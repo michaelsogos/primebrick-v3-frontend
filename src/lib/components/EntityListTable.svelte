@@ -649,7 +649,7 @@
       {/if}
     {:else}
       <Table.Root
-        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-head]]:bg-sky-50 [&_[data-slot=table-head]]:bg-clip-border dark:[&_[data-slot=table-head]]:bg-sky-950/30"
+        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-head]]:bg-sky-50 [&_[data-slot=table-head]]:bg-clip-border [&_[data-slot=table-head]]:text-foreground dark:[&_[data-slot=table-head]]:text-foreground/100 dark:[&_[data-slot=table-head]]:opacity-100 dark:[&_[data-slot=table-head]]:bg-sky-950/30"
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
