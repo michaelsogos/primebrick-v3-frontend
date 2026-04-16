@@ -39,6 +39,17 @@
     "theme": {
       "light": "Passa al tema chiaro",
       "dark": "Passa al tema scuro"
+    },
+    "errors": {
+      "aria": "Errori",
+      "title": "Errori",
+      "clear": "Pulisci",
+      "close": "Chiudi",
+      "empty": "Nessun errore.",
+      "unhandledRejection": "Rifiuto non gestito",
+      "unhandledError": "Errore non gestito",
+      "unhandledRejectionFallback": "Rifiuto non gestito",
+      "unhandledErrorFallback": "Errore non gestito"
     }
   }
   ,

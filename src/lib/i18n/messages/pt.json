@@ -39,6 +39,17 @@
     "theme": {
       "light": "Mudar para tema claro",
       "dark": "Mudar para tema escuro"
+    },
+    "errors": {
+      "aria": "Erros",
+      "title": "Erros",
+      "clear": "Limpar",
+      "close": "Fechar",
+      "empty": "Sem erros.",
+      "unhandledRejection": "Rejeição não tratada",
+      "unhandledError": "Erro não tratado",
+      "unhandledRejectionFallback": "Rejeição não tratada",
+      "unhandledErrorFallback": "Erro não tratado"
     }
   }
   ,

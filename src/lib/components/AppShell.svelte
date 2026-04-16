@@ -7,6 +7,7 @@
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
   import AppToastHost from '$lib/components/AppToastHost.svelte';
   import * as Sheet from '$lib/components/ui/sheet';
+  import { t } from '$lib/i18n';
   import { loadShellNav } from '$lib/shell/modules-shell.svelte';
   import { pushAppError } from '$lib/errors/app-errors';
 
@@ -45,12 +46,17 @@
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
-      const msg = reason instanceof Error ? reason.message : String(reason ?? 'Unhandled rejection');
-      pushAppError({ message: msg, scope: 'Unhandled rejection' });
+      const fallback = $t('shell.errors.unhandledRejectionFallback');
+      const msg = reason instanceof Error ? reason.message : String(reason ?? fallback);
+      pushAppError({ message: msg, scope: $t('shell.errors.unhandledRejection') });
     };
     const onWindowError = (e: ErrorEvent) => {
+      const fallback = $t('shell.errors.unhandledErrorFallback');
       const msg = e.error instanceof Error ? e.error.message : e.message;
-      pushAppError({ message: msg || 'Unhandled error', scope: 'Unhandled error' });
+      pushAppError({
+        message: msg || fallback,
+        scope: $t('shell.errors.unhandledError')
+      });
     };
     window.addEventListener('unhandledrejection', onUnhandledRejection);
     window.addEventListener('error', onWindowError);
