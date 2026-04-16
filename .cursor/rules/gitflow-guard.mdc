@@ -18,6 +18,8 @@ alwaysApply: true
 
 - Before the first modification, if not already on a GitFlow branch, ask the user to choose `feature`, `release`, or `hotfix` and confirm the exact branch name.
 - After completing a set of requested changes, always ask whether to **close the branch** (merge per GitFlow + tag if release/hotfix) or **continue working** on it.
+- Do **not** push to remote automatically. Only push when the user explicitly asks.
+- Do **not** commit changes until they have been verified to work (by running checks and/or visually confirming the fix).
 
 ## Versioning rules (SemVer, major stays 0)
 
