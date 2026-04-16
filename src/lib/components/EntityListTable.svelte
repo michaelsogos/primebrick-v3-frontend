@@ -653,7 +653,7 @@
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
-        <Table.Header class="sticky top-0 z-10 bg-sky-50 dark:bg-sky-950/30">
+        <Table.Header class="sticky top-0 z-[80] bg-sky-50 dark:bg-sky-950/30">
           <Table.Row>
             {#if rowSelectionEnabled}
               <Table.Head
