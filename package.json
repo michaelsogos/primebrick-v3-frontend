@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "version:auto": "node scripts/version-sync.mjs",
+    "prebuild": "node scripts/version-sync.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo .",
