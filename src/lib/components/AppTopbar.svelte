@@ -8,7 +8,7 @@
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
-  import { Bell, Menu, TriangleAlert, X } from 'lucide-svelte';
+  import { Bell, Menu, TriangleAlert, X, ThumbsUp } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
 
@@ -77,8 +77,8 @@
               variant="ghost"
               size="icon"
               class="relative"
-              aria-label="errors"
-              title="errors"
+              aria-label={$t('shell.errors.aria')}
+              title={$t('shell.errors.aria')}
             >
               <TriangleAlert class="size-4" />
               {#if $appErrors.length > 0}
@@ -92,7 +92,7 @@
         <Sheet.Content side="right" class="w-[420px] p-0" showClose={false}>
           <div class="flex h-full flex-col">
             <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
-              <div class="text-sm font-medium">Errors</div>
+              <div class="text-sm font-medium">{$t('shell.errors.title')}</div>
               <div class="flex items-center gap-1">
                 <Button
                   variant="ghost"
@@ -100,11 +100,11 @@
                   disabled={$appErrors.length === 0}
                   onclick={() => clearAppErrors()}
                 >
-                  Clear
+                  {$t('shell.errors.clear')}
                 </Button>
                 <Sheet.Close
                   class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                  title="Close"
+                  title={$t('shell.errors.close')}
                 >
                   <XIcon class="size-4" />
                 </Sheet.Close>
@@ -113,7 +113,14 @@
 
             <div class="min-h-0 flex-1 overflow-auto p-2">
               {#if $appErrors.length === 0}
-                <div class="p-3 text-sm text-muted-foreground">No errors.</div>
+                <div class="grid h-full place-items-center p-3">
+                  <div class="relative flex flex-col items-center gap-2 text-center">
+                    <div class="pb-watermark-empty">
+                      <ThumbsUp class="size-20 text-info" />
+                    </div>
+                    <div class="text-sm font-medium text-muted-foreground">{$t('shell.errors.empty')}</div>
+                  </div>
+                </div>
               {:else}
                 <div class="space-y-2">
                   {#each $appErrors as e (e.id)}
@@ -178,4 +185,23 @@
     </div>
   </div>
 </header>
+
+<style>
+  @keyframes pb-watermark-pulse {
+    0%,
+    100% {
+      opacity: 0.12;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 0.22;
+      transform: translateY(-6px) scale(1.06);
+    }
+  }
+
+  .pb-watermark-empty {
+    transform-origin: center;
+    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+  }
+</style>
 

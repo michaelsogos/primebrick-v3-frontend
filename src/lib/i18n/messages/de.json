@@ -39,6 +39,17 @@
     "theme": {
       "light": "Zum hellen Thema wechseln",
       "dark": "Zum dunklen Thema wechseln"
+    },
+    "errors": {
+      "aria": "Fehler",
+      "title": "Fehler",
+      "clear": "Leeren",
+      "close": "Schließen",
+      "empty": "Keine Fehler.",
+      "unhandledRejection": "Nicht behandelte Zurückweisung",
+      "unhandledError": "Nicht behandelter Fehler",
+      "unhandledRejectionFallback": "Nicht behandelte Zurückweisung",
+      "unhandledErrorFallback": "Nicht behandelter Fehler"
     }
   }
   ,

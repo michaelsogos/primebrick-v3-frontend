@@ -244,7 +244,8 @@
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     if (key !== 'uuid' && key !== 'code') return undefined;
-    const baseBg = isHeader ? 'bg-sky-50 dark:bg-sky-950/30' : 'bg-background';
+    // Header background must be opaque in dark mode (otherwise rows show through and header text looks faded).
+    const baseBg = isHeader ? 'bg-sky-200 dark:bg-sky-950' : 'bg-gray-100 dark:bg-gray-950';
     const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
@@ -290,6 +291,76 @@
       return;
     }
     onSearchInKeysChange([...searchInKeys, key]);
+  }
+
+  /** Visual tokens for list search (aligned with backend customers wildcard rules). */
+  type SearchSyntaxSeg =
+    | { kind: 'plain'; text: string }
+    | { kind: 'wAny'; text: string }
+    | { kind: 'wOne'; text: string }
+    | { kind: 'litStar' | 'litQ'; text: string }
+    | { kind: 'sym'; text: string }
+    | { kind: 'bsLit'; text: string };
+
+  function searchSyntaxSegments(raw: string): SearchSyntaxSeg[] {
+    const out: SearchSyntaxSeg[] = [];
+    let buf = '';
+    const flush = () => {
+      if (buf) {
+        out.push({ kind: 'plain', text: buf });
+        buf = '';
+      }
+    };
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i]!;
+      const next = raw[i + 1];
+      if (ch === '\\' && next === '*') {
+        flush();
+        out.push({ kind: 'wAny', text: '\\*' });
+        i++;
+      } else if (ch === '\\' && next === '?') {
+        flush();
+        out.push({ kind: 'wOne', text: '\\?' });
+        i++;
+      } else if (ch === '\\' && next !== undefined) {
+        flush();
+        out.push({ kind: 'bsLit', text: ch + next });
+        i++;
+      } else if (ch === '*') {
+        flush();
+        out.push({ kind: 'litStar', text: '*' });
+      } else if (ch === '?') {
+        flush();
+        out.push({ kind: 'litQ', text: '?' });
+      } else if (ch === '%' || ch === '_') {
+        flush();
+        out.push({ kind: 'sym', text: ch });
+      } else {
+        buf += ch;
+      }
+    }
+    flush();
+    return out;
+  }
+
+  const searchSyntaxParts = $derived(searchSyntaxSegments(search));
+
+  function searchSyntaxSpanClass(seg: SearchSyntaxSeg): string {
+    switch (seg.kind) {
+      case 'plain':
+        return 'text-foreground';
+      case 'wAny':
+        return 'font-semibold text-sky-600 dark:text-sky-400';
+      case 'wOne':
+        return 'font-semibold text-violet-600 dark:text-violet-400';
+      case 'litStar':
+      case 'litQ':
+        return 'font-medium text-amber-700/90 dark:text-amber-400/90';
+      case 'sym':
+        return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
+      case 'bsLit':
+        return 'text-muted-foreground';
+    }
   }
 
   function toggleColumnKey(key: string) {
@@ -445,16 +516,40 @@
     <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
       <div class="relative w-full">
         <Search
-          class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"
         />
+        <!-- Highlight layer: must match Input padding / font so glyphs line up with transparent text above. -->
+        <div
+          class="pointer-events-none absolute inset-0 z-0 flex min-h-9 items-center overflow-hidden whitespace-pre rounded-md border border-transparent bg-background py-1 pl-8 pr-36 text-base leading-normal md:text-sm"
+          aria-hidden="true"
+        >
+          {#each searchSyntaxParts as seg, si (si)}
+            <span class={searchSyntaxSpanClass(seg)}>{seg.text}</span>
+          {/each}
+        </div>
         <Input
-          class="pl-8 pr-28 border-sky-100 focus-visible:ring-sky-200/50 focus-visible:border-sky-200 dark:border-sky-900/40 dark:focus-visible:ring-sky-900/40 dark:focus-visible:border-sky-900/60"
+          class="relative z-10 border-sky-100 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:border-sky-900/40 dark:selection:bg-primary/35 dark:selection:text-transparent focus-visible:border-sky-200 focus-visible:ring-sky-200/50 dark:focus-visible:border-sky-900/60 dark:focus-visible:ring-sky-900/40"
           value={search}
+          spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
         />
 
-        <div class="absolute right-1 top-1/2 -translate-y-1/2">
+        <div class="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+          {#if search.trim().length > 0}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
+              onclick={() => onSearchInput('')}
+              aria-label={$t('common.reset')}
+              title={$t('common.reset')}
+            >
+              <XIcon class="size-4" />
+            </Button>
+          {/if}
+
           <Sheet.Root bind:open={searchMenuOpen}>
             <Sheet.Trigger>
               {#snippet child({ props })}
@@ -649,16 +744,16 @@
       {/if}
     {:else}
       <Table.Root
-        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-head]]:bg-sky-50 [&_[data-slot=table-head]]:bg-clip-border dark:[&_[data-slot=table-head]]:bg-sky-950/30"
+        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30"
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
-        <Table.Header class="sticky top-0 z-10 bg-sky-50 dark:bg-sky-950/30">
+        <Table.Header class="sticky top-0 z-[80] bg-background">
           <Table.Row>
             {#if rowSelectionEnabled}
               <Table.Head
                 bind:ref={checkboxHeadRef}
-                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-50 dark:bg-sky-950/30 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
                 <div class="flex h-10 items-center justify-center">
                   <input
@@ -748,7 +843,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-50 dark:bg-sky-950/30 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
                 <div class="flex h-10 items-center justify-center">
                   <span class="sr-only">actions</span>
@@ -829,7 +924,7 @@
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
               >
                 {#if rowSelectionEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-background bg-clip-border p-2">
+                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
                     <div class="flex h-10 items-center justify-center">
                       <input
                         type="checkbox"
@@ -889,7 +984,7 @@
                   {/if}
                 {/each}
                 {#if actionsEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-background bg-clip-border p-2">
+                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
                     <div class="flex h-10 items-center justify-center">
                       {#if rowActions}
                         {@render rowActions({ row: r })}
@@ -963,6 +1058,8 @@
         </DropdownMenu.Content>
       </DropdownMenu.Root>
       <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
+
+      <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
 
       <Button
         variant="soft"

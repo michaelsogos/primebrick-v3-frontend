@@ -39,6 +39,17 @@
     "theme": {
       "light": "Cambiar a tema claro",
       "dark": "Cambiar a tema oscuro"
+    },
+    "errors": {
+      "aria": "Errores",
+      "title": "Errores",
+      "clear": "Limpiar",
+      "close": "Cerrar",
+      "empty": "Sin errores.",
+      "unhandledRejection": "Rechazo no gestionado",
+      "unhandledError": "Error no gestionado",
+      "unhandledRejectionFallback": "Rechazo no gestionado",
+      "unhandledErrorFallback": "Error no gestionado"
     }
   }
   ,

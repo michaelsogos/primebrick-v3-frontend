@@ -39,6 +39,17 @@
     "theme": {
       "light": "Switch to light theme",
       "dark": "Switch to dark theme"
+    },
+    "errors": {
+      "aria": "Errors",
+      "title": "Errors",
+      "clear": "Clear",
+      "close": "Close",
+      "empty": "No errors.",
+      "unhandledRejection": "Unhandled rejection",
+      "unhandledError": "Unhandled error",
+      "unhandledRejectionFallback": "Unhandled rejection",
+      "unhandledErrorFallback": "Unhandled error"
     }
   }
   ,
