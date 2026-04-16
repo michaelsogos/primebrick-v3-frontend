@@ -148,3 +148,4 @@ These are conventions to keep the UI consistent and reduce “one-off” compone
 
 \n- GitFlow test change
 \n## v0.1.0\n- First release (GitFlow dry run)\n
+\n- Hotfix test change
