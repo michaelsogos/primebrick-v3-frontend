@@ -1,6 +1,6 @@
 # Frontend agent guide — Primebrick
 
-This doc is the **frontend-specific companion** to the repo root `AGENTS.md`.
+This doc is the **frontend-specific agent guide** for this repository.
 
 ## App page layout (standard)
 

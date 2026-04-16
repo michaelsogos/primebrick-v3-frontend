@@ -1,0 +1,12 @@
+---
+description: Primebrick frontend — context and safety rules
+alwaysApply: true
+---
+
+# Primebrick frontend
+
+- **Purpose:** Modular management system (CRM, Accounting, Warehouse, custom modules).
+- **Stack:** SvelteKit + Svelte 5 + TypeScript. The API lives in a separate backend repo.
+- **Before cloud/Foundry/messaging work:** Read `docs/ai/SKILLS.md` and treat only **[x]** skills as in-scope unless the user names another skill or path explicitly.
+- **Onboarding:** Read local `AGENTS.md` for commands and conventions.
+- **API contract caution:** Keep frontend API types and usage aligned with backend responses when changing contracts.
