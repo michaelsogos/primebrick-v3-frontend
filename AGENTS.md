@@ -14,6 +14,15 @@ In-app routes under the shell should **fill the main content area** (full width,
   - Typecheck: `pnpm run check`
   - Build: `pnpm run build`
 
+## GitFlow workflow (team rule)
+
+- Do not work directly on `main` or `develop`. Create a GitFlow branch first:
+  - `feature/*` from `develop`
+  - `release/*` from `develop`
+  - `hotfix/*` from `main`
+- Do not push automatically. Push only when explicitly requested.
+- Do not commit changes until the fix has been verified (checks and/or visual verification).
+
 ## UI architecture (Shadcn-Svelte)
 
 Primebrick uses **Shadcn-Svelte** as “vendored UI source” + Tailwind.

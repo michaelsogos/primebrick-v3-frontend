@@ -245,7 +245,7 @@
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     if (key !== 'uuid' && key !== 'code') return undefined;
     // Header background must be opaque in dark mode (otherwise rows show through and header text looks faded).
-    const baseBg = isHeader ? 'bg-sky-100 dark:bg-sky-950' : 'bg-gray-50 dark:bg-gray-950';
+    const baseBg = isHeader ? 'bg-sky-200 dark:bg-sky-950' : 'bg-gray-100 dark:bg-gray-950';
     const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
@@ -650,16 +650,16 @@
       {/if}
     {:else}
       <Table.Root
-        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-head]]:bg-sky-100 [&_[data-slot=table-head]]:bg-clip-border [&_[data-slot=table-head]]:text-foreground dark:[&_[data-slot=table-head]]:bg-sky-950 dark:[&_[data-slot=table-head]]:text-foreground dark:[&_[data-slot=table-head]]:opacity-100"
+        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30"
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
-        <Table.Header class="sticky top-0 z-[80] bg-sky-100 dark:bg-sky-950">
+        <Table.Header class="sticky top-0 z-[80] bg-background">
           <Table.Row>
             {#if rowSelectionEnabled}
               <Table.Head
                 bind:ref={checkboxHeadRef}
-                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-100 dark:bg-sky-950 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
                 <div class="flex h-10 items-center justify-center">
                   <input
@@ -749,7 +749,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-100 dark:bg-sky-950 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
                 <div class="flex h-10 items-center justify-center">
                   <span class="sr-only">actions</span>
@@ -830,7 +830,7 @@
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
               >
                 {#if rowSelectionEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-background bg-clip-border p-2">
+                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
                     <div class="flex h-10 items-center justify-center">
                       <input
                         type="checkbox"
@@ -890,7 +890,7 @@
                   {/if}
                 {/each}
                 {#if actionsEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-background bg-clip-border p-2">
+                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
                     <div class="flex h-10 items-center justify-center">
                       {#if rowActions}
                         {@render rowActions({ row: r })}
