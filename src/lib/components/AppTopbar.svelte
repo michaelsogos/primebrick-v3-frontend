@@ -8,7 +8,7 @@
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
-  import { Bell, Menu, TriangleAlert, X } from 'lucide-svelte';
+  import { Bell, Menu, TriangleAlert, X, ThumbsUp } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
 
@@ -113,7 +113,14 @@
 
             <div class="min-h-0 flex-1 overflow-auto p-2">
               {#if $appErrors.length === 0}
-                <div class="p-3 text-sm text-muted-foreground">{$t('shell.errors.empty')}</div>
+                <div class="grid h-full place-items-center p-3">
+                  <div class="relative flex flex-col items-center gap-2 text-center">
+                    <div class="pb-watermark-empty">
+                      <ThumbsUp class="size-20 text-info" />
+                    </div>
+                    <div class="text-sm font-medium text-muted-foreground">{$t('shell.errors.empty')}</div>
+                  </div>
+                </div>
               {:else}
                 <div class="space-y-2">
                   {#each $appErrors as e (e.id)}
@@ -178,4 +185,23 @@
     </div>
   </div>
 </header>
+
+<style>
+  @keyframes pb-watermark-pulse {
+    0%,
+    100% {
+      opacity: 0.12;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 0.22;
+      transform: translateY(-6px) scale(1.06);
+    }
+  }
+
+  .pb-watermark-empty {
+    transform-origin: center;
+    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+  }
+</style>
 
