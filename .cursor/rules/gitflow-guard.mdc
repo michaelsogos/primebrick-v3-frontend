@@ -16,7 +16,8 @@ alwaysApply: true
 
 ## Required user prompts
 
-- Before the first modification, if not already on a GitFlow branch, ask the user to choose `feature`, `release`, or `hotfix` and confirm the exact branch name.
+- Before the first modification, if not already on a GitFlow branch, ask the user to choose `feature`, `release`, or `hotfix`.
+  - After the user chooses the type, the agent should propose a **meaningful** GitFlow branch name and proceed without asking the user to pick the exact name (unless the user explicitly wants to name it).
 - After completing a set of requested changes, always ask whether to **close the branch** (merge per GitFlow + tag if release/hotfix) or **continue working** on it.
 - Do **not** push to remote automatically. Only push when the user explicitly asks.
 - Do **not** commit changes until they have been verified to work (by running checks and/or visually confirming the fix).
