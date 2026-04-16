@@ -20,6 +20,8 @@ In-app routes under the shell should **fill the main content area** (full width,
   - `feature/*` from `develop`
   - `release/*` from `develop`
   - `hotfix/*` from `main`
+- If you are **already** on `feature/*`, `release/*`, or `hotfix/*`, **ask** whether to **stay** on that branch or **open a new** GitFlow branch. If the user stays, do **not** argue about the branch name.
+- If the user **chooses a new** branch: **ask** whether to **close the previous branch first** or leave it open; then always **`checkout` the parent (`develop` or `main`) → `pull` → `checkout -b …`** for the new branch (do not branch the new feature off the old feature unless the user explicitly asks).
 - Do not push automatically. Push only when explicitly requested.
 - Do not commit changes until the fix has been verified (checks and/or visual verification).
 
