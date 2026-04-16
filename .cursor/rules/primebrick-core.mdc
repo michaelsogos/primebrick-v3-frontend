@@ -10,3 +10,4 @@ alwaysApply: true
 - **Before cloud/Foundry/messaging work:** Read `docs/ai/SKILLS.md` and treat only **[x]** skills as in-scope unless the user names another skill or path explicitly.
 - **Onboarding:** Read local `AGENTS.md` for commands and conventions.
 - **API contract caution:** Keep frontend API types and usage aligned with backend responses when changing contracts.
+- **Documentation language:** All `*.md` files in this repository must be **English** for team-facing prose. Do not add Italian (or other non-English) copy to Markdown; reserve non-English for direct chat with the user only.

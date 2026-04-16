@@ -2,6 +2,8 @@
 
 This doc is the **frontend-specific agent guide** for this repository.
 
+**Documentation language:** All `*.md` files in this repository must use **English** for team-facing prose.
+
 ## App page layout (standard)
 
 In-app routes under the shell should **fill the main content area** (full width, no `mx-auto` / `max-w-*` unless a specific form needs it). Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer padding `p-2 sm:p-3`, column `gap-4`, `min-h-0` so flex children (tables, cards) can use remaining height. Put breadcrumb + `h1` (and optional toolbar) in `{#snippet header()}`; put the main block (e.g. `EntityListTable`) as default children.
