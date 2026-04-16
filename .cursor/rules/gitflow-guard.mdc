@@ -1,0 +1,27 @@
+---
+description: GitFlow guardrails — never change main/develop; ask user to branch; ask to close branch after changes
+alwaysApply: true
+---
+
+# GitFlow guardrails (frontend)
+
+## Hard rules
+
+- **Do not make code or configuration changes on `main` or `develop`.**
+  - If the current branch is `main` or `develop`, stop before editing and ask the user which GitFlow branch type to create.
+- **All work must happen on a GitFlow branch**:
+  - `feature/*` (from `develop`)
+  - `release/*` (from `develop`, SemVer like `release/0.2.0`)
+  - `hotfix/*` (from `main`, SemVer like `hotfix/0.2.1`)
+
+## Required user prompts
+
+- Before the first modification, if not already on a GitFlow branch, ask the user to choose `feature`, `release`, or `hotfix` and confirm the exact branch name.
+- After completing a set of requested changes, always ask whether to **close the branch** (merge per GitFlow + tag if release/hotfix) or **continue working** on it.
+
+## Versioning rules (SemVer, major stays 0)
+
+- Release branches bump **MINOR**: `v0.x.y` → `release/0.(x+1).0`, tag `v0.(x+1).0`.
+- Hotfix branches bump **PATCH**: `v0.x.y` → `hotfix/0.x.(y+1)`, tag `v0.x.(y+1)`.
+- Tag name must be derived from the branch name (`release/0.2.0` → tag `v0.2.0`).
+
