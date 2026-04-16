@@ -146,3 +146,4 @@ These are conventions to keep the UI consistent and reduce “one-off” compone
 - Prefer **SVG** (inline or as `.svg`), icon libraries (e.g. `lucide-svelte`), or CSS techniques.
 - If a bitmap is unavoidable for a specific business requirement, confirm explicitly before adding it.
 
+\n- GitFlow test change
