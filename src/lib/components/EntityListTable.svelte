@@ -965,6 +965,8 @@
       </DropdownMenu.Root>
       <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
 
+      <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+
       <Button
         variant="soft"
         size="icon-sm"
