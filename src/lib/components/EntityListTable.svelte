@@ -293,6 +293,76 @@
     onSearchInKeysChange([...searchInKeys, key]);
   }
 
+  /** Visual tokens for list search (aligned with backend customers wildcard rules). */
+  type SearchSyntaxSeg =
+    | { kind: 'plain'; text: string }
+    | { kind: 'wAny'; text: string }
+    | { kind: 'wOne'; text: string }
+    | { kind: 'litStar' | 'litQ'; text: string }
+    | { kind: 'sym'; text: string }
+    | { kind: 'bsLit'; text: string };
+
+  function searchSyntaxSegments(raw: string): SearchSyntaxSeg[] {
+    const out: SearchSyntaxSeg[] = [];
+    let buf = '';
+    const flush = () => {
+      if (buf) {
+        out.push({ kind: 'plain', text: buf });
+        buf = '';
+      }
+    };
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i]!;
+      const next = raw[i + 1];
+      if (ch === '\\' && next === '*') {
+        flush();
+        out.push({ kind: 'wAny', text: '\\*' });
+        i++;
+      } else if (ch === '\\' && next === '?') {
+        flush();
+        out.push({ kind: 'wOne', text: '\\?' });
+        i++;
+      } else if (ch === '\\' && next !== undefined) {
+        flush();
+        out.push({ kind: 'bsLit', text: ch + next });
+        i++;
+      } else if (ch === '*') {
+        flush();
+        out.push({ kind: 'litStar', text: '*' });
+      } else if (ch === '?') {
+        flush();
+        out.push({ kind: 'litQ', text: '?' });
+      } else if (ch === '%' || ch === '_') {
+        flush();
+        out.push({ kind: 'sym', text: ch });
+      } else {
+        buf += ch;
+      }
+    }
+    flush();
+    return out;
+  }
+
+  const searchSyntaxParts = $derived(searchSyntaxSegments(search));
+
+  function searchSyntaxSpanClass(seg: SearchSyntaxSeg): string {
+    switch (seg.kind) {
+      case 'plain':
+        return 'text-foreground';
+      case 'wAny':
+        return 'font-semibold text-sky-600 dark:text-sky-400';
+      case 'wOne':
+        return 'font-semibold text-violet-600 dark:text-violet-400';
+      case 'litStar':
+      case 'litQ':
+        return 'font-medium text-amber-700/90 dark:text-amber-400/90';
+      case 'sym':
+        return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
+      case 'bsLit':
+        return 'text-muted-foreground';
+    }
+  }
+
   function toggleColumnKey(key: string) {
     const col = columns.find((c) => c.key === key);
     if (col?.hideable === false) return;
@@ -446,16 +516,40 @@
     <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
       <div class="relative w-full">
         <Search
-          class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"
         />
+        <!-- Highlight layer: must match Input padding / font so glyphs line up with transparent text above. -->
+        <div
+          class="pointer-events-none absolute inset-0 z-0 flex min-h-9 items-center overflow-hidden whitespace-pre rounded-md border border-transparent bg-background py-1 pl-8 pr-36 text-base leading-normal md:text-sm"
+          aria-hidden="true"
+        >
+          {#each searchSyntaxParts as seg, si (si)}
+            <span class={searchSyntaxSpanClass(seg)}>{seg.text}</span>
+          {/each}
+        </div>
         <Input
-          class="pl-8 pr-28 border-sky-100 focus-visible:ring-sky-200/50 focus-visible:border-sky-200 dark:border-sky-900/40 dark:focus-visible:ring-sky-900/40 dark:focus-visible:border-sky-900/60"
+          class="relative z-10 border-sky-100 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:border-sky-900/40 dark:selection:bg-primary/35 dark:selection:text-transparent focus-visible:border-sky-200 focus-visible:ring-sky-200/50 dark:focus-visible:border-sky-900/60 dark:focus-visible:ring-sky-900/40"
           value={search}
+          spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
         />
 
-        <div class="absolute right-1 top-1/2 -translate-y-1/2">
+        <div class="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+          {#if search.trim().length > 0}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
+              onclick={() => onSearchInput('')}
+              aria-label={$t('common.reset')}
+              title={$t('common.reset')}
+            >
+              <XIcon class="size-4" />
+            </Button>
+          {/if}
+
           <Sheet.Root bind:open={searchMenuOpen}>
             <Sheet.Trigger>
               {#snippet child({ props })}
