@@ -1,0 +1,111 @@
+{
+  "app": {
+    "title": "Primebrick"
+  },
+  "common": {
+    "loading": "Loading…",
+    "loadFailed": "Loading failed",
+    "soon": "Soon",
+    "new": "New",
+    "prev": "Prev",
+    "next": "Next",
+    "all": "All",
+    "reset": "Reset",
+    "done": "Done"
+  },
+  "shell": {
+    "subtitle": "Backoffice",
+    "serverUnreachable": "Unable to reach the server. Make sure your network connection can reach the server.",
+    "modulesLoadFailed": "Could not load the menu.",
+    "retry": "Retry",
+    "nav": {
+      "aria": "Navigation",
+      "open": "Open navigation",
+      "crmFallback": "CRM"
+    },
+    "search": {
+      "placeholder": "Search…",
+      "aria": "Search"
+    },
+    "notifications": {
+      "aria": "Notifications"
+    },
+    "userMenu": {
+      "aria": "User menu",
+      "title": "Profile",
+      "accountSoon": "Account settings (soon)",
+      "signOutSoon": "Sign out (soon)"
+    },
+    "theme": {
+      "light": "Switch to light theme",
+      "dark": "Switch to dark theme"
+    }
+  }
+  ,
+  "entities": {
+    "list": {
+      "searchPlaceholder": "Search customers…",
+      "empty": "No results",
+      "noRecords": "No records",
+      "selectedSingular": "selected",
+      "selectedPlural": "selected",
+      "columns": "Columns",
+      "auditingFields": "Auditing Fields",
+      "filters": "Filters",
+      "searchIn": "Search in",
+      "searchInAll": "All fields",
+      "searchInFields": "fields",
+      "filtersHint": "Refine the list using server-side filters.",
+      "pageSize": "Rows per page"
+    },
+    "crm": {
+      "pipeline": {
+        "nav": "Pipeline",
+        "title": "Pipeline",
+        "cardTitle": "Sample workspace",
+        "description": "Non-functional preview for layout and navigation.",
+        "body1": "Use this area to sketch CRM pipeline screens before wiring APIs.",
+        "body2": "Nothing here is persisted.",
+        "fake1": "Lead stages (example)",
+        "fake2": "Drag-and-drop board (not connected)",
+        "fake3": "Team inbox (mock)"
+      }
+    },
+    "customer": {
+      "title": "Customer Management",
+      "singular": "customer",
+      "plural": "customers",
+      "new": {
+        "title": "New customer"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "fields": {
+        "code": "Code",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "company_name": "Company",
+        "email": "Email",
+        "phone": "Phone",
+        "status": "Status",
+        "uuid": "UUID",
+        "status_reason": "Status reason",
+        "local_address": "Address",
+        "local_city": "City",
+        "local_state": "State/Region",
+        "local_country": "Country",
+        "local_zip": "ZIP",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
+      }
+    }
+  }
+}
+

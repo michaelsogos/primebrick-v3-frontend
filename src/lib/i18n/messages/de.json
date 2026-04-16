@@ -1,0 +1,111 @@
+{
+  "app": {
+    "title": "Primebrick"
+  },
+  "common": {
+    "loading": "Lädt…",
+    "loadFailed": "Laden fehlgeschlagen",
+    "soon": "Bald",
+    "new": "Neu",
+    "prev": "Zurück",
+    "next": "Weiter",
+    "all": "Alle",
+    "reset": "Zurücksetzen",
+    "done": "Fertig"
+  },
+  "shell": {
+    "subtitle": "Backoffice",
+    "serverUnreachable": "Server nicht erreichbar. Stellen Sie sicher, dass Ihre Netzwerkverbindung den Server erreichen kann.",
+    "modulesLoadFailed": "Menü konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "nav": {
+      "aria": "Navigation",
+      "open": "Navigation öffnen",
+      "crmFallback": "CRM"
+    },
+    "search": {
+      "placeholder": "Suchen…",
+      "aria": "Suchen"
+    },
+    "notifications": {
+      "aria": "Benachrichtigungen"
+    },
+    "userMenu": {
+      "aria": "Benutzermenü",
+      "title": "Profil",
+      "accountSoon": "Kontoeinstellungen (bald)",
+      "signOutSoon": "Abmelden (bald)"
+    },
+    "theme": {
+      "light": "Zum hellen Thema wechseln",
+      "dark": "Zum dunklen Thema wechseln"
+    }
+  }
+  ,
+  "entities": {
+    "list": {
+      "searchPlaceholder": "Kunden suchen…",
+      "empty": "Keine Ergebnisse",
+      "noRecords": "Keine Datensätze",
+      "selectedSingular": "ausgewählt",
+      "selectedPlural": "ausgewählt",
+      "columns": "Spalten",
+      "auditingFields": "Audit-Felder",
+      "filters": "Filter",
+      "searchIn": "Suchen in",
+      "searchInAll": "Alle Felder",
+      "searchInFields": "Felder",
+      "filtersHint": "Liste mit serverseitigen Filtern verfeinern.",
+      "pageSize": "Zeilen pro Seite"
+    },
+    "crm": {
+      "pipeline": {
+        "nav": "Pipeline",
+        "title": "Pipeline",
+        "cardTitle": "Beispiel-Arbeitsbereich",
+        "description": "Statische Vorschau für Layout und Navigation.",
+        "body1": "Platzhalter, um CRM-Pipeline-Oberflächen vor Anbindung der APIs zu skizzieren.",
+        "body2": "Es werden keine Daten gespeichert.",
+        "fake1": "Lead-Phasen (Beispiel)",
+        "fake2": "Drag-and-Drop-Board (nicht verbunden)",
+        "fake3": "Team-Posteingang (Mock)"
+      }
+    },
+    "customer": {
+      "title": "Kundenverwaltung",
+      "singular": "Kunde",
+      "plural": "Kunden",
+      "new": {
+        "title": "Neuer Kunde"
+      },
+      "status": {
+        "active": "Aktiv",
+        "inactive": "Inaktiv"
+      },
+      "fields": {
+        "code": "Code",
+        "first_name": "Vorname",
+        "last_name": "Nachname",
+        "company_name": "Firma",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "status": "Status",
+        "uuid": "UUID",
+        "status_reason": "Statusgrund",
+        "local_address": "Adresse",
+        "local_city": "Stadt",
+        "local_state": "Bundesland/Region",
+        "local_country": "Land",
+        "local_zip": "PLZ",
+        "created_at": "Erstellt am",
+        "updated_at": "Aktualisiert am",
+        "created_by": "Erstellt von",
+        "updated_by": "Aktualisiert von",
+        "version": "Version",
+        "deleted_at": "Gelöscht am",
+        "deleted_by": "Gelöscht von"
+      }
+    }
+  }
+}
+

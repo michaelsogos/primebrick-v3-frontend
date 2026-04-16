@@ -1,0 +1,111 @@
+{
+  "app": {
+    "title": "Primebrick"
+  },
+  "common": {
+    "loading": "A carregar…",
+    "loadFailed": "Carregamento falhou",
+    "soon": "Em breve",
+    "new": "Novo",
+    "prev": "Ant",
+    "next": "Seg",
+    "all": "Todos",
+    "reset": "Repor",
+    "done": "Concluído"
+  },
+  "shell": {
+    "subtitle": "Backoffice",
+    "serverUnreachable": "Não foi possível contactar o servidor. Verifique se a ligação de rede permite alcançar o servidor.",
+    "modulesLoadFailed": "Não foi possível carregar o menu.",
+    "retry": "Tentar novamente",
+    "nav": {
+      "aria": "Navegação",
+      "open": "Abrir navegação",
+      "crmFallback": "CRM"
+    },
+    "search": {
+      "placeholder": "Pesquisar…",
+      "aria": "Pesquisar"
+    },
+    "notifications": {
+      "aria": "Notificações"
+    },
+    "userMenu": {
+      "aria": "Menu do utilizador",
+      "title": "Perfil",
+      "accountSoon": "Definições da conta (em breve)",
+      "signOutSoon": "Terminar sessão (em breve)"
+    },
+    "theme": {
+      "light": "Mudar para tema claro",
+      "dark": "Mudar para tema escuro"
+    }
+  }
+  ,
+  "entities": {
+    "list": {
+      "searchPlaceholder": "Pesquisar clientes…",
+      "empty": "Sem resultados",
+      "noRecords": "Sem registos",
+      "selectedSingular": "selecionado",
+      "selectedPlural": "selecionados",
+      "columns": "Colunas",
+      "auditingFields": "Campos de auditoria",
+      "filters": "Filtros",
+      "searchIn": "Pesquisar em",
+      "searchInAll": "Todos os campos",
+      "searchInFields": "campos",
+      "filtersHint": "Refine a lista com filtros do servidor.",
+      "pageSize": "Linhas por página"
+    },
+    "crm": {
+      "pipeline": {
+        "nav": "Pipeline",
+        "title": "Pipeline",
+        "cardTitle": "Área de trabalho de exemplo",
+        "description": "Pré-visualização estática para layout e navegação.",
+        "body1": "Ecrã de preenchimento para testar o fluxo CRM antes de ligar as APIs.",
+        "body2": "Não são guardados dados.",
+        "fake1": "Fases do lead (exemplo)",
+        "fake2": "Quadro arrastar e largar (sem ligação)",
+        "fake3": "Caixa de entrada da equipa (simulada)"
+      }
+    },
+    "customer": {
+      "title": "Gestão de clientes",
+      "singular": "cliente",
+      "plural": "clientes",
+      "new": {
+        "title": "Novo cliente"
+      },
+      "status": {
+        "active": "Ativo",
+        "inactive": "Inativo"
+      },
+      "fields": {
+        "code": "Código",
+        "first_name": "Nome",
+        "last_name": "Apelido",
+        "company_name": "Empresa",
+        "email": "Email",
+        "phone": "Telefone",
+        "status": "Estado",
+        "uuid": "UUID",
+        "status_reason": "Motivo do estado",
+        "local_address": "Morada",
+        "local_city": "Cidade",
+        "local_state": "Distrito/Região",
+        "local_country": "País",
+        "local_zip": "Código postal",
+        "created_at": "Criado em",
+        "updated_at": "Atualizado em",
+        "created_by": "Criado por",
+        "updated_by": "Atualizado por",
+        "version": "Versão",
+        "deleted_at": "Eliminado em",
+        "deleted_by": "Eliminado por"
+      }
+    }
+  }
+}
+

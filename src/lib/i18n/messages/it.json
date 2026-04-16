@@ -1,0 +1,111 @@
+{
+  "app": {
+    "title": "Primebrick"
+  },
+  "common": {
+    "loading": "Caricamento…",
+    "loadFailed": "Caricamento fallito",
+    "soon": "Presto",
+    "new": "Nuovo",
+    "prev": "Prec",
+    "next": "Succ",
+    "all": "Tutti",
+    "reset": "Reset",
+    "done": "Fatto"
+  },
+  "shell": {
+    "subtitle": "Backoffice",
+    "serverUnreachable": "Impossibile contattare il server. Verifica che la connessione di rete sia abilitata a raggiungere il server.",
+    "modulesLoadFailed": "Impossibile caricare il menu.",
+    "retry": "Riprova",
+    "nav": {
+      "aria": "Navigazione",
+      "open": "Apri navigazione",
+      "crmFallback": "CRM"
+    },
+    "search": {
+      "placeholder": "Cerca…",
+      "aria": "Cerca"
+    },
+    "notifications": {
+      "aria": "Notifiche"
+    },
+    "userMenu": {
+      "aria": "Menu utente",
+      "title": "Profilo",
+      "accountSoon": "Impostazioni account (presto)",
+      "signOutSoon": "Esci (presto)"
+    },
+    "theme": {
+      "light": "Passa al tema chiaro",
+      "dark": "Passa al tema scuro"
+    }
+  }
+  ,
+  "entities": {
+    "list": {
+      "searchPlaceholder": "Cerca clienti…",
+      "empty": "Nessun risultato",
+      "noRecords": "Nessun record",
+      "selectedSingular": "selezionato",
+      "selectedPlural": "selezionati",
+      "columns": "Colonne",
+      "auditingFields": "Campi di auditing",
+      "filters": "Filtri",
+      "searchIn": "Cerca in",
+      "searchInAll": "Tutti i campi",
+      "searchInFields": "campi",
+      "filtersHint": "Affina la lista con filtri server-side.",
+      "pageSize": "Righe per pagina"
+    },
+    "crm": {
+      "pipeline": {
+        "nav": "Pipeline",
+        "title": "Pipeline",
+        "cardTitle": "Area di lavoro di esempio",
+        "description": "Anteprima statica per layout e navigazione.",
+        "body1": "Schermata segnaposto per provare il flusso CRM prima di collegare le API.",
+        "body2": "Nessun dato viene salvato.",
+        "fake1": "Fasi del lead (esempio)",
+        "fake2": "Board drag-and-drop (non collegata)",
+        "fake3": "Inbox di team (mock)"
+      }
+    },
+    "customer": {
+      "title": "Gestione Clienti",
+      "singular": "Cliente",
+      "plural": "Clienti",
+      "new": {
+        "title": "Nuovo cliente"
+      },
+      "status": {
+        "active": "Attivo",
+        "inactive": "Inattivo"
+      },
+      "fields": {
+        "code": "Codice",
+        "first_name": "Nome",
+        "last_name": "Cognome",
+        "company_name": "Azienda",
+        "email": "Email",
+        "phone": "Telefono",
+        "status": "Stato",
+        "uuid": "UUID",
+        "status_reason": "Motivo stato",
+        "local_address": "Indirizzo",
+        "local_city": "Città",
+        "local_state": "Provincia/Regione",
+        "local_country": "Paese",
+        "local_zip": "CAP",
+        "created_at": "Creato il",
+        "updated_at": "Aggiornato il",
+        "created_by": "Creato da",
+        "updated_by": "Aggiornato da",
+        "version": "Versione",
+        "deleted_at": "Eliminato il",
+        "deleted_by": "Eliminato da"
+      }
+    }
+  }
+}
+

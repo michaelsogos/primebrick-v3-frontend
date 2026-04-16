@@ -1,0 +1,16 @@
+{
+	"extends": "./.svelte-kit/tsconfig.json",
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"lib": ["ES2023"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"target": "ES2023",
+		"verbatimModuleSyntax": true,
+		"noEmit": true
+	},
+	"include": ["vite.config.ts", "svelte.config.js"]
+}
