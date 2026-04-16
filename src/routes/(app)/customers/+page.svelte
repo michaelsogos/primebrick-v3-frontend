@@ -259,14 +259,45 @@
     persistListUiStateToSession();
   });
 
+  /** Mirrors backend list search gate: >=3 “real” chars, or escaped wildcard (`\*` / `\?`) with >=1 real char. */
+  function customerSearchShouldQuery(trimmed: string): boolean {
+    if (trimmed.length === 0) return false;
+    if (trimmed.length >= 3) return true;
+    let trueChars = 0;
+    let hasEscapedWildcard = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i]!;
+      const next = trimmed[i + 1];
+      if (ch === '\\' && (next === '*' || next === '?')) {
+        hasEscapedWildcard = true;
+        i++;
+        continue;
+      }
+      if (ch === '\\' && next !== undefined) {
+        trueChars++;
+        i++;
+        continue;
+      }
+      trueChars++;
+    }
+    return hasEscapedWildcard && trueChars >= 1;
+  }
+
   function onSearchInput(v: string) {
     search = v;
+
     if (searchTimer) clearTimeout(searchTimer);
+
+    const trimmed = v.trim();
+    const shouldReset = trimmed.length === 0;
+    const shouldSearch = customerSearchShouldQuery(trimmed);
+    if (!shouldReset && !shouldSearch) return;
+
     searchTimer = setTimeout(() => {
-      appliedSearch = search;
+      appliedSearch = search.trim();
       page = 1;
       void refreshRows({ clampPage: true });
-    }, 350);
+    }, 450);
   }
 
   function onSearchInKeysChange(keys: string[] | null) {
