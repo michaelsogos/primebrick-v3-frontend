@@ -43,3 +43,14 @@ export class ApiUnreachableError extends Error {
     this.status = status;
   }
 }
+
+/** BE responded; downstream Postgres (or equivalent) is unavailable — not the same as gateway/offline. */
+export class ApiDatabaseUnavailableError extends Error {
+  override readonly name = 'ApiDatabaseUnavailableError';
+  readonly status: number;
+
+  constructor(status: number) {
+    super('ApiDatabaseUnavailableError');
+    this.status = status;
+  }
+}
