@@ -4,6 +4,12 @@ This doc is the **frontend-specific agent guide** for this repository.
 
 **Documentation language:** All `*.md` files in this repository must use **English** for team-facing prose.
 
+## Multi-repo layout (this repository is standalone)
+
+- This **frontend** tree is its **own Git repository**, independent from the **backend** repo and from any **workspace/meta** repo that may sit beside it in a local folder layout.
+- **Commits, branches, pushes, and releases** apply to **this repo only** (`git` commands run from the frontend root unless the user specifies otherwise).
+- When the user asks to **release everything** / **all repos**, they mean **frontend + backend + workspace meta** as separate operations: complete the GitFlow steps **in each** repository that had changes (verify, commit, push, then merge/tag per team rules). Do not imply a single monorepo push covers the others.
+
 ## App page layout (standard)
 
 In-app routes under the shell should **fill the main content area** (full width, no `mx-auto` / `max-w-*` unless a specific form needs it). Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer padding `p-2 sm:p-3`, column `gap-4`, `min-h-0` so flex children (tables, cards) can use remaining height. Put breadcrumb + `h1` (and optional toolbar) in `{#snippet header()}`; put the main block (e.g. `EntityListTable`) as default children.
@@ -153,12 +159,34 @@ These are conventions to keep the UI consistent and reduce “one-off” compone
 - When adding/changing UI text keys, update **all** language JSON files (even if the translation is temporarily copied from EN) so keys don’t drift.
 - Avoid deleting or renaming keys without updating every language file.
 
+## Error handling (impact + tags)
+
+Follow `.cursor/rules/error-impact-levels.mdc`:
+
+- All user-visible errors should include an `impact` level.
+- Prefer `scopeKey` / `messageKey` (i18n) over hardcoded strings (avoid mixed EN/IT).
+- Put technical details into tags (chips), e.g. `LIST_FAILED` + `HTTP 503`.
+
+## Local dev (backend)
+
+- The backend dev server auto-reloads via `tsx watch` (HMR-like).
+- If the user already has the backend running on port `3001`, prefer testing via HTTP requests to the existing server
+  rather than starting a second backend instance (avoids `EADDRINUSE` and terminal spam).
+
+### Cleanup after agent-started servers
+
+- When you **started** a dev server (backend and/or frontend) **only to run tests or verify a change**, **stop that process tree when you are done** so ports and terminals are not left occupied.
+- **Do not** stop servers the user is already running in **their** terminal for normal work. If you cannot tell (same port, ambiguous parent), **ask** or limit shutdown to the exact subtree you spawned (e.g. the `tsx watch` / `pnpm … dev` chain from the Cursor terminal session used for the test).
+
+## Backend availability (API calls)
+
+- **Types** shared with the availability layer live in `src/lib/api-types.ts` (avoids circular imports with `backend-availability.ts`).
+- **All app API traffic** to `/api/v1/*` should go through `apiFetch` / `apiFetchWithTimeout` from `$lib/api` so the global offline gate applies.
+- **Health / recovery** uses `probeHealth()` from `$lib/backend-availability.ts` (plain `fetch` to `/api/v1/health`, bypasses the gate). Do not use `fetchHealth()` for sidebar recovery while offline—it would be blocked by the gate.
+- **AbortError** (cancelled requests) must not flip the backend to offline; `apiFetch` rethrows aborts without calling `noteGatewayFailure`.
+
 ## Icons & images (no raster)
 
 - **Do not** add raster images for UI icons/illustrations (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`).
 - Prefer **SVG** (inline or as `.svg`), icon libraries (e.g. `lucide-svelte`), or CSS techniques.
 - If a bitmap is unavoidable for a specific business requirement, confirm explicitly before adding it.
-
-\n- GitFlow test change
-\n## v0.1.0\n- First release (GitFlow dry run)\n
-\n- Hotfix test change

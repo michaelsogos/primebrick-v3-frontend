@@ -50,6 +50,15 @@
       "unhandledError": "Nicht behandelter Fehler",
       "unhandledRejectionFallback": "Nicht behandelte Zurückweisung",
       "unhandledErrorFallback": "Nicht behandelter Fehler"
+    },
+    "health": {
+      "beOnline": "Online",
+      "beOffline": "Offline",
+      "dbOffline": "DB offline",
+      "versionsTitle": "Versionen",
+      "shellVersion": "Shell",
+      "backendVersion": "Backend",
+      "modulesTitle": "Module"
     }
   }
   ,

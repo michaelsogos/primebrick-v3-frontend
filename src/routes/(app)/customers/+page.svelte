@@ -7,7 +7,9 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { pushAppError } from '$lib/errors/app-errors';
+  import { apiFetchWithTimeout } from '$lib/api';
+  import { pushImpactError } from '$lib/errors/app-errors';
+  import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta } from '$lib/entity-list';
   import { defaultVisibleColumnKeys, sanitizeVisibleKeys } from '$lib/entity-list';
 
@@ -101,33 +103,74 @@
     return true;
   }
 
-  async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = 30_000) {
-    const timeoutController = new AbortController();
-    const tmo = setTimeout(() => timeoutController.abort(), timeoutMs);
+  // Meta is static UI configuration — avoid refetching or double-fetching.
+  // Use globalThis so multiple mounts (dev/HMR) share cache + in-flight promise.
+  const metaCacheKey = '__pbCustomerMetaCache';
+  const metaInFlightKey = '__pbCustomerMetaInFlight';
 
-    const externalSignal = init?.signal;
-    if (externalSignal) {
-      if (externalSignal.aborted) timeoutController.abort();
-      else externalSignal.addEventListener('abort', () => timeoutController.abort(), { once: true });
-    }
-
-    try {
-      const res = await fetch(input, { ...init, signal: timeoutController.signal });
-      return res;
-    } finally {
-      clearTimeout(tmo);
-    }
+  function getMetaCache(): CustomerMeta | null {
+    return ((globalThis as any)[metaCacheKey] ?? null) as CustomerMeta | null;
+  }
+  function getMetaInFlight(): Promise<CustomerMeta> | null {
+    return ((globalThis as any)[metaInFlightKey] ?? null) as Promise<CustomerMeta> | null;
+  }
+  function setMetaCache(next: CustomerMeta | null) {
+    (globalThis as any)[metaCacheKey] = next;
+  }
+  function setMetaInFlight(next: Promise<CustomerMeta> | null) {
+    (globalThis as any)[metaInFlightKey] = next;
   }
 
   async function loadMeta() {
-    const metaRes = await fetchWithTimeout('/api/v1/entities/customer/meta');
-    if (!metaRes.ok) throw new Error(`meta failed (${metaRes.status})`);
-    meta = (await metaRes.json()) as CustomerMeta;
+    if (meta) return;
+    const cached = getMetaCache();
+    if (cached) {
+      meta = cached;
+      const defSort = meta.list.defaultSort;
+      sortKey = null;
+      sortDir = defSort?.dir ?? 'asc';
+      pageSize = meta.list.defaultPageSize ?? pageSize;
+      ensureVisibleKeys();
+      return;
+    }
+    const inFlight = getMetaInFlight();
+    if (inFlight) {
+      meta = await inFlight;
+      const defSort = meta.list.defaultSort;
+      sortKey = null;
+      sortDir = defSort?.dir ?? 'asc';
+      pageSize = meta.list.defaultPageSize ?? pageSize;
+      ensureVisibleKeys();
+      return;
+    }
 
-    const defSort = meta.list.defaultSort;
+    setMetaInFlight(
+      (async () => {
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/customer/meta', undefined, 30_000);
+        if (!metaRes.ok) {
+          const apiCode = await readApiErrorCode(metaRes);
+          const code = apiCode ?? 'GET_METADATA_FAILED';
+          throw new ApiListError(code, metaRes.status);
+        }
+        const next = (await metaRes.json()) as CustomerMeta;
+        setMetaCache(next);
+        return next;
+      })()
+    );
+
+    try {
+      const p = getMetaInFlight();
+      meta = p ? await p : null;
+    } finally {
+      setMetaInFlight(null);
+    }
+
+    const m = meta as unknown as CustomerMeta | null;
+    if (!m) return;
+    const defSort = m.list.defaultSort;
     sortKey = null;
     sortDir = defSort?.dir ?? 'asc';
-    pageSize = meta.list.defaultPageSize ?? pageSize;
+    pageSize = m.list.defaultPageSize ?? pageSize;
     ensureVisibleKeys();
   }
 
@@ -165,6 +208,70 @@
   }
 
   let activeListController: AbortController | null = null;
+
+  class ApiListError extends Error {
+    readonly status: number;
+    readonly code: string;
+
+    constructor(code: string, status: number) {
+      super(code);
+      this.code = code;
+      this.status = status;
+    }
+  }
+
+  async function readApiErrorCode(res: Response): Promise<string | null> {
+    try {
+      const data = (await res.json()) as { error?: unknown };
+      return typeof data?.error === 'string' ? data.error : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function isAbortError(e: unknown): boolean {
+    return (
+      (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
+      (e instanceof Error && e.name === 'AbortError')
+    );
+  }
+
+  function asApiListError(e: unknown): { code: string; status: number | null } | null {
+    if (!e || typeof e !== 'object') return null;
+    const anyE = e as { name?: string; code?: string; message?: string; status?: number | null };
+    if (anyE.name === 'ApiUnreachableError') {
+      const st = anyE.status;
+      const status = typeof st === 'number' ? st : st === null ? null : null;
+      return { code: 'BACKEND_OFFLINE', status };
+    }
+    const code =
+      typeof anyE.code === 'string' ? anyE.code : typeof anyE.message === 'string' ? anyE.message : null;
+    const status = typeof anyE.status === 'number' ? anyE.status : null;
+    if (!code) return null;
+    return { code, status };
+  }
+
+  /** Gateway / BE unreachable (502–504) or short-circuited while globally offline. */
+  function isBackendGatewayUnreachable(code: string, status: number | null): boolean {
+    return (
+      code === 'BACKEND_OFFLINE' ||
+      (status !== null && (status === 502 || status === 503 || status === 504))
+    );
+  }
+
+  /** When status is unknown (gated), show HTTP 502 as the agreed “proxy/offline” tag. */
+  function httpTagForGatewayFailure(status: number | null): number {
+    return typeof status === 'number' ? status : 502;
+  }
+
+  function backendOfflineTags(status: number | null): AppErrorTag[] {
+    const http = httpTagForGatewayFailure(status);
+    return [
+      { label: 'BACKEND_OFFLINE', tone: 'danger' },
+      { label: `HTTP ${http}`, tone: 'danger' },
+    ];
+  }
+
   async function loadRows() {
     activeListController?.abort();
     const controller = new AbortController();
@@ -181,10 +288,17 @@
     qs.set('sort_key', effSortKey);
     qs.set('sort_dir', effSortDir);
 
-    const listRes = await fetchWithTimeout(`/api/v1/entities/customer/list?${qs.toString()}`, {
-      signal: controller.signal
-    });
-    if (!listRes.ok) throw new Error(`list failed (${listRes.status})`);
+    const listRes = await apiFetchWithTimeout(
+      `/api/v1/entities/customer/list?${qs.toString()}`,
+      { signal: controller.signal },
+      30_000
+    );
+    if (!listRes.ok) {
+      const apiCode = await readApiErrorCode(listRes);
+      // Convention: prefer backend-provided error codes; otherwise use a stable enum-style code.
+      const code = apiCode ?? 'GET_ENTITY_LIST_FAILED';
+      throw new ApiListError(code, listRes.status);
+    }
     const list = (await listRes.json()) as ListResponse;
     rows = list.rows;
     total = list.total;
@@ -203,11 +317,38 @@
         }
       }
     } catch (e) {
-      error = $t('common.loadFailed');
-      pushAppError({
-        message: $t('common.loadFailed'),
-        scope: 'Customers list',
-        detail: e instanceof Error ? e.message : String(e),
+      if (isAbortError(e)) return;
+      const err = asApiListError(e);
+      const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+      const status = err?.status ?? null;
+
+      const isDbDown = code === 'DATABASE_UNAVAILABLE';
+      const isGateway = isBackendGatewayUnreachable(code, status);
+
+      if (isGateway) {
+        error = $t('shell.serverUnreachable');
+        pushImpactError({
+          impact: 'CRITICAL',
+          messageKey: 'shell.serverUnreachable',
+          scopeKey: 'errors.scope.customersList',
+          tags: backendOfflineTags(status),
+          toast: false,
+        });
+        return;
+      }
+
+      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      pushImpactError({
+        impact: isDbDown ? 'CRITICAL' : 'HIGH',
+        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
+        scopeKey: 'errors.scope.customersList',
+        tags: [
+          { label: code, tone: isDbDown ? 'danger' : 'warning' },
+          ...(status !== null
+            ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
+            : []),
+        ],
+        toast: false,
       });
     } finally {
       loading = false;
@@ -218,11 +359,14 @@
   $effect(() => {
     if (didInit) return;
     didInit = true;
-    (async () => {
+    void (async () => {
       loading = true;
       error = null;
+
+      tryRestoreListUiStateFromSession();
+
       try {
-        tryRestoreListUiStateFromSession();
+        // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
         await loadMeta();
         await loadRows();
         const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -231,11 +375,39 @@
           await loadRows();
         }
       } catch (e) {
-        error = $t('common.loadFailed');
-        pushAppError({
-          message: $t('common.loadFailed'),
-          scope: 'Customers page init',
-          detail: e instanceof Error ? e.message : String(e),
+        if (isAbortError(e)) return;
+
+        const err = asApiListError(e);
+        const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+        const status = err?.status ?? null;
+
+        const isDbDown = code === 'DATABASE_UNAVAILABLE';
+        const isGateway = isBackendGatewayUnreachable(code, status);
+
+        if (isGateway) {
+          error = $t('shell.serverUnreachable');
+          pushImpactError({
+            impact: 'CRITICAL',
+            messageKey: 'shell.serverUnreachable',
+            scopeKey: 'errors.scope.customersPageInit',
+            tags: backendOfflineTags(status),
+            toast: false,
+          });
+          return;
+        }
+
+        error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+        pushImpactError({
+          impact: isDbDown ? 'CRITICAL' : 'HIGH',
+          messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
+          scopeKey: 'errors.scope.customersPageInit',
+          tags: [
+            { label: code, tone: isDbDown ? 'danger' : 'warning' },
+            ...(status !== null
+              ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
+              : []),
+          ],
+          toast: false,
         });
       } finally {
         loading = false;

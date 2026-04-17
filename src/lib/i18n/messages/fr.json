@@ -50,6 +50,15 @@
       "unhandledError": "Erreur non gérée",
       "unhandledRejectionFallback": "Rejet non géré",
       "unhandledErrorFallback": "Erreur non gérée"
+    },
+    "health": {
+      "beOnline": "Online",
+      "beOffline": "Offline",
+      "dbOffline": "DB offline",
+      "versionsTitle": "Versions",
+      "shellVersion": "Shell",
+      "backendVersion": "Backend",
+      "modulesTitle": "Modules"
     }
   }
   ,

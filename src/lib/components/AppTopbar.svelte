@@ -8,9 +8,85 @@
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
-  import { Bell, Menu, TriangleAlert, X, ThumbsUp } from 'lucide-svelte';
+  import { Bell, Menu, TriangleAlert, X, ThumbsUp, AlertOctagon, AlertTriangle, Info, CircleX, Trash2 } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
+
+  type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+  function impactRank(i: ImpactLevel): number {
+    switch (i) {
+      case 'CRITICAL':
+        return 4;
+      case 'HIGH':
+        return 3;
+      case 'MEDIUM':
+        return 2;
+      case 'LOW':
+        return 1;
+    }
+  }
+
+  function maxImpact(xs: Array<{ impact?: ImpactLevel }>): ImpactLevel {
+    let best: ImpactLevel = 'LOW';
+    for (const x of xs) {
+      const imp = (x.impact ?? 'MEDIUM') as ImpactLevel;
+      if (impactRank(imp) > impactRank(best)) best = imp;
+    }
+    return best;
+  }
+
+  function impactBadgeClass(i: ImpactLevel): string {
+    switch (i) {
+      case 'CRITICAL':
+        return 'bg-red-600 text-white';
+      case 'HIGH':
+        return 'bg-amber-500 text-black';
+      case 'MEDIUM':
+        return 'bg-sky-500 text-white';
+      case 'LOW':
+        return 'bg-emerald-500 text-white';
+    }
+  }
+
+  function impactCardRing(i: ImpactLevel): string {
+    switch (i) {
+      case 'CRITICAL':
+        return 'border-red-500/30';
+      case 'HIGH':
+        return 'border-amber-500/30';
+      case 'MEDIUM':
+        return 'border-sky-500/25';
+      case 'LOW':
+        return 'border-emerald-500/25';
+    }
+  }
+
+  function impactIcon(i: ImpactLevel) {
+    switch (i) {
+      case 'CRITICAL':
+        return AlertOctagon;
+      case 'HIGH':
+        return AlertTriangle;
+      case 'MEDIUM':
+        return Info;
+      case 'LOW':
+        return CircleX;
+    }
+  }
+
+  function impactIconClass(i: ImpactLevel): string {
+    switch (i) {
+      case 'CRITICAL':
+        return 'size-4 text-red-600';
+      case 'HIGH':
+        return 'size-4 text-amber-600';
+      case 'MEDIUM':
+        return 'size-4 text-sky-600';
+      case 'LOW':
+        return 'size-4 text-emerald-600';
+    }
+  }
 
   interface $$Props {
     onBurgerClick?: () => void;
@@ -82,7 +158,8 @@
             >
               <TriangleAlert class="size-4" />
               {#if $appErrors.length > 0}
-                <Badge class="absolute -right-1 -top-1 h-4 min-w-4 justify-center border-transparent bg-destructive px-1 text-[10px] text-destructive-foreground">
+                {@const mi = maxImpact($appErrors as unknown as Array<{ impact?: ImpactLevel }>)}
+                <Badge class={`absolute -right-1 -top-1 h-4 min-w-4 justify-center border-transparent px-1 text-[10px] ${impactBadgeClass(mi)}`}>
                   {$appErrors.length > 99 ? '99+' : $appErrors.length}
                 </Badge>
               {/if}
@@ -96,11 +173,13 @@
               <div class="flex items-center gap-1">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon-sm"
                   disabled={$appErrors.length === 0}
                   onclick={() => clearAppErrors()}
+                  aria-label={$t('shell.errors.clear')}
+                  title={$t('shell.errors.clear')}
                 >
-                  {$t('shell.errors.clear')}
+                  <Trash2 class="size-4" />
                 </Button>
                 <Sheet.Close
                   class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
@@ -124,16 +203,46 @@
               {:else}
                 <div class="space-y-2">
                   {#each $appErrors as e (e.id)}
-                    <div class="rounded-md border bg-background p-3">
+                    {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
+                    {@const Icon = impactIcon(imp)}
+                    <div class={`rounded-md border bg-background p-3 ${impactCardRing(imp)}`}>
                       <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                          {#if e.scope}
-                            <div class="text-[11px] font-medium text-muted-foreground">{e.scope}</div>
-                          {/if}
-                          <div class="text-sm font-medium text-foreground">{e.message}</div>
-                          {#if e.detail}
-                            <div class="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{e.detail}</div>
-                          {/if}
+                        <div class="flex min-w-0 gap-2">
+                          <div class="mt-0.5 shrink-0">
+                            <Icon class={impactIconClass(imp)} />
+                          </div>
+                          <div class="min-w-0">
+                            {#if (e as any).scopeKey || e.scope}
+                              <div class="text-[11px] font-medium text-muted-foreground">
+                                {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
+                              </div>
+                            {/if}
+                            <div class="text-sm font-medium text-foreground">
+                              {(e as any).messageKey ? $t((e as any).messageKey) : ((e as any).message ?? e.message)}
+                            </div>
+                            {#if (e as any).tags?.length}
+                              <div class="mt-1 flex flex-wrap gap-1">
+                                {#each (e as any).tags as tag (tag.label)}
+                                  <span
+                                    class={tag.tone === 'danger'
+                                      ? 'inline-flex items-center rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300'
+                                      : tag.tone === 'warning'
+                                        ? 'inline-flex items-center rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200'
+                                        : tag.tone === 'info'
+                                          ? 'inline-flex items-center rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300'
+                                          : tag.tone === 'success'
+                                            ? 'inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300'
+                                            : 'inline-flex items-center rounded border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground'}
+                                  >
+                                    {tag.label}
+                                  </span>
+                                {/each}
+                              </div>
+                            {/if}
+                            {#if e.detail}
+                              <div class="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{e.detail}</div>
+                            {/if}
+                          </div>
                         </div>
                         <div class="shrink-0 text-[11px] text-muted-foreground">
                           {new Date(e.createdAt).toLocaleTimeString()}

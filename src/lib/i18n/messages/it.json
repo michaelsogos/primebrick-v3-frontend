@@ -5,6 +5,7 @@
   "common": {
     "loading": "Caricamento…",
     "loadFailed": "Caricamento fallito",
+    "dbUnavailable": "Database temporaneamente non disponibile. Alcuni dati potrebbero non caricarsi.",
     "soon": "Presto",
     "new": "Nuovo",
     "prev": "Prec",
@@ -50,9 +51,24 @@
       "unhandledError": "Errore non gestito",
       "unhandledRejectionFallback": "Rifiuto non gestito",
       "unhandledErrorFallback": "Errore non gestito"
+    },
+    "health": {
+      "beOnline": "Online",
+      "beOffline": "Offline",
+      "dbOffline": "DB offline",
+      "versionsTitle": "Versioni",
+      "shellVersion": "Shell",
+      "backendVersion": "Backend",
+      "modulesTitle": "Moduli"
     }
   }
   ,
+  "errors": {
+    "scope": {
+      "customersPageInit": "Inizializzazione pagina clienti",
+      "customersList": "Lista clienti"
+    }
+  },
   "entities": {
     "list": {
       "searchPlaceholder": "Cerca clienti…",
