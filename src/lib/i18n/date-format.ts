@@ -49,30 +49,21 @@ export function formatUiDate(input: Date | string | number, lang: UiLang): strin
 }
 
 /**
- * English UI: 12-hour clock with AM/PM. European UI langs (it, fr, es, de, pt): 24-hour clock.
- * Always includes seconds on the time part.
- */
-function useHour12Clock(lang: UiLang): boolean {
-  return lang === 'en';
-}
-
-/**
  * Calendar date + time (entity `datetime` columns, error drawer timestamps, etc.).
- * Date part matches {@link formatUiDate}; time part follows shell clock convention.
+ * Uses one BCP 47 tag per shell language; does **not** set `hour12` — `Intl` applies each
+ * locale’s default hour cycle (e.g. 12h vs 24h) from the standard algorithm.
  */
 export function formatUiDateTime(input: Date | string | number, lang: UiLang): string {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return '';
   const tag = uiLocaleTag(lang);
-  const hour12 = useHour12Clock(lang);
   const fmt = getCached(dateTimeFmt, tag, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    hour: hour12 ? 'numeric' : '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit',
-    hour12
+    second: '2-digit'
   });
   return fmt.format(d);
 }

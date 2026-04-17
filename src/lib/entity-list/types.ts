@@ -6,7 +6,7 @@ export type MetaColumn = {
   key: string;
   labelKey: string;
   /**
-   * `date`: locale date only. `datetime`: locale date + time (12h + AM/PM for EN shell, 24h for EU langs).
+   * `date`: locale date only. `datetime`: locale date + time (`Intl` default hour cycle for that locale).
    */
   type: 'text' | 'badge' | 'date' | 'datetime' | string;
   sortable?: boolean;
