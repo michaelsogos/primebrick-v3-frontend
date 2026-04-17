@@ -3,6 +3,7 @@
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
+  import * as Alert from '$lib/components/ui/alert';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Badge } from '$lib/components/ui/badge';
   import LangSelect from '$lib/components/LangSelect.svelte';
@@ -50,16 +51,18 @@
     }
   }
 
-  function impactCardRing(i: ImpactLevel): string {
+  function impactToAlertVariant(
+    i: ImpactLevel
+  ): 'impactCritical' | 'impactHigh' | 'impactMedium' | 'impactLow' {
     switch (i) {
       case 'CRITICAL':
-        return 'border-red-500/30';
+        return 'impactCritical';
       case 'HIGH':
-        return 'border-amber-500/30';
+        return 'impactHigh';
       case 'MEDIUM':
-        return 'border-sky-500/25';
+        return 'impactMedium';
       case 'LOW':
-        return 'border-emerald-500/25';
+        return 'impactLow';
     }
   }
 
@@ -73,19 +76,6 @@
         return Info;
       case 'LOW':
         return CircleX;
-    }
-  }
-
-  function impactIconClass(i: ImpactLevel): string {
-    switch (i) {
-      case 'CRITICAL':
-        return 'size-4 text-red-600';
-      case 'HIGH':
-        return 'size-4 text-amber-600';
-      case 'MEDIUM':
-        return 'size-4 text-sky-600';
-      case 'LOW':
-        return 'size-4 text-emerald-600';
     }
   }
 
@@ -192,50 +182,44 @@
                   {#each $appErrors as e (e.id)}
                     {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
                     {@const Icon = impactIcon(imp)}
-                    <div class={`rounded-md border bg-background p-3 ${impactCardRing(imp)}`}>
-                      <div class="flex items-start justify-between gap-2">
-                        <div class="flex min-w-0 gap-2">
-                          <div class="mt-0.5 shrink-0">
-                            <Icon class={impactIconClass(imp)} />
+                    <Alert.Root variant={impactToAlertVariant(imp)} class="justify-between gap-2">
+                      <Icon class="shrink-0" />
+                      <div class="min-w-0 flex-1 space-y-1">
+                        {#if (e as any).scopeKey || e.scope}
+                          <div class="text-[11px] font-medium text-muted-foreground">
+                            {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
                           </div>
-                          <div class="min-w-0">
-                            {#if (e as any).scopeKey || e.scope}
-                              <div class="text-[11px] font-medium text-muted-foreground">
-                                {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
-                              </div>
-                            {/if}
-                            <div class="text-sm font-medium text-foreground">
-                              {(e as any).messageKey ? $t((e as any).messageKey) : ((e as any).message ?? e.message)}
-                            </div>
-                            {#if (e as any).tags?.length}
-                              <div class="mt-1 flex flex-wrap gap-1">
-                                {#each (e as any).tags as tag (tag.label)}
-                                  <span
-                                    class={tag.tone === 'danger'
-                                      ? 'inline-flex items-center rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300'
-                                      : tag.tone === 'warning'
-                                        ? 'inline-flex items-center rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200'
-                                        : tag.tone === 'info'
-                                          ? 'inline-flex items-center rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300'
-                                          : tag.tone === 'success'
-                                            ? 'inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300'
-                                            : 'inline-flex items-center rounded border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground'}
-                                  >
-                                    {tag.label}
-                                  </span>
-                                {/each}
-                              </div>
-                            {/if}
-                            {#if e.detail}
-                              <div class="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{e.detail}</div>
-                            {/if}
+                        {/if}
+                        <Alert.Title class="text-sm">
+                          {(e as any).messageKey ? $t((e as any).messageKey) : ((e as any).message ?? e.message)}
+                        </Alert.Title>
+                        {#if (e as any).tags?.length}
+                          <div class="mt-1 flex flex-wrap gap-1">
+                            {#each (e as any).tags as tag (tag.label)}
+                              <span
+                                class={tag.tone === 'danger'
+                                  ? 'inline-flex items-center rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300'
+                                  : tag.tone === 'warning'
+                                    ? 'inline-flex items-center rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200'
+                                    : tag.tone === 'info'
+                                      ? 'inline-flex items-center rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300'
+                                      : tag.tone === 'success'
+                                        ? 'inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300'
+                                        : 'inline-flex items-center rounded border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground'}
+                              >
+                                {tag.label}
+                              </span>
+                            {/each}
                           </div>
-                        </div>
-                        <div class="shrink-0 text-[11px] text-muted-foreground">
-                          {formatUiDateTime(e.createdAt, $uiLang)}
-                        </div>
+                        {/if}
+                        {#if e.detail}
+                          <Alert.Description class="text-xs whitespace-pre-wrap">{e.detail}</Alert.Description>
+                        {/if}
                       </div>
-                    </div>
+                      <div class="shrink-0 text-[11px] text-muted-foreground">
+                        {formatUiDateTime(e.createdAt, $uiLang)}
+                      </div>
+                    </Alert.Root>
                   {/each}
                 </div>
               {/if}
