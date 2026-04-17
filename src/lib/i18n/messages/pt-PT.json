@@ -25,7 +25,21 @@
     },
     "search": {
       "placeholder": "Pesquisar…",
-      "aria": "Pesquisar"
+      "aria": "Abrir paleta de comandos"
+    },
+    "commandPalette": {
+      "title": "Paleta de comandos",
+      "description": "Procurar um comando a executar",
+      "inputPlaceholder": "Introduza um comando ou pesquise…",
+      "empty": "Sem resultados.",
+      "groupSuggestions": "Sugestões",
+      "groupSettings": "Definições",
+      "itemCalendar": "Calendário",
+      "itemSearchEmoji": "Procurar emoji",
+      "itemCalculator": "Calculadora",
+      "itemProfile": "Perfil",
+      "itemBilling": "Faturação",
+      "itemSettings": "Definições"
     },
     "notifications": {
       "aria": "Notificações"
