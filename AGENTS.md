@@ -29,8 +29,9 @@ In-app routes under the shell should **fill the main content area** (full width,
 
 ## GitFlow workflow (team rule)
 
-- **Never commit** application or config changes on `main` or `develop`. If you are on `develop` or `main`, **create a branch first** (`git checkout -b feature/...` or `fix/...` from updated `develop`), then edit and commit. No “small fix” exception unless the user explicitly allows direct commits to `develop`.
-- **Before the first patch/write in this repo:** run `git branch --show-current`; if `develop` or `main`, **`git checkout -b fix/<slug>`** first—see **`.cursor/rules/gitflow-guard.mdc`** (*Mandatory order*).
+- **Zero tolerance:** do **not** keep working (edits/commits) on **`develop` or `main`**. Do **not** push commits that were created on `develop`—merge **`feature/*`** into `develop` first. *"Push and close"* does **not** mean commit on `develop`. Only an **explicit** *"commit on `develop`"* overrides—see **`.cursor/rules/gitflow-guard.mdc`** (*Zero tolerance*).
+- **Never commit** application or config changes on `main` or `develop`. If you are on `develop` or `main`, **create a `feature/*` branch first** (`git checkout -b feature/...` from updated `develop`), then edit and commit. No “small fix” exception unless the user explicitly allows direct commits to `develop`.
+- **Before the first patch/write in this repo:** run `git branch --show-current`; if `develop` or `main`, **`git checkout -b feature/<slug>`** first—see **`.cursor/rules/gitflow-guard.mdc`** (*Mandatory order*).
 - Allowed branch types:
   - `feature/*` or `fix/*` from `develop`
   - `release/*` from `develop` (release process only)
