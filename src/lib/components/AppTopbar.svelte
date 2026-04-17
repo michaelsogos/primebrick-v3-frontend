@@ -97,11 +97,12 @@
 
   let { onBurgerClick, burgerOpen = false, unreadNotifications = 3 }: $$Props = $props();
 
-  let commandPaletteOpen = $state(false);
   let errorsOpen = $state(false);
 </script>
 
-<header class="sticky top-0 z-30 border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm">
+<header
+  class="sticky top-0 z-30 overflow-visible border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm"
+>
   <div class="flex h-14 items-center gap-3 px-3 sm:px-4">
     <Button
       type="button"
@@ -125,26 +126,7 @@
       </span>
     </Button>
 
-    <div class="mx-auto w-full max-w-xs sm:max-w-sm">
-      <button
-        type="button"
-        class="relative flex h-8 w-full cursor-pointer items-center rounded-md border border-input bg-background/60 text-left text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent/40 hover:text-accent-foreground"
-        aria-haspopup="dialog"
-        aria-expanded={commandPaletteOpen}
-        aria-label={$t('shell.search.aria')}
-        onclick={() => (commandPaletteOpen = true)}
-      >
-        <span
-          class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 rounded-sm bg-background/70 px-1 text-xs text-muted-foreground"
-          aria-hidden="true"
-        >
-          \
-        </span>
-        <span class="block w-full truncate pl-8 pr-3 text-muted-foreground">{$t('shell.search.placeholder')}</span>
-      </button>
-    </div>
-
-    <CommandPalette bind:open={commandPaletteOpen} />
+    <CommandPalette />
 
     <div class="flex shrink-0 items-center gap-1">
       <LangSelect />

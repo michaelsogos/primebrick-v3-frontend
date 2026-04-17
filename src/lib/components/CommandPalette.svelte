@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { Dialog, Command } from 'bits-ui';
+  import { tick, onMount } from 'svelte';
+  import { Command } from 'bits-ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import CalculatorIcon from '@lucide/svelte/icons/calculator';
@@ -12,22 +13,38 @@
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
+  const listDomId = 'pb-command-palette-list';
+
+  let rootEl = $state<HTMLDivElement | null>(null);
+  let inputRef = $state<HTMLInputElement | null>(null);
+
   function isAppleOs(): boolean {
     if (!browser) return false;
     return /Mac|iPhone|iPad/i.test(navigator.userAgent);
   }
 
-  /** Ctrl+K / ⌘K style shortcut label for sub-items (P, B, S, …). */
   function modShortcut(key: string): string {
     return `${isAppleOs() ? '⌘' : 'Ctrl+'}${key}`;
   }
 
-  function onWindowKeydown(e: KeyboardEvent) {
+  function close() {
+    open = false;
+  }
+
+  function onGlobalKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+      return;
+    }
+
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       open = !open;
       return;
     }
+
     if (e.altKey && (e.key === '\\' || e.code === 'Backslash')) {
       const el = e.target;
       if (
@@ -42,107 +59,187 @@
       open = !open;
     }
   }
+
+  $effect(() => {
+    if (open && inputRef) {
+      void tick().then(() => inputRef?.focus());
+    }
+  });
+
+  onMount(() => {
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (!open) return;
+      const t = e.target;
+      if (t instanceof Node && rootEl?.contains(t)) return;
+      close();
+    };
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onDocPointerDown, true);
+  });
 </script>
 
-<svelte:window onkeydown={onWindowKeydown} />
+<svelte:window onkeydown={onGlobalKeydown} />
 
-<Dialog.Root bind:open>
-  <Dialog.Portal>
-    <Dialog.Overlay
-      class="fixed inset-0 z-[200] bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-    />
-    <Dialog.Content
-      class={cn(
-        'fixed left-1/2 top-[min(30%,10rem)] z-[201] w-[min(100vw-2rem,28rem)] max-h-[min(70vh,24rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-lg outline-none',
-        'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
-        'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95'
-      )}
-    >
-      <Dialog.Title class="sr-only">{$t('shell.commandPalette.title')}</Dialog.Title>
-      <Dialog.Description class="sr-only">{$t('shell.commandPalette.description')}</Dialog.Description>
-
-      <Command.Root
-        class="flex h-full w-full flex-col overflow-hidden rounded-xl bg-popover text-popover-foreground"
-        label={$t('shell.commandPalette.title')}
+<div
+  class="relative z-40 mx-auto w-full max-w-xs sm:max-w-sm"
+  bind:this={rootEl}
+>
+  <Command.Root
+    class="w-full"
+    label={$t('shell.commandPalette.title')}
+  >
+    <div class="relative">
+      <!-- Real search field: always visible, never covered by the dropdown -->
+      <div
+        class={cn(
+          'relative flex h-8 w-full items-center rounded-md border bg-background/60 shadow-sm transition-[box-shadow,border-color]',
+          open
+            ? 'z-10 rounded-b-none border-border border-b-transparent shadow-md'
+            : 'border-input'
+        )}
       >
+        <span
+          class="pointer-events-none absolute left-2 top-1/2 z-[1] -translate-y-1/2 rounded-sm bg-background/70 px-1 text-xs text-muted-foreground"
+          aria-hidden="true"
+        >
+          \
+        </span>
         <Command.Input
-          class="flex h-11 w-full border-b border-border bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
-          placeholder={$t('shell.commandPalette.inputPlaceholder')}
+          bind:ref={inputRef}
+          id="pb-command-palette-input"
+          class={cn(
+            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-none',
+            'placeholder:text-muted-foreground',
+            'focus-visible:ring-0 focus-visible:ring-offset-0'
+          )}
+          placeholder={$t('shell.search.placeholder')}
+          aria-expanded={open}
+          aria-controls={open ? listDomId : undefined}
+          aria-autocomplete="list"
+          oninput={() => {
+            open = true;
+          }}
+          onpointerdown={() => {
+            open = true;
+          }}
         />
-        <Command.List class="max-h-[min(50vh,18rem)] overflow-y-auto overflow-x-hidden p-2">
-          <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
-            {$t('shell.commandPalette.empty')}
-          </Command.Empty>
+      </div>
 
-          <Command.Group value="suggestions" class="overflow-hidden p-1 text-foreground">
-            <Command.GroupHeading
-              class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
-            >
-              {$t('shell.commandPalette.groupSuggestions')}
-            </Command.GroupHeading>
-            <Command.GroupItems>
-              <Command.Item
-                value="calendar"
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <CalendarIcon />
-                <span>{$t('shell.commandPalette.itemCalendar')}</span>
-              </Command.Item>
-              <Command.Item
-                value="emoji"
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <SmileIcon />
-                <span>{$t('shell.commandPalette.itemSearchEmoji')}</span>
-              </Command.Item>
-              <Command.Item
-                value="calculator"
-                disabled
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <CalculatorIcon />
-                <span>{$t('shell.commandPalette.itemCalculator')}</span>
-              </Command.Item>
-            </Command.GroupItems>
-          </Command.Group>
+      <!-- Detached panel: overlays page below the top bar; input stays uncovered -->
+      <div
+        class={cn(
+          'pointer-events-none absolute left-0 right-0 top-full z-[60] -mt-px pt-0',
+          open && 'pointer-events-auto'
+        )}
+        style="perspective: 1100px; perspective-origin: 50% 0%;"
+        aria-hidden={!open}
+      >
+        <div
+          id={listDomId}
+          class={cn('pb-cube-panel border border-t-0 border-border bg-popover text-popover-foreground shadow-xl')}
+          data-state={open ? 'open' : 'closed'}
+        >
+          <Command.List
+            class="max-h-[min(50vh,18rem)] overflow-y-auto overflow-x-hidden p-2"
+          >
+            <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
+              {$t('shell.commandPalette.empty')}
+            </Command.Empty>
 
-          <Command.Separator class="-mx-1 my-1 h-px bg-border" />
+            <Command.Group value="suggestions" class="overflow-hidden p-1 text-foreground">
+              <Command.GroupHeading class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                {$t('shell.commandPalette.groupSuggestions')}
+              </Command.GroupHeading>
+              <Command.GroupItems>
+                <Command.Item
+                  value="calendar"
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <CalendarIcon />
+                  <span>{$t('shell.commandPalette.itemCalendar')}</span>
+                </Command.Item>
+                <Command.Item
+                  value="emoji"
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <SmileIcon />
+                  <span>{$t('shell.commandPalette.itemSearchEmoji')}</span>
+                </Command.Item>
+                <Command.Item
+                  value="calculator"
+                  disabled
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <CalculatorIcon />
+                  <span>{$t('shell.commandPalette.itemCalculator')}</span>
+                </Command.Item>
+              </Command.GroupItems>
+            </Command.Group>
 
-          <Command.Group value="settings" class="overflow-hidden p-1 text-foreground">
-            <Command.GroupHeading
-              class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
-            >
-              {$t('shell.commandPalette.groupSettings')}
-            </Command.GroupHeading>
-            <Command.GroupItems>
-              <Command.Item
-                value="profile"
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <UserIcon />
-                <span>{$t('shell.commandPalette.itemProfile')}</span>
-                <span class="ms-auto text-xs text-muted-foreground">{modShortcut('P')}</span>
-              </Command.Item>
-              <Command.Item
-                value="billing"
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <CreditCardIcon />
-                <span>{$t('shell.commandPalette.itemBilling')}</span>
-                <span class="ms-auto text-xs text-muted-foreground">{modShortcut('B')}</span>
-              </Command.Item>
-              <Command.Item
-                value="app-settings"
-                class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-              >
-                <SettingsIcon />
-                <span>{$t('shell.commandPalette.itemSettings')}</span>
-                <span class="ms-auto text-xs text-muted-foreground">{modShortcut('S')}</span>
-              </Command.Item>
-            </Command.GroupItems>
-          </Command.Group>
-        </Command.List>
-      </Command.Root>
-    </Dialog.Content>
-  </Dialog.Portal>
-</Dialog.Root>
+            <Command.Separator class="-mx-1 my-1 h-px bg-border" />
+
+            <Command.Group value="settings" class="overflow-hidden p-1 text-foreground">
+              <Command.GroupHeading class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                {$t('shell.commandPalette.groupSettings')}
+              </Command.GroupHeading>
+              <Command.GroupItems>
+                <Command.Item
+                  value="profile"
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <UserIcon />
+                  <span>{$t('shell.commandPalette.itemProfile')}</span>
+                  <span class="ms-auto text-xs text-muted-foreground">{modShortcut('P')}</span>
+                </Command.Item>
+                <Command.Item
+                  value="billing"
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <CreditCardIcon />
+                  <span>{$t('shell.commandPalette.itemBilling')}</span>
+                  <span class="ms-auto text-xs text-muted-foreground">{modShortcut('B')}</span>
+                </Command.Item>
+                <Command.Item
+                  value="app-settings"
+                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                >
+                  <SettingsIcon />
+                  <span>{$t('shell.commandPalette.itemSettings')}</span>
+                  <span class="ms-auto text-xs text-muted-foreground">{modShortcut('S')}</span>
+                </Command.Item>
+              </Command.GroupItems>
+            </Command.Group>
+          </Command.List>
+        </div>
+      </div>
+    </div>
+  </Command.Root>
+</div>
+
+<style>
+  /* Vertical “card flip” — list hinges from the top like a cube face */
+  .pb-cube-panel {
+    transform-origin: top center;
+    border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px);
+    transform: rotateX(-86deg) translate3d(0, -6px, 0);
+    opacity: 0;
+    filter: blur(0.5px);
+    transition:
+      transform 420ms cubic-bezier(0.22, 1, 0.32, 1),
+      opacity 260ms ease,
+      filter 260ms ease;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .pb-cube-panel[data-state='open'] {
+    transform: rotateX(0deg) translate3d(0, 0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  .pb-cube-panel[data-state='closed'] {
+    pointer-events: none;
+  }
+</style>
