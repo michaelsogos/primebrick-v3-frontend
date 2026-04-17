@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
@@ -97,11 +97,12 @@
 
   let { onBurgerClick, burgerOpen = false, unreadNotifications = 3 }: $$Props = $props();
 
-  let search = $state('');
   let errorsOpen = $state(false);
 </script>
 
-<header class="sticky top-0 z-30 border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm">
+<header
+  class="sticky top-0 z-30 overflow-visible border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm"
+>
   <div class="flex h-14 items-center gap-3 px-3 sm:px-4">
     <Button
       type="button"
@@ -125,22 +126,7 @@
       </span>
     </Button>
 
-    <div class="mx-auto w-full max-w-xs sm:max-w-sm">
-      <div class="relative">
-        <span
-          class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 rounded-sm bg-background/70 px-1 text-xs text-muted-foreground"
-          aria-hidden="true"
-        >
-          \
-        </span>
-        <Input
-          bind:value={search}
-          placeholder={$t('shell.search.placeholder')}
-          aria-label={$t('shell.search.aria')}
-          class="h-8 bg-background/60 pl-8 text-sm"
-        />
-      </div>
-    </div>
+    <CommandPalette />
 
     <div class="flex shrink-0 items-center gap-1">
       <LangSelect />

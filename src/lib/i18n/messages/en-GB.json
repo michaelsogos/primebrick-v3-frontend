@@ -26,7 +26,21 @@
     },
     "search": {
       "placeholder": "Search…",
-      "aria": "Search"
+      "aria": "Open command palette"
+    },
+    "commandPalette": {
+      "title": "Command palette",
+      "description": "Search for a command to run",
+      "inputPlaceholder": "Type a command or search…",
+      "empty": "No results found.",
+      "groupSuggestions": "Suggestions",
+      "groupSettings": "Settings",
+      "itemCalendar": "Calendar",
+      "itemSearchEmoji": "Search Emoji",
+      "itemCalculator": "Calculator",
+      "itemProfile": "Profile",
+      "itemBilling": "Billing",
+      "itemSettings": "Settings"
     },
     "notifications": {
       "aria": "Notifications"
