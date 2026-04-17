@@ -37,6 +37,36 @@ export function normalizeLang(input: string | null | undefined): UiLang | null {
   return BASE_TO_DEFAULT[primary] ?? null;
 }
 
+type LangEntry = { code: UiLang; label: string };
+
+/**
+ * Order language rows: first those that match `navigator.languages` (browser preference order,
+ * via {@link normalizeLang}), then the rest sorted alphabetically by `label`.
+ */
+export function orderLangEntriesByBrowser<T extends LangEntry>(
+  entries: readonly T[],
+  browserLanguages: readonly string[] | null | undefined
+): T[] {
+  const byCode = new Map<UiLang, T>(entries.map((e) => [e.code, e]));
+  const seen = new Set<UiLang>();
+  const out: T[] = [];
+  if (browserLanguages?.length) {
+    for (const raw of browserLanguages) {
+      const ui = normalizeLang(raw);
+      if (!ui || seen.has(ui)) continue;
+      const row = byCode.get(ui);
+      if (row) {
+        seen.add(ui);
+        out.push(row);
+      }
+    }
+  }
+  const rest = entries
+    .filter((e) => !seen.has(e.code))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+  return [...out, ...rest];
+}
+
 /**
  * Short region/script badge for UI (e.g. `en-GB` → `GB`, `it-IT` → `IT`, `zh-Hans-CN` → `CN`).
  * Prefers a 2-letter region subtag when present; otherwise the second subtag.

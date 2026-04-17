@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { uiLang, setUiLang } from '$lib/i18n/store.svelte';
-  import type { UiLang } from '$lib/i18n/languages';
+  import { orderLangEntriesByBrowser, type UiLang } from '$lib/i18n/languages';
   import { ChevronDown } from 'lucide-svelte';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
@@ -14,6 +15,11 @@
     { code: 'de-DE', label: 'Deutsch', flagCode: 'de' },
     { code: 'pt-PT', label: 'Português', flagCode: 'pt' }
   ];
+
+  $: sortedLangs = orderLangEntriesByBrowser(
+    LANGS,
+    browser && typeof navigator !== 'undefined' ? navigator.languages : null
+  );
 
   $: current = LANGS.find((l) => l.code === $uiLang) ?? LANGS[0];
 </script>
@@ -36,7 +42,7 @@
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end" class="min-w-52">
-    {#each LANGS as lang (lang.code)}
+    {#each sortedLangs as lang (lang.code)}
       <DropdownMenu.Item
         onSelect={() => setUiLang(lang.code)}
         closeOnSelect={true}

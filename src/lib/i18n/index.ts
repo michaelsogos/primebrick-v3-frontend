@@ -42,4 +42,4 @@ export const t: Readable<(key: string) => string> = derived(
 );
 
 export { formatUiDate, formatUiDateTime, formatListCellValue, uiLocaleTag } from './date-format';
-export { uiLangRegionSuffix } from './languages';
+export { uiLangRegionSuffix, orderLangEntriesByBrowser } from './languages';
