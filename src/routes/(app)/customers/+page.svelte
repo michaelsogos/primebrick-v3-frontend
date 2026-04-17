@@ -2,8 +2,10 @@
   import { t, formatListCellValue } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import EntityListTable from '$lib/components/EntityListTable.svelte';
   import { badgeClassesFromToken } from '$lib/colors/badge';
+  import { cn } from '$lib/utils';
   import { Plus } from 'lucide-svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
@@ -590,9 +592,12 @@
       {#snippet cell({ row, column })}
         {#if column.key === 'status'}
           {@const cfg = column.badge?.values?.[row.status]}
-          <span class={badgeClassesFromToken(cfg?.color ?? null)}>
+          <Badge
+            variant="outline"
+            class={cn(badgeClassesFromToken(cfg?.color ?? null), 'border-0 shadow-none')}
+          >
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
-          </span>
+          </Badge>
         {:else}
           {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}
