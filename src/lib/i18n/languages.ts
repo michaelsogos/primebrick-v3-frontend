@@ -36,3 +36,17 @@ export function normalizeLang(input: string | null | undefined): UiLang | null {
   const primary = trimmed.split('-')[0]?.toLowerCase() ?? '';
   return BASE_TO_DEFAULT[primary] ?? null;
 }
+
+/**
+ * Short region/script badge for UI (e.g. `en-GB` → `GB`, `it-IT` → `IT`, `zh-Hans-CN` → `CN`).
+ * Prefers a 2-letter region subtag when present; otherwise the second subtag.
+ */
+export function uiLangRegionSuffix(tag: string): string {
+  const parts = tag.split('-').filter(Boolean);
+  if (parts.length < 2) return parts[0]?.toUpperCase() ?? '';
+  const second = parts[1]!;
+  if (second.length === 2) return second.toUpperCase();
+  const region = parts.find((p, i) => i >= 2 && p.length === 2);
+  if (region) return region.toUpperCase();
+  return second.toUpperCase();
+}

@@ -2,7 +2,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { uiLang, setUiLang } from '$lib/i18n/store.svelte';
-  import type { UiLang } from '$lib/i18n/languages';
+  import { uiLangRegionSuffix, type UiLang } from '$lib/i18n/languages';
   import { Check, ChevronDown } from 'lucide-svelte';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
@@ -22,7 +22,9 @@
     {#snippet child({ props })}
       <Button {...props} type="button" variant="ghost" class="h-9 gap-2 px-2">
         <span class={`fi fi-${current.flagCode} rounded-sm`} aria-hidden="true"></span>
-        <span class="text-xs font-semibold uppercase tracking-wide">{$uiLang}</span>
+        <span class="text-xs font-semibold uppercase tracking-wide" title={$uiLang}
+          >{uiLangRegionSuffix($uiLang)}</span
+        >
         <ChevronDown class="size-4 opacity-70" />
       </Button>
     {/snippet}
@@ -38,9 +40,14 @@
           <span class={`fi fi-${lang.flagCode} rounded-sm`} aria-hidden="true"></span>
           <span>{lang.label}</span>
         </span>
-        {#if lang.code === $uiLang}
-          <Check class="size-4 opacity-70" />
-        {/if}
+        <span class="flex shrink-0 items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground" title={lang.code}
+            >{uiLangRegionSuffix(lang.code)}</span
+          >
+          {#if lang.code === $uiLang}
+            <Check class="size-4 opacity-70" />
+          {/if}
+        </span>
       </DropdownMenu.Item>
     {/each}
   </DropdownMenu.Content>
