@@ -5,6 +5,13 @@ alwaysApply: true
 
 # GitFlow guardrails (frontend)
 
+## Zero tolerance (agents — non-negotiable)
+
+1. **Never work from `develop` or `main`.** No patches, writes, deletes, or **commits** on those branches—only `checkout` to refresh and **immediately** `checkout -b fix/<slug>` or `feature/<slug>`.
+2. **Never push commits made on `develop`.** Commit on **`fix/*` / `feature/*`**, merge into `develop`, then push. *"Push and close"* = merge the task branch first, **not** commit on `develop`.
+3. **Only explicit overrides:** e.g. *"commit directly on `develop`"*. Ordinary *"push"* requests do **not** waive branching.
+4. If `HEAD` is `develop`/`main`, **branch before the first edit.**
+
 ## Mandatory order (agents): branch **before** any tracked-file edit
 
 Applies to **every** change in **this** repo (source, docs, `.cursor`), including when the workspace meta repo is not open.
@@ -14,7 +21,7 @@ Applies to **every** change in **this** repo (source, docs, `.cursor`), includin
 3. If already on **`feature/*`**, **`fix/*`**, **`release/*`**, **`hotfix/*`**: proceed.
 4. Documenting GitFlow in prose is **not** enough—you must **run** `git checkout -b …` when on `develop`/`main`.
 
-Unless the user **explicitly** orders commits directly on `develop`/`main`.
+Unless the user **explicitly** orders commits directly on `develop`/`main` (see **Zero tolerance**).
 
 ## Hard rules
 
