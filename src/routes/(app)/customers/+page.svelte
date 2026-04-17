@@ -6,7 +6,9 @@
   import { Plus } from 'lucide-svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import { browser } from '$app/environment';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
@@ -357,64 +359,80 @@
     }
   }
 
+  async function bootstrapCustomersList() {
+    loading = true;
+    error = null;
+
+    tryRestoreListUiStateFromSession();
+
+    try {
+      // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
+      await loadMeta();
+      await loadRows();
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (page > nextTotalPages) {
+        page = 1;
+        await loadRows();
+      }
+    } catch (e) {
+      if (isAbortError(e)) return;
+
+      const err = asApiListError(e);
+      const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+      const status = err?.status ?? null;
+
+      const isDbDown = code === 'DATABASE_UNAVAILABLE';
+      const isGateway = isBackendGatewayUnreachable(code, status);
+
+      if (isGateway) {
+        error = $t('shell.serverUnreachable');
+        pushImpactError({
+          impact: 'CRITICAL',
+          messageKey: 'shell.serverUnreachable',
+          scopeKey: 'errors.scope.customersPageInit',
+          tags: backendOfflineTags(status),
+          toast: false,
+        });
+        return;
+      }
+
+      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      pushImpactError({
+        impact: isDbDown ? 'CRITICAL' : 'HIGH',
+        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
+        scopeKey: 'errors.scope.customersPageInit',
+        tags: [
+          { label: code, tone: isDbDown ? 'danger' : 'warning' },
+          ...(status !== null
+            ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
+            : []),
+        ],
+        toast: false,
+      });
+    } finally {
+      loading = false;
+    }
+  }
+
   let didInit = $state(false);
   $effect(() => {
     if (didInit) return;
     didInit = true;
-    void (async () => {
-      loading = true;
-      error = null;
+    void bootstrapCustomersList();
+  });
 
-      tryRestoreListUiStateFromSession();
-
-      try {
-        // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
-        await loadMeta();
-        await loadRows();
-        const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
-        if (page > nextTotalPages) {
-          page = 1;
-          await loadRows();
+  /** After BE/DB recovery: reload list with current filters, or full bootstrap if meta never loaded. */
+  $effect(() => {
+    if (!browser) return;
+    return onConnectivityRestored(() => {
+      void (async () => {
+        if (meta) {
+          await refreshRows({ clampPage: true });
+        } else {
+          await bootstrapCustomersList();
         }
-      } catch (e) {
-        if (isAbortError(e)) return;
-
-        const err = asApiListError(e);
-        const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
-        const status = err?.status ?? null;
-
-        const isDbDown = code === 'DATABASE_UNAVAILABLE';
-        const isGateway = isBackendGatewayUnreachable(code, status);
-
-        if (isGateway) {
-          error = $t('shell.serverUnreachable');
-          pushImpactError({
-            impact: 'CRITICAL',
-            messageKey: 'shell.serverUnreachable',
-            scopeKey: 'errors.scope.customersPageInit',
-            tags: backendOfflineTags(status),
-            toast: false,
-          });
-          return;
-        }
-
-        error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
-        pushImpactError({
-          impact: isDbDown ? 'CRITICAL' : 'HIGH',
-          messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-          scopeKey: 'errors.scope.customersPageInit',
-          tags: [
-            { label: code, tone: isDbDown ? 'danger' : 'warning' },
-            ...(status !== null
-              ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
-              : []),
-          ],
-          toast: false,
-        });
-      } finally {
-        loading = false;
-      }
-    })();
+      })();
+    });
   });
 
   // Keep visibleKeys valid as meta/columns change (without infinite loops).

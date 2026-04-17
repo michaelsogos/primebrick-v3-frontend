@@ -4,6 +4,7 @@ import {
   isValidHealthPayload,
   type HealthPayload
 } from '$lib/api-types';
+import { dispatchConnectivityRestored } from '$lib/app-connectivity-events';
 
 /** Sidebar / shell: single source of truth so offline vs DB is never inconsistent. */
 export type HealthChipState = 'backend_offline' | 'db_offline' | 'ok' | 'loading';
@@ -74,7 +75,21 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
     } catch {
       return { ok: false, status: null };
     }
-    if (!res.ok) return { ok: false, status: res.status };
+    if (!res.ok) {
+      // BE reachable but DB unhealthy: same JSON as 200, HTTP 503 (see backend sendHealth).
+      if (res.status === 503) {
+        let parsed: unknown;
+        try {
+          parsed = await res.json();
+        } catch {
+          return { ok: false, status: 503 };
+        }
+        if (isValidHealthPayload(parsed)) {
+          return { ok: true, payload: parsed };
+        }
+      }
+      return { ok: false, status: res.status };
+    }
     let parsed: unknown;
     try {
       parsed = await res.json();
@@ -104,6 +119,7 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
   flushHealthChip();
 
   inf.inFlight = (async () => {
+    const previousChip = backendState.healthChip;
     let r: HealthResult;
     try {
       r = await rawFetchHealth();
@@ -115,6 +131,12 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
       backendState.dbOk = !!r.payload.db?.ok;
       setBackendOffline(false);
       flushHealthChip();
+      if (
+        (previousChip === 'backend_offline' || previousChip === 'db_offline') &&
+        backendState.healthChip === 'ok'
+      ) {
+        dispatchConnectivityRestored({ previous: previousChip });
+      }
     } else {
       backendState.health = null;
       backendState.dbOk = null;

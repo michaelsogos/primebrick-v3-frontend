@@ -93,10 +93,12 @@
     };
   });
 
-  /** One interval for the whole app — not per AppSidebar instance (desktop + sheet). */
+  /** One interval: poll while BE is unreachable, or while BE is up but DB is down (503 health). */
   $effect(() => {
     if (!browser) return;
-    if (!backendState.offline) return;
+    const dbDown =
+      backendState.health !== null && !backendState.health.db.ok;
+    if (!backendState.offline && !dbDown) return;
     const id = setInterval(() => void probeHealth(), 5000);
     return () => clearInterval(id);
   });
