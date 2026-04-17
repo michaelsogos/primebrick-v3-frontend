@@ -10,6 +10,7 @@
   import SettingsIcon from '@lucide/svelte/icons/settings';
   import SmileIcon from '@lucide/svelte/icons/smile';
   import UserIcon from '@lucide/svelte/icons/user';
+  import CommandKeyGlyph from '@lucide/svelte/icons/command';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -135,11 +136,37 @@
         >
           \
         </span>
+        {#if browser}
+          <div
+            class="pointer-events-none absolute right-2 top-1/2 z-[1] flex -translate-y-1/2 items-center gap-0.5"
+            aria-hidden="true"
+          >
+            {#if isAppleOs()}
+              <span
+                class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 text-muted-foreground shadow-sm"
+                title="⌘K"
+              >
+                <CommandKeyGlyph class="size-3.5" strokeWidth={2} />
+              </span>
+              <kbd
+                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >K</kbd>
+            {:else}
+              <kbd
+                class="inline-flex h-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1.5 font-mono text-[10px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >Ctrl</kbd>
+              <kbd
+                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >K</kbd>
+            {/if}
+          </div>
+        {/if}
         <Command.Input
           bind:ref={inputRef}
           id="pb-command-palette-input"
           class={cn(
             'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-none',
+            browser && 'pr-[5.25rem]',
             'placeholder:text-muted-foreground',
             'focus-visible:ring-0 focus-visible:ring-offset-0'
           )}
