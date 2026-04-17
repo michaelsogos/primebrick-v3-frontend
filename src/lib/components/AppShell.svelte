@@ -130,17 +130,20 @@
     </div>
 
     <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-      <Sheet.Root bind:open={mobileOpen}>
-        <AppTopbar {...({ onBurgerClick, burgerOpen } as any)} />
+      <!-- z-40 above main (z-0) so topbar chrome (command palette, menus) paints over scrolling page content. -->
+      <div class="relative z-40 shrink-0">
+        <Sheet.Root bind:open={mobileOpen}>
+          <AppTopbar {...({ onBurgerClick, burgerOpen } as any)} />
 
-        <AppServerBanner />
+          <AppServerBanner />
 
-        <Sheet.Content side="left" class="p-0 md:hidden">
-          <AppSidebar collapsed={false} />
-        </Sheet.Content>
-      </Sheet.Root>
+          <Sheet.Content side="left" class="p-0 md:hidden">
+            <AppSidebar collapsed={false} />
+          </Sheet.Content>
+        </Sheet.Root>
+      </div>
 
-      <main class="min-h-0 min-w-0 flex-1 overflow-auto">
+      <main class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
       </main>
     </div>

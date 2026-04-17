@@ -10,6 +10,7 @@
   import SettingsIcon from '@lucide/svelte/icons/settings';
   import SmileIcon from '@lucide/svelte/icons/smile';
   import UserIcon from '@lucide/svelte/icons/user';
+  import CommandKeyGlyph from '@lucide/svelte/icons/command';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -17,6 +18,15 @@
 
   let rootEl = $state<HTMLDivElement | null>(null);
   let inputRef = $state<HTMLInputElement | null>(null);
+  let listRef = $state<HTMLElement | null>(null);
+
+  /** Subpixel / border-box rounding often makes scrollHeight > clientHeight by 1–2px with overflow-y-auto → useless scrollbar. */
+  const LIST_SCROLL_TOLERANCE_PX = 2;
+
+  function syncCommandListOverflow(el: HTMLElement) {
+    const needScroll = el.scrollHeight > el.clientHeight + LIST_SCROLL_TOLERANCE_PX;
+    el.style.overflowY = needScroll ? 'auto' : 'hidden';
+  }
 
   function isAppleOs(): boolean {
     if (!browser) return false;
@@ -66,6 +76,31 @@
     }
   });
 
+  $effect(() => {
+    if (!browser || !listRef) return;
+
+    if (!open) {
+      listRef.style.removeProperty('overflow-y');
+      return;
+    }
+
+    const el = listRef;
+    const run = () => {
+      requestAnimationFrame(() => {
+        if (!el.isConnected) return;
+        syncCommandListOverflow(el);
+      });
+    };
+
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      el.style.removeProperty('overflow-y');
+    };
+  });
+
   onMount(() => {
     const onDocPointerDown = (e: PointerEvent) => {
       if (!open) return;
@@ -80,10 +115,7 @@
 
 <svelte:window onkeydown={onGlobalKeydown} />
 
-<div
-  class="relative z-40 mx-auto w-full max-w-xs sm:max-w-sm"
-  bind:this={rootEl}
->
+<div class="relative mx-auto w-full max-w-xs sm:max-w-sm" bind:this={rootEl}>
   <Command.Root
     class="w-full"
     label={$t('shell.commandPalette.title')}
@@ -104,11 +136,37 @@
         >
           \
         </span>
+        {#if browser}
+          <div
+            class="pointer-events-none absolute right-2 top-1/2 z-[1] flex -translate-y-1/2 items-center gap-0.5"
+            aria-hidden="true"
+          >
+            {#if isAppleOs()}
+              <span
+                class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 text-muted-foreground shadow-sm"
+                title="⌘K"
+              >
+                <CommandKeyGlyph class="size-3.5" strokeWidth={2} />
+              </span>
+              <kbd
+                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >K</kbd>
+            {:else}
+              <kbd
+                class="inline-flex h-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1.5 font-mono text-[10px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >Ctrl</kbd>
+              <kbd
+                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
+                >K</kbd>
+            {/if}
+          </div>
+        {/if}
         <Command.Input
           bind:ref={inputRef}
           id="pb-command-palette-input"
           class={cn(
             'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-none',
+            browser && 'pr-[5.25rem]',
             'placeholder:text-muted-foreground',
             'focus-visible:ring-0 focus-visible:ring-offset-0'
           )}
@@ -128,7 +186,7 @@
       <!-- Detached panel: overlays page below the top bar; input stays uncovered -->
       <div
         class={cn(
-          'pointer-events-none absolute left-0 right-0 top-full z-[60] -mt-px pt-0',
+          'pointer-events-none absolute left-0 right-0 top-full z-[130] -mt-px pt-0',
           open && 'pointer-events-auto'
         )}
         style="perspective: 1100px; perspective-origin: 50% 0%;"
@@ -140,7 +198,8 @@
           data-state={open ? 'open' : 'closed'}
         >
           <Command.List
-            class="max-h-[min(50vh,18rem)] overflow-y-auto overflow-x-hidden p-2"
+            bind:ref={listRef}
+            class="max-h-[min(50vh,18rem)] overflow-x-hidden overflow-y-hidden p-2"
           >
             <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
               {$t('shell.commandPalette.empty')}
