@@ -6,8 +6,8 @@
   import { ChevronDown } from 'lucide-svelte';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
-    { code: 'en-GB', label: 'English (UK)', flagCode: 'gb' },
-    { code: 'en-US', label: 'English (US)', flagCode: 'us' },
+    { code: 'en-GB', label: 'British English', flagCode: 'gb' },
+    { code: 'en-US', label: 'American English', flagCode: 'us' },
     { code: 'it-IT', label: 'Italiano', flagCode: 'it' },
     { code: 'fr-FR', label: 'Français', flagCode: 'fr' },
     { code: 'es-ES', label: 'Español', flagCode: 'es' },
