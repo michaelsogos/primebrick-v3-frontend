@@ -80,10 +80,7 @@
 
 <svelte:window onkeydown={onGlobalKeydown} />
 
-<div
-  class="relative z-40 mx-auto w-full max-w-xs sm:max-w-sm"
-  bind:this={rootEl}
->
+<div class="relative mx-auto w-full max-w-xs sm:max-w-sm" bind:this={rootEl}>
   <Command.Root
     class="w-full"
     label={$t('shell.commandPalette.title')}
@@ -128,7 +125,7 @@
       <!-- Detached panel: overlays page below the top bar; input stays uncovered -->
       <div
         class={cn(
-          'pointer-events-none absolute left-0 right-0 top-full z-[60] -mt-px pt-0',
+          'pointer-events-none absolute left-0 right-0 top-full z-[130] -mt-px pt-0',
           open && 'pointer-events-auto'
         )}
         style="perspective: 1100px; perspective-origin: 50% 0%;"
