@@ -8,7 +8,12 @@ This doc is the **frontend-specific agent guide** for this repository.
 
 - This **frontend** tree is its **own Git repository**, independent from the **backend** repo and from any **workspace/meta** repo that may sit beside it in a local folder layout.
 - **Commits, branches, pushes, and releases** apply to **this repo only** (`git` commands run from the frontend root unless the user specifies otherwise).
-- When the user asks to **release everything** / **all repos**, they mean **frontend + backend + workspace meta** as separate operations: complete the GitFlow steps **in each** repository that had changes (verify, commit, push, then merge/tag per team rules). Do not imply a single monorepo push covers the others.
+
+### “Release everything” / **rilascia tutto**
+
+When the user says **rilascia tutto** or **release everything**, they expect the **full GitFlow release close** in **this repo** and in **backend** and **workspace meta**: `develop` → `release/<version>` → **`pnpm run version:auto`** → merge to **`main`** → tag **`v<version>`** → merge to **`develop`** → delete **`release/*`**. Do **not** treat “release” as only pushing `develop`.
+
+Authoritative steps: **`.cursor/rules/gitflow-guard.mdc`**. Same SemVer across all three repos for a coordinated release unless the user scopes to one repo.
 
 ## App page layout (standard)
 
