@@ -49,23 +49,35 @@ export function formatUiDate(input: Date | string | number, lang: UiLang): strin
 }
 
 /**
- * Instant with date + time (for error logs, toasts metadata, etc.).
+ * English UI: 12-hour clock with AM/PM. European UI langs (it, fr, es, de, pt): 24-hour clock.
+ * Always includes seconds on the time part.
+ */
+function useHour12Clock(lang: UiLang): boolean {
+  return lang === 'en';
+}
+
+/**
+ * Calendar date + time (entity `datetime` columns, error drawer timestamps, etc.).
+ * Date part matches {@link formatUiDate}; time part follows shell clock convention.
  */
 export function formatUiDateTime(input: Date | string | number, lang: UiLang): string {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return '';
   const tag = uiLocaleTag(lang);
+  const hour12 = useHour12Clock(lang);
   const fmt = getCached(dateTimeFmt, tag, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    hour: hour12 ? 'numeric' : '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12
   });
   return fmt.format(d);
 }
 
-/** Default table cell: format `date` / `datetime` columns; otherwise `String(raw)`. */
+/** Default table cell: `date` → locale date only; `datetime` → {@link formatUiDateTime}; else `String(raw)`. */
 export function formatListCellValue(
   column: Pick<MetaColumn, 'type'>,
   raw: unknown,
@@ -73,9 +85,14 @@ export function formatListCellValue(
 ): string {
   if (raw === null || raw === undefined) return '';
   const kind = column.type ?? 'text';
-  if (kind === 'date' || kind === 'datetime') {
+  if (kind === 'date') {
     if (typeof raw === 'string' || typeof raw === 'number' || raw instanceof Date) {
       return formatUiDate(raw, lang);
+    }
+  }
+  if (kind === 'datetime') {
+    if (typeof raw === 'string' || typeof raw === 'number' || raw instanceof Date) {
+      return formatUiDateTime(raw, lang);
     }
   }
   return String(raw);

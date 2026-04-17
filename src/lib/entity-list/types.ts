@@ -5,7 +5,9 @@ export type SortDir = 'asc' | 'desc';
 export type MetaColumn = {
   key: string;
   labelKey: string;
-  /** `date` / `datetime`: rendered as locale date (`DD MMM YYYY`) in entity lists. */
+  /**
+   * `date`: locale date only. `datetime`: locale date + time (12h + AM/PM for EN shell, 24h for EU langs).
+   */
   type: 'text' | 'badge' | 'date' | 'datetime' | string;
   sortable?: boolean;
   searchable?: boolean;
