@@ -249,7 +249,7 @@
                 aria-label={$t('shell.health.versionsTitle')}
                 title={$t('shell.health.versionsTitle')}
               >
-                <Badge variant="outline" class="font-mono text-[12px] font-medium tabular-nums">
+                <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                   v{APP_VERSION}
                 </Badge>
               </button>
