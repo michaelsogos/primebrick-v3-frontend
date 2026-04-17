@@ -7,7 +7,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { apiFetchWithTimeout } from '$lib/api';
+  import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta } from '$lib/entity-list';
@@ -237,13 +237,14 @@
   }
 
   function asApiListError(e: unknown): { code: string; status: number | null } | null {
+    if (e instanceof ApiDatabaseUnavailableError) {
+      return { code: 'DATABASE_UNAVAILABLE', status: e.status };
+    }
+    if (e instanceof ApiUnreachableError) {
+      return { code: 'BACKEND_OFFLINE', status: e.status };
+    }
     if (!e || typeof e !== 'object') return null;
     const anyE = e as { name?: string; code?: string; message?: string; status?: number | null };
-    if (anyE.name === 'ApiUnreachableError') {
-      const st = anyE.status;
-      const status = typeof st === 'number' ? st : st === null ? null : null;
-      return { code: 'BACKEND_OFFLINE', status };
-    }
     const code =
       typeof anyE.code === 'string' ? anyE.code : typeof anyE.message === 'string' ? anyE.message : null;
     const status = typeof anyE.status === 'number' ? anyE.status : null;
@@ -251,8 +252,9 @@
     return { code, status };
   }
 
-  /** Gateway / BE unreachable (502–504) or short-circuited while globally offline. */
+  /** Gateway / proxy / network — not application-level DB down (`ApiDatabaseUnavailableError`). */
   function isBackendGatewayUnreachable(code: string, status: number | null): boolean {
+    if (code === 'DATABASE_UNAVAILABLE') return false;
     return (
       code === 'BACKEND_OFFLINE' ||
       (status !== null && (status === 502 || status === 503 || status === 504))
