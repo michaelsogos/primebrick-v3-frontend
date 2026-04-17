@@ -1,7 +1,8 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
-  import { t } from '$lib/i18n';
+  import { t, formatListCellValue } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import * as Table from '$lib/components/ui/table';
@@ -943,7 +944,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {String(r[col.key as keyof TRow] ?? '')}
+                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -951,7 +952,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {String(r[col.key as keyof TRow] ?? '')}
+                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -961,7 +962,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {String(r[col.key as keyof TRow] ?? '')}
+                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -969,7 +970,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {String(r[col.key as keyof TRow] ?? '')}
+                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -978,7 +979,7 @@
                       {#if cell}
                         {@render cell({ row: r, column: col })}
                       {:else}
-                        {String(r[col.key as keyof TRow] ?? '')}
+                        {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
                       {/if}
                     </Table.Cell>
                   {/if}
