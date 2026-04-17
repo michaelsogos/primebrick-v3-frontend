@@ -2,7 +2,7 @@
  * Supported UI locales as full BCP 47 tags (language + region/script where relevant).
  * Add entries here + a matching `./messages/<tag>.json` to support e.g. `zh-Hans-CN` vs `zh-Hant-TW`.
  */
-export const UI_LANGS = ['en-GB', 'it-IT', 'fr-FR', 'es-ES', 'de-DE', 'pt-PT'] as const;
+export const UI_LANGS = ['en-GB', 'en-US', 'it-IT', 'fr-FR', 'es-ES', 'de-DE', 'pt-PT'] as const;
 
 export type UiLang = (typeof UI_LANGS)[number];
 

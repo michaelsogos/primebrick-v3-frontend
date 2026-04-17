@@ -13,6 +13,8 @@ type Dict = Record<string, unknown>;
 
 const DICTS: Record<UiLang, Dict> = {
   'en-GB': enGB,
+  /** Same strings as UK English; locale tag drives `Intl` (US formatting). */
+  'en-US': enGB,
   'it-IT': itIT,
   'fr-FR': frFR,
   'es-ES': esES,
