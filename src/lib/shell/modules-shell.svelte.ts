@@ -14,7 +14,6 @@ export async function loadShellNav(): Promise<void> {
     shellNav.modules = await fetchModules();
     shellNav.unreachable = false;
   } catch (e) {
-    shellNav.modules = [];
     if (e instanceof ApiUnreachableError) {
       shellNav.unreachable = true;
       shellNav.error = null;

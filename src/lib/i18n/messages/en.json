@@ -5,6 +5,7 @@
   "common": {
     "loading": "Loading…",
     "loadFailed": "Loading failed",
+    "dbUnavailable": "Database is temporarily unavailable. Some data may not load.",
     "soon": "Soon",
     "new": "New",
     "prev": "Prev",
@@ -50,9 +51,24 @@
       "unhandledError": "Unhandled error",
       "unhandledRejectionFallback": "Unhandled rejection",
       "unhandledErrorFallback": "Unhandled error"
+    },
+    "health": {
+      "beOnline": "Online",
+      "beOffline": "Offline",
+      "dbOffline": "DB offline",
+      "versionsTitle": "Versions",
+      "shellVersion": "Shell",
+      "backendVersion": "Backend",
+      "modulesTitle": "Modules"
     }
   }
   ,
+  "errors": {
+    "scope": {
+      "customersPageInit": "Customers page init",
+      "customersList": "Customers list"
+    }
+  },
   "entities": {
     "list": {
       "searchPlaceholder": "Search customers…",

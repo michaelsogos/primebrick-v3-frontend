@@ -1,0 +1,49 @@
+---
+description: Frontend error model — impact levels + i18n keys
+alwaysApply: true
+---
+
+# Frontend error impact levels (Primebrick)
+
+## Rule
+
+All user-visible errors pushed into the app error panel/toasts must include an **impact level**.
+
+- **Impact is not priority**. It expresses **user/business impact** if the error happens.
+- Impact drives **consistent UI semantics** (colors + “traffic light” icons) and helps triage quickly.
+
+## Impact levels
+
+- `CRITICAL`: app is unusable or core flows are blocked (e.g. **server unreachable**, **database unavailable** for DB-backed screens)
+- `HIGH`: important features degraded but some usage still possible
+- `MEDIUM`: partial failure with workaround; user can proceed
+- `LOW`: cosmetic / optional feature failure
+
+## Error codes (enum-style)
+
+Use stable, enum-like SCREAMING_SNAKE_CASE codes as tags and/or API `error` fields:
+
+- Example: `LIST_FAILED`, `DATABASE_UNAVAILABLE`
+
+Avoid embedding dynamic details in the message text (no `"… (503)"`). Put technical details into **tags**
+(`HTTP 503`, error code, network label) and keep user-facing message localized via `messageKey`.
+
+## i18n (no hardcoded EN/IT strings)
+
+Do not push mixed-language strings like `"Customers page init"` into errors.
+
+Prefer:
+
+- `scopeKey`: short context label key (e.g. `errors.scope.customersPageInit`)
+- `messageKey`: user-facing message key (e.g. `common.dbUnavailable`)
+- `detail`: optional technical detail (English is OK here; it’s for diagnostics)
+
+## UI mapping (semaphore)
+
+The UI must render impact levels with consistent colors/icons:
+
+- `CRITICAL`: red + stop-style icon
+- `HIGH`: amber + warning icon
+- `MEDIUM`: blue + info icon
+- `LOW`: green + minor icon
+
