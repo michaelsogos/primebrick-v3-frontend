@@ -6,12 +6,12 @@
   import { Check, ChevronDown } from 'lucide-svelte';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
-    { code: 'en', label: 'English', flagCode: 'gb' },
-    { code: 'it', label: 'Italiano', flagCode: 'it' },
-    { code: 'fr', label: 'Français', flagCode: 'fr' },
-    { code: 'es', label: 'Español', flagCode: 'es' },
-    { code: 'de', label: 'Deutsch', flagCode: 'de' },
-    { code: 'pt', label: 'Português', flagCode: 'pt' }
+    { code: 'en-GB', label: 'English', flagCode: 'gb' },
+    { code: 'it-IT', label: 'Italiano', flagCode: 'it' },
+    { code: 'fr-FR', label: 'Français', flagCode: 'fr' },
+    { code: 'es-ES', label: 'Español', flagCode: 'es' },
+    { code: 'de-DE', label: 'Deutsch', flagCode: 'de' },
+    { code: 'pt-PT', label: 'Português', flagCode: 'pt' }
   ];
 
   $: current = LANGS.find((l) => l.code === $uiLang) ?? LANGS[0];

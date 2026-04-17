@@ -1,21 +1,12 @@
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { UiLang } from './languages';
 
-/** BCP 47 tags aligned with UI languages (short month names, locale-appropriate ordering). */
-const LOCALE_BY_UI_LANG: Record<UiLang, string> = {
-  en: 'en-GB',
-  it: 'it-IT',
-  fr: 'fr-FR',
-  es: 'es-ES',
-  de: 'de-DE',
-  pt: 'pt-PT'
-};
-
 const dateOnlyFmt = new Map<string, Intl.DateTimeFormat>();
 const dateTimeFmt = new Map<string, Intl.DateTimeFormat>();
 
+/** `UiLang` is already a BCP 47 tag — pass through to `Intl` as-is. */
 export function uiLocaleTag(lang: UiLang): string {
-  return LOCALE_BY_UI_LANG[lang];
+  return lang;
 }
 
 function getCached(
