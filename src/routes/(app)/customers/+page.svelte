@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+  import { t, formatListCellValue } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import EntityListTable from '$lib/components/EntityListTable.svelte';
   import { badgeClassesFromToken } from '$lib/colors/badge';
@@ -593,7 +594,7 @@
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
           </span>
         {:else}
-          {String(row[column.key as keyof CustomerListRow] ?? '')}
+          {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}
       {/snippet}
 

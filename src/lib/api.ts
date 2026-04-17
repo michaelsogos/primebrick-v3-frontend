@@ -10,6 +10,19 @@ import {
 export type { HealthModule, HealthPayload, ModuleInfo } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
+/** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
+const ENTITY_API_PATH = '/api/v1/entities';
+
+function requestUrlString(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
+function isEntityApiRequest(input: RequestInfo | URL): boolean {
+  return requestUrlString(input).includes(ENTITY_API_PATH);
+}
+
 async function responseIsDatabaseUnavailable(res: Response): Promise<boolean> {
   if (!isUnreachableHttpStatus(res.status)) return false;
   const ct = res.headers.get('content-type') ?? '';
@@ -25,9 +38,14 @@ async function responseIsDatabaseUnavailable(res: Response): Promise<boolean> {
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   await ensureBackendOnlineOrThrow();
 
+  const nextInit: RequestInit = init ? { ...init } : {};
+  if (isEntityApiRequest(input) && nextInit.cache === undefined) {
+    nextInit.cache = 'no-store';
+  }
+
   let res: Response;
   try {
-    res = await fetch(input, init);
+    res = await fetch(input, nextInit);
   } catch (e) {
     const aborted =
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||

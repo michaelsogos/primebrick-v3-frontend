@@ -7,7 +7,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import { t } from '$lib/i18n';
+  import { t, formatUiDateTime } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { Bell, Menu, TriangleAlert, X, ThumbsUp, AlertOctagon, AlertTriangle, Info, CircleX, Trash2 } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
@@ -245,7 +246,7 @@
                           </div>
                         </div>
                         <div class="shrink-0 text-[11px] text-muted-foreground">
-                          {new Date(e.createdAt).toLocaleTimeString()}
+                          {formatUiDateTime(e.createdAt, $uiLang)}
                         </div>
                       </div>
                     </div>
