@@ -17,6 +17,15 @@
 
   let rootEl = $state<HTMLDivElement | null>(null);
   let inputRef = $state<HTMLInputElement | null>(null);
+  let listRef = $state<HTMLElement | null>(null);
+
+  /** Subpixel / border-box rounding often makes scrollHeight > clientHeight by 1–2px with overflow-y-auto → useless scrollbar. */
+  const LIST_SCROLL_TOLERANCE_PX = 2;
+
+  function syncCommandListOverflow(el: HTMLElement) {
+    const needScroll = el.scrollHeight > el.clientHeight + LIST_SCROLL_TOLERANCE_PX;
+    el.style.overflowY = needScroll ? 'auto' : 'hidden';
+  }
 
   function isAppleOs(): boolean {
     if (!browser) return false;
@@ -64,6 +73,31 @@
     if (open && inputRef) {
       void tick().then(() => inputRef?.focus());
     }
+  });
+
+  $effect(() => {
+    if (!browser || !listRef) return;
+
+    if (!open) {
+      listRef.style.removeProperty('overflow-y');
+      return;
+    }
+
+    const el = listRef;
+    const run = () => {
+      requestAnimationFrame(() => {
+        if (!el.isConnected) return;
+        syncCommandListOverflow(el);
+      });
+    };
+
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      el.style.removeProperty('overflow-y');
+    };
   });
 
   onMount(() => {
@@ -137,7 +171,8 @@
           data-state={open ? 'open' : 'closed'}
         >
           <Command.List
-            class="max-h-[min(50vh,18rem)] overflow-y-auto overflow-x-hidden p-2"
+            bind:ref={listRef}
+            class="max-h-[min(50vh,18rem)] overflow-x-hidden overflow-y-hidden p-2"
           >
             <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
               {$t('shell.commandPalette.empty')}
