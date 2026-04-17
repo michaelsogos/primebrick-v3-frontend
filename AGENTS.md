@@ -29,9 +29,11 @@ In-app routes under the shell should **fill the main content area** (full width,
 
 ## GitFlow workflow (team rule)
 
-- Do not work directly on `main` or `develop`. Create a GitFlow branch first:
-  - `feature/*` from `develop`
-  - `release/*` from `develop`
+- **Never commit** application or config changes on `main` or `develop`. If you are on `develop` or `main`, **create a branch first** (`git checkout -b feature/...` or `fix/...` from updated `develop`), then edit and commit. No “small fix” exception unless the user explicitly allows direct commits to `develop`.
+- **Before the first patch/write in this repo:** run `git branch --show-current`; if `develop` or `main`, **`git checkout -b fix/<slug>`** first—see **`.cursor/rules/gitflow-guard.mdc`** (*Mandatory order*).
+- Allowed branch types:
+  - `feature/*` or `fix/*` from `develop`
+  - `release/*` from `develop` (release process only)
   - `hotfix/*` from `main`
 - If you are **already** on `feature/*`, `release/*`, or `hotfix/*`, **ask** whether to **stay** on that branch or **open a new** GitFlow branch. If the user stays, do **not** argue about the branch name.
 - If the user **chooses a new** branch: **ask** whether to **close the previous branch first** or leave it open; then always **`checkout` the parent (`develop` or `main`) → `pull` → `checkout -b …`** for the new branch (do not branch the new feature off the old feature unless the user explicitly asks).
