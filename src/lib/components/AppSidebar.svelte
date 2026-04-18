@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils';
+  import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
   import { APP_VERSION } from '$lib/version';
@@ -310,6 +311,8 @@
                       <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
                     {/if}
                   </div>
+
+                  <BrowserClientInfo />
                 </div>
               </div>
             </div>

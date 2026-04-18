@@ -1,7 +1,7 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
-  import { t, formatListCellValue } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
@@ -11,6 +11,7 @@
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils.js';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
+  import { formatDatetimeIanaListCell } from '$lib/entity-list/format-datetime-iana-cell';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     SlidersHorizontal,
@@ -30,7 +31,9 @@
     ChevronUp,
     RotateCw,
     RotateCcw,
-    MoreVertical
+    MoreVertical,
+    Globe,
+    MapPin
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -73,6 +76,8 @@
     rowActionsEnabled = false,
     rowActions,
     filtersOpen = $bindable(false),
+    datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
+    datetimeIanaRenderTick = $bindable(0),
     cell,
     filters,
     metaLoadingView,
@@ -120,6 +125,9 @@
     rowActionsEnabled?: boolean;
     rowActions?: Snippet<[ { row: TRow } ]>;
     filtersOpen?: boolean;
+    /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
+    datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
+    datetimeIanaRenderTick?: number;
     cell?: Snippet<[CellArgs]>;
     filters?: Snippet;
     metaLoadingView?: Snippet;
@@ -144,6 +152,21 @@
 
   let columnsMenuOpen = $state(false);
   let searchMenuOpen = $state(false);
+
+  function toggleDatetimeIana(col: MetaColumn) {
+    const cur = datetimeIanaModeByKey[col.key] ?? 'browser';
+    const next: 'browser' | 'record' = cur === 'browser' ? 'record' : 'browser';
+    datetimeIanaModeByKey = { ...datetimeIanaModeByKey, [col.key]: next };
+    datetimeIanaRenderTick++;
+  }
+
+  function defaultCellText(
+    col: MetaColumn,
+    row: TRow,
+    ianaMode: 'browser' | 'record' = 'browser'
+  ): string {
+    return formatDatetimeIanaListCell(col, row as Record<string, unknown>, $uiLang, ianaMode);
+  }
 
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
@@ -839,20 +862,62 @@
                         ? 'relative z-10 select-none opacity-60'
                         : 'relative z-10 cursor-pointer select-none'
                       : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
+                  onclick={(e) => {
+                    const el = e.target as HTMLElement | null;
+                    if (el?.closest?.('[data-pb-datetime-iana-toggle]')) return;
+                    handleSortClick(col);
+                  }}
                 >
-                  <span class="inline-flex items-center gap-1">
-                    {$t(col.labelKey)}
-                    {#if col.sortable}
-                      {#if sortKey !== col.key}
-                        <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
-                      {:else if sortDir === 'asc'}
-                        <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                      {:else}
-                        <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  {#if col.datetimeIanaToggle}
+                    <div class="flex w-full min-w-0 items-center justify-between gap-1">
+                      <span class="inline-flex min-w-0 items-center gap-1">
+                        {$t(col.labelKey)}
+                        {#if col.sortable}
+                          {#if sortKey !== col.key}
+                            <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                          {:else if sortDir === 'asc'}
+                            <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                          {:else}
+                            <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                          {/if}
+                        {/if}
+                      </span>
+                      <button
+                        type="button"
+                        data-pb-datetime-iana-toggle
+                        class="inline-flex shrink-0 rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                          ? $t('entities.list.datetimeIana.hintBrowser')
+                          : $t('entities.list.datetimeIana.hintRecord')}
+                        aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                          ? $t('entities.list.datetimeIana.hintBrowser')
+                          : $t('entities.list.datetimeIana.hintRecord')}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          toggleDatetimeIana(col);
+                        }}
+                      >
+                        {#if (datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'}
+                          <Globe class="size-3.5 opacity-90" />
+                        {:else}
+                          <MapPin class="size-3.5 opacity-90" />
+                        {/if}
+                      </button>
+                    </div>
+                  {:else}
+                    <span class="inline-flex items-center gap-1">
+                      {$t(col.labelKey)}
+                      {#if col.sortable}
+                        {#if sortKey !== col.key}
+                          <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                        {:else if sortDir === 'asc'}
+                          <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {:else}
+                          <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {/if}
                       {/if}
-                    {/if}
-                  </span>
+                    </span>
+                  {/if}
                 </Table.Head>
               {/if}
             {/each}
@@ -927,6 +992,7 @@
               </Table.Row>
             {/if}
           {:else}
+            {#key datetimeIanaRenderTick}
             {#each rows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
@@ -957,7 +1023,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -965,7 +1031,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -975,7 +1041,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -983,7 +1049,7 @@
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -992,7 +1058,7 @@
                       {#if cell}
                         {@render cell({ row: r, column: col })}
                       {:else}
-                        {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                        {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
                       {/if}
                     </Table.Cell>
                   {/if}
@@ -1012,6 +1078,7 @@
                 {/if}
               </Table.Row>
             {/each}
+            {/key}
           {/if}
         </Table.Body>
       </Table.Root>

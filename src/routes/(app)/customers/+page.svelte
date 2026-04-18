@@ -18,7 +18,11 @@
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta } from '$lib/entity-list';
-  import { defaultVisibleColumnKeys, sanitizeVisibleKeys } from '$lib/entity-list';
+  import {
+    defaultVisibleColumnKeys,
+    formatDatetimeIanaListCell,
+    sanitizeVisibleKeys
+  } from '$lib/entity-list';
 
   type MetaFilter = {
     key: string;
@@ -80,6 +84,10 @@
   let selectedKeys = $state<string[]>([]);
 
   let searchInKeys = $state<string[] | null>(null);
+
+  /** Shared with `EntityListTable` IANA header toggle (required when `{#snippet cell}` overrides defaults). */
+  let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
+  let datetimeIanaRenderTick = $state(0);
 
   const storageKeyPrefix = 'pb:customers:list:';
   const skVisibleKeys = `${storageKeyPrefix}visibleKeys`;
@@ -560,6 +568,8 @@
   {/snippet}
 
   <EntityListTable
+      bind:datetimeIanaModeByKey
+      bind:datetimeIanaRenderTick
       uid={meta?.uid ?? 'uuid'}
       columns={columns}
       rowDensity="compact"
@@ -602,6 +612,14 @@
           >
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
           </Badge>
+        {:else if column.type === 'datetime' && column.datetimeIanaToggle}
+          {@const _ = datetimeIanaRenderTick}
+          {formatDatetimeIanaListCell(
+            column,
+            row as Record<string, unknown>,
+            $uiLang,
+            datetimeIanaModeByKey[column.key] ?? 'browser'
+          )}
         {:else}
           {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}

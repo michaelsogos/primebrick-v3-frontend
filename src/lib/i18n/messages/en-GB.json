@@ -74,7 +74,14 @@
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Modules"
+      "modulesTitle": "Modules",
+      "clientTitle": "This browser",
+      "ianaTimezone": "IANA time zone",
+      "preferredLanguages": "Preferred languages",
+      "resolvedLocale": "Date/time locale",
+      "calendarSystem": "Calendar",
+      "numberingSystem": "Numbering system",
+      "hourCycle": "Hour cycle"
     }
   }
   ,
@@ -86,6 +93,10 @@
   },
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "Shown in your browser time zone. Click to use the stored IANA from the row.",
+        "hintRecord": "Shown in the stored IANA time zone. Click to use your browser time zone."
+      },
       "searchPlaceholder": "Search customers…",
       "empty": "No results",
       "noRecords": "No records",
@@ -132,6 +143,8 @@
         "email": "Email",
         "phone": "Phone",
         "status": "Status",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Onboarding time zone",
         "uuid": "UUID",
         "status_reason": "Status reason",
         "local_address": "Address",

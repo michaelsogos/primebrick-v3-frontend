@@ -73,12 +73,23 @@
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Modules"
+      "modulesTitle": "Modules",
+      "clientTitle": "Ce navigateur",
+      "ianaTimezone": "Fuseau horaire IANA",
+      "preferredLanguages": "Langues préférées",
+      "resolvedLocale": "Locale date/heure",
+      "calendarSystem": "Calendrier",
+      "numberingSystem": "Numération",
+      "hourCycle": "Cycle horaire"
     }
   }
   ,
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "Affiché dans le fuseau du navigateur. Clic pour l’IANA enregistrée sur la ligne.",
+        "hintRecord": "Affiché dans le fuseau IANA enregistré. Clic pour le fuseau du navigateur."
+      },
       "searchPlaceholder": "Rechercher des clients…",
       "empty": "Aucun résultat",
       "noRecords": "Aucun enregistrement",
@@ -125,6 +136,8 @@
         "email": "E-mail",
         "phone": "Téléphone",
         "status": "Statut",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Fuseau onboarding",
         "uuid": "UUID",
         "status_reason": "Motif du statut",
         "local_address": "Adresse",

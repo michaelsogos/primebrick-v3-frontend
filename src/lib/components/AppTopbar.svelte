@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -10,10 +12,23 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Bell, Menu, TriangleAlert, X, ThumbsUp, AlertOctagon, AlertTriangle, Info, CircleX, Trash2 } from 'lucide-svelte';
+  import {
+    Bell,
+    Globe,
+    Menu,
+    TriangleAlert,
+    X,
+    ThumbsUp,
+    AlertOctagon,
+    AlertTriangle,
+    Info,
+    CircleX,
+    Trash2
+  } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
+  import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -104,6 +119,12 @@
   let { onBurgerClick, burgerOpen = false, unreadNotifications = 3 }: $$Props = $props();
 
   let errorsOpen = $state(false);
+  let ianaTimeZone = $state<string | null>(null);
+
+  onMount(() => {
+    if (!browser) return;
+    ianaTimeZone = getResolvedIanaTimeZone();
+  });
 </script>
 
 <header
@@ -134,7 +155,17 @@
 
     <CommandPalette />
 
-    <div class="flex shrink-0 items-center gap-1">
+    <div class="flex min-w-0 shrink-0 items-center gap-2">
+      {#if ianaTimeZone}
+        <span
+          class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-[14rem]"
+          title={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
+          aria-label={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
+        >
+          <Globe class="size-4 shrink-0 text-muted-foreground opacity-80" aria-hidden="true" />
+          <span class="truncate text-xs text-muted-foreground">{ianaTimeZone}</span>
+        </span>
+      {/if}
       <LangSelect />
 
       <Sheet.Root bind:open={errorsOpen}>
