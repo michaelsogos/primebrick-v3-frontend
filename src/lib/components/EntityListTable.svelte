@@ -134,10 +134,11 @@
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
   const compactRows = $derived(rowDensity === 'compact');
-  const rowChromeH = $derived(compactRows ? 'h-8' : 'h-10');
+  const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
+  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     compactRows
-      ? '[&_[data-slot=table-head]]:!h-8 [&_[data-slot=table-head]]:py-1 [&_[data-slot=table-head]]:text-xs [&_[data-slot=table-cell]]:!py-1.5 [&_[data-slot=table-cell]]:text-sm'
+      ? '[&_th]:!h-6 [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:!py-1.5 [&_tbody_td]:text-sm'
       : ''
   );
 
@@ -755,6 +756,7 @@
       {/if}
     {:else}
       <Table.Root
+        data-row-density={rowDensity}
         class={cn(
           'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
           tableDensityClass
