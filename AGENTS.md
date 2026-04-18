@@ -31,6 +31,8 @@ Full GitFlow close for **all three** repos (frontend, backend, meta): see **`.cu
 
 Follow **`.cursor/rules/gitflow-guard.mdc`**: never commit on `develop`/`main`; use `feature/*`; merge before push; push only when asked; verify with `pnpm run check` (and visually when UI changes).
 
+**New task / nuovo task:** When the user starts a new task (e.g. *“Iniziamo un nuovo task”*, *let’s start a new task*), infer `feature/<slug>` from context and create that branch from `develop` before edits — see **workspace root `AGENTS.md` → New task workflow**.
+
 ## Skills (optional)
 
 Under `.cursor/skills/` — e.g. UI stack, in-browser verification — open the relevant `SKILL.md` when the task matches.
