@@ -168,11 +168,16 @@
     return formatDatetimeIanaListCell(col, row as Record<string, unknown>, $uiLang, ianaMode);
   }
 
-  /** When showing stored IANA timezone (record mode), tint header + body cells light amber. */
+  /**
+   * When showing stored IANA timezone (record mode), tint header + body cells light amber.
+   * Uses `!` because `Table.Root` applies `[&_[data-slot=table-cell]:not(.sticky)]:bg-background` and
+   * `[&_[data-slot=table-head]:not(.sticky)]:bg-sky-50` from the wrapper (higher specificity than plain
+   * `bg-amber-*`). `Table.Row` also sets hover `[&>th,td]:bg-muted` / sky when selected — `hover:!` wins.
+   */
   function datetimeIanaRecordHighlightClass(col: MetaColumn): string | undefined {
     if (col.type !== 'datetime' || !col.datetimeIanaToggle) return undefined;
     if ((datetimeIanaModeByKey[col.key] ?? 'browser') !== 'record') return undefined;
-    return 'bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/90 dark:hover:bg-amber-950/55';
+    return '!bg-amber-50 dark:!bg-amber-950/40 hover:!bg-amber-100/95 dark:hover:!bg-amber-950/55';
   }
 
   let rowRangeMouseDown = $state(false);
