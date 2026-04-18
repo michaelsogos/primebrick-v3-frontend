@@ -5,6 +5,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
+  import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
@@ -127,9 +128,11 @@
     noRecordsMessage?: string;
   } = $props();
 
+  const selectionCheckboxClass =
+    'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
+
   let columnsMenuOpen = $state(false);
   let searchMenuOpen = $state(false);
-  let headerCheckbox = $state<HTMLInputElement | null>(null);
 
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
@@ -164,6 +167,8 @@
   const pageKeys = $derived(rows.map((r) => rowKey(r)));
   const selectedOnPageCount = $derived(pageKeys.filter((k) => selectedKeys.includes(k)).length);
   const allOnPageSelected = $derived(pageKeys.length > 0 && selectedOnPageCount === pageKeys.length);
+  /** Header checkbox tri-state: partial selection on current page. */
+  const headerIndeterminate = $derived(selectedOnPageCount > 0 && !allOnPageSelected);
   const actionsEnabled = $derived(!!rowActionsEnabled || !!rowActions);
   const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
 
@@ -498,11 +503,6 @@
     };
   });
 
-  $effect(() => {
-    if (!headerCheckbox || !rowSelectionEnabled) return;
-    headerCheckbox.indeterminate = selectedOnPageCount > 0 && !allOnPageSelected;
-  });
-
   const loadingText = $derived(loadingMessage ?? $t('common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
 
@@ -536,7 +536,7 @@
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
         />
 
-        <div class="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+        <div class="absolute right-1 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
           {#if search.trim().length > 0}
             <Button
               type="button"
@@ -757,12 +757,11 @@
                 class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
                 <div class="flex h-10 items-center justify-center">
-                  <input
-                    bind:this={headerCheckbox}
-                    type="checkbox"
-                    class="size-4 rounded border-input text-primary accent-primary"
+                  <Checkbox
+                    class={selectionCheckboxClass}
                     checked={allOnPageSelected}
-                    onclick={toggleAllOnPage}
+                    indeterminate={headerIndeterminate}
+                    onCheckedChange={() => toggleAllOnPage()}
                     aria-label="select all"
                   />
                 </div>
@@ -927,11 +926,10 @@
                 {#if rowSelectionEnabled}
                   <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
                     <div class="flex h-10 items-center justify-center">
-                      <input
-                        type="checkbox"
-                        class="size-4 rounded border-input text-primary accent-primary"
+                      <Checkbox
+                        class={selectionCheckboxClass}
                         checked={selectedKeys.includes(rk)}
-                        onclick={() => toggleRowSelect(rk)}
+                        onCheckedChange={() => toggleRowSelect(rk)}
                         aria-label="select row"
                       />
                     </div>

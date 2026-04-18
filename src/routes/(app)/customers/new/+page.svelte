@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { t } from '$lib/i18n';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
 </script>
 
@@ -10,10 +12,11 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          {
-            label:
-              shellNav.modules.find((mod) => mod.id === 'crm')?.name ?? $t('shell.nav.crmFallback')
-          },
+          crmModuleMenuSegment({
+            modules: shellNav.modules,
+            pathname: page.url.pathname,
+            t: (key) => $t(key)
+          }),
           { label: $t('entities.customer.title'), href: '/customers' }
         ]}
       />

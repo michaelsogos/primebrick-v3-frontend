@@ -1,13 +1,17 @@
 <script lang="ts">
+  import { page as appPage } from '$app/state';
   import { t, formatListCellValue } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import EntityListTable from '$lib/components/EntityListTable.svelte';
   import { badgeClassesFromToken } from '$lib/colors/badge';
+  import { cn } from '$lib/utils';
   import { Plus } from 'lucide-svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { browser } from '$app/environment';
+  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
@@ -536,10 +540,11 @@
       <div class="min-w-0 space-y-1">
         <AppPageBreadcrumb
           segments={[
-            {
-              label:
-                shellNav.modules.find((mod) => mod.id === 'crm')?.name ?? $t('shell.nav.crmFallback')
-            }
+            crmModuleMenuSegment({
+              modules: shellNav.modules,
+              pathname: appPage.url.pathname,
+              t: (key) => $t(key)
+            })
           ]}
         />
         <h1 class="truncate text-xl font-semibold leading-tight">{title}</h1>
@@ -590,9 +595,12 @@
       {#snippet cell({ row, column })}
         {#if column.key === 'status'}
           {@const cfg = column.badge?.values?.[row.status]}
-          <span class={badgeClassesFromToken(cfg?.color ?? null)}>
+          <Badge
+            variant="outline"
+            class={cn(badgeClassesFromToken(cfg?.color ?? null), 'border-0 shadow-none')}
+          >
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
-          </span>
+          </Badge>
         {:else}
           {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}

@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import * as Sheet from '$lib/components/ui/sheet';
+  import { cn } from '$lib/utils';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
   import { APP_VERSION } from '$lib/version';
@@ -238,7 +239,28 @@
     </nav>
 
     <div class="px-3 pb-3 pt-2">
+      <!-- Footer chips: health/status first; version control always last (shell convention). -->
       <div class="flex flex-wrap items-center gap-2">
+        <Badge
+          variant="outline"
+          class={cn(
+            'pointer-events-none w-fit gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+            healthChipClass
+          )}
+          title={healthChipLabel}
+        >
+          {#if healthChip === 'backend_offline'}
+            <CloudOff class="size-3.5 opacity-90" />
+          {:else if healthChip === 'db_offline'}
+            <Database class="size-3.5 opacity-90" />
+          {:else}
+            <Cloud class="size-3.5 opacity-90" />
+          {/if}
+          {#if !collapsed}
+            <span>{healthChipLabel}</span>
+          {/if}
+        </Badge>
+
         <Sheet.Root bind:open={versionsOpen}>
           <Sheet.Trigger>
             {#snippet child({ props })}
@@ -293,22 +315,6 @@
             </div>
           </Sheet.Content>
         </Sheet.Root>
-
-        <span
-          class={`inline-flex w-fit items-center justify-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${healthChipClass}`}
-          title={healthChipLabel}
-        >
-          {#if healthChip === 'backend_offline'}
-            <CloudOff class="size-3.5 opacity-90" />
-          {:else if healthChip === 'db_offline'}
-            <Database class="size-3.5 opacity-90" />
-          {:else}
-            <Cloud class="size-3.5 opacity-90" />
-          {/if}
-          {#if !collapsed}
-            <span>{healthChipLabel}</span>
-          {/if}
-        </span>
       </div>
     </div>
   </div>
