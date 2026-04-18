@@ -13,8 +13,24 @@
   import { Bell, Menu, TriangleAlert, X, ThumbsUp, AlertOctagon, AlertTriangle, Info, CircleX, Trash2 } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
+  import { cn } from '$lib/utils';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+  function errorTagBadgeClass(tone: string | undefined) {
+    switch (tone) {
+      case 'danger':
+        return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
+      case 'warning':
+        return 'border-amber-500/25 bg-amber-500/10 text-amber-800 dark:text-amber-200';
+      case 'info':
+        return 'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300';
+      case 'success':
+        return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+      default:
+        return 'border-border/60 bg-muted/30 text-muted-foreground';
+    }
+  }
 
   function impactRank(i: ImpactLevel): number {
     switch (i) {
@@ -196,19 +212,15 @@
                         {#if (e as any).tags?.length}
                           <div class="mt-1 flex flex-wrap gap-1">
                             {#each (e as any).tags as tag (tag.label)}
-                              <span
-                                class={tag.tone === 'danger'
-                                  ? 'inline-flex items-center rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300'
-                                  : tag.tone === 'warning'
-                                    ? 'inline-flex items-center rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200'
-                                    : tag.tone === 'info'
-                                      ? 'inline-flex items-center rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300'
-                                      : tag.tone === 'success'
-                                        ? 'inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300'
-                                        : 'inline-flex items-center rounded border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground'}
+                              <Badge
+                                variant="outline"
+                                class={cn(
+                                  'h-auto border px-1.5 py-0.5 text-[10px] font-medium',
+                                  errorTagBadgeClass(tag.tone)
+                                )}
                               >
                                 {tag.label}
-                              </span>
+                              </Badge>
                             {/each}
                           </div>
                         {/if}

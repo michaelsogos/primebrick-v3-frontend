@@ -22,7 +22,8 @@
     "nav": {
       "aria": "Navigation",
       "open": "Open navigation",
-      "crmFallback": "CRM"
+      "crmFallback": "CRM",
+      "crmBreadcrumbMenu": "CRM sections"
     },
     "search": {
       "placeholder": "Search…",

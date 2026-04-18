@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page as appPage } from '$app/state';
   import { t, formatListCellValue } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
@@ -10,6 +11,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { browser } from '$app/environment';
+  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
@@ -538,10 +540,11 @@
       <div class="min-w-0 space-y-1">
         <AppPageBreadcrumb
           segments={[
-            {
-              label:
-                shellNav.modules.find((mod) => mod.id === 'crm')?.name ?? $t('shell.nav.crmFallback')
-            }
+            crmModuleMenuSegment({
+              modules: shellNav.modules,
+              pathname: appPage.url.pathname,
+              t: (key) => $t(key)
+            })
           ]}
         />
         <h1 class="truncate text-xl font-semibold leading-tight">{title}</h1>

@@ -13,6 +13,8 @@ type ChildSnippet = import('svelte').Snippet;
 
 export type WithoutChild<T> = Omit<T, 'child'> & { child?: ChildSnippet };
 
+export type WithoutChildren<T> = Omit<T, 'children'>;
+
 export type WithoutChildrenOrChild<T> = Omit<T, 'children' | 'child'> & {
   children?: ChildSnippet;
   child?: ChildSnippet;

@@ -21,7 +21,8 @@
     "nav": {
       "aria": "Navegación",
       "open": "Abrir navegación",
-      "crmFallback": "CRM"
+      "crmFallback": "CRM",
+      "crmBreadcrumbMenu": "Secciones de CRM"
     },
     "search": {
       "placeholder": "Buscar…",
