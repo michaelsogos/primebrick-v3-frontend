@@ -29,7 +29,7 @@ Full GitFlow close for **all three** repos (frontend, backend, meta): see **`.cu
 
 ## GitFlow
 
-Follow **`.cursor/rules/gitflow-guard.mdc`**: never commit on `develop`/`main`; use `feature/*`; merge before push; push only when asked; verify with `pnpm run check` (and visually when UI changes).
+Follow **`.cursor/rules/gitflow-guard.mdc`**: never commit on `develop`/`main`; use `feature/*`; merge before push; push only when asked; verify with `pnpm run check` (and visually when UI changes). **Before closing a feature** (merge to `develop`, delete branch), **ask the user** — even if you created the branch automatically.
 
 **New task / nuovo task:** When the user starts a new task (e.g. *“Iniziamo un nuovo task”*, *let’s start a new task*), infer `feature/<slug>` from context and create that branch from `develop` before edits — see **workspace root `AGENTS.md` → New task workflow**.
 

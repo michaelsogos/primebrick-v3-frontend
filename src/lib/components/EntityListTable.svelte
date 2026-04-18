@@ -168,6 +168,18 @@
     return formatDatetimeIanaListCell(col, row as Record<string, unknown>, $uiLang, ianaMode);
   }
 
+  /**
+   * When showing stored IANA timezone (record mode), tint header + body cells light amber.
+   * Uses `!` because `Table.Root` applies `[&_[data-slot=table-cell]:not(.sticky)]:bg-background` and
+   * `[&_[data-slot=table-head]:not(.sticky)]:bg-sky-50` from the wrapper (higher specificity than plain
+   * `bg-amber-*`). `Table.Row` also sets hover `[&>th,td]:bg-muted` / sky when selected — `hover:!` wins.
+   */
+  function datetimeIanaRecordHighlightClass(col: MetaColumn): string | undefined {
+    if (col.type !== 'datetime' || !col.datetimeIanaToggle) return undefined;
+    if ((datetimeIanaModeByKey[col.key] ?? 'browser') !== 'record') return undefined;
+    return '!bg-amber-50 dark:!bg-amber-950/40 hover:!bg-amber-100/95 dark:hover:!bg-amber-950/55';
+  }
+
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
   let rangeDragActive = $state(false);
@@ -856,12 +868,15 @@
                 </Table.Head>
               {:else}
                 <Table.Head
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
+                  class={cn(
+                    stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10'),
+                    datetimeIanaRecordHighlightClass(col)
+                  )}
                   onclick={(e) => {
                     const el = e.target as HTMLElement | null;
                     if (el?.closest?.('[data-pb-datetime-iana-toggle]')) return;
@@ -1019,7 +1034,10 @@
                 {#each renderColumns as col, colIdx (col.key)}
                   {#if col.key === 'uuid'}
                     {#if i === 0}
-                      <Table.Cell bind:ref={uuidFirstCellRef} class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        bind:ref={uuidFirstCellRef}
+                        class={cn(stickyCellClass(col.key, colIdx, false), datetimeIanaRecordHighlightClass(col))}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
@@ -1027,7 +1045,9 @@
                         {/if}
                       </Table.Cell>
                     {:else}
-                      <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        class={cn(stickyCellClass(col.key, colIdx, false), datetimeIanaRecordHighlightClass(col))}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
@@ -1037,7 +1057,10 @@
                     {/if}
                   {:else if col.key === 'code'}
                     {#if i === 0}
-                      <Table.Cell bind:ref={codeFirstCellRef} class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        bind:ref={codeFirstCellRef}
+                        class={cn(stickyCellClass(col.key, colIdx, false), datetimeIanaRecordHighlightClass(col))}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
@@ -1045,7 +1068,9 @@
                         {/if}
                       </Table.Cell>
                     {:else}
-                      <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        class={cn(stickyCellClass(col.key, colIdx, false), datetimeIanaRecordHighlightClass(col))}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
@@ -1054,7 +1079,9 @@
                       </Table.Cell>
                     {/if}
                   {:else}
-                    <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                    <Table.Cell
+                      class={cn(stickyCellClass(col.key, colIdx, false), datetimeIanaRecordHighlightClass(col))}
+                    >
                       {#if cell}
                         {@render cell({ row: r, column: col })}
                       {:else}

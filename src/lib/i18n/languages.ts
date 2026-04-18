@@ -80,3 +80,13 @@ export function uiLangRegionSuffix(tag: string): string {
   if (region) return region.toUpperCase();
   return second.toUpperCase();
 }
+
+/**
+ * Two-letter label for the compact topbar trigger: final BCP 47 subtag only (`en-GB` → `GB`, `it-IT` → `IT`).
+ * Not for dropdown rows — use full `label` there.
+ */
+export function uiLangTopBarTwoLetterSuffix(tag: string): string {
+  const parts = tag.split('-').filter(Boolean);
+  const last = parts[parts.length - 1] ?? '';
+  return last.toUpperCase().slice(0, 2);
+}

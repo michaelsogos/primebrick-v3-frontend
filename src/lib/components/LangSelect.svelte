@@ -3,7 +3,11 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { uiLang, setUiLang } from '$lib/i18n/store.svelte';
-  import { orderLangEntriesByBrowser, type UiLang } from '$lib/i18n/languages';
+  import {
+    orderLangEntriesByBrowser,
+    type UiLang,
+    uiLangTopBarTwoLetterSuffix
+  } from '$lib/i18n/languages';
   import { ChevronDown } from 'lucide-svelte';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
@@ -36,7 +40,9 @@
         aria-label={`Language: ${current.label}`}
       >
         <span class={`fi fi-${current.flagCode} shrink-0 rounded-sm`} aria-hidden="true"></span>
-        <span class="truncate text-xs font-semibold">{current.label}</span>
+        <span class="w-6 shrink-0 text-center text-xs font-semibold">
+          {uiLangTopBarTwoLetterSuffix(current.code)}
+        </span>
         <ChevronDown class="size-4 shrink-0 opacity-70" />
       </Button>
     {/snippet}
