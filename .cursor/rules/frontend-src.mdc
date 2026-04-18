@@ -1,0 +1,51 @@
+---
+description: Primebrick frontend — all app source under src/ (SvelteKit, Shadcn, errors, API usage)
+globs: src/**
+alwaysApply: false
+---
+
+# Frontend `src/**` (single scoped rule — prefer this over @-mentioning long AGENTS.md)
+
+## Stack & commands
+
+- **Stack:** SvelteKit + Svelte 5 + TypeScript.
+- **Commands:** `pnpm run dev`, `pnpm run check`, `pnpm run build`.
+
+## Routes and modules
+
+- **Pages / layouts:** `src/routes/` (`+page.svelte`, `+layout.svelte`, optional `+page.ts`).
+- **Shared code:** `src/lib/` — use **Svelte 5** runes as in existing files.
+- **Modules list** in dev: `/api/v1/modules` (Vite proxy in `vite.config.ts`). Keep API types aligned with backend when contracts change.
+
+## Shadcn-Svelte (vendored UI)
+
+- **Primitives:** `src/lib/components/ui/*` — managed with **Shadcn-Svelte CLI**; prefer minimal direct edits.
+- **App components:** `src/lib/components/*` (not under `ui/`) — compose primitives; add domain behavior.
+- **Use primitives directly** when not customized; add wrappers only for app-wide defaults or shared behavior.
+- **Vendor refresh:** branch `chore/ui-vendor-update-YYYY-MM`; update **one** component at a time with overwrite; run `pnpm run check` after each.
+
+## i18n
+
+- Use `t()` from `$lib/i18n` for user-facing text.
+- Messages: `src/lib/i18n/messages/*.json` — when adding/changing keys, update **all** locale files.
+
+## User-visible errors (impact + tags)
+
+All errors shown in panel/toasts must carry an **impact** level (not “priority”): `CRITICAL` | `HIGH` | `MEDIUM` | `LOW`.
+
+- **Codes:** stable `SCREAMING_SNAKE_CASE` (e.g. `LIST_FAILED`, `DATABASE_UNAVAILABLE`). Put HTTP codes / details in **tags**, not in the localized message body.
+- **i18n:** use `scopeKey` / `messageKey`; avoid hardcoded mixed-language strings.
+- **UI:** map impacts to consistent colors/icons (CRITICAL → red/stop, HIGH → amber, MEDIUM → blue, LOW → green).
+
+## API & backend availability
+
+- Types: `src/lib/api-types.ts`. **All** `/api/v1/*` app calls through `apiFetch` / `apiFetchWithTimeout` from `$lib/api` (offline gate).
+- Health / recovery: `probeHealth()` in `$lib/backend-availability.ts` (bypasses gate). **AbortError** must not mark backend offline.
+
+## Icons
+
+No raster icons for UI (`.png`/`.jpg`/etc.); prefer SVG, Lucide, or CSS.
+
+## Deeper conventions
+
+Longer patterns (forms, tables, nav, dev server etiquette): **`docs/agent/patterns.md`**.

@@ -1,13 +1,14 @@
 ---
-description: Primebrick frontend — context and safety rules
+description: Primebrick frontend — product context (always apply)
 alwaysApply: true
 ---
 
 # Primebrick frontend
 
 - **Purpose:** Modular management system (CRM, Accounting, Warehouse, custom modules).
-- **Stack:** SvelteKit + Svelte 5 + TypeScript. The API lives in a separate backend repo.
-- **Before cloud/Foundry/messaging work:** Read `docs/ai/SKILLS.md` and treat only **[x]** skills as in-scope unless the user names another skill or path explicitly.
-- **Onboarding:** Read local `AGENTS.md` for commands and conventions.
-- **API contract caution:** Keep frontend API types and usage aligned with backend responses when changing contracts.
-- **Documentation language:** All `*.md` files in this repository must be **English** for team-facing prose. Do not add Italian (or other non-English) copy to Markdown; reserve non-English for direct chat with the user only.
+- **Stack:** SvelteKit + Svelte 5 + TypeScript. API lives in a separate backend repo.
+- **Before cloud/Foundry/messaging work:** read `docs/ai/SKILLS.md` — only **[x]** skills are in scope unless the user names another path.
+- **Code under `src/`:** follow **`.cursor/rules/frontend-src.mdc`** (scoped to `src/**` — avoids loading long prose on every task).
+- **Longer UI/layout/vendor notes:** `docs/agent/patterns.md`.
+- **API contract:** keep frontend types and usage aligned with backend when contracts change.
+- **Team-facing `*.md`:** English only; non-English reserved for direct chat with the user.
