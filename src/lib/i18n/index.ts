@@ -41,5 +41,11 @@ export const t: Readable<(key: string) => string> = derived(
       getPath($dict, key) ?? getPath(enGB as Dict, key) ?? key
 );
 
-export { formatUiDate, formatUiDateTime, formatListCellValue, uiLocaleTag } from './date-format';
+export {
+  formatUiDate,
+  formatUiDateTime,
+  formatUiDateTimeInTimeZone,
+  formatListCellValue,
+  uiLocaleTag
+} from './date-format';
 export { uiLangRegionSuffix, orderLangEntriesByBrowser } from './languages';

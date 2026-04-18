@@ -73,12 +73,23 @@
       "versionsTitle": "Versões",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Módulos"
+      "modulesTitle": "Módulos",
+      "clientTitle": "Este navegador",
+      "ianaTimezone": "Fuso horário IANA",
+      "preferredLanguages": "Idiomas preferidos",
+      "resolvedLocale": "Locale de data/hora",
+      "calendarSystem": "Calendário",
+      "numberingSystem": "Sistema numérico",
+      "hourCycle": "Ciclo horário"
     }
   }
   ,
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "Mostrado no fuso do navegador. Clique para usar a IANA guardada na linha.",
+        "hintRecord": "Mostrado no fuso IANA guardado. Clique para usar o fuso do navegador."
+      },
       "searchPlaceholder": "Pesquisar clientes…",
       "empty": "Sem resultados",
       "noRecords": "Sem registos",
@@ -125,6 +136,8 @@
         "email": "Email",
         "phone": "Telefone",
         "status": "Estado",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Fuso horário onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo do estado",
         "local_address": "Morada",

@@ -73,12 +73,23 @@
       "versionsTitle": "Versionen",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Module"
+      "modulesTitle": "Module",
+      "clientTitle": "Dieser Browser",
+      "ianaTimezone": "IANA-Zeitzone",
+      "preferredLanguages": "Bevorzugte Sprachen",
+      "resolvedLocale": "Datum/Zeit-Locale",
+      "calendarSystem": "Kalender",
+      "numberingSystem": "Zahlensystem",
+      "hourCycle": "Stundenzyklus"
     }
   }
   ,
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "In der Browser-Zeitzone. Klick für gespeicherte IANA der Zeile.",
+        "hintRecord": "In der gespeicherten IANA-Zeitzone. Klick für Browser-Zeitzone."
+      },
       "searchPlaceholder": "Kunden suchen…",
       "empty": "Keine Ergebnisse",
       "noRecords": "Keine Datensätze",
@@ -125,6 +136,8 @@
         "email": "E-Mail",
         "phone": "Telefon",
         "status": "Status",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Onboarding-Zeitzone",
         "uuid": "UUID",
         "status_reason": "Statusgrund",
         "local_address": "Adresse",
