@@ -562,6 +562,7 @@
   <EntityListTable
       uid={meta?.uid ?? 'uuid'}
       columns={columns}
+      rowDensity="compact"
       rowActionsEnabled
       defaultSort={meta?.list.defaultSort}
       pageSizeOptions={meta?.list.pageSizeOptions}

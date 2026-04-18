@@ -67,6 +67,7 @@
     selectedKeys,
     onSelectedKeysChange,
     rowSelectionEnabled = true,
+    rowDensity = 'default',
     onRefresh,
     refreshDisabled = false,
     rowActionsEnabled = false,
@@ -113,6 +114,7 @@
     selectedKeys: string[];
     onSelectedKeysChange: (keys: string[]) => void;
     rowSelectionEnabled?: boolean;
+    rowDensity?: 'default' | 'compact';
     onRefresh: () => void;
     refreshDisabled?: boolean;
     rowActionsEnabled?: boolean;
@@ -130,6 +132,15 @@
 
   const selectionCheckboxClass =
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
+
+  const compactRows = $derived(rowDensity === 'compact');
+  const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
+  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
+  const tableDensityClass = $derived(
+    compactRows
+      ? '[&_th]:!h-6 [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:!py-1.5 [&_tbody_td]:text-sm'
+      : ''
+  );
 
   let columnsMenuOpen = $state(false);
   let searchMenuOpen = $state(false);
@@ -745,7 +756,11 @@
       {/if}
     {:else}
       <Table.Root
-        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30"
+        data-row-density={rowDensity}
+        class={cn(
+          'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+          tableDensityClass
+        )}
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
@@ -756,7 +771,7 @@
                 bind:ref={checkboxHeadRef}
                 class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
-                <div class="flex h-10 items-center justify-center">
+                <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <Checkbox
                     class={selectionCheckboxClass}
                     checked={allOnPageSelected}
@@ -845,7 +860,7 @@
               <Table.Head
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
-                <div class="flex h-10 items-center justify-center">
+                <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">actions</span>
                 </div>
               </Table.Head>
@@ -925,7 +940,7 @@
               >
                 {#if rowSelectionEnabled}
                   <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
-                    <div class="flex h-10 items-center justify-center">
+                    <div class={cn('flex items-center justify-center', rowChromeH)}>
                       <Checkbox
                         class={selectionCheckboxClass}
                         checked={selectedKeys.includes(rk)}
@@ -984,7 +999,7 @@
                 {/each}
                 {#if actionsEnabled}
                   <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
-                    <div class="flex h-10 items-center justify-center">
+                    <div class={cn('flex items-center justify-center', rowChromeH)}>
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
