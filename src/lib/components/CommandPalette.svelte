@@ -115,7 +115,7 @@
 
 <svelte:window onkeydown={onGlobalKeydown} />
 
-<div class="relative mx-auto w-full max-w-xs sm:max-w-sm" bind:this={rootEl}>
+<div class="relative w-full max-w-xs sm:max-w-sm" bind:this={rootEl}>
   <Command.Root
     class="w-full"
     label={$t('shell.commandPalette.title')}

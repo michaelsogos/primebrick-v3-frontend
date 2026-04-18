@@ -130,32 +130,37 @@
 <header
   class="sticky top-0 z-30 overflow-visible border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm"
 >
-  <div class="flex h-14 items-center gap-3 px-3 sm:px-4">
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      class="shrink-0"
-      aria-label={$t('shell.nav.open')}
-      onclick={() => onBurgerClick?.()}
-    >
-      <span class="relative inline-flex size-5 items-center justify-center">
-        <Menu
-          class={burgerOpen
-            ? 'absolute size-5 rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'
-            : 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'}
-        />
-        <X
-          class={burgerOpen
-            ? 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'
-            : 'absolute size-5 -rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'}
-        />
-      </span>
-    </Button>
+  <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
+  <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
+    <div class="flex min-w-0 justify-start">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="shrink-0"
+        aria-label={$t('shell.nav.open')}
+        onclick={() => onBurgerClick?.()}
+      >
+        <span class="relative inline-flex size-5 items-center justify-center">
+          <Menu
+            class={burgerOpen
+              ? 'absolute size-5 rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'
+              : 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'}
+          />
+          <X
+            class={burgerOpen
+              ? 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'
+              : 'absolute size-5 -rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'}
+          />
+        </span>
+      </Button>
+    </div>
 
-    <CommandPalette />
+    <div class="flex min-w-0 justify-center">
+      <CommandPalette />
+    </div>
 
-    <div class="flex min-w-0 shrink-0 items-center gap-2">
+    <div class="flex min-w-0 shrink-0 items-center justify-end gap-2">
       {#if ianaTimeZone}
         <span
           class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-[14rem]"
