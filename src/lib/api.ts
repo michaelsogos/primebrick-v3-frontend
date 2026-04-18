@@ -1,5 +1,6 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
 import {
+  ApiDatabaseUnavailableError,
   ApiUnreachableError,
   isUnreachableHttpStatus,
   type HealthPayload,
@@ -7,14 +8,44 @@ import {
 } from '$lib/api-types';
 
 export type { HealthModule, HealthPayload, ModuleInfo } from '$lib/api-types';
-export { ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
+export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
+
+/** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
+const ENTITY_API_PATH = '/api/v1/entities';
+
+function requestUrlString(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
+function isEntityApiRequest(input: RequestInfo | URL): boolean {
+  return requestUrlString(input).includes(ENTITY_API_PATH);
+}
+
+async function responseIsDatabaseUnavailable(res: Response): Promise<boolean> {
+  if (!isUnreachableHttpStatus(res.status)) return false;
+  const ct = res.headers.get('content-type') ?? '';
+  if (!ct.includes('application/json')) return false;
+  try {
+    const data = (await res.clone().json()) as { error?: unknown };
+    return data.error === 'DATABASE_UNAVAILABLE';
+  } catch {
+    return false;
+  }
+}
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   await ensureBackendOnlineOrThrow();
 
+  const nextInit: RequestInit = init ? { ...init } : {};
+  if (isEntityApiRequest(input) && nextInit.cache === undefined) {
+    nextInit.cache = 'no-store';
+  }
+
   let res: Response;
   try {
-    res = await fetch(input, init);
+    res = await fetch(input, nextInit);
   } catch (e) {
     const aborted =
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
@@ -25,6 +56,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   }
 
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
+    if (await responseIsDatabaseUnavailable(res)) {
+      throw new ApiDatabaseUnavailableError(res.status);
+    }
     noteGatewayFailure(res.status);
     throw new ApiUnreachableError(res.status);
   }

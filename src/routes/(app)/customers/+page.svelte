@@ -1,13 +1,20 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+  import { page as appPage } from '$app/state';
+  import { t, formatListCellValue } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import EntityListTable from '$lib/components/EntityListTable.svelte';
   import { badgeClassesFromToken } from '$lib/colors/badge';
+  import { cn } from '$lib/utils';
   import { Plus } from 'lucide-svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import { browser } from '$app/environment';
+  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { apiFetchWithTimeout } from '$lib/api';
+  import { onConnectivityRestored } from '$lib/app-connectivity-events';
+  import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta } from '$lib/entity-list';
@@ -237,13 +244,14 @@
   }
 
   function asApiListError(e: unknown): { code: string; status: number | null } | null {
+    if (e instanceof ApiDatabaseUnavailableError) {
+      return { code: 'DATABASE_UNAVAILABLE', status: e.status };
+    }
+    if (e instanceof ApiUnreachableError) {
+      return { code: 'BACKEND_OFFLINE', status: e.status };
+    }
     if (!e || typeof e !== 'object') return null;
     const anyE = e as { name?: string; code?: string; message?: string; status?: number | null };
-    if (anyE.name === 'ApiUnreachableError') {
-      const st = anyE.status;
-      const status = typeof st === 'number' ? st : st === null ? null : null;
-      return { code: 'BACKEND_OFFLINE', status };
-    }
     const code =
       typeof anyE.code === 'string' ? anyE.code : typeof anyE.message === 'string' ? anyE.message : null;
     const status = typeof anyE.status === 'number' ? anyE.status : null;
@@ -251,8 +259,9 @@
     return { code, status };
   }
 
-  /** Gateway / BE unreachable (502–504) or short-circuited while globally offline. */
+  /** Gateway / proxy / network — not application-level DB down (`ApiDatabaseUnavailableError`). */
   function isBackendGatewayUnreachable(code: string, status: number | null): boolean {
+    if (code === 'DATABASE_UNAVAILABLE') return false;
     return (
       code === 'BACKEND_OFFLINE' ||
       (status !== null && (status === 502 || status === 503 || status === 504))
@@ -355,64 +364,80 @@
     }
   }
 
+  async function bootstrapCustomersList() {
+    loading = true;
+    error = null;
+
+    tryRestoreListUiStateFromSession();
+
+    try {
+      // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
+      await loadMeta();
+      await loadRows();
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (page > nextTotalPages) {
+        page = 1;
+        await loadRows();
+      }
+    } catch (e) {
+      if (isAbortError(e)) return;
+
+      const err = asApiListError(e);
+      const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+      const status = err?.status ?? null;
+
+      const isDbDown = code === 'DATABASE_UNAVAILABLE';
+      const isGateway = isBackendGatewayUnreachable(code, status);
+
+      if (isGateway) {
+        error = $t('shell.serverUnreachable');
+        pushImpactError({
+          impact: 'CRITICAL',
+          messageKey: 'shell.serverUnreachable',
+          scopeKey: 'errors.scope.customersPageInit',
+          tags: backendOfflineTags(status),
+          toast: false,
+        });
+        return;
+      }
+
+      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      pushImpactError({
+        impact: isDbDown ? 'CRITICAL' : 'HIGH',
+        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
+        scopeKey: 'errors.scope.customersPageInit',
+        tags: [
+          { label: code, tone: isDbDown ? 'danger' : 'warning' },
+          ...(status !== null
+            ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
+            : []),
+        ],
+        toast: false,
+      });
+    } finally {
+      loading = false;
+    }
+  }
+
   let didInit = $state(false);
   $effect(() => {
     if (didInit) return;
     didInit = true;
-    void (async () => {
-      loading = true;
-      error = null;
+    void bootstrapCustomersList();
+  });
 
-      tryRestoreListUiStateFromSession();
-
-      try {
-        // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
-        await loadMeta();
-        await loadRows();
-        const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
-        if (page > nextTotalPages) {
-          page = 1;
-          await loadRows();
+  /** After BE/DB recovery: reload list with current filters, or full bootstrap if meta never loaded. */
+  $effect(() => {
+    if (!browser) return;
+    return onConnectivityRestored(() => {
+      void (async () => {
+        if (meta) {
+          await refreshRows({ clampPage: true });
+        } else {
+          await bootstrapCustomersList();
         }
-      } catch (e) {
-        if (isAbortError(e)) return;
-
-        const err = asApiListError(e);
-        const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
-        const status = err?.status ?? null;
-
-        const isDbDown = code === 'DATABASE_UNAVAILABLE';
-        const isGateway = isBackendGatewayUnreachable(code, status);
-
-        if (isGateway) {
-          error = $t('shell.serverUnreachable');
-          pushImpactError({
-            impact: 'CRITICAL',
-            messageKey: 'shell.serverUnreachable',
-            scopeKey: 'errors.scope.customersPageInit',
-            tags: backendOfflineTags(status),
-            toast: false,
-          });
-          return;
-        }
-
-        error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
-        pushImpactError({
-          impact: isDbDown ? 'CRITICAL' : 'HIGH',
-          messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-          scopeKey: 'errors.scope.customersPageInit',
-          tags: [
-            { label: code, tone: isDbDown ? 'danger' : 'warning' },
-            ...(status !== null
-              ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
-              : []),
-          ],
-          toast: false,
-        });
-      } finally {
-        loading = false;
-      }
-    })();
+      })();
+    });
   });
 
   // Keep visibleKeys valid as meta/columns change (without infinite loops).
@@ -515,10 +540,11 @@
       <div class="min-w-0 space-y-1">
         <AppPageBreadcrumb
           segments={[
-            {
-              label:
-                shellNav.modules.find((mod) => mod.id === 'crm')?.name ?? $t('shell.nav.crmFallback')
-            }
+            crmModuleMenuSegment({
+              modules: shellNav.modules,
+              pathname: appPage.url.pathname,
+              t: (key) => $t(key)
+            })
           ]}
         />
         <h1 class="truncate text-xl font-semibold leading-tight">{title}</h1>
@@ -569,11 +595,14 @@
       {#snippet cell({ row, column })}
         {#if column.key === 'status'}
           {@const cfg = column.badge?.values?.[row.status]}
-          <span class={badgeClassesFromToken(cfg?.color ?? null)}>
+          <Badge
+            variant="outline"
+            class={cn(badgeClassesFromToken(cfg?.color ?? null), 'border-0 shadow-none')}
+          >
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
-          </span>
+          </Badge>
         {:else}
-          {String(row[column.key as keyof CustomerListRow] ?? '')}
+          {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}
       {/snippet}
 

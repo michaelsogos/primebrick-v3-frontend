@@ -3,8 +3,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import * as Sheet from '$lib/components/ui/sheet';
-  import type { HealthPayload } from '$lib/api-types';
-  import { backendAvailability, probeHealth } from '$lib/backend-availability';
+  import { cn } from '$lib/utils';
+  import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -27,15 +27,10 @@
   let crmOpen = $state(false);
 
   let versionsOpen = $state(false);
-  let health = $state<HealthPayload | null>(null);
-  let healthOffline = $state(false);
 
-  $effect(() => {
-    return backendAvailability.subscribe((s) => {
-      health = s.health;
-      healthOffline = s.offline;
-    });
-  });
+  const health = $derived(backendState.health);
+  const healthOffline = $derived(backendState.offline);
+  const healthChip = $derived(backendState.healthChip);
 
   const hrefForModule = (_id: string) => {
     return undefined;
@@ -56,32 +51,24 @@
     return LayoutGrid;
   };
 
-  const healthState = $derived(
-    healthOffline ? 'backend_offline' : !health ? 'loading' : !health.db.ok ? 'db_offline' : 'ok'
-  );
-
   const healthChipLabel = $derived(
-    healthState === 'backend_offline'
+    healthChip === 'backend_offline'
       ? $t('shell.health.beOffline')
-      : healthState === 'db_offline'
+      : healthChip === 'db_offline'
         ? $t('shell.health.dbOffline')
-        : healthState === 'ok'
+        : healthChip === 'ok'
           ? $t('shell.health.beOnline')
           : $t('common.loading')
   );
 
   const healthChipClass = $derived(
-    healthState === 'backend_offline'
+    healthChip === 'backend_offline'
       ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-      : healthState === 'db_offline'
+      : healthChip === 'db_offline'
         ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthState === 'ok'
+        : healthChip === 'ok'
           ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
           : 'border-border/60 bg-muted/30 text-muted-foreground'
-  );
-
-  const healthIcon = $derived(
-    healthState === 'backend_offline' ? CloudOff : healthState === 'db_offline' ? Database : Cloud
   );
 
   $effect(() => {
@@ -92,17 +79,6 @@
     crmOpen = customersActive || pipelineActive;
   });
 
-  /** Initial health snapshot (uses plain fetch inside probeHealth — works even when apiFetch is gated). */
-  $effect(() => {
-    void probeHealth({ force: true });
-  });
-
-  /** While BE is marked offline, poll every 5s for recovery (no polling spam while online). */
-  $effect(() => {
-    if (!healthOffline) return;
-    const id = setInterval(() => void probeHealth({ force: true }), 5000);
-    return () => clearInterval(id);
-  });
 </script>
 
 <aside
@@ -263,7 +239,28 @@
     </nav>
 
     <div class="px-3 pb-3 pt-2">
+      <!-- Footer chips: health/status first; version control always last (shell convention). -->
       <div class="flex flex-wrap items-center gap-2">
+        <Badge
+          variant="outline"
+          class={cn(
+            'pointer-events-none w-fit gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+            healthChipClass
+          )}
+          title={healthChipLabel}
+        >
+          {#if healthChip === 'backend_offline'}
+            <CloudOff class="size-3.5 opacity-90" />
+          {:else if healthChip === 'db_offline'}
+            <Database class="size-3.5 opacity-90" />
+          {:else}
+            <Cloud class="size-3.5 opacity-90" />
+          {/if}
+          {#if !collapsed}
+            <span>{healthChipLabel}</span>
+          {/if}
+        </Badge>
+
         <Sheet.Root bind:open={versionsOpen}>
           <Sheet.Trigger>
             {#snippet child({ props })}
@@ -318,22 +315,6 @@
             </div>
           </Sheet.Content>
         </Sheet.Root>
-
-        <span
-          class={`inline-flex w-fit items-center justify-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${healthChipClass}`}
-          title={healthChipLabel}
-        >
-          {#if healthState === 'backend_offline'}
-            <CloudOff class="size-3.5 opacity-90" />
-          {:else if healthState === 'db_offline'}
-            <Database class="size-3.5 opacity-90" />
-          {:else}
-            <Cloud class="size-3.5 opacity-90" />
-          {/if}
-          {#if !collapsed}
-            <span>{healthChipLabel}</span>
-          {/if}
-        </span>
       </div>
     </div>
   </div>

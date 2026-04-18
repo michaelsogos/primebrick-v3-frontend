@@ -21,11 +21,26 @@
     "nav": {
       "aria": "Navegación",
       "open": "Abrir navegación",
-      "crmFallback": "CRM"
+      "crmFallback": "CRM",
+      "crmBreadcrumbMenu": "Secciones de CRM"
     },
     "search": {
       "placeholder": "Buscar…",
-      "aria": "Buscar"
+      "aria": "Abrir paleta de comandos"
+    },
+    "commandPalette": {
+      "title": "Paleta de comandos",
+      "description": "Buscar un comando para ejecutar",
+      "inputPlaceholder": "Escriba un comando o busque…",
+      "empty": "Sin resultados.",
+      "groupSuggestions": "Sugerencias",
+      "groupSettings": "Ajustes",
+      "itemCalendar": "Calendario",
+      "itemSearchEmoji": "Buscar emoji",
+      "itemCalculator": "Calculadora",
+      "itemProfile": "Perfil",
+      "itemBilling": "Facturación",
+      "itemSettings": "Ajustes"
     },
     "notifications": {
       "aria": "Notificaciones"

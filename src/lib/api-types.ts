@@ -13,6 +13,19 @@ export type HealthPayload = {
   db: { ok: boolean };
 };
 
+/** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */
+export function isValidHealthPayload(x: unknown): x is HealthPayload {
+  if (!x || typeof x !== 'object') return false;
+  const o = x as Record<string, unknown>;
+  if (o.ok !== true) return false;
+  if (typeof o.service !== 'string') return false;
+  if (typeof o.version !== 'string') return false;
+  if (!Array.isArray(o.modules)) return false;
+  const db = o.db;
+  if (!db || typeof db !== 'object') return false;
+  return typeof (db as { ok?: unknown }).ok === 'boolean';
+}
+
 /** Proxy/gateway/timeouts: backend likely down or unreachable. */
 export function isUnreachableHttpStatus(status: number): boolean {
   if (status === 502 || status === 503 || status === 504) return true;
@@ -27,6 +40,17 @@ export class ApiUnreachableError extends Error {
 
   constructor(status: number | null = null) {
     super('ApiUnreachableError');
+    this.status = status;
+  }
+}
+
+/** BE responded; downstream Postgres (or equivalent) is unavailable — not the same as gateway/offline. */
+export class ApiDatabaseUnavailableError extends Error {
+  override readonly name = 'ApiDatabaseUnavailableError';
+  readonly status: number;
+
+  constructor(status: number) {
+    super('ApiDatabaseUnavailableError');
     this.status = status;
   }
 }

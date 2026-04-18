@@ -1,14 +1,32 @@
 ---
-description: GitFlow guardrails — never change main/develop; ask user to branch; ask to close branch after changes
+description: GitFlow guardrails — branch before ANY edit; never commit on main/develop
 alwaysApply: true
 ---
 
 # GitFlow guardrails (frontend)
 
+## Zero tolerance (agents — non-negotiable)
+
+1. **Never work from `develop` or `main`.** No patches, writes, deletes, or **commits** on those branches—only `checkout` to refresh and **immediately** `git checkout -b feature/<slug>` from updated `develop`.
+2. **Never push commits made on `develop`.** Commit on **`feature/*`**, merge into `develop`, then push. *"Push and close"* = merge the task branch first, **not** commit on `develop`.
+3. **Only explicit overrides:** e.g. *"commit directly on `develop`"*. Ordinary *"push"* requests do **not** waive branching.
+4. If `HEAD` is `develop`/`main`, **branch before the first edit.**
+
+## Mandatory order (agents): branch **before** any tracked-file edit
+
+Applies to **every** change in **this** repo (source, docs, `.cursor`), including when the workspace meta repo is not open.
+
+1. **Before** the first tool that **creates, modifies, or deletes** a tracked file, run: `git branch --show-current` (from this repo root).
+2. If **`main` or `develop`**: `git fetch` (or `pull`) as needed, then **`git checkout -b feature/<slug>`**, **then** edit files.
+3. If already on **`feature/*`**, **`release/*`**, **`hotfix/*`**: proceed.
+4. Documenting GitFlow in prose is **not** enough—you must **run** `git checkout -b …` when on `develop`/`main`.
+
+Unless the user **explicitly** orders commits directly on `develop`/`main` (see **Zero tolerance**).
+
 ## Hard rules
 
-- **Do not make code or configuration changes on `main` or `develop`.**
-  - If the current branch is `main` or `develop`, stop before editing and ask the user which GitFlow branch type to create.
+- **Do not commit code or configuration changes on `main` or `develop`.**
+  - If `HEAD` is `main` or `develop`, **create** `feature/*` first (see **Mandatory order**), then edit—do not only “ask” and still patch files on `develop`.
 - **All work must happen on a GitFlow branch**:
   - `feature/*` (from `develop`)
   - `release/*` (from `develop`, SemVer like `release/0.2.0`)

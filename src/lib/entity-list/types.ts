@@ -5,7 +5,10 @@ export type SortDir = 'asc' | 'desc';
 export type MetaColumn = {
   key: string;
   labelKey: string;
-  type: 'text' | 'badge' | string;
+  /**
+   * `date`: locale date only. `datetime`: locale date + time (`Intl` default hour cycle for that locale).
+   */
+  type: 'text' | 'badge' | 'date' | 'datetime' | string;
   sortable?: boolean;
   searchable?: boolean;
   hideable?: boolean;
