@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import * as Breadcrumb from '$lib/components/ui/breadcrumb';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { isMenuSegment, type AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
   import { cn } from '$lib/utils';
   import { ChevronDown } from 'lucide-svelte';
@@ -40,9 +41,7 @@
               <DropdownMenu.Content align="start" class="min-w-[12rem]">
                 {#each seg.items as item (item.href)}
                   <DropdownMenu.Item
-                    class={item.current
-                      ? 'bg-sky-100 font-medium text-foreground dark:bg-sky-950/45'
-                      : undefined}
+                    class={dropdownMenuSelectedItemClass(item.current)}
                     onSelect={() => {
                       if (!item.current) void goto(item.href);
                     }}
