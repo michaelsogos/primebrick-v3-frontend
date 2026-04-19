@@ -16,6 +16,13 @@ export type MetaColumn = {
   badge?: {
     values?: Record<string, { labelKey?: string; labelText?: string; color?: string }>;
   };
+  /**
+   * `datetime` only: header CTA toggles between browser-local `Intl` (default) and
+   * {@link recordIanaField} on the row (IANA id from the API).
+   */
+  datetimeIanaToggle?: {
+    recordIanaField: string;
+  };
 };
 
 /** `meta.list` slice shared by entity list UIs. */

@@ -74,7 +74,14 @@
       "versionsTitle": "Versioni",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Moduli"
+      "modulesTitle": "Moduli",
+      "clientTitle": "Questo browser",
+      "ianaTimezone": "Fuso orario IANA",
+      "preferredLanguages": "Lingue preferite",
+      "resolvedLocale": "Locale data/ora (Intl)",
+      "calendarSystem": "Calendario",
+      "numberingSystem": "Sistema numerico",
+      "hourCycle": "Ciclo orario (12/24h)"
     }
   }
   ,
@@ -86,6 +93,10 @@
   },
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "Visualizzato nel fuso del browser. Clic per usare l’IANA salvata sulla riga.",
+        "hintRecord": "Visualizzato nel fuso IANA salvato. Clic per usare il fuso del browser."
+      },
       "searchPlaceholder": "Cerca clienti…",
       "empty": "Nessun risultato",
       "noRecords": "Nessun record",
@@ -132,6 +143,8 @@
         "email": "Email",
         "phone": "Telefono",
         "status": "Stato",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Fuso onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo stato",
         "local_address": "Indirizzo",

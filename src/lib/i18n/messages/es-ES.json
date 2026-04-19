@@ -73,12 +73,23 @@
       "versionsTitle": "Versiones",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
-      "modulesTitle": "Módulos"
+      "modulesTitle": "Módulos",
+      "clientTitle": "Este navegador",
+      "ianaTimezone": "Zona horaria IANA",
+      "preferredLanguages": "Idiomas preferidos",
+      "resolvedLocale": "Configuración regional de fecha/hora",
+      "calendarSystem": "Calendario",
+      "numberingSystem": "Sistema numérico",
+      "hourCycle": "Ciclo horario"
     }
   }
   ,
   "entities": {
     "list": {
+      "datetimeIana": {
+        "hintBrowser": "Mostrado en la zona horaria del navegador. Clic para usar la IANA guardada.",
+        "hintRecord": "Mostrado en la zona IANA guardada. Clic para usar la del navegador."
+      },
       "searchPlaceholder": "Buscar clientes…",
       "empty": "Sin resultados",
       "noRecords": "Sin registros",
@@ -125,6 +136,8 @@
         "email": "Email",
         "phone": "Teléfono",
         "status": "Estado",
+        "onboarding_at": "Onboarding",
+        "onboarding_time_zone": "Zona horaria onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo del estado",
         "local_address": "Dirección",

@@ -1,16 +1,18 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
-  import { t, formatListCellValue } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils.js';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
+  import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     SlidersHorizontal,
@@ -30,7 +32,9 @@
     ChevronUp,
     RotateCw,
     RotateCcw,
-    MoreVertical
+    MoreVertical,
+    Globe,
+    MapPin
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -67,11 +71,14 @@
     selectedKeys,
     onSelectedKeysChange,
     rowSelectionEnabled = true,
+    rowDensity = 'default',
     onRefresh,
     refreshDisabled = false,
     rowActionsEnabled = false,
     rowActions,
     filtersOpen = $bindable(false),
+    datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
+    datetimeIanaRenderTick = $bindable(0),
     cell,
     filters,
     metaLoadingView,
@@ -113,11 +120,15 @@
     selectedKeys: string[];
     onSelectedKeysChange: (keys: string[]) => void;
     rowSelectionEnabled?: boolean;
+    rowDensity?: 'default' | 'compact';
     onRefresh: () => void;
     refreshDisabled?: boolean;
     rowActionsEnabled?: boolean;
     rowActions?: Snippet<[ { row: TRow } ]>;
     filtersOpen?: boolean;
+    /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
+    datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
+    datetimeIanaRenderTick?: number;
     cell?: Snippet<[CellArgs]>;
     filters?: Snippet;
     metaLoadingView?: Snippet;
@@ -131,8 +142,81 @@
   const selectionCheckboxClass =
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
+  const compactRows = $derived(rowDensity === 'compact');
+  const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
+  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
+  const tableDensityClass = $derived(
+    compactRows
+      ? '[&_th]:!h-6 [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:!py-1.5 [&_tbody_td]:text-sm'
+      : ''
+  );
+
   let columnsMenuOpen = $state(false);
   let searchMenuOpen = $state(false);
+
+  function toggleDatetimeIana(col: MetaColumn) {
+    const cur = datetimeIanaModeByKey[col.key] ?? 'browser';
+    const next: 'browser' | 'record' = cur === 'browser' ? 'record' : 'browser';
+    datetimeIanaModeByKey = { ...datetimeIanaModeByKey, [col.key]: next };
+    datetimeIanaRenderTick++;
+  }
+
+  /** Top-align cells that stack datetime value + IANA badge. */
+  function entityListDataCellValignClass(col: MetaColumn): string | undefined {
+    return col.datetimeIanaToggle ? 'align-top' : undefined;
+  }
+
+  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default sky like other columns. */
+  function isDatetimeIanaRecordMode(col: MetaColumn): boolean {
+    if (col.type !== 'datetime' || !col.datetimeIanaToggle) return false;
+    return (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record';
+  }
+
+  /**
+   * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
+   * Dark mode keeps the softer header strip (`amber-950/30`) that matched the table’s default
+   * `sky-950/30` heads — reads better than the heavier `/45` used briefly on dark.
+   * `Table.Row` applies `hover:[…]:[&>th]:bg-muted`; repeat the same bg on `hover:` with `!` so the
+   * header does not grey out on row hover (hover tint stays on body cells only).
+   */
+  function datetimeIanaHeadHighlightClass(col: MetaColumn): string | undefined {
+    if (!isDatetimeIanaRecordMode(col)) return undefined;
+    return '!bg-amber-100 hover:!bg-amber-100 dark:!bg-amber-950/30 dark:hover:!bg-amber-950/30';
+  }
+
+  /**
+   * Datetime IANA body cells: amber palette only in record (stored timezone) mode. Browser mode: no classes here
+   * (standard sky interaction applies). Non-selected: base 50, row-hover → 100. Selected: 200, selected+hover → 300.
+   */
+  function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    if (!isDatetimeIanaRecordMode(col)) return undefined;
+    if (rowSelected) {
+      return '!bg-amber-200/95 dark:!bg-amber-950/55 transition-colors group-hover/entity-row:!bg-amber-300/95 dark:group-hover/entity-row:!bg-amber-950/70';
+    }
+    return '!bg-amber-50 dark:!bg-amber-950/40 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-950/55';
+  }
+
+  /** Gray band (checkbox / actions): base 100, hover 200; selected 300, selected+hover 400 (dark 950→900→800→700). */
+  function entityListGrayChromeCellClass(rowSelected: boolean): string {
+    return rowSelected
+      ? '!bg-gray-300 dark:!bg-gray-800 transition-colors group-hover/entity-row:!bg-gray-400 dark:group-hover/entity-row:!bg-gray-700'
+      : 'bg-gray-100 dark:bg-gray-950 transition-colors group-hover/entity-row:bg-gray-200 dark:group-hover/entity-row:bg-gray-900';
+  }
+
+  /** Sticky uuid/code: same ramp as chrome; merges with `stickyCellClass` (selected uses `!` to override base gray). */
+  function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
+    return rowSelected
+      ? '!bg-gray-300 dark:!bg-gray-800 transition-colors group-hover/entity-row:!bg-gray-400 dark:group-hover/entity-row:!bg-gray-700'
+      : 'transition-colors group-hover/entity-row:bg-gray-200 dark:group-hover/entity-row:bg-gray-900';
+  }
+
+  /** Normal (white/background) cells: sky palette — hover 50/40α; selected 100/50α; selected+hover 200/65α. */
+  function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
+    if (rowSelected) {
+      return 'transition-colors !bg-sky-100 dark:!bg-sky-950/50 group-hover/entity-row:!bg-sky-200 dark:group-hover/entity-row:!bg-sky-950/65';
+    }
+    return 'transition-colors group-hover/entity-row:!bg-sky-50 dark:group-hover/entity-row:!bg-sky-950/40';
+  }
 
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
@@ -513,6 +597,26 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
+  {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
+    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+    {@const parts = formatDatetimeCellDisplay(
+      col,
+      row as Record<string, unknown>,
+      $uiLang,
+      mode
+    )}
+    {#if isDatetimeIanaRecordMode(col) && parts.iana}
+      <div class="flex min-w-0 flex-col gap-1">
+        <span class="min-w-0 truncate">{parts.text}</span>
+        <Badge
+          variant="outline"
+          class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-600/60 dark:bg-amber-950/50 dark:text-amber-100"
+        >{parts.iana}</Badge>
+      </div>
+    {:else}
+      <span class="min-w-0 truncate">{parts.text}</span>
+    {/if}
+  {/snippet}
   <div class="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
       <div class="relative w-full">
@@ -745,7 +849,11 @@
       {/if}
     {:else}
       <Table.Root
-        class="w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30"
+        data-row-density={rowDensity}
+        class={cn(
+          'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+          tableDensityClass
+        )}
         containerClass="h-full overflow-auto"
         style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
       >
@@ -756,7 +864,7 @@
                 bind:ref={checkboxHeadRef}
                 class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
-                <div class="flex h-10 items-center justify-center">
+                <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <Checkbox
                     class={selectionCheckboxClass}
                     checked={allOnPageSelected}
@@ -818,26 +926,71 @@
                 </Table.Head>
               {:else}
                 <Table.Head
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
+                  class={cn(
+                    stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10'),
+                    datetimeIanaHeadHighlightClass(col)
+                  )}
+                  onclick={(e) => {
+                    const el = e.target as HTMLElement | null;
+                    if (el?.closest?.('[data-pb-datetime-iana-toggle]')) return;
+                    handleSortClick(col);
+                  }}
                 >
-                  <span class="inline-flex items-center gap-1">
-                    {$t(col.labelKey)}
-                    {#if col.sortable}
-                      {#if sortKey !== col.key}
-                        <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
-                      {:else if sortDir === 'asc'}
-                        <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                      {:else}
-                        <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  {#if col.datetimeIanaToggle}
+                    <div class="flex w-full min-w-0 items-center justify-between gap-1">
+                      <span class="inline-flex min-w-0 items-center gap-1">
+                        {$t(col.labelKey)}
+                        {#if col.sortable}
+                          {#if sortKey !== col.key}
+                            <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                          {:else if sortDir === 'asc'}
+                            <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                          {:else}
+                            <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                          {/if}
+                        {/if}
+                      </span>
+                      <button
+                        type="button"
+                        data-pb-datetime-iana-toggle
+                        class="inline-flex shrink-0 rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                          ? $t('entities.list.datetimeIana.hintBrowser')
+                          : $t('entities.list.datetimeIana.hintRecord')}
+                        aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                          ? $t('entities.list.datetimeIana.hintBrowser')
+                          : $t('entities.list.datetimeIana.hintRecord')}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          toggleDatetimeIana(col);
+                        }}
+                      >
+                        {#if (datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'}
+                          <Globe class="size-3.5 opacity-90" />
+                        {:else}
+                          <MapPin class="size-3.5 opacity-90" />
+                        {/if}
+                      </button>
+                    </div>
+                  {:else}
+                    <span class="inline-flex items-center gap-1">
+                      {$t(col.labelKey)}
+                      {#if col.sortable}
+                        {#if sortKey !== col.key}
+                          <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                        {:else if sortDir === 'asc'}
+                          <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {:else}
+                          <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {/if}
                       {/if}
-                    {/if}
-                  </span>
+                    </span>
+                  {/if}
                 </Table.Head>
               {/if}
             {/each}
@@ -845,7 +998,7 @@
               <Table.Head
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
               >
-                <div class="flex h-10 items-center justify-center">
+                <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">actions</span>
                 </div>
               </Table.Head>
@@ -912,20 +1065,28 @@
               </Table.Row>
             {/if}
           {:else}
+            {#key datetimeIanaRenderTick}
             {#each rows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
               <Table.Row
+                suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
                 data-state={rowSelected ? 'selected' : undefined}
-                class={rowSelected
-                  ? 'bg-sky-50 data-[state=selected]:bg-sky-50 hover:[&,&>svelte-css-wrapper]:[&>th,td]:bg-sky-100 dark:bg-sky-950 dark:data-[state=selected]:bg-sky-950 dark:hover:[&,&>svelte-css-wrapper]:[&>th,td]:bg-sky-900'
-                  : undefined}
+                class={cn(
+                  'group/entity-row',
+                  rowSelected ? 'data-[state=selected]:!bg-transparent' : undefined
+                )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
               >
                 {#if rowSelectionEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
-                    <div class="flex h-10 items-center justify-center">
+                  <Table.Cell
+                    class={cn(
+                      'w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-clip-border p-2',
+                      entityListGrayChromeCellClass(rowSelected)
+                    )}
+                  >
+                    <div class={cn('flex items-center justify-center', rowChromeH)}>
                       <Checkbox
                         class={selectionCheckboxClass}
                         checked={selectedKeys.includes(rk)}
@@ -938,53 +1099,97 @@
                 {#each renderColumns as col, colIdx (col.key)}
                   {#if col.key === 'uuid'}
                     {#if i === 0}
-                      <Table.Cell bind:ref={uuidFirstCellRef} class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        bind:ref={uuidFirstCellRef}
+                        class={cn(
+                          stickyCellClass(col.key, colIdx, false),
+                          datetimeIanaCellHighlightClass(col, rowSelected),
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
+                        )}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {:else}
-                      <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        class={cn(
+                          stickyCellClass(col.key, colIdx, false),
+                          datetimeIanaCellHighlightClass(col, rowSelected),
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
+                        )}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {/if}
                   {:else if col.key === 'code'}
                     {#if i === 0}
-                      <Table.Cell bind:ref={codeFirstCellRef} class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        bind:ref={codeFirstCellRef}
+                        class={cn(
+                          stickyCellClass(col.key, colIdx, false),
+                          datetimeIanaCellHighlightClass(col, rowSelected),
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
+                        )}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {:else}
-                      <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                      <Table.Cell
+                        class={cn(
+                          stickyCellClass(col.key, colIdx, false),
+                          datetimeIanaCellHighlightClass(col, rowSelected),
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
+                        )}
+                      >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {/if}
                   {:else}
-                    <Table.Cell class={stickyCellClass(col.key, colIdx, false)}>
+                    <Table.Cell
+                      class={cn(
+                        stickyCellClass(col.key, colIdx, false),
+                        datetimeIanaCellHighlightClass(col, rowSelected),
+                        isDatetimeIanaRecordMode(col)
+                          ? undefined
+                          : entityListDefaultScrollInteractionClass(rowSelected),
+                        entityListDataCellValignClass(col)
+                      )}
+                    >
                       {#if cell}
                         {@render cell({ row: r, column: col })}
                       {:else}
-                        {formatListCellValue(col, r[col.key as keyof TRow], $uiLang)}
+                        {@render listDefaultCellValue(r, col)}
                       {/if}
                     </Table.Cell>
                   {/if}
                 {/each}
                 {#if actionsEnabled}
-                  <Table.Cell class="w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-gray-100 dark:bg-gray-950 bg-clip-border p-2">
-                    <div class="flex h-10 items-center justify-center">
+                  <Table.Cell
+                    class={cn(
+                      'w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-clip-border p-2',
+                      entityListGrayChromeCellClass(rowSelected)
+                    )}
+                  >
+                    <div class={cn('flex items-center justify-center', rowChromeH)}>
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
@@ -997,6 +1202,7 @@
                 {/if}
               </Table.Row>
             {/each}
+            {/key}
           {/if}
         </Table.Body>
       </Table.Root>

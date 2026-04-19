@@ -3,6 +3,8 @@ import type { UiLang } from './languages';
 
 const dateOnlyFmt = new Map<string, Intl.DateTimeFormat>();
 const dateTimeFmt = new Map<string, Intl.DateTimeFormat>();
+/** Key: `${localeTag}@@${timeZone}` */
+const dateTimeTzFmt = new Map<string, Intl.DateTimeFormat>();
 
 /** `UiLang` is already a BCP 47 tag — pass through to `Intl` as-is. */
 export function uiLocaleTag(lang: UiLang): string {
@@ -57,6 +59,43 @@ export function formatUiDateTime(input: Date | string | number, lang: UiLang): s
     second: '2-digit'
   });
   return fmt.format(d);
+}
+
+/**
+ * Same calendar/hour presentation as {@link formatUiDateTime}, but in a specific IANA zone
+ * (DST rules from the environment). Falls back to {@link formatUiDateTime} if `timeZone` is invalid.
+ */
+export function formatUiDateTimeInTimeZone(
+  input: Date | string | number,
+  lang: UiLang,
+  timeZone: string
+): string {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return '';
+  const tag = uiLocaleTag(lang);
+  const mapKey = `${tag}@@${timeZone}`;
+  let fmt = dateTimeTzFmt.get(mapKey);
+  if (!fmt) {
+    try {
+      fmt = new Intl.DateTimeFormat(tag, {
+        timeZone,
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      dateTimeTzFmt.set(mapKey, fmt);
+    } catch {
+      return formatUiDateTime(input, lang);
+    }
+  }
+  try {
+    return fmt.format(d);
+  } catch {
+    return formatUiDateTime(input, lang);
+  }
 }
 
 /** Default table cell: `date` → locale date only; `datetime` → {@link formatUiDateTime}; else `String(raw)`. */

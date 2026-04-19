@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils';
+  import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
   import { APP_VERSION } from '$lib/version';
@@ -267,11 +268,13 @@
               <button
                 {...props}
                 type="button"
-                class="inline-flex w-fit items-center justify-center rounded-full border border-muted-foreground/40 bg-background/45 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/90 hover:bg-background/65 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
+                class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label={$t('shell.health.versionsTitle')}
                 title={$t('shell.health.versionsTitle')}
               >
-                v{APP_VERSION}
+                <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                  v{APP_VERSION}
+                </Badge>
               </button>
             {/snippet}
           </Sheet.Trigger>
@@ -310,6 +313,8 @@
                       <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
                     {/if}
                   </div>
+
+                  <BrowserClientInfo />
                 </div>
               </div>
             </div>
