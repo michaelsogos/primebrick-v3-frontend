@@ -20,7 +20,7 @@
   import type { EntityListListMeta } from '$lib/entity-list';
   import {
     defaultVisibleColumnKeys,
-    formatDatetimeIanaListCell,
+    formatDatetimeCellDisplay,
     sanitizeVisibleKeys
   } from '$lib/entity-list';
 
@@ -614,12 +614,24 @@
           </Badge>
         {:else if column.type === 'datetime' && column.datetimeIanaToggle}
           {@const _ = datetimeIanaRenderTick}
-          {formatDatetimeIanaListCell(
+          {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}
+          {@const parts = formatDatetimeCellDisplay(
             column,
             row as Record<string, unknown>,
             $uiLang,
-            datetimeIanaModeByKey[column.key] ?? 'browser'
+            mode
           )}
+          {#if mode === 'record' && parts.iana}
+            <div class="flex min-w-0 flex-col gap-1">
+              <span class="min-w-0 truncate">{parts.text}</span>
+              <Badge
+                variant="outline"
+                class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-600/60 dark:bg-amber-950/50 dark:text-amber-100"
+              >{parts.iana}</Badge>
+            </div>
+          {:else}
+            <span class="min-w-0 truncate">{parts.text}</span>
+          {/if}
         {:else}
           {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
         {/if}

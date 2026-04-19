@@ -5,13 +5,14 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils.js';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
-  import { formatDatetimeIanaListCell } from '$lib/entity-list/format-datetime-iana-cell';
+  import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     SlidersHorizontal,
@@ -160,12 +161,9 @@
     datetimeIanaRenderTick++;
   }
 
-  function defaultCellText(
-    col: MetaColumn,
-    row: TRow,
-    ianaMode: 'browser' | 'record' = 'browser'
-  ): string {
-    return formatDatetimeIanaListCell(col, row as Record<string, unknown>, $uiLang, ianaMode);
+  /** Top-align cells that stack datetime value + IANA badge. */
+  function entityListDataCellValignClass(col: MetaColumn): string | undefined {
+    return col.datetimeIanaToggle ? 'align-top' : undefined;
   }
 
   /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default sky like other columns. */
@@ -599,6 +597,26 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
+  {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
+    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+    {@const parts = formatDatetimeCellDisplay(
+      col,
+      row as Record<string, unknown>,
+      $uiLang,
+      mode
+    )}
+    {#if isDatetimeIanaRecordMode(col) && parts.iana}
+      <div class="flex min-w-0 flex-col gap-1">
+        <span class="min-w-0 truncate">{parts.text}</span>
+        <Badge
+          variant="outline"
+          class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-600/60 dark:bg-amber-950/50 dark:text-amber-100"
+        >{parts.iana}</Badge>
+      </div>
+    {:else}
+      <span class="min-w-0 truncate">{parts.text}</span>
+    {/if}
+  {/snippet}
   <div class="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
       <div class="relative w-full">
@@ -1086,13 +1104,14 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected)
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
                         )}
                       >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -1100,13 +1119,14 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected)
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
                         )}
                       >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -1117,13 +1137,14 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected)
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
                         )}
                       >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {:else}
@@ -1131,13 +1152,14 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected)
+                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          entityListDataCellValignClass(col)
                         )}
                       >
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
-                          {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
+                          {@render listDefaultCellValue(r, col)}
                         {/if}
                       </Table.Cell>
                     {/if}
@@ -1148,13 +1170,14 @@
                         datetimeIanaCellHighlightClass(col, rowSelected),
                         isDatetimeIanaRecordMode(col)
                           ? undefined
-                          : entityListDefaultScrollInteractionClass(rowSelected)
+                          : entityListDefaultScrollInteractionClass(rowSelected),
+                        entityListDataCellValignClass(col)
                       )}
                     >
                       {#if cell}
                         {@render cell({ row: r, column: col })}
                       {:else}
-                        {defaultCellText(col, r, datetimeIanaModeByKey[col.key] ?? 'browser')}
+                        {@render listDefaultCellValue(r, col)}
                       {/if}
                     </Table.Cell>
                   {/if}
