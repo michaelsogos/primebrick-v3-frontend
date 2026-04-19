@@ -15,6 +15,10 @@ import SubContent from "./dropdown-menu-sub-content.svelte";
 import SubTrigger from "./dropdown-menu-sub-trigger.svelte";
 import GroupHeading from "./dropdown-menu-group-heading.svelte";
 import Portal from "./dropdown-menu-portal.svelte";
+export {
+	dropdownMenuItemWithSelectedClass,
+	dropdownMenuSelectedItemClass,
+} from "./dropdown-menu-item-selected";
 
 export {
 	CheckboxGroup,

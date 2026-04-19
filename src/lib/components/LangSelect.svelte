@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { uiLang, setUiLang } from '$lib/i18n/store.svelte';
   import {
     orderLangEntriesByBrowser,
@@ -52,13 +53,10 @@
       <DropdownMenu.Item
         onSelect={() => setUiLang(lang.code)}
         closeOnSelect={true}
-        class="flex items-center gap-2"
+        class={dropdownMenuItemWithSelectedClass('flex items-center gap-2', lang.code === $uiLang)}
       >
         <span class={`fi fi-${lang.flagCode} shrink-0 rounded-sm`} aria-hidden="true"></span>
-        <span
-          class="min-w-0 flex-1 truncate"
-          class:font-semibold={lang.code === $uiLang}
-        >
+        <span class="min-w-0 flex-1 truncate">
           {lang.label}
         </span>
       </DropdownMenu.Item>
