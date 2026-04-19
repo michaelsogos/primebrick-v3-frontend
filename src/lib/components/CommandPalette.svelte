@@ -122,12 +122,13 @@
   >
     <div class="relative">
       <!-- Real search field: always visible, never covered by the dropdown -->
+      <!-- Chrome matches `$lib/components/ui/input` (wrapper carries border/bg/hover/focus; inner `Command.Input` is borderless). -->
       <div
         class={cn(
-          'relative flex h-8 w-full items-center rounded-md border bg-background/60 shadow-sm transition-[box-shadow,border-color]',
+          'relative flex h-8 w-full items-center rounded-md border shadow-xs ring-offset-background transition-colors',
           open
-            ? 'z-10 rounded-b-none border-border border-b-transparent shadow-md'
-            : 'border-input'
+            ? 'z-10 rounded-b-none border-border border-b-transparent bg-popover shadow-md'
+            : 'border-input bg-sky-50/10 dark:bg-input/30 hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
         )}
       >
         <span

@@ -559,7 +559,7 @@
       </div>
 
       <div class="flex shrink-0 items-center justify-end gap-2">
-        <Button href="/customers/new" variant="parallax">
+        <Button href="/customers/new">
           <Plus class="size-4" />
           {$t('common.new')}
         </Button>
