@@ -9,6 +9,7 @@
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils.js';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
@@ -21,7 +22,6 @@
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
-    Check,
     TriangleAlert,
     Hourglass,
     CircleX,
@@ -141,6 +141,10 @@
 
   const selectionCheckboxClass =
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
+
+  /** Sheet list rows use a real `Checkbox` for visuals; the row `button` handles clicks (checkbox is non-interactive). */
+  const sheetMenuCheckboxClass =
+    'pointer-events-none shrink-0 border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
   const compactRows = $derived(rowDensity === 'compact');
   const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
@@ -633,7 +637,7 @@
           {/each}
         </div>
         <Input
-          class="relative z-10 border-sky-100 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:border-sky-900/40 dark:selection:bg-primary/35 dark:selection:text-transparent focus-visible:border-sky-200 focus-visible:ring-sky-200/50 dark:focus-visible:border-sky-900/60 dark:focus-visible:ring-sky-900/40"
+          class="relative z-10 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:selection:bg-primary/35 dark:selection:text-transparent"
           value={search}
           spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
@@ -658,13 +662,9 @@
           <Sheet.Root bind:open={searchMenuOpen}>
             <Sheet.Trigger>
               {#snippet child({ props })}
-                <button
-                  type="button"
-                  class="inline-flex h-8 items-center gap-1 rounded-md border border-sky-100 bg-sky-50 px-2 text-xs text-foreground/80 shadow-xs hover:bg-sky-100/70 hover:border-sky-200 dark:border-sky-900/40 dark:bg-sky-950/30 dark:hover:bg-sky-950/40"
-                  {...props}
-                >
+                <Button variant="soft" size="xs" {...props}>
                   {searchScopeLabel()}
-                </button>
+                </Button>
               {/snippet}
             </Sheet.Trigger>
 
@@ -694,15 +694,16 @@
                 <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
                   <button
                     type="button"
-                    class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+                    class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
                     onclick={() => onSearchInKeysChange(null)}
                   >
-                    <span class="truncate">{$t('entities.list.searchInAll')}</span>
-                    <Check
-                      class={!searchInKeys || searchInKeys.length === 0
-                        ? 'size-4 text-success'
-                        : 'size-4 text-muted-foreground opacity-40'}
-                    />
+                    <span class="pointer-events-none shrink-0" aria-hidden="true">
+                      <Checkbox
+                        checked={!searchInKeys || searchInKeys.length === 0}
+                        class={sheetMenuCheckboxClass}
+                      />
+                    </span>
+                    <span class="min-w-0 flex-1 truncate">{$t('entities.list.searchInAll')}</span>
                   </button>
 
                   <div class="my-2 px-2">
@@ -712,15 +713,16 @@
                   {#each searchableColumns as col (col.key)}
                     <button
                       type="button"
-                      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+                      class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
                       onclick={() => toggleSearchKey(col.key)}
                     >
-                      <span class="truncate">{$t(col.labelKey)}</span>
-                      <Check
-                        class={searchInKeys?.includes(col.key)
-                          ? 'size-4 text-success'
-                          : 'size-4 text-muted-foreground opacity-40'}
-                      />
+                      <span class="pointer-events-none shrink-0" aria-hidden="true">
+                        <Checkbox
+                          checked={!!searchInKeys?.includes(col.key)}
+                          class={sheetMenuCheckboxClass}
+                        />
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
                     </button>
                   {/each}
                 </div>
@@ -779,17 +781,20 @@
               {#each nonAuditingColumns as col (col.key)}
                 <button
                   type="button"
+                  disabled={col.hideable === false}
                   class={col.hideable === false
-                    ? 'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                    : 'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                    ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
+                    : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
                   onclick={() => toggleColumnKey(col.key)}
                 >
-                  <span class="truncate">{$t(col.labelKey)}</span>
-                  <Check
-                    class={visibleKeys.includes(col.key)
-                      ? 'size-4 text-success'
-                      : 'size-4 text-muted-foreground opacity-40'}
-                  />
+                  <span class="pointer-events-none shrink-0" aria-hidden="true">
+                    <Checkbox
+                      checked={visibleKeys.includes(col.key)}
+                      disabled={col.hideable === false}
+                      class={sheetMenuCheckboxClass}
+                    />
+                  </span>
+                  <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
                 </button>
               {/each}
 
@@ -805,17 +810,20 @@
                 {#each auditingColumns as col (col.key)}
                   <button
                     type="button"
+                    disabled={col.hideable === false}
                     class={col.hideable === false
-                      ? 'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
+                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
                     onclick={() => toggleColumnKey(col.key)}
                   >
-                    <span class="truncate">{$t(col.labelKey)}</span>
-                    <Check
-                      class={visibleKeys.includes(col.key)
-                        ? 'size-4 text-success'
-                        : 'size-4 text-muted-foreground opacity-40'}
-                    />
+                    <span class="pointer-events-none shrink-0" aria-hidden="true">
+                      <Checkbox
+                        checked={visibleKeys.includes(col.key)}
+                        disabled={col.hideable === false}
+                        class={sheetMenuCheckboxClass}
+                      />
+                    </span>
+                    <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
                   </button>
                 {/each}
               {/if}
@@ -1253,6 +1261,7 @@
         <DropdownMenu.Content>
           {#each pageSizeOptions as opt (opt)}
             <DropdownMenu.Item
+              class={dropdownMenuSelectedItemClass(opt === pageSize)}
               onSelect={() => {
                 onPageSizeChange(opt);
               }}

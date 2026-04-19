@@ -11,12 +11,10 @@
 					"bg-primary text-primary-foreground shadow-xs relative overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:bg-gradient-to-b after:from-white/12 after:to-transparent hover:after:from-white/18 active:after:from-white/8",
 				glass:
 					"bg-primary/80 text-primary-foreground shadow-xs backdrop-blur-sm ring-1 ring-white/15 hover:bg-primary/75 active:bg-primary/85",
-				parallax:
-					"bg-primary text-primary-foreground shadow-xs relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/10 before:to-transparent after:pointer-events-none after:absolute after:inset-y-0 after:-left-1/2 after:w-[200%] after:bg-gradient-to-r after:from-transparent after:via-white/14 after:to-transparent after:opacity-70 after:translate-x-[-35%] after:transition-transform after:duration-700 after:ease-out hover:after:opacity-100 hover:after:via-white/22 hover:after:translate-x-[35%] active:after:via-white/12",
 				destructive:
 					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white shadow-xs",
 				soft:
-					"bg-sky-50 text-foreground border border-sky-100 hover:bg-sky-100/70 hover:border-sky-200 shadow-xs dark:bg-sky-950/30 dark:border-sky-900/40 dark:hover:bg-sky-950/40",
+					"border border-input bg-sky-100/50 text-foreground shadow-xs hover:bg-sky-100 hover:border-ring/50 dark:border-input dark:bg-sky-950/40 dark:hover:bg-sky-950/55 dark:hover:border-ring/45",
 				outline:
 					"bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border shadow-xs",
 				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs",
@@ -26,6 +24,7 @@
 			size: {
 				default: "h-9 px-4 py-2 has-[>svg]:px-3",
 				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
+				xs: "h-7 gap-1 px-2 text-xs has-[>svg]:px-2 [&_svg:not([class*='size-'])]:size-3.5",
 				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
 				icon: "size-9",
 				"icon-sm": "size-8",
