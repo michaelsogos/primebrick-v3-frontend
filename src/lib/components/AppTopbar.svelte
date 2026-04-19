@@ -28,6 +28,7 @@
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
+  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -114,9 +115,18 @@
     onBurgerClick?: () => void;
     burgerOpen?: boolean;
     unreadNotifications?: number;
+    /** Seed for stable light-mode avatar color (e.g. user id); defaults to placeholder initials. */
+    userAvatarSeed?: string;
   }
 
-  let { onBurgerClick, burgerOpen = false, unreadNotifications = 3 }: $$Props = $props();
+  let {
+    onBurgerClick,
+    burgerOpen = false,
+    unreadNotifications = 3,
+    userAvatarSeed = 'PB'
+  }: $$Props = $props();
+
+  const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 
   let errorsOpen = $state(false);
   let ianaTimeZone = $state<string | null>(null);
@@ -297,8 +307,10 @@
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
             <Button {...props} type="button" variant="ghost" size="icon" aria-label={$t('shell.userMenu.aria')}>
-              <Avatar class="size-8">
-                <AvatarFallback class="text-xs font-semibold">PB</AvatarFallback>
+              <Avatar class="size-8 rounded-none avatar-hex">
+                <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                  PB
+                </AvatarFallback>
               </Avatar>
             </Button>
           {/snippet}
