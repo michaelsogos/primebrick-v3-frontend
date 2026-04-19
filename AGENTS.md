@@ -33,6 +33,8 @@ Follow **`.cursor/rules/gitflow-guard.mdc`**: never commit on `develop`/`main`; 
 
 **New task / nuovo task:** When the user starts a new task (e.g. *“Iniziamo un nuovo task”*, *let’s start a new task*), infer `feature/<slug>` from context and create that branch from `develop` before edits — see **workspace root `AGENTS.md` → New task workflow**.
 
+**After creating a feature branch:** Always end with an explicit `git checkout <that-branch>` if needed, then `git branch --show-current` (or equivalent) so the working tree and IDE/Cursor state match the branch you will edit. Creating `feature/*` with `git checkout -b` already switches HEAD; still verify before writing files.
+
 ## Skills (optional)
 
 Under `.cursor/skills/` — e.g. UI stack, in-browser verification — open the relevant `SKILL.md` when the task matches.
