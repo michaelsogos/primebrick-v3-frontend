@@ -637,7 +637,7 @@
           {/each}
         </div>
         <Input
-          class="relative z-10 border-sky-100 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:border-sky-900/40 dark:selection:bg-primary/35 dark:selection:text-transparent focus-visible:border-sky-200 focus-visible:ring-sky-200/50 dark:focus-visible:border-sky-900/60 dark:focus-visible:ring-sky-900/40"
+          class="relative z-10 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:selection:bg-primary/35 dark:selection:text-transparent"
           value={search}
           spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
@@ -662,13 +662,9 @@
           <Sheet.Root bind:open={searchMenuOpen}>
             <Sheet.Trigger>
               {#snippet child({ props })}
-                <button
-                  type="button"
-                  class="inline-flex h-8 items-center gap-1 rounded-md border border-sky-100 bg-sky-50 px-2 text-xs text-foreground/80 shadow-xs hover:bg-sky-100/70 hover:border-sky-200 dark:border-sky-900/40 dark:bg-sky-950/30 dark:hover:bg-sky-950/40"
-                  {...props}
-                >
+                <Button variant="soft" size="xs" {...props}>
                   {searchScopeLabel()}
-                </button>
+                </Button>
               {/snippet}
             </Sheet.Trigger>
 
