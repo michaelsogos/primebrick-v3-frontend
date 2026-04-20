@@ -2,6 +2,7 @@
 	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
 	import CircleIcon from "@lucide/svelte/icons/circle";
 	import { cn, type WithoutChild } from "$lib/utils.js";
+	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from "../menu-row-chrome.js";
 
 	let {
 		ref = $bindable(null),
@@ -15,7 +16,10 @@
 	bind:ref
 	data-slot="dropdown-menu-radio-item"
 	class={cn(
-		"focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 ps-8 pe-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		"relative flex cursor-default select-none items-center gap-2 rounded-md py-1.5 ps-8 pe-2 text-sm outline-hidden data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		menuSoftRowBorderBase,
+		menuSoftRowHighlightData,
+		menuSoftFocusKeyboard,
 		className
 	)}
 	{...restProps}
