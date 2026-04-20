@@ -50,7 +50,12 @@
       "aria": "User menu",
       "title": "Profile",
       "accountSoon": "Account settings (soon)",
-      "signOutSoon": "Sign out (soon)"
+      "signOutSoon": "Sign out (soon)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Account",
+      "itemBilling": "Billing",
+      "itemNotifications": "Notifications",
+      "itemSignOut": "Sign out"
     },
     "theme": {
       "light": "Switch to light theme",

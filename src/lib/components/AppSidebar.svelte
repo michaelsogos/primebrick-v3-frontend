@@ -1,33 +1,42 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import * as Sheet from '$lib/components/ui/sheet';
+  import * as Sidebar from '$lib/components/ui/sidebar';
+  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { cn } from '$lib/utils';
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
+  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { afterNavigate } from '$app/navigation';
   import {
-    ChevronDown,
-    ChevronRight,
+    BadgeCheck,
+    Bell,
+    ChevronsUpDown,
     Cloud,
     CloudOff,
+    CreditCard,
     Database,
     Kanban,
     LayoutGrid,
+    LogOut,
     Package,
     Receipt,
+    Sparkles,
     Users
   } from 'lucide-svelte';
-
-  let { collapsed = false, onRequestExpand }: { collapsed?: boolean; onRequestExpand?: () => void } = $props();
 
   let selectedId = $state<string | null>(null);
   let crmOpen = $state(false);
 
   let versionsOpen = $state(false);
+
+  const sidebar = Sidebar.useSidebar();
+  const collapsed = $derived(sidebar.state === 'collapsed');
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -72,6 +81,10 @@
           : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
+  const userAvatarSeed = 'PB';
+  const userName = 'Prime Brick';
+  const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
+
   $effect(() => {
     if (shellNav.loading) return;
     if (navLoadFailed) return;
@@ -80,165 +93,199 @@
     crmOpen = customersActive || pipelineActive;
   });
 
+  /**
+   * Keep the shell behavior: close the mobile sheet on navigation and collapse on desktop after
+   * subsequent navigations so content keeps max width.
+   */
+  afterNavigate(({ from }) => {
+    sidebar.setOpenMobile(false);
+    if (from && !sidebar.isMobile) sidebar.setOpen(false);
+  });
 </script>
 
-<aside
-  class="relative h-full bg-[hsl(var(--sidebar-chrome))] text-[hsl(var(--sidebar-chrome-foreground))] shadow-sm transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:right-0 after:top-[calc(3.5rem+1px)] after:bottom-0 after:w-px after:bg-border/40"
-  aria-label={$t('shell.nav.aria')}
-  style={`width: ${collapsed ? '72px' : '280px'}`}
->
-  <div class="flex h-full flex-col">
-    <div class="flex h-14 items-center gap-2 px-3">
+<Sidebar.Root side="left" collapsible="icon" aria-label={$t('shell.nav.aria')}>
+  <Sidebar.Header>
+    <div class="flex h-14 items-center gap-2 px-2">
       <div class="flex size-9 items-center justify-center rounded-md border bg-background/30 font-semibold">
         P
       </div>
-      {#if !collapsed}
-        <div class="min-w-0">
-          <div class="truncate text-sm font-semibold">{$t('app.title')}</div>
-          <div class="truncate text-xs text-muted-foreground">{$t('shell.subtitle')}</div>
-        </div>
-      {/if}
+      <div class="min-w-0 group-data-[collapsible=icon]:hidden">
+        <div class="truncate text-sm font-semibold">{$t('app.title')}</div>
+        <div class="truncate text-xs text-muted-foreground">{$t('shell.subtitle')}</div>
+      </div>
     </div>
+  </Sidebar.Header>
 
-    <nav class="flex-1 min-h-0 overflow-y-auto p-2">
+  <Sidebar.Content>
+    <Sidebar.Menu>
       {#if shellNav.loading}
-        <div class="px-2 py-1 text-xs text-muted-foreground">{$t('common.loading')}</div>
+        <div class="px-3 py-2 text-xs text-muted-foreground">{$t('common.loading')}</div>
       {:else}
-        <ul class="space-y-1">
-          {#each shellNav.modules as m (m.id)}
-            {@const Icon = iconFor(m.id)}
-            {@const href = hrefForModule(m.id)}
-            {@const isActive = href
-              ? page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
-              : selectedId === m.id}
-            <li>
-              {#if m.id === 'crm'}
-                {@const crmParentActive = selectedId === m.id && !customersActive}
-                {@const crmCollapsedChildActive = collapsed && (customersActive || pipelineActive)}
-                <Button
-                  type="button"
-                  variant={crmParentActive ? 'secondary' : 'ghost'}
-                  class={
-                    collapsed
-                      ? crmCollapsedChildActive
-                        ? 'h-10 w-full justify-center px-0 bg-sky-100 hover:bg-sky-200/70 dark:bg-sky-950/45 dark:hover:bg-sky-950/55'
-                        : 'h-10 w-full justify-center px-0'
-                      : crmParentActive
-                        ? 'h-10 w-full justify-between px-3 bg-sky-100 hover:bg-sky-200/70 dark:bg-sky-950/45 dark:hover:bg-sky-950/55'
-                        : 'h-10 w-full justify-between px-3'
+        {#each shellNav.modules as m (m.id)}
+          {@const Icon = iconFor(m.id)}
+          {@const href = hrefForModule(m.id)}
+          {@const isActive = href
+            ? page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
+            : selectedId === m.id}
+
+          <Sidebar.MenuItem>
+            {#if m.id === 'crm'}
+              {@const crmParentActive = selectedId === m.id && !customersActive}
+              <Sidebar.MenuButton
+                isActive={crmParentActive || (collapsed && (customersActive || pipelineActive))}
+                aria-disabled={!m.enabled}
+                title={m.name}
+                onclick={() => {
+                  if (!m.enabled) return;
+                  if (collapsed) {
+                    sidebar.setOpen(true);
+                    crmOpen = true;
+                    return;
                   }
-                  disabled={!m.enabled}
-                  title={m.name}
-                  onclick={() => {
-                    if (!m.enabled) return;
-                    if (collapsed) {
-                      onRequestExpand?.();
-                      crmOpen = true;
-                      return;
-                    }
-                    selectedId = m.id;
-                    crmOpen = !crmOpen;
-                  }}
-                >
-                  <span class={collapsed ? '' : 'flex items-center gap-2'}>
-                    <Icon class="size-4 opacity-80" />
-                    {#if !collapsed}
-                      <span class="truncate">{m.name}</span>
-                    {/if}
-                  </span>
-                  {#if !collapsed}
-                    {#if crmOpen}
-                      <ChevronDown class="size-4 opacity-70" />
-                    {:else}
-                      <ChevronRight class="size-4 opacity-70" />
-                    {/if}
-                  {/if}
-                  {#if !collapsed && !m.enabled}
-                    <Badge variant="outline" class="h-5 px-2 text-[10px]">{$t('common.soon')}</Badge>
-                  {/if}
-                </Button>
+                  selectedId = m.id;
+                  crmOpen = !crmOpen;
+                }}
+              >
+                <Icon />
+                <span>{m.name}</span>
+                {#if !m.enabled}
+                  <Badge variant="outline" class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden">
+                    {$t('common.soon')}
+                  </Badge>
+                {/if}
+              </Sidebar.MenuButton>
 
-                {#if !collapsed && crmOpen}
-                  <div class="mt-1 rounded-md bg-background/85 p-1 shadow-sm ring-1 ring-border/40">
-                    <Button
-                      href="/customers"
-                      variant={customersActive ? 'secondary' : 'ghost'}
-                      class={customersActive
-                        ? 'h-9 w-full justify-start px-3 text-sm bg-sky-100 hover:bg-sky-200/70 dark:bg-sky-950/45 dark:hover:bg-sky-950/55'
-                        : 'h-9 w-full justify-start px-3 text-sm'}
-                      title={$t('entities.customer.title')}
-                    >
-                      <span class="flex min-w-0 items-center gap-2">
-                        <Users class="size-3.5 opacity-80" />
-                        <span class="truncate">{$t('entities.customer.title')}</span>
-                      </span>
-                    </Button>
+              {#if crmOpen}
+                <Sidebar.MenuSub>
+                  <Sidebar.MenuSubItem>
+                    <Sidebar.MenuSubButton href="/customers" isActive={customersActive}>
+                      <Users class="size-3.5 opacity-80" />
+                      <span>{$t('entities.customer.title')}</span>
+                    </Sidebar.MenuSubButton>
+                  </Sidebar.MenuSubItem>
+                  <Sidebar.MenuSubItem>
+                    <Sidebar.MenuSubButton href="/crm/pipeline" isActive={pipelineActive}>
+                      <Kanban class="size-3.5 opacity-80" />
+                      <span>{$t('entities.crm.pipeline.nav')}</span>
+                    </Sidebar.MenuSubButton>
+                  </Sidebar.MenuSubItem>
+                </Sidebar.MenuSub>
+              {/if}
+            {:else}
+              <Sidebar.MenuButton
+                isActive={isActive}
+                aria-disabled={!m.enabled}
+                title={m.name}
+              >
+                {#snippet child({ props })}
+                  <a
+                    {...props}
+                    href={m.enabled ? href : undefined}
+                    aria-disabled={!m.enabled}
+                    onclick={(e) => {
+                      if (!m.enabled) e.preventDefault();
+                      if (!href && m.enabled) selectedId = m.id;
+                    }}
+                  >
+                    <Icon />
+                    <span>{m.name}</span>
+                    {#if !m.enabled}
+                      <Badge variant="outline" class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden">
+                        {$t('common.soon')}
+                      </Badge>
+                    {/if}
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+            {/if}
+          </Sidebar.MenuItem>
+        {/each}
+      {/if}
+    </Sidebar.Menu>
+  </Sidebar.Content>
 
-                    <Button
-                      href="/crm/pipeline"
-                      variant={pipelineActive ? 'secondary' : 'ghost'}
-                      class={pipelineActive
-                        ? 'h-9 w-full justify-start px-3 text-sm bg-sky-100 hover:bg-sky-200/70 dark:bg-sky-950/45 dark:hover:bg-sky-950/55'
-                        : 'h-9 w-full justify-start px-3 text-sm'}
-                      title={$t('entities.crm.pipeline.nav')}
-                    >
-                      <span class="flex min-w-0 items-center gap-2">
-                        <Kanban class="size-3.5 opacity-80" />
-                        <span class="truncate">{$t('entities.crm.pipeline.nav')}</span>
-                      </span>
-                    </Button>
+  <Sidebar.Footer>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Sidebar.MenuButton
+                {...props}
+                size="lg"
+                title={userName}
+                class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              >
+                <Avatar class="size-8 rounded-none avatar-hex">
+                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                    {userAvatarSeed}
+                  </AvatarFallback>
+                </Avatar>
+
+                {#if !collapsed}
+                  <div class="grid min-w-0 flex-1 text-left leading-tight">
+                    <span class="truncate text-sm font-medium">{userName}</span>
+                    <span class="truncate text-xs text-muted-foreground">{$t('shell.userMenu.title')}</span>
                   </div>
                 {/if}
-              {:else if href}
-                <Button
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  class={collapsed
-                    ? 'h-10 w-full justify-center px-0'
-                    : 'h-10 w-full justify-between px-3'}
-                  disabled={!m.enabled}
-                  title={m.name}
-                  href={m.enabled ? href : undefined}
-                >
-                  <span class={collapsed ? '' : 'flex items-center gap-2'}>
-                    <Icon class="size-4 opacity-80" />
-                    {#if !collapsed}
-                      <span class="truncate">{m.name}</span>
-                    {/if}
-                  </span>
-                  {#if !collapsed && !m.enabled}
-                    <Badge variant="outline" class="h-5 px-2 text-[10px]">{$t('common.soon')}</Badge>
-                  {/if}
-                </Button>
-              {:else}
-                <Button
-                  type="button"
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  class={collapsed
-                    ? 'h-10 w-full justify-center px-0'
-                    : 'h-10 w-full justify-between px-3'}
-                  disabled={!m.enabled}
-                  title={m.name}
-                  onclick={() => {
-                    if (m.enabled) selectedId = m.id;
-                  }}
-                >
-                  <span class={collapsed ? '' : 'flex items-center gap-2'}>
-                    <Icon class="size-4 opacity-80" />
-                    {#if !collapsed}
-                      <span class="truncate">{m.name}</span>
-                    {/if}
-                  </span>
-                  {#if !collapsed && !m.enabled}
-                    <Badge variant="outline" class="h-5 px-2 text-[10px]">{$t('common.soon')}</Badge>
-                  {/if}
-                </Button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </nav>
 
+                <ChevronsUpDown class="ms-auto size-4 shrink-0 opacity-70 group-data-[collapsible=icon]:hidden" />
+              </Sidebar.MenuButton>
+            {/snippet}
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Content
+            side="right"
+            align="end"
+            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
+          >
+            <DropdownMenu.Label class="p-0 font-normal">
+              <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
+                <Avatar class="size-8 rounded-none avatar-hex">
+                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                    {userAvatarSeed}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="grid flex-1 text-left leading-tight">
+                  <span class="truncate font-medium">{userName}</span>
+                  <span class="truncate text-xs text-muted-foreground">m@example.com</span>
+                </div>
+              </div>
+            </DropdownMenu.Label>
+
+            <DropdownMenu.Separator />
+
+            <DropdownMenu.Group>
+              <DropdownMenu.Item disabled>
+                <Sparkles />
+                <span>{$t('shell.userMenu.itemUpgrade')}</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item disabled>
+                <BadgeCheck />
+                <span>{$t('shell.userMenu.itemAccount')}</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item disabled>
+                <CreditCard />
+                <span>{$t('shell.userMenu.itemBilling')}</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item disabled>
+                <Bell />
+                <span>{$t('shell.userMenu.itemNotifications')}</span>
+              </DropdownMenu.Item>
+            </DropdownMenu.Group>
+
+            <DropdownMenu.Separator />
+
+            <DropdownMenu.Item variant="destructive" disabled>
+              <LogOut />
+              <span>{$t('shell.userMenu.itemSignOut')}</span>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+
+    <Sidebar.Separator />
     <div class="px-3 pb-3 pt-2">
       <!-- Footer chips: health/status first; version control always last (shell convention). -->
       <div class="flex flex-wrap items-center gap-2">
@@ -322,5 +369,5 @@
         </Sheet.Root>
       </div>
     </div>
-  </div>
-</aside>
+  </Sidebar.Footer>
+</Sidebar.Root>

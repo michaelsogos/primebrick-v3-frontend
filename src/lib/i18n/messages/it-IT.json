@@ -50,7 +50,12 @@
       "aria": "Menu utente",
       "title": "Profilo",
       "accountSoon": "Impostazioni account (presto)",
-      "signOutSoon": "Esci (presto)"
+      "signOutSoon": "Esci (presto)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Account",
+      "itemBilling": "Fatturazione",
+      "itemNotifications": "Notifiche",
+      "itemSignOut": "Esci"
     },
     "theme": {
       "light": "Passa al tema chiaro",

@@ -49,7 +49,12 @@
       "aria": "Benutzermenü",
       "title": "Profil",
       "accountSoon": "Kontoeinstellungen (bald)",
-      "signOutSoon": "Abmelden (bald)"
+      "signOutSoon": "Abmelden (bald)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Konto",
+      "itemBilling": "Abrechnung",
+      "itemNotifications": "Benachrichtigungen",
+      "itemSignOut": "Abmelden"
     },
     "theme": {
       "light": "Zum hellen Thema wechseln",

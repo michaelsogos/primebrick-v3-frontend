@@ -49,7 +49,12 @@
       "aria": "Menu utilisateur",
       "title": "Profil",
       "accountSoon": "Paramètres du compte (bientôt)",
-      "signOutSoon": "Déconnexion (bientôt)"
+      "signOutSoon": "Déconnexion (bientôt)",
+      "itemUpgrade": "Mise à niveau",
+      "itemAccount": "Compte",
+      "itemBilling": "Facturation",
+      "itemNotifications": "Notifications",
+      "itemSignOut": "Déconnexion"
     },
     "theme": {
       "light": "Passer au thème clair",

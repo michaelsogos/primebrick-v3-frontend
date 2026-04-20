@@ -49,7 +49,12 @@
       "aria": "Menu do utilizador",
       "title": "Perfil",
       "accountSoon": "Definições da conta (em breve)",
-      "signOutSoon": "Terminar sessão (em breve)"
+      "signOutSoon": "Terminar sessão (em breve)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Conta",
+      "itemBilling": "Faturação",
+      "itemNotifications": "Notificações",
+      "itemSignOut": "Terminar sessão"
     },
     "theme": {
       "light": "Mudar para tema claro",
