@@ -68,26 +68,27 @@
   });
 </script>
 
-<div class="h-dvh overflow-hidden bg-background text-foreground">
+<div class="flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground">
   <AppToastHost />
 
   <!--
     Single route tree: one `{@render children()}`.
     Previously we duplicated desktop + mobile columns, which mounted every page twice (duplicate effects, duplicate errors).
   -->
-  <Sidebar.Provider>
+  <Sidebar.Provider class="flex h-full min-h-0 w-full flex-1 flex-row bg-background">
     <AppSidebar />
 
-    <Sidebar.Inset>
+    <!-- Sidebar.Inset renders `<main>`; keep a single main landmark (no nested `<main>`). -->
+    <Sidebar.Inset class="min-h-0 flex-1">
       <!-- z-40 above main (z-0) so topbar chrome (command palette, menus) paints over scrolling page content. -->
       <div class="relative z-40 shrink-0">
         <AppTopbar />
         <AppServerBanner />
       </div>
 
-      <main class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
-      </main>
+      </div>
     </Sidebar.Inset>
   </Sidebar.Provider>
 </div>

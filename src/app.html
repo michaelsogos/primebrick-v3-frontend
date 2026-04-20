@@ -4,6 +4,21 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- Keep in sync with `ThemeToggle.svelte` (`pb.theme`). Applies before paint so `.dark` tokens + `dark:` utilities match immediately. -->
+		<script>
+			(function () {
+				try {
+					var k = 'pb.theme';
+					var saved = localStorage.getItem(k);
+					var dark =
+						saved === 'dark' ||
+						(saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+					document.documentElement.classList.toggle('dark', dark);
+				} catch (e) {
+					/* ignore */
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

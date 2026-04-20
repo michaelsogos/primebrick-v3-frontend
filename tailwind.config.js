@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class'],
+  /** v3.4+ manual toggle: `:where(.dark, .dark *)` (includes `html.dark`); `class` uses legacy `&:is(.dark *)`. */
+  darkMode: 'selector',
   content: ['./src/**/*.{html,js,svelte,ts}'],
   safelist: [
     {

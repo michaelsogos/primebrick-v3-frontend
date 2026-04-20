@@ -12,6 +12,7 @@
   }
 
   :root {
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -70,6 +71,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -113,13 +115,15 @@
     --sidebar-primary-foreground: 0.985 0 0;
     --sidebar-accent: 0.269 0 0;
     --sidebar-accent-foreground: 0.985 0 0;
-    --sidebar-border: 1 0 0;
+    /* Border: use a subtle neutral edge (not raw L=1 white, which reads as a harsh line in dark). */
+    --sidebar-border: 0.32 0 0;
     --sidebar-ring: 0.439 0 0;
 
     /* Dark-mode chrome (keep slightly different from background). */
     --sidebar-chrome: 222 47% 12%;
     --sidebar-chrome-foreground: 210 40% 98%;
-    --topbar-chrome: 222 47% 12%;
+    /* Topbar: slightly lifted from page background so the bar reads clearly in dark. */
+    --topbar-chrome: 222 47% 11%;
     --topbar-chrome-foreground: 210 40% 98%;
   }
 

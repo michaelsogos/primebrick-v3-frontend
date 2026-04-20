@@ -103,7 +103,7 @@
   });
 </script>
 
-<Sidebar.Root side="left" collapsible="icon" aria-label={$t('shell.nav.aria')}>
+<Sidebar.Root side="left" variant="inset" collapsible="icon" aria-label={$t('shell.nav.aria')}>
   <Sidebar.Header>
     <div class="flex h-14 items-center gap-2 px-2">
       <div class="flex size-9 items-center justify-center rounded-md border bg-background/30 font-semibold">
