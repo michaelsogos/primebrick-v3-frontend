@@ -68,14 +68,14 @@
   });
 </script>
 
-<div class="flex h-dvh min-h-0 flex-col overflow-hidden bg-background text-foreground">
+<div class="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background text-foreground">
   <AppToastHost />
 
   <!--
     Single route tree: one `{@render children()}`.
     Previously we duplicated desktop + mobile columns, which mounted every page twice (duplicate effects, duplicate errors).
   -->
-  <Sidebar.Provider class="flex h-full min-h-0 w-full flex-1 flex-row bg-background">
+  <Sidebar.Provider class="flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-row bg-background">
     <AppSidebar />
 
     <!-- Sidebar.Inset renders `<main>`; keep a single main landmark (no nested `<main>`). -->

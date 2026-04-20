@@ -12,6 +12,10 @@ export default {
   ],
   theme: {
     extend: {
+      /** Matches pre–v4 `shadow-xs` used on `develop` for buttons/inputs (not in default TW v3 theme). */
+      boxShadow: {
+        xs: '0 1px 2px 0 rgb(15 23 42 / 0.06)',
+      },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
