@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
+  import { LoadingBar } from '$lib/components/ui/loading-bar';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -621,8 +622,8 @@
       <span class="min-w-0 truncate">{parts.text}</span>
     {/if}
   {/snippet}
-  <div class="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
-    <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
+  <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
+    <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
       <div class="relative w-full">
         <Search
           class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"
@@ -1040,9 +1041,7 @@
               <Table.Row>
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
                   <div class="w-full">
-                    <div class="h-0.5 w-full overflow-hidden bg-muted">
-                      <div class="h-full w-1/3 bg-info pb-loading-bar"></div>
-                    </div>
+                    <LoadingBar size="xs" />
                     <div class="grid min-h-[14rem] place-items-center p-3">
                       <div class="relative flex flex-col items-center gap-2 text-center">
                         <div class="pb-watermark-loading">
@@ -1329,19 +1328,6 @@
 {/if}
 
 <style>
-  @keyframes pb-indeterminate {
-    0% {
-      transform: translateX(-120%);
-    }
-    100% {
-      transform: translateX(360%);
-    }
-  }
-
-  .pb-loading-bar {
-    animation: pb-indeterminate 1.2s ease-in-out infinite;
-  }
-
   @keyframes pb-watermark-pulse {
     0%,
     100% {

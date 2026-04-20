@@ -2,14 +2,13 @@ import { cn } from '$lib/utils.js';
 
 /**
  * Single-select dropdowns: style for the row that matches the current value (language, breadcrumb branch, etc.).
- * Matches CRM sidebar sub-nav: base sky tint + on highlight a darker step (not generic `accent`), same idea as table row hover.
+ * Same soft chrome as `menu-row-chrome.ts` (sky fill + `border-input` + `shadow-xs`).
  */
 export function dropdownMenuSelectedItemClass(selected?: boolean | null): string | undefined {
   if (!selected) return undefined;
   return [
-    'bg-sky-100 font-medium text-foreground dark:bg-sky-950/45',
-    'data-[highlighted]:bg-sky-200/70 data-[highlighted]:text-foreground',
-    'dark:data-[highlighted]:bg-sky-950/55 dark:data-[highlighted]:text-foreground',
+    'border border-input bg-sky-100 font-semibold text-sky-950 shadow-xs',
+    'data-[highlighted]:bg-sky-200 data-[highlighted]:text-sky-950',
   ].join(' ');
 }
 

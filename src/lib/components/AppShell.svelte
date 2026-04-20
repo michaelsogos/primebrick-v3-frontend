@@ -2,12 +2,11 @@
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
   import type { Snippet } from 'svelte';
-  import { afterNavigate } from '$app/navigation';
   import AppTopbar from '$lib/components/AppTopbar.svelte';
   import AppSidebar from '$lib/components/AppSidebar.svelte';
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
-  import AppToastHost from '$lib/components/AppToastHost.svelte';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Toaster } from '$lib/components/ui/sonner';
+  import * as Sidebar from '$lib/components/ui/sidebar';
   import { t } from '$lib/i18n';
   import { loadShellNav } from '$lib/shell/modules-shell.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -16,59 +15,12 @@
 
   let { children }: { children: Snippet } = $props();
 
-  const STORAGE_KEY = 'pb.sidebarCollapsed';
-  /** Default collapsed so the main content gets more horizontal space until the user pins it open. */
-  let sidebarCollapsed = $state(true);
-
-  let mobileOpen = $state(false);
-
-  /** Matches Tailwind `md` (768px): desktop chrome vs mobile sheet. */
-  let isMd = $state(false);
-
   let wasOffline = $state(false);
   const backendOffline = $derived(backendState.offline);
 
-  const burgerOpen = $derived(isMd ? !sidebarCollapsed : mobileOpen);
-
-  /**
-   * After each in-app navigation: close the mobile sheet (slide away) and collapse the desktop
-   * sidebar so the main content keeps maximum width. Skip desktop/localStorage on the first
-   * navigation (no `from`) so `onMount` can still apply a saved preference once.
-   */
-  afterNavigate(({ from }) => {
-    mobileOpen = false;
-    if (from) {
-      sidebarCollapsed = true;
-      localStorage.setItem(STORAGE_KEY, 'true');
-    }
-  });
-
-  function toggleCollapse() {
-    sidebarCollapsed = !sidebarCollapsed;
-    localStorage.setItem(STORAGE_KEY, String(sidebarCollapsed));
-  }
-
-  function onBurgerClick() {
-    if (isMd) toggleCollapse();
-    else mobileOpen = !mobileOpen;
-  }
-
   onMount(() => {
     void probeHealth();
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved !== null) {
-      sidebarCollapsed = saved === 'true';
-    }
     void loadShellNav();
-
-    const mq = window.matchMedia('(min-width: 768px)');
-    const syncMq = () => {
-      const next = mq.matches;
-      isMd = next;
-      if (next) mobileOpen = false;
-    };
-    syncMq();
-    mq.addEventListener('change', syncMq);
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
@@ -87,7 +39,6 @@
     window.addEventListener('unhandledrejection', onUnhandledRejection);
     window.addEventListener('error', onWindowError);
     return () => {
-      mq.removeEventListener('change', syncMq);
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onWindowError);
     };
@@ -117,36 +68,28 @@
   });
 </script>
 
-<div class="h-dvh overflow-hidden bg-background text-foreground">
-  <AppToastHost />
+<div class="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background text-foreground">
+  <Toaster />
 
   <!--
     Single route tree: one `{@render children()}`.
     Previously we duplicated desktop + mobile columns, which mounted every page twice (duplicate effects, duplicate errors).
   -->
-  <div class="flex h-dvh min-h-0 w-full flex-col md:flex-row">
-    <div class="hidden h-full shrink-0 md:flex">
-      <AppSidebar collapsed={sidebarCollapsed} onRequestExpand={() => (sidebarCollapsed = false)} />
-    </div>
+  <Sidebar.Provider class="flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-row bg-background">
+    <AppSidebar />
 
-    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <!-- Sidebar.Inset renders `<main>`; keep a single main landmark (no nested `<main>`). -->
+    <Sidebar.Inset class="min-h-0 flex-1">
       <!-- z-40 above main (z-0) so topbar chrome (command palette, menus) paints over scrolling page content. -->
       <div class="relative z-40 shrink-0">
-        <Sheet.Root bind:open={mobileOpen}>
-          <AppTopbar {...({ onBurgerClick, burgerOpen } as any)} />
-
-          <AppServerBanner />
-
-          <Sheet.Content side="left" class="p-0 md:hidden">
-            <AppSidebar collapsed={false} />
-          </Sheet.Content>
-        </Sheet.Root>
+        <AppTopbar />
+        <AppServerBanner />
       </div>
 
-      <main class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
-      </main>
-    </div>
-  </div>
+      </div>
+    </Sidebar.Inset>
+  </Sidebar.Provider>
 </div>
 

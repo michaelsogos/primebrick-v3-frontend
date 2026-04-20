@@ -21,6 +21,12 @@
     "nav": {
       "aria": "Navigation",
       "open": "Navigation öffnen",
+      "modulesGroup": "Module",
+      "demoSettingsGroup": "Einstellungen",
+      "demoItemProfile": "Profil",
+      "demoItemPreferences": "Präferenzen",
+      "demoItemHelp": "Hilfe & Support",
+      "demoItemCriticalToast": "Kritischer Toast (Demo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM-Bereiche"
     },
@@ -49,7 +55,18 @@
       "aria": "Benutzermenü",
       "title": "Profil",
       "accountSoon": "Kontoeinstellungen (bald)",
-      "signOutSoon": "Abmelden (bald)"
+      "signOutSoon": "Abmelden (bald)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Konto",
+      "itemBilling": "Abrechnung",
+      "itemNotifications": "Benachrichtigungen",
+      "itemSignOut": "Abmelden"
+    },
+    "org": {
+      "subtitle": "Organisation",
+      "switcherAria": "Organisation auswählen",
+      "acme": "ACME",
+      "johnDoe": "John Doe SRL"
     },
     "theme": {
       "light": "Zum hellen Thema wechseln",
@@ -65,6 +82,16 @@
       "unhandledError": "Nicht behandelter Fehler",
       "unhandledRejectionFallback": "Nicht behandelte Zurückweisung",
       "unhandledErrorFallback": "Nicht behandelter Fehler"
+    },
+    "demoToast": {
+      "profileMessage": "Demo-Hinweis (niedrige Priorität).",
+      "preferencesMessage": "Demo-Warnung (mittlere Priorität).",
+      "helpMessage": "Demo-Fehler (hohe Priorität).",
+      "profileAria": "Profil — Demo-Info-Toast anzeigen",
+      "preferencesAria": "Einstellungen — Demo-Warn-Toast anzeigen",
+      "helpAria": "Hilfe und Support — Demo-Fehler-Toast anzeigen",
+      "criticalMessage": "Demo-Hinweis kritisch / dringend (abweichend vom Standardfehler).",
+      "criticalAria": "Kritischer Toast — Demo-Dringlichkeits-Toast anzeigen"
     },
     "health": {
       "beOnline": "Online",

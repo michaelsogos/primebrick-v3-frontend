@@ -22,6 +22,12 @@
     "nav": {
       "aria": "Navigation",
       "open": "Open navigation",
+      "modulesGroup": "Modules",
+      "demoSettingsGroup": "Settings",
+      "demoItemProfile": "Profile",
+      "demoItemPreferences": "Preferences",
+      "demoItemHelp": "Help & support",
+      "demoItemCriticalToast": "Critical toast (demo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM sections"
     },
@@ -50,7 +56,18 @@
       "aria": "User menu",
       "title": "Profile",
       "accountSoon": "Account settings (soon)",
-      "signOutSoon": "Sign out (soon)"
+      "signOutSoon": "Sign out (soon)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Account",
+      "itemBilling": "Billing",
+      "itemNotifications": "Notifications",
+      "itemSignOut": "Sign out"
+    },
+    "org": {
+      "subtitle": "Organization",
+      "switcherAria": "Select organization",
+      "acme": "ACME",
+      "johnDoe": "John Doe SRL"
     },
     "theme": {
       "light": "Switch to light theme",
@@ -66,6 +83,16 @@
       "unhandledError": "Unhandled error",
       "unhandledRejectionFallback": "Unhandled rejection",
       "unhandledErrorFallback": "Unhandled error"
+    },
+    "demoToast": {
+      "profileMessage": "Demo informational notice (low impact).",
+      "preferencesMessage": "Demo warning notice (medium impact).",
+      "helpMessage": "Demo error notice (high impact).",
+      "profileAria": "Profile — show demo info toast",
+      "preferencesAria": "Preferences — show demo warning toast",
+      "helpAria": "Help and support — show demo error toast",
+      "criticalMessage": "Demo urgent / critical impact (distinct from standard error).",
+      "criticalAria": "Critical toast — show demo urgent toast"
     },
     "health": {
       "beOnline": "Online",

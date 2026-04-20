@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
+	import { cn } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -12,8 +13,7 @@
 
 <div
 	bind:this={ref}
-	data-slot="sheet-footer"
-	class={cn("mt-auto flex flex-col gap-2 p-4", className)}
+	class={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
 	{...restProps}
 >
 	{@render children?.()}

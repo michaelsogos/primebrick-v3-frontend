@@ -21,6 +21,12 @@
     "nav": {
       "aria": "Navegação",
       "open": "Abrir navegação",
+      "modulesGroup": "Módulos",
+      "demoSettingsGroup": "Definições",
+      "demoItemProfile": "Perfil",
+      "demoItemPreferences": "Preferências",
+      "demoItemHelp": "Ajuda e suporte",
+      "demoItemCriticalToast": "Toast crítico (demo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Secções do CRM"
     },
@@ -49,7 +55,18 @@
       "aria": "Menu do utilizador",
       "title": "Perfil",
       "accountSoon": "Definições da conta (em breve)",
-      "signOutSoon": "Terminar sessão (em breve)"
+      "signOutSoon": "Terminar sessão (em breve)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Conta",
+      "itemBilling": "Faturação",
+      "itemNotifications": "Notificações",
+      "itemSignOut": "Terminar sessão"
+    },
+    "org": {
+      "subtitle": "Organização",
+      "switcherAria": "Selecionar organização",
+      "acme": "ACME",
+      "johnDoe": "John Doe SRL"
     },
     "theme": {
       "light": "Mudar para tema claro",
@@ -65,6 +82,16 @@
       "unhandledError": "Erro não tratado",
       "unhandledRejectionFallback": "Rejeição não tratada",
       "unhandledErrorFallback": "Erro não tratado"
+    },
+    "demoToast": {
+      "profileMessage": "Aviso informativo de demonstração (impacto baixo).",
+      "preferencesMessage": "Aviso de demonstração (impacto médio).",
+      "helpMessage": "Erro de demonstração (impacto alto).",
+      "profileAria": "Perfil — mostrar toast informativo de demonstração",
+      "preferencesAria": "Preferências — mostrar toast de aviso de demonstração",
+      "helpAria": "Ajuda e suporte — mostrar toast de erro de demonstração",
+      "criticalMessage": "Aviso crítico / urgente de demonstração (distinto do erro padrão).",
+      "criticalAria": "Toast crítico — mostrar toast urgente de demonstração"
     },
     "health": {
       "beOnline": "Online",

@@ -3,6 +3,7 @@
   import { tick, onMount } from 'svelte';
   import { Command } from 'bits-ui';
   import { cn } from '$lib/utils';
+  import { commandMenuItemClassName } from '$lib/components/ui/menu-row-chrome';
   import { t } from '$lib/i18n';
   import CalculatorIcon from '@lucide/svelte/icons/calculator';
   import CalendarIcon from '@lucide/svelte/icons/calendar';
@@ -11,6 +12,7 @@
   import SmileIcon from '@lucide/svelte/icons/smile';
   import UserIcon from '@lucide/svelte/icons/user';
   import CommandKeyGlyph from '@lucide/svelte/icons/command';
+  import { Kbd } from '$lib/components/ui/kbd';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -128,7 +130,7 @@
           'relative flex h-8 w-full items-center rounded-md border shadow-xs ring-offset-background transition-colors',
           open
             ? 'z-10 rounded-b-none border-border border-b-transparent bg-popover shadow-md'
-            : 'border-input bg-sky-50/10 dark:bg-input/30 hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
+            : 'border-input bg-background dark:bg-input/30 hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
         )}
       >
         <span
@@ -143,22 +145,13 @@
             aria-hidden="true"
           >
             {#if isAppleOs()}
-              <span
-                class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 text-muted-foreground shadow-sm"
-                title="⌘K"
-              >
+              <Kbd size="icon" title="⌘K">
                 <CommandKeyGlyph class="size-3.5" strokeWidth={2} />
-              </span>
-              <kbd
-                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >K</kbd>
+              </Kbd>
+              <Kbd size="key">K</Kbd>
             {:else}
-              <kbd
-                class="inline-flex h-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1.5 font-mono text-[10px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >Ctrl</kbd>
-              <kbd
-                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >K</kbd>
+              <Kbd size="modifier">Ctrl</Kbd>
+              <Kbd size="key">K</Kbd>
             {/if}
           </div>
         {/if}
@@ -211,25 +204,15 @@
                 {$t('shell.commandPalette.groupSuggestions')}
               </Command.GroupHeading>
               <Command.GroupItems>
-                <Command.Item
-                  value="calendar"
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="calendar" class={commandMenuItemClassName}>
                   <CalendarIcon />
                   <span>{$t('shell.commandPalette.itemCalendar')}</span>
                 </Command.Item>
-                <Command.Item
-                  value="emoji"
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="emoji" class={commandMenuItemClassName}>
                   <SmileIcon />
                   <span>{$t('shell.commandPalette.itemSearchEmoji')}</span>
                 </Command.Item>
-                <Command.Item
-                  value="calculator"
-                  disabled
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="calculator" disabled class={commandMenuItemClassName}>
                   <CalculatorIcon />
                   <span>{$t('shell.commandPalette.itemCalculator')}</span>
                 </Command.Item>
@@ -243,26 +226,17 @@
                 {$t('shell.commandPalette.groupSettings')}
               </Command.GroupHeading>
               <Command.GroupItems>
-                <Command.Item
-                  value="profile"
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="profile" class={commandMenuItemClassName}>
                   <UserIcon />
                   <span>{$t('shell.commandPalette.itemProfile')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('P')}</span>
                 </Command.Item>
-                <Command.Item
-                  value="billing"
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="billing" class={commandMenuItemClassName}>
                   <CreditCardIcon />
                   <span>{$t('shell.commandPalette.itemBilling')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('B')}</span>
                 </Command.Item>
-                <Command.Item
-                  value="app-settings"
-                  class="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
-                >
+                <Command.Item value="app-settings" class={commandMenuItemClassName}>
                   <SettingsIcon />
                   <span>{$t('shell.commandPalette.itemSettings')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('S')}</span>

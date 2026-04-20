@@ -2,24 +2,23 @@
 	import { type VariantProps, tv } from "tailwind-variants";
 
 	/**
-	 * shadcn-svelte–style alert; `impact*` variants mirror the shell error impact palette
-	 * (borders / icon tint) while keeping `bg-background` and `text-foreground` for readability.
+	 * shadcn-svelte–style alert; `impact*` variants mirror toast / Sonner semantics: tinted
+	 * surface + border (persistent “toast-like” cards, no auto-dismiss).
 	 */
 	export const alertVariants = tv({
-		base: "relative flex w-full items-start gap-3 rounded-lg border p-3 text-sm shadow-sm [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:translate-y-0.5",
+		base: "relative flex w-full items-start gap-3 rounded-lg border p-3 text-sm shadow-sm ring-1 ring-black/5 dark:ring-white/10 [&>svg]:shrink-0 [&>svg]:translate-y-0.5",
 		variants: {
 			variant: {
-				default: "border-border bg-background text-foreground [&>svg]:text-foreground",
+				default:
+					"border-border bg-background text-foreground [&>svg]:size-4 [&>svg]:text-foreground",
 				destructive:
-					"border-destructive/30 bg-destructive/5 text-foreground [&>svg]:text-destructive dark:border-destructive/40 dark:bg-destructive/10",
+					"border-destructive/30 bg-destructive/5 text-foreground [&>svg]:size-4 [&>svg]:text-destructive dark:border-destructive/40 dark:bg-destructive/10",
+				/** Surfaces in `app.css` — match Sonner toasts (critical solid + rich error/warning/info). */
 				impactCritical:
-					"border-red-500/30 bg-background text-foreground [&>svg]:text-red-600 dark:[&>svg]:text-red-500",
-				impactHigh:
-					"border-amber-500/30 bg-background text-foreground [&>svg]:text-amber-600 dark:[&>svg]:text-amber-500",
-				impactMedium:
-					"border-sky-500/25 bg-background text-foreground [&>svg]:text-sky-600 dark:[&>svg]:text-sky-400",
-				impactLow:
-					"border-emerald-500/25 bg-background text-foreground [&>svg]:text-emerald-600 dark:[&>svg]:text-emerald-500",
+					"pb-shell-error-card--critical [&>svg]:size-5 border-0 ring-0 shadow-none",
+				impactHigh: "pb-shell-error-card--error [&>svg]:size-5 border-0 ring-0 shadow-none",
+				impactMedium: "pb-shell-error-card--warning [&>svg]:size-5 border-0 ring-0 shadow-none",
+				impactLow: "pb-shell-error-card--info [&>svg]:size-5 border-0 ring-0 shadow-none",
 			},
 		},
 		defaultVariants: {
