@@ -622,8 +622,8 @@
       <span class="min-w-0 truncate">{parts.text}</span>
     {/if}
   {/snippet}
-  <div class="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
-    <div class="flex min-w-[260px] flex-1 items-center gap-2 sm:max-w-[520px]">
+  <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
+    <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
       <div class="relative w-full">
         <Search
           class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"

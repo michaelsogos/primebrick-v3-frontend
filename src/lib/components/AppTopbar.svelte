@@ -3,10 +3,9 @@
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import * as Sidebar from '$lib/components/ui/sidebar';
   import * as Sheet from '$lib/components/ui/sheet';
   import * as Alert from '$lib/components/ui/alert';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Badge } from '$lib/components/ui/badge';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -15,9 +14,7 @@
   import {
     Bell,
     Globe,
-    Menu,
     TriangleAlert,
-    X,
     ThumbsUp,
     AlertOctagon,
     AlertTriangle,
@@ -28,7 +25,6 @@
   import XIcon from '@lucide/svelte/icons/x';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -112,21 +108,10 @@
   }
 
   interface $$Props {
-    onBurgerClick?: () => void;
-    burgerOpen?: boolean;
     unreadNotifications?: number;
-    /** Seed for stable light-mode avatar color (e.g. user id); defaults to placeholder initials. */
-    userAvatarSeed?: string;
   }
 
-  let {
-    onBurgerClick,
-    burgerOpen = false,
-    unreadNotifications = 3,
-    userAvatarSeed = 'PB'
-  }: $$Props = $props();
-
-  const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
+  let { unreadNotifications = 3 }: $$Props = $props();
 
   let errorsOpen = $state(false);
   let ianaTimeZone = $state<string | null>(null);
@@ -138,32 +123,12 @@
 </script>
 
 <header
-  class="sticky top-0 z-30 overflow-visible border-b border-border/40 bg-[hsl(var(--topbar-chrome))] text-[hsl(var(--topbar-chrome-foreground))] shadow-sm"
+  class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground shadow-sm dark:border-border/60 dark:bg-muted/25 dark:backdrop-blur-sm"
 >
   <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
   <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
     <div class="flex min-w-0 justify-start">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        class="shrink-0"
-        aria-label={$t('shell.nav.open')}
-        onclick={() => onBurgerClick?.()}
-      >
-        <span class="relative inline-flex size-5 items-center justify-center">
-          <Menu
-            class={burgerOpen
-              ? 'absolute size-5 rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'
-              : 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'}
-          />
-          <X
-            class={burgerOpen
-              ? 'absolute size-5 rotate-0 scale-100 opacity-100 transition-all duration-200 ease-out'
-              : 'absolute size-5 -rotate-90 scale-75 opacity-0 transition-all duration-200 ease-out'}
-          />
-        </span>
-      </Button>
+      <Sidebar.Trigger aria-label={$t('shell.nav.open')} class="shrink-0" />
     </div>
 
     <div class="flex min-w-0 justify-center">
@@ -205,14 +170,15 @@
             </Button>
           {/snippet}
         </Sheet.Trigger>
-        <Sheet.Content side="right" class="w-[420px] p-0" showClose={false}>
+        <Sheet.Content side="right" class="w-[420px] p-0">
           <div class="flex h-full flex-col">
             <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
               <div class="text-sm font-medium">{$t('shell.errors.title')}</div>
               <div class="flex items-center gap-1">
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
+                  class="h-8 w-8"
                   disabled={$appErrors.length === 0}
                   onclick={() => clearAppErrors()}
                   aria-label={$t('shell.errors.clear')}
@@ -302,26 +268,6 @@
       </Button>
 
       <ThemeToggle />
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} type="button" variant="ghost" size="icon" aria-label={$t('shell.userMenu.aria')}>
-              <Avatar class="size-8 rounded-none avatar-hex">
-                <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                  PB
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end">
-          <DropdownMenu.Label>{$t('shell.userMenu.title')}</DropdownMenu.Label>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item disabled>{$t('shell.userMenu.accountSoon')}</DropdownMenu.Item>
-          <DropdownMenu.Item disabled>{$t('shell.userMenu.signOutSoon')}</DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
     </div>
   </div>
 </header>

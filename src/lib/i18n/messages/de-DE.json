@@ -21,6 +21,11 @@
     "nav": {
       "aria": "Navigation",
       "open": "Navigation öffnen",
+      "modulesGroup": "Module",
+      "demoSettingsGroup": "Einstellungen",
+      "demoItemProfile": "Profil",
+      "demoItemPreferences": "Präferenzen",
+      "demoItemHelp": "Hilfe & Support",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM-Bereiche"
     },
@@ -49,7 +54,18 @@
       "aria": "Benutzermenü",
       "title": "Profil",
       "accountSoon": "Kontoeinstellungen (bald)",
-      "signOutSoon": "Abmelden (bald)"
+      "signOutSoon": "Abmelden (bald)",
+      "itemUpgrade": "Upgrade",
+      "itemAccount": "Konto",
+      "itemBilling": "Abrechnung",
+      "itemNotifications": "Benachrichtigungen",
+      "itemSignOut": "Abmelden"
+    },
+    "org": {
+      "subtitle": "Organisation",
+      "switcherAria": "Organisation auswählen",
+      "acme": "ACME",
+      "johnDoe": "John Doe SRL"
     },
     "theme": {
       "light": "Zum hellen Thema wechseln",
