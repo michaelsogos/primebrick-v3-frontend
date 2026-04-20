@@ -16,6 +16,8 @@
   import {
     BadgeCheck,
     Bell,
+    Building2,
+    Check,
     ChevronsUpDown,
     Cloud,
     CloudOff,
@@ -34,6 +36,13 @@
   let crmOpen = $state(false);
 
   let versionsOpen = $state(false);
+
+  /** Demo-only org switcher (static); replace with API-backed org when available. */
+  type DemoOrgId = 'acme' | 'johnDoe';
+  let selectedOrgId = $state<DemoOrgId>('acme');
+  const selectedOrgLabel = $derived(
+    selectedOrgId === 'acme' ? $t('shell.org.acme') : $t('shell.org.johnDoe')
+  );
 
   const sidebar = Sidebar.useSidebar();
   const collapsed = $derived(sidebar.state === 'collapsed');
@@ -105,15 +114,74 @@
 
 <Sidebar.Root side="left" variant="inset" collapsible="icon" aria-label={$t('shell.nav.aria')}>
   <Sidebar.Header>
-    <div class="flex h-14 items-center gap-2 px-2">
-      <div class="flex size-9 items-center justify-center rounded-md border bg-background/30 font-semibold">
-        P
-      </div>
-      <div class="min-w-0 group-data-[collapsible=icon]:hidden">
-        <div class="truncate text-sm font-semibold">{$t('app.title')}</div>
-        <div class="truncate text-xs text-muted-foreground">{$t('shell.subtitle')}</div>
-      </div>
-    </div>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Sidebar.MenuButton
+                {...props}
+                size="lg"
+                class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                title={selectedOrgLabel}
+                aria-label={$t('shell.org.switcherAria')}
+              >
+                <div
+                  class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"
+                >
+                  <Building2 class="size-4 opacity-90" aria-hidden="true" />
+                </div>
+                {#if !collapsed}
+                  <div class="grid min-w-0 flex-1 text-left leading-tight">
+                    <span class="truncate text-sm font-semibold">{selectedOrgLabel}</span>
+                    <span class="truncate text-xs text-muted-foreground">{$t('shell.org.subtitle')}</span>
+                  </div>
+                  <ChevronsUpDown class="ms-auto size-4 shrink-0 opacity-70" aria-hidden="true" />
+                {/if}
+              </Sidebar.MenuButton>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56"
+            side="right"
+            align="end"
+          >
+            <DropdownMenu.Label class="px-2 text-xs font-medium text-muted-foreground">
+              {$t('shell.org.subtitle')}
+            </DropdownMenu.Label>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item
+              class="gap-2"
+              closeOnSelect={true}
+              onSelect={() => {
+                selectedOrgId = 'acme';
+              }}
+            >
+              <span class="flex size-4 shrink-0 items-center justify-center">
+                {#if selectedOrgId === 'acme'}
+                  <Check class="size-4" aria-hidden="true" />
+                {/if}
+              </span>
+              <span class="min-w-0 flex-1 truncate">{$t('shell.org.acme')}</span>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              class="gap-2"
+              closeOnSelect={true}
+              onSelect={() => {
+                selectedOrgId = 'johnDoe';
+              }}
+            >
+              <span class="flex size-4 shrink-0 items-center justify-center">
+                {#if selectedOrgId === 'johnDoe'}
+                  <Check class="size-4" aria-hidden="true" />
+                {/if}
+              </span>
+              <span class="min-w-0 flex-1 truncate">{$t('shell.org.johnDoe')}</span>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
   </Sidebar.Header>
 
   <Sidebar.Content>
@@ -237,7 +305,7 @@
           <DropdownMenu.Content
             side="right"
             align="end"
-            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56 rounded-lg"
+            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56"
           >
             <DropdownMenu.Label class="p-0 font-normal">
               <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">

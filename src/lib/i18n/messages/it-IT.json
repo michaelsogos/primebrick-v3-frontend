@@ -57,6 +57,12 @@
       "itemNotifications": "Notifiche",
       "itemSignOut": "Esci"
     },
+    "org": {
+      "subtitle": "Organizzazione",
+      "switcherAria": "Seleziona organizzazione",
+      "acme": "ACME",
+      "johnDoe": "John Doe SRL"
+    },
     "theme": {
       "light": "Passa al tema chiaro",
       "dark": "Passa al tema scuro"
