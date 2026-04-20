@@ -38,6 +38,12 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /**
+     * CRITICAL — slightly more vivid than `destructive` / error toast, without neon “alarm” red.
+     */
+    --critical: 0 86% 57%;
+    --critical-foreground: 210 40% 98%;
+
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 210 40% 98%;
     --warning: 47.9 95.8% 53.1%;
@@ -96,6 +102,10 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Slightly lifted vs dark `destructive`; still clearly red, not a bright scarlet chip. */
+    --critical: 0 64% 38%;
+    --critical-foreground: 210 40% 98%;
+
     --success: 142.1 70.6% 45.3%;
     --success-foreground: 222.2 84% 4.9%;
     --warning: 47.9 95.8% 53.1%;
@@ -141,4 +151,147 @@
   .avatar-hex {
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
+}
+
+/**
+ * CRITICAL Sonner toasts — unlayered.
+ * Sonner sets `color` on `[data-styled]` and fixed grays on `[data-description]` / dark theme
+ * with selectors that beat a lone utility class — target `li.toast-impact-critical …` explicitly.
+ */
+/* Plain selectors — `:global()` only works in Svelte <style>, not in this file; invalid rules were ignored. */
+li[data-sonner-toast].toast-impact-critical[data-styled='true'],
+.pb-shell-error-card--critical {
+  background: hsl(var(--critical)) !important;
+  border: 1px solid hsl(var(--critical) / 0.28) !important;
+  color: hsl(var(--critical-foreground)) !important;
+  box-shadow:
+    0 0 0 1px hsl(var(--critical) / 0.2),
+    0 4px 14px hsl(var(--critical) / 0.14) !important;
+}
+
+li[data-sonner-toast].toast-impact-critical [data-content] {
+  color: hsl(var(--critical-foreground)) !important;
+}
+
+li[data-sonner-toast].toast-impact-critical [data-title] {
+  color: hsl(var(--critical-foreground)) !important;
+}
+
+li[data-sonner-toast].toast-impact-critical [data-description] {
+  color: hsl(var(--critical-foreground) / 0.95) !important;
+}
+
+[data-sonner-toaster][data-sonner-theme='dark'] li[data-sonner-toast].toast-impact-critical [data-description] {
+  color: hsl(var(--critical-foreground) / 0.95) !important;
+}
+
+li[data-sonner-toast].toast-impact-critical [data-icon],
+li[data-sonner-toast].toast-impact-critical [data-icon] svg,
+.pb-shell-error-card--critical > svg {
+  color: hsl(var(--critical-foreground)) !important;
+  stroke: currentColor !important;
+}
+
+.pb-shell-error-card--critical [data-slot='alert-title'] {
+  color: hsl(var(--critical-foreground)) !important;
+}
+
+.pb-shell-error-card--critical [data-slot='alert-description'] {
+  color: hsl(var(--critical-foreground) / 0.92) !important;
+}
+
+/**
+ * Error sheet cards — match Sonner `richColors` toast surfaces (see svelte-sonner Toaster.svelte).
+ */
+.pb-shell-error-card--error {
+  border: 1px solid hsl(359, 100%, 94%) !important;
+  background: hsl(359, 100%, 97%) !important;
+  color: hsl(360, 100%, 45%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1) !important;
+}
+
+.dark .pb-shell-error-card--error {
+  border-color: hsl(357, 89%, 16%) !important;
+  background: hsl(358, 76%, 10%) !important;
+  color: hsl(358, 100%, 81%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35) !important;
+}
+
+.pb-shell-error-card--error > svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.pb-shell-error-card--error [data-slot='alert-title'] {
+  color: inherit !important;
+}
+
+.pb-shell-error-card--error [data-slot='alert-description'] {
+  color: hsl(360 100% 45% / 0.88) !important;
+}
+
+.dark .pb-shell-error-card--error [data-slot='alert-description'] {
+  color: hsl(358 100% 81% / 0.88) !important;
+}
+
+.pb-shell-error-card--warning {
+  border: 1px solid hsl(49, 91%, 84%) !important;
+  background: hsl(49, 100%, 97%) !important;
+  color: hsl(31, 92%, 45%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1) !important;
+}
+
+.dark .pb-shell-error-card--warning {
+  border-color: hsl(60, 100%, 9%) !important;
+  background: hsl(64, 100%, 6%) !important;
+  color: hsl(46, 87%, 65%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35) !important;
+}
+
+.pb-shell-error-card--warning > svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.pb-shell-error-card--warning [data-slot='alert-title'] {
+  color: inherit !important;
+}
+
+.pb-shell-error-card--warning [data-slot='alert-description'] {
+  color: hsl(31 92% 45% / 0.88) !important;
+}
+
+.dark .pb-shell-error-card--warning [data-slot='alert-description'] {
+  color: hsl(46 87% 65% / 0.88) !important;
+}
+
+.pb-shell-error-card--info {
+  border: 1px solid hsl(221, 91%, 93%) !important;
+  background: hsl(208, 100%, 97%) !important;
+  color: hsl(210, 92%, 45%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1) !important;
+}
+
+.dark .pb-shell-error-card--info {
+  border-color: hsl(223, 43%, 17%) !important;
+  background: hsl(215, 100%, 6%) !important;
+  color: hsl(216, 87%, 65%) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35) !important;
+}
+
+.pb-shell-error-card--info > svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.pb-shell-error-card--info [data-slot='alert-title'] {
+  color: inherit !important;
+}
+
+.pb-shell-error-card--info [data-slot='alert-description'] {
+  color: hsl(210 92% 45% / 0.88) !important;
+}
+
+.dark .pb-shell-error-card--info [data-slot='alert-description'] {
+  color: hsl(216 87% 65% / 0.88) !important;
 }

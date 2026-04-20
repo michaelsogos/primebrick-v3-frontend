@@ -26,6 +26,7 @@
       "demoItemProfile": "Perfil",
       "demoItemPreferences": "Preferencias",
       "demoItemHelp": "Ayuda y soporte",
+      "demoItemCriticalToast": "Toast crítico (demo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Secciones de CRM"
     },
@@ -81,6 +82,16 @@
       "unhandledError": "Error no gestionado",
       "unhandledRejectionFallback": "Rechazo no gestionado",
       "unhandledErrorFallback": "Error no gestionado"
+    },
+    "demoToast": {
+      "profileMessage": "Aviso informativo de demostración (impacto bajo).",
+      "preferencesMessage": "Aviso de demostración (impacto medio).",
+      "helpMessage": "Error de demostración (impacto alto).",
+      "profileAria": "Perfil — mostrar toast informativo de demostración",
+      "preferencesAria": "Preferencias — mostrar toast de aviso de demostración",
+      "helpAria": "Ayuda y soporte — mostrar toast de error de demostración",
+      "criticalMessage": "Aviso crítico / urgente de demostración (distinto del error estándar).",
+      "criticalAria": "Toast crítico — mostrar toast urgente de demostración"
     },
     "health": {
       "beOnline": "Online",

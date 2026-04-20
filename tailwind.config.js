@@ -37,6 +37,10 @@ export default {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        critical: {
+          DEFAULT: 'hsl(var(--critical))',
+          foreground: 'hsl(var(--critical-foreground))',
+        },
         success: {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',

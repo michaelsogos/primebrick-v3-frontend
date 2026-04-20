@@ -14,12 +14,10 @@
   import {
     Bell,
     Globe,
+    CircleAlert,
     TriangleAlert,
     ThumbsUp,
-    AlertOctagon,
-    AlertTriangle,
     Info,
-    CircleX,
     Trash2
   } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
@@ -69,13 +67,13 @@
   function impactBadgeClass(i: ImpactLevel): string {
     switch (i) {
       case 'CRITICAL':
-        return 'bg-red-600 text-white';
+        return 'bg-critical text-critical-foreground';
       case 'HIGH':
-        return 'bg-amber-500 text-black';
+        return 'bg-destructive text-destructive-foreground';
       case 'MEDIUM':
-        return 'bg-sky-500 text-white';
+        return 'bg-warning text-warning-foreground';
       case 'LOW':
-        return 'bg-emerald-500 text-white';
+        return 'bg-info text-info-foreground';
     }
   }
 
@@ -94,16 +92,16 @@
     }
   }
 
+  /** Outline icons aligned with `ui/sonner` (CircleAlert for error-class toasts). */
   function impactIcon(i: ImpactLevel) {
     switch (i) {
       case 'CRITICAL':
-        return AlertOctagon;
       case 'HIGH':
-        return AlertTriangle;
+        return CircleAlert;
       case 'MEDIUM':
-        return Info;
+        return TriangleAlert;
       case 'LOW':
-        return CircleX;
+        return Info;
     }
   }
 
@@ -211,10 +209,10 @@
                     {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
                     {@const Icon = impactIcon(imp)}
                     <Alert.Root variant={impactToAlertVariant(imp)} class="justify-between gap-2">
-                      <Icon class="shrink-0" />
+                      <Icon class="shrink-0" strokeWidth={2} aria-hidden="true" />
                       <div class="min-w-0 flex-1 space-y-1">
                         {#if (e as any).scopeKey || e.scope}
-                          <div class="text-[11px] font-medium text-muted-foreground">
+                          <div class="text-[11px] font-medium leading-tight text-inherit opacity-80">
                             {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
                           </div>
                         {/if}
@@ -240,7 +238,7 @@
                           <Alert.Description class="text-xs whitespace-pre-wrap">{e.detail}</Alert.Description>
                         {/if}
                       </div>
-                      <div class="shrink-0 text-[11px] text-muted-foreground">
+                      <div class="shrink-0 text-[11px] text-inherit opacity-70">
                         {formatUiDateTime(e.createdAt, $uiLang)}
                       </div>
                     </Alert.Root>
