@@ -18,17 +18,20 @@
     Bell,
     Building2,
     Check,
+    ChevronRight,
     ChevronsUpDown,
     Cloud,
     CloudOff,
     CreditCard,
     Database,
-    Kanban,
     LayoutGrid,
+    LifeBuoy,
     LogOut,
     Package,
     Receipt,
+    Settings,
     Sparkles,
+    User,
     Users
   } from 'lucide-svelte';
 
@@ -112,7 +115,7 @@
   });
 </script>
 
-<Sidebar.Root side="left" variant="inset" collapsible="icon" aria-label={$t('shell.nav.aria')}>
+<Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('shell.nav.aria')}>
   <Sidebar.Header>
     <Sidebar.Menu>
       <Sidebar.MenuItem>
@@ -185,91 +188,137 @@
   </Sidebar.Header>
 
   <Sidebar.Content>
-    <Sidebar.Menu>
-      {#if shellNav.loading}
-        <div class="px-3 py-2 text-xs text-muted-foreground">{$t('common.loading')}</div>
-      {:else}
-        {#each shellNav.modules as m (m.id)}
-          {@const Icon = iconFor(m.id)}
-          {@const href = hrefForModule(m.id)}
-          {@const isActive = href
-            ? page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
-            : selectedId === m.id}
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>{$t('shell.nav.modulesGroup')}</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          {#if shellNav.loading}
+            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('common.loading')}</div>
+          {:else}
+            {#each shellNav.modules as m (m.id)}
+              {@const Icon = iconFor(m.id)}
+              {@const href = hrefForModule(m.id)}
+              {@const isActive = href
+                ? page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
+                : selectedId === m.id}
 
-          <Sidebar.MenuItem>
-            {#if m.id === 'crm'}
-              {@const crmParentActive = selectedId === m.id && !customersActive}
-              <Sidebar.MenuButton
-                isActive={crmParentActive || (collapsed && (customersActive || pipelineActive))}
-                aria-disabled={!m.enabled}
-                title={m.name}
-                onclick={() => {
-                  if (!m.enabled) return;
-                  if (collapsed) {
-                    sidebar.setOpen(true);
-                    crmOpen = true;
-                    return;
-                  }
-                  selectedId = m.id;
-                  crmOpen = !crmOpen;
-                }}
-              >
-                <Icon />
-                <span>{m.name}</span>
-                {#if !m.enabled}
-                  <Badge variant="outline" class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden">
-                    {$t('common.soon')}
-                  </Badge>
-                {/if}
-              </Sidebar.MenuButton>
-
-              {#if crmOpen}
-                <Sidebar.MenuSub>
-                  <Sidebar.MenuSubItem>
-                    <Sidebar.MenuSubButton href="/customers" isActive={customersActive}>
-                      <Users class="size-3.5 opacity-80" />
-                      <span>{$t('entities.customer.title')}</span>
-                    </Sidebar.MenuSubButton>
-                  </Sidebar.MenuSubItem>
-                  <Sidebar.MenuSubItem>
-                    <Sidebar.MenuSubButton href="/crm/pipeline" isActive={pipelineActive}>
-                      <Kanban class="size-3.5 opacity-80" />
-                      <span>{$t('entities.crm.pipeline.nav')}</span>
-                    </Sidebar.MenuSubButton>
-                  </Sidebar.MenuSubItem>
-                </Sidebar.MenuSub>
-              {/if}
-            {:else}
-              <Sidebar.MenuButton
-                isActive={isActive}
-                aria-disabled={!m.enabled}
-                title={m.name}
-              >
-                {#snippet child({ props })}
-                  <a
-                    {...props}
-                    href={m.enabled ? href : undefined}
-                    aria-disabled={!m.enabled}
-                    onclick={(e) => {
-                      if (!m.enabled) e.preventDefault();
-                      if (!href && m.enabled) selectedId = m.id;
-                    }}
+              <Sidebar.MenuItem>
+                {#if m.id === 'crm'}
+                  {@const crmParentActive = selectedId === m.id && !customersActive}
+                  <div
+                    class="group/collapsible"
+                    data-state={crmOpen ? 'open' : 'closed'}
                   >
-                    <Icon />
-                    <span>{m.name}</span>
-                    {#if !m.enabled}
-                      <Badge variant="outline" class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden">
-                        {$t('common.soon')}
-                      </Badge>
+                    <Sidebar.MenuButton
+                      isActive={crmParentActive || (collapsed && (customersActive || pipelineActive))}
+                      aria-disabled={!m.enabled}
+                      aria-expanded={crmOpen}
+                      title={m.name}
+                      onclick={() => {
+                        if (!m.enabled) return;
+                        if (collapsed) {
+                          sidebar.setOpen(true);
+                          crmOpen = true;
+                          return;
+                        }
+                        selectedId = m.id;
+                        crmOpen = !crmOpen;
+                      }}
+                    >
+                      <Icon />
+                      <span>{m.name}</span>
+                      {#if !m.enabled}
+                        <Badge
+                          variant="outline"
+                          class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden"
+                        >
+                          {$t('common.soon')}
+                        </Badge>
+                      {:else}
+                        <ChevronRight
+                          class="ms-auto size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
+                          aria-hidden="true"
+                        />
+                      {/if}
+                    </Sidebar.MenuButton>
+
+                    {#if crmOpen}
+                      <Sidebar.MenuSub>
+                        <Sidebar.MenuSubItem>
+                          <Sidebar.MenuSubButton href="/customers" isActive={customersActive}>
+                            <span>{$t('entities.customer.title')}</span>
+                          </Sidebar.MenuSubButton>
+                        </Sidebar.MenuSubItem>
+                        <Sidebar.MenuSubItem>
+                          <Sidebar.MenuSubButton href="/crm/pipeline" isActive={pipelineActive}>
+                            <span>{$t('entities.crm.pipeline.nav')}</span>
+                          </Sidebar.MenuSubButton>
+                        </Sidebar.MenuSubItem>
+                      </Sidebar.MenuSub>
                     {/if}
-                  </a>
-                {/snippet}
-              </Sidebar.MenuButton>
-            {/if}
+                  </div>
+                {:else}
+                  <Sidebar.MenuButton
+                    isActive={isActive}
+                    aria-disabled={!m.enabled}
+                    title={m.name}
+                  >
+                    {#snippet child({ props })}
+                      <a
+                        {...props}
+                        href={m.enabled ? href : undefined}
+                        aria-disabled={!m.enabled}
+                        onclick={(e) => {
+                          if (!m.enabled) e.preventDefault();
+                          if (!href && m.enabled) selectedId = m.id;
+                        }}
+                      >
+                        <Icon />
+                        <span>{m.name}</span>
+                        {#if !m.enabled}
+                          <Badge
+                            variant="outline"
+                            class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden"
+                          >
+                            {$t('common.soon')}
+                          </Badge>
+                        {/if}
+                      </a>
+                    {/snippet}
+                  </Sidebar.MenuButton>
+                {/if}
+              </Sidebar.MenuItem>
+            {/each}
+          {/if}
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>{$t('shell.nav.demoSettingsGroup')}</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemProfile')}>
+              <User aria-hidden="true" />
+              <span>{$t('shell.nav.demoItemProfile')}</span>
+            </Sidebar.MenuButton>
           </Sidebar.MenuItem>
-        {/each}
-      {/if}
-    </Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemPreferences')}>
+              <Settings aria-hidden="true" />
+              <span>{$t('shell.nav.demoItemPreferences')}</span>
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemHelp')}>
+              <LifeBuoy aria-hidden="true" />
+              <span>{$t('shell.nav.demoItemHelp')}</span>
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
   </Sidebar.Content>
 
   <Sidebar.Footer>

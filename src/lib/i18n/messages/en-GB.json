@@ -22,6 +22,11 @@
     "nav": {
       "aria": "Navigation",
       "open": "Open navigation",
+      "modulesGroup": "Modules",
+      "demoSettingsGroup": "Settings",
+      "demoItemProfile": "Profile",
+      "demoItemPreferences": "Preferences",
+      "demoItemHelp": "Help & support",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM sections"
     },
