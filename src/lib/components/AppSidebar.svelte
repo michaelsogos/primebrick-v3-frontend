@@ -321,7 +321,7 @@
     </Sidebar.Group>
   </Sidebar.Content>
 
-  <Sidebar.Footer>
+  <Sidebar.Footer class="gap-1.5 p-1.5">
     <Sidebar.Menu>
       <Sidebar.MenuItem>
         <DropdownMenu.Root>
@@ -403,87 +403,92 @@
     </Sidebar.Menu>
 
     <Sidebar.Separator />
-    <div class="px-3 pb-3 pt-2">
+    <div class="w-full px-2 pb-1.5 pt-1 group-data-[collapsible=icon]:px-1.5">
       <!-- Footer chips: health/status first; version control always last (shell convention). -->
-      <div class="flex flex-wrap items-center gap-2">
+      <div
+        class="flex w-full flex-wrap items-center gap-2 group-data-[collapsible=icon]:flex-nowrap group-data-[collapsible=icon]:justify-center"
+      >
         <Badge
           variant="outline"
           class={cn(
             'pointer-events-none w-fit gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+            'group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!min-h-8 group-data-[collapsible=icon]:!min-w-8 group-data-[collapsible=icon]:shrink-0 group-data-[collapsible=icon]:!rounded-md group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:[&>svg]:!size-4',
             healthChipClass
           )}
           title={healthChipLabel}
         >
           {#if healthChip === 'backend_offline'}
-            <CloudOff class="size-3.5 opacity-90" />
+            <CloudOff class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else if healthChip === 'db_offline'}
-            <Database class="size-3.5 opacity-90" />
+            <Database class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else}
-            <Cloud class="size-3.5 opacity-90" />
+            <Cloud class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {/if}
           {#if !collapsed}
             <span>{healthChipLabel}</span>
           {/if}
         </Badge>
 
-        <Sheet.Root bind:open={versionsOpen}>
-          <Sheet.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                type="button"
-                class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label={$t('shell.health.versionsTitle')}
-                title={$t('shell.health.versionsTitle')}
-              >
-                <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-                  v{APP_VERSION}
-                </Badge>
-              </button>
-            {/snippet}
-          </Sheet.Trigger>
-          <Sheet.Content side="right" class="w-[420px] p-0">
-            <div class="flex h-full flex-col">
-              <div class="border-b px-4 py-3">
-                <div class="text-sm font-medium">{$t('shell.health.versionsTitle')}</div>
-              </div>
+        {#if !collapsed || sidebar.isMobile}
+          <Sheet.Root bind:open={versionsOpen}>
+            <Sheet.Trigger>
+              {#snippet child({ props })}
+                <button
+                  {...props}
+                  type="button"
+                  class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label={$t('shell.health.versionsTitle')}
+                  title={$t('shell.health.versionsTitle')}
+                >
+                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                    v{APP_VERSION}
+                  </Badge>
+                </button>
+              {/snippet}
+            </Sheet.Trigger>
+            <Sheet.Content side="right" class="w-[420px] p-0">
+              <div class="flex h-full flex-col">
+                <div class="border-b px-4 py-3">
+                  <div class="text-sm font-medium">{$t('shell.health.versionsTitle')}</div>
+                </div>
 
-              <div class="min-h-0 flex-1 overflow-auto p-4">
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between gap-3 text-sm">
-                    <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
-                    <div class="font-mono">{APP_VERSION}</div>
+                <div class="min-h-0 flex-1 overflow-auto p-4">
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                      <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
+                      <div class="font-mono">{APP_VERSION}</div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                      <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
+                      <div class="font-mono">{health?.version ?? '—'}</div>
+                    </div>
+
+                    <div class="pt-1">
+                      <div class="mb-2 text-xs font-medium text-muted-foreground">{$t('shell.health.modulesTitle')}</div>
+                      {#if health?.modules?.length}
+                        <div class="space-y-1">
+                          {#each health.modules as m (m.id)}
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                              <div class="truncate">{m.id}</div>
+                              <div class="shrink-0 font-mono text-muted-foreground">{m.version}</div>
+                            </div>
+                          {/each}
+                        </div>
+                      {:else if healthOffline}
+                        <div class="text-xs text-muted-foreground">{$t('shell.serverUnreachable')}</div>
+                      {:else}
+                        <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
+                      {/if}
+                    </div>
+
+                    <BrowserClientInfo />
                   </div>
-
-                  <div class="flex items-center justify-between gap-3 text-sm">
-                    <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
-                    <div class="font-mono">{health?.version ?? '—'}</div>
-                  </div>
-
-                  <div class="pt-1">
-                    <div class="mb-2 text-xs font-medium text-muted-foreground">{$t('shell.health.modulesTitle')}</div>
-                    {#if health?.modules?.length}
-                      <div class="space-y-1">
-                        {#each health.modules as m (m.id)}
-                          <div class="flex items-center justify-between gap-3 text-sm">
-                            <div class="truncate">{m.id}</div>
-                            <div class="shrink-0 font-mono text-muted-foreground">{m.version}</div>
-                          </div>
-                        {/each}
-                      </div>
-                    {:else if healthOffline}
-                      <div class="text-xs text-muted-foreground">{$t('shell.serverUnreachable')}</div>
-                    {:else}
-                      <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
-                    {/if}
-                  </div>
-
-                  <BrowserClientInfo />
                 </div>
               </div>
-            </div>
-          </Sheet.Content>
-        </Sheet.Root>
+            </Sheet.Content>
+          </Sheet.Root>
+        {/if}
       </div>
     </div>
   </Sidebar.Footer>
