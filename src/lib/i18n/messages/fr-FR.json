@@ -26,6 +26,7 @@
       "demoItemProfile": "Profil",
       "demoItemPreferences": "Préférences",
       "demoItemHelp": "Aide et support",
+      "demoItemCriticalToast": "Toast critique (démo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Sections CRM"
     },
@@ -81,6 +82,16 @@
       "unhandledError": "Erreur non gérée",
       "unhandledRejectionFallback": "Rejet non géré",
       "unhandledErrorFallback": "Erreur non gérée"
+    },
+    "demoToast": {
+      "profileMessage": "Notification d’information de démonstration (impact faible).",
+      "preferencesMessage": "Avertissement de démonstration (impact moyen).",
+      "helpMessage": "Erreur de démonstration (impact élevé).",
+      "profileAria": "Profil — afficher un toast d’information de démo",
+      "preferencesAria": "Préférences — afficher un toast d’avertissement de démo",
+      "helpAria": "Aide et support — afficher un toast d’erreur de démo",
+      "criticalMessage": "Notification critique / urgente de démonstration (distincte de l’erreur standard).",
+      "criticalAria": "Toast critique — afficher un toast urgent de démo"
     },
     "health": {
       "beOnline": "Online",

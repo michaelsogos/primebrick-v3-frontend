@@ -37,6 +37,7 @@
     "clsx": "^2.1.1",
     "flag-icons": "^7.5.0",
     "lucide-svelte": "^1.0.1",
+    "svelte-sonner": "^1.1.0",
     "tailwind-merge": "^3.5.0"
   }
 }

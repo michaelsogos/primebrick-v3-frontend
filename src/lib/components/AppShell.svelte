@@ -5,7 +5,7 @@
   import AppTopbar from '$lib/components/AppTopbar.svelte';
   import AppSidebar from '$lib/components/AppSidebar.svelte';
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
-  import AppToastHost from '$lib/components/AppToastHost.svelte';
+  import { Toaster } from '$lib/components/ui/sonner';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { t } from '$lib/i18n';
   import { loadShellNav } from '$lib/shell/modules-shell.svelte';
@@ -69,7 +69,7 @@
 </script>
 
 <div class="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background text-foreground">
-  <AppToastHost />
+  <Toaster />
 
   <!--
     Single route tree: one `{@render children()}`.

@@ -27,6 +27,7 @@
       "demoItemProfile": "Profile",
       "demoItemPreferences": "Preferences",
       "demoItemHelp": "Help & support",
+      "demoItemCriticalToast": "Critical toast (demo)",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM sections"
     },
@@ -82,6 +83,16 @@
       "unhandledError": "Unhandled error",
       "unhandledRejectionFallback": "Unhandled rejection",
       "unhandledErrorFallback": "Unhandled error"
+    },
+    "demoToast": {
+      "profileMessage": "Demo informational notice (low impact).",
+      "preferencesMessage": "Demo warning notice (medium impact).",
+      "helpMessage": "Demo error notice (high impact).",
+      "profileAria": "Profile — show demo info toast",
+      "preferencesAria": "Preferences — show demo warning toast",
+      "helpAria": "Help and support — show demo error toast",
+      "criticalMessage": "Demo urgent / critical impact (distinct from standard error).",
+      "criticalAria": "Critical toast — show demo urgent toast"
     },
     "health": {
       "beOnline": "Online",

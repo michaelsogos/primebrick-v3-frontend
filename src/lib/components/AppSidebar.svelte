@@ -12,6 +12,7 @@
   import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { pushImpactError } from '$lib/errors/app-errors';
   import { afterNavigate } from '$app/navigation';
   import {
     BadgeCheck,
@@ -27,6 +28,7 @@
     LayoutGrid,
     LifeBuoy,
     LogOut,
+    Siren,
     Package,
     Receipt,
     Settings,
@@ -49,6 +51,38 @@
 
   const sidebar = Sidebar.useSidebar();
   const collapsed = $derived(sidebar.state === 'collapsed');
+
+  function demoToastProfile() {
+    pushImpactError({
+      impact: 'LOW',
+      messageKey: 'shell.demoToast.profileMessage',
+      scopeKey: 'shell.nav.demoItemProfile'
+    });
+  }
+
+  function demoToastPreferences() {
+    pushImpactError({
+      impact: 'MEDIUM',
+      messageKey: 'shell.demoToast.preferencesMessage',
+      scopeKey: 'shell.nav.demoItemPreferences'
+    });
+  }
+
+  function demoToastHelp() {
+    pushImpactError({
+      impact: 'HIGH',
+      messageKey: 'shell.demoToast.helpMessage',
+      scopeKey: 'shell.nav.demoItemHelp'
+    });
+  }
+
+  function demoToastCritical() {
+    pushImpactError({
+      impact: 'CRITICAL',
+      messageKey: 'shell.demoToast.criticalMessage',
+      scopeKey: 'shell.nav.demoItemCriticalToast'
+    });
+  }
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -299,21 +333,47 @@
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           <Sidebar.MenuItem>
-            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemProfile')}>
+            <Sidebar.MenuButton
+              type="button"
+              title={$t('shell.nav.demoItemProfile')}
+              aria-label={$t('shell.demoToast.profileAria')}
+              onclick={demoToastProfile}
+            >
               <User aria-hidden="true" />
               <span>{$t('shell.nav.demoItemProfile')}</span>
             </Sidebar.MenuButton>
           </Sidebar.MenuItem>
           <Sidebar.MenuItem>
-            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemPreferences')}>
+            <Sidebar.MenuButton
+              type="button"
+              title={$t('shell.nav.demoItemPreferences')}
+              aria-label={$t('shell.demoToast.preferencesAria')}
+              onclick={demoToastPreferences}
+            >
               <Settings aria-hidden="true" />
               <span>{$t('shell.nav.demoItemPreferences')}</span>
             </Sidebar.MenuButton>
           </Sidebar.MenuItem>
           <Sidebar.MenuItem>
-            <Sidebar.MenuButton disabled title={$t('shell.nav.demoItemHelp')}>
+            <Sidebar.MenuButton
+              type="button"
+              title={$t('shell.nav.demoItemHelp')}
+              aria-label={$t('shell.demoToast.helpAria')}
+              onclick={demoToastHelp}
+            >
               <LifeBuoy aria-hidden="true" />
               <span>{$t('shell.nav.demoItemHelp')}</span>
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton
+              type="button"
+              title={$t('shell.nav.demoItemCriticalToast')}
+              aria-label={$t('shell.demoToast.criticalAria')}
+              onclick={demoToastCritical}
+            >
+              <Siren aria-hidden="true" />
+              <span>{$t('shell.nav.demoItemCriticalToast')}</span>
             </Sidebar.MenuButton>
           </Sidebar.MenuItem>
         </Sidebar.Menu>
