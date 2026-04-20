@@ -11,6 +11,7 @@
   import SmileIcon from '@lucide/svelte/icons/smile';
   import UserIcon from '@lucide/svelte/icons/user';
   import CommandKeyGlyph from '@lucide/svelte/icons/command';
+  import { Kbd } from '$lib/components/ui/kbd';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -143,22 +144,13 @@
             aria-hidden="true"
           >
             {#if isAppleOs()}
-              <span
-                class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 text-muted-foreground shadow-sm"
-                title="⌘K"
-              >
+              <Kbd size="icon" title="⌘K">
                 <CommandKeyGlyph class="size-3.5" strokeWidth={2} />
-              </span>
-              <kbd
-                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >K</kbd>
+              </Kbd>
+              <Kbd size="key">K</Kbd>
             {:else}
-              <kbd
-                class="inline-flex h-5 shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1.5 font-mono text-[10px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >Ctrl</kbd>
-              <kbd
-                class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 px-1 font-mono text-[11px] font-semibold leading-none text-muted-foreground shadow-sm"
-                >K</kbd>
+              <Kbd size="modifier">Ctrl</Kbd>
+              <Kbd size="key">K</Kbd>
             {/if}
           </div>
         {/if}
