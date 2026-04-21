@@ -1,5 +1,5 @@
 @import "flag-icons/css/flag-icons.min.css";
-@import "@fontsource/inter/latin.css";
+@import "@fontsource-variable/inter";
 
 @tailwind base;
 @tailwind components;

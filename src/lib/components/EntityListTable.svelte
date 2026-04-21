@@ -11,8 +11,8 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import * as Sheet from '$lib/components/ui/sheet';
   import { cn } from '$lib/utils.js';
+  import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
   import XIcon from '@lucide/svelte/icons/x';
@@ -140,6 +140,27 @@
     noRecordsMessage?: string;
   } = $props();
 
+  // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
+  let lastPanelId = $state<string | null>(null);
+  $effect(() => {
+    if (sheetState.panelId) lastPanelId = sheetState.panelId;
+  });
+
+  // Do not `$effect`-open from `filtersOpen`: while the sheet is closing, `filtersOpen` can
+  // still be true for a tick and `openSheet` runs again (infinite reopen loop).
+
+  /** Parent can set `bind:filtersOpen={false}` to dismiss the filters sheet. */
+  $effect(() => {
+    if (!filters) return;
+    if (!filtersOpen && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
+  });
+
+  /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
+  $effect(() => {
+    if (!filters) return;
+    if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
+  });
+
   const selectionCheckboxClass =
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
@@ -156,8 +177,7 @@
       : ''
   );
 
-  let columnsMenuOpen = $state(false);
-  let searchMenuOpen = $state(false);
+  // Panels are mounted via global SheetHost; keep local boolean state only for the optional `filters` slot.
 
   function toggleDatetimeIana(col: MetaColumn) {
     const cur = datetimeIanaModeByKey[col.key] ?? 'browser';
@@ -660,76 +680,25 @@
             </Button>
           {/if}
 
-          <Sheet.Root bind:open={searchMenuOpen}>
-            <Sheet.Trigger>
-              {#snippet child({ props })}
-                <Button variant="soft" size="xs" {...props}>
-                  {searchScopeLabel()}
-                </Button>
-              {/snippet}
-            </Sheet.Trigger>
-
-            <Sheet.Content side="right" class="w-[360px] p-0" showClose={false}>
-              <div class="flex h-full flex-col">
-                <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
-                  <div class="text-sm font-medium">{$t('entities.list.searchIn')}</div>
-                  <div class="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-                      onclick={() => onSearchInKeysChange(null)}
-                      title={$t('common.reset')}
-                    >
-                      <RotateCcw class="size-4" />
-                    </Button>
-                    <Sheet.Close
-                      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                      title={$t('common.done')}
-                    >
-                      <XIcon class="size-4" />
-                    </Sheet.Close>
-                  </div>
-                </div>
-
-                <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
-                  <button
-                    type="button"
-                    class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
-                    onclick={() => onSearchInKeysChange(null)}
-                  >
-                    <span class="pointer-events-none shrink-0" aria-hidden="true">
-                      <Checkbox
-                        checked={!searchInKeys || searchInKeys.length === 0}
-                        class={sheetMenuCheckboxClass}
-                      />
-                    </span>
-                    <span class="min-w-0 flex-1 truncate">{$t('entities.list.searchInAll')}</span>
-                  </button>
-
-                  <div class="my-2 px-2">
-                    <div class="h-px bg-border"></div>
-                  </div>
-
-                  {#each searchableColumns as col (col.key)}
-                    <button
-                      type="button"
-                      class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
-                      onclick={() => toggleSearchKey(col.key)}
-                    >
-                      <span class="pointer-events-none shrink-0" aria-hidden="true">
-                        <Checkbox
-                          checked={!!searchInKeys?.includes(col.key)}
-                          class={sheetMenuCheckboxClass}
-                        />
-                      </span>
-                      <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            </Sheet.Content>
-          </Sheet.Root>
+          <Button
+            variant="soft"
+            size="xs"
+            type="button"
+            onclick={() =>
+              openSheet(
+                'entity.searchIn',
+                {
+                  searchInKeys,
+                  searchableColumns,
+                  onSearchInKeysChange,
+                  toggleSearchKey,
+                  sheetMenuCheckboxClass
+                } as any,
+                { contentClass: 'w-[360px] p-0' }
+              )}
+          >
+            {searchScopeLabel()}
+          </Button>
         </div>
       </div>
     </div>
@@ -746,95 +715,46 @@
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
 
-      <Sheet.Root bind:open={columnsMenuOpen}>
-        <Sheet.Trigger>
-          {#snippet child({ props })}
-            <Button variant="soft" size="sm" {...props}>
-              <Columns3 class="size-4" />
-              {$t('entities.list.columns')}
-            </Button>
-          {/snippet}
-        </Sheet.Trigger>
-        <Sheet.Content side="right" class="w-[360px] p-0" showClose={false}>
-          <div class="flex h-full flex-col">
-            <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
-              <div class="text-sm font-medium">{$t('entities.list.columns')}</div>
-              <div class="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-                  onclick={() => onResetColumnVisibility()}
-                  title={$t('common.reset')}
-                >
-                  <RotateCcw class="size-4" />
-                </Button>
-                <Sheet.Close
-                  class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                  title={$t('common.done')}
-                >
-                  <XIcon class="size-4" />
-                </Sheet.Close>
-              </div>
-            </div>
-
-            <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
-              {#each nonAuditingColumns as col (col.key)}
-                <button
-                  type="button"
-                  disabled={col.hideable === false}
-                  class={col.hideable === false
-                    ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-                    : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-                  onclick={() => toggleColumnKey(col.key)}
-                >
-                  <span class="pointer-events-none shrink-0" aria-hidden="true">
-                    <Checkbox
-                      checked={visibleKeys.includes(col.key)}
-                      disabled={col.hideable === false}
-                      class={sheetMenuCheckboxClass}
-                    />
-                  </span>
-                  <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
-                </button>
-              {/each}
-
-              {#if auditingColumns.length > 0}
-                <div class="my-2 px-2">
-                  <div class="flex items-center gap-2">
-                    <div class="h-px flex-1 bg-border"></div>
-                    <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
-                    <div class="h-px flex-1 bg-border"></div>
-                  </div>
-                </div>
-
-                {#each auditingColumns as col (col.key)}
-                  <button
-                    type="button"
-                    disabled={col.hideable === false}
-                    class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-                    onclick={() => toggleColumnKey(col.key)}
-                  >
-                    <span class="pointer-events-none shrink-0" aria-hidden="true">
-                      <Checkbox
-                        checked={visibleKeys.includes(col.key)}
-                        disabled={col.hideable === false}
-                        class={sheetMenuCheckboxClass}
-                      />
-                    </span>
-                    <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
-                  </button>
-                {/each}
-              {/if}
-            </div>
-          </div>
-        </Sheet.Content>
-      </Sheet.Root>
+      <Button
+        variant="soft"
+        size="sm"
+        type="button"
+        onclick={() =>
+          openSheet(
+            'entity.columns',
+            {
+              nonAuditingColumns,
+              auditingColumns,
+              visibleKeys,
+              toggleColumnKey,
+              onResetColumnVisibility,
+              sheetMenuCheckboxClass,
+              t: $t
+            } as any,
+            { contentClass: 'w-[360px] p-0' }
+          )}
+      >
+        <Columns3 class="size-4" />
+        {$t('entities.list.columns')}
+      </Button>
 
       {#if filters}
-        <Button variant="soft" size="sm" onclick={() => (filtersOpen = true)}>
+        <Button
+          variant="soft"
+          size="sm"
+          type="button"
+          onclick={() => {
+            if (sheetState.open && sheetState.panelId === 'entity.filters') {
+              closeSheet();
+              filtersOpen = false;
+              return;
+            }
+            filtersOpen = true;
+            openSheet('entity.filters', { content: filters } as any, {
+              contentClass: 'w-[360px] p-0'
+            });
+          }}
+        >
           <SlidersHorizontal class="size-4" />
           {$t('entities.list.filters')}
         </Button>
@@ -1320,11 +1240,7 @@
 </div>
 
 {#if filters}
-  <Sheet.Root bind:open={filtersOpen}>
-    <Sheet.Content side="right" class="w-[360px] p-0">
-      {@render filters()}
-    </Sheet.Content>
-  </Sheet.Root>
+  <!-- Filters content is mounted inside the global SheetHost (entity.filters panel). -->
 {/if}
 
 <style>
