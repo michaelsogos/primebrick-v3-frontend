@@ -129,7 +129,12 @@
       "searchInAll": "Todos los campos",
       "searchInFields": "campos",
       "filtersHint": "Refina la lista con filtros del servidor.",
-      "pageSize": "Filas por página"
+      "pageSize": "Filas por página",
+      "paginationStatus": "Página {page} de {total}",
+      "viewSelectedOnlyTitle": "Mostrar solo filas seleccionadas en esta página",
+      "viewAllRowsTitle": "Mostrar todas las filas de esta página",
+      "noSelectedRowsInView": "No hay filas seleccionadas en esta página.",
+      "selectedRowsNotLoadedHint": "Abre las páginas donde se cargaron esos registros para poder verlos todos aquí."
     },
     "crm": {
       "pipeline": {

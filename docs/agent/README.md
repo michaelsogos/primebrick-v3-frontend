@@ -4,6 +4,6 @@ Use this folder for **longer** human/agent reference material. Day-to-day rules 
 
 | File | Contents |
 |------|----------|
-| `patterns.md` | Page layout, UI conventions, Shadcn vendor workflow, dev server etiquette |
+| `patterns.md` | Page layout, UI conventions, global **SheetHost** side panel, Shadcn vendor workflow, dev server etiquette |
 
 Keep **`AGENTS.md`** at repo root as the short entry point.

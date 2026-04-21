@@ -47,6 +47,21 @@ Prefer one table pattern: headers, row hover, empty/loading, pagination/filters 
 
 Drive module navigation from the modules API via a domain component (e.g. module nav) rather than duplicating logic per route.
 
+### Global side sheet (right panel)
+
+The **right-hand “sidebar” sheet** is not route-owned UI: it is a **single reusable host** mounted once in the app shell.
+
+| Piece | Role |
+|-------|------|
+| `$lib/shell/sheets/sheet-manager.svelte.ts` | `sheetState`, `openSheet`, `closeSheet`, `replaceSheet`; typed `SheetPanelId` and per-panel props. |
+| `$lib/shell/sheets/SheetHost.svelte` | One `Sheet.Root` / `Sheet.Content`; picks the panel component from a **registry** by `sheetState.panelId`. |
+| `$lib/shell/sheets/panels/*` | Shell panels (e.g. errors, versions). |
+| `$lib/entity-list/sheets/panels/*` | Entity-list panels (search-in, columns, filters). |
+
+**How to add a panel:** register the Svelte panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions.
+
+**Do not** drive `openSheet` from an `$effect` that also depends on a **bindable boolean** mirroring sheet open state (e.g. “open when flag is true and sheet looks closed”). While the sheet is closing, the flag can still be `true` for a tick and the effect will **re-open** the sheet → infinite loop. Prefer **opening from the click handler** (or another discrete event) and use small, one-way sync effects only for “parent set flag false → `closeSheet`” / “sheet dismissed → clear flag”.
+
 ## Agent checklist (UI)
 
 - Use primitives directly when no customization is needed.
@@ -54,6 +69,7 @@ Drive module navigation from the modules API via a domain component (e.g. module
 - Keep primitives stable for CLI refreshes.
 - Isolate vendor updates in a dedicated branch.
 - Do not fork primitives for one-off styling.
+- Right-side sheets: use **`SheetHost` + `openSheet` / `closeSheet`**; avoid reactive `openSheet` loops tied to bindable “open” flags (see **Global side sheet** above).
 
 ## Local dev (backend + agents)
 

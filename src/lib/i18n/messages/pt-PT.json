@@ -129,7 +129,12 @@
       "searchInAll": "Todos os campos",
       "searchInFields": "campos",
       "filtersHint": "Refine a lista com filtros do servidor.",
-      "pageSize": "Linhas por página"
+      "pageSize": "Linhas por página",
+      "paginationStatus": "Página {page} de {total}",
+      "viewSelectedOnlyTitle": "Mostrar apenas linhas selecionadas nesta página",
+      "viewAllRowsTitle": "Mostrar todas as linhas desta página",
+      "noSelectedRowsInView": "Não há linhas selecionadas nesta página.",
+      "selectedRowsNotLoadedHint": "Abra as páginas onde esses registos foram carregados para os ver todos aqui."
     },
     "crm": {
       "pipeline": {
