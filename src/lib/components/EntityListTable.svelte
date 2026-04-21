@@ -281,6 +281,42 @@
   const actionsEnabled = $derived(!!rowActionsEnabled || !!rowActions);
   const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
 
+  /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
+  let tableRef = $state<HTMLTableElement | null>(null);
+  let savedTableScrollLeft = $state(0);
+  let prevRowsLoadingForScrollSave = $state(false);
+  let prevRowsLoadingForScrollRestore = $state(false);
+
+  function tableScrollHost(table: HTMLTableElement | null): HTMLElement | null {
+    if (!table) return null;
+    return table.closest('[data-slot=table-container]');
+  }
+
+  /** Capture horizontal scroll before the loading skeleton replaces row markup (browser often resets both axes). */
+  $effect.pre(() => {
+    void rowsLoading;
+    void tableRef;
+    const host = tableScrollHost(tableRef);
+    if (rowsLoading && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
+    prevRowsLoadingForScrollSave = rowsLoading;
+  });
+
+  $effect(() => {
+    void rowsLoading;
+    void tableRef;
+    const host = tableScrollHost(tableRef);
+    if (!rowsLoading && prevRowsLoadingForScrollRestore && host) {
+      const left = savedTableScrollLeft;
+      queueMicrotask(() => {
+        host.scrollLeft = left;
+        requestAnimationFrame(() => {
+          if (host.scrollLeft !== left) host.scrollLeft = left;
+        });
+      });
+    }
+    prevRowsLoadingForScrollRestore = rowsLoading;
+  });
+
   // Sticky offsets (measured widths so we can keep columns auto-sized).
   let checkboxHeadRef = $state<HTMLElement | null>(null);
   let uuidHeadRef = $state<HTMLElement | null>(null);
@@ -778,6 +814,7 @@
       {/if}
     {:else}
       <Table.Root
+        bind:ref={tableRef}
         data-row-density={rowDensity}
         class={cn(
           'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
