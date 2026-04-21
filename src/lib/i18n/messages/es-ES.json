@@ -129,7 +129,8 @@
       "searchInAll": "Todos los campos",
       "searchInFields": "campos",
       "filtersHint": "Refina la lista con filtros del servidor.",
-      "pageSize": "Filas por página"
+      "pageSize": "Filas por página",
+      "paginationStatus": "Página {page} de {total}"
     },
     "crm": {
       "pipeline": {

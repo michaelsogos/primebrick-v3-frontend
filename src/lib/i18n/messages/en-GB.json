@@ -136,7 +136,8 @@
       "searchInAll": "All fields",
       "searchInFields": "fields",
       "filtersHint": "Refine the list using server-side filters.",
-      "pageSize": "Rows per page"
+      "pageSize": "Rows per page",
+      "paginationStatus": "Page {page} of {total}"
     },
     "crm": {
       "pipeline": {
