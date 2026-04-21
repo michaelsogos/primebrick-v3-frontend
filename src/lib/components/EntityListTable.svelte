@@ -1169,6 +1169,7 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
@@ -1190,51 +1191,56 @@
           {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-      <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
 
       <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
 
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={page <= 1}
-        onclick={() => onPageChange(1)}
-        aria-label="first page"
-        title="first page"
-      >
-        <ChevronsLeft class="size-4" />
-      </Button>
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={page <= 1}
-        onclick={() => onPageChange(Math.max(1, page - 1))}
-        aria-label="previous page"
-        title="previous page"
-      >
-        <ChevronLeft class="size-4" />
-      </Button>
-      <div class="min-w-[7rem] text-center text-muted-foreground">{page} / {totalPages}</div>
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={page >= totalPages}
-        onclick={() => onPageChange(Math.min(totalPages, page + 1))}
-        aria-label="next page"
-        title="next page"
-      >
-        <ChevronRight class="size-4" />
-      </Button>
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={page >= totalPages}
-        onclick={() => onPageChange(totalPages)}
-        aria-label="last page"
-        title="last page"
-      >
-        <ChevronsRight class="size-4" />
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="soft"
+          size="icon-sm"
+          disabled={page <= 1}
+          onclick={() => onPageChange(1)}
+          aria-label="first page"
+          title="first page"
+        >
+          <ChevronsLeft class="size-4" />
+        </Button>
+        <Button
+          variant="soft"
+          size="icon-sm"
+          disabled={page <= 1}
+          onclick={() => onPageChange(Math.max(1, page - 1))}
+          aria-label="previous page"
+          title="previous page"
+        >
+          <ChevronLeft class="size-4" />
+        </Button>
+        <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
+          {$t('entities.list.paginationStatus')
+            .replace('{page}', String(page))
+            .replace('{total}', String(totalPages))}
+        </div>
+        <Button
+          variant="soft"
+          size="icon-sm"
+          disabled={page >= totalPages}
+          onclick={() => onPageChange(Math.min(totalPages, page + 1))}
+          aria-label="next page"
+          title="next page"
+        >
+          <ChevronRight class="size-4" />
+        </Button>
+        <Button
+          variant="soft"
+          size="icon-sm"
+          disabled={page >= totalPages}
+          onclick={() => onPageChange(totalPages)}
+          aria-label="last page"
+          title="last page"
+        >
+          <ChevronsRight class="size-4" />
+        </Button>
+      </div>
     </div>
   </div>
 </div>

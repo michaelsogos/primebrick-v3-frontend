@@ -129,7 +129,8 @@
       "searchInAll": "Alle Felder",
       "searchInFields": "Felder",
       "filtersHint": "Liste mit serverseitigen Filtern verfeinern.",
-      "pageSize": "Zeilen pro Seite"
+      "pageSize": "Zeilen pro Seite",
+      "paginationStatus": "Seite {page} von {total}"
     },
     "crm": {
       "pipeline": {
