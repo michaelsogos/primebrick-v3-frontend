@@ -4,12 +4,10 @@
   import { Button } from '$lib/components/ui/button';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import * as Sheet from '$lib/components/ui/sheet';
-  import * as Alert from '$lib/components/ui/alert';
   import { Badge } from '$lib/components/ui/badge';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import { t, formatUiDateTime } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import {
     Bell,
@@ -21,9 +19,9 @@
     Trash2
   } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
-  import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
-  import { cn } from '$lib/utils';
+  import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -111,7 +109,6 @@
 
   let { unreadNotifications = 3 }: $$Props = $props();
 
-  let errorsOpen = $state(false);
   let ianaTimeZone = $state<string | null>(null);
 
   onMount(() => {
@@ -146,109 +143,23 @@
       {/if}
       <LangSelect />
 
-      <Sheet.Root bind:open={errorsOpen}>
-        <Sheet.Trigger>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              type="button"
-              variant="ghost"
-              size="icon"
-              class="relative"
-              aria-label={$t('shell.errors.aria')}
-              title={$t('shell.errors.aria')}
-            >
-              <TriangleAlert class="size-4" />
-              {#if $appErrors.length > 0}
-                {@const mi = maxImpact($appErrors as unknown as Array<{ impact?: ImpactLevel }>)}
-                <Badge class={`absolute -right-1 -top-1 h-4 min-w-4 justify-center border-transparent px-1 text-[10px] ${impactBadgeClass(mi)}`}>
-                  {$appErrors.length > 99 ? '99+' : $appErrors.length}
-                </Badge>
-              {/if}
-            </Button>
-          {/snippet}
-        </Sheet.Trigger>
-        <Sheet.Content side="right" class="w-[420px] p-0">
-          <div class="flex h-full flex-col">
-            <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
-              <div class="text-sm font-medium">{$t('shell.errors.title')}</div>
-              <div class="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  disabled={$appErrors.length === 0}
-                  onclick={() => clearAppErrors()}
-                  aria-label={$t('shell.errors.clear')}
-                  title={$t('shell.errors.clear')}
-                >
-                  <Trash2 class="size-4" />
-                </Button>
-                <Sheet.Close
-                  class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                  title={$t('shell.errors.close')}
-                >
-                  <XIcon class="size-4" />
-                </Sheet.Close>
-              </div>
-            </div>
-
-            <div class="min-h-0 flex-1 overflow-auto p-2">
-              {#if $appErrors.length === 0}
-                <div class="grid h-full place-items-center p-3">
-                  <div class="relative flex flex-col items-center gap-2 text-center">
-                    <div class="pb-watermark-empty">
-                      <ThumbsUp class="size-20 text-info" />
-                    </div>
-                    <div class="text-sm font-medium text-muted-foreground">{$t('shell.errors.empty')}</div>
-                  </div>
-                </div>
-              {:else}
-                <div class="space-y-2">
-                  {#each $appErrors as e (e.id)}
-                    {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
-                    {@const Icon = impactIcon(imp)}
-                    <Alert.Root variant={impactToAlertVariant(imp)} class="justify-between gap-2">
-                      <Icon class="shrink-0" strokeWidth={2} aria-hidden="true" />
-                      <div class="min-w-0 flex-1 space-y-1">
-                        {#if (e as any).scopeKey || e.scope}
-                          <div class="text-[11px] font-medium leading-tight text-inherit opacity-80">
-                            {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
-                          </div>
-                        {/if}
-                        <Alert.Title class="text-sm">
-                          {(e as any).messageKey ? $t((e as any).messageKey) : ((e as any).message ?? e.message)}
-                        </Alert.Title>
-                        {#if (e as any).tags?.length}
-                          <div class="mt-1 flex flex-wrap gap-1">
-                            {#each (e as any).tags as tag (tag.label)}
-                              <Badge
-                                variant="outline"
-                                class={cn(
-                                  'h-auto border px-1.5 py-0.5 text-[10px] font-medium',
-                                  errorTagBadgeClass(tag.tone)
-                                )}
-                              >
-                                {tag.label}
-                              </Badge>
-                            {/each}
-                          </div>
-                        {/if}
-                        {#if e.detail}
-                          <Alert.Description class="text-xs whitespace-pre-wrap">{e.detail}</Alert.Description>
-                        {/if}
-                      </div>
-                      <div class="shrink-0 text-[11px] text-inherit opacity-70">
-                        {formatUiDateTime(e.createdAt, $uiLang)}
-                      </div>
-                    </Alert.Root>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          </div>
-        </Sheet.Content>
-      </Sheet.Root>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="relative"
+        aria-label={$t('shell.errors.aria')}
+        title={$t('shell.errors.aria')}
+        onclick={() => openSheet('shell.errors', {}, { contentClass: 'w-[420px] p-0' })}
+      >
+        <TriangleAlert class="size-4" />
+        {#if $appErrors.length > 0}
+          {@const mi = maxImpact($appErrors as unknown as Array<{ impact?: ImpactLevel }>)}
+          <Badge class={`absolute -right-1 -top-1 h-4 min-w-4 justify-center border-transparent px-1 text-[10px] ${impactBadgeClass(mi)}`}>
+            {$appErrors.length > 99 ? '99+' : $appErrors.length}
+          </Badge>
+        {/if}
+      </Button>
 
       <Button
         type="button"
@@ -271,21 +182,6 @@
 </header>
 
 <style>
-  @keyframes pb-watermark-pulse {
-    0%,
-    100% {
-      opacity: 0.12;
-      transform: translateY(0) scale(1);
-    }
-    50% {
-      opacity: 0.22;
-      transform: translateY(-6px) scale(1.06);
-    }
-  }
-
-  .pb-watermark-empty {
-    transform-origin: center;
-    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
-  }
+  /* moved to ErrorsPanel.svelte (sheet content). */
 </style>
 

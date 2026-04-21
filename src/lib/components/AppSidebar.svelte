@@ -2,7 +2,6 @@
   import { page } from '$app/state';
   import { Badge } from '$lib/components/ui/badge';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import * as Sheet from '$lib/components/ui/sheet';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { cn } from '$lib/utils';
@@ -13,6 +12,7 @@
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { pushImpactError } from '$lib/errors/app-errors';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
   import {
     BadgeCheck,
@@ -39,8 +39,6 @@
 
   let selectedId = $state<string | null>(null);
   let crmOpen = $state(false);
-
-  let versionsOpen = $state(false);
 
   /** Demo-only org switcher (static); replace with API-backed org when available. */
   type DemoOrgId = 'acme' | 'johnDoe';
@@ -490,64 +488,17 @@
         </Badge>
 
         {#if !collapsed || sidebar.isMobile}
-          <Sheet.Root bind:open={versionsOpen}>
-            <Sheet.Trigger>
-              {#snippet child({ props })}
-                <button
-                  {...props}
-                  type="button"
-                  class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label={$t('shell.health.versionsTitle')}
-                  title={$t('shell.health.versionsTitle')}
-                >
-                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-                    v{APP_VERSION}
-                  </Badge>
-                </button>
-              {/snippet}
-            </Sheet.Trigger>
-            <Sheet.Content side="right" class="w-[420px] p-0">
-              <div class="flex h-full flex-col">
-                <div class="border-b px-4 py-3">
-                  <div class="text-sm font-medium">{$t('shell.health.versionsTitle')}</div>
-                </div>
-
-                <div class="min-h-0 flex-1 overflow-auto p-4">
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between gap-3 text-sm">
-                      <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
-                      <div class="font-mono">{APP_VERSION}</div>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3 text-sm">
-                      <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
-                      <div class="font-mono">{health?.version ?? '—'}</div>
-                    </div>
-
-                    <div class="pt-1">
-                      <div class="mb-2 text-xs font-medium text-muted-foreground">{$t('shell.health.modulesTitle')}</div>
-                      {#if health?.modules?.length}
-                        <div class="space-y-1">
-                          {#each health.modules as m (m.id)}
-                            <div class="flex items-center justify-between gap-3 text-sm">
-                              <div class="truncate">{m.id}</div>
-                              <div class="shrink-0 font-mono text-muted-foreground">{m.version}</div>
-                            </div>
-                          {/each}
-                        </div>
-                      {:else if healthOffline}
-                        <div class="text-xs text-muted-foreground">{$t('shell.serverUnreachable')}</div>
-                      {:else}
-                        <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
-                      {/if}
-                    </div>
-
-                    <BrowserClientInfo />
-                  </div>
-                </div>
-              </div>
-            </Sheet.Content>
-          </Sheet.Root>
+          <button
+            type="button"
+            class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={$t('shell.health.versionsTitle')}
+            title={$t('shell.health.versionsTitle')}
+            onclick={() => openSheet('shell.versions', {}, { contentClass: 'w-[420px] p-0' })}
+          >
+            <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+              v{APP_VERSION}
+            </Badge>
+          </button>
         {/if}
       </div>
     </div>

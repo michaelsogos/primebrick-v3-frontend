@@ -32,7 +32,7 @@
     "vite": "^8.0.4"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.8",
+    "@fontsource-variable/inter": "^5.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "flag-icons": "^7.5.0",
