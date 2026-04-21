@@ -1,6 +1,11 @@
 <script lang="ts">
   import * as Sheet from '$lib/components/ui/sheet';
-  import { closeSheet, sheetState, type SheetPanelId } from '$lib/shell/sheets/sheet-manager.svelte';
+  import {
+    closeSheet,
+    sheetState,
+    shouldSuppressSheetDialogClose,
+    type SheetPanelId
+  } from '$lib/shell/sheets/sheet-manager.svelte';
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
   import VersionsPanel from '$lib/shell/sheets/panels/VersionsPanel.svelte';
@@ -20,13 +25,17 @@
   const Panel = $derived(panelId ? registry[panelId] : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);
 
-  /** Controlled dialog: `bind:open={() => sheetState.open, …}` did not reliably sync bits-ui with module `$state`. */
+  /**
+   * Controlled dialog: keep `open` in sync with `sheetState.open`.
+   * Ignore a spurious `false` right after `openSheet()` (see `shouldSuppressSheetDialogClose`).
+   */
   function onSheetOpenChange(next: boolean) {
     if (next) {
       sheetState.open = true;
-    } else {
-      closeSheet();
+      return;
     }
+    if (shouldSuppressSheetDialogClose()) return;
+    closeSheet();
   }
 </script>
 

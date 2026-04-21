@@ -32,6 +32,17 @@ export type SheetPanelPropsMap = {
 
 type AnyPanelProps = SheetPanelPropsMap[SheetPanelId];
 
+/**
+ * Bits-ui `Dialog` can emit `onOpenChange(false)` immediately after a programmatic `open=true`,
+ * which would call `closeSheet()` before the panel paints. Ignore close callbacks briefly after
+ * `openSheet()` until after the next frames.
+ */
+let suppressDialogCloseFromHost = false;
+
+export function shouldSuppressSheetDialogClose(): boolean {
+  return suppressDialogCloseFromHost;
+}
+
 export const sheetState = $state({
   open: false,
   panelId: null as SheetPanelId | null,
@@ -51,7 +62,13 @@ export function openSheet<T extends SheetPanelId>(
   sheetState.side = options?.side ?? 'right';
   sheetState.contentClass = options?.contentClass ?? sheetState.contentClass;
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
+  suppressDialogCloseFromHost = true;
   sheetState.open = true;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      suppressDialogCloseFromHost = false;
+    });
+  });
 }
 
 export function replaceSheet<T extends SheetPanelId>(
