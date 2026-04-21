@@ -1314,7 +1314,12 @@
     {/if}
   </div>
 
-  <div class="flex items-center justify-between gap-3 border-t bg-background px-3 py-2 text-sm">
+  <div
+    class={cn(
+      'flex items-center justify-between gap-3 border-t bg-background px-3 py-2',
+      compactRows ? 'text-xs' : 'text-sm'
+    )}
+  >
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
       <div class="text-muted-foreground">
         {#if footerRangeTotal === 0}
