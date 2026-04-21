@@ -130,7 +130,11 @@
       "searchInFields": "champs",
       "filtersHint": "Affinez la liste avec des filtres côté serveur.",
       "pageSize": "Lignes par page",
-      "paginationStatus": "Page {page} sur {total}"
+      "paginationStatus": "Page {page} sur {total}",
+      "viewSelectedOnlyTitle": "Afficher uniquement les lignes sélectionnées sur cette page",
+      "viewAllRowsTitle": "Afficher toutes les lignes de cette page",
+      "noSelectedRowsInView": "Aucune ligne sélectionnée sur cette page.",
+      "selectedRowsNotLoadedHint": "Ouvrez les pages où ces enregistrements ont été chargés pour les réunir ici."
     },
     "crm": {
       "pipeline": {

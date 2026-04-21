@@ -137,7 +137,11 @@
       "searchInFields": "fields",
       "filtersHint": "Refine the list using server-side filters.",
       "pageSize": "Rows per page",
-      "paginationStatus": "Page {page} of {total}"
+      "paginationStatus": "Page {page} of {total}",
+      "viewSelectedOnlyTitle": "Show only selected rows on this page",
+      "viewAllRowsTitle": "Show all rows on this page",
+      "noSelectedRowsInView": "No selected rows on this page.",
+      "selectedRowsNotLoadedHint": "Open the pages where those records were loaded to assemble the full selection here."
     },
     "crm": {
       "pipeline": {

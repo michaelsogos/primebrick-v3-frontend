@@ -20,13 +20,17 @@
   const Panel = $derived(panelId ? registry[panelId] : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);
 
-  function setOpen(v: boolean) {
-    if (v) sheetState.open = true;
-    else closeSheet();
+  /** Controlled dialog: `bind:open={() => sheetState.open, …}` did not reliably sync bits-ui with module `$state`. */
+  function onSheetOpenChange(next: boolean) {
+    if (next) {
+      sheetState.open = true;
+    } else {
+      closeSheet();
+    }
   }
 </script>
 
-<Sheet.Root bind:open={() => sheetState.open, setOpen}>
+<Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
   <Sheet.Content showClose={false} side={sheetState.side} class={sheetState.contentClass}>
     {#if Panel}
       <Panel {...panelProps} />
