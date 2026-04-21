@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -35,7 +35,9 @@
     RotateCcw,
     MoreVertical,
     Globe,
-    MapPin
+    MapPin,
+    Eye,
+    EyeOff
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -151,13 +153,20 @@
 
   /** Parent can set `bind:filtersOpen={false}` to dismiss the filters sheet. */
   $effect(() => {
-    if (!filters) return;
+    // `filters` is a Snippet whose reference changes whenever the parent re-renders (e.g. on
+    // `selectedKeys` updates). Do not subscribe to it here — only react to real sheet/bind state.
+    if (!untrack(() => filters)) return;
+    void filtersOpen;
+    void sheetState.open;
+    void sheetState.panelId;
     if (!filtersOpen && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
   $effect(() => {
-    if (!filters) return;
+    if (!untrack(() => filters)) return;
+    void sheetState.open;
+    void lastPanelId;
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
   });
 
@@ -249,6 +258,8 @@
   let lastRangeEndIndex = $state<number | null>(null);
   /** Selection at mousedown; current drag applies symmetric diff with the active range vs this snapshot. */
   let selectionSnapshotAtMouseDown: Set<string> | null = null;
+  /** After a range brush drag, suppress the following `click` on the row (same gesture as mouseup). */
+  let skipNextRowClickSelectToggle = false;
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
@@ -273,13 +284,90 @@
       return out;
     })()
   );
-  const pageKeys = $derived(rows.map((r) => rowKey(r)));
+  /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
+  let showSelectedOnly = $state(false);
+  let clientSelectedPage = $state(1);
+  let selectedRowByKey = $state(new Map<string, TRow>());
+
+  const orderedSelectedRows = $derived(
+    selectedKeys.map((k) => selectedRowByKey.get(k)).filter((r): r is TRow => r !== undefined)
+  );
+  const clientSelectedTotalPages = $derived(
+    Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)))
+  );
+  const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
+  const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : page);
+  const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
+  const footerRangeTotal = $derived(footerUsesClientPaging ? orderedSelectedRows.length : total);
+  const footerRangeStart = $derived(
+    footerRangeTotal === 0 ? 0 : (footerPage - 1) * pageSize + 1
+  );
+  const footerRangeEnd = $derived(
+    footerRangeTotal === 0 ? 0 : Math.min(footerPage * pageSize, footerRangeTotal)
+  );
+
+  const viewRows = $derived(
+    rowSelectionEnabled && showSelectedOnly
+      ? orderedSelectedRows.slice(
+          (clientSelectedPage - 1) * pageSize,
+          (clientSelectedPage - 1) * pageSize + pageSize
+        )
+      : rows
+  );
+  const pageKeys = $derived(viewRows.map((r) => rowKey(r)));
   const selectedOnPageCount = $derived(pageKeys.filter((k) => selectedKeys.includes(k)).length);
   const allOnPageSelected = $derived(pageKeys.length > 0 && selectedOnPageCount === pageKeys.length);
   /** Header checkbox tri-state: partial selection on current page. */
   const headerIndeterminate = $derived(selectedOnPageCount > 0 && !allOnPageSelected);
   const actionsEnabled = $derived(!!rowActionsEnabled || !!rowActions);
   const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
+
+  /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
+  let tableRef = $state<HTMLTableElement | null>(null);
+  let savedTableScrollLeft = $state(0);
+  let prevRowsLoadingForScrollSave = $state(false);
+  let prevRowsLoadingForScrollRestore = $state(false);
+
+  function tableScrollHost(table: HTMLTableElement | null): HTMLElement | null {
+    if (!table) return null;
+    return table.closest('[data-slot=table-container]');
+  }
+
+  /** Capture horizontal scroll before the loading skeleton replaces row markup (browser often resets both axes). */
+  $effect.pre(() => {
+    void rowsLoading;
+    void tableRef;
+    const host = tableScrollHost(tableRef);
+    if (rowsLoading && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
+    prevRowsLoadingForScrollSave = rowsLoading;
+  });
+
+  $effect(() => {
+    void rowsLoading;
+    void tableRef;
+    const host = tableScrollHost(tableRef);
+    if (!rowsLoading && prevRowsLoadingForScrollRestore && host) {
+      const left = savedTableScrollLeft;
+      queueMicrotask(() => {
+        host.scrollLeft = left;
+        requestAnimationFrame(() => {
+          if (host.scrollLeft !== left) host.scrollLeft = left;
+        });
+      });
+    }
+    prevRowsLoadingForScrollRestore = rowsLoading;
+  });
+
+  /** Any server list reload (sort, search, filters, page) exits client-only selection view. */
+  let prevRowsLoadingForServerList = $state(false);
+  $effect(() => {
+    const loading = rowsLoading;
+    if (loading && !prevRowsLoadingForServerList) {
+      if (showSelectedOnly) showSelectedOnly = false;
+      clientSelectedPage = 1;
+    }
+    prevRowsLoadingForServerList = loading;
+  });
 
   // Sticky offsets (measured widths so we can keep columns auto-sized).
   let checkboxHeadRef = $state<HTMLElement | null>(null);
@@ -394,6 +482,26 @@
     const v = row[uid as keyof TRow] as unknown;
     return typeof v === 'string' ? v : String(v ?? '');
   }
+
+  /** Merge current server page rows into a stable map so "selected only" can span pages without refetching. */
+  $effect(() => {
+    void rows;
+    void selectedKeys;
+    const sel = new Set(selectedKeys);
+    const next = new Map<string, TRow>();
+    for (const r of rows) {
+      const k = rowKey(r);
+      if (sel.has(k)) next.set(k, r);
+    }
+    const old = untrack(() => selectedRowByKey);
+    for (const k of selectedKeys) {
+      if (!next.has(k)) {
+        const prev = old.get(k);
+        if (prev) next.set(k, prev);
+      }
+    }
+    selectedRowByKey = next;
+  });
 
   function toggleSearchKey(key: string) {
     if (!searchInKeys || searchInKeys.length === 0) {
@@ -510,6 +618,27 @@
     }
   }
 
+  /** Toggle row selection on cell click when checkboxes are enabled (header excluded). */
+  function onEntityRowClick(key: string, e: MouseEvent) {
+    if (!rowSelectionEnabled || rowsLoading || error) return;
+    const t = e.target as HTMLElement | null;
+    if (!t) return;
+    if (
+      t.closest(
+        'input, button, a, textarea, select, [role="button"], [role="checkbox"], [data-slot=dropdown-menu-trigger]'
+      )
+    ) {
+      return;
+    }
+    if (skipNextRowClickSelectToggle) {
+      skipNextRowClickSelectToggle = false;
+      return;
+    }
+    toggleRowSelect(key);
+    // Avoid stray document-level handlers (dialogs/sheets) treating this as an extra activation.
+    e.stopPropagation();
+  }
+
   function toggleAllOnPage() {
     if (allOnPageSelected) {
       const remove = new Set(pageKeys);
@@ -522,6 +651,9 @@
   }
 
   function resetRowRangeSelect() {
+    // Read brush state without subscribing the caller `$effect` (page/rowsLoading/…): otherwise
+    // setting `rowRangeMouseDown` true on mousedown re-runs that effect and clears range before mousemove.
+    if (untrack(() => rowRangeMouseDown && rangeDragActive)) skipNextRowClickSelectToggle = true;
     rowRangeMouseDown = false;
     rangeAnchorIndex = null;
     rangeDragActive = false;
@@ -530,7 +662,7 @@
   }
 
   function canStartRowRangeSelect(e: MouseEvent): boolean {
-    if (!rowSelectionEnabled || rowsLoading || error || rows.length === 0) return false;
+    if (!rowSelectionEnabled || rowsLoading || error || viewRows.length === 0) return false;
     if (e.button !== 0) return false;
     const t = e.target as HTMLElement | null;
     if (!t) return false;
@@ -545,7 +677,7 @@
 
     const lo = Math.min(anchor, end);
     const hi = Math.max(anchor, end);
-    const rangeKeys = rows.slice(lo, hi + 1).map((r) => rowKey(r));
+    const rangeKeys = viewRows.slice(lo, hi + 1).map((r) => rowKey(r));
     const rangeSet = new Set(rangeKeys);
     const pageKeySet = new Set(pageKeys);
 
@@ -565,6 +697,9 @@
   }
 
   function onRowRangeMouseDown(i: number, e: MouseEvent) {
+    if (!rowSelectionEnabled) return;
+    // New pointer gesture on a data row: clear a stale suppressor from an earlier range-drag mouseup.
+    skipNextRowClickSelectToggle = false;
     if (!canStartRowRangeSelect(e)) return;
     e.preventDefault();
     selectionSnapshotAtMouseDown = new Set(selectedKeys);
@@ -581,7 +716,7 @@
     if (!(tr instanceof HTMLElement)) return;
     const raw = tr.dataset.rowIndex;
     const idx = raw === undefined ? NaN : Number(raw);
-    if (!Number.isFinite(idx) || idx < 0 || idx >= rows.length) return;
+    if (!Number.isFinite(idx) || idx < 0 || idx >= viewRows.length) return;
 
     if (!rangeDragActive) {
       if (idx === rangeAnchorIndex) return;
@@ -619,6 +754,28 @@
   const selectionPastParticipleKey = $derived(
     selectionCount === 1 ? 'entities.list.selectedSingular' : 'entities.list.selectedPlural'
   );
+
+  $effect(() => {
+    void selectedKeys;
+    void rowSelectionEnabled;
+    if (selectedKeys.length === 0 && showSelectedOnly) {
+      showSelectedOnly = false;
+      clientSelectedPage = 1;
+    }
+    if (!rowSelectionEnabled && showSelectedOnly) {
+      showSelectedOnly = false;
+      clientSelectedPage = 1;
+    }
+  });
+
+  $effect(() => {
+    void orderedSelectedRows.length;
+    void pageSize;
+    void showSelectedOnly;
+    if (!showSelectedOnly) return;
+    const maxP = Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)));
+    if (clientSelectedPage > maxP) clientSelectedPage = maxP;
+  });
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
@@ -778,6 +935,7 @@
       {/if}
     {:else}
       <Table.Root
+        bind:ref={tableRef}
         data-row-density={rowDensity}
         class={cn(
           'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
@@ -991,9 +1149,28 @@
                 </Table.Cell>
               </Table.Row>
             {/if}
+          {:else if viewRows.length === 0}
+            <Table.Row>
+              <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
+                <div class="grid min-h-[14rem] place-items-center p-3">
+                  <div class="relative flex flex-col items-center gap-2 text-center">
+                    <div class="pb-watermark-empty">
+                      <TriangleAlert class="size-20 text-warning" />
+                    </div>
+                    <div class="text-sm font-medium text-muted-foreground">
+                      {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
+                        {$t('entities.list.selectedRowsNotLoadedHint')}
+                      {:else}
+                        {$t('entities.list.noSelectedRowsInView')}
+                      {/if}
+                    </div>
+                  </div>
+                </div>
+              </Table.Cell>
+            </Table.Row>
           {:else}
             {#key datetimeIanaRenderTick}
-            {#each rows as r, i (rowKey(r))}
+            {#each viewRows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
               <Table.Row
@@ -1005,6 +1182,7 @@
                   rowSelected ? 'data-[state=selected]:!bg-transparent' : undefined
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
+                onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
               >
                 {#if rowSelectionEnabled}
                   <Table.Cell
@@ -1139,31 +1317,53 @@
   <div class="flex items-center justify-between gap-3 border-t bg-background px-3 py-2 text-sm">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
       <div class="text-muted-foreground">
-        {#if total === 0}
+        {#if footerRangeTotal === 0}
           0
         {:else}
-          {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} / {total}
+          {footerRangeStart}-{footerRangeEnd} / {footerRangeTotal}
         {/if}
       </div>
       {#if rowSelectionEnabled && selectionCount > 0}
-        <div class="text-info">
-          {selectionCount}
-          {#if selectionCount === 1}
-            {#if selectionLabelSingularText}
-              {' '}{selectionLabelSingularText}{' '}
-            {:else if selectionLabelSingularKey}
-              {' '}{$t(selectionLabelSingularKey)}{' '}
+        <div class="flex items-center gap-1.5 text-info">
+          <span class="inline-flex flex-wrap items-baseline gap-x-1">
+            {selectionCount}
+            {#if selectionCount === 1}
+              {#if selectionLabelSingularText}
+                {' '}{selectionLabelSingularText}{' '}
+              {:else if selectionLabelSingularKey}
+                {' '}{$t(selectionLabelSingularKey)}{' '}
+              {:else if selectionLabelText}
+                {' '}{selectionLabelText}{' '}
+              {:else if selectionLabelKey}
+                {' '}{$t(selectionLabelKey)}{' '}
+              {/if}
             {:else if selectionLabelText}
               {' '}{selectionLabelText}{' '}
             {:else if selectionLabelKey}
               {' '}{$t(selectionLabelKey)}{' '}
             {/if}
-          {:else if selectionLabelText}
-            {' '}{selectionLabelText}{' '}
-          {:else if selectionLabelKey}
-            {' '}{$t(selectionLabelKey)}{' '}
-          {/if}
-          {$t(selectionPastParticipleKey)}
+            {$t(selectionPastParticipleKey)}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            class="shrink-0 text-info hover:bg-info/10 hover:text-info"
+            aria-pressed={showSelectedOnly}
+            title={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
+            aria-label={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
+            onclick={() => {
+              const next = !showSelectedOnly;
+              showSelectedOnly = next;
+              if (next) clientSelectedPage = 1;
+            }}
+          >
+            {#if showSelectedOnly}
+              <EyeOff class="size-4" />
+            {:else}
+              <Eye class="size-4" />
+            {/if}
+          </Button>
         </div>
       {/if}
     </div>
@@ -1198,8 +1398,11 @@
         <Button
           variant="soft"
           size="icon-sm"
-          disabled={page <= 1}
-          onclick={() => onPageChange(1)}
+          disabled={footerPage <= 1}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = 1;
+            else onPageChange(1);
+          }}
           aria-label="first page"
           title="first page"
         >
@@ -1208,8 +1411,11 @@
         <Button
           variant="soft"
           size="icon-sm"
-          disabled={page <= 1}
-          onclick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={footerPage <= 1}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
+            else onPageChange(Math.max(1, page - 1));
+          }}
           aria-label="previous page"
           title="previous page"
         >
@@ -1217,14 +1423,17 @@
         </Button>
         <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
           {$t('entities.list.paginationStatus')
-            .replace('{page}', String(page))
-            .replace('{total}', String(totalPages))}
+            .replace('{page}', String(footerPage))
+            .replace('{total}', String(footerTotalPages))}
         </div>
         <Button
           variant="soft"
           size="icon-sm"
-          disabled={page >= totalPages}
-          onclick={() => onPageChange(Math.min(totalPages, page + 1))}
+          disabled={footerPage >= footerTotalPages}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
+            else onPageChange(Math.min(totalPages, page + 1));
+          }}
           aria-label="next page"
           title="next page"
         >
@@ -1233,8 +1442,11 @@
         <Button
           variant="soft"
           size="icon-sm"
-          disabled={page >= totalPages}
-          onclick={() => onPageChange(totalPages)}
+          disabled={footerPage >= footerTotalPages}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
+            else onPageChange(totalPages);
+          }}
           aria-label="last page"
           title="last page"
         >

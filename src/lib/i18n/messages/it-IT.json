@@ -137,7 +137,11 @@
       "searchInFields": "campi",
       "filtersHint": "Affina la lista con filtri server-side.",
       "pageSize": "Righe per pagina",
-      "paginationStatus": "Pagina {page} di {total}"
+      "paginationStatus": "Pagina {page} di {total}",
+      "viewSelectedOnlyTitle": "Mostra solo le righe selezionate in questa pagina",
+      "viewAllRowsTitle": "Mostra tutte le righe di questa pagina",
+      "noSelectedRowsInView": "Nessuna riga selezionata in questa pagina.",
+      "selectedRowsNotLoadedHint": "Apri le pagine in cui hai caricato quei record per poterli vedere tutti qui."
     },
     "crm": {
       "pipeline": {

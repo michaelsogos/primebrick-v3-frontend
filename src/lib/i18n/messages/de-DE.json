@@ -130,7 +130,11 @@
       "searchInFields": "Felder",
       "filtersHint": "Liste mit serverseitigen Filtern verfeinern.",
       "pageSize": "Zeilen pro Seite",
-      "paginationStatus": "Seite {page} von {total}"
+      "paginationStatus": "Seite {page} von {total}",
+      "viewSelectedOnlyTitle": "Nur ausgewählte Zeilen auf dieser Seite anzeigen",
+      "viewAllRowsTitle": "Alle Zeilen auf dieser Seite anzeigen",
+      "noSelectedRowsInView": "Keine ausgewählten Zeilen auf dieser Seite.",
+      "selectedRowsNotLoadedHint": "Öffnen Sie die Seiten, auf denen diese Datensätze geladen wurden, um die vollständige Auswahl hier zusammenzustellen."
     },
     "crm": {
       "pipeline": {
