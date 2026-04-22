@@ -1352,7 +1352,7 @@
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="xs"
             class="shrink-0 text-info hover:bg-info/10 hover:text-info"
             aria-pressed={showSelectedOnly}
             title={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
@@ -1378,7 +1378,7 @@
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <Button variant="soft" size="sm" {...props}>
+            <Button variant="soft" size="xs" {...props}>
               {pageSize}
             </Button>
           {/snippet}
@@ -1402,7 +1402,7 @@
       <div class="flex items-center gap-2">
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage <= 1}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = 1;
@@ -1415,7 +1415,7 @@
         </Button>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage <= 1}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
@@ -1433,7 +1433,7 @@
         </div>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage >= footerTotalPages}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
@@ -1446,7 +1446,7 @@
         </Button>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage >= footerTotalPages}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
