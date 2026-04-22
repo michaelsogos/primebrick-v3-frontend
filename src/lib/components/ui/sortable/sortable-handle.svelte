@@ -4,24 +4,18 @@
 	import type { Snippet } from 'svelte';
 
 	let { class: className, children }: { class?: string; children?: Snippet } = $props();
-
-	function setDraggable(e: MouseEvent, state: boolean) {
-		const target = e.currentTarget as HTMLElement;
-		const item =
-			target.closest('div[draggable="false"]') || target.closest('div[draggable="true"]');
-		if (item instanceof HTMLElement) {
-			item.draggable = state;
-		}
-	}
 </script>
 
 <div
 	class={cn('cursor-grab active:cursor-grabbing p-1 touch-none', className)}
+	data-sortable-handle
 	role="button"
 	tabindex="0"
-	onmousedown={(e) => setDraggable(e, true)}
-	onmouseup={(e) => setDraggable(e, false)}
-	onmouseleave={(e) => setDraggable(e, false)}
+	onmousedown={(e) => {
+		const el = e.currentTarget as HTMLElement;
+		const item = el.closest('[data-sortable-item]');
+		if (item instanceof HTMLElement) item.dataset.sortableDragArmed = '1';
+	}}
 >
 	{#if children}
 		{@render children()}

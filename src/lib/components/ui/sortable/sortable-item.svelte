@@ -24,10 +24,23 @@
 	bind:this={node}
 	class={cn('relative transition-all', isDragging && 'opacity-30', className)}
 	role="listitem"
-	draggable="false"
-	ondragstart={(e) => ctx.onDragStart(e, id)}
+	data-sortable-item
+	draggable="true"
+	ondragstart={(e) => {
+		const itemEl = e.currentTarget as HTMLElement;
+		// Drag is allowed only when the handle "arms" this item (see SortableHandle).
+		if (itemEl.dataset.sortableDragArmed !== '1') {
+			e.preventDefault();
+			return;
+		}
+		ctx.onDragStart(e, id);
+	}}
 	ondragover={(e) => ctx.onDragOver(e, id)}
-	ondragend={(e) => ctx.onDragEnd(e)}
+	ondragend={(e) => {
+		const itemEl = e.currentTarget as HTMLElement;
+		delete itemEl.dataset.sortableDragArmed;
+		ctx.onDragEnd(e);
+	}}
 >
 	{@render children()}
 </div>
