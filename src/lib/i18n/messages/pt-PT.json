@@ -136,7 +136,13 @@
       "viewSelectedOnlyTitle": "Mostrar apenas linhas selecionadas nesta página",
       "viewAllRowsTitle": "Mostrar todas as linhas desta página",
       "noSelectedRowsInView": "Não há linhas selecionadas nesta página.",
-      "selectedRowsNotLoadedHint": "Abra as páginas onde esses registos foram carregados para os ver todos aqui."
+      "selectedRowsNotLoadedHint": "Abra as páginas onde esses registos foram carregados para os ver todos aqui.",
+      "viewMode": {
+        "groupAria": "Disposição dos resultados",
+        "table": "Tabela",
+        "cards": "Cartões (grelha)",
+        "cardsList": "Cartões (lista horizontal)"
+      }
     },
     "crm": {
       "pipeline": {

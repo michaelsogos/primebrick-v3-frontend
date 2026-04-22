@@ -136,7 +136,13 @@
       "viewSelectedOnlyTitle": "Nur ausgewählte Zeilen auf dieser Seite anzeigen",
       "viewAllRowsTitle": "Alle Zeilen auf dieser Seite anzeigen",
       "noSelectedRowsInView": "Keine ausgewählten Zeilen auf dieser Seite.",
-      "selectedRowsNotLoadedHint": "Öffnen Sie die Seiten, auf denen diese Datensätze geladen wurden, um die vollständige Auswahl hier zusammenzustellen."
+      "selectedRowsNotLoadedHint": "Öffnen Sie die Seiten, auf denen diese Datensätze geladen wurden, um die vollständige Auswahl hier zusammenzustellen.",
+      "viewMode": {
+        "groupAria": "Ergebnislayout",
+        "table": "Tabelle",
+        "cards": "Karten (Raster)",
+        "cardsList": "Karten (horizontale Liste)"
+      }
     },
     "crm": {
       "pipeline": {

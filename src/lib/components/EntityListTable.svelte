@@ -23,6 +23,7 @@
     SlidersHorizontal,
     Columns3,
     LayoutGrid,
+    LayoutList,
     Table2,
     Search,
     ArrowUpDown,
@@ -172,7 +173,7 @@
 
   const orderState = $state<ColumnOrderState>({});
 
-  type ViewMode = 'table' | 'cards';
+  type ViewMode = 'table' | 'cards' | 'cards_list';
   const viewModeStorageKey = $derived(
     columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
   );
@@ -182,7 +183,7 @@
     if (typeof window === 'undefined') return null;
     try {
       const raw = window.sessionStorage.getItem(viewModeStorageKey);
-      if (raw === 'table' || raw === 'cards') return raw;
+      if (raw === 'table' || raw === 'cards' || raw === 'cards_list') return raw;
       return null;
     } catch {
       return null;
@@ -1127,6 +1128,49 @@
       <span class="min-w-0 truncate">{parts.text}</span>
     {/if}
   {/snippet}
+
+  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean)}
+    <div
+      class={cn(
+        'flex flex-col gap-0.5',
+        viewMode === 'cards_list' ? 'min-w-[9rem] max-w-[24rem] shrink-0' : 'min-w-0'
+      )}
+    >
+      <div class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</div>
+      <div
+        class={cn(
+          'min-w-0 text-sm',
+          (!isCardFieldEmpty(r, col)
+            ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
+            : undefined) ?? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+        )}
+      >
+        {#if isCardFieldEmpty(r, col)}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              {#snippet child({ props })}
+                <button
+                  type="button"
+                  {...props}
+                  data-pb-card-cta
+                  class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
+                  aria-label="Vuoto"
+                >
+                  <Ban class="size-4" />
+                </button>
+              {/snippet}
+            </Tooltip.Trigger>
+            <Tooltip.Content>Vuoto</Tooltip.Content>
+          </Tooltip.Root>
+        {:else if cell}
+          {@render cell({ row: r, column: col })}
+        {:else}
+          {@render listDefaultCellValue(r, col)}
+        {/if}
+      </div>
+    </div>
+  {/snippet}
+
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
       <div class="relative w-full">
@@ -1200,23 +1244,51 @@
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
 
-      <Button
-        variant="soft"
-        size="icon-sm"
-        type="button"
-        aria-label={viewMode === 'table' ? 'switch to cards' : 'switch to table'}
-        aria-pressed={viewMode === 'cards'}
-        title={viewMode === 'table' ? 'cards' : 'table'}
-        onclick={() => {
-          viewMode = viewMode === 'table' ? 'cards' : 'table';
-        }}
+      <div
+        class="inline-flex rounded-md border border-input bg-muted/30 p-0.5 shadow-xs dark:bg-muted/20"
+        role="group"
+        aria-label={$t('entities.list.viewMode.groupAria')}
       >
-        {#if viewMode === 'table'}
-          <LayoutGrid class="size-4" />
-        {:else}
+        <Button
+          variant={viewMode === 'table' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'table'}
+          title={$t('entities.list.viewMode.table')}
+          onclick={() => {
+            viewMode = 'table';
+          }}
+        >
           <Table2 class="size-4" />
-        {/if}
-      </Button>
+        </Button>
+        <Button
+          variant={viewMode === 'cards' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'cards'}
+          title={$t('entities.list.viewMode.cards')}
+          onclick={() => {
+            viewMode = 'cards';
+          }}
+        >
+          <LayoutGrid class="size-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'cards_list' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'cards_list'}
+          title={$t('entities.list.viewMode.cardsList')}
+          onclick={() => {
+            viewMode = 'cards_list';
+          }}
+        >
+          <LayoutList class="size-4" />
+        </Button>
+      </div>
 
       <Button
         variant="soft"
@@ -1281,7 +1353,7 @@
         </div>
       {/if}
     {:else}
-      {#if viewMode === 'cards'}
+      {#if viewMode !== 'table'}
         <div class="h-full overflow-auto">
           {#if error}
             {#if errorView}
@@ -1455,7 +1527,13 @@
             </div>
 
             <div class="p-3">
-              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div
+                class={cn(
+                  viewMode === 'cards_list'
+                    ? 'flex flex-col gap-3'
+                    : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                )}
+              >
                 {#each viewRows as r (rowKey(r))}
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
@@ -1466,6 +1544,9 @@
                     data-state={rowSelected ? 'selected' : undefined}
                     class={cn(
                       'group rounded-md border bg-background p-3 shadow-sm transition-colors',
+                      viewMode === 'cards_list'
+                        ? 'flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4'
+                        : undefined,
                       rowSelectionEnabled
                         ? rowSelected
                           ? 'cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-950/55'
@@ -1488,86 +1569,107 @@
                       }
                     }
                   >
-                    <div class="mb-2 flex items-start justify-between gap-2">
-                      {#if rowSelectionEnabled}
-                        <div
-                          class="shrink-0"
-                          data-pb-card-cta
-                          role="button"
-                          tabindex="-1"
-                          onclick={(e) => e.stopPropagation()}
-                          onkeydown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                          }}
-                        >
-                          <Checkbox
-                            class={selectionCheckboxClass}
-                            checked={selectedKeys.includes(rk)}
-                            onCheckedChange={() => toggleRowSelect(rk)}
-                            aria-label="select row"
-                          />
-                        </div>
-                      {/if}
-
-                      {#if actionsEnabled}
-                        <div
-                          class="ml-auto shrink-0"
-                          data-pb-card-cta
-                          role="button"
-                          tabindex="-1"
-                          onclick={(e) => e.stopPropagation()}
-                          onkeydown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                          }}
-                        >
-                          {#if rowActions}
-                            {@render rowActions({ row: r })}
-                          {:else}
-                            <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
-                              <MoreVertical class="size-4" />
-                            </Button>
-                          {/if}
-                        </div>
-                      {/if}
-                    </div>
-
-                    <div class="flex flex-col gap-2">
-                      {#each renderColumns as col (col.key)}
-                        <div class="flex flex-col gap-0.5">
-                          <div class="text-xs font-medium text-muted-foreground">{ $t(col.labelKey) }</div>
+                    {#if viewMode === 'cards_list'}
+                      <div
+                        class="flex w-full shrink-0 items-start justify-between gap-2 sm:w-auto sm:flex-col sm:items-stretch sm:gap-2"
+                      >
+                        {#if rowSelectionEnabled}
                           <div
-                            class={cn(
-                              'min-w-0 text-sm',
-                              datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected) ??
-                                stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
-                            )}
+                            class="shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
                           >
-                            {#if isCardFieldEmpty(r, col)}
-                              <Tooltip.Root>
-                                <Tooltip.Trigger>
-                                  {#snippet child({ props })}
-                                    <button
-                                      type="button"
-                                      {...props}
-                                      data-pb-card-cta
-                                      class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-                                      aria-label="Vuoto"
-                                    >
-                                      <Ban class="size-4" />
-                                    </button>
-                                  {/snippet}
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>Vuoto</Tooltip.Content>
-                              </Tooltip.Root>
-                            {:else if cell}
-                              {@render cell({ row: r, column: col })}
+                            <Checkbox
+                              class={selectionCheckboxClass}
+                              checked={selectedKeys.includes(rk)}
+                              onCheckedChange={() => toggleRowSelect(rk)}
+                              aria-label="select row"
+                            />
+                          </div>
+                        {/if}
+
+                        {#if actionsEnabled}
+                          <div
+                            class={cn('shrink-0', rowSelectionEnabled ? 'ml-auto sm:ml-0' : 'ml-auto')}
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            {#if rowActions}
+                              {@render rowActions({ row: r })}
                             {:else}
-                              {@render listDefaultCellValue(r, col)}
+                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                                <MoreVertical class="size-4" />
+                              </Button>
                             {/if}
                           </div>
-                        </div>
-                      {/each}
-                    </div>
+                        {/if}
+                      </div>
+
+                      <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
+                        {#each renderColumns as col (col.key)}
+                          {@render entityCardField(r, col, rowSelected)}
+                        {/each}
+                      </div>
+                    {:else}
+                      <div class="mb-2 flex items-start justify-between gap-2">
+                        {#if rowSelectionEnabled}
+                          <div
+                            class="shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            <Checkbox
+                              class={selectionCheckboxClass}
+                              checked={selectedKeys.includes(rk)}
+                              onCheckedChange={() => toggleRowSelect(rk)}
+                              aria-label="select row"
+                            />
+                          </div>
+                        {/if}
+
+                        {#if actionsEnabled}
+                          <div
+                            class="ml-auto shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            {#if rowActions}
+                              {@render rowActions({ row: r })}
+                            {:else}
+                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/if}
+                          </div>
+                        {/if}
+                      </div>
+
+                      <div class="flex flex-col gap-2">
+                        {#each renderColumns as col (col.key)}
+                          {@render entityCardField(r, col, rowSelected)}
+                        {/each}
+                      </div>
+                    {/if}
                   </div>
                 {/each}
               </div>
