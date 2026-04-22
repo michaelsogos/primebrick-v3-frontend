@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 	import { cn } from "$lib/utils.js";
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
@@ -38,16 +37,14 @@
 
 <svelte:window onkeydown={sidebar.handleShortcutKeydown} />
 
-<Tooltip.Provider delayDuration={0}>
-	<div
-		style="--sidebar-width: {SIDEBAR_WIDTH}; --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}; {style}"
-		class={cn(
-			"group/sidebar-wrapper has-[[data-variant=inset]]:bg-sidebar flex min-h-svh min-w-0 w-full max-w-full",
-			className
-		)}
-		bind:this={ref}
-		{...restProps}
-	>
-		{@render children?.()}
-	</div>
-</Tooltip.Provider>
+<div
+	style="--sidebar-width: {SIDEBAR_WIDTH}; --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}; {style}"
+	class={cn(
+		"group/sidebar-wrapper has-[[data-variant=inset]]:bg-sidebar flex min-h-svh min-w-0 w-full max-w-full",
+		className
+	)}
+	bind:this={ref}
+	{...restProps}
+>
+	{@render children?.()}
+</div>
