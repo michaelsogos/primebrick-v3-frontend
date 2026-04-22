@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Tooltip as TooltipPrimitive } from "bits-ui";
+	import { Content as TooltipPrimitiveContent } from "$lib/vendor/bits-ui-tooltip-exports";
+	import type { ContentProps } from "$lib/vendor/bits-ui-tooltip-exports";
 	import { cn } from "$lib/utils.js";
 
 	let {
@@ -7,10 +8,10 @@
 		class: className,
 		sideOffset = 4,
 		...restProps
-	}: TooltipPrimitive.ContentProps = $props();
+	}: ContentProps = $props();
 </script>
 
-<TooltipPrimitive.Content
+<TooltipPrimitiveContent
 	bind:ref
 	{sideOffset}
 	class={cn(
