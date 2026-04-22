@@ -21,6 +21,7 @@
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
+    orderedColumnsFromListMeta,
     sanitizeVisibleKeys
   } from '$lib/entity-list';
 
@@ -94,7 +95,10 @@
   const skSearchInKeys = `${storageKeyPrefix}searchInKeys`;
 
   const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
-  const columns = $derived(meta?.list.columns ?? []);
+  const columns = $derived(orderedColumnsFromListMeta(meta?.list));
+  const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
+  const dataColumns = $derived(meta?.list.stickyColumns || meta?.list.auditingColumns ? (meta?.list.columns ?? []) : []);
+  const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
   const rowsLoading = $derived(metaLoaded && loading);
@@ -571,6 +575,9 @@
       bind:datetimeIanaModeByKey
       bind:datetimeIanaRenderTick
       uid={meta?.uid ?? 'uuid'}
+      {stickyColumns}
+      {dataColumns}
+      {auditingColumns}
       columns={columns}
       rowDensity="compact"
       rowActionsEnabled

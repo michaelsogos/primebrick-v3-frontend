@@ -10,6 +10,7 @@
   type ColumnLike = { key: string; labelKey: string; hideable?: boolean };
 
   interface $$Props {
+    stickyColumns: ColumnLike[];
     nonAuditingColumns: ColumnLike[];
     auditingColumns: ColumnLike[];
     visibleKeys: string[];
@@ -20,6 +21,7 @@
   }
 
   let {
+    stickyColumns,
     nonAuditingColumns,
     auditingColumns,
     visibleKeys,
@@ -57,25 +59,65 @@
   <SheetHeader title={headerTitle} actions={headerActions} />
 
   <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
-    {#each nonAuditingColumns as col (col.key)}
-      <button
-        type="button"
-        disabled={col.hideable === false}
-        class={col.hideable === false
-          ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-          : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-        onclick={() => toggleColumnKey(col.key)}
-      >
-        <span class="pointer-events-none shrink-0" aria-hidden="true">
-          <Checkbox
-            checked={visibleKeys.includes(col.key)}
-            disabled={col.hideable === false}
-            class={sheetMenuCheckboxClass}
-          />
-        </span>
-        <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
-      </button>
-    {/each}
+    {#if stickyColumns.length > 0}
+      <div class="my-2 px-2">
+        <div class="flex items-center gap-2">
+          <div class="h-px flex-1 bg-border"></div>
+          <div class="text-xs font-medium text-muted-foreground">{t('entities.list.stickyFields')}</div>
+          <div class="h-px flex-1 bg-border"></div>
+        </div>
+      </div>
+
+      {#each stickyColumns as col (col.key)}
+        <button
+          type="button"
+          disabled={col.hideable === false}
+          class={col.hideable === false
+            ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
+            : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+          onclick={() => toggleColumnKey(col.key)}
+        >
+          <span class="pointer-events-none shrink-0" aria-hidden="true">
+            <Checkbox
+              checked={visibleKeys.includes(col.key)}
+              disabled={col.hideable === false}
+              class={sheetMenuCheckboxClass}
+            />
+          </span>
+          <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+        </button>
+      {/each}
+    {/if}
+
+    {#if nonAuditingColumns.length > 0}
+      <div class="my-2 px-2">
+        <div class="flex items-center gap-2">
+          <div class="h-px flex-1 bg-border"></div>
+          <div class="text-xs font-medium text-muted-foreground">{t('entities.list.dataFields')}</div>
+          <div class="h-px flex-1 bg-border"></div>
+        </div>
+      </div>
+
+      {#each nonAuditingColumns as col (col.key)}
+        <button
+          type="button"
+          disabled={col.hideable === false}
+          class={col.hideable === false
+            ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
+            : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+          onclick={() => toggleColumnKey(col.key)}
+        >
+          <span class="pointer-events-none shrink-0" aria-hidden="true">
+            <Checkbox
+              checked={visibleKeys.includes(col.key)}
+              disabled={col.hideable === false}
+              class={sheetMenuCheckboxClass}
+            />
+          </span>
+          <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+        </button>
+      {/each}
+    {/if}
 
     {#if auditingColumns.length > 0}
       <div class="my-2 px-2">

@@ -28,11 +28,28 @@ export type MetaColumn = {
 /** `meta.list` slice shared by entity list UIs. */
 export type EntityListListMeta = {
   searchPlaceholderKey?: string;
-  columns: MetaColumn[];
+  /**
+   * Non-sticky, non-auditing columns, ordered for display.
+   * Back-compat: older APIs used `columns` to mean "all columns".
+   */
+  columns?: MetaColumn[];
+  /** Sticky (pinned) columns, ordered for display (rendered first). */
+  stickyColumns?: MetaColumn[];
+  /** Auditing columns, ordered for display (rendered last). */
+  auditingColumns?: MetaColumn[];
   defaultPageSize?: number;
   pageSizeOptions?: number[];
   defaultSort?: { key: string; dir: SortDir };
 };
+
+/** All columns in the order they should be displayed (sticky -> data -> auditing). */
+export function orderedColumnsFromListMeta(list: EntityListListMeta | null | undefined): MetaColumn[] {
+  if (!list) return [];
+  if (list.stickyColumns || list.auditingColumns) {
+    return [...(list.stickyColumns ?? []), ...(list.columns ?? []), ...(list.auditingColumns ?? [])];
+  }
+  return list.columns ?? [];
+}
 
 /** Keys visible by default from column meta (`hideable === false` or `defaultVisible !== false`). */
 export function defaultVisibleColumnKeys(columns: MetaColumn[]): string[] {

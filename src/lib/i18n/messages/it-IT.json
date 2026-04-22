@@ -130,6 +130,8 @@
       "selectedSingular": "selezionato",
       "selectedPlural": "selezionati",
       "columns": "Colonne",
+      "stickyFields": "Campi fissati",
+      "dataFields": "Campi",
       "auditingFields": "Campi di auditing",
       "filters": "Filtri",
       "searchIn": "Cerca in",

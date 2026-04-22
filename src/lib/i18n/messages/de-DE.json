@@ -123,6 +123,8 @@
       "selectedSingular": "ausgewählt",
       "selectedPlural": "ausgewählt",
       "columns": "Spalten",
+      "stickyFields": "Fixierte Felder",
+      "dataFields": "Felder",
       "auditingFields": "Audit-Felder",
       "filters": "Filter",
       "searchIn": "Suchen in",

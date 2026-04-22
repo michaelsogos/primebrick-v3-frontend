@@ -45,6 +45,9 @@
   let {
     uid,
     columns,
+    stickyColumns,
+    dataColumns,
+    auditingColumns,
     defaultSort,
     pageSizeOptions: pageSizeOptionsProp,
     searchPlaceholderKey,
@@ -93,7 +96,15 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /**
+     * Columns to render/select in the UI.
+     * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
+     * - Back-compat: provide `columns` only
+     */
     columns: MetaColumn[];
+    stickyColumns?: MetaColumn[];
+    dataColumns?: MetaColumn[];
+    auditingColumns?: MetaColumn[];
     defaultSort?: { key: string; dir: SortDir };
     pageSizeOptions?: number[];
     searchPlaceholderKey?: string;
@@ -160,6 +171,44 @@
     void sheetState.open;
     void sheetState.panelId;
     if (!filtersOpen && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
+  });
+
+  // Keep sheet panel props reactive while open (SheetHost stores a snapshot at `openSheet()` time).
+  // Without this, checkboxes in `entity.columns` / `entity.searchIn` don't visually toggle even though
+  // the underlying selection changes.
+  $effect(() => {
+    void sheetState.open;
+    void sheetState.panelId;
+    void visibleKeys;
+    void searchInKeys;
+    void searchableColumns;
+    void nonAuditingColumns;
+    void auditingColumnsGroup;
+    void stickyColumnsGroup;
+
+    if (!sheetState.open) return;
+    if (sheetState.panelId === 'entity.columns') {
+      sheetState.props = {
+        stickyColumns: stickyColumnsGroup,
+        nonAuditingColumns,
+        auditingColumns: auditingColumnsGroup,
+        visibleKeys,
+        toggleColumnKey,
+        onResetColumnVisibility,
+        sheetMenuCheckboxClass,
+        t: $t
+      } as any;
+      return;
+    }
+    if (sheetState.panelId === 'entity.searchIn') {
+      sheetState.props = {
+        searchInKeys,
+        searchableColumns,
+        onSearchInKeysChange,
+        toggleSearchKey,
+        sheetMenuCheckboxClass
+      } as any;
+    }
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
@@ -264,25 +313,27 @@
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  const searchableColumns = $derived(columns.filter((c) => c.searchable !== false));
-  const shownColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
-  const renderColumns = $derived(
-    (() => {
-      // Ensure UUID is the first visible data column (after row checkbox),
-      // and keep `code` immediately after it.
-      const cols = shownColumns;
-      const byKey = new Map(cols.map((c) => [c.key, c] as const));
-      const out: MetaColumn[] = [];
-      const uuid = byKey.get('uuid');
-      const code = byKey.get('code');
-      if (uuid) out.push(uuid);
-      if (code) out.push(code);
-      for (const c of cols) {
-        if (c.key === 'uuid' || c.key === 'code') continue;
-        out.push(c);
-      }
-      return out;
-    })()
+  const allColumns = $derived(
+    stickyColumns || auditingColumns
+      ? [...(stickyColumns ?? []), ...(dataColumns ?? []), ...(auditingColumns ?? [])]
+      : columns
+  );
+  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
+  const renderColumns = $derived(shownColumns);
+  const stickyColumnsGroup = $derived(
+    stickyColumns ??
+      (() => {
+        // Back-compat: legacy behavior (uuid/code pinned in the selector).
+        const cols = allColumns;
+        const byKey = new Map(cols.map((c) => [c.key, c] as const));
+        const out: MetaColumn[] = [];
+        const uuid = byKey.get('uuid');
+        const code = byKey.get('code');
+        if (uuid) out.push(uuid);
+        if (code) out.push(code);
+        return out;
+      })()
   );
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
@@ -465,8 +516,13 @@
     'deleted_at',
     'deleted_by'
   ]);
-  const nonAuditingColumns = $derived(columns.filter((c) => !auditingKeySet.has(c.key)));
-  const auditingColumns = $derived(columns.filter((c) => auditingKeySet.has(c.key)));
+  const auditingColumnsGroup = $derived(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)));
+  const nonAuditingColumns = $derived(
+    dataColumns ??
+      allColumns.filter(
+        (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
+      )
+  );
 
   const searchScopeLabel = $derived(() => {
     if (!searchInKeys || searchInKeys.length === 0) return $t('entities.list.searchInAll');
@@ -880,8 +936,9 @@
           openSheet(
             'entity.columns',
             {
+              stickyColumns: stickyColumnsGroup,
               nonAuditingColumns,
-              auditingColumns,
+              auditingColumns: auditingColumnsGroup,
               visibleKeys,
               toggleColumnKey,
               onResetColumnVisibility,
