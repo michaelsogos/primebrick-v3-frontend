@@ -1,11 +1,12 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
+  import * as Sortable from '$lib/components/ui/sortable';
   import * as Sheet from '$lib/components/ui/sheet';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import XIcon from '@lucide/svelte/icons/x';
-  import { RotateCcw } from 'lucide-svelte';
+  import { GripVertical, RotateCcw } from 'lucide-svelte';
 
   type ColumnLike = { key: string; labelKey: string; hideable?: boolean };
 
@@ -15,6 +16,7 @@
     auditingColumns: ColumnLike[];
     visibleKeys: string[];
     toggleColumnKey: (key: string) => void;
+    onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
     onResetColumnVisibility: () => void;
     sheetMenuCheckboxClass: string;
     t: (key: string) => string;
@@ -26,6 +28,7 @@
     auditingColumns,
     visibleKeys,
     toggleColumnKey,
+    onReorderKeys,
     onResetColumnVisibility,
     sheetMenuCheckboxClass,
     t
@@ -68,25 +71,43 @@
         </div>
       </div>
 
-      {#each stickyColumns as col (col.key)}
-        <button
-          type="button"
-          disabled={col.hideable === false}
-          class={col.hideable === false
-            ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-            : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-          onclick={() => toggleColumnKey(col.key)}
-        >
-          <span class="pointer-events-none shrink-0" aria-hidden="true">
-            <Checkbox
-              checked={visibleKeys.includes(col.key)}
-              disabled={col.hideable === false}
-              class={sheetMenuCheckboxClass}
-            />
-          </span>
-          <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
-        </button>
-      {/each}
+      <Sortable.Root
+        items={stickyColumns.map((c) => ({ id: c.key, col: c }))}
+        onSort={(items) => onReorderKeys?.('sticky', items.map((i) => i.id))}
+      >
+        {#snippet children()}
+          <div role="list" class="flex flex-col">
+            {#each stickyColumns as col (col.key)}
+              <Sortable.Item id={col.key}>
+                {#snippet children()}
+                  <div
+                    class={col.hideable === false
+                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                  >
+                    <Sortable.Handle />
+                    <button
+                      type="button"
+                      disabled={col.hideable === false}
+                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
+                      onclick={() => toggleColumnKey(col.key)}
+                    >
+                      <span class="pointer-events-none shrink-0" aria-hidden="true">
+                        <Checkbox
+                          checked={visibleKeys.includes(col.key)}
+                          disabled={col.hideable === false}
+                          class={sheetMenuCheckboxClass}
+                        />
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                    </button>
+                  </div>
+                {/snippet}
+              </Sortable.Item>
+            {/each}
+          </div>
+        {/snippet}
+      </Sortable.Root>
     {/if}
 
     {#if nonAuditingColumns.length > 0}
@@ -98,25 +119,43 @@
         </div>
       </div>
 
-      {#each nonAuditingColumns as col (col.key)}
-        <button
-          type="button"
-          disabled={col.hideable === false}
-          class={col.hideable === false
-            ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-            : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-          onclick={() => toggleColumnKey(col.key)}
-        >
-          <span class="pointer-events-none shrink-0" aria-hidden="true">
-            <Checkbox
-              checked={visibleKeys.includes(col.key)}
-              disabled={col.hideable === false}
-              class={sheetMenuCheckboxClass}
-            />
-          </span>
-          <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
-        </button>
-      {/each}
+      <Sortable.Root
+        items={nonAuditingColumns.map((c) => ({ id: c.key, col: c }))}
+        onSort={(items) => onReorderKeys?.('data', items.map((i) => i.id))}
+      >
+        {#snippet children()}
+          <div role="list" class="flex flex-col">
+            {#each nonAuditingColumns as col (col.key)}
+              <Sortable.Item id={col.key}>
+                {#snippet children()}
+                  <div
+                    class={col.hideable === false
+                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                  >
+                    <Sortable.Handle />
+                    <button
+                      type="button"
+                      disabled={col.hideable === false}
+                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
+                      onclick={() => toggleColumnKey(col.key)}
+                    >
+                      <span class="pointer-events-none shrink-0" aria-hidden="true">
+                        <Checkbox
+                          checked={visibleKeys.includes(col.key)}
+                          disabled={col.hideable === false}
+                          class={sheetMenuCheckboxClass}
+                        />
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                    </button>
+                  </div>
+                {/snippet}
+              </Sortable.Item>
+            {/each}
+          </div>
+        {/snippet}
+      </Sortable.Root>
     {/if}
 
     {#if auditingColumns.length > 0}
@@ -129,24 +168,45 @@
       </div>
 
       {#each auditingColumns as col (col.key)}
-        <button
-          type="button"
-          disabled={col.hideable === false}
-          class={col.hideable === false
-            ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent disabled:cursor-not-allowed'
-            : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
-          onclick={() => toggleColumnKey(col.key)}
-        >
-          <span class="pointer-events-none shrink-0" aria-hidden="true">
-            <Checkbox
-              checked={visibleKeys.includes(col.key)}
-              disabled={col.hideable === false}
-              class={sheetMenuCheckboxClass}
-            />
-          </span>
-          <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
-        </button>
+        <!-- rendered below via Sortable -->
       {/each}
+      <Sortable.Root
+        items={auditingColumns.map((c) => ({ id: c.key, col: c }))}
+        onSort={(items) => onReorderKeys?.('auditing', items.map((i) => i.id))}
+      >
+        {#snippet children()}
+          <div role="list" class="flex flex-col">
+            {#each auditingColumns as col (col.key)}
+              <Sortable.Item id={col.key}>
+                {#snippet children()}
+                  <div
+                    class={col.hideable === false
+                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                  >
+                    <Sortable.Handle />
+                    <button
+                      type="button"
+                      disabled={col.hideable === false}
+                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
+                      onclick={() => toggleColumnKey(col.key)}
+                    >
+                      <span class="pointer-events-none shrink-0" aria-hidden="true">
+                        <Checkbox
+                          checked={visibleKeys.includes(col.key)}
+                          disabled={col.hideable === false}
+                          class={sheetMenuCheckboxClass}
+                        />
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                    </button>
+                  </div>
+                {/snippet}
+              </Sortable.Item>
+            {/each}
+          </div>
+        {/snippet}
+      </Sortable.Root>
     {/if}
   </div>
 </div>

@@ -93,6 +93,7 @@
   const storageKeyPrefix = 'pb:customers:list:';
   const skVisibleKeys = `${storageKeyPrefix}visibleKeys`;
   const skSearchInKeys = `${storageKeyPrefix}searchInKeys`;
+  const skColumnOrder = `${storageKeyPrefix}columnOrder`;
 
   const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
   const columns = $derived(orderedColumnsFromListMeta(meta?.list));
@@ -578,6 +579,7 @@
       {stickyColumns}
       {dataColumns}
       {auditingColumns}
+      columnOrderStorageKey={skColumnOrder}
       columns={columns}
       rowDensity="compact"
       rowActionsEnabled
