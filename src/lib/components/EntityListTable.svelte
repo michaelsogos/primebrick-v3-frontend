@@ -8,6 +8,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
+  import { Switch } from '$lib/components/ui/switch';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -15,12 +17,17 @@
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
+  import { formatListCellValue } from '$lib/i18n/date-format';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     SlidersHorizontal,
     Columns3,
+    LayoutGrid,
+    Table2,
     Search,
     ArrowUpDown,
+    ArrowUpNarrowWide,
+    ArrowDownWideNarrow,
     ArrowUp,
     ArrowDown,
     TriangleAlert,
@@ -34,6 +41,7 @@
     RotateCw,
     RotateCcw,
     MoreVertical,
+    Ban,
     Globe,
     MapPin,
     Eye,
@@ -164,6 +172,32 @@
 
   const orderState = $state<ColumnOrderState>({});
 
+  type ViewMode = 'table' | 'cards';
+  const viewModeStorageKey = $derived(
+    columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
+  );
+  let viewMode = $state<ViewMode>('table');
+
+  function readViewMode(): ViewMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.sessionStorage.getItem(viewModeStorageKey);
+      if (raw === 'table' || raw === 'cards') return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeViewMode(next: ViewMode) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(viewModeStorageKey, next);
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
   function readOrderState(): ColumnOrderState {
     if (!columnOrderStorageKey) return {};
     if (typeof window === 'undefined') return {};
@@ -195,6 +229,17 @@
     } catch {
       // ignore quota / blocked storage
     }
+  }
+
+  function resetColumnsAndSorting() {
+    onResetColumnVisibility();
+    // Reset column visual order (sticky/data/auditing) to default meta order.
+    orderState.sticky = undefined;
+    orderState.data = undefined;
+    orderState.auditing = undefined;
+    writeOrderState({});
+    if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
+    else onSortChange(null, defaultSortDir);
   }
 
   function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
@@ -246,6 +291,14 @@
     orderState.sticky = loaded.sticky;
     orderState.data = loaded.data;
     orderState.auditing = loaded.auditing;
+
+    const storedMode = readViewMode();
+    if (storedMode) viewMode = storedMode;
+  });
+
+  $effect(() => {
+    void viewMode;
+    writeViewMode(viewMode);
   });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
@@ -317,7 +370,7 @@
           orderState.sticky = nextState.sticky;
           writeOrderState(nextState);
         },
-        onResetColumnVisibility,
+        onResetColumnVisibility: resetColumnsAndSorting,
         sheetMenuCheckboxClass,
         t: $t
       } as any;
@@ -367,6 +420,43 @@
     datetimeIanaRenderTick++;
   }
 
+  function isBlankish(value: unknown): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (typeof value === 'number') return false;
+    if (typeof value === 'boolean') return false;
+    return false;
+  }
+
+  /**
+   * Card view empty-state detection.
+   *
+   * Note: when a route provides `{#snippet cell}`, we cannot reliably infer rendered emptiness;
+   * in that case we only apply this heuristic for scalar-ish values on the row key.
+   */
+  function isCardFieldEmpty(row: TRow, col: MetaColumn): boolean {
+    const r = row as Record<string, unknown>;
+    const raw = r[col.key];
+
+    if (col.type === 'datetime' && col.datetimeIanaToggle) {
+      const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
+      const parts = formatDatetimeCellDisplay(col, r, $uiLang, mode);
+      const textEmpty = parts.text.trim().length === 0;
+      // In record mode we may show an IANA badge even if the datetime text is empty; treat as non-empty.
+      if (isDatetimeIanaRecordMode(col) && parts.iana && parts.iana.trim().length > 0) return false;
+      return textEmpty;
+    }
+
+    if (cell) {
+      return isBlankish(raw);
+    }
+
+    if (isBlankish(raw)) return true;
+
+    const formatted = formatListCellValue(col, raw, $uiLang).trim();
+    return formatted.length === 0;
+  }
+
   /** Top-align cells that stack datetime value + IANA badge. */
   function entityListDataCellValignClass(col: MetaColumn): string | undefined {
     return col.datetimeIanaToggle ? 'align-top' : undefined;
@@ -402,6 +492,15 @@
     return '!bg-amber-50 dark:!bg-amber-950/40 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-950/55';
   }
 
+  /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
+  function datetimeIanaCardFieldHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    if (!isDatetimeIanaRecordMode(col)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-amber-300/70 bg-amber-200/70 p-2 transition-colors group-hover:bg-amber-300/75 dark:border-amber-700/55 dark:bg-amber-950/45 dark:group-hover:bg-amber-950/60';
+    }
+    return 'rounded-md border border-amber-200/70 bg-amber-50/70 p-2 transition-colors group-hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/30 dark:group-hover:bg-amber-950/45';
+  }
+
   /** Gray band (checkbox / actions): base 100, hover 200; selected 300, selected+hover 400 (dark 950→900→800→700). */
   function entityListGrayChromeCellClass(rowSelected: boolean): string {
     return rowSelected
@@ -434,6 +533,7 @@
   let skipNextRowClickSelectToggle = false;
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
+  const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
   const allColumns = $derived(
@@ -445,6 +545,8 @@
         ]
       : columns
   );
+  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
+  const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
   const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
   const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const renderColumns = $derived(shownColumns);
@@ -465,6 +567,17 @@
       orderState.sticky
     )
   );
+
+  /** Card view: mimic sticky “gray chrome” cells for sticky columns (uuid/code/etc.). */
+  function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
+    if (!stickyKeys.has(col.key)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-gray-800/70 dark:bg-gray-800/70 dark:group-hover:bg-gray-700/80';
+    }
+    return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-gray-900/60 dark:bg-gray-950/40 dark:group-hover:bg-gray-900/55';
+  }
+
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
   let clientSelectedPage = $state(1);
@@ -800,7 +913,7 @@
 
   function handleSortClick(col: MetaColumn) {
     if (rowsLoading) return;
-    if (!col.sortable) return;
+    if (col.sortable === false) return;
     if (sortKey !== col.key) {
       onSortChange(col.key, 'asc');
     } else if (sortDir === 'asc') {
@@ -836,6 +949,21 @@
     }
     toggleRowSelect(key);
     // Avoid stray document-level handlers (dialogs/sheets) treating this as an extra activation.
+    e.stopPropagation();
+  }
+
+  function onEntityCardClick(key: string, e: MouseEvent) {
+    if (!rowSelectionEnabled || rowsLoading || error) return;
+    const t = e.target as HTMLElement | null;
+    if (!t) return;
+    if (
+      t.closest(
+        'input, button, a, textarea, select, [role="checkbox"], [data-slot=dropdown-menu-trigger], [data-pb-card-cta]'
+      )
+    ) {
+      return;
+    }
+    toggleRowSelect(key);
     e.stopPropagation();
   }
 
@@ -1074,6 +1202,24 @@
 
       <Button
         variant="soft"
+        size="icon-sm"
+        type="button"
+        aria-label={viewMode === 'table' ? 'switch to cards' : 'switch to table'}
+        aria-pressed={viewMode === 'cards'}
+        title={viewMode === 'table' ? 'cards' : 'table'}
+        onclick={() => {
+          viewMode = viewMode === 'table' ? 'cards' : 'table';
+        }}
+      >
+        {#if viewMode === 'table'}
+          <LayoutGrid class="size-4" />
+        {:else}
+          <Table2 class="size-4" />
+        {/if}
+      </Button>
+
+      <Button
+        variant="soft"
         size="sm"
         type="button"
         onclick={() =>
@@ -1085,7 +1231,7 @@
               auditingColumns: auditingColumnsGroup,
               visibleKeys,
               toggleColumnKey,
-              onResetColumnVisibility,
+              onResetColumnVisibility: resetColumnsAndSorting,
               sheetMenuCheckboxClass,
               t: $t
             } as any,
@@ -1135,24 +1281,71 @@
         </div>
       {/if}
     {:else}
-      <Table.Root
-        bind:ref={tableRef}
-        data-row-density={rowDensity}
-        class={cn(
-          'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
-          tableDensityClass
-        )}
-        containerClass="h-full overflow-auto"
-        style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
-      >
-        <Table.Header class="sticky top-0 z-[80] bg-background">
-          <Table.Row>
-            {#if rowSelectionEnabled}
-              <Table.Head
-                bind:ref={checkboxHeadRef}
-                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
-              >
-                <div class={cn('flex items-center justify-center', rowChromeH)}>
+      {#if viewMode === 'cards'}
+        <div class="h-full overflow-auto">
+          {#if error}
+            {#if errorView}
+              {@render errorView()}
+            {:else}
+              <div class="grid min-h-[14rem] place-items-center">
+                <div class="relative flex flex-col items-center gap-2 text-center">
+                  <div class="pb-watermark-error">
+                    <CircleX class="size-20 text-destructive" />
+                  </div>
+                  <div class="text-sm font-medium text-muted-foreground">{error}</div>
+                </div>
+              </div>
+            {/if}
+          {:else if rowsLoading}
+            {#if rowsLoadingView}
+              {@render rowsLoadingView()}
+            {:else}
+              <div class="w-full">
+                <LoadingBar size="xs" />
+                <div class="grid min-h-[14rem] place-items-center">
+                  <div class="relative flex flex-col items-center gap-2 text-center">
+                    <div class="pb-watermark-loading">
+                      <Hourglass class="size-20 text-info" />
+                    </div>
+                    <div class="text-sm font-medium text-muted-foreground">{loadingText}</div>
+                  </div>
+                </div>
+              </div>
+            {/if}
+          {:else if rows.length === 0}
+            {#if emptyView}
+              {@render emptyView()}
+            {:else}
+              <div class="grid min-h-[14rem] place-items-center">
+                <div class="relative flex flex-col items-center gap-2 text-center">
+                  <div class="pb-watermark-empty">
+                    <TriangleAlert class="size-20 text-warning" />
+                  </div>
+                  <div class="text-sm font-medium text-muted-foreground">{emptyText}</div>
+                </div>
+              </div>
+            {/if}
+          {:else if viewRows.length === 0}
+            <div class="grid min-h-[14rem] place-items-center">
+              <div class="relative flex flex-col items-center gap-2 text-center">
+                <div class="pb-watermark-empty">
+                  <TriangleAlert class="size-20 text-warning" />
+                </div>
+                <div class="text-sm font-medium text-muted-foreground">
+                  {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
+                    {$t('entities.list.selectedRowsNotLoadedHint')}
+                  {:else}
+                    {$t('entities.list.noSelectedRowsInView')}
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {:else}
+            <div
+              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                {#if rowSelectionEnabled}
                   <Checkbox
                     class={selectionCheckboxClass}
                     checked={allOnPageSelected}
@@ -1160,48 +1353,271 @@
                     onCheckedChange={() => toggleAllOnPage()}
                     aria-label="select all"
                   />
-                </div>
-              </Table.Head>
-            {/if}
-            {#each renderColumns as col, colIdx (col.key)}
-              {#if col.key === 'uuid'}
+                  <span class="text-xs font-medium text-muted-foreground">
+                    {allOnPageSelected ? 'deseleziona tutto' : 'seleziona tutto'}
+                  </span>
+                {/if}
+
+                <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+
+                <span class="text-xs font-medium text-muted-foreground">Ordina per</span>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
+                        {#if effectiveSortKey}
+                          {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
+                        {:else}
+                          —
+                        {/if}
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
+                      onSelect={() => onSortChange(null, defaultSortDir)}
+                    >
+                      —
+                    </DropdownMenu.Item>
+                    {#each sortableColumns as col (col.key)}
+                      <DropdownMenu.Item
+                        class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
+                        onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
+                      >
+                        {$t(col.labelKey)}
+                      </DropdownMenu.Item>
+                    {/each}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                <span class="ml-1 text-xs font-medium text-muted-foreground">in ordine</span>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button variant="soft" size="xs" {...props} disabled={!effectiveSortKey}>
+                        {#if sortDir === 'asc'}
+                          <ArrowUpNarrowWide class="size-4" />
+                        {:else}
+                          <ArrowDownWideNarrow class="size-4" />
+                        {/if}
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
+                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
+                    >
+                      <span class="inline-flex items-center gap-2">
+                        <ArrowUpNarrowWide class="size-4" />
+                        Crescente
+                      </span>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(sortDir === 'desc')}
+                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'desc')}
+                    >
+                      <span class="inline-flex items-center gap-2">
+                        <ArrowDownWideNarrow class="size-4" />
+                        Decrescente
+                      </span>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                {#each datetimeIanaToggleColumns as col (col.key)}
+                  <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
+                    <Switch
+                      checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                      disabled={rowsLoading}
+                      aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                        ? $t('entities.list.datetimeIana.hintBrowser')
+                        : $t('entities.list.datetimeIana.hintRecord')}
+                      title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                        ? $t('entities.list.datetimeIana.hintBrowser')
+                        : $t('entities.list.datetimeIana.hintRecord')}
+                      onCheckedChange={() => toggleDatetimeIana(col)}
+                    >
+                      {#snippet thumbIcons({ checked })}
+                        {#if checked}
+                          <MapPin class="size-3.5 opacity-95" />
+                        {:else}
+                          <Globe class="size-3.5 opacity-95" />
+                        {/if}
+                      {/snippet}
+                    </Switch>
+                  </div>
+                {/each}
+              </div>
+            </div>
+
+            <div class="p-3">
+              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {#each viewRows as r (rowKey(r))}
+                  {@const rk = rowKey(r)}
+                  {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+                  <div
+                    role="button"
+                    tabindex={rowSelectionEnabled ? 0 : -1}
+                    aria-disabled={!rowSelectionEnabled}
+                    data-state={rowSelected ? 'selected' : undefined}
+                    class={cn(
+                      'group rounded-md border bg-background p-3 shadow-sm transition-colors',
+                      rowSelectionEnabled
+                        ? rowSelected
+                          ? 'cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-950/55'
+                          : 'cursor-pointer hover:bg-accent/40'
+                        : undefined,
+                      rowSelected
+                        ? 'bg-sky-50 ring-1 ring-primary/40 dark:bg-sky-950/35 dark:ring-primary/35'
+                        : undefined
+                    )}
+                    onclick={(e) => {
+                      if (!rowSelectionEnabled) return;
+                      onEntityCardClick(rk, e);
+                    }}
+                    onkeydown={
+                      (e) => {
+                        if (!rowSelectionEnabled) return;
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        toggleRowSelect(rk);
+                      }
+                    }
+                  >
+                    <div class="mb-2 flex items-start justify-between gap-2">
+                      {#if rowSelectionEnabled}
+                        <div
+                          class="shrink-0"
+                          data-pb-card-cta
+                          role="button"
+                          tabindex="-1"
+                          onclick={(e) => e.stopPropagation()}
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                          }}
+                        >
+                          <Checkbox
+                            class={selectionCheckboxClass}
+                            checked={selectedKeys.includes(rk)}
+                            onCheckedChange={() => toggleRowSelect(rk)}
+                            aria-label="select row"
+                          />
+                        </div>
+                      {/if}
+
+                      {#if actionsEnabled}
+                        <div
+                          class="ml-auto shrink-0"
+                          data-pb-card-cta
+                          role="button"
+                          tabindex="-1"
+                          onclick={(e) => e.stopPropagation()}
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                          }}
+                        >
+                          {#if rowActions}
+                            {@render rowActions({ row: r })}
+                          {:else}
+                            <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <MoreVertical class="size-4" />
+                            </Button>
+                          {/if}
+                        </div>
+                      {/if}
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                      {#each renderColumns as col (col.key)}
+                        <div class="flex flex-col gap-0.5">
+                          <div class="text-xs font-medium text-muted-foreground">{ $t(col.labelKey) }</div>
+                          <div
+                            class={cn(
+                              'min-w-0 text-sm',
+                              datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected) ??
+                                stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+                            )}
+                          >
+                            {#if isCardFieldEmpty(r, col)}
+                              <Tooltip.Root>
+                                <Tooltip.Trigger>
+                                  {#snippet child({ props })}
+                                    <button
+                                      type="button"
+                                      {...props}
+                                      data-pb-card-cta
+                                      class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
+                                      aria-label="Vuoto"
+                                    >
+                                      <Ban class="size-4" />
+                                    </button>
+                                  {/snippet}
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>Vuoto</Tooltip.Content>
+                              </Tooltip.Root>
+                            {:else if cell}
+                              {@render cell({ row: r, column: col })}
+                            {:else}
+                              {@render listDefaultCellValue(r, col)}
+                            {/if}
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <Table.Root
+          bind:ref={tableRef}
+          data-row-density={rowDensity}
+          class={cn(
+            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+            tableDensityClass
+          )}
+          containerClass="h-full overflow-auto"
+          style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
+        >
+          <Table.Header class="sticky top-0 z-[80] bg-background">
+            <Table.Row>
+              {#if rowSelectionEnabled}
                 <Table.Head
-                  bind:ref={uuidHeadRef}
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
+                  bind:ref={checkboxHeadRef}
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
                 >
-                <span class="inline-flex items-center gap-1">
-                  {$t(col.labelKey)}
-                  {#if col.sortable}
-                    {#if sortKey !== col.key}
-                      <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
-                    {:else if sortDir === 'asc'}
-                      <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                    {:else}
-                      <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                    {/if}
-                  {/if}
-                </span>
+                  <div class={cn('flex items-center justify-center', rowChromeH)}>
+                    <Checkbox
+                      class={selectionCheckboxClass}
+                      checked={allOnPageSelected}
+                      indeterminate={headerIndeterminate}
+                      onCheckedChange={() => toggleAllOnPage()}
+                      aria-label="select all"
+                    />
+                  </div>
                 </Table.Head>
-              {:else if col.key === 'code'}
-                <Table.Head
-                  bind:ref={codeHeadRef}
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
-                >
+              {/if}
+              {#each renderColumns as col, colIdx (col.key)}
+                {#if col.key === 'uuid'}
+                  <Table.Head
+                    bind:ref={uuidHeadRef}
+                    class={stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable !== false
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10')}
+                    onclick={() => handleSortClick(col)}
+                  >
                   <span class="inline-flex items-center gap-1">
                     {$t(col.labelKey)}
-                    {#if col.sortable}
+                    {#if col.sortable !== false}
                       {#if sortKey !== col.key}
                         <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                       {:else if sortDir === 'asc'}
@@ -1211,12 +1627,36 @@
                       {/if}
                     {/if}
                   </span>
-                </Table.Head>
-              {:else}
+                  </Table.Head>
+                {:else if col.key === 'code'}
+                  <Table.Head
+                    bind:ref={codeHeadRef}
+                    class={stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable !== false
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10')}
+                    onclick={() => handleSortClick(col)}
+                  >
+                    <span class="inline-flex items-center gap-1">
+                      {$t(col.labelKey)}
+                      {#if col.sortable !== false}
+                        {#if sortKey !== col.key}
+                          <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                        {:else if sortDir === 'asc'}
+                          <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {:else}
+                          <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {/if}
+                      {/if}
+                    </span>
+                  </Table.Head>
+                {:else}
                 <Table.Head
                   class={cn(
                     stickyCellClass(col.key, colIdx, true) ??
-                      (col.sortable
+                      (col.sortable !== false
                         ? rowsLoading
                           ? 'relative z-10 select-none opacity-60'
                           : 'relative z-10 cursor-pointer select-none'
@@ -1233,7 +1673,7 @@
                     <div class="flex w-full min-w-0 items-center justify-between gap-1">
                       <span class="inline-flex min-w-0 items-center gap-1">
                         {$t(col.labelKey)}
-                        {#if col.sortable}
+                        {#if col.sortable !== false}
                           {#if sortKey !== col.key}
                             <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                           {:else if sortDir === 'asc'}
@@ -1268,7 +1708,7 @@
                   {:else}
                     <span class="inline-flex items-center gap-1">
                       {$t(col.labelKey)}
-                      {#if col.sortable}
+                      {#if col.sortable !== false}
                         {#if sortKey !== col.key}
                           <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                         {:else if sortDir === 'asc'}
@@ -1512,6 +1952,7 @@
           {/if}
         </Table.Body>
       </Table.Root>
+    {/if}
     {/if}
   </div>
 
