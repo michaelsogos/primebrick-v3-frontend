@@ -8,6 +8,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
+  import { Switch } from '$lib/components/ui/switch';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -15,12 +17,18 @@
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
+  import { formatListCellValue } from '$lib/i18n/date-format';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     SlidersHorizontal,
     Columns3,
+    LayoutGrid,
+    LayoutList,
+    Table2,
     Search,
     ArrowUpDown,
+    ArrowUpNarrowWide,
+    ArrowDownWideNarrow,
     ArrowUp,
     ArrowDown,
     TriangleAlert,
@@ -34,6 +42,7 @@
     RotateCw,
     RotateCcw,
     MoreVertical,
+    Ban,
     Globe,
     MapPin,
     Eye,
@@ -45,6 +54,10 @@
   let {
     uid,
     columns,
+    stickyColumns,
+    dataColumns,
+    auditingColumns,
+    columnOrderStorageKey,
     defaultSort,
     pageSizeOptions: pageSizeOptionsProp,
     searchPlaceholderKey,
@@ -93,7 +106,17 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /**
+     * Columns to render/select in the UI.
+     * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
+     * - Back-compat: provide `columns` only
+     */
     columns: MetaColumn[];
+    stickyColumns?: MetaColumn[];
+    dataColumns?: MetaColumn[];
+    auditingColumns?: MetaColumn[];
+    /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
+    columnOrderStorageKey?: string;
     defaultSort?: { key: string; dir: SortDir };
     pageSizeOptions?: number[];
     searchPlaceholderKey?: string;
@@ -142,6 +165,143 @@
     noRecordsMessage?: string;
   } = $props();
 
+  type ColumnOrderState = {
+    sticky?: string[];
+    data?: string[];
+    auditing?: string[];
+  };
+
+  const orderState = $state<ColumnOrderState>({});
+
+  type ViewMode = 'table' | 'cards' | 'cards_list';
+  const viewModeStorageKey = $derived(
+    columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
+  );
+  let viewMode = $state<ViewMode>('table');
+
+  function readViewMode(): ViewMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.sessionStorage.getItem(viewModeStorageKey);
+      if (raw === 'table' || raw === 'cards' || raw === 'cards_list') return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeViewMode(next: ViewMode) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(viewModeStorageKey, next);
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  function readOrderState(): ColumnOrderState {
+    if (!columnOrderStorageKey) return {};
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.sessionStorage.getItem(columnOrderStorageKey);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== 'object') return {};
+      const obj = parsed as any;
+      return {
+        sticky: Array.isArray(obj.sticky)
+          ? obj.sticky.filter((k: unknown) => typeof k === 'string')
+          : undefined,
+        data: Array.isArray(obj.data) ? obj.data.filter((k: unknown) => typeof k === 'string') : undefined,
+        auditing: Array.isArray(obj.auditing)
+          ? obj.auditing.filter((k: unknown) => typeof k === 'string')
+          : undefined
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  function writeOrderState(next: ColumnOrderState) {
+    if (!columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(columnOrderStorageKey, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  function resetColumnsAndSorting() {
+    onResetColumnVisibility();
+    // Reset column visual order (sticky/data/auditing) to default meta order.
+    orderState.sticky = undefined;
+    orderState.data = undefined;
+    orderState.auditing = undefined;
+    writeOrderState({});
+    if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
+    else onSortChange(null, defaultSortDir);
+  }
+
+  function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
+    if (!keys || keys.length === 0) return cols;
+    const byKey = new Map(cols.map((c) => [c.key, c] as const));
+    const out: MetaColumn[] = [];
+    const used = new Set<string>();
+    for (const k of keys) {
+      const c = byKey.get(k);
+      if (!c) continue;
+      out.push(c);
+      used.add(k);
+    }
+    for (const c of cols) {
+      if (used.has(c.key)) continue;
+      out.push(c);
+    }
+    return out;
+  }
+
+  function moveKeyWithin(keys: string[], fromKey: string, toKey: string): string[] {
+    if (fromKey === toKey) return keys;
+    const fromIdx = keys.indexOf(fromKey);
+    const toIdx = keys.indexOf(toKey);
+    if (fromIdx < 0 || toIdx < 0) return keys;
+    const next = keys.slice();
+    next.splice(fromIdx, 1);
+    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    next.splice(insertAt, 0, fromKey);
+    return next;
+  }
+
+  function reorderGroup(group: 'data' | 'auditing', fromKey: string, toKey: string) {
+    const base =
+      group === 'data'
+        ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
+        : (auditingColumnsGroup ?? []).map((c) => c.key);
+    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
+    const nextKeys = moveKeyWithin(cur, fromKey, toKey);
+    const nextState: ColumnOrderState =
+      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
+    orderState.data = nextState.data;
+    orderState.auditing = nextState.auditing;
+    writeOrderState(nextState);
+  }
+
+  onMount(() => {
+    const loaded = readOrderState();
+    orderState.sticky = loaded.sticky;
+    orderState.data = loaded.data;
+    orderState.auditing = loaded.auditing;
+
+    const storedMode = readViewMode();
+    if (storedMode) viewMode = storedMode;
+  });
+
+  $effect(() => {
+    void viewMode;
+    writeViewMode(viewMode);
+  });
+
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
   let lastPanelId = $state<string | null>(null);
   $effect(() => {
@@ -160,6 +320,72 @@
     void sheetState.open;
     void sheetState.panelId;
     if (!filtersOpen && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
+  });
+
+  // Keep sheet panel props reactive while open (SheetHost stores a snapshot at `openSheet()` time).
+  // Without this, checkboxes in `entity.columns` / `entity.searchIn` don't visually toggle even though
+  // the underlying selection changes.
+  $effect(() => {
+    void sheetState.open;
+    void sheetState.panelId;
+    void visibleKeys;
+    void searchInKeys;
+    void searchableColumns;
+    void nonAuditingColumns;
+    void auditingColumnsGroup;
+    void stickyColumnsGroup;
+
+    if (!sheetState.open) return;
+    if (sheetState.panelId === 'entity.columns') {
+      sheetState.props = {
+        stickyColumns: stickyColumnsGroup,
+        nonAuditingColumns,
+        auditingColumns: auditingColumnsGroup,
+        visibleKeys,
+        toggleColumnKey,
+        onReorderKeys: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => {
+          const allowed = new Set(
+            (group === 'sticky'
+              ? stickyColumnsGroup
+              : group === 'data'
+                ? nonAuditingColumns
+                : auditingColumnsGroup
+            ).map((c) => c.key)
+          );
+          const dedup: string[] = [];
+          const seen = new Set<string>();
+          for (const k of keys) {
+            if (!allowed.has(k)) continue;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            dedup.push(k);
+          }
+          const nextState: ColumnOrderState =
+            group === 'sticky'
+              ? { ...orderState, sticky: dedup }
+              : group === 'data'
+                ? { ...orderState, data: dedup }
+                : { ...orderState, auditing: dedup };
+          orderState.data = nextState.data;
+          orderState.auditing = nextState.auditing;
+          orderState.sticky = nextState.sticky;
+          writeOrderState(nextState);
+        },
+        onResetColumnVisibility: resetColumnsAndSorting,
+        sheetMenuCheckboxClass,
+        t: $t
+      } as any;
+      return;
+    }
+    if (sheetState.panelId === 'entity.searchIn') {
+      sheetState.props = {
+        searchInKeys,
+        searchableColumns,
+        onSearchInKeysChange,
+        toggleSearchKey,
+        sheetMenuCheckboxClass
+      } as any;
+    }
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
@@ -193,6 +419,43 @@
     const next: 'browser' | 'record' = cur === 'browser' ? 'record' : 'browser';
     datetimeIanaModeByKey = { ...datetimeIanaModeByKey, [col.key]: next };
     datetimeIanaRenderTick++;
+  }
+
+  function isBlankish(value: unknown): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (typeof value === 'number') return false;
+    if (typeof value === 'boolean') return false;
+    return false;
+  }
+
+  /**
+   * Card view empty-state detection.
+   *
+   * Note: when a route provides `{#snippet cell}`, we cannot reliably infer rendered emptiness;
+   * in that case we only apply this heuristic for scalar-ish values on the row key.
+   */
+  function isCardFieldEmpty(row: TRow, col: MetaColumn): boolean {
+    const r = row as Record<string, unknown>;
+    const raw = r[col.key];
+
+    if (col.type === 'datetime' && col.datetimeIanaToggle) {
+      const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
+      const parts = formatDatetimeCellDisplay(col, r, $uiLang, mode);
+      const textEmpty = parts.text.trim().length === 0;
+      // In record mode we may show an IANA badge even if the datetime text is empty; treat as non-empty.
+      if (isDatetimeIanaRecordMode(col) && parts.iana && parts.iana.trim().length > 0) return false;
+      return textEmpty;
+    }
+
+    if (cell) {
+      return isBlankish(raw);
+    }
+
+    if (isBlankish(raw)) return true;
+
+    const formatted = formatListCellValue(col, raw, $uiLang).trim();
+    return formatted.length === 0;
   }
 
   /** Top-align cells that stack datetime value + IANA badge. */
@@ -230,6 +493,15 @@
     return '!bg-amber-50 dark:!bg-amber-950/40 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-950/55';
   }
 
+  /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
+  function datetimeIanaCardFieldHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    if (!isDatetimeIanaRecordMode(col)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-amber-300/70 bg-amber-200/70 p-2 transition-colors group-hover:bg-amber-300/75 dark:border-amber-700/55 dark:bg-amber-950/45 dark:group-hover:bg-amber-950/60';
+    }
+    return 'rounded-md border border-amber-200/70 bg-amber-50/70 p-2 transition-colors group-hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/30 dark:group-hover:bg-amber-950/45';
+  }
+
   /** Gray band (checkbox / actions): base 100, hover 200; selected 300, selected+hover 400 (dark 950→900→800→700). */
   function entityListGrayChromeCellClass(rowSelected: boolean): string {
     return rowSelected
@@ -262,28 +534,51 @@
   let skipNextRowClickSelectToggle = false;
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
+  const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  const searchableColumns = $derived(columns.filter((c) => c.searchable !== false));
-  const shownColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
-  const renderColumns = $derived(
-    (() => {
-      // Ensure UUID is the first visible data column (after row checkbox),
-      // and keep `code` immediately after it.
-      const cols = shownColumns;
-      const byKey = new Map(cols.map((c) => [c.key, c] as const));
-      const out: MetaColumn[] = [];
-      const uuid = byKey.get('uuid');
-      const code = byKey.get('code');
-      if (uuid) out.push(uuid);
-      if (code) out.push(code);
-      for (const c of cols) {
-        if (c.key === 'uuid' || c.key === 'code') continue;
-        out.push(c);
-      }
-      return out;
-    })()
+  const allColumns = $derived(
+    stickyColumns || auditingColumns
+      ? [
+          ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
+          ...applyKeyOrder(dataColumns ?? [], orderState.data),
+          ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
+        ]
+      : columns
   );
+  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
+  const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
+  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
+  const renderColumns = $derived(shownColumns);
+  const stickyColumnsGroup = $derived(
+    applyKeyOrder(
+      stickyColumns ??
+      (() => {
+        // Back-compat: legacy behavior (uuid/code pinned in the selector).
+        const cols = allColumns;
+        const byKey = new Map(cols.map((c) => [c.key, c] as const));
+        const out: MetaColumn[] = [];
+        const uuid = byKey.get('uuid');
+        const code = byKey.get('code');
+        if (uuid) out.push(uuid);
+        if (code) out.push(code);
+        return out;
+      })(),
+      orderState.sticky
+    )
+  );
+
+  /** Card view: mimic sticky “gray chrome” cells for sticky columns (uuid/code/etc.). */
+  function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
+    if (!stickyKeys.has(col.key)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-gray-800/70 dark:bg-gray-800/70 dark:group-hover:bg-gray-700/80';
+    }
+    return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-gray-900/60 dark:bg-gray-950/40 dark:group-hover:bg-gray-900/55';
+  }
+
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
   let clientSelectedPage = $state(1);
@@ -389,8 +684,16 @@
     const uuidW = Math.max(uuidHeadW, uuidCellW);
     const codeW = Math.max(codeHeadW, codeCellW);
 
-    const nextLeftUuid = Math.round(checkboxW);
-    const nextLeftCode = Math.round(checkboxW + uuidW);
+    const stickyVisibleKeys = stickyColumnsGroup
+      .filter((c) => visibleKeys.includes(c.key))
+      .filter((c) => c.key === 'uuid' || c.key === 'code')
+      .map((c) => c.key);
+    const firstKey = stickyVisibleKeys[0] ?? 'uuid';
+    const firstW = firstKey === 'uuid' ? uuidW : codeW;
+
+    // If the user reorders sticky columns, swap their left offsets accordingly.
+    const nextLeftUuid = Math.round(firstKey === 'uuid' ? checkboxW : checkboxW + firstW);
+    const nextLeftCode = Math.round(firstKey === 'code' ? checkboxW : checkboxW + firstW);
 
     // Avoid update loops when called from afterUpdate(): only write if changed.
     if (stickyLeftUuidPx !== nextLeftUuid) stickyLeftUuidPx = nextLeftUuid;
@@ -442,6 +745,7 @@
     void actionsEnabled;
     void visibleKeys;
     void columns;
+    void orderState.sticky;
     requestAnimationFrame(() => updateStickyOffsets());
   });
 
@@ -465,8 +769,18 @@
     'deleted_at',
     'deleted_by'
   ]);
-  const nonAuditingColumns = $derived(columns.filter((c) => !auditingKeySet.has(c.key)));
-  const auditingColumns = $derived(columns.filter((c) => auditingKeySet.has(c.key)));
+  const auditingColumnsGroup = $derived(
+    applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+  );
+  const nonAuditingColumns = $derived(
+    applyKeyOrder(
+      dataColumns ??
+        allColumns.filter(
+          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
+        ),
+      orderState.data
+    )
+  );
 
   const searchScopeLabel = $derived(() => {
     if (!searchInKeys || searchInKeys.length === 0) return $t('entities.list.searchInAll');
@@ -600,7 +914,7 @@
 
   function handleSortClick(col: MetaColumn) {
     if (rowsLoading) return;
-    if (!col.sortable) return;
+    if (col.sortable === false) return;
     if (sortKey !== col.key) {
       onSortChange(col.key, 'asc');
     } else if (sortDir === 'asc') {
@@ -636,6 +950,21 @@
     }
     toggleRowSelect(key);
     // Avoid stray document-level handlers (dialogs/sheets) treating this as an extra activation.
+    e.stopPropagation();
+  }
+
+  function onEntityCardClick(key: string, e: MouseEvent) {
+    if (!rowSelectionEnabled || rowsLoading || error) return;
+    const t = e.target as HTMLElement | null;
+    if (!t) return;
+    if (
+      t.closest(
+        'input, button, a, textarea, select, [role="checkbox"], [data-slot=dropdown-menu-trigger], [data-pb-card-cta]'
+      )
+    ) {
+      return;
+    }
+    toggleRowSelect(key);
     e.stopPropagation();
   }
 
@@ -799,6 +1128,49 @@
       <span class="min-w-0 truncate">{parts.text}</span>
     {/if}
   {/snippet}
+
+  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean)}
+    <div
+      class={cn(
+        'flex flex-col gap-0.5',
+        viewMode === 'cards_list' ? 'min-w-[9rem] max-w-[24rem] shrink-0' : 'min-w-0'
+      )}
+    >
+      <div class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</div>
+      <div
+        class={cn(
+          'min-w-0 text-sm',
+          (!isCardFieldEmpty(r, col)
+            ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
+            : undefined) ?? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+        )}
+      >
+        {#if isCardFieldEmpty(r, col)}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              {#snippet child({ props })}
+                <button
+                  type="button"
+                  {...props}
+                  data-pb-card-cta
+                  class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
+                  aria-label="Vuoto"
+                >
+                  <Ban class="size-4" />
+                </button>
+              {/snippet}
+            </Tooltip.Trigger>
+            <Tooltip.Content>Vuoto</Tooltip.Content>
+          </Tooltip.Root>
+        {:else if cell}
+          {@render cell({ row: r, column: col })}
+        {:else}
+          {@render listDefaultCellValue(r, col)}
+        {/if}
+      </div>
+    </div>
+  {/snippet}
+
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
       <div class="relative w-full">
@@ -872,6 +1244,52 @@
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
 
+      <div
+        class="inline-flex rounded-md border border-input bg-muted/30 p-0.5 shadow-xs dark:bg-muted/20"
+        role="group"
+        aria-label={$t('entities.list.viewMode.groupAria')}
+      >
+        <Button
+          variant={viewMode === 'table' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'table'}
+          title={$t('entities.list.viewMode.table')}
+          onclick={() => {
+            viewMode = 'table';
+          }}
+        >
+          <Table2 class="size-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'cards' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'cards'}
+          title={$t('entities.list.viewMode.cards')}
+          onclick={() => {
+            viewMode = 'cards';
+          }}
+        >
+          <LayoutGrid class="size-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'cards_list' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class="rounded-sm"
+          aria-pressed={viewMode === 'cards_list'}
+          title={$t('entities.list.viewMode.cardsList')}
+          onclick={() => {
+            viewMode = 'cards_list';
+          }}
+        >
+          <LayoutList class="size-4" />
+        </Button>
+      </div>
+
       <Button
         variant="soft"
         size="sm"
@@ -880,11 +1298,12 @@
           openSheet(
             'entity.columns',
             {
+              stickyColumns: stickyColumnsGroup,
               nonAuditingColumns,
-              auditingColumns,
+              auditingColumns: auditingColumnsGroup,
               visibleKeys,
               toggleColumnKey,
-              onResetColumnVisibility,
+              onResetColumnVisibility: resetColumnsAndSorting,
               sheetMenuCheckboxClass,
               t: $t
             } as any,
@@ -934,24 +1353,71 @@
         </div>
       {/if}
     {:else}
-      <Table.Root
-        bind:ref={tableRef}
-        data-row-density={rowDensity}
-        class={cn(
-          'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
-          tableDensityClass
-        )}
-        containerClass="h-full overflow-auto"
-        style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
-      >
-        <Table.Header class="sticky top-0 z-[80] bg-background">
-          <Table.Row>
-            {#if rowSelectionEnabled}
-              <Table.Head
-                bind:ref={checkboxHeadRef}
-                class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
-              >
-                <div class={cn('flex items-center justify-center', rowChromeH)}>
+      {#if viewMode !== 'table'}
+        <div class="h-full overflow-auto">
+          {#if error}
+            {#if errorView}
+              {@render errorView()}
+            {:else}
+              <div class="grid min-h-[14rem] place-items-center">
+                <div class="relative flex flex-col items-center gap-2 text-center">
+                  <div class="pb-watermark-error">
+                    <CircleX class="size-20 text-destructive" />
+                  </div>
+                  <div class="text-sm font-medium text-muted-foreground">{error}</div>
+                </div>
+              </div>
+            {/if}
+          {:else if rowsLoading}
+            {#if rowsLoadingView}
+              {@render rowsLoadingView()}
+            {:else}
+              <div class="w-full">
+                <LoadingBar size="xs" />
+                <div class="grid min-h-[14rem] place-items-center">
+                  <div class="relative flex flex-col items-center gap-2 text-center">
+                    <div class="pb-watermark-loading">
+                      <Hourglass class="size-20 text-info" />
+                    </div>
+                    <div class="text-sm font-medium text-muted-foreground">{loadingText}</div>
+                  </div>
+                </div>
+              </div>
+            {/if}
+          {:else if rows.length === 0}
+            {#if emptyView}
+              {@render emptyView()}
+            {:else}
+              <div class="grid min-h-[14rem] place-items-center">
+                <div class="relative flex flex-col items-center gap-2 text-center">
+                  <div class="pb-watermark-empty">
+                    <TriangleAlert class="size-20 text-warning" />
+                  </div>
+                  <div class="text-sm font-medium text-muted-foreground">{emptyText}</div>
+                </div>
+              </div>
+            {/if}
+          {:else if viewRows.length === 0}
+            <div class="grid min-h-[14rem] place-items-center">
+              <div class="relative flex flex-col items-center gap-2 text-center">
+                <div class="pb-watermark-empty">
+                  <TriangleAlert class="size-20 text-warning" />
+                </div>
+                <div class="text-sm font-medium text-muted-foreground">
+                  {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
+                    {$t('entities.list.selectedRowsNotLoadedHint')}
+                  {:else}
+                    {$t('entities.list.noSelectedRowsInView')}
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {:else}
+            <div
+              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                {#if rowSelectionEnabled}
                   <Checkbox
                     class={selectionCheckboxClass}
                     checked={allOnPageSelected}
@@ -959,48 +1425,301 @@
                     onCheckedChange={() => toggleAllOnPage()}
                     aria-label="select all"
                   />
-                </div>
-              </Table.Head>
-            {/if}
-            {#each renderColumns as col, colIdx (col.key)}
-              {#if col.key === 'uuid'}
-                <Table.Head
-                  bind:ref={uuidHeadRef}
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
-                >
-                <span class="inline-flex items-center gap-1">
-                  {$t(col.labelKey)}
-                  {#if col.sortable}
-                    {#if sortKey !== col.key}
-                      <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
-                    {:else if sortDir === 'asc'}
-                      <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <span class="text-xs font-medium text-muted-foreground">
+                    {allOnPageSelected ? 'deseleziona tutto' : 'seleziona tutto'}
+                  </span>
+                {/if}
+
+                <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+
+                <span class="text-xs font-medium text-muted-foreground">Ordina per</span>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
+                        {#if effectiveSortKey}
+                          {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
+                        {:else}
+                          —
+                        {/if}
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
+                      onSelect={() => onSortChange(null, defaultSortDir)}
+                    >
+                      —
+                    </DropdownMenu.Item>
+                    {#each sortableColumns as col (col.key)}
+                      <DropdownMenu.Item
+                        class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
+                        onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
+                      >
+                        {$t(col.labelKey)}
+                      </DropdownMenu.Item>
+                    {/each}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                <span class="ml-1 text-xs font-medium text-muted-foreground">in ordine</span>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button variant="soft" size="xs" {...props} disabled={!effectiveSortKey}>
+                        {#if sortDir === 'asc'}
+                          <ArrowUpNarrowWide class="size-4" />
+                        {:else}
+                          <ArrowDownWideNarrow class="size-4" />
+                        {/if}
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
+                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
+                    >
+                      <span class="inline-flex items-center gap-2">
+                        <ArrowUpNarrowWide class="size-4" />
+                        Crescente
+                      </span>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      class={dropdownMenuSelectedItemClass(sortDir === 'desc')}
+                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'desc')}
+                    >
+                      <span class="inline-flex items-center gap-2">
+                        <ArrowDownWideNarrow class="size-4" />
+                        Decrescente
+                      </span>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                {#each datetimeIanaToggleColumns as col (col.key)}
+                  <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
+                    <Switch
+                      checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                      disabled={rowsLoading}
+                      aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                        ? $t('entities.list.datetimeIana.hintBrowser')
+                        : $t('entities.list.datetimeIana.hintRecord')}
+                      title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
+                        ? $t('entities.list.datetimeIana.hintBrowser')
+                        : $t('entities.list.datetimeIana.hintRecord')}
+                      onCheckedChange={() => toggleDatetimeIana(col)}
+                    >
+                      {#snippet thumbIcons({ checked })}
+                        {#if checked}
+                          <MapPin class="size-3.5 opacity-95" />
+                        {:else}
+                          <Globe class="size-3.5 opacity-95" />
+                        {/if}
+                      {/snippet}
+                    </Switch>
+                  </div>
+                {/each}
+              </div>
+            </div>
+
+            <div class="p-3">
+              <div
+                class={cn(
+                  viewMode === 'cards_list'
+                    ? 'flex flex-col gap-3'
+                    : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                )}
+              >
+                {#each viewRows as r (rowKey(r))}
+                  {@const rk = rowKey(r)}
+                  {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+                  <div
+                    role="button"
+                    tabindex={rowSelectionEnabled ? 0 : -1}
+                    aria-disabled={!rowSelectionEnabled}
+                    data-state={rowSelected ? 'selected' : undefined}
+                    class={cn(
+                      'group rounded-md border bg-background p-3 shadow-sm transition-colors',
+                      viewMode === 'cards_list'
+                        ? 'flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4'
+                        : undefined,
+                      rowSelectionEnabled
+                        ? rowSelected
+                          ? 'cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-950/55'
+                          : 'cursor-pointer hover:bg-accent/40'
+                        : undefined,
+                      rowSelected
+                        ? 'bg-sky-50 ring-1 ring-primary/40 dark:bg-sky-950/35 dark:ring-primary/35'
+                        : undefined
+                    )}
+                    onclick={(e) => {
+                      if (!rowSelectionEnabled) return;
+                      onEntityCardClick(rk, e);
+                    }}
+                    onkeydown={
+                      (e) => {
+                        if (!rowSelectionEnabled) return;
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        toggleRowSelect(rk);
+                      }
+                    }
+                  >
+                    {#if viewMode === 'cards_list'}
+                      <div
+                        class="flex w-full shrink-0 items-start justify-between gap-2 sm:w-auto sm:flex-col sm:items-stretch sm:gap-2"
+                      >
+                        {#if rowSelectionEnabled}
+                          <div
+                            class="shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            <Checkbox
+                              class={selectionCheckboxClass}
+                              checked={selectedKeys.includes(rk)}
+                              onCheckedChange={() => toggleRowSelect(rk)}
+                              aria-label="select row"
+                            />
+                          </div>
+                        {/if}
+
+                        {#if actionsEnabled}
+                          <div
+                            class={cn('shrink-0', rowSelectionEnabled ? 'ml-auto sm:ml-0' : 'ml-auto')}
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            {#if rowActions}
+                              {@render rowActions({ row: r })}
+                            {:else}
+                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/if}
+                          </div>
+                        {/if}
+                      </div>
+
+                      <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
+                        {#each renderColumns as col (col.key)}
+                          {@render entityCardField(r, col, rowSelected)}
+                        {/each}
+                      </div>
                     {:else}
-                      <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                      <div class="mb-2 flex items-start justify-between gap-2">
+                        {#if rowSelectionEnabled}
+                          <div
+                            class="shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            <Checkbox
+                              class={selectionCheckboxClass}
+                              checked={selectedKeys.includes(rk)}
+                              onCheckedChange={() => toggleRowSelect(rk)}
+                              aria-label="select row"
+                            />
+                          </div>
+                        {/if}
+
+                        {#if actionsEnabled}
+                          <div
+                            class="ml-auto shrink-0"
+                            data-pb-card-cta
+                            role="button"
+                            tabindex="-1"
+                            onclick={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                            }}
+                          >
+                            {#if rowActions}
+                              {@render rowActions({ row: r })}
+                            {:else}
+                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/if}
+                          </div>
+                        {/if}
+                      </div>
+
+                      <div class="flex flex-col gap-2">
+                        {#each renderColumns as col (col.key)}
+                          {@render entityCardField(r, col, rowSelected)}
+                        {/each}
+                      </div>
                     {/if}
-                  {/if}
-                </span>
-                </Table.Head>
-              {:else if col.key === 'code'}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <Table.Root
+          bind:ref={tableRef}
+          data-row-density={rowDensity}
+          class={cn(
+            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+            tableDensityClass
+          )}
+          containerClass="h-full overflow-auto"
+          style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
+        >
+          <Table.Header class="sticky top-0 z-[80] bg-background">
+            <Table.Row>
+              {#if rowSelectionEnabled}
                 <Table.Head
-                  bind:ref={codeHeadRef}
-                  class={stickyCellClass(col.key, colIdx, true) ??
-                    (col.sortable
-                      ? rowsLoading
-                        ? 'relative z-10 select-none opacity-60'
-                        : 'relative z-10 cursor-pointer select-none'
-                      : 'relative z-10')}
-                  onclick={() => handleSortClick(col)}
+                  bind:ref={checkboxHeadRef}
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
                 >
+                  <div class={cn('flex items-center justify-center', rowChromeH)}>
+                    <Checkbox
+                      class={selectionCheckboxClass}
+                      checked={allOnPageSelected}
+                      indeterminate={headerIndeterminate}
+                      onCheckedChange={() => toggleAllOnPage()}
+                      aria-label="select all"
+                    />
+                  </div>
+                </Table.Head>
+              {/if}
+              {#each renderColumns as col, colIdx (col.key)}
+                {#if col.key === 'uuid'}
+                  <Table.Head
+                    bind:ref={uuidHeadRef}
+                    class={stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable !== false
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10')}
+                    onclick={() => handleSortClick(col)}
+                  >
                   <span class="inline-flex items-center gap-1">
                     {$t(col.labelKey)}
-                    {#if col.sortable}
+                    {#if col.sortable !== false}
                       {#if sortKey !== col.key}
                         <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                       {:else if sortDir === 'asc'}
@@ -1010,12 +1729,36 @@
                       {/if}
                     {/if}
                   </span>
-                </Table.Head>
-              {:else}
+                  </Table.Head>
+                {:else if col.key === 'code'}
+                  <Table.Head
+                    bind:ref={codeHeadRef}
+                    class={stickyCellClass(col.key, colIdx, true) ??
+                      (col.sortable !== false
+                        ? rowsLoading
+                          ? 'relative z-10 select-none opacity-60'
+                          : 'relative z-10 cursor-pointer select-none'
+                        : 'relative z-10')}
+                    onclick={() => handleSortClick(col)}
+                  >
+                    <span class="inline-flex items-center gap-1">
+                      {$t(col.labelKey)}
+                      {#if col.sortable !== false}
+                        {#if sortKey !== col.key}
+                          <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
+                        {:else if sortDir === 'asc'}
+                          <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {:else}
+                          <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                        {/if}
+                      {/if}
+                    </span>
+                  </Table.Head>
+                {:else}
                 <Table.Head
                   class={cn(
                     stickyCellClass(col.key, colIdx, true) ??
-                      (col.sortable
+                      (col.sortable !== false
                         ? rowsLoading
                           ? 'relative z-10 select-none opacity-60'
                           : 'relative z-10 cursor-pointer select-none'
@@ -1032,7 +1775,7 @@
                     <div class="flex w-full min-w-0 items-center justify-between gap-1">
                       <span class="inline-flex min-w-0 items-center gap-1">
                         {$t(col.labelKey)}
-                        {#if col.sortable}
+                        {#if col.sortable !== false}
                           {#if sortKey !== col.key}
                             <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                           {:else if sortDir === 'asc'}
@@ -1067,7 +1810,7 @@
                   {:else}
                     <span class="inline-flex items-center gap-1">
                       {$t(col.labelKey)}
-                      {#if col.sortable}
+                      {#if col.sortable !== false}
                         {#if sortKey !== col.key}
                           <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                         {:else if sortDir === 'asc'}
@@ -1312,6 +2055,7 @@
         </Table.Body>
       </Table.Root>
     {/if}
+    {/if}
   </div>
 
   <div
@@ -1352,7 +2096,7 @@
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="xs"
             class="shrink-0 text-info hover:bg-info/10 hover:text-info"
             aria-pressed={showSelectedOnly}
             title={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
@@ -1378,7 +2122,7 @@
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <Button variant="soft" size="sm" {...props}>
+            <Button variant="soft" size="xs" {...props}>
               {pageSize}
             </Button>
           {/snippet}
@@ -1402,7 +2146,7 @@
       <div class="flex items-center gap-2">
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage <= 1}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = 1;
@@ -1415,7 +2159,7 @@
         </Button>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage <= 1}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
@@ -1433,7 +2177,7 @@
         </div>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage >= footerTotalPages}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
@@ -1446,7 +2190,7 @@
         </Button>
         <Button
           variant="soft"
-          size="icon-sm"
+          size="xs"
           disabled={footerPage >= footerTotalPages}
           onclick={() => {
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;

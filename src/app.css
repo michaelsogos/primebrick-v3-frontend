@@ -146,6 +146,12 @@
   }
 }
 
+/* Sortable drag mode: keep "grabbing" cursor only inside the active group. */
+.pb-sortable-root--dragging,
+.pb-sortable-root--dragging * {
+  cursor: grabbing !important;
+}
+
 @layer utilities {
   /** Pointy-top hexagon clip; use with Avatar: `class="… rounded-none avatar-hex"` to override default circles. */
   .avatar-hex {

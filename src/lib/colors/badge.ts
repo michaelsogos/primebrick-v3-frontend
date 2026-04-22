@@ -25,17 +25,17 @@ export function badgeClassesFromToken(token: TailwindColorToken | string | null 
   // Excel-like readability: lighter background + darker text.
   const bg = clampShade(shade <= 200 ? 50 : shade - 200);
   const text = clampShade(shade >= 600 ? shade : shade + 400);
-  const ring = clampShade(shade);
 
   // Dark mode: invert the contrast, keep a soft tinted bg.
   const darkBg = clampShade(shade >= 700 ? 950 : shade + 600);
   const darkText = clampShade(shade <= 300 ? 200 : shade - 200);
-  const darkRing = clampShade(shade <= 300 ? 300 : shade);
 
+  // Ring uses the same palette step as the label. Ring opacity utilities must appear in `tailwind.config.js`
+  // safelist or dynamic classes are omitted and Tailwind falls back to `--ring` (sky).
   return cn(
-    'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
-    `bg-${color}-${bg}/50 text-${color}-${text} ring-${color}-${ring}/20`,
-    `dark:bg-${color}-${darkBg}/30 dark:text-${color}-${darkText} dark:ring-${color}-${darkRing}/25`
+    'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ring-offset-0',
+    `bg-${color}-${bg}/50 text-${color}-${text} ring-${color}-${text}/45`,
+    `dark:bg-${color}-${darkBg}/30 dark:text-${color}-${darkText} dark:ring-${color}-${darkText}/50`
   );
 }
 

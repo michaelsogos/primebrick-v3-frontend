@@ -130,6 +130,8 @@
       "selectedSingular": "selezionato",
       "selectedPlural": "selezionati",
       "columns": "Colonne",
+      "stickyFields": "Campi fissati",
+      "dataFields": "Campi",
       "auditingFields": "Campi di auditing",
       "filters": "Filtri",
       "searchIn": "Cerca in",
@@ -141,7 +143,13 @@
       "viewSelectedOnlyTitle": "Mostra solo le righe selezionate in questa pagina",
       "viewAllRowsTitle": "Mostra tutte le righe di questa pagina",
       "noSelectedRowsInView": "Nessuna riga selezionata in questa pagina.",
-      "selectedRowsNotLoadedHint": "Apri le pagine in cui hai caricato quei record per poterli vedere tutti qui."
+      "selectedRowsNotLoadedHint": "Apri le pagine in cui hai caricato quei record per poterli vedere tutti qui.",
+      "viewMode": {
+        "groupAria": "Layout risultati",
+        "table": "Tabella",
+        "cards": "Card (griglia)",
+        "cardsList": "Card (lista orizzontale)"
+      }
     },
     "crm": {
       "pipeline": {

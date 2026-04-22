@@ -6,7 +6,7 @@ export default {
   safelist: [
     {
       pattern:
-        /^(bg|text|ring)-(neutral|stone|zinc|slate|gray|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900|950)(\/(5|10|15|20|25|30|40|50))?$/,
+        /^(bg|text|ring)-(neutral|stone|zinc|slate|gray|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900|950)(\/(5|10|15|20|25|30|40|45|50))?$/,
       variants: ['dark'],
     },
   ],

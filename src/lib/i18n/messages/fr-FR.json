@@ -123,6 +123,8 @@
       "selectedSingular": "sélectionné",
       "selectedPlural": "sélectionnés",
       "columns": "Colonnes",
+      "stickyFields": "Champs épinglés",
+      "dataFields": "Champs",
       "auditingFields": "Champs d’audit",
       "filters": "Filtres",
       "searchIn": "Rechercher dans",
@@ -134,7 +136,13 @@
       "viewSelectedOnlyTitle": "Afficher uniquement les lignes sélectionnées sur cette page",
       "viewAllRowsTitle": "Afficher toutes les lignes de cette page",
       "noSelectedRowsInView": "Aucune ligne sélectionnée sur cette page.",
-      "selectedRowsNotLoadedHint": "Ouvrez les pages où ces enregistrements ont été chargés pour les réunir ici."
+      "selectedRowsNotLoadedHint": "Ouvrez les pages où ces enregistrements ont été chargés pour les réunir ici.",
+      "viewMode": {
+        "groupAria": "Disposition des résultats",
+        "table": "Tableau",
+        "cards": "Cartes (grille)",
+        "cardsList": "Cartes (liste horizontale)"
+      }
     },
     "crm": {
       "pipeline": {

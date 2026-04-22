@@ -130,6 +130,8 @@
       "selectedSingular": "selected",
       "selectedPlural": "selected",
       "columns": "Columns",
+      "stickyFields": "Sticky fields",
+      "dataFields": "Fields",
       "auditingFields": "Auditing Fields",
       "filters": "Filters",
       "searchIn": "Search in",
@@ -141,7 +143,13 @@
       "viewSelectedOnlyTitle": "Show only selected rows on this page",
       "viewAllRowsTitle": "Show all rows on this page",
       "noSelectedRowsInView": "No selected rows on this page.",
-      "selectedRowsNotLoadedHint": "Open the pages where those records were loaded to assemble the full selection here."
+      "selectedRowsNotLoadedHint": "Open the pages where those records were loaded to assemble the full selection here.",
+      "viewMode": {
+        "groupAria": "Result layout",
+        "table": "Table",
+        "cards": "Cards (grid)",
+        "cardsList": "Cards (horizontal list)"
+      }
     },
     "crm": {
       "pipeline": {
