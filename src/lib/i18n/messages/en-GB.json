@@ -130,6 +130,8 @@
       "selectedSingular": "selected",
       "selectedPlural": "selected",
       "columns": "Columns",
+      "stickyFields": "Sticky fields",
+      "dataFields": "Fields",
       "auditingFields": "Auditing Fields",
       "filters": "Filters",
       "searchIn": "Search in",

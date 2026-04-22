@@ -45,6 +45,10 @@
   let {
     uid,
     columns,
+    stickyColumns,
+    dataColumns,
+    auditingColumns,
+    columnOrderStorageKey,
     defaultSort,
     pageSizeOptions: pageSizeOptionsProp,
     searchPlaceholderKey,
@@ -93,7 +97,17 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /**
+     * Columns to render/select in the UI.
+     * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
+     * - Back-compat: provide `columns` only
+     */
     columns: MetaColumn[];
+    stickyColumns?: MetaColumn[];
+    dataColumns?: MetaColumn[];
+    auditingColumns?: MetaColumn[];
+    /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
+    columnOrderStorageKey?: string;
     defaultSort?: { key: string; dir: SortDir };
     pageSizeOptions?: number[];
     searchPlaceholderKey?: string;
@@ -142,6 +156,98 @@
     noRecordsMessage?: string;
   } = $props();
 
+  type ColumnOrderState = {
+    sticky?: string[];
+    data?: string[];
+    auditing?: string[];
+  };
+
+  const orderState = $state<ColumnOrderState>({});
+
+  function readOrderState(): ColumnOrderState {
+    if (!columnOrderStorageKey) return {};
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.sessionStorage.getItem(columnOrderStorageKey);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== 'object') return {};
+      const obj = parsed as any;
+      return {
+        sticky: Array.isArray(obj.sticky)
+          ? obj.sticky.filter((k: unknown) => typeof k === 'string')
+          : undefined,
+        data: Array.isArray(obj.data) ? obj.data.filter((k: unknown) => typeof k === 'string') : undefined,
+        auditing: Array.isArray(obj.auditing)
+          ? obj.auditing.filter((k: unknown) => typeof k === 'string')
+          : undefined
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  function writeOrderState(next: ColumnOrderState) {
+    if (!columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(columnOrderStorageKey, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
+    if (!keys || keys.length === 0) return cols;
+    const byKey = new Map(cols.map((c) => [c.key, c] as const));
+    const out: MetaColumn[] = [];
+    const used = new Set<string>();
+    for (const k of keys) {
+      const c = byKey.get(k);
+      if (!c) continue;
+      out.push(c);
+      used.add(k);
+    }
+    for (const c of cols) {
+      if (used.has(c.key)) continue;
+      out.push(c);
+    }
+    return out;
+  }
+
+  function moveKeyWithin(keys: string[], fromKey: string, toKey: string): string[] {
+    if (fromKey === toKey) return keys;
+    const fromIdx = keys.indexOf(fromKey);
+    const toIdx = keys.indexOf(toKey);
+    if (fromIdx < 0 || toIdx < 0) return keys;
+    const next = keys.slice();
+    next.splice(fromIdx, 1);
+    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    next.splice(insertAt, 0, fromKey);
+    return next;
+  }
+
+  function reorderGroup(group: 'data' | 'auditing', fromKey: string, toKey: string) {
+    const base =
+      group === 'data'
+        ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
+        : (auditingColumnsGroup ?? []).map((c) => c.key);
+    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
+    const nextKeys = moveKeyWithin(cur, fromKey, toKey);
+    const nextState: ColumnOrderState =
+      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
+    orderState.data = nextState.data;
+    orderState.auditing = nextState.auditing;
+    writeOrderState(nextState);
+  }
+
+  onMount(() => {
+    const loaded = readOrderState();
+    orderState.sticky = loaded.sticky;
+    orderState.data = loaded.data;
+    orderState.auditing = loaded.auditing;
+  });
+
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
   let lastPanelId = $state<string | null>(null);
   $effect(() => {
@@ -160,6 +266,72 @@
     void sheetState.open;
     void sheetState.panelId;
     if (!filtersOpen && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
+  });
+
+  // Keep sheet panel props reactive while open (SheetHost stores a snapshot at `openSheet()` time).
+  // Without this, checkboxes in `entity.columns` / `entity.searchIn` don't visually toggle even though
+  // the underlying selection changes.
+  $effect(() => {
+    void sheetState.open;
+    void sheetState.panelId;
+    void visibleKeys;
+    void searchInKeys;
+    void searchableColumns;
+    void nonAuditingColumns;
+    void auditingColumnsGroup;
+    void stickyColumnsGroup;
+
+    if (!sheetState.open) return;
+    if (sheetState.panelId === 'entity.columns') {
+      sheetState.props = {
+        stickyColumns: stickyColumnsGroup,
+        nonAuditingColumns,
+        auditingColumns: auditingColumnsGroup,
+        visibleKeys,
+        toggleColumnKey,
+        onReorderKeys: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => {
+          const allowed = new Set(
+            (group === 'sticky'
+              ? stickyColumnsGroup
+              : group === 'data'
+                ? nonAuditingColumns
+                : auditingColumnsGroup
+            ).map((c) => c.key)
+          );
+          const dedup: string[] = [];
+          const seen = new Set<string>();
+          for (const k of keys) {
+            if (!allowed.has(k)) continue;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            dedup.push(k);
+          }
+          const nextState: ColumnOrderState =
+            group === 'sticky'
+              ? { ...orderState, sticky: dedup }
+              : group === 'data'
+                ? { ...orderState, data: dedup }
+                : { ...orderState, auditing: dedup };
+          orderState.data = nextState.data;
+          orderState.auditing = nextState.auditing;
+          orderState.sticky = nextState.sticky;
+          writeOrderState(nextState);
+        },
+        onResetColumnVisibility,
+        sheetMenuCheckboxClass,
+        t: $t
+      } as any;
+      return;
+    }
+    if (sheetState.panelId === 'entity.searchIn') {
+      sheetState.props = {
+        searchInKeys,
+        searchableColumns,
+        onSearchInKeysChange,
+        toggleSearchKey,
+        sheetMenuCheckboxClass
+      } as any;
+    }
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
@@ -264,25 +436,34 @@
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  const searchableColumns = $derived(columns.filter((c) => c.searchable !== false));
-  const shownColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
-  const renderColumns = $derived(
-    (() => {
-      // Ensure UUID is the first visible data column (after row checkbox),
-      // and keep `code` immediately after it.
-      const cols = shownColumns;
-      const byKey = new Map(cols.map((c) => [c.key, c] as const));
-      const out: MetaColumn[] = [];
-      const uuid = byKey.get('uuid');
-      const code = byKey.get('code');
-      if (uuid) out.push(uuid);
-      if (code) out.push(code);
-      for (const c of cols) {
-        if (c.key === 'uuid' || c.key === 'code') continue;
-        out.push(c);
-      }
-      return out;
-    })()
+  const allColumns = $derived(
+    stickyColumns || auditingColumns
+      ? [
+          ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
+          ...applyKeyOrder(dataColumns ?? [], orderState.data),
+          ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
+        ]
+      : columns
+  );
+  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
+  const renderColumns = $derived(shownColumns);
+  const stickyColumnsGroup = $derived(
+    applyKeyOrder(
+      stickyColumns ??
+      (() => {
+        // Back-compat: legacy behavior (uuid/code pinned in the selector).
+        const cols = allColumns;
+        const byKey = new Map(cols.map((c) => [c.key, c] as const));
+        const out: MetaColumn[] = [];
+        const uuid = byKey.get('uuid');
+        const code = byKey.get('code');
+        if (uuid) out.push(uuid);
+        if (code) out.push(code);
+        return out;
+      })(),
+      orderState.sticky
+    )
   );
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
@@ -389,8 +570,16 @@
     const uuidW = Math.max(uuidHeadW, uuidCellW);
     const codeW = Math.max(codeHeadW, codeCellW);
 
-    const nextLeftUuid = Math.round(checkboxW);
-    const nextLeftCode = Math.round(checkboxW + uuidW);
+    const stickyVisibleKeys = stickyColumnsGroup
+      .filter((c) => visibleKeys.includes(c.key))
+      .filter((c) => c.key === 'uuid' || c.key === 'code')
+      .map((c) => c.key);
+    const firstKey = stickyVisibleKeys[0] ?? 'uuid';
+    const firstW = firstKey === 'uuid' ? uuidW : codeW;
+
+    // If the user reorders sticky columns, swap their left offsets accordingly.
+    const nextLeftUuid = Math.round(firstKey === 'uuid' ? checkboxW : checkboxW + firstW);
+    const nextLeftCode = Math.round(firstKey === 'code' ? checkboxW : checkboxW + firstW);
 
     // Avoid update loops when called from afterUpdate(): only write if changed.
     if (stickyLeftUuidPx !== nextLeftUuid) stickyLeftUuidPx = nextLeftUuid;
@@ -442,6 +631,7 @@
     void actionsEnabled;
     void visibleKeys;
     void columns;
+    void orderState.sticky;
     requestAnimationFrame(() => updateStickyOffsets());
   });
 
@@ -465,8 +655,18 @@
     'deleted_at',
     'deleted_by'
   ]);
-  const nonAuditingColumns = $derived(columns.filter((c) => !auditingKeySet.has(c.key)));
-  const auditingColumns = $derived(columns.filter((c) => auditingKeySet.has(c.key)));
+  const auditingColumnsGroup = $derived(
+    applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+  );
+  const nonAuditingColumns = $derived(
+    applyKeyOrder(
+      dataColumns ??
+        allColumns.filter(
+          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
+        ),
+      orderState.data
+    )
+  );
 
   const searchScopeLabel = $derived(() => {
     if (!searchInKeys || searchInKeys.length === 0) return $t('entities.list.searchInAll');
@@ -880,8 +1080,9 @@
           openSheet(
             'entity.columns',
             {
+              stickyColumns: stickyColumnsGroup,
               nonAuditingColumns,
-              auditingColumns,
+              auditingColumns: auditingColumnsGroup,
               visibleKeys,
               toggleColumnKey,
               onResetColumnVisibility,

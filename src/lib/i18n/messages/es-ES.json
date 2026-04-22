@@ -123,6 +123,8 @@
       "selectedSingular": "seleccionado",
       "selectedPlural": "seleccionados",
       "columns": "Columnas",
+      "stickyFields": "Campos fijados",
+      "dataFields": "Campos",
       "auditingFields": "Campos de auditoría",
       "filters": "Filtros",
       "searchIn": "Buscar en",
