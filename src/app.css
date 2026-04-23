@@ -172,6 +172,25 @@
   box-sizing: border-box;
 }
 
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  /**
+   * Sonner hover/expand: blur the page behind the toast stack (no dim).
+   * Implemented as a fixed overlay so it does not affect toast layout.
+   */
+  html:has([data-sonner-toaster][data-x-position='center']:hover)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Some browsers won't apply backdrop-filter on a fully transparent surface. */
+    background: rgb(0 0 0 / 0.01);
+    pointer-events: none;
+    /* Sonner toaster uses a huge z-index; keep overlay under the toasts. */
+    z-index: 999999998;
+  }
+}
+
 /**
  * CRITICAL Sonner toasts — unlayered.
  * Sonner sets `color` on `[data-styled]` and fixed grays on `[data-description]` / dark theme
