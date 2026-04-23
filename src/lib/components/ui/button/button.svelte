@@ -8,13 +8,13 @@
 		variants: {
 			variant: {
 				default:
-					"bg-primary text-primary-foreground shadow-xs relative overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:bg-gradient-to-b after:from-white/12 after:to-transparent hover:after:from-white/18 active:after:from-white/8",
+					"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
 				glass:
 					"bg-primary/80 text-primary-foreground shadow-xs backdrop-blur-sm ring-1 ring-white/15 hover:bg-primary/75 active:bg-primary/85",
 				destructive:
 					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white shadow-xs",
 				soft:
-					"border border-input bg-sky-100/50 text-foreground shadow-xs hover:bg-sky-100 hover:border-ring/50 dark:border-input dark:bg-sky-950/40 dark:hover:bg-sky-950/55 dark:hover:border-ring/45",
+					"border border-input bg-sky-100/50 text-foreground shadow-xs hover:bg-sky-100 hover:border-ring/50 dark:border-input dark:bg-input/40 dark:hover:bg-input/55 dark:hover:border-ring/45",
 				outline:
 					"bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border shadow-xs",
 				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs",
