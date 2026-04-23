@@ -2,7 +2,7 @@
  * Shared menu list chrome (dropdown, command palette, sidebar items):
  * - **Hover / keyboard highlight**: neutral pill, slightly darker than `sidebar-accent`
  *   (≈ zinc-100) — `zinc-200` light, `zinc-700` on dark surfaces
- * - **Selected**: `bg-sky-100` + `border-input` + `shadow-xs`
+ * - **Selected**: `neutral` surface + `border-input` + `shadow-xs` (aligned with dark neutral shell, not sky)
  * Inactive rows keep `border border-transparent` so highlight/selection does not reflow.
  */
 
@@ -38,8 +38,9 @@ export const menuSoftFocusKeyboard = [
 ].join(' ');
 
 export const menuSoftAriaSelected = [
-	'aria-selected:border-input aria-selected:bg-sky-100 aria-selected:text-sky-950 aria-selected:shadow-xs',
-	'aria-selected:[&_svg]:text-sky-950',
+	'aria-selected:border-input aria-selected:bg-neutral-100 aria-selected:text-neutral-950 aria-selected:shadow-xs',
+	'dark:aria-selected:bg-neutral-800 dark:aria-selected:text-neutral-50',
+	'aria-selected:[&_svg]:text-neutral-950 dark:aria-selected:[&_svg]:text-neutral-50',
 ].join(' ');
 
 /** `Command.Item`: layout + soft frame + highlight + aria-selected */
@@ -51,9 +52,12 @@ export const commandMenuItemClassName = [
 	menuSoftAriaSelected,
 ].join(' ');
 
-/** Sidebar: selected row (sky + border); hover when active stays on sky scale */
+/** Sidebar: selected row (neutral + border); hover when active stays on neutral scale */
 export const menuSidebarActiveChrome = [
-	'data-[active=true]:border-input data-[active=true]:bg-sky-100 data-[active=true]:text-sky-950 data-[active=true]:shadow-xs',
-	'data-[active=true]:hover:bg-sky-200 data-[active=true]:hover:text-sky-950 data-[active=true]:[&>svg]:text-sky-950',
+	'data-[active=true]:border-input data-[active=true]:bg-neutral-100 data-[active=true]:text-neutral-950 data-[active=true]:shadow-xs',
+	'dark:data-[active=true]:bg-neutral-800 dark:data-[active=true]:text-neutral-50',
+	'data-[active=true]:hover:bg-neutral-200 data-[active=true]:hover:text-neutral-950',
+	'dark:data-[active=true]:hover:bg-neutral-700 dark:data-[active=true]:hover:text-neutral-50',
+	'data-[active=true]:[&>svg]:text-neutral-950 dark:data-[active=true]:[&>svg]:text-neutral-50',
 	'data-[active=true]:font-semibold',
 ].join(' ');

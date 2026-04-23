@@ -78,26 +78,27 @@
 
   .dark {
     color-scheme: dark;
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Neutral ramp (shadcn-style H=0): aligns main chrome with OKLCH `sidebar` grays, not slate/sky. */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -113,10 +114,10 @@
     --info: 199 89% 60%;
     --info-foreground: 222.2 84% 4.9%;
 
-    --border: 217.2 32.6% 17.5%;
-    /* Dark counterpart to light `sky-200` input border (~sky-800); also feeds `dark:bg-input/30` on inputs & outline buttons. */
-    --input: 201 90% 34%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 14.9%;
+    /* Neutral borders on inputs & outline buttons (`dark:bg-input/30`, etc.). */
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
 
     /* Sidebar tokens (match shadcn-svelte docs "first example"). */
     --sidebar: 0.205 0 0;
@@ -129,12 +130,11 @@
     --sidebar-border: 0.32 0 0;
     --sidebar-ring: 0.439 0 0;
 
-    /* Dark-mode chrome (keep slightly different from background). */
-    --sidebar-chrome: 222 47% 12%;
-    --sidebar-chrome-foreground: 210 40% 98%;
-    /* Topbar: slightly lifted from page background so the bar reads clearly in dark. */
-    --topbar-chrome: 222 47% 11%;
-    --topbar-chrome-foreground: 210 40% 98%;
+    /* Dark-mode chrome: same neutral ramp as `--background` / shell (for consumers of these tokens). */
+    --sidebar-chrome: 0 0% 12%;
+    --sidebar-chrome-foreground: 0 0% 98%;
+    --topbar-chrome: 0 0% 11%;
+    --topbar-chrome-foreground: 0 0% 98%;
   }
 
   * {

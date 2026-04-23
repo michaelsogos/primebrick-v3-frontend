@@ -463,7 +463,7 @@
     return col.datetimeIanaToggle ? 'align-top' : undefined;
   }
 
-  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default sky like other columns. */
+  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default neutral like other columns. */
   function isDatetimeIanaRecordMode(col: MetaColumn): boolean {
     if (col.type !== 'datetime' || !col.datetimeIanaToggle) return false;
     return (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record';
@@ -471,57 +471,64 @@
 
   /**
    * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
-   * Dark mode keeps the softer header strip (`amber-950/30`) that matched the table’s default
-   * `sky-950/30` heads — reads better than the heavier `/45` used briefly on dark.
+   * Dark: same **Tailwind amber** ramp as body (`amber-950`).
    * `Table.Row` applies `hover:[…]:[&>th]:bg-muted`; repeat the same bg on `hover:` with `!` so the
    * header does not grey out on row hover (hover tint stays on body cells only).
    */
   function datetimeIanaHeadHighlightClass(col: MetaColumn): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
-    return '!bg-amber-100 hover:!bg-amber-100 dark:!bg-amber-950/30 dark:hover:!bg-amber-950/30';
+    return '!bg-amber-100 hover:!bg-amber-100 dark:!bg-amber-950 dark:hover:!bg-amber-950';
   }
 
   /**
    * Datetime IANA body cells: amber palette only in record (stored timezone) mode. Browser mode: no classes here
-   * (standard sky interaction applies). Non-selected: base 50, row-hover → 100. Selected: 200, selected+hover → 300.
+   * (standard neutral interaction applies). Light: 50→100 hover, 200→300 when row selected.
+   * Dark (Tailwind amber): base `950` → hover `900` → selected `800` → selected+hover `700`.
    */
   function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
     if (rowSelected) {
-      return '!bg-amber-200/95 dark:!bg-amber-950/55 transition-colors group-hover/entity-row:!bg-amber-300/95 dark:group-hover/entity-row:!bg-amber-950/70';
+      return '!bg-amber-200/95 dark:!bg-amber-800 transition-colors group-hover/entity-row:!bg-amber-300/95 dark:group-hover/entity-row:!bg-amber-700';
     }
-    return '!bg-amber-50 dark:!bg-amber-950/40 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-950/55';
+    return '!bg-amber-50 dark:!bg-amber-950 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-900';
   }
 
   /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
   function datetimeIanaCardFieldHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
     if (rowSelected) {
-      return 'rounded-md border border-amber-300/70 bg-amber-200/70 p-2 transition-colors group-hover:bg-amber-300/75 dark:border-amber-700/55 dark:bg-amber-950/45 dark:group-hover:bg-amber-950/60';
+      return 'rounded-md border border-amber-300/70 bg-amber-200/70 p-2 transition-colors group-hover:bg-amber-300/75 dark:border-amber-700 dark:bg-amber-800 dark:group-hover:bg-amber-700';
     }
-    return 'rounded-md border border-amber-200/70 bg-amber-50/70 p-2 transition-colors group-hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/30 dark:group-hover:bg-amber-950/45';
+    return 'rounded-md border border-amber-200/70 bg-amber-50/70 p-2 transition-colors group-hover:bg-amber-100/80 dark:border-amber-900 dark:bg-amber-950 dark:group-hover:bg-amber-900';
   }
 
-  /** Gray band (checkbox / actions): base 100, hover 200; selected 300, selected+hover 400 (dark 950→900→800→700). */
+  /**
+   * Checkbox / actions (dark): base `900`, hover `800`, selected `700`, selected+hover `600` — same ramp as sticky uuid/code body.
+   */
   function entityListGrayChromeCellClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-gray-300 dark:!bg-gray-800 transition-colors group-hover/entity-row:!bg-gray-400 dark:group-hover/entity-row:!bg-gray-700'
-      : 'bg-gray-100 dark:bg-gray-950 transition-colors group-hover/entity-row:bg-gray-200 dark:group-hover/entity-row:bg-gray-900';
+      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      : 'bg-neutral-100 dark:bg-neutral-900 transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
-  /** Sticky uuid/code: same ramp as chrome; merges with `stickyCellClass` (selected uses `!` to override base gray). */
+  /**
+   * Sticky uuid/code body overlay (dark, not IANA): base from `stickyCellClass`; hover `800`; selected `700` / `600`.
+   */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-gray-300 dark:!bg-gray-800 transition-colors group-hover/entity-row:!bg-gray-400 dark:group-hover/entity-row:!bg-gray-700'
-      : 'transition-colors group-hover/entity-row:bg-gray-200 dark:group-hover/entity-row:bg-gray-900';
+      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
-  /** Normal (white/background) cells: sky palette — hover 50/40α; selected 100/50α; selected+hover 200/65α. */
+  /**
+   * Normal (non-sticky) scroll cells — **not** IANA record (IANA uses its own ramp). Light unchanged.
+   * Dark: rest `950`, hover `900`, selected `900`, selected+hover `800` (sticky selected resta `700`/`600`).
+   */
   function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
     if (rowSelected) {
-      return 'transition-colors !bg-sky-100 dark:!bg-sky-950/50 group-hover/entity-row:!bg-sky-200 dark:group-hover/entity-row:!bg-sky-950/65';
+      return 'transition-colors !bg-neutral-100 dark:!bg-neutral-900 group-hover/entity-row:!bg-neutral-200 dark:group-hover/entity-row:!bg-neutral-800';
     }
-    return 'transition-colors group-hover/entity-row:!bg-sky-50 dark:group-hover/entity-row:!bg-sky-950/40';
+    return 'dark:!bg-neutral-950 transition-colors group-hover/entity-row:!bg-neutral-50 dark:group-hover/entity-row:!bg-neutral-900';
   }
 
   let rowRangeMouseDown = $state(false);
@@ -569,14 +576,14 @@
     )
   );
 
-  /** Card view: mimic sticky “gray chrome” cells for sticky columns (uuid/code/etc.). */
+  /** Card view: sticky uuid/code-style fields — dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
   function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
     if (!stickyKeys.has(col.key)) return undefined;
     if (rowSelected) {
-      return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-gray-800/70 dark:bg-gray-800/70 dark:group-hover:bg-gray-700/80';
+      return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600';
     }
-    return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-gray-900/60 dark:bg-gray-950/40 dark:group-hover:bg-gray-900/55';
+    return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800';
   }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -751,8 +758,13 @@
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     if (key !== 'uuid' && key !== 'code') return undefined;
-    // Header background must be opaque in dark mode (otherwise rows show through and header text looks faded).
-    const baseBg = isHeader ? 'bg-sky-200 dark:bg-sky-950' : 'bg-gray-100 dark:bg-gray-950';
+    /**
+     * Sticky uuid/code: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+     * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
+     */
+    const baseBg = isHeader
+      ? 'bg-neutral-200 dark:bg-neutral-800'
+      : 'bg-neutral-100 dark:bg-neutral-900';
     const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
@@ -887,7 +899,7 @@
       case 'plain':
         return 'text-foreground';
       case 'wAny':
-        return 'font-semibold text-sky-600 dark:text-sky-400';
+        return 'font-semibold text-neutral-600 dark:text-neutral-400';
       case 'wOne':
         return 'font-semibold text-violet-600 dark:text-violet-400';
       case 'litStar':
@@ -1121,7 +1133,7 @@
         <span class="min-w-0 truncate">{parts.text}</span>
         <Badge
           variant="outline"
-          class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-600/60 dark:bg-amber-950/50 dark:text-amber-100"
+          class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
         >{parts.iana}</Badge>
       </div>
     {:else}
@@ -1549,11 +1561,11 @@
                         : undefined,
                       rowSelectionEnabled
                         ? rowSelected
-                          ? 'cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-950/55'
+                          ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800'
                           : 'cursor-pointer hover:bg-accent/40'
                         : undefined,
                       rowSelected
-                        ? 'bg-sky-50 ring-1 ring-primary/40 dark:bg-sky-950/35 dark:ring-primary/35'
+                        ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
                         : undefined
                     )}
                     onclick={(e) => {
@@ -1681,7 +1693,7 @@
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
-            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
             tableDensityClass
           )}
           containerClass="h-full overflow-auto"
@@ -1692,7 +1704,7 @@
               {#if rowSelectionEnabled}
                 <Table.Head
                   bind:ref={checkboxHeadRef}
-                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
                     <Checkbox
@@ -1826,7 +1838,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">actions</span>
@@ -1952,7 +1964,9 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          isDatetimeIanaRecordMode(col)
+                            ? undefined
+                            : entityListGrayBandStickyInteractionClass(rowSelected),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -1967,7 +1981,9 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          isDatetimeIanaRecordMode(col)
+                            ? undefined
+                            : entityListGrayBandStickyInteractionClass(rowSelected),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -1985,7 +2001,9 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          isDatetimeIanaRecordMode(col)
+                            ? undefined
+                            : entityListGrayBandStickyInteractionClass(rowSelected),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2000,7 +2018,9 @@
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
-                          entityListGrayBandStickyInteractionClass(rowSelected),
+                          isDatetimeIanaRecordMode(col)
+                            ? undefined
+                            : entityListGrayBandStickyInteractionClass(rowSelected),
                           entityListDataCellValignClass(col)
                         )}
                       >

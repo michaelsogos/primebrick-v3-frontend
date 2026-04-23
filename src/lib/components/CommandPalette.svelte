@@ -130,7 +130,7 @@
           'relative flex h-8 w-full items-center rounded-md border shadow-xs ring-offset-background transition-colors',
           open
             ? 'z-10 rounded-b-none border-border border-b-transparent bg-popover shadow-md'
-            : 'border-input bg-background dark:bg-input/30 hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
+            : 'border-input bg-background dark:bg-input/30 hover:border-ring/40 hover:bg-neutral-100/90 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
         )}
       >
         <span
