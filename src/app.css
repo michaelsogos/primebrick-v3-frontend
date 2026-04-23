@@ -160,6 +160,52 @@
 }
 
 /**
+ * Sonner defaults to an extreme z-index (~1e9), which paints over shell sheets/dialogs (`z-50`).
+ * Keep toasts above the top chrome (`z-40` in AppShell) but under modal overlays (`z-50`).
+ */
+[data-sonner-toaster] {
+  z-index: 45 !important;
+}
+
+/**
+ * Custom Sonner toasts (`toast.custom`, e.g. EventToast): `data-styled="false"` skips Sonner's
+ * `width: var(--width)` on the `<li>`, so the toast shrink-wraps to the message. Pin to the toaster
+ * width (matches `position="top-center"` in `ui/sonner`); same behaviour in light and dark.
+ */
+[data-sonner-toaster][data-x-position='center'] > li[data-sonner-toast][data-styled='false'] {
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* Outer `<li>` should not pick up Sonner `richColors` chrome (padding/border/background) — layout is EventCard. */
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  /**
+   * Sonner hover/expand: blur the page behind the toast stack (no dim).
+   * Implemented as a fixed overlay so it does not affect toast layout.
+   */
+  html:has([data-sonner-toaster][data-x-position='center']:hover)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Some browsers won't apply backdrop-filter on a fully transparent surface. */
+    background: rgb(0 0 0 / 0.01);
+    pointer-events: none;
+    /* Just under `[data-sonner-toaster]` (45); above AppShell top chrome (40). */
+    z-index: 44;
+  }
+}
+
+/**
  * CRITICAL Sonner toasts — unlayered.
  * Sonner sets `color` on `[data-styled]` and fixed grays on `[data-description]` / dark theme
  * with selectors that beat a lone utility class — target `li.toast-impact-critical …` explicitly.

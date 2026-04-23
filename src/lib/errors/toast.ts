@@ -22,18 +22,28 @@ function toastEvent(tone: ToastTone, message: string, data?: ExternalToast) {
           ? tr('impact.warning')
           : tr('impact.information');
 
-  return sonnerToast.custom(EventToast, {
-    ...data,
-    unstyled: true,
-    duration: 5000,
-    componentProps: {
-      label,
-      title: scope ?? '',
-      message,
-      time: Date.now(),
-      tone
-    }
-  });
+  return sonnerToast.custom(
+    EventToast,
+    {
+      ...data,
+      /**
+       * Custom EventCard toasts must stay "neutral" on the outer `<li>`:
+       * - `type: 'default'` avoids Sonner `richColors` styling keyed on `data-type='error'|…'`.
+       * - `richColors: false` matches critical toasts and prevents extra outer chrome affecting layout.
+       */
+      type: 'default',
+      richColors: false,
+      unstyled: true,
+      duration: 5000,
+      componentProps: {
+        label,
+        title: scope ?? '',
+        message,
+        time: Date.now(),
+        tone
+      }
+    } as ExternalToast<typeof EventToast>
+  );
 }
 
 /**
@@ -44,7 +54,6 @@ function toastEvent(tone: ToastTone, message: string, data?: ExternalToast) {
 export function toastCritical(message: string, data?: ExternalToast) {
   return toastEvent('critical', message, {
     ...data,
-    richColors: false,
     class: [TOAST_CRITICAL_CLASS, data?.class].filter(Boolean).join(' ')
   });
 }
