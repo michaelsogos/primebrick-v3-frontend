@@ -1266,8 +1266,8 @@
           size="icon-sm"
           type="button"
           class={cn(
-            'rounded-sm transition-colors',
-            viewMode !== 'table' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            viewMode !== 'table' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
           )}
           aria-pressed={viewMode === 'table'}
           title={$t('entities.list.viewMode.table')}
@@ -1282,8 +1282,8 @@
           size="icon-sm"
           type="button"
           class={cn(
-            'rounded-sm transition-colors',
-            viewMode !== 'cards' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            viewMode !== 'cards' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
           )}
           aria-pressed={viewMode === 'cards'}
           title={$t('entities.list.viewMode.cards')}
@@ -1298,8 +1298,8 @@
           size="icon-sm"
           type="button"
           class={cn(
-            'rounded-sm transition-colors',
-            viewMode !== 'cards_list' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            viewMode !== 'cards_list' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
           )}
           aria-pressed={viewMode === 'cards_list'}
           title={$t('entities.list.viewMode.cardsList')}
