@@ -170,6 +170,12 @@
   width: auto;
   max-width: 100%;
   box-sizing: border-box;
+  /* Outer `<li>` should not pick up Sonner `richColors` chrome (padding/border/background) — layout is EventCard. */
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
