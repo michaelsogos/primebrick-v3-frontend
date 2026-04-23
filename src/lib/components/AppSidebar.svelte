@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { Badge } from '$lib/components/ui/badge';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { cn } from '$lib/utils';
@@ -186,7 +187,7 @@
             </DropdownMenu.Label>
             <DropdownMenu.Separator />
             <DropdownMenu.Item
-              class="gap-2"
+              class={cn('gap-2', dropdownMenuSelectedItemClass(selectedOrgId === 'acme'))}
               closeOnSelect={true}
               onSelect={() => {
                 selectedOrgId = 'acme';
@@ -200,7 +201,7 @@
               <span class="min-w-0 flex-1 truncate">{$t('shell.org.acme')}</span>
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              class="gap-2"
+              class={cn('gap-2', dropdownMenuSelectedItemClass(selectedOrgId === 'johnDoe'))}
               closeOnSelect={true}
               onSelect={() => {
                 selectedOrgId = 'johnDoe';
