@@ -1,16 +1,16 @@
 import { cn } from '$lib/utils.js';
 
 /**
- * Single-select dropdowns: style for the row that matches the current value (language, pagination, etc.).
- * Matches `menu-row-chrome` selected chrome (`menuSoftAriaSelected` / sidebar / command palette) in light and dark.
+ * Single-select dropdowns: selected row (language, pagination, …).
+ * Light: sky fill only — no `border-input` outline; dark: neutral fill only (same idea as dark soft chips).
  */
 export function dropdownMenuSelectedItemClass(selected?: boolean | null): string | undefined {
   if (!selected) return undefined;
   return [
-    'border border-input bg-neutral-100 font-semibold text-neutral-950 shadow-xs',
-    'data-[highlighted]:bg-neutral-200 data-[highlighted]:text-neutral-950',
-    '[&_svg]:text-neutral-950',
-    'dark:border-input dark:bg-neutral-800 dark:text-neutral-50 dark:shadow-xs',
+    'border-transparent bg-sky-100 font-semibold text-sky-950 shadow-xs',
+    'data-[highlighted]:bg-sky-200 data-[highlighted]:text-sky-950',
+    '[&_svg]:text-sky-950',
+    'dark:border-transparent dark:bg-neutral-800 dark:text-neutral-50 dark:shadow-xs',
     'dark:data-[highlighted]:bg-neutral-700 dark:data-[highlighted]:text-neutral-50',
     'dark:[&_svg]:text-neutral-50',
   ].join(' ');
