@@ -463,7 +463,7 @@
     return col.datetimeIanaToggle ? 'align-top' : undefined;
   }
 
-  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default sky like other columns. */
+  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default neutral like other columns. */
   function isDatetimeIanaRecordMode(col: MetaColumn): boolean {
     if (col.type !== 'datetime' || !col.datetimeIanaToggle) return false;
     return (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record';
@@ -472,7 +472,7 @@
   /**
    * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
    * Dark mode keeps the softer header strip (`amber-950/30`) that matched the table’s default
-   * `sky-950/30` heads — reads better than the heavier `/45` used briefly on dark.
+   * `neutral-950/30` heads — reads better than the heavier `/45` used briefly on dark.
    * `Table.Row` applies `hover:[…]:[&>th]:bg-muted`; repeat the same bg on `hover:` with `!` so the
    * header does not grey out on row hover (hover tint stays on body cells only).
    */
@@ -483,7 +483,7 @@
 
   /**
    * Datetime IANA body cells: amber palette only in record (stored timezone) mode. Browser mode: no classes here
-   * (standard sky interaction applies). Non-selected: base 50, row-hover → 100. Selected: 200, selected+hover → 300.
+   * (standard neutral interaction applies). Non-selected: base 50, row-hover → 100. Selected: 200, selected+hover → 300.
    */
   function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
@@ -516,12 +516,12 @@
       : 'transition-colors group-hover/entity-row:bg-gray-200 dark:group-hover/entity-row:bg-gray-900';
   }
 
-  /** Normal (white/background) cells: sky palette — hover 50/40α; selected 100/50α; selected+hover 200/65α. */
+  /** Normal (white/background) cells: neutral palette — hover 50/40α; selected 100/50α; selected+hover 200/65α. */
   function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
     if (rowSelected) {
-      return 'transition-colors !bg-sky-100 dark:!bg-sky-950/50 group-hover/entity-row:!bg-sky-200 dark:group-hover/entity-row:!bg-sky-950/65';
+      return 'transition-colors !bg-neutral-100 dark:!bg-neutral-950/50 group-hover/entity-row:!bg-neutral-200 dark:group-hover/entity-row:!bg-neutral-950/65';
     }
-    return 'transition-colors group-hover/entity-row:!bg-sky-50 dark:group-hover/entity-row:!bg-sky-950/40';
+    return 'transition-colors group-hover/entity-row:!bg-neutral-50 dark:group-hover/entity-row:!bg-neutral-950/40';
   }
 
   let rowRangeMouseDown = $state(false);
@@ -752,7 +752,7 @@
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     if (key !== 'uuid' && key !== 'code') return undefined;
     // Header background must be opaque in dark mode (otherwise rows show through and header text looks faded).
-    const baseBg = isHeader ? 'bg-sky-200 dark:bg-sky-950' : 'bg-gray-100 dark:bg-gray-950';
+    const baseBg = isHeader ? 'bg-neutral-200 dark:bg-neutral-950' : 'bg-gray-100 dark:bg-gray-950';
     const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
@@ -887,7 +887,7 @@
       case 'plain':
         return 'text-foreground';
       case 'wAny':
-        return 'font-semibold text-sky-600 dark:text-sky-400';
+        return 'font-semibold text-neutral-600 dark:text-neutral-400';
       case 'wOne':
         return 'font-semibold text-violet-600 dark:text-violet-400';
       case 'litStar':
@@ -1549,11 +1549,11 @@
                         : undefined,
                       rowSelectionEnabled
                         ? rowSelected
-                          ? 'cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-950/55'
+                          ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-950/55'
                           : 'cursor-pointer hover:bg-accent/40'
                         : undefined,
                       rowSelected
-                        ? 'bg-sky-50 ring-1 ring-primary/40 dark:bg-sky-950/35 dark:ring-primary/35'
+                        ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-950/35 dark:ring-primary/35'
                         : undefined
                     )}
                     onclick={(e) => {
@@ -1681,7 +1681,7 @@
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
-            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-sky-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-sky-950/30',
+            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-950/30',
             tableDensityClass
           )}
           containerClass="h-full overflow-auto"
@@ -1692,7 +1692,7 @@
               {#if rowSelectionEnabled}
                 <Table.Head
                   bind:ref={checkboxHeadRef}
-                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-neutral-200 dark:bg-neutral-950 bg-clip-border px-2"
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
                     <Checkbox
@@ -1826,7 +1826,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-sky-200 dark:bg-sky-950 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-950 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">actions</span>
