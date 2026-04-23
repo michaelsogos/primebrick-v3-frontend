@@ -78,26 +78,27 @@
 
   .dark {
     color-scheme: dark;
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Neutral ramp (shadcn-style H=0): aligns main chrome with OKLCH `sidebar` grays, not slate/sky. */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -113,10 +114,10 @@
     --info: 199 89% 60%;
     --info-foreground: 222.2 84% 4.9%;
 
-    --border: 217.2 32.6% 17.5%;
-    /* Dark counterpart to light `sky-200` input border (~sky-800); also feeds `dark:bg-input/30` on inputs & outline buttons. */
-    --input: 201 90% 34%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 14.9%;
+    /* Neutral borders on inputs & outline buttons (`dark:bg-input/30`, etc.). */
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
 
     /* Sidebar tokens (match shadcn-svelte docs "first example"). */
     --sidebar: 0.205 0 0;
@@ -129,12 +130,11 @@
     --sidebar-border: 0.32 0 0;
     --sidebar-ring: 0.439 0 0;
 
-    /* Dark-mode chrome (keep slightly different from background). */
-    --sidebar-chrome: 222 47% 12%;
-    --sidebar-chrome-foreground: 210 40% 98%;
-    /* Topbar: slightly lifted from page background so the bar reads clearly in dark. */
-    --topbar-chrome: 222 47% 11%;
-    --topbar-chrome-foreground: 210 40% 98%;
+    /* Dark-mode chrome: same neutral ramp as `--background` / shell (for consumers of these tokens). */
+    --sidebar-chrome: 0 0% 12%;
+    --sidebar-chrome-foreground: 0 0% 98%;
+    --topbar-chrome: 0 0% 11%;
+    --topbar-chrome-foreground: 0 0% 98%;
   }
 
   * {
@@ -156,6 +156,52 @@
   /** Pointy-top hexagon clip; use with Avatar: `class="… rounded-none avatar-hex"` to override default circles. */
   .avatar-hex {
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+}
+
+/**
+ * Sonner defaults to an extreme z-index (~1e9), which paints over shell sheets/dialogs (`z-50`).
+ * Keep toasts above the top chrome (`z-40` in AppShell) but under modal overlays (`z-50`).
+ */
+[data-sonner-toaster] {
+  z-index: 45 !important;
+}
+
+/**
+ * Custom Sonner toasts (`toast.custom`, e.g. EventToast): `data-styled="false"` skips Sonner's
+ * `width: var(--width)` on the `<li>`, so the toast shrink-wraps to the message. Pin to the toaster
+ * width (matches `position="top-center"` in `ui/sonner`); same behaviour in light and dark.
+ */
+[data-sonner-toaster][data-x-position='center'] > li[data-sonner-toast][data-styled='false'] {
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* Outer `<li>` should not pick up Sonner `richColors` chrome (padding/border/background) — layout is EventCard. */
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  /**
+   * Sonner hover/expand: blur the page behind the toast stack (no dim).
+   * Implemented as a fixed overlay so it does not affect toast layout.
+   */
+  html:has([data-sonner-toaster][data-x-position='center']:hover)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Some browsers won't apply backdrop-filter on a fully transparent surface. */
+    background: rgb(0 0 0 / 0.01);
+    pointer-events: none;
+    /* Just under `[data-sonner-toaster]` (45); above AppShell top chrome (40). */
+    z-index: 44;
   }
 }
 

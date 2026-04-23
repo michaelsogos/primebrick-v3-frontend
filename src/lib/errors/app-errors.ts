@@ -10,6 +10,9 @@ export type AppErrorTag = {
   tone?: 'neutral' | 'danger' | 'warning' | 'info' | 'success';
 };
 
+/** Newest-first ring buffer cap; overflow drops the oldest tail entry. */
+const MAX_APP_ERRORS = 50;
+
 export type AppError = {
   id: string;
   impact: ImpactLevel;
@@ -69,6 +72,11 @@ function uid(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
+function prependCapped(xs: AppError[], err: AppError): AppError[] {
+  const next = [err, ...xs];
+  return next.length > MAX_APP_ERRORS ? next.slice(0, MAX_APP_ERRORS) : next;
+}
+
 export function pushAppError(input: { message: string; scope?: string; detail?: string; toast?: boolean }) {
   const err: AppError = {
     id: uid('err'),
@@ -78,7 +86,7 @@ export function pushAppError(input: { message: string; scope?: string; detail?: 
     detail: input.detail,
     createdAt: Date.now()
   };
-  appErrors.update((xs) => [err, ...xs]);
+  appErrors.update((xs) => prependCapped(xs, err));
 
   if (input.toast !== false) {
     toast.error(input.message, baseToastOpts(input.scope));
@@ -112,7 +120,7 @@ export function pushImpactError(input: {
     detail: input.detail,
     createdAt: Date.now()
   };
-  appErrors.update((xs) => [err, ...xs]);
+  appErrors.update((xs) => prependCapped(xs, err));
 
   if (input.toast !== false) {
     showImpactToast(input.impact, message, scope);

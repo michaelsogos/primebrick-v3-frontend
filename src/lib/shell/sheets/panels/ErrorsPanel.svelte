@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import * as Alert from '$lib/components/ui/alert';
   import { Badge } from '$lib/components/ui/badge';
+  import * as EventCard from '$lib/components/ui/event-card';
   import * as Sheet from '$lib/components/ui/sheet';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -9,7 +9,7 @@
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { CircleAlert, TriangleAlert, ThumbsUp, Info, Trash2 } from 'lucide-svelte';
+  import { ThumbsUp, Trash2 } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -44,15 +44,16 @@
     }
   }
 
-  function impactIcon(i: ImpactLevel) {
+  function impactToEventColor(i: ImpactLevel): 'critical' | 'error' | 'warning' | 'info' {
     switch (i) {
       case 'CRITICAL':
+        return 'critical';
       case 'HIGH':
-        return CircleAlert;
+        return 'error';
       case 'MEDIUM':
-        return TriangleAlert;
+        return 'warning';
       case 'LOW':
-        return Info;
+        return 'info';
     }
   }
 </script>
@@ -100,43 +101,50 @@
       <div class="space-y-2">
         {#each $appErrors as e (e.id)}
           {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
-          {@const Icon = impactIcon(imp)}
-          <Alert.Root variant={impactToAlertVariant(imp)} class="justify-between gap-2">
-            <Icon class="shrink-0" strokeWidth={2} aria-hidden="true" />
-            <div class="min-w-0 flex-1 space-y-1">
-              {#if (e as any).scopeKey || e.scope}
-                <div class="text-[11px] font-medium leading-tight text-inherit opacity-80">
-                  {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
-                </div>
-              {/if}
-              <Alert.Title class="text-sm">
-                {(e as any).messageKey
-                  ? $t((e as any).messageKey)
-                  : ((e as any).message ?? e.message)}
-              </Alert.Title>
-              {#if (e as any).tags?.length}
-                <div class="mt-1 flex flex-wrap gap-1">
-                  {#each (e as any).tags as tag (tag.label)}
-                    <Badge
-                      variant="outline"
-                      class={cn(
-                        'h-auto border px-1.5 py-0.5 text-[10px] font-medium',
-                        errorTagBadgeClass(tag.tone)
-                      )}
-                    >
-                      {tag.label}
-                    </Badge>
-                  {/each}
-                </div>
-              {/if}
-              {#if e.detail}
-                <Alert.Description class="text-xs whitespace-pre-wrap">{e.detail}</Alert.Description>
-              {/if}
-            </div>
-            <div class="shrink-0 text-[11px] text-inherit opacity-70">
-              {formatUiDateTime(e.createdAt, $uiLang)}
-            </div>
-          </Alert.Root>
+          {@const eventColor = impactToEventColor(imp)}
+          {@const labelKey =
+            imp === 'CRITICAL'
+              ? 'impact.criticalError'
+              : imp === 'HIGH'
+                ? 'impact.error'
+                : imp === 'MEDIUM'
+                  ? 'impact.warning'
+                  : 'impact.information'}
+
+          <EventCard.Root eventColor={eventColor}>
+            <EventCard.Label eventColor={eventColor}>{$t(labelKey)}</EventCard.Label>
+
+            {#if (e as any).scopeKey || e.scope}
+              <EventCard.Title class="truncate">
+                {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
+              </EventCard.Title>
+            {/if}
+
+            <EventCard.Message>
+              {(e as any).messageKey
+                ? $t((e as any).messageKey)
+                : ((e as any).message ?? e.message)}
+            </EventCard.Message>
+
+            {#if (e as any).tags?.length}
+              <div class="mt-1 flex flex-wrap gap-1">
+                {#each (e as any).tags as tag (tag.label)}
+                  <Badge
+                    variant="outline"
+                    class={cn('h-auto border px-1.5 py-0.5 text-[10px] font-medium', errorTagBadgeClass(tag.tone))}
+                  >
+                    {tag.label}
+                  </Badge>
+                {/each}
+              </div>
+            {/if}
+
+            {#if e.detail}
+              <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
+            {/if}
+
+            <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+          </EventCard.Root>
         {/each}
       </div>
     {/if}
