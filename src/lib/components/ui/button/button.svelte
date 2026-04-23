@@ -8,7 +8,7 @@
 		variants: {
 			variant: {
 				default:
-					"bg-primary text-primary-foreground shadow-xs relative overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:bg-gradient-to-b after:from-white/12 after:to-transparent hover:after:from-white/18 active:after:from-white/8",
+					"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
 				glass:
 					"bg-primary/80 text-primary-foreground shadow-xs backdrop-blur-sm ring-1 ring-white/15 hover:bg-primary/75 active:bg-primary/85",
 				destructive:
