@@ -118,6 +118,12 @@
       "customersList": "Customers list"
     }
   },
+  "impact": {
+    "information": "Information",
+    "warning": "Warning",
+    "error": "Error",
+    "criticalError": "Critical error"
+  },
   "entities": {
     "list": {
       "datetimeIana": {
