@@ -160,6 +160,14 @@
 }
 
 /**
+ * Sonner defaults to an extreme z-index (~1e9), which paints over shell sheets/dialogs (`z-50`).
+ * Keep toasts above the top chrome (`z-40` in AppShell) but under modal overlays (`z-50`).
+ */
+[data-sonner-toaster] {
+  z-index: 45 !important;
+}
+
+/**
  * Custom Sonner toasts (`toast.custom`, e.g. EventToast): `data-styled="false"` skips Sonner's
  * `width: var(--width)` on the `<li>`, so the toast shrink-wraps to the message. Pin to the toaster
  * width (matches `position="top-center"` in `ui/sonner`); same behaviour in light and dark.
@@ -192,8 +200,8 @@
     /* Some browsers won't apply backdrop-filter on a fully transparent surface. */
     background: rgb(0 0 0 / 0.01);
     pointer-events: none;
-    /* Sonner toaster uses a huge z-index; keep overlay under the toasts. */
-    z-index: 999999998;
+    /* Just under `[data-sonner-toaster]` (45); above AppShell top chrome (40). */
+    z-index: 44;
   }
 }
 
