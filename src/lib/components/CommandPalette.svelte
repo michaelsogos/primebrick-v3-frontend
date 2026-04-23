@@ -3,6 +3,7 @@
   import { tick, onMount } from 'svelte';
   import { Command } from 'bits-ui';
   import { cn } from '$lib/utils';
+  import { inputControlHoverClasses } from '$lib/components/ui/input/input-chrome';
   import { commandMenuItemClassName } from '$lib/components/ui/menu-row-chrome';
   import { t } from '$lib/i18n';
   import CalculatorIcon from '@lucide/svelte/icons/calculator';
@@ -130,7 +131,10 @@
           'relative flex h-8 w-full items-center rounded-md border shadow-xs ring-offset-background transition-colors',
           open
             ? 'z-10 rounded-b-none border-border border-b-transparent bg-popover shadow-md'
-            : 'border-input bg-background dark:bg-input/30 hover:border-ring/40 hover:bg-neutral-100/90 dark:hover:border-ring/35 dark:hover:bg-input/38 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]'
+            : cn(
+                'border-input bg-background dark:bg-input/30 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
+                inputControlHoverClasses
+              )
         )}
       >
         <span

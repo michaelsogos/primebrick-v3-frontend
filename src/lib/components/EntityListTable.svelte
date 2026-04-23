@@ -1257,7 +1257,7 @@
       </Button>
 
       <div
-        class="inline-flex rounded-md border border-input bg-muted/30 p-0.5 shadow-xs dark:bg-muted/20"
+        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
         role="group"
         aria-label={$t('entities.list.viewMode.groupAria')}
       >
@@ -1265,7 +1265,10 @@
           variant={viewMode === 'table' ? 'default' : 'ghost'}
           size="icon-sm"
           type="button"
-          class="rounded-sm"
+          class={cn(
+            'rounded-sm transition-colors',
+            viewMode !== 'table' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
           aria-pressed={viewMode === 'table'}
           title={$t('entities.list.viewMode.table')}
           onclick={() => {
@@ -1278,7 +1281,10 @@
           variant={viewMode === 'cards' ? 'default' : 'ghost'}
           size="icon-sm"
           type="button"
-          class="rounded-sm"
+          class={cn(
+            'rounded-sm transition-colors',
+            viewMode !== 'cards' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
           aria-pressed={viewMode === 'cards'}
           title={$t('entities.list.viewMode.cards')}
           onclick={() => {
@@ -1291,7 +1297,10 @@
           variant={viewMode === 'cards_list' ? 'default' : 'ghost'}
           size="icon-sm"
           type="button"
-          class="rounded-sm"
+          class={cn(
+            'rounded-sm transition-colors',
+            viewMode !== 'cards_list' && 'hover:bg-sky-200 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
           aria-pressed={viewMode === 'cards_list'}
           title={$t('entities.list.viewMode.cardsList')}
           onclick={() => {

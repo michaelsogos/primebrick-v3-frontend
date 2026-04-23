@@ -1,15 +1,13 @@
 import { cn } from '$lib/utils.js';
+import { menuListSelectedSurfaceDropdownClasses } from '../menu-row-chrome.js';
 
 /**
- * Single-select dropdowns: style for the row that matches the current value (language, breadcrumb branch, etc.).
- * Same soft chrome as `menu-row-chrome.ts` (sky fill + `border-input` + `shadow-xs`).
+ * Single-select dropdowns: selected row (language, pagination, …).
+ * Same surface as command palette + sidebar active (`menu-row-chrome`).
  */
 export function dropdownMenuSelectedItemClass(selected?: boolean | null): string | undefined {
   if (!selected) return undefined;
-  return [
-    'border border-input bg-sky-100 font-semibold text-sky-950 shadow-xs',
-    'data-[highlighted]:bg-sky-200 data-[highlighted]:text-sky-950',
-  ].join(' ');
+  return menuListSelectedSurfaceDropdownClasses;
 }
 
 /** Merge layout classes on `DropdownMenu.Item` with optional selected state. */
