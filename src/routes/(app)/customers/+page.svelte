@@ -17,7 +17,7 @@
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta } from '$lib/entity-list';
+  import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
@@ -78,6 +78,9 @@
   let total = $state(0);
 
   let filtersOpen = $state(false);
+
+  const viewMode: ViewName = 'table';
+  const viewVisibility = $derived(meta?.list.viewVisibility);
   let statusFilter = $state<'ACTIVE' | 'INACTIVE' | null>(null);
 
   let visibleKeys = $state<string[]>([]);
@@ -98,7 +101,13 @@
   const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
   const columns = $derived(orderedColumnsFromListMeta(meta?.list));
   const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
-  const dataColumns = $derived(meta?.list.stickyColumns || meta?.list.auditingColumns ? (meta?.list.columns ?? []) : []);
+  const dataColumns = $derived(
+    (meta?.list.columns ?? []).filter((c: MetaColumn) => {
+      const stickyKeys = new Set((meta?.list.stickyColumns ?? []).map((c) => c.key));
+      const auditingKeys = new Set((meta?.list.auditingColumns ?? []).map((c) => c.key));
+      return !stickyKeys.has(c.key) && !auditingKeys.has(c.key);
+    })
+  );
   const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
@@ -108,11 +117,11 @@
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns);
+      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
       return;
     }
     if (!columns.length) return;
-    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
   }
 
   function arrayEq(a: string[] | null, b: string[] | null): boolean {
@@ -456,7 +465,7 @@
   // Keep visibleKeys valid as meta/columns change (without infinite loops).
   $effect(() => {
     if (!columns.length) return;
-    const next = sanitizeVisibleKeys(visibleKeys, columns);
+    const next = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
     if (!arrayEq(next, visibleKeys)) visibleKeys = next;
   });
 
@@ -538,8 +547,8 @@
     visibleKeys = keys;
   }
 
-  function onResetColumnVisibility() {
-    visibleKeys = defaultVisibleColumnKeys(columns);
+  function onResetColumnVisibility(view: ViewName) {
+    visibleKeys = defaultVisibleColumnKeys(columns, view, viewVisibility);
   }
 
   function onSelectedKeysChange(keys: string[]) {
@@ -611,6 +620,7 @@
       {onSelectedKeysChange}
       onRefresh={() => refreshRows({ clampPage: true })}
       bind:filtersOpen
+      viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}
         {#if column.key === 'status'}
