@@ -15,8 +15,8 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { cn } from '$lib/utils.js';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import type { MetaColumn, SortDir } from '$lib/entity-list/types';
-  import { formatDatetimeCellDisplay } from '$lib/entity-list/format-datetime-iana-cell';
+  import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName } from '$lib/entity-list/types';
+  import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
   import XIcon from '@lucide/svelte/icons/x';
   import {
@@ -57,6 +57,7 @@
     stickyColumns,
     dataColumns,
     auditingColumns,
+    viewVisibility,
     columnOrderStorageKey,
     defaultSort,
     pageSizeOptions: pageSizeOptionsProp,
@@ -115,6 +116,7 @@
     stickyColumns?: MetaColumn[];
     dataColumns?: MetaColumn[];
     auditingColumns?: MetaColumn[];
+    viewVisibility?: ListMetaViewVisibility;
     /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
     columnOrderStorageKey?: string;
     defaultSort?: { key: string; dir: SortDir };
@@ -142,7 +144,7 @@
     onSortChange: (key: string | null, dir: SortDir) => void;
     visibleKeys: string[];
     onVisibleKeysChange: (keys: string[]) => void;
-    onResetColumnVisibility: () => void;
+    onResetColumnVisibility: (view: ViewName) => void;
     selectedKeys: string[];
     onSelectedKeysChange: (keys: string[]) => void;
     rowSelectionEnabled?: boolean;
@@ -233,7 +235,7 @@
   }
 
   function resetColumnsAndSorting() {
-    onResetColumnVisibility();
+    onResetColumnVisibility('table');
     // Reset column visual order (sticky/data/auditing) to default meta order.
     orderState.sticky = undefined;
     orderState.data = undefined;
@@ -371,7 +373,7 @@
           orderState.sticky = nextState.sticky;
           writeOrderState(nextState);
         },
-        onResetColumnVisibility: resetColumnsAndSorting,
+        onResetColumnVisibility: () => onResetColumnVisibility('table'),
         sheetMenuCheckboxClass,
         t: $t
       } as any;
@@ -544,15 +546,28 @@
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  const allColumns = $derived(
-    stickyColumns || auditingColumns
-      ? [
-          ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
-          ...applyKeyOrder(dataColumns ?? [], orderState.data),
-          ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
-        ]
-      : columns
-  );
+  const allColumns = $derived((() => {
+    let all: MetaColumn[];
+    if (stickyColumns || auditingColumns) {
+      all = [
+        ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
+        ...applyKeyOrder(dataColumns ?? [], orderState.data),
+        ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
+      ];
+    } else {
+      all = columns;
+    }
+    // Deduplicate by key, preserving order.
+    const seen = new Set<string>();
+    const dedup: MetaColumn[] = [];
+    for (const col of all) {
+      if (!seen.has(col.key)) {
+        seen.add(col.key);
+        dedup.push(col);
+      }
+    }
+    return dedup;
+  })());
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
   const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
   const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
