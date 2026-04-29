@@ -1181,7 +1181,7 @@
                   {...props}
                   data-pb-card-cta
                   class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-                  aria-label="Vuoto"
+                  aria-label={$t('entities.list.clear')}
                 >
                   <Ban class="size-4" />
                 </button>
@@ -1265,8 +1265,8 @@
         size="icon-sm"
         disabled={rowsLoading || refreshDisabled}
         onclick={() => onRefresh()}
-        aria-label="refresh"
-        title="refresh"
+        aria-label={$t('entities.list.refresh')}
+        title={$t('entities.list.refresh')}
       >
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
@@ -1459,16 +1459,16 @@
                     checked={allOnPageSelected}
                     indeterminate={headerIndeterminate}
                     onCheckedChange={() => toggleAllOnPage()}
-                    aria-label="select all"
+                    aria-label={$t('entities.list.selectAll')}
                   />
                   <span class="text-xs font-medium text-muted-foreground">
-                    {allOnPageSelected ? 'deseleziona tutto' : 'seleziona tutto'}
+                    {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
                   </span>
                 {/if}
 
                 <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
 
-                <span class="text-xs font-medium text-muted-foreground">Ordina per</span>
+                <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1499,7 +1499,7 @@
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
 
-                <span class="ml-1 text-xs font-medium text-muted-foreground">in ordine</span>
+                <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('entities.list.inOrder')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1519,7 +1519,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowUpNarrowWide class="size-4" />
-                        Crescente
+                        {$t('entities.list.ascending')}
                       </span>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
@@ -1528,7 +1528,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowDownWideNarrow class="size-4" />
-                        Decrescente
+                        {$t('entities.list.descending')}
                       </span>
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
@@ -1624,7 +1624,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('entities.list.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1643,7 +1643,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1673,7 +1673,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('entities.list.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1692,7 +1692,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1736,7 +1736,7 @@
                       checked={allOnPageSelected}
                       indeterminate={headerIndeterminate}
                       onCheckedChange={() => toggleAllOnPage()}
-                      aria-label="select all"
+                      aria-label={$t('entities.list.selectAll')}
                     />
                   </div>
                 </Table.Head>
@@ -2196,8 +2196,8 @@
             if (footerUsesClientPaging) clientSelectedPage = 1;
             else onPageChange(1);
           }}
-          aria-label="first page"
-          title="first page"
+          aria-label={$t('entities.list.firstPage')}
+          title={$t('entities.list.firstPage')}
         >
           <ChevronsLeft class="size-4" />
         </Button>
@@ -2209,8 +2209,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
             else onPageChange(Math.max(1, page - 1));
           }}
-          aria-label="previous page"
-          title="previous page"
+          aria-label={$t('entities.list.previousPage')}
+          title={$t('entities.list.previousPage')}
         >
           <ChevronLeft class="size-4" />
         </Button>
@@ -2227,8 +2227,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
             else onPageChange(Math.min(totalPages, page + 1));
           }}
-          aria-label="next page"
-          title="next page"
+          aria-label={$t('entities.list.nextPage')}
+          title={$t('entities.list.nextPage')}
         >
           <ChevronRight class="size-4" />
         </Button>
@@ -2240,8 +2240,8 @@
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
             else onPageChange(totalPages);
           }}
-          aria-label="last page"
-          title="last page"
+          aria-label={$t('entities.list.lastPage')}
+          title={$t('entities.list.lastPage')}
         >
           <ChevronsRight class="size-4" />
         </Button>
