@@ -155,7 +155,14 @@
         "table": "Tabella",
         "cards": "Card (griglia)",
         "cardsList": "Card (lista orizzontale)"
-      }
+      },
+      "emptyField": "Vuoto",
+      "deselectAll": "deseleziona tutto",
+      "selectAll": "seleziona tutto",
+      "sortBy": "Ordina per",
+      "inOrder": "in ordine",
+      "ascending": "Crescente",
+      "descending": "Decrescente"
     },
     "crm": {
       "pipeline": {

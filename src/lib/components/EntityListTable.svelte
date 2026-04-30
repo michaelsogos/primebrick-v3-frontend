@@ -1181,13 +1181,13 @@
                   {...props}
                   data-pb-card-cta
                   class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-                  aria-label="Vuoto"
+                  aria-label={$t('entities.list.emptyField')}
                 >
                   <Ban class="size-4" />
                 </button>
               {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Content>Vuoto</Tooltip.Content>
+            <Tooltip.Content>{$t('entities.list.emptyField')}</Tooltip.Content>
           </Tooltip.Root>
         {:else if cell}
           {@render cell({ row: r, column: col })}
@@ -1462,13 +1462,13 @@
                     aria-label="select all"
                   />
                   <span class="text-xs font-medium text-muted-foreground">
-                    {allOnPageSelected ? 'deseleziona tutto' : 'seleziona tutto'}
+                    {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
                   </span>
                 {/if}
 
                 <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
 
-                <span class="text-xs font-medium text-muted-foreground">Ordina per</span>
+                <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1499,7 +1499,7 @@
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
 
-                <span class="ml-1 text-xs font-medium text-muted-foreground">in ordine</span>
+                <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('entities.list.inOrder')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1519,7 +1519,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowUpNarrowWide class="size-4" />
-                        Crescente
+                        {$t('entities.list.ascending')}
                       </span>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
@@ -1528,7 +1528,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowDownWideNarrow class="size-4" />
-                        Decrescente
+                        {$t('entities.list.descending')}
                       </span>
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>

@@ -142,7 +142,14 @@
         "table": "Tabelle",
         "cards": "Karten (Raster)",
         "cardsList": "Karten (horizontale Liste)"
-      }
+      },
+      "emptyField": "Leer",
+      "deselectAll": "alle abwählen",
+      "selectAll": "alle auswählen",
+      "sortBy": "Sortieren nach",
+      "inOrder": "in Reihenfolge",
+      "ascending": "Aufsteigend",
+      "descending": "Absteigend"
     },
     "crm": {
       "pipeline": {

@@ -155,7 +155,14 @@
         "table": "Table",
         "cards": "Cards (grid)",
         "cardsList": "Cards (horizontal list)"
-      }
+      },
+      "emptyField": "Empty",
+      "deselectAll": "deselect all",
+      "selectAll": "select all",
+      "sortBy": "Sort by",
+      "inOrder": "in order",
+      "ascending": "Ascending",
+      "descending": "Descending"
     },
     "crm": {
       "pipeline": {

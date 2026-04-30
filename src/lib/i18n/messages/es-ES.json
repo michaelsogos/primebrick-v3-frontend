@@ -142,7 +142,14 @@
         "table": "Tabla",
         "cards": "Tarjetas (cuadrícula)",
         "cardsList": "Tarjetas (lista horizontal)"
-      }
+      },
+      "emptyField": "Vacío",
+      "deselectAll": "deseleccionar todo",
+      "selectAll": "seleccionar todo",
+      "sortBy": "Ordenar por",
+      "inOrder": "en orden",
+      "ascending": "Ascendente",
+      "descending": "Descendente"
     },
     "crm": {
       "pipeline": {
