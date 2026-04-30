@@ -11,7 +11,16 @@
     "next": "Suiv",
     "all": "Tous",
     "reset": "Réinitialiser",
-    "done": "Terminé"
+    "done": "Terminé",
+    "toggleSidebar": "Basculer la barre latérale",
+    "refresh": "actualiser",
+    "selectAll": "tout sélectionner",
+    "selectRow": "sélectionner la ligne",
+    "rowActions": "actions de ligne",
+    "actions": "actions",
+    "close": "Fermer",
+    "more": "Plus",
+    "breadcrumb": "breadcrumb"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -149,7 +158,13 @@
       "sortBy": "Trier par",
       "inOrder": "dans l'ordre",
       "ascending": "Croissant",
-      "descending": "Décroissant"
+      "descending": "Décroissant",
+      "pagination": {
+        "firstPage": "première page",
+        "previousPage": "page précédente",
+        "nextPage": "page suivante",
+        "lastPage": "dernière page"
+      }
     },
     "crm": {
       "pipeline": {

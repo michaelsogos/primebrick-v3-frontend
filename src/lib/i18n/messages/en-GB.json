@@ -4,15 +4,24 @@
   },
   "common": {
     "loading": "Loading…",
-    "loadFailed": "Loading failed",
-    "dbUnavailable": "Database is temporarily unavailable. Some data may not load.",
+    "loadFailed": "Load failed",
+    "dbUnavailable": "Database temporarily unavailable. Some data might not load.",
     "soon": "Soon",
     "new": "New",
     "prev": "Prev",
     "next": "Next",
     "all": "All",
     "reset": "Reset",
-    "done": "Done"
+    "done": "Done",
+    "toggleSidebar": "Toggle Sidebar",
+    "refresh": "refresh",
+    "selectAll": "select all",
+    "selectRow": "select row",
+    "rowActions": "row actions",
+    "actions": "actions",
+    "close": "Close",
+    "more": "More",
+    "breadcrumb": "breadcrumb"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -162,7 +171,13 @@
       "sortBy": "Sort by",
       "inOrder": "in order",
       "ascending": "Ascending",
-      "descending": "Descending"
+      "descending": "Descending",
+      "pagination": {
+        "firstPage": "first page",
+        "previousPage": "previous page",
+        "nextPage": "next page",
+        "lastPage": "last page"
+      }
     },
     "crm": {
       "pipeline": {

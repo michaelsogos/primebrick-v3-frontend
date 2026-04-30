@@ -1265,8 +1265,8 @@
         size="icon-sm"
         disabled={rowsLoading || refreshDisabled}
         onclick={() => onRefresh()}
-        aria-label="refresh"
-        title="refresh"
+        aria-label={$t('common.refresh')}
+        title={$t('common.refresh')}
       >
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
@@ -1459,7 +1459,7 @@
                     checked={allOnPageSelected}
                     indeterminate={headerIndeterminate}
                     onCheckedChange={() => toggleAllOnPage()}
-                    aria-label="select all"
+                    aria-label={$t('common.selectAll')}
                   />
                   <span class="text-xs font-medium text-muted-foreground">
                     {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
@@ -1624,7 +1624,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('common.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1643,7 +1643,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('common.rowActions')} title={$t('common.actions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1673,7 +1673,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('common.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1692,7 +1692,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('common.rowActions')} title={$t('common.actions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1736,7 +1736,7 @@
                       checked={allOnPageSelected}
                       indeterminate={headerIndeterminate}
                       onCheckedChange={() => toggleAllOnPage()}
-                      aria-label="select all"
+                      aria-label={$t('common.selectAll')}
                     />
                   </div>
                 </Table.Head>
@@ -1865,7 +1865,7 @@
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
-                  <span class="sr-only">actions</span>
+                  <span class="sr-only">{$t('common.actions')}</span>
                 </div>
               </Table.Head>
             {/if}
@@ -2196,8 +2196,8 @@
             if (footerUsesClientPaging) clientSelectedPage = 1;
             else onPageChange(1);
           }}
-          aria-label="first page"
-          title="first page"
+          aria-label={$t('entities.list.pagination.firstPage')}
+          title={$t('entities.list.pagination.firstPage')}
         >
           <ChevronsLeft class="size-4" />
         </Button>
@@ -2209,8 +2209,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
             else onPageChange(Math.max(1, page - 1));
           }}
-          aria-label="previous page"
-          title="previous page"
+          aria-label={$t('entities.list.pagination.previousPage')}
+          title={$t('entities.list.pagination.previousPage')}
         >
           <ChevronLeft class="size-4" />
         </Button>
@@ -2227,8 +2227,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
             else onPageChange(Math.min(totalPages, page + 1));
           }}
-          aria-label="next page"
-          title="next page"
+          aria-label={$t('entities.list.pagination.nextPage')}
+          title={$t('entities.list.pagination.nextPage')}
         >
           <ChevronRight class="size-4" />
         </Button>
@@ -2240,8 +2240,8 @@
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
             else onPageChange(totalPages);
           }}
-          aria-label="last page"
-          title="last page"
+          aria-label={$t('entities.list.pagination.lastPage')}
+          title={$t('entities.list.pagination.lastPage')}
         >
           <ChevronsRight class="size-4" />
         </Button>

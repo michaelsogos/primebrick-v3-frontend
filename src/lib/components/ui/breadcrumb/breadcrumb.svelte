@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { WithElementRef } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
+	import { t } from "$lib/i18n";
 
 	let {
 		ref = $bindable(null),
@@ -14,7 +15,7 @@
 	bind:this={ref}
 	data-slot="breadcrumb"
 	class={className}
-	aria-label="breadcrumb"
+	aria-label={$t('common.breadcrumb')}
 	{...restProps}
 >
 	{@render children?.()}
