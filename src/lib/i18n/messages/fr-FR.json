@@ -198,7 +198,7 @@
         "email": "E-mail",
         "phone": "Téléphone",
         "status": "Statut",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Activé le",
         "onboarding_time_zone": "Fuseau onboarding",
         "uuid": "UUID",
         "status_reason": "Motif du statut",

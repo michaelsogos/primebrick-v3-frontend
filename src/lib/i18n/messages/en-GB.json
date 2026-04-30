@@ -211,7 +211,7 @@
         "email": "Email",
         "phone": "Phone",
         "status": "Status",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Onboarded At",
         "onboarding_time_zone": "Onboarding time zone",
         "uuid": "UUID",
         "status_reason": "Status reason",

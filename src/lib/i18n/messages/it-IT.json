@@ -211,7 +211,7 @@
         "email": "Email",
         "phone": "Telefono",
         "status": "Stato",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Attivo il",
         "onboarding_time_zone": "Fuso onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo stato",

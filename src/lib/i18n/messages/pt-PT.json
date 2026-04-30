@@ -198,7 +198,7 @@
         "email": "Email",
         "phone": "Telefone",
         "status": "Estado",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Ativo em",
         "onboarding_time_zone": "Fuso horário onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo do estado",
