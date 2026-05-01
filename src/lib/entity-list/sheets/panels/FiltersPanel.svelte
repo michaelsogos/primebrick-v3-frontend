@@ -2,17 +2,17 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import { t } from "$lib/i18n";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw } from "lucide-svelte";
-
-  type ColumnLike = { key: string; labelKey: string; type?: string };
+  import { RotateCcw, ChevronDown } from "lucide-svelte";
+  import type { MetaColumn } from "$lib/entity-list/types";
 
   interface $$Props {
     content: any;
-    filterableColumns?: ColumnLike[];
+    filterableColumns?: MetaColumn[];
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
@@ -39,6 +39,36 @@
     onFilterValuesChange?.(newValues);
   }
 
+  function getBadgeOptions(col: MetaColumn) {
+    if (col.type !== 'badge' || !col.badge?.values) return [];
+    return Object.entries(col.badge.values).map(([key, value]) => ({
+      key,
+      label: value.labelText || $t(value.labelKey || `entities.customer.status.${key}`),
+      color: value.color
+    }));
+  }
+
+  function renderFilterInput(col: MetaColumn) {
+    if (col.type === 'badge' && col.badge?.values) {
+      const options = getBadgeOptions(col);
+      const selectedOption = options.find(opt => opt.key === filterValues[col.key]);
+      
+      return {
+        type: 'dropdown',
+        options,
+        selectedOption,
+        placeholder: $t(`entities.list.filterPlaceholder`)
+      };
+    }
+    
+    // For text, date, datetime types - use text input for now
+    return {
+      type: 'input',
+      inputType: col.type === 'date' || col.type === 'datetime' ? 'date' : 'text',
+      placeholder: $t(`entities.list.filterPlaceholder`),
+      value: filterValues[col.key] || ''
+    };
+  }
   function resetAllFilters() {
     onResetFilters?.();
   }
@@ -89,14 +119,56 @@
           {/if}
         </div>
         
-        <Input
-          id="filter-{col.key}"
-          type="text"
-          placeholder={$t(`entities.list.filterPlaceholder`)}
-          value={filterValues[col.key] || ''}
-          oninput={(e) => updateFilterValue(col.key, e.currentTarget.value)}
-          class="w-full"
-        />
+        {#if renderFilterInput(col).type === 'dropdown'}
+          {@const filterConfig = renderFilterInput(col)}
+          {@const options = filterConfig.options}
+          {@const selectedOption = filterConfig.selectedOption}
+          {@const placeholder = filterConfig.placeholder}
+          
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  id="filter-{col.key}"
+                  variant="outline"
+                  class="w-full justify-between"
+                  {...props}
+                >
+                  {selectedOption ? selectedOption.label : placeholder}
+                  <ChevronDown class="ml-2 h-4 w-4" />
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content class="w-full">
+              <DropdownMenu.Item
+                onclick={() => updateFilterValue(col.key, null)}
+              >
+                {placeholder}
+              </DropdownMenu.Item>
+              {#each options as option}
+                <DropdownMenu.Item
+                  onclick={() => updateFilterValue(col.key, option.key)}
+                >
+                  {option.label}
+                </DropdownMenu.Item>
+              {/each}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {:else}
+          {@const filterConfig = renderFilterInput(col)}
+          {@const inputType = filterConfig.inputType}
+          {@const placeholder = filterConfig.placeholder}
+          {@const value = filterConfig.value}
+          
+          <Input
+            id="filter-{col.key}"
+            type={inputType}
+            placeholder={placeholder}
+            value={value}
+            oninput={(e) => updateFilterValue(col.key, e.currentTarget.value)}
+            class="w-full"
+          />
+        {/if}
       </div>
     {/each}
     
