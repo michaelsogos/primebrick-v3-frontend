@@ -316,6 +316,20 @@
     if (appliedSearch.trim()) qs.set('search', appliedSearch.trim());
     if (appliedSearch.trim() && searchInKeys && searchInKeys.length) qs.set('search_in', searchInKeys.join(','));
     if (statusFilter) qs.set('status', statusFilter);
+    // Convert filterValues to backend filters array format using bracket notation
+    // Format: filters[0][field]=status&filters[0][op]==&filters[0][value]=ACTIVE
+    let filterIdx = 0;
+    for (const [field, value] of Object.entries(filterValues)) {
+      if (value !== undefined && value !== null && value !== '') {
+        const col = columns.find(c => c.key === field);
+        const op = col?.type === 'badge' ? '=' : 'ILIKE';
+        qs.set(`filters[${filterIdx}][field]`, field);
+        qs.set(`filters[${filterIdx}][op]`, op);
+        qs.set(`filters[${filterIdx}][value]`, String(value));
+        qs.set(`filters[${filterIdx}][connector]`, 'AND');
+        filterIdx++;
+      }
+    }
     qs.set('page', String(page));
     qs.set('page_size', String(pageSize));
     const effSortKey = sortKey ?? defaultSortKey;
