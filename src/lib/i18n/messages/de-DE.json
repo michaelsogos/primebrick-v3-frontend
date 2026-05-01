@@ -20,7 +20,8 @@
     "actions": "Aktionen",
     "close": "Schließen",
     "more": "Mehr",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "clear": "Leeren"
   },
   "shell": {
     "subtitle": "Backoffice",

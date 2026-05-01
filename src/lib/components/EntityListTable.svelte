@@ -1385,7 +1385,8 @@
                 sheetMenuCheckboxClass
               }
             } as any, {
-              contentClass: 'w-[360px] p-0'
+              contentClass: 'w-[360px] p-0',
+              modal: false
             });
           }}
         >

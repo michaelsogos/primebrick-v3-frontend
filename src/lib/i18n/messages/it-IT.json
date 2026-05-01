@@ -21,7 +21,8 @@
     "actions": "azioni",
     "close": "Chiudi",
     "more": "Altro",
-    "breadcrumb": "breadcrumb"
+    "breadcrumb": "breadcrumb",
+    "clear": "Pulisci"
   },
   "shell": {
     "subtitle": "Backoffice",

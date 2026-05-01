@@ -13,6 +13,8 @@ export type SheetOpenOptions = {
   contentClass?: string;
   /** When true, keep `panelId/props` after close (rare; defaults false). */
   keepMountedState?: boolean;
+  /** When false, the sheet will not have a modal overlay (defaults true). */
+  modal?: boolean;
 };
 
 export type SheetPanelPropsMap = {
@@ -43,13 +45,24 @@ export function shouldSuppressSheetDialogClose(): boolean {
   return suppressDialogCloseFromHost;
 }
 
-export const sheetState = $state({
+type SheetState = {
+  open: boolean;
+  panelId: SheetPanelId | null;
+  props: AnyPanelProps | null;
+  side: SheetSide;
+  contentClass: string;
+  keepMountedState: boolean;
+  modal: boolean;
+};
+
+export const sheetState = $state<SheetState>({
   open: false,
-  panelId: null as SheetPanelId | null,
-  props: null as AnyPanelProps | null,
-  side: 'right' as SheetSide,
+  panelId: null,
+  props: null,
+  side: 'right',
   contentClass: 'w-[420px] p-0',
-  keepMountedState: false
+  keepMountedState: false,
+  modal: true
 });
 
 export function openSheet<T extends SheetPanelId>(
@@ -62,6 +75,7 @@ export function openSheet<T extends SheetPanelId>(
   sheetState.side = options?.side ?? 'right';
   sheetState.contentClass = options?.contentClass ?? sheetState.contentClass;
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
+  sheetState.modal = options?.modal ?? true;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
   requestAnimationFrame(() => {

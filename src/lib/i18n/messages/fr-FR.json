@@ -20,7 +20,8 @@
     "actions": "actions",
     "close": "Fermer",
     "more": "Plus",
-    "breadcrumb": "breadcrumb"
+    "breadcrumb": "breadcrumb",
+    "clear": "Effacer"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -84,9 +85,8 @@
     "errors": {
       "aria": "Erreurs",
       "title": "Erreurs",
-      "reset": "Effacer",
-      "done": "Terminé",
-      "apply": "Appliquer",
+      "clear": "Effacer",
+      "close": "Fermer",
       "empty": "Aucune erreur.",
       "unhandledRejection": "Rejet non géré",
       "unhandledError": "Erreur non gérée",

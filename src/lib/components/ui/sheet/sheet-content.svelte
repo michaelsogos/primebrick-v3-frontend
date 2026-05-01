@@ -31,6 +31,7 @@
 		class: className,
 		side = "right",
 		showClose = true,
+		modal = true,
 		portalProps,
 		children,
 		...restProps
@@ -39,12 +40,16 @@
 		side?: Side;
 		/** When false, hide the default X control (custom header chrome may provide its own). */
 		showClose?: boolean;
+		/** When false, the sheet will not have a modal overlay (defaults true). */
+		modal?: boolean;
 		children: Snippet;
 	} = $props();
 </script>
 
 <SheetPrimitive.Portal {...portalProps}>
-	<SheetOverlay />
+	{#if modal}
+		<SheetOverlay />
+	{/if}
 	<SheetPrimitive.Content bind:ref class={cn(sheetVariants({ side }), className)} {...restProps}>
 		{@render children?.()}
 		{#if showClose}

@@ -20,7 +20,8 @@
     "actions": "acciones",
     "close": "Cerrar",
     "more": "Más",
-    "breadcrumb": "breadcrumb"
+    "breadcrumb": "breadcrumb",
+    "clear": "Limpiar"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -84,9 +85,8 @@
     "errors": {
       "aria": "Errores",
       "title": "Errores",
-      "reset": "Limpiar",
-      "done": "Hecho",
-      "apply": "Aplicar",
+      "clear": "Limpiar",
+      "close": "Cerrar",
       "empty": "Sin errores.",
       "unhandledRejection": "Rechazo no gestionado",
       "unhandledError": "Error no gestionado",
