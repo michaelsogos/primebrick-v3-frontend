@@ -10,6 +10,7 @@
   import { Plus } from 'lucide-svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import { browser } from '$app/environment';
   import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -82,6 +83,9 @@
   const viewMode: ViewName = 'table';
   const viewVisibility = $derived(meta?.list.viewVisibility);
   let statusFilter = $state<'ACTIVE' | 'INACTIVE' | null>(null);
+  
+  // Filter values for all filterable columns
+  let filterValues = $state<Record<string, any>>({});
 
   let visibleKeys = $state<string[]>([]);
 
@@ -554,6 +558,19 @@
   function onSelectedKeysChange(keys: string[]) {
     selectedKeys = keys;
   }
+
+  function onFilterValuesChange(values: Record<string, any>) {
+    filterValues = values;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onResetFilters() {
+    filterValues = {};
+    statusFilter = null;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
 </script>
 
 <AppPageScaffold>
@@ -620,6 +637,9 @@
       {onSelectedKeysChange}
       onRefresh={() => refreshRows({ clampPage: true })}
       bind:filtersOpen
+      {filterValues}
+      onFilterValuesChange={onFilterValuesChange}
+      onResetFilters={onResetFilters}
       viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}
@@ -656,70 +676,5 @@
         {/if}
       {/snippet}
 
-      {#snippet filters()}
-        <div class="flex h-full flex-col">
-          <div class="border-b p-2 sm:p-3">
-            <div class="text-base font-semibold">{$t('entities.list.filters')}</div>
-            <div class="text-sm text-muted-foreground">{$t('entities.list.filtersHint')}</div>
-          </div>
-
-          <div class="flex-1 overflow-auto p-2 sm:p-3">
-            <div class="space-y-2">
-              <div class="text-sm font-medium">{$t('entities.customer.fields.status')}</div>
-              <div class="flex gap-2">
-                <Button
-                  variant={statusFilter === null ? 'secondary' : 'soft'}
-                  size="sm"
-                  onclick={() => {
-                    statusFilter = null;
-                    page = 1;
-                    void refreshRows({ clampPage: true });
-                  }}
-                >
-                  {$t('common.all')}
-                </Button>
-                <Button
-                  variant={statusFilter === 'ACTIVE' ? 'secondary' : 'soft'}
-                  size="sm"
-                  onclick={() => {
-                    statusFilter = 'ACTIVE';
-                    page = 1;
-                    void refreshRows({ clampPage: true });
-                  }}
-                >
-                  {$t('entities.customer.status.active')}
-                </Button>
-                <Button
-                  variant={statusFilter === 'INACTIVE' ? 'secondary' : 'soft'}
-                  size="sm"
-                  onclick={() => {
-                    statusFilter = 'INACTIVE';
-                    page = 1;
-                    void refreshRows({ clampPage: true });
-                  }}
-                >
-                  {$t('entities.customer.status.inactive')}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div class="border-t p-2 sm:p-3">
-            <div class="flex items-center justify-end gap-2">
-              <Button
-                variant="soft"
-                onclick={() => {
-                  statusFilter = null;
-                  page = 1;
-                  void refreshRows({ clampPage: true });
-                }}
-              >
-                {$t('common.reset')}
-              </Button>
-              <Button onclick={() => (filtersOpen = false)}>{$t('common.done')}</Button>
-            </div>
-          </div>
-        </div>
-      {/snippet}
-  </EntityListTable>
+        </EntityListTable>
 </AppPageScaffold>
