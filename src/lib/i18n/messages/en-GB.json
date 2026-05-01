@@ -13,6 +13,7 @@
     "all": "All",
     "reset": "Reset",
     "done": "Done",
+    "apply": "Apply",
     "toggleSidebar": "Toggle Sidebar",
     "refresh": "refresh",
     "selectRow": "select row",

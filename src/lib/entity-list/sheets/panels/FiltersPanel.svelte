@@ -28,15 +28,26 @@
     sheetMenuCheckboxClass = "h-4 w-4"
   }: $$Props = $props();
 
-  function updateFilterValue(key: string, value: any) {
-    const newValues = { ...filterValues, [key]: value };
-    onFilterValuesChange?.(newValues);
+  // Temporary filter values (being edited by user)
+  let tempFilterValues = $state<Record<string, any>>({});
+  
+  // Initialize temp values when component loads or when filterValues change
+  $effect(() => {
+    tempFilterValues = { ...filterValues };
+  });
+
+  function updateTempFilterValue(key: string, value: any) {
+    tempFilterValues = { ...tempFilterValues, [key]: value };
   }
 
-  function clearFilter(key: string) {
-    const newValues = { ...filterValues };
+  function clearTempFilter(key: string) {
+    const newValues = { ...tempFilterValues };
     delete newValues[key];
-    onFilterValuesChange?.(newValues);
+    tempFilterValues = newValues;
+  }
+
+  function applyFilters() {
+    onFilterValuesChange?.(tempFilterValues);
   }
 
   function getBadgeOptions(col: MetaColumn) {
@@ -51,7 +62,7 @@
   function renderFilterInput(col: MetaColumn) {
     if (col.type === 'badge' && col.badge?.values) {
       const options = getBadgeOptions(col);
-      const selectedOption = options.find(opt => opt.key === filterValues[col.key]);
+      const selectedOption = options.find(opt => opt.key === tempFilterValues[col.key]);
       
       return {
         type: 'dropdown',
@@ -66,7 +77,7 @@
       type: 'input',
       inputType: col.type === 'date' || col.type === 'datetime' ? 'date' : 'text',
       placeholder: $t(`entities.list.filterPlaceholder`),
-      value: filterValues[col.key] || ''
+      value: tempFilterValues[col.key] || ''
     };
   }
   function resetAllFilters() {
@@ -75,6 +86,15 @@
 </script>
 
 {#snippet headerActions()}
+  <Button
+    variant="default"
+    size="sm"
+    class="mr-2"
+    onclick={applyFilters}
+    title={$t("common.apply")}
+  >
+    {$t("common.apply")}
+  </Button>
   <Button
     variant="ghost"
     size="icon-sm"
@@ -107,12 +127,12 @@
           <label for="filter-{col.key}" class="text-sm font-medium text-foreground">
             {$t(col.labelKey)}
           </label>
-          {#if filterValues[col.key]}
+          {#if tempFilterValues[col.key]}
             <Button
               variant="ghost"
               size="sm"
               class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onclick={() => clearFilter(col.key)}
+              onclick={() => clearTempFilter(col.key)}
             >
               {$t("common.clear")}
             </Button>
@@ -141,13 +161,13 @@
             </DropdownMenu.Trigger>
             <DropdownMenu.Content class="w-full">
               <DropdownMenu.Item
-                onclick={() => updateFilterValue(col.key, null)}
+                onclick={() => updateTempFilterValue(col.key, null)}
               >
                 {placeholder}
               </DropdownMenu.Item>
               {#each options as option}
                 <DropdownMenu.Item
-                  onclick={() => updateFilterValue(col.key, option.key)}
+                  onclick={() => updateTempFilterValue(col.key, option.key)}
                 >
                   {option.label}
                 </DropdownMenu.Item>
@@ -165,7 +185,7 @@
             type={inputType}
             placeholder={placeholder}
             value={value}
-            oninput={(e) => updateFilterValue(col.key, e.currentTarget.value)}
+            oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
             class="w-full"
           />
         {/if}
