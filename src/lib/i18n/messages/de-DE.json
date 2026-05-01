@@ -135,6 +135,8 @@
       "dataFields": "Felder",
       "auditingFields": "Audit-Felder",
       "filters": "Filter",
+      "filterPlaceholder": "Filtern...",
+      "noFilterableFields": "Keine filterbaren Felder verfügbar",
       "searchIn": "Suchen in",
       "searchInAll": "Alle Felder",
       "searchInFields": "Felder",

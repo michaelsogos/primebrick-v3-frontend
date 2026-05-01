@@ -148,6 +148,8 @@
       "dataFields": "Campi",
       "auditingFields": "Campi di auditing",
       "filters": "Filtri",
+      "filterPlaceholder": "Filtra...",
+      "noFilterableFields": "Nessun campo filtrabile disponibile",
       "searchIn": "Cerca in",
       "searchInAll": "Tutti i campi",
       "searchInFields": "campi",

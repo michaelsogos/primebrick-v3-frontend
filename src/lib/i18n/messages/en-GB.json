@@ -148,6 +148,8 @@
       "dataFields": "Fields",
       "auditingFields": "Auditing Fields",
       "filters": "Filters",
+      "filterPlaceholder": "Filter...",
+      "noFilterableFields": "No filterable fields available",
       "searchIn": "Search in",
       "searchInAll": "All fields",
       "searchInFields": "fields",
