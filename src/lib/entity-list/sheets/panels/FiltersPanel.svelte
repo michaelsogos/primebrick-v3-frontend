@@ -185,20 +185,10 @@
   <div class="min-h-0 flex-1 overflow-auto px-2 py-2 {modal ? '' : 'bg-muted/40'}">
     {#each filterableColumns as col (col.key)}
       <div class="mb-4">
-        <div class="mb-2 flex items-center justify-between">
+        <div class="mb-2">
           <label for="filter-{col.key}" class="text-sm font-medium text-foreground">
             {$t(col.labelKey)}
           </label>
-          {#if tempFilterValues[col.key]}
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onclick={() => clearTempFilter(col.key)}
-            >
-              {$t("common.clear")}
-            </Button>
-          {/if}
         </div>
         
         {#if renderFilterInput(col).type === 'multiselect'}
@@ -222,7 +212,22 @@
                       : placeholder
                     }
                   </span>
-                  <ChevronDown class="ml-2 h-4 w-4 shrink-0" />
+                  <div class="flex items-center gap-1">
+                    {#if selectedKeys.length > 0}
+                      <button
+                        type="button"
+                        class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          clearTempFilter(col.key);
+                        }}
+                        title={$t("common.clear")}
+                      >
+                        <XIcon class="size-3" />
+                      </button>
+                    {/if}
+                    <ChevronDown class="h-4 w-4 shrink-0" />
+                  </div>
                 </Button>
               {/snippet}
             </DropdownMenu.Trigger>
@@ -252,14 +257,26 @@
           {@const placeholder = filterConfig.placeholder}
           {@const value = filterConfig.value}
 
-          <Input
-            id="filter-{col.key}"
-            type={inputType}
-            placeholder={placeholder}
-            value={value}
-            oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
-            class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
-          />
+          <div class="relative">
+            <Input
+              id="filter-{col.key}"
+              type={inputType}
+              placeholder={placeholder}
+              value={value}
+              oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
+              class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs pr-8"
+            />
+            {#if value}
+              <button
+                type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => clearTempFilter(col.key)}
+                title={$t("common.clear")}
+              >
+                <XIcon class="size-3" />
+              </button>
+            {/if}
+          </div>
         {/if}
       </div>
     {/each}
