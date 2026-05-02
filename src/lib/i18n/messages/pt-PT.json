@@ -115,10 +115,15 @@
       "clientTitle": "Este navegador",
       "ianaTimezone": "Fuso horário IANA",
       "preferredLanguages": "Idiomas preferidos",
-      "resolvedLocale": "Locale de data/hora",
+      "resolvedLocale": "Locale data/hora",
       "calendarSystem": "Calendário",
       "numberingSystem": "Sistema numérico",
-      "hourCycle": "Ciclo horário"
+      "hourCycle": "Ciclo horário",
+      "operatingSystem": "Sistema Operativo",
+      "osVersion": "Versão SO",
+      "osArch": "Arquitetura",
+      "browser": "Nome do navegador",
+      "browserVersion": "Versão do navegador"
     }
   }
   ,

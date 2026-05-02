@@ -119,7 +119,12 @@
       "resolvedLocale": "Date/time locale",
       "calendarSystem": "Calendar",
       "numberingSystem": "Numbering system",
-      "hourCycle": "Hour cycle"
+      "hourCycle": "Hour cycle",
+      "operatingSystem": "Operating System",
+      "osVersion": "OS Version",
+      "osArch": "Architecture",
+      "browser": "Browser Name",
+      "browserVersion": "Browser Version"
     }
   }
   ,
