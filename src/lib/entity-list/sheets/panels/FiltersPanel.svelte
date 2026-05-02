@@ -218,12 +218,13 @@
                       <button
                         type="button"
                         class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                        onmousedown={(e) => {
+                        onpointerdown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                         }}
                         onclick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           clearTempFilter(col.key);
                         }}
                         title={$t("common.clear")}
