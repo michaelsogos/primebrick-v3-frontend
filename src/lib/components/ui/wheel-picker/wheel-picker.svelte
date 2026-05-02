@@ -17,7 +17,7 @@
 	)}
 >
 	<div
-		class="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[32px] rounded-md bg-muted z-1"
+		class="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[32px] rounded-md bg-accent/50 dark:bg-accent/20 z-1"
 	/>
 
 	<div
