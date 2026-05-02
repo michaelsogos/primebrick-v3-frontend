@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import * as Sheet from '$lib/components/ui/sheet';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -15,10 +15,9 @@
     searchableColumns: ColumnLike[];
     onSearchInKeysChange: (keys: string[] | null) => void;
     toggleSearchKey: (key: string) => void;
-    sheetMenuCheckboxClass: string;
   }
 
-  let { searchInKeys, searchableColumns, onSearchInKeysChange, toggleSearchKey, sheetMenuCheckboxClass }: $$Props =
+  let { searchInKeys, searchableColumns, onSearchInKeysChange, toggleSearchKey }: $$Props =
     $props();
 </script>
 
@@ -55,7 +54,7 @@
       onclick={() => onSearchInKeysChange(null)}
     >
       <span class="pointer-events-none shrink-0" aria-hidden="true">
-        <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={sheetMenuCheckboxClass} />
+        <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={checkboxVisualOnlyClass} />
       </span>
       <span class="min-w-0 flex-1 truncate">{$t('entities.list.searchInAll')}</span>
     </button>
@@ -71,7 +70,7 @@
         onclick={() => toggleSearchKey(col.key)}
       >
         <span class="pointer-events-none shrink-0" aria-hidden="true">
-          <Checkbox checked={!!searchInKeys?.includes(col.key)} class={sheetMenuCheckboxClass} />
+          <Checkbox checked={!!searchInKeys?.includes(col.key)} class={checkboxVisualOnlyClass} />
         </span>
         <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
       </button>

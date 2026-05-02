@@ -3,6 +3,8 @@
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import { Badge } from "$lib/components/ui/badge";
+  import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
   import { t } from "$lib/i18n";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
@@ -11,6 +13,8 @@
   import type { MetaColumn } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
+  import { badgeClassesFromToken } from "$lib/colors/badge";
+  import { cn } from "$lib/utils";
 
   interface $$Props {
     content: any;
@@ -18,22 +22,21 @@
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
-    sheetMenuCheckboxClass?: string;
     modal?: boolean;
   }
 
-  let { 
+  let {
     content,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
-    sheetMenuCheckboxClass = "h-4 w-4",
     modal = true
   }: $$Props = $props();
 
   // Temporary filter values (being edited by user)
   let tempFilterValues = $state<Record<string, any>>({});
+
 
   // Local state for DateDropper values (CalendarDate objects)
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
@@ -107,12 +110,12 @@
   function renderFilterInput(col: MetaColumn) {
     if (col.type === 'badge' && col.badge?.values) {
       const options = getBadgeOptions(col);
-      const selectedOption = options.find(opt => opt.key === tempFilterValues[col.key]);
+      const selectedKeys = (tempFilterValues[col.key] as string[]) || [];
 
       return {
-        type: 'dropdown',
+        type: 'multiselect' as const,
         options,
-        selectedOption,
+        selectedKeys,
         placeholder: $t(`entities.list.filterPlaceholder`)
       };
     }
@@ -120,17 +123,25 @@
     // For date types - use DateDropper
     if (col.type === 'date' || col.type === 'datetime') {
       return {
-        type: 'date-dropper'
+        type: 'date-dropper' as const
       };
     }
 
     // For text types - use text input
     return {
-      type: 'input',
+      type: 'input' as const,
       inputType: 'text',
       placeholder: $t(`entities.list.filterPlaceholder`),
       value: tempFilterValues[col.key] || ''
     };
+  }
+
+  function toggleBadgeSelection(colKey: string, optionKey: string) {
+    const currentSelection = tempFilterValues[colKey] as string[] || [];
+    const newSelection = currentSelection.includes(optionKey)
+      ? currentSelection.filter(k => k !== optionKey)
+      : [...currentSelection, optionKey];
+    tempFilterValues = { ...tempFilterValues, [colKey]: newSelection.length > 0 ? newSelection : undefined };
   }
   function resetAllFilters() {
     onResetFilters?.();
@@ -175,26 +186,16 @@
   <div class="min-h-0 flex-1 overflow-auto px-2 py-2 {modal ? '' : 'bg-muted/40'}">
     {#each filterableColumns as col (col.key)}
       <div class="mb-4">
-        <div class="mb-2 flex items-center justify-between">
-          <label for="filter-{col.key}" class="text-sm font-medium text-foreground">
+        <div class="mb-2">
+          <label for="filter-{col.key}" class="text-xs font-normal text-foreground">
             {$t(col.labelKey)}
           </label>
-          {#if tempFilterValues[col.key]}
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onclick={() => clearTempFilter(col.key)}
-            >
-              {$t("common.clear")}
-            </Button>
-          {/if}
         </div>
         
-        {#if renderFilterInput(col).type === 'dropdown'}
+        {#if renderFilterInput(col).type === 'multiselect'}
           {@const filterConfig = renderFilterInput(col)}
           {@const options = filterConfig.options}
-          {@const selectedOption = filterConfig.selectedOption}
+          {@const selectedKeys = filterConfig.selectedKeys || []}
           {@const placeholder = filterConfig.placeholder}
 
           <DropdownMenu.Root>
@@ -202,48 +203,100 @@
               {#snippet child({ props })}
                 <Button
                   id="filter-{col.key}"
-                  variant="outline"
-                  class="w-full justify-between"
+                  variant="ghost"
+                  class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
                   {...props}
                 >
-                  {selectedOption ? selectedOption.label : placeholder}
-                  <ChevronDown class="ml-2 h-4 w-4" />
+                  <span class={selectedKeys.length > 0 ? 'text-foreground' : 'text-muted-foreground/70 text-xs'}>
+                    {selectedKeys.length > 0
+                      ? `${selectedKeys.length} ${$t('entities.list.selected')}`
+                      : placeholder
+                    }
+                  </span>
+                  <div class="flex items-center gap-1">
+                    {#if selectedKeys.length > 0}
+                      <button
+                        type="button"
+                        class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        onpointerdown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          clearTempFilter(col.key);
+                        }}
+                        title={$t("common.clear")}
+                      >
+                        <XIcon class="size-3" />
+                      </button>
+                    {/if}
+                    <ChevronDown class="h-4 w-4 shrink-0" />
+                  </div>
                 </Button>
               {/snippet}
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content class="w-full">
-              <DropdownMenu.Item
-                onclick={() => updateTempFilterValue(col.key, null)}
-              >
-                {placeholder}
-              </DropdownMenu.Item>
+            <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
               {#each options as option}
-                <DropdownMenu.Item
-                  onclick={() => updateTempFilterValue(col.key, option.key)}
+                <DropdownMenuCheckboxItem
+                  checked={selectedKeys.includes(option.key)}
+                  onCheckedChange={() => toggleBadgeSelection(col.key, option.key)}
+                  closeOnSelect={false}
                 >
-                  {option.label}
-                </DropdownMenu.Item>
+                  <Badge
+                    variant="outline"
+                    class={cn(badgeClassesFromToken(option.color ?? null), 'border-0 shadow-none')}
+                  >
+                    {option.label}
+                  </Badge>
+                </DropdownMenuCheckboxItem>
               {/each}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else if renderFilterInput(col).type === 'date-dropper'}
-          <DateWheelPicker
-            bind:value={dateDropperValues[col.key]}
-          />
+          <div class="relative">
+            <DateWheelPicker
+              bind:value={dateDropperValues[col.key]}
+              placeholder={$t("entities.list.filterPlaceholder")}
+            />
+            {#if dateDropperValues[col.key]}
+              <button
+                type="button"
+                class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => clearTempFilter(col.key)}
+                title={$t("common.clear")}
+              >
+                <XIcon class="size-3" />
+              </button>
+            {/if}
+          </div>
         {:else}
           {@const filterConfig = renderFilterInput(col)}
           {@const inputType = filterConfig.inputType}
           {@const placeholder = filterConfig.placeholder}
           {@const value = filterConfig.value}
 
-          <Input
-            id="filter-{col.key}"
-            type={inputType}
-            placeholder={placeholder}
-            value={value}
-            oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
-            class="w-full"
-          />
+          <div class="relative">
+            <Input
+              id="filter-{col.key}"
+              type={inputType}
+              placeholder={placeholder}
+              value={value}
+              oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
+              class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs pr-8"
+            />
+            {#if value}
+              <button
+                type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => clearTempFilter(col.key)}
+                title={$t("common.clear")}
+              >
+                <XIcon class="size-3" />
+              </button>
+            {/if}
+          </div>
         {/if}
       </div>
     {/each}

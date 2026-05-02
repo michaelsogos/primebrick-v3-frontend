@@ -11,7 +11,7 @@
 	import { t } from "$lib/i18n";
 	import { uiLang } from "$lib/i18n/store.svelte";
 
-	let { value = $bindable() } = $props();
+	let { value = $bindable(), placeholder = $t("common.selectDate") } = $props();
 	let isOpen = $state(false);
 
 	let df = $state(new DateFormatter($uiLang, { dateStyle: "long" }));
@@ -85,8 +85,8 @@
 				variant="outline"
 				class="w-full justify-between font-normal border-input bg-background dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] {inputControlHoverClasses}"
 			>
-				<span class={cn(!value && "text-muted-foreground")}>
-					{value ? df.format(value.toDate(getLocalTimeZone())) : $t("common.selectDate")}
+				<span class={cn(!value && "text-muted-foreground/70 text-xs")}>
+					{value ? df.format(value.toDate(getLocalTimeZone())) : placeholder}
 				</span>
 				<Calendar class="ml-2 h-4 w-4 opacity-50" />
 			</Button>
