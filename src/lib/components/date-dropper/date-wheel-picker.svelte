@@ -93,7 +93,7 @@
 		{/snippet}
 	</Popover.Trigger>
 
-	<Popover.Content class="w-[320px] p-0 shadow-2xl border-border rounded-2xl overflow-hidden bg-popover" align="start">
+	<Popover.Content class="w-[320px] p-0 shadow-2xl border-border rounded-none overflow-hidden bg-popover" align="start">
 		<WheelPicker>
 			<WheelPickerGroup bind:value={selectedDay} onValueChange={() => {}}>
 				{#each days as day}

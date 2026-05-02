@@ -18,14 +18,14 @@
 >
 	<div
 		class="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[32px] rounded-md bg-input/30 dark:bg-input/20 border border-input/50 dark:border-input/40 z-1"
-	/>
+	></div>
 
 	<div
 		class="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent z-2"
-	/>
+	></div>
 	<div
 		class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent z-2"
-	/>
+	></div>
 
 	<div class="flex h-full w-full justify-center px-4 z-2 perspective-container">
 		{@render children()}
