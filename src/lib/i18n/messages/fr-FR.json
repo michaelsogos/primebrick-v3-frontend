@@ -117,8 +117,13 @@
       "preferredLanguages": "Langues préférées",
       "resolvedLocale": "Locale date/heure",
       "calendarSystem": "Calendrier",
-      "numberingSystem": "Numération",
-      "hourCycle": "Cycle horaire"
+      "numberingSystem": "Système de numération",
+      "hourCycle": "Cycle horaire",
+      "operatingSystem": "Système d'exploitation",
+      "osVersion": "Version OS",
+      "osArch": "Architecture",
+      "browser": "Nom du navigateur",
+      "browserVersion": "Version du navigateur"
     }
   }
   ,

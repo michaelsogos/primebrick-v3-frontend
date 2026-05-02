@@ -113,12 +113,17 @@
       "backendVersion": "Backend",
       "modulesTitle": "Module",
       "clientTitle": "Dieser Browser",
-      "ianaTimezone": "IANA-Zeitzone",
+      "ianaTimezone": "IANA Zeitzone",
       "preferredLanguages": "Bevorzugte Sprachen",
-      "resolvedLocale": "Datum/Zeit-Locale",
+      "resolvedLocale": "Datums-/Uhrzeit-Locale",
       "calendarSystem": "Kalender",
       "numberingSystem": "Zahlensystem",
-      "hourCycle": "Stundenzyklus"
+      "hourCycle": "Stundenzyklus",
+      "operatingSystem": "Betriebssystem",
+      "osVersion": "OS-Version",
+      "osArch": "Architektur",
+      "browser": "Browser-Name",
+      "browserVersion": "Browserversion"
     }
   }
   ,

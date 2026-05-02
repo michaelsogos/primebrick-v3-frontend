@@ -41,17 +41,21 @@
 
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
-        <div class="font-mono">{health?.version ?? '—'}</div>
+        <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+          {health?.version ? `v${health.version}` : '—'}
+        </Badge>
       </div>
 
       <div class="pt-1">
-        <div class="mb-2 text-xs font-medium text-muted-foreground">{$t('shell.health.modulesTitle')}</div>
+        <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.modulesTitle')}</div>
         {#if health?.modules?.length}
           <div class="space-y-1">
             {#each health.modules as m (m.id)}
               <div class="flex items-center justify-between gap-3 text-sm">
-                <div class="truncate">{m.id}</div>
-                <div class="shrink-0 font-mono text-muted-foreground">{m.version}</div>
+                <div class="truncate text-muted-foreground">{m.id}</div>
+                <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                  v{m.version}
+                </Badge>
               </div>
             {/each}
           </div>
