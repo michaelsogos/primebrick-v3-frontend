@@ -1495,7 +1495,7 @@
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Content>
+                  <DropdownMenu.Content align="start">
                     <DropdownMenu.Item
                       class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
                       onSelect={() => onSortChange(null, defaultSortDir)}
@@ -1526,7 +1526,7 @@
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Content>
+                  <DropdownMenu.Content align="start">
                     <DropdownMenu.Item
                       class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
                       onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
