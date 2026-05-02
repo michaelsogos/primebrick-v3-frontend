@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import { Switch } from '$lib/components/ui/switch';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -377,7 +377,7 @@
           writeOrderState(nextState);
         },
         onResetColumnVisibility: () => onResetColumnVisibility('table'),
-        sheetMenuCheckboxClass,
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass,
         t: $t
       } as any;
       return;
@@ -388,7 +388,7 @@
         searchableColumns,
         onSearchInKeysChange,
         toggleSearchKey,
-        sheetMenuCheckboxClass
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass
       } as any;
     }
     if (sheetState.panelId === 'entity.filters') {
@@ -396,8 +396,7 @@
         filterableColumns,
         filterValues: filterValues ?? {},
         onFilterValuesChange,
-        onResetFilters,
-        sheetMenuCheckboxClass
+        onResetFilters
       } as any;
     }
   });
@@ -408,13 +407,6 @@
     void lastPanelId;
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
   });
-
-  const selectionCheckboxClass =
-    'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
-
-  /** Sheet list rows use a real `Checkbox` for visuals; the row `button` handles clicks (checkbox is non-interactive). */
-  const sheetMenuCheckboxClass =
-    'pointer-events-none shrink-0 border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
   const compactRows = $derived(rowDensity === 'compact');
   const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
@@ -1260,7 +1252,7 @@
                   searchableColumns,
                   onSearchInKeysChange,
                   toggleSearchKey,
-                  sheetMenuCheckboxClass
+                  sheetMenuCheckboxClass: checkboxVisualOnlyClass
                 } as any,
                 { contentClass: 'w-[360px] p-0' }
               )}
@@ -1352,7 +1344,7 @@
               visibleKeys,
               toggleColumnKey,
               onResetColumnVisibility: resetColumnsAndSorting,
-              sheetMenuCheckboxClass,
+              sheetMenuCheckboxClass: checkboxVisualOnlyClass,
               t: $t
             } as any,
             { contentClass: 'w-[360px] p-0' }
@@ -1374,15 +1366,14 @@
               return;
             }
             filtersOpen = true;
-            openSheet('entity.filters', { 
+            openSheet('entity.filters', {
               content: FiltersPanel,
               props: {
                 content: {},
                 filterableColumns,
                 filterValues: filterValues ?? {},
                 onFilterValuesChange,
-                onResetFilters,
-                sheetMenuCheckboxClass
+                onResetFilters
               }
             } as any, {
               contentClass: 'w-[360px] p-0',
@@ -1478,7 +1469,7 @@
               <div class="flex flex-wrap items-center gap-2">
                 {#if rowSelectionEnabled}
                   <Checkbox
-                    class={selectionCheckboxClass}
+                    class={checkboxInteractiveClass}
                     checked={allOnPageSelected}
                     indeterminate={headerIndeterminate}
                     onCheckedChange={() => toggleAllOnPage()}
@@ -1504,7 +1495,7 @@
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Content>
+                  <DropdownMenu.Content align="start">
                     <DropdownMenu.Item
                       class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
                       onSelect={() => onSortChange(null, defaultSortDir)}
@@ -1535,7 +1526,7 @@
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Content>
+                  <DropdownMenu.Content align="start">
                     <DropdownMenu.Item
                       class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
                       onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
@@ -1644,7 +1635,7 @@
                             }}
                           >
                             <Checkbox
-                              class={selectionCheckboxClass}
+                              class={checkboxInteractiveClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
                               aria-label={$t('entities.list.selectRow')}
@@ -1693,7 +1684,7 @@
                             }}
                           >
                             <Checkbox
-                              class={selectionCheckboxClass}
+                              class={checkboxInteractiveClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
                               aria-label={$t('entities.list.selectRow')}
@@ -1755,7 +1746,7 @@
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
                     <Checkbox
-                      class={selectionCheckboxClass}
+                      class={checkboxInteractiveClass}
                       checked={allOnPageSelected}
                       indeterminate={headerIndeterminate}
                       onCheckedChange={() => toggleAllOnPage()}
@@ -1995,7 +1986,7 @@
                   >
                     <div class={cn('flex items-center justify-center', rowChromeH)}>
                       <Checkbox
-                        class={selectionCheckboxClass}
+                        class={checkboxInteractiveClass}
                         checked={selectedKeys.includes(rk)}
                         onCheckedChange={() => toggleRowSelect(rk)}
                         aria-label="select row"

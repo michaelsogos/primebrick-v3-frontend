@@ -318,16 +318,32 @@
     if (statusFilter) qs.set('status', statusFilter);
     // Convert filterValues to backend filters array format using bracket notation
     // Format: filters[0][field]=status&filters[0][op]==&filters[0][value]=ACTIVE
+    // For multi-select (badge) fields, values should be in OR among themselves
+    // Different fields should be in AND
     let filterIdx = 0;
     for (const [field, value] of Object.entries(filterValues)) {
       if (value !== undefined && value !== null && value !== '') {
         const col = columns.find(c => c.key === field);
         const op = col?.type === 'badge' ? '=' : 'ILIKE';
-        qs.set(`filters[${filterIdx}][field]`, field);
-        qs.set(`filters[${filterIdx}][op]`, op);
-        qs.set(`filters[${filterIdx}][value]`, String(value));
-        qs.set(`filters[${filterIdx}][connector]`, 'AND');
-        filterIdx++;
+
+        // Handle multi-select (array) values for badge fields
+        if (col?.type === 'badge' && Array.isArray(value)) {
+          for (let i = 0; i < value.length; i++) {
+            qs.set(`filters[${filterIdx}][field]`, field);
+            qs.set(`filters[${filterIdx}][op]`, op);
+            qs.set(`filters[${filterIdx}][value]`, String(value[i]));
+            // Use OR for values within the same field, AND for the last one to connect to next field
+            const connector = i < value.length - 1 ? 'OR' : 'AND';
+            qs.set(`filters[${filterIdx}][connector]`, connector);
+            filterIdx++;
+          }
+        } else {
+          qs.set(`filters[${filterIdx}][field]`, field);
+          qs.set(`filters[${filterIdx}][op]`, op);
+          qs.set(`filters[${filterIdx}][value]`, String(value));
+          qs.set(`filters[${filterIdx}][connector]`, 'AND');
+          filterIdx++;
+        }
       }
     }
     qs.set('page', String(page));
