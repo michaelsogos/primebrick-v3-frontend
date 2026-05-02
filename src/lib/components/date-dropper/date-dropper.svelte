@@ -8,6 +8,7 @@
 
 	let { value = $bindable() } = $props();
 	let isOpen = $state(false);
+	let isInitialScroll = $state(false);
 
 	const df = new DateFormatter("en-US", { dateStyle: "long" });
 
@@ -22,6 +23,9 @@
 	function setupScrollObserver(container: HTMLElement, part: "day" | "month" | "year", items: any[]) {
 		const observer = new IntersectionObserver(
 			(entries) => {
+				// Skip updates during initial scroll
+				if (isInitialScroll) return;
+
 				entries.forEach((entry) => {
 					if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
 						const index = Array.from(container.children[0].children).indexOf(entry.target as HTMLElement);
@@ -56,6 +60,28 @@
 	// Setup observers when popover opens
 	$effect(() => {
 		if (isOpen && dayScrollContainer && monthScrollContainer && yearScrollContainer) {
+			// Scroll to current value position on open
+			if (value) {
+				isInitialScroll = true;
+
+				const dayButton = dayScrollContainer.querySelector(`button:nth-child(${value.day})`) as HTMLElement;
+				const monthButton = monthScrollContainer.querySelector(`button:nth-child(${value.month})`) as HTMLElement;
+				const yearIndex = years.indexOf(value.year);
+				const yearButton = yearScrollContainer.querySelector(`button:nth-child(${yearIndex + 1})`) as HTMLElement;
+
+				// Scroll to position without triggering observer
+				requestAnimationFrame(() => {
+					dayButton?.scrollIntoView({ behavior: "auto", block: "center" });
+					monthButton?.scrollIntoView({ behavior: "auto", block: "center" });
+					yearButton?.scrollIntoView({ behavior: "auto", block: "center" });
+
+					// Re-enable observer after scroll
+					setTimeout(() => {
+						isInitialScroll = false;
+					}, 150);
+				});
+			}
+
 			const cleanupDay = setupScrollObserver(dayScrollContainer, "day", days);
 			const cleanupMonth = setupScrollObserver(monthScrollContainer, "month", months);
 			const cleanupYear = setupScrollObserver(yearScrollContainer, "year", years);
@@ -101,16 +127,16 @@
 			if (!isDown) return;
 			isDown = false;
 			node.style.cursor = "grab";
-			node.style.scrollSnapType = "y mandatory";
-			node.style.scrollBehavior = "smooth";
+			// Find nearest snap position and scroll to it
+			snapToNearest(node);
 		};
 
 		const onMouseUp = () => {
 			if (!isDown) return;
 			isDown = false;
 			node.style.cursor = "grab";
-			node.style.scrollSnapType = "y mandatory";
-			node.style.scrollBehavior = "smooth";
+			// Find nearest snap position and scroll to it
+			snapToNearest(node);
 		};
 
 		const onMouseMove = (e: MouseEvent) => {
@@ -134,6 +160,26 @@
 				node.removeEventListener("mousemove", onMouseMove);
 			}
 		};
+	}
+
+	// Helper to snap to nearest item after drag ends
+	function snapToNearest(container: HTMLElement) {
+		const itemHeight = 48;
+		const padding = 116;
+		const containerHeight = 280;
+		const center = containerHeight / 2;
+
+		const currentScroll = container.scrollTop;
+		// Calculate which item is closest to center
+		// Item position in content: padding + index * itemHeight
+		// We want: padding + index * itemHeight - currentScroll = center
+		// So: index = (currentScroll + center - padding) / itemHeight
+		const index = Math.round((currentScroll + center - padding) / itemHeight);
+		const targetScroll = (index * itemHeight) - center + padding;
+
+		container.style.scrollSnapType = "y mandatory";
+		container.style.scrollBehavior = "smooth";
+		container.scrollTop = Math.max(0, targetScroll);
 	}
 
 	function updateDate(part: "day" | "month" | "year", val: number, element?: HTMLElement) {
