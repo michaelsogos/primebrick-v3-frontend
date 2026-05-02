@@ -21,7 +21,8 @@
     "close": "Schließen",
     "more": "Mehr",
     "breadcrumb": "Breadcrumb",
-    "clear": "Leeren"
+    "clear": "Leeren",
+    "selectDate": "Datum auswählen"
   },
   "shell": {
     "subtitle": "Backoffice",

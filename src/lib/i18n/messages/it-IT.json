@@ -22,7 +22,8 @@
     "close": "Chiudi",
     "more": "Altro",
     "breadcrumb": "breadcrumb",
-    "clear": "Pulisci"
+    "clear": "Pulisci",
+    "selectDate": "Seleziona data"
   },
   "shell": {
     "subtitle": "Backoffice",

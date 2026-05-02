@@ -8,20 +8,27 @@
 	import WheelPicker from "$lib/components/ui/wheel-picker/wheel-picker.svelte";
 	import WheelPickerItem from "$lib/components/ui/wheel-picker/wheel-picker-item.svelte";
 	import WheelPickerGroup from "$lib/components/ui/wheel-picker/wheel-picker-group.svelte";
+	import { t } from "$lib/i18n";
+	import { uiLang } from "$lib/i18n/store.svelte";
 
 	let { value = $bindable() } = $props();
 	let isOpen = $state(false);
 
-	const df = new DateFormatter("en-US", { dateStyle: "long" });
+	let df = $state(new DateFormatter($uiLang, { dateStyle: "long" }));
+	let monthFormatter = $state(new DateFormatter($uiLang, { month: "short" }));
+
+	$effect(() => {
+		df = new DateFormatter($uiLang, { dateStyle: "long" });
+		monthFormatter = new DateFormatter($uiLang, { month: "short" });
+	});
 
 	// Generate date data
 	const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-	const months = [
-		"January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December"
-	];
+	const months = Array.from({ length: 12 }, (_, i) =>
+		monthFormatter.format(new CalendarDate(today(getLocalTimeZone()).year, i + 1, 1).toDate(getLocalTimeZone()))
+	);
 	const currentYear = today(getLocalTimeZone()).year;
-	const years = Array.from({ length: 100 }, (_, i) => (currentYear - 80 + i).toString());
+	const years = Array.from({ length: 100 }, (_, i) => (currentYear - 50 + i).toString());
 
 	let selectedDay = $state("");
 	let selectedMonth = $state("");
@@ -79,7 +86,7 @@
 				class="w-full justify-between font-normal border-input bg-background dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] {inputControlHoverClasses}"
 			>
 				<span class={cn(!value && "text-muted-foreground")}>
-					{value ? df.format(value.toDate(getLocalTimeZone())) : "Select date"}
+					{value ? df.format(value.toDate(getLocalTimeZone())) : $t("common.selectDate")}
 				</span>
 				<Calendar class="ml-2 h-4 w-4 opacity-50" />
 			</Button>
@@ -113,8 +120,8 @@
 
 		<!-- Footer -->
 		<div class="p-3 border-t bg-muted/10 flex gap-2">
-			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>Cancel</Button>
-			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => (isOpen = false)}>Confirm</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>{$t("common.close")}</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => (isOpen = false)}>{$t("common.done")}</Button>
 		</div>
 	</Popover.Content>
 </Popover.Root>
