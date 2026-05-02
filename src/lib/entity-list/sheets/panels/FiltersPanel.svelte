@@ -3,6 +3,8 @@
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import { Badge } from "$lib/components/ui/badge";
+  import { Checkbox } from "$lib/components/ui/checkbox";
   import { t } from "$lib/i18n";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
@@ -11,6 +13,8 @@
   import type { MetaColumn } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
+  import { badgeClassesFromToken } from "$lib/colors/badge";
+  import { cn } from "$lib/utils";
 
   interface $$Props {
     content: any;
@@ -107,12 +111,12 @@
   function renderFilterInput(col: MetaColumn) {
     if (col.type === 'badge' && col.badge?.values) {
       const options = getBadgeOptions(col);
-      const selectedOption = options.find(opt => opt.key === tempFilterValues[col.key]);
+      const selectedKeys = (tempFilterValues[col.key] as string[]) || [];
 
       return {
-        type: 'dropdown',
+        type: 'multiselect' as const,
         options,
-        selectedOption,
+        selectedKeys,
         placeholder: $t(`entities.list.filterPlaceholder`)
       };
     }
@@ -120,17 +124,25 @@
     // For date types - use DateDropper
     if (col.type === 'date' || col.type === 'datetime') {
       return {
-        type: 'date-dropper'
+        type: 'date-dropper' as const
       };
     }
 
     // For text types - use text input
     return {
-      type: 'input',
+      type: 'input' as const,
       inputType: 'text',
       placeholder: $t(`entities.list.filterPlaceholder`),
       value: tempFilterValues[col.key] || ''
     };
+  }
+
+  function toggleBadgeSelection(colKey: string, optionKey: string) {
+    const currentSelection = tempFilterValues[colKey] as string[] || [];
+    const newSelection = currentSelection.includes(optionKey)
+      ? currentSelection.filter(k => k !== optionKey)
+      : [...currentSelection, optionKey];
+    tempFilterValues = { ...tempFilterValues, [colKey]: newSelection.length > 0 ? newSelection : undefined };
   }
   function resetAllFilters() {
     onResetFilters?.();
@@ -191,10 +203,10 @@
           {/if}
         </div>
         
-        {#if renderFilterInput(col).type === 'dropdown'}
+        {#if renderFilterInput(col).type === 'multiselect'}
           {@const filterConfig = renderFilterInput(col)}
           {@const options = filterConfig.options}
-          {@const selectedOption = filterConfig.selectedOption}
+          {@const selectedKeys = filterConfig.selectedKeys || []}
           {@const placeholder = filterConfig.placeholder}
 
           <DropdownMenu.Root>
@@ -206,24 +218,40 @@
                   class="w-full justify-between"
                   {...props}
                 >
-                  {selectedOption ? selectedOption.label : placeholder}
+                  {selectedKeys.length > 0
+                    ? `${selectedKeys.length} ${$t('entities.list.selected')}`
+                    : placeholder
+                  }
                   <ChevronDown class="ml-2 h-4 w-4" />
                 </Button>
               {/snippet}
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content class="w-full">
-              <DropdownMenu.Item
-                onclick={() => updateTempFilterValue(col.key, null)}
-              >
-                {placeholder}
-              </DropdownMenu.Item>
+            <DropdownMenu.Content class="w-full max-h-96 overflow-auto">
               {#each options as option}
                 <DropdownMenu.Item
-                  onclick={() => updateTempFilterValue(col.key, option.key)}
+                  class="flex items-center gap-2"
+                  onclick={() => toggleBadgeSelection(col.key, option.key)}
                 >
-                  {option.label}
+                  <Checkbox
+                    checked={selectedKeys.includes(option.key)}
+                    class={sheetMenuCheckboxClass}
+                  />
+                  <Badge
+                    variant="outline"
+                    class={cn(badgeClassesFromToken(option.color ?? null), 'border-0 shadow-none')}
+                  >
+                    {option.label}
+                  </Badge>
                 </DropdownMenu.Item>
               {/each}
+              {#if selectedKeys.length > 0}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item
+                  onclick={() => updateTempFilterValue(col.key, undefined)}
+                >
+                  {$t('common.clear')}
+                </DropdownMenu.Item>
+              {/if}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else if renderFilterInput(col).type === 'date-dropper'}

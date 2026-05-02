@@ -144,6 +144,7 @@
       "auditingFields": "Champs d’audit",
       "filters": "Filtres",
       "filterPlaceholder": "Filtrer...",
+      "selected": "sélectionnés",
       "noFilterableFields": "Aucun champ filtrable disponible",
       "searchIn": "Rechercher dans",
       "searchInAll": "Tous les champs",

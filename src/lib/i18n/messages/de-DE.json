@@ -144,6 +144,7 @@
       "auditingFields": "Audit-Felder",
       "filters": "Filter",
       "filterPlaceholder": "Filtern...",
+      "selected": "ausgewählt",
       "noFilterableFields": "Keine filterbaren Felder verfügbar",
       "searchIn": "Suchen in",
       "searchInAll": "Alle Felder",
