@@ -255,9 +255,22 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else if renderFilterInput(col).type === 'date-dropper'}
-          <DateWheelPicker
-            bind:value={dateDropperValues[col.key]}
-          />
+          <div class="relative">
+            <DateWheelPicker
+              bind:value={dateDropperValues[col.key]}
+              placeholder={$t("entities.list.filterPlaceholder")}
+            />
+            {#if dateDropperValues[col.key]}
+              <button
+                type="button"
+                class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => clearTempFilter(col.key)}
+                title={$t("common.clear")}
+              >
+                <XIcon class="size-3" />
+              </button>
+            {/if}
+          </div>
         {:else}
           {@const filterConfig = renderFilterInput(col)}
           {@const inputType = filterConfig.inputType}
