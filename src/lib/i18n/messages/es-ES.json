@@ -11,7 +11,18 @@
     "next": "Sig",
     "all": "Todos",
     "reset": "Restablecer",
-    "done": "Hecho"
+    "done": "Hecho",
+    "apply": "Aplicar",
+    "toggleSidebar": "Alternar barra lateral",
+    "refresh": "actualizar",
+    "selectRow": "seleccionar fila",
+    "rowActions": "acciones de fila",
+    "actions": "acciones",
+    "close": "Cerrar",
+    "more": "Más",
+    "breadcrumb": "breadcrumb",
+    "clear": "Limpiar",
+    "selectDate": "Seleccionar fecha"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -127,6 +138,8 @@
       "dataFields": "Campos",
       "auditingFields": "Campos de auditoría",
       "filters": "Filtros",
+      "filterPlaceholder": "Filtrar...",
+      "noFilterableFields": "No hay campos filtrables disponibles",
       "searchIn": "Buscar en",
       "searchInAll": "Todos los campos",
       "searchInFields": "campos",
@@ -137,11 +150,29 @@
       "viewAllRowsTitle": "Mostrar todas las filas de esta página",
       "noSelectedRowsInView": "No hay filas seleccionadas en esta página.",
       "selectedRowsNotLoadedHint": "Abre las páginas donde se cargaron esos registros para poder verlos todos aquí.",
+      "clear": "Vaciar",
+      "refresh": "Actualizar",
+      "selectAll": "seleccionar todo",
+      "deselectAll": "deseleccionar todo",
+      "selectRow": "seleccionar fila",
+      "rowActions": "acciones de fila",
+      "sortBy": "Ordenar por",
+      "inOrder": "en orden",
+      "ascending": "Ascendente",
+      "descending": "Descendente",
+      "onboarding": "Incorporación",
       "viewMode": {
         "groupAria": "Disposición de resultados",
         "table": "Tabla",
         "cards": "Tarjetas (cuadrícula)",
         "cardsList": "Tarjetas (lista horizontal)"
+      },
+      "emptyField": "Vacío",
+      "pagination": {
+        "firstPage": "primera página",
+        "previousPage": "página anterior",
+        "nextPage": "página siguiente",
+        "lastPage": "última página"
       }
     },
     "crm": {
@@ -176,7 +207,7 @@
         "email": "Email",
         "phone": "Teléfono",
         "status": "Estado",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Activado el",
         "onboarding_time_zone": "Zona horaria onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo del estado",

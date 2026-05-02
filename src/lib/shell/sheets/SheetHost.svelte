@@ -40,9 +40,9 @@
 </script>
 
 <Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={sheetState.contentClass}>
+  <Sheet.Content showClose={false} side={sheetState.side} class={sheetState.contentClass} modal={sheetState.modal}>
     {#if Panel}
-      <Panel {...panelProps} />
+      <Panel {...panelProps} modal={sheetState.modal} />
     {/if}
   </Sheet.Content>
 </Sheet.Root>

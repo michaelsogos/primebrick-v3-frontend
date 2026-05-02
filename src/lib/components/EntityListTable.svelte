@@ -15,6 +15,7 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { cn } from '$lib/utils.js';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
+  import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -94,10 +95,12 @@
     rowActionsEnabled = false,
     rowActions,
     filtersOpen = $bindable(false),
+    filterValues = {},
+    onFilterValuesChange,
+    onResetFilters,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
-    filters,
     metaLoadingView,
     rowsLoadingView,
     emptyView,
@@ -154,11 +157,13 @@
     rowActionsEnabled?: boolean;
     rowActions?: Snippet<[ { row: TRow } ]>;
     filtersOpen?: boolean;
+    filterValues?: Record<string, any>;
+    onFilterValuesChange?: (values: Record<string, any>) => void;
+    onResetFilters?: () => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
     cell?: Snippet<[CellArgs]>;
-    filters?: Snippet;
     metaLoadingView?: Snippet;
     rowsLoadingView?: Snippet;
     emptyView?: Snippet;
@@ -315,9 +320,6 @@
 
   /** Parent can set `bind:filtersOpen={false}` to dismiss the filters sheet. */
   $effect(() => {
-    // `filters` is a Snippet whose reference changes whenever the parent re-renders (e.g. on
-    // `selectedKeys` updates). Do not subscribe to it here — only react to real sheet/bind state.
-    if (!untrack(() => filters)) return;
     void filtersOpen;
     void sheetState.open;
     void sheetState.panelId;
@@ -333,6 +335,7 @@
     void visibleKeys;
     void searchInKeys;
     void searchableColumns;
+    void filterableColumns;
     void nonAuditingColumns;
     void auditingColumnsGroup;
     void stickyColumnsGroup;
@@ -388,11 +391,19 @@
         sheetMenuCheckboxClass
       } as any;
     }
+    if (sheetState.panelId === 'entity.filters') {
+      sheetState.props = {
+        filterableColumns,
+        filterValues: filterValues ?? {},
+        onFilterValuesChange,
+        onResetFilters,
+        sheetMenuCheckboxClass
+      } as any;
+    }
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
   $effect(() => {
-    if (!untrack(() => filters)) return;
     void sheetState.open;
     void lastPanelId;
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
@@ -571,6 +582,7 @@
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
   const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
   const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
   const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const renderColumns = $derived(shownColumns);
   const stickyColumnsGroup = $derived(
@@ -1181,13 +1193,13 @@
                   {...props}
                   data-pb-card-cta
                   class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-                  aria-label="Vuoto"
+                  aria-label={$t('entities.list.clear')}
                 >
                   <Ban class="size-4" />
                 </button>
               {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Content>Vuoto</Tooltip.Content>
+            <Tooltip.Content>{$t('entities.list.emptyField')}</Tooltip.Content>
           </Tooltip.Root>
         {:else if cell}
           {@render cell({ row: r, column: col })}
@@ -1265,8 +1277,8 @@
         size="icon-sm"
         disabled={rowsLoading || refreshDisabled}
         onclick={() => onRefresh()}
-        aria-label="refresh"
-        title="refresh"
+        aria-label={$t('entities.list.refresh')}
+        title={$t('entities.list.refresh')}
       >
         <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
       </Button>
@@ -1350,7 +1362,7 @@
         {$t('entities.list.columns')}
       </Button>
 
-      {#if filters}
+      {#if filterableColumns.length > 0}
         <Button
           variant="soft"
           size="sm"
@@ -1362,8 +1374,19 @@
               return;
             }
             filtersOpen = true;
-            openSheet('entity.filters', { content: filters } as any, {
-              contentClass: 'w-[360px] p-0'
+            openSheet('entity.filters', { 
+              content: FiltersPanel,
+              props: {
+                content: {},
+                filterableColumns,
+                filterValues: filterValues ?? {},
+                onFilterValuesChange,
+                onResetFilters,
+                sheetMenuCheckboxClass
+              }
+            } as any, {
+              contentClass: 'w-[360px] p-0',
+              modal: false
             });
           }}
         >
@@ -1459,16 +1482,16 @@
                     checked={allOnPageSelected}
                     indeterminate={headerIndeterminate}
                     onCheckedChange={() => toggleAllOnPage()}
-                    aria-label="select all"
+                    aria-label={$t('entities.list.selectAll')}
                   />
                   <span class="text-xs font-medium text-muted-foreground">
-                    {allOnPageSelected ? 'deseleziona tutto' : 'seleziona tutto'}
+                    {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
                   </span>
                 {/if}
 
                 <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
 
-                <span class="text-xs font-medium text-muted-foreground">Ordina per</span>
+                <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1499,7 +1522,7 @@
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
 
-                <span class="ml-1 text-xs font-medium text-muted-foreground">in ordine</span>
+                <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('entities.list.inOrder')}</span>
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -1519,7 +1542,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowUpNarrowWide class="size-4" />
-                        Crescente
+                        {$t('entities.list.ascending')}
                       </span>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
@@ -1528,7 +1551,7 @@
                     >
                       <span class="inline-flex items-center gap-2">
                         <ArrowDownWideNarrow class="size-4" />
-                        Decrescente
+                        {$t('entities.list.descending')}
                       </span>
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
@@ -1624,7 +1647,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('entities.list.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1643,7 +1666,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1673,7 +1696,7 @@
                               class={selectionCheckboxClass}
                               checked={selectedKeys.includes(rk)}
                               onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label="select row"
+                              aria-label={$t('entities.list.selectRow')}
                             />
                           </div>
                         {/if}
@@ -1692,7 +1715,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
+                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
                                 <MoreVertical class="size-4" />
                               </Button>
                             {/if}
@@ -1736,7 +1759,7 @@
                       checked={allOnPageSelected}
                       indeterminate={headerIndeterminate}
                       onCheckedChange={() => toggleAllOnPage()}
-                      aria-label="select all"
+                      aria-label={$t('entities.list.selectAll')}
                     />
                   </div>
                 </Table.Head>
@@ -1865,7 +1888,7 @@
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
-                  <span class="sr-only">actions</span>
+                  <span class="sr-only">{$t('common.actions')}</span>
                 </div>
               </Table.Head>
             {/if}
@@ -2196,8 +2219,8 @@
             if (footerUsesClientPaging) clientSelectedPage = 1;
             else onPageChange(1);
           }}
-          aria-label="first page"
-          title="first page"
+          aria-label={$t('entities.list.firstPage')}
+          title={$t('entities.list.firstPage')}
         >
           <ChevronsLeft class="size-4" />
         </Button>
@@ -2209,8 +2232,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
             else onPageChange(Math.max(1, page - 1));
           }}
-          aria-label="previous page"
-          title="previous page"
+          aria-label={$t('entities.list.previousPage')}
+          title={$t('entities.list.previousPage')}
         >
           <ChevronLeft class="size-4" />
         </Button>
@@ -2227,8 +2250,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
             else onPageChange(Math.min(totalPages, page + 1));
           }}
-          aria-label="next page"
-          title="next page"
+          aria-label={$t('entities.list.nextPage')}
+          title={$t('entities.list.nextPage')}
         >
           <ChevronRight class="size-4" />
         </Button>
@@ -2240,8 +2263,8 @@
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
             else onPageChange(totalPages);
           }}
-          aria-label="last page"
-          title="last page"
+          aria-label={$t('entities.list.lastPage')}
+          title={$t('entities.list.lastPage')}
         >
           <ChevronsRight class="size-4" />
         </Button>
@@ -2250,9 +2273,6 @@
   </div>
 </div>
 
-{#if filters}
-  <!-- Filters content is mounted inside the global SheetHost (entity.filters panel). -->
-{/if}
 
 <style>
   @keyframes pb-watermark-pulse {

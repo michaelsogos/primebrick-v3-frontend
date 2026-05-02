@@ -12,7 +12,18 @@
     "next": "Succ",
     "all": "Tutti",
     "reset": "Reset",
-    "done": "Fatto"
+    "done": "Fatto",
+    "apply": "Applica",
+    "toggleSidebar": "Attiva/Disattiva barra laterale",
+    "refresh": "Aggiorna",
+    "selectRow": "seleziona riga",
+    "rowActions": "azioni riga",
+    "actions": "azioni",
+    "close": "Chiudi",
+    "more": "Altro",
+    "breadcrumb": "breadcrumb",
+    "clear": "Pulisci",
+    "selectDate": "Seleziona data"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -140,6 +151,8 @@
       "dataFields": "Campi",
       "auditingFields": "Campi di auditing",
       "filters": "Filtri",
+      "filterPlaceholder": "Filtra...",
+      "noFilterableFields": "Nessun campo filtrabile disponibile",
       "searchIn": "Cerca in",
       "searchInAll": "Tutti i campi",
       "searchInFields": "campi",
@@ -150,11 +163,29 @@
       "viewAllRowsTitle": "Mostra tutte le righe di questa pagina",
       "noSelectedRowsInView": "Nessuna riga selezionata in questa pagina.",
       "selectedRowsNotLoadedHint": "Apri le pagine in cui hai caricato quei record per poterli vedere tutti qui.",
+      "clear": "Vuoto",
+      "refresh": "Aggiorna",
+      "selectAll": "seleziona tutto",
+      "deselectAll": "deseleziona tutto",
+      "selectRow": "seleziona riga",
+      "rowActions": "azioni riga",
+      "sortBy": "Ordina per",
+      "inOrder": "in ordine",
+      "ascending": "Crescente",
+      "descending": "Decrescente",
+      "onboarding": "Inserimento",
       "viewMode": {
         "groupAria": "Layout risultati",
         "table": "Tabella",
         "cards": "Card (griglia)",
         "cardsList": "Card (lista orizzontale)"
+      },
+      "emptyField": "Vuoto",
+      "pagination": {
+        "firstPage": "prima pagina",
+        "previousPage": "pagina precedente",
+        "nextPage": "pagina successiva",
+        "lastPage": "ultima pagina"
       }
     },
     "crm": {
@@ -189,7 +220,7 @@
         "email": "Email",
         "phone": "Telefono",
         "status": "Stato",
-        "onboarding_at": "Onboarding",
+        "onboarding_at": "Attivo il",
         "onboarding_time_zone": "Fuso onboarding",
         "uuid": "UUID",
         "status_reason": "Motivo stato",

@@ -3,6 +3,7 @@
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { useSidebar } from "./context.svelte.js";
+	import { t } from "$lib/i18n";
 
 	let {
 		ref = $bindable(null),
@@ -17,10 +18,10 @@
 <button
 	bind:this={ref}
 	data-sidebar="rail"
-	aria-label="Toggle Sidebar"
+	aria-label={$t('common.toggleSidebar')}
 	tabIndex={-1}
 	onclick={() => sidebar.toggle()}
-	title="Toggle Sidebar"
+	title={$t('common.toggleSidebar')}
 	class={cn(
 		"hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
 		"[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
