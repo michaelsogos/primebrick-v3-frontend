@@ -9,7 +9,7 @@
   import XIcon from "@lucide/svelte/icons/x";
   import { RotateCcw, ChevronDown } from "lucide-svelte";
   import type { MetaColumn } from "$lib/entity-list/types";
-  import DateDropper from "$lib/components/date-dropper/date-dropper.svelte";
+  import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
 
   interface $$Props {
@@ -227,7 +227,7 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else if renderFilterInput(col).type === 'date-dropper'}
-          <DateDropper
+          <DateWheelPicker
             bind:value={dateDropperValues[col.key]}
           />
         {:else}
