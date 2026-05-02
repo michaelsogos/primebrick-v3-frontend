@@ -105,6 +105,8 @@
   }
 
   function renderFilterInput(col: MetaColumn) {
+    console.log('Column:', col.key, 'Type:', col.type);
+
     if (col.type === 'badge' && col.badge?.values) {
       const options = getBadgeOptions(col);
       const selectedOption = options.find(opt => opt.key === tempFilterValues[col.key]);
