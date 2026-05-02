@@ -187,7 +187,7 @@
     {#each filterableColumns as col (col.key)}
       <div class="mb-4">
         <div class="mb-2">
-          <label for="filter-{col.key}" class="text-sm font-medium text-foreground">
+          <label for="filter-{col.key}" class="text-xs font-normal text-foreground">
             {$t(col.labelKey)}
           </label>
         </div>
