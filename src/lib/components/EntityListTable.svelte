@@ -15,6 +15,7 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { cn } from '$lib/utils.js';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
+  import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -94,10 +95,12 @@
     rowActionsEnabled = false,
     rowActions,
     filtersOpen = $bindable(false),
+    filterValues = {},
+    onFilterValuesChange,
+    onResetFilters,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
-    filters,
     metaLoadingView,
     rowsLoadingView,
     emptyView,
@@ -154,11 +157,13 @@
     rowActionsEnabled?: boolean;
     rowActions?: Snippet<[ { row: TRow } ]>;
     filtersOpen?: boolean;
+    filterValues?: Record<string, any>;
+    onFilterValuesChange?: (values: Record<string, any>) => void;
+    onResetFilters?: () => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
     cell?: Snippet<[CellArgs]>;
-    filters?: Snippet;
     metaLoadingView?: Snippet;
     rowsLoadingView?: Snippet;
     emptyView?: Snippet;
@@ -315,9 +320,6 @@
 
   /** Parent can set `bind:filtersOpen={false}` to dismiss the filters sheet. */
   $effect(() => {
-    // `filters` is a Snippet whose reference changes whenever the parent re-renders (e.g. on
-    // `selectedKeys` updates). Do not subscribe to it here — only react to real sheet/bind state.
-    if (!untrack(() => filters)) return;
     void filtersOpen;
     void sheetState.open;
     void sheetState.panelId;
@@ -333,6 +335,7 @@
     void visibleKeys;
     void searchInKeys;
     void searchableColumns;
+    void filterableColumns;
     void nonAuditingColumns;
     void auditingColumnsGroup;
     void stickyColumnsGroup;
@@ -388,11 +391,19 @@
         sheetMenuCheckboxClass
       } as any;
     }
+    if (sheetState.panelId === 'entity.filters') {
+      sheetState.props = {
+        filterableColumns,
+        filterValues: filterValues ?? {},
+        onFilterValuesChange,
+        onResetFilters,
+        sheetMenuCheckboxClass
+      } as any;
+    }
   });
 
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
   $effect(() => {
-    if (!untrack(() => filters)) return;
     void sheetState.open;
     void lastPanelId;
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
@@ -571,6 +582,7 @@
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
   const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
   const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
   const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const renderColumns = $derived(shownColumns);
   const stickyColumnsGroup = $derived(
@@ -1350,7 +1362,7 @@
         {$t('entities.list.columns')}
       </Button>
 
-      {#if filters}
+      {#if filterableColumns.length > 0}
         <Button
           variant="soft"
           size="sm"
@@ -1362,8 +1374,19 @@
               return;
             }
             filtersOpen = true;
-            openSheet('entity.filters', { content: filters } as any, {
-              contentClass: 'w-[360px] p-0'
+            openSheet('entity.filters', { 
+              content: FiltersPanel,
+              props: {
+                content: {},
+                filterableColumns,
+                filterValues: filterValues ?? {},
+                onFilterValuesChange,
+                onResetFilters,
+                sheetMenuCheckboxClass
+              }
+            } as any, {
+              contentClass: 'w-[360px] p-0',
+              modal: false
             });
           }}
         >
@@ -2250,9 +2273,6 @@
   </div>
 </div>
 
-{#if filters}
-  <!-- Filters content is mounted inside the global SheetHost (entity.filters panel). -->
-{/if}
 
 <style>
   @keyframes pb-watermark-pulse {

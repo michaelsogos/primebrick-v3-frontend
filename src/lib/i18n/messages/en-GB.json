@@ -13,6 +13,7 @@
     "all": "All",
     "reset": "Reset",
     "done": "Done",
+    "apply": "Apply",
     "toggleSidebar": "Toggle Sidebar",
     "refresh": "refresh",
     "selectRow": "select row",
@@ -20,7 +21,9 @@
     "actions": "actions",
     "close": "Close",
     "more": "More",
-    "breadcrumb": "breadcrumb"
+    "breadcrumb": "breadcrumb",
+    "clear": "Clear",
+    "selectDate": "Select date"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -148,6 +151,8 @@
       "dataFields": "Fields",
       "auditingFields": "Auditing Fields",
       "filters": "Filters",
+      "filterPlaceholder": "Filter...",
+      "noFilterableFields": "No filterable fields available",
       "searchIn": "Search in",
       "searchInAll": "All fields",
       "searchInFields": "fields",

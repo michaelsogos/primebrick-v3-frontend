@@ -12,6 +12,7 @@
     "all": "Tous",
     "reset": "Réinitialiser",
     "done": "Terminé",
+    "apply": "Appliquer",
     "toggleSidebar": "Basculer la barre latérale",
     "refresh": "actualiser",
     "selectRow": "sélectionner la ligne",
@@ -19,7 +20,9 @@
     "actions": "actions",
     "close": "Fermer",
     "more": "Plus",
-    "breadcrumb": "breadcrumb"
+    "breadcrumb": "breadcrumb",
+    "clear": "Effacer",
+    "selectDate": "Sélectionner une date"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -135,6 +138,8 @@
       "dataFields": "Champs",
       "auditingFields": "Champs d’audit",
       "filters": "Filtres",
+      "filterPlaceholder": "Filtrer...",
+      "noFilterableFields": "Aucun champ filtrable disponible",
       "searchIn": "Rechercher dans",
       "searchInAll": "Tous les champs",
       "searchInFields": "champs",
