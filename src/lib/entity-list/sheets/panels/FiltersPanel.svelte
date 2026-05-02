@@ -43,7 +43,7 @@
     tempFilterValues = { ...filterValues };
     // Sync date dropper values
     for (const col of filterableColumns) {
-      if (col.type === 'date') {
+      if (col.type === 'date' || col.type === 'datetime') {
         dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key]);
       }
     }
@@ -52,7 +52,7 @@
   // Sync date dropper changes back to temp filter values
   $effect(() => {
     for (const col of filterableColumns) {
-      if (col.type === 'date' && dateDropperValues[col.key] !== undefined) {
+      if ((col.type === 'date' || col.type === 'datetime') && dateDropperValues[col.key] !== undefined) {
         const isoValue = calendarDateToIso(dateDropperValues[col.key]);
         if (isoValue !== tempFilterValues[col.key]) {
           tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
@@ -105,8 +105,6 @@
   }
 
   function renderFilterInput(col: MetaColumn) {
-    console.log('Column:', col.key, 'Type:', col.type);
-
     if (col.type === 'badge' && col.badge?.values) {
       const options = getBadgeOptions(col);
       const selectedOption = options.find(opt => opt.key === tempFilterValues[col.key]);
@@ -120,16 +118,16 @@
     }
 
     // For date types - use DateDropper
-    if (col.type === 'date') {
+    if (col.type === 'date' || col.type === 'datetime') {
       return {
         type: 'date-dropper'
       };
     }
 
-    // For text, datetime types - use text input
+    // For text types - use text input
     return {
       type: 'input',
-      inputType: col.type === 'datetime' ? 'datetime-local' : 'text',
+      inputType: 'text',
       placeholder: $t(`entities.list.filterPlaceholder`),
       value: tempFilterValues[col.key] || ''
     };
