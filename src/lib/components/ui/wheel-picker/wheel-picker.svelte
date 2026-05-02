@@ -17,7 +17,7 @@
 	)}
 >
 	<div
-		class="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[32px] rounded-md bg-primary dark:bg-accent border border-primary/20 dark:border-accent/50 z-1"
+		class="pointer-events-none absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[32px] rounded-md bg-input/30 dark:bg-input/20 border border-input/50 dark:border-input/40 z-1"
 	/>
 
 	<div
