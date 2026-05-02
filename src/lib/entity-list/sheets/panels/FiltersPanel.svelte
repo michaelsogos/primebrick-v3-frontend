@@ -37,6 +37,7 @@
   // Temporary filter values (being edited by user)
   let tempFilterValues = $state<Record<string, any>>({});
 
+
   // Local state for DateDropper values (CalendarDate objects)
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
 
@@ -217,6 +218,10 @@
                       <button
                         type="button"
                         class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        onmousedown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                         onclick={(e) => {
                           e.stopPropagation();
                           clearTempFilter(col.key);
@@ -236,6 +241,7 @@
                 <DropdownMenuCheckboxItem
                   checked={selectedKeys.includes(option.key)}
                   onCheckedChange={() => toggleBadgeSelection(col.key, option.key)}
+                  closeOnSelect={false}
                 >
                   <Badge
                     variant="outline"
