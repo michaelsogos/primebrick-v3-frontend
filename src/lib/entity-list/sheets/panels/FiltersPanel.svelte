@@ -228,21 +228,27 @@
             </DropdownMenu.Trigger>
             <DropdownMenu.Content class="w-full max-h-96 overflow-auto">
               {#each options as option}
-                <DropdownMenu.Item
-                  class="flex items-center gap-2"
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent"
                   onclick={() => toggleBadgeSelection(col.key, option.key)}
                 >
-                  <Checkbox
-                    checked={selectedKeys.includes(option.key)}
-                    class={checkboxVisualOnlyClass}
-                  />
+                  <div class="pointer-events-none shrink-0 size-4 rounded-[4px] border border-input bg-background dark:bg-input/30 flex items-center justify-center shadow-xs {selectedKeys.includes(option.key) ? 'bg-primary text-primary-foreground border-primary' : 'border-foreground/50 dark:border-foreground/35'}">
+                    {#if selectedKeys.includes(option.key)}
+                      <div class="text-current">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    {/if}
+                  </div>
                   <Badge
                     variant="outline"
                     class={cn(badgeClassesFromToken(option.color ?? null), 'border-0 shadow-none')}
                   >
                     {option.label}
                   </Badge>
-                </DropdownMenu.Item>
+                </button>
               {/each}
               {#if selectedKeys.length > 0}
                 <DropdownMenu.Separator />
