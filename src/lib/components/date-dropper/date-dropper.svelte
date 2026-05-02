@@ -4,13 +4,71 @@
 	import { Calendar } from "lucide-svelte";
 	import { DateFormatter, getLocalTimeZone, today, CalendarDate } from "@internationalized/date";
 	import { cn } from "$lib/utils";
+	import { inputControlHoverClasses } from "$lib/components/ui/input/input-chrome";
 
 	let { value = $bindable() } = $props();
 	let isOpen = $state(false);
 
 	const df = new DateFormatter("en-US", { dateStyle: "long" });
 
-	/** 
+	// Refs for scroll containers
+	let dayScrollContainer: HTMLElement;
+	let monthScrollContainer: HTMLElement;
+	let yearScrollContainer: HTMLElement;
+
+	/**
+	 * Intersection Observer to detect centered element
+	 */
+	function setupScrollObserver(container: HTMLElement, part: "day" | "month" | "year", items: any[]) {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
+						const index = Array.from(container.children[0].children).indexOf(entry.target as HTMLElement);
+						if (index !== -1) {
+							const val = part === "month" ? index + 1 : items[index];
+							if (!value) value = today(getLocalTimeZone());
+							try {
+								value = value.set({ [part]: val });
+							} catch (e) {
+								if (part === "month" || part === "year") {
+									value = new CalendarDate(value.year, value.month, 1).set({ [part]: val });
+								}
+							}
+						}
+					}
+				});
+			},
+			{
+				root: container,
+				threshold: [0.8, 1],
+				rootMargin: "-100px 0px -100px 0px"
+			}
+		);
+
+		// Observe all buttons in the container
+		const buttons = container.querySelectorAll("button");
+		buttons.forEach((btn) => observer.observe(btn));
+
+		return () => observer.disconnect();
+	}
+
+	// Setup observers when popover opens
+	$effect(() => {
+		if (isOpen && dayScrollContainer && monthScrollContainer && yearScrollContainer) {
+			const cleanupDay = setupScrollObserver(dayScrollContainer, "day", days);
+			const cleanupMonth = setupScrollObserver(monthScrollContainer, "month", months);
+			const cleanupYear = setupScrollObserver(yearScrollContainer, "year", years);
+
+			return () => {
+				cleanupDay();
+				cleanupMonth();
+				cleanupYear();
+			};
+		}
+	});
+
+	/**
 	 * Dataset generation 
 	 */
 	const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -78,7 +136,7 @@
 		};
 	}
 
-	function updateDate(part: "day" | "month" | "year", val: number) {
+	function updateDate(part: "day" | "month" | "year", val: number, element?: HTMLElement) {
 		if (!value) value = today(getLocalTimeZone());
 		try {
 			value = value.set({ [part]: val });
@@ -87,6 +145,11 @@
 			if (part === "month" || part === "year") {
 				value = new CalendarDate(value.year, value.month, 1).set({ [part]: val });
 			}
+		}
+		
+		// Scroll the clicked element to center
+		if (element) {
+			element.scrollIntoView({ behavior: "smooth", block: "center" });
 		}
 	}
 </script>
@@ -97,7 +160,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				class="h-12 w-full justify-between px-4 text-base font-normal border-border/50 hover:border-primary/50 transition-all"
+				class="w-full justify-between font-normal border-input bg-background dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] {inputControlHoverClasses}"
 			>
 				<span class={cn(!value && "text-muted-foreground")}>
 					{value ? df.format(value.toDate(getLocalTimeZone())) : "Select date"}
@@ -108,21 +171,17 @@
 	</Popover.Trigger>
 
 	<Popover.Content class="w-[320px] p-0 shadow-2xl border-border rounded-2xl overflow-hidden bg-popover" align="start">
-		<div class="bg-muted/30 p-3 text-center border-b text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground select-none">
-			Scroll to select
-		</div>
-
 		<div class="relative flex h-[280px] bg-background select-none">
 			<!-- Selection Indicator -->
-			<div class="pointer-events-none absolute top-1/2 left-0 h-12 w-full -translate-y-1/2 border-y border-border/50 bg-muted/5 z-0"></div>
+			<div class="pointer-events-none absolute top-1/2 left-0 h-12 w-full -translate-y-1/2 border-y border-border/50 bg-sky-100/50 dark:bg-zinc-800/30 z-0"></div>
 
 			<!-- DAY COLUMN -->
-			<div use:dragToScroll class="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 cursor-grab active:cursor-grabbing">
+			<div bind:this={dayScrollContainer} use:dragToScroll class="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 cursor-grab active:cursor-grabbing">
 				<div class="py-[116px]">
 					{#each days as d}
 						<button
 							class={cn("h-12 w-full flex items-center justify-center snap-center text-sm transition-all", value?.day === d ? "text-primary font-bold text-lg" : "opacity-40 hover:opacity-100")}
-							onclick={() => updateDate("day", d)}
+							onclick={(e) => updateDate("day", d, e.currentTarget as HTMLElement)}
 						>
 							{d}
 						</button>
@@ -131,12 +190,12 @@
 			</div>
 
 			<!-- MONTH COLUMN -->
-			<div use:dragToScroll class="flex-[1.5] overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 border-x border-border/50 cursor-grab active:cursor-grabbing">
+			<div bind:this={monthScrollContainer} use:dragToScroll class="flex-[1.5] overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 border-x border-border/50 cursor-grab active:cursor-grabbing">
 				<div class="py-[116px]">
 					{#each months as m, i}
 						<button
 							class={cn("h-12 w-full flex items-center justify-center snap-center text-sm transition-all px-1 text-center", value?.month === i + 1 ? "text-primary font-bold text-lg" : "opacity-40 hover:opacity-100")}
-							onclick={() => updateDate("month", i + 1)}
+							onclick={(e) => updateDate("month", i + 1, e.currentTarget as HTMLElement)}
 						>
 							{m}
 						</button>
@@ -145,12 +204,12 @@
 			</div>
 
 			<!-- YEAR COLUMN -->
-			<div use:dragToScroll class="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 cursor-grab active:cursor-grabbing">
+			<div bind:this={yearScrollContainer} use:dragToScroll class="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide z-20 cursor-grab active:cursor-grabbing">
 				<div class="py-[116px]">
 					{#each years as y}
 						<button
 							class={cn("h-12 w-full flex items-center justify-center snap-center text-sm transition-all", value?.year === y ? "text-primary font-bold text-lg" : "opacity-40 hover:opacity-100")}
-							onclick={() => updateDate("year", y)}
+							onclick={(e) => updateDate("year", y, e.currentTarget as HTMLElement)}
 						>
 							{y}
 						</button>
@@ -161,8 +220,8 @@
 
 		<!-- Footer -->
 		<div class="p-3 border-t bg-muted/10 flex gap-2">
-			<Button variant="ghost" class="flex-1 h-10" onclick={() => (isOpen = false)}>Cancel</Button>
-			<Button class="flex-1 h-10 shadow-lg shadow-primary/20 font-semibold" onclick={() => (isOpen = false)}>Confirm</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>Cancel</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => (isOpen = false)}>Confirm</Button>
 		</div>
 	</Popover.Content>
 </Popover.Root>
