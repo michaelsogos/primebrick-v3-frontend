@@ -4,7 +4,7 @@
   import * as Sheet from "$lib/components/ui/sheet";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import { Badge } from "$lib/components/ui/badge";
-  import { Checkbox } from "$lib/components/ui/checkbox";
+  import { Checkbox, checkboxVisualOnlyClass } from "$lib/components/ui/checkbox";
   import { t } from "$lib/i18n";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
@@ -22,17 +22,15 @@
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
-    sheetMenuCheckboxClass?: string;
     modal?: boolean;
   }
 
-  let { 
+  let {
     content,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
-    sheetMenuCheckboxClass = "h-4 w-4",
     modal = true
   }: $$Props = $props();
 
@@ -236,7 +234,7 @@
                 >
                   <Checkbox
                     checked={selectedKeys.includes(option.key)}
-                    class={sheetMenuCheckboxClass}
+                    class={checkboxVisualOnlyClass}
                   />
                   <Badge
                     variant="outline"

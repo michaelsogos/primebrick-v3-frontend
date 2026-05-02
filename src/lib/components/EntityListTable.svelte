@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import { Switch } from '$lib/components/ui/switch';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -377,7 +377,7 @@
           writeOrderState(nextState);
         },
         onResetColumnVisibility: () => onResetColumnVisibility('table'),
-        sheetMenuCheckboxClass,
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass,
         t: $t
       } as any;
       return;
@@ -388,7 +388,7 @@
         searchableColumns,
         onSearchInKeysChange,
         toggleSearchKey,
-        sheetMenuCheckboxClass
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass
       } as any;
     }
     if (sheetState.panelId === 'entity.filters') {
@@ -396,8 +396,7 @@
         filterableColumns,
         filterValues: filterValues ?? {},
         onFilterValuesChange,
-        onResetFilters,
-        sheetMenuCheckboxClass
+        onResetFilters
       } as any;
     }
   });
@@ -411,10 +410,6 @@
 
   const selectionCheckboxClass =
     'border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
-
-  /** Sheet list rows use a real `Checkbox` for visuals; the row `button` handles clicks (checkbox is non-interactive). */
-  const sheetMenuCheckboxClass =
-    'pointer-events-none shrink-0 border-foreground/50 shadow-sm dark:border-foreground/35 data-[state=checked]:border-primary';
 
   const compactRows = $derived(rowDensity === 'compact');
   const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
@@ -1260,7 +1255,7 @@
                   searchableColumns,
                   onSearchInKeysChange,
                   toggleSearchKey,
-                  sheetMenuCheckboxClass
+                  sheetMenuCheckboxClass: checkboxVisualOnlyClass
                 } as any,
                 { contentClass: 'w-[360px] p-0' }
               )}
@@ -1352,7 +1347,7 @@
               visibleKeys,
               toggleColumnKey,
               onResetColumnVisibility: resetColumnsAndSorting,
-              sheetMenuCheckboxClass,
+              sheetMenuCheckboxClass: checkboxVisualOnlyClass,
               t: $t
             } as any,
             { contentClass: 'w-[360px] p-0' }
@@ -1374,15 +1369,14 @@
               return;
             }
             filtersOpen = true;
-            openSheet('entity.filters', { 
+            openSheet('entity.filters', {
               content: FiltersPanel,
               props: {
                 content: {},
                 filterableColumns,
                 filterValues: filterValues ?? {},
                 onFilterValuesChange,
-                onResetFilters,
-                sheetMenuCheckboxClass
+                onResetFilters
               }
             } as any, {
               contentClass: 'w-[360px] p-0',

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import * as Sortable from '$lib/components/ui/sortable';
   import * as Sheet from '$lib/components/ui/sheet';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -18,7 +18,6 @@
     toggleColumnKey: (key: string) => void;
     onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
     onResetColumnVisibility: () => void;
-    sheetMenuCheckboxClass: string;
     t: (key: string) => string;
   }
 
@@ -30,7 +29,6 @@
     toggleColumnKey,
     onReorderKeys,
     onResetColumnVisibility,
-    sheetMenuCheckboxClass,
     t
   }: $$Props = $props();
 </script>
@@ -96,7 +94,7 @@
                         <Checkbox
                           checked={visibleKeys.includes(col.key)}
                           disabled={col.hideable === false}
-                          class={sheetMenuCheckboxClass}
+                          class={checkboxVisualOnlyClass}
                         />
                       </span>
                       <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
@@ -144,7 +142,7 @@
                         <Checkbox
                           checked={visibleKeys.includes(col.key)}
                           disabled={col.hideable === false}
-                          class={sheetMenuCheckboxClass}
+                          class={checkboxVisualOnlyClass}
                         />
                       </span>
                       <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
@@ -195,7 +193,7 @@
                         <Checkbox
                           checked={visibleKeys.includes(col.key)}
                           disabled={col.hideable === false}
-                          class={sheetMenuCheckboxClass}
+                          class={checkboxVisualOnlyClass}
                         />
                       </span>
                       <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
