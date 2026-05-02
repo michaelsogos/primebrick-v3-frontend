@@ -226,7 +226,7 @@
                 </Button>
               {/snippet}
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content class="w-full max-h-96 overflow-auto">
+            <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
               {#each options as option}
                 <DropdownMenuCheckboxItem
                   checked={selectedKeys.includes(option.key)}
@@ -240,14 +240,6 @@
                   </Badge>
                 </DropdownMenuCheckboxItem>
               {/each}
-              {#if selectedKeys.length > 0}
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item
-                  onclick={() => updateTempFilterValue(col.key, undefined)}
-                >
-                  {$t('common.clear')}
-                </DropdownMenu.Item>
-              {/if}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else if renderFilterInput(col).type === 'date-dropper'}
