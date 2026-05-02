@@ -156,7 +156,7 @@
       "dataFields": "Fields",
       "auditingFields": "Auditing Fields",
       "filters": "Filters",
-      "filterPlaceholder": "Filter...",
+      "filterPlaceholder": "No filter applied",
       "selected": "selected",
       "noFilterableFields": "No filterable fields available",
       "searchIn": "Search in",

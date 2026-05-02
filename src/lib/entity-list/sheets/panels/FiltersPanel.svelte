@@ -216,7 +216,7 @@
                   class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
                   {...props}
                 >
-                  <span class={selectedKeys.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                  <span class={selectedKeys.length > 0 ? 'text-foreground' : 'text-muted-foreground/70 text-xs'}>
                     {selectedKeys.length > 0
                       ? `${selectedKeys.length} ${$t('entities.list.selected')}`
                       : placeholder
@@ -258,7 +258,7 @@
             placeholder={placeholder}
             value={value}
             oninput={(e) => updateTempFilterValue(col.key, e.currentTarget.value)}
-            class="w-full"
+            class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
           />
         {/if}
       </div>

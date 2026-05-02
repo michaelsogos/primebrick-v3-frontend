@@ -143,7 +143,7 @@
       "dataFields": "Felder",
       "auditingFields": "Audit-Felder",
       "filters": "Filter",
-      "filterPlaceholder": "Filtern...",
+      "filterPlaceholder": "Kein Filter angewendet",
       "selected": "ausgewählt",
       "noFilterableFields": "Keine filterbaren Felder verfügbar",
       "searchIn": "Suchen in",
