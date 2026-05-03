@@ -17,7 +17,7 @@ Independent Git repository containing the Primebrick SvelteKit application.
 
 ## Where to look (order)
 
-1. **`docs/agent/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
+1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
 2. **`docs/ai/`** — skills selection and suggested workflows.
 
 ## GitFlow rules
@@ -75,5 +75,4 @@ When the user starts a fresh piece of work with phrases such as "Let's start a n
 
 ## Further documentation
 
-See `docs/agent/patterns.md` for UI patterns and conventions.
-See `docs/ai/` for skills selection and suggested workflows.
+See `docs/ai/` for UI patterns, skills selection, and suggested workflows.
