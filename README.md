@@ -1,3 +1,14 @@
+# AI AGENT INSTRUCTIONS - Primebrick Frontend
+
+**IMPORTANT:** Read [AGENTS.md](./AGENTS.md) for complete AI agent instructions, GitFlow rules, and commands.
+
+## Quick Start for AI Agents
+
+- Read [AGENTS.md](./AGENTS.md) for repository overview, GitFlow rules, and commands
+- See [docs/ai/](./docs/ai/) for UI patterns, skills selection, and suggested workflows
+
+---
+
 # Primebrick frontend
 
 SvelteKit (Svelte 5 + TypeScript) frontend for **Primebrick**.
