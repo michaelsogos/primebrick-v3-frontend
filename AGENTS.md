@@ -1,5 +1,13 @@
 # AI AGENT INSTRUCTIONS - Primebrick Frontend
 
+## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
+
+**AI agents MUST NEVER commit changes without explicit user instruction.**
+
+- **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
+- This applies to ALL situations - no exceptions
+- See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules including commit rules
+
 ## Repository overview
 
 Independent Git repository containing the Primebrick SvelteKit application.

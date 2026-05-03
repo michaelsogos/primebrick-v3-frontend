@@ -2,6 +2,17 @@
 
 This repository follows GitFlow. AI agents MUST follow these rules.
 
+## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
+
+**AI agents MUST NEVER commit changes without explicit user instruction.**
+
+- **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
+- This applies to ALL situations - no exceptions
+- The user must explicitly say "commit", "procedi con il commit", or equivalent
+- Do NOT commit even if you think the work is complete
+- Do NOT commit even if you think it's "obvious"
+- **ALWAYS wait for explicit user instruction before committing**
+
 ## Branch management
 
 - **NEVER work directly on `develop` or `main`**
