@@ -5,6 +5,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
+  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
@@ -413,7 +414,7 @@
   /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     compactRows
-      ? '[&_th]:!h-6 [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:!py-1.5 [&_tbody_td]:text-sm'
+      ? '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
       : ''
   );
 
@@ -477,12 +478,12 @@
   /**
    * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
    * Dark: same **Tailwind amber** ramp as body (`amber-950`).
-   * `Table.Row` applies `hover:[…]:[&>th]:bg-muted`; repeat the same bg on `hover:` with `!` so the
+   * `Table.Row` applies `[&>th]:[…]:hover:bg-muted`; repeat the same bg on `hover:` with `!` so the
    * header does not grey out on row hover (hover tint stays on body cells only).
    */
   function datetimeIanaHeadHighlightClass(col: MetaColumn): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
-    return '!bg-amber-100 hover:!bg-amber-100 dark:!bg-amber-950 dark:hover:!bg-amber-950';
+    return 'bg-amber-100! hover:bg-amber-100! dark:bg-amber-950! dark:hover:bg-amber-950!';
   }
 
   /**
@@ -493,9 +494,9 @@
   function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
     if (rowSelected) {
-      return '!bg-amber-200/95 dark:!bg-amber-800 transition-colors group-hover/entity-row:!bg-amber-300/95 dark:group-hover/entity-row:!bg-amber-700';
+      return 'bg-amber-200/95! dark:bg-amber-800! transition-colors group-hover/entity-row:bg-amber-300/95! dark:group-hover/entity-row:bg-amber-700!';
     }
-    return '!bg-amber-50 dark:!bg-amber-950 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-900';
+    return 'bg-amber-50! dark:bg-amber-950! transition-colors group-hover/entity-row:bg-amber-100/95! dark:group-hover/entity-row:bg-amber-900!';
   }
 
   /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
@@ -512,7 +513,7 @@
    */
   function entityListGrayChromeCellClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'bg-neutral-100 dark:bg-neutral-900 transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
@@ -521,7 +522,7 @@
    */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
@@ -531,9 +532,9 @@
    */
   function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
     if (rowSelected) {
-      return 'transition-colors !bg-neutral-100 dark:!bg-neutral-900 group-hover/entity-row:!bg-neutral-200 dark:group-hover/entity-row:!bg-neutral-800';
+      return 'transition-colors bg-neutral-100! dark:bg-neutral-900! group-hover/entity-row:bg-neutral-200! dark:group-hover/entity-row:bg-neutral-800!';
     }
-    return 'dark:!bg-neutral-950 transition-colors group-hover/entity-row:!bg-neutral-50 dark:group-hover/entity-row:!bg-neutral-900';
+    return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
   }
 
   let rowRangeMouseDown = $state(false);
@@ -784,7 +785,7 @@
     const baseBg = isHeader
       ? 'bg-neutral-200 dark:bg-neutral-800'
       : 'bg-neutral-100 dark:bg-neutral-900';
-    const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
+    const left = key === 'uuid' ? 'left-(--pb-sticky-left-uuid)' : 'left-(--pb-sticky-left-code)';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
     // when sticky columns overlap scrolling content.
@@ -923,7 +924,7 @@
         return 'font-semibold text-violet-600 dark:text-violet-400';
       case 'litStar':
       case 'litQ':
-        return 'font-medium text-amber-700/90 dark:text-amber-400/90';
+        return 'font-medium text-amber-700/90 dark:text-amber-400/90 bg-amber-50 dark:bg-amber-950/30 rounded px-0.5';
       case 'sym':
         return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
       case 'bsLit':
@@ -1164,7 +1165,7 @@
     <div
       class={cn(
         'flex flex-col gap-0.5',
-        viewMode === 'cards_list' ? 'min-w-[9rem] max-w-[24rem] shrink-0' : 'min-w-0'
+        viewMode === 'cards_list' ? 'min-w-36 max-w-[24rem] shrink-0' : 'min-w-0'
       )}
     >
       <div class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</div>
@@ -1204,63 +1205,68 @@
 
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
-      <div class="relative w-full">
-        <Search
-          class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <!-- Highlight layer: must match Input padding / font so glyphs line up with transparent text above. -->
-        <div
-          class="pointer-events-none absolute inset-0 z-0 flex min-h-9 items-center overflow-hidden whitespace-pre rounded-md border border-transparent bg-background py-1 pl-8 pr-36 text-base leading-normal md:text-sm"
-          aria-hidden="true"
+      <InputGroup
+        class="
+          group/input
+          w-full
+          bg-sky-50/20 border border-input
+          hover:bg-sky-50/45 hover:border-ring/40
+          focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring
+          dark:bg-input/40 dark:hover:bg-input/55
+          rounded-md transition-all duration-200
+        "
+      >
+        <InputGroupAddon
+          align="inline-start"
+          class="bg-transparent border-none pr-0"
         >
-          {#each searchSyntaxParts as seg, si (si)}
-            <span class={searchSyntaxSpanClass(seg)}>{seg.text}</span>
-          {/each}
-        </div>
-        <Input
-          class="relative z-10 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:selection:bg-primary/35 dark:selection:text-transparent"
+          <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
+        </InputGroupAddon>
+
+        <InputGroupInput
+          class="
+            bg-transparent border-none text-sm
+            focus-visible:ring-0 focus-visible:ring-offset-0
+            placeholder:text-muted-foreground/70 placeholder:text-xs
+          "
           value={search}
-          spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
         />
 
-        <div class="absolute right-1 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
-          {#if search.trim().length > 0}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-              onclick={() => onSearchInput('')}
-              aria-label={$t('common.reset')}
-              title={$t('common.reset')}
-            >
-              <XIcon class="size-4" />
-            </Button>
-          {/if}
-
-          <Button
-            variant="soft"
-            size="xs"
-            type="button"
-            onclick={() =>
-              openSheet(
-                'entity.searchIn',
-                {
-                  searchInKeys,
-                  searchableColumns,
-                  onSearchInKeysChange,
-                  toggleSearchKey,
-                  sheetMenuCheckboxClass: checkboxVisualOnlyClass
-                } as any,
-                { contentClass: 'w-[360px] p-0' }
-              )}
+        {#if search.trim().length > 0}
+          <InputGroupButton
+            variant="ghost"
+            size="icon-xs"
+            class="hover:bg-sky-100/50 dark:hover:bg-white/10"
+            onclick={() => onSearchInput('')}
+            aria-label={$t('common.reset')}
+            title={$t('common.reset')}
           >
-            {searchScopeLabel()}
-          </Button>
-        </div>
-      </div>
+            <XIcon class="size-4" />
+          </InputGroupButton>
+        {/if}
+
+        <InputGroupButton
+          variant="soft"
+          size="xs"
+          class="mr-1 bg-sky-100/50 hover:bg-sky-200/50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+          onclick={() =>
+            openSheet(
+              'entity.searchIn',
+              {
+                searchInKeys,
+                searchableColumns,
+                onSearchInKeysChange,
+                toggleSearchKey,
+                sheetMenuCheckboxClass: checkboxVisualOnlyClass
+              } as any,
+              { contentClass: 'w-[360px] p-0' }
+            )}
+        >
+          {searchScopeLabel()}
+        </InputGroupButton>
+      </InputGroup>
     </div>
 
     <div class="flex items-center justify-end gap-2">
@@ -1409,7 +1415,7 @@
             {#if errorView}
               {@render errorView()}
             {:else}
-              <div class="grid min-h-[14rem] place-items-center">
+              <div class="grid min-h-56 place-items-center">
                 <div class="relative flex flex-col items-center gap-2 text-center">
                   <div class="pb-watermark-error">
                     <CircleX class="size-20 text-destructive" />
@@ -1424,7 +1430,7 @@
             {:else}
               <div class="w-full">
                 <LoadingBar size="xs" />
-                <div class="grid min-h-[14rem] place-items-center">
+                <div class="grid min-h-56 place-items-center">
                   <div class="relative flex flex-col items-center gap-2 text-center">
                     <div class="pb-watermark-loading">
                       <Hourglass class="size-20 text-info" />
@@ -1438,7 +1444,7 @@
             {#if emptyView}
               {@render emptyView()}
             {:else}
-              <div class="grid min-h-[14rem] place-items-center">
+              <div class="grid min-h-56 place-items-center">
                 <div class="relative flex flex-col items-center gap-2 text-center">
                   <div class="pb-watermark-empty">
                     <TriangleAlert class="size-20 text-warning" />
@@ -1448,7 +1454,7 @@
               </div>
             {/if}
           {:else if viewRows.length === 0}
-            <div class="grid min-h-[14rem] place-items-center">
+            <div class="grid min-h-56 place-items-center">
               <div class="relative flex flex-col items-center gap-2 text-center">
                 <div class="pb-watermark-empty">
                   <TriangleAlert class="size-20 text-warning" />
@@ -1464,7 +1470,7 @@
             </div>
           {:else}
             <div
-              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur-sm supports-backdrop-filter:bg-background/70"
             >
               <div class="flex flex-wrap items-center gap-2">
                 {#if rowSelectionEnabled}
@@ -1487,21 +1493,11 @@
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
                       <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
-                        {#if effectiveSortKey}
-                          {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
-                        {:else}
-                          —
-                        {/if}
+                        {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
-                      onSelect={() => onSortChange(null, defaultSortDir)}
-                    >
-                      —
-                    </DropdownMenu.Item>
                     {#each sortableColumns as col (col.key)}
                       <DropdownMenu.Item
                         class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
@@ -1731,18 +1727,18 @@
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
-            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
+            'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
             tableDensityClass
           )}
           containerClass="h-full overflow-auto"
           style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
         >
-          <Table.Header class="sticky top-0 z-[80] bg-background">
+          <Table.Header class="sticky top-0 z-80 bg-background">
             <Table.Row>
               {#if rowSelectionEnabled}
                 <Table.Head
                   bind:ref={checkboxHeadRef}
-                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
                     <Checkbox
@@ -1876,7 +1872,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">{$t('common.actions')}</span>
@@ -1894,7 +1890,7 @@
             {:else}
               <Table.Row>
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-[14rem] place-items-center p-3">
+                  <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-error">
                         <CircleX class="size-20 text-destructive" />
@@ -1913,7 +1909,7 @@
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
                   <div class="w-full">
                     <LoadingBar size="xs" />
-                    <div class="grid min-h-[14rem] place-items-center p-3">
+                    <div class="grid min-h-56 place-items-center p-3">
                       <div class="relative flex flex-col items-center gap-2 text-center">
                         <div class="pb-watermark-loading">
                           <Hourglass class="size-20 text-info" />
@@ -1931,7 +1927,7 @@
             {:else}
               <Table.Row>
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-[14rem] place-items-center p-3">
+                  <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-empty">
                         <TriangleAlert class="size-20 text-warning" />
@@ -1945,7 +1941,7 @@
           {:else if viewRows.length === 0}
             <Table.Row>
               <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                <div class="grid min-h-[14rem] place-items-center p-3">
+                <div class="grid min-h-56 place-items-center p-3">
                   <div class="relative flex flex-col items-center gap-2 text-center">
                     <div class="pb-watermark-empty">
                       <TriangleAlert class="size-20 text-warning" />
@@ -1972,7 +1968,7 @@
                 data-state={rowSelected ? 'selected' : undefined}
                 class={cn(
                   'group/entity-row',
-                  rowSelected ? 'data-[state=selected]:!bg-transparent' : undefined
+                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}

@@ -1,16 +1,18 @@
-# Frontend agent guide — Primebrick
+# AI AGENT INSTRUCTIONS - Primebrick Frontend
 
-Short entry point for this repository. **Scoped agent rules** live in `.cursor/rules/` (see **`frontend-src.mdc`** for everything under `src/`).
+## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
 
-**Documentation language:** All `*.md` files here must use **English** for team-facing prose.
+**AI agents MUST NEVER commit changes without explicit user instruction.**
 
-## Repository layout
+- **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
+- This applies to ALL situations - no exceptions
+- See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules including commit rules
 
-This **frontend** tree is its **own Git repository** (separate from backend and from any meta workspace folder).
+## Repository overview
 
-### Coordinated release (*rilascia tutto*)
+Independent Git repository containing the Primebrick SvelteKit application.
 
-Full GitFlow close for **all three** repos (frontend, backend, meta): see **`.cursor/rules/gitflow-guard.mdc`**. Same SemVer across repos unless the user scopes to one repo.
+**Documentation language:** All `*.md` files must use **English** for team-facing prose.
 
 ## Stack & commands
 
@@ -23,18 +25,15 @@ Full GitFlow close for **all three** repos (frontend, backend, meta): see **`.cu
 
 ## Where to look (order)
 
-1. **`.cursor/rules/`** — `primebrick-core.mdc` (always); **`frontend-src.mdc`** applies when editing files under `src/` (Shadcn, routes, errors, API).
-2. **`docs/agent/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
-3. **`docs/ai/SKILLS.md`** — before deep Azure/Foundry work; only checked **[x]** skills unless the user overrides.
+1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
+2. **`docs/ai/`** — skills selection and suggested workflows.
 
-## GitFlow
+## GitFlow rules
 
-Follow **`.cursor/rules/gitflow-guard.mdc`**: never commit on `develop`/`main`; use `feature/*`; merge before push; push only when asked; verify with `pnpm run check` (and visually when UI changes). **Before closing a feature** (merge to `develop`, delete branch), **ask the user** — even if you created the branch automatically.
+This repository follows GitFlow. AI agents MUST follow these rules.
 
-**New task / nuovo task:** When the user starts a new task (e.g. *“Iniziamo un nuovo task”*, *let’s start a new task*), infer `feature/<slug>` from context and create that branch from `develop` before edits — see **workspace root `AGENTS.md` → New task workflow**.
+**See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
 
-**After creating a feature branch:** Always end with an explicit `git checkout <that-branch>` if needed, then `git branch --show-current` (or equivalent) so the working tree and IDE/Cursor state match the branch you will edit. Creating `feature/*` with `git checkout -b` already switches HEAD; still verify before writing files.
+## Further documentation
 
-## Skills (optional)
-
-Under `.cursor/skills/` — e.g. UI stack, in-browser verification — open the relevant `SKILL.md` when the task matches.
+See `docs/ai/` for UI patterns, skills selection, and suggested workflows.

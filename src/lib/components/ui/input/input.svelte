@@ -26,7 +26,7 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"selection:bg-primary bg-background dark:bg-input/30 selection:text-primary-foreground border-input ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 pt-1.5 text-sm font-medium shadow-xs transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50",
+			"selection:bg-primary bg-background dark:bg-input/30 selection:text-primary-foreground border-input ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 pt-1.5 text-sm font-medium shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
 			inputControlHoverClasses,
 			"disabled:hover:border-input disabled:hover:bg-background dark:disabled:hover:border-input dark:disabled:hover:bg-input/30",
 			"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
@@ -43,7 +43,7 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+			"border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
 			inputControlHoverClasses,
 			"disabled:hover:border-input disabled:hover:bg-background dark:disabled:hover:border-input dark:disabled:hover:bg-input/30",
 			"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",

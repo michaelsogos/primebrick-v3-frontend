@@ -5,20 +5,15 @@
 	let {
 		ref = $bindable(null),
 		class: className,
-		inset,
 		children,
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
-		inset?: boolean;
-	} = $props();
+	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
 </script>
 
-<div
+<span
 	bind:this={ref}
-	data-slot="dropdown-menu-label"
-	data-inset={inset}
-	class={cn("px-2 py-1.5 text-sm font-semibold data-inset:ps-8", className)}
+	class={cn("text-muted-foreground gap-2 text-sm [&_svg:not([class*='size-'])]:size-4 flex items-center [&_svg]:pointer-events-none", className)}
 	{...restProps}
 >
 	{@render children?.()}
-</div>
+</span>

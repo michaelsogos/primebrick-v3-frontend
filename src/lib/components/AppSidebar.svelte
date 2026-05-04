@@ -178,7 +178,7 @@
             {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
-            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56"
+            class="w-(--bits-dropdown-menu-anchor-width) min-w-56"
             side="right"
             align="end"
           >
@@ -413,7 +413,7 @@
           <DropdownMenu.Content
             side="right"
             align="end"
-            class="w-[var(--bits-dropdown-menu-anchor-width)] min-w-56"
+            class="w-(--bits-dropdown-menu-anchor-width) min-w-56"
           >
             <DropdownMenu.Label class="p-0 font-normal">
               <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
@@ -471,7 +471,7 @@
           variant="outline"
           class={cn(
             'pointer-events-none w-fit gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
-            'group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!min-h-8 group-data-[collapsible=icon]:!min-w-8 group-data-[collapsible=icon]:shrink-0 group-data-[collapsible=icon]:!rounded-md group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:[&>svg]:!size-4',
+            'group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:min-h-8! group-data-[collapsible=icon]:min-w-8! group-data-[collapsible=icon]:shrink-0 group-data-[collapsible=icon]:rounded-md! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:group-data-[collapsible=icon]:size-4!',
             healthChipClass
           )}
           title={healthChipLabel}
