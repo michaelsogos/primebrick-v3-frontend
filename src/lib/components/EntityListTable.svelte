@@ -1225,7 +1225,7 @@
 
         <InputGroupInput
           class="
-            bg-transparent border-none
+            bg-transparent border-none text-sm
             focus-visible:ring-0 focus-visible:ring-offset-0
             placeholder:text-muted-foreground/70 placeholder:text-xs
           "
