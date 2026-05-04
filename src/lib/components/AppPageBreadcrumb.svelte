@@ -31,14 +31,14 @@
                 class={cn(
                   'inline-flex max-w-full min-w-0 items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-left',
                   'text-muted-foreground hover:text-foreground',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+                  'outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
                 )}
                 aria-label={seg.menuAriaLabel ?? seg.label}
               >
                 <span class="truncate">{seg.label}</span>
                 <ChevronDown class="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start" class="min-w-[12rem]">
+              <DropdownMenu.Content align="start" class="min-w-48">
                 {#each seg.items as item (item.href)}
                   <DropdownMenu.Item
                     class={dropdownMenuSelectedItemClass(item.current)}

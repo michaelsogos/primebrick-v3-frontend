@@ -413,7 +413,7 @@
   /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     compactRows
-      ? '[&_th]:!h-6 [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:!py-1.5 [&_tbody_td]:text-sm'
+      ? '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
       : ''
   );
 
@@ -477,12 +477,12 @@
   /**
    * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
    * Dark: same **Tailwind amber** ramp as body (`amber-950`).
-   * `Table.Row` applies `hover:[…]:[&>th]:bg-muted`; repeat the same bg on `hover:` with `!` so the
+   * `Table.Row` applies `[&>th]:[…]:hover:bg-muted`; repeat the same bg on `hover:` with `!` so the
    * header does not grey out on row hover (hover tint stays on body cells only).
    */
   function datetimeIanaHeadHighlightClass(col: MetaColumn): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
-    return '!bg-amber-100 hover:!bg-amber-100 dark:!bg-amber-950 dark:hover:!bg-amber-950';
+    return 'bg-amber-100! hover:bg-amber-100! dark:bg-amber-950! dark:hover:bg-amber-950!';
   }
 
   /**
@@ -493,9 +493,9 @@
   function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
     if (!isDatetimeIanaRecordMode(col)) return undefined;
     if (rowSelected) {
-      return '!bg-amber-200/95 dark:!bg-amber-800 transition-colors group-hover/entity-row:!bg-amber-300/95 dark:group-hover/entity-row:!bg-amber-700';
+      return 'bg-amber-200/95! dark:bg-amber-800! transition-colors group-hover/entity-row:bg-amber-300/95! dark:group-hover/entity-row:bg-amber-700!';
     }
-    return '!bg-amber-50 dark:!bg-amber-950 transition-colors group-hover/entity-row:!bg-amber-100/95 dark:group-hover/entity-row:!bg-amber-900';
+    return 'bg-amber-50! dark:bg-amber-950! transition-colors group-hover/entity-row:bg-amber-100/95! dark:group-hover/entity-row:bg-amber-900!';
   }
 
   /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
@@ -512,7 +512,7 @@
    */
   function entityListGrayChromeCellClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'bg-neutral-100 dark:bg-neutral-900 transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
@@ -521,7 +521,7 @@
    */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
-      ? '!bg-neutral-300 dark:!bg-neutral-700 transition-colors group-hover/entity-row:!bg-neutral-400 dark:group-hover/entity-row:!bg-neutral-600'
+      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
   }
 
@@ -531,9 +531,9 @@
    */
   function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
     if (rowSelected) {
-      return 'transition-colors !bg-neutral-100 dark:!bg-neutral-900 group-hover/entity-row:!bg-neutral-200 dark:group-hover/entity-row:!bg-neutral-800';
+      return 'transition-colors bg-neutral-100! dark:bg-neutral-900! group-hover/entity-row:bg-neutral-200! dark:group-hover/entity-row:bg-neutral-800!';
     }
-    return 'dark:!bg-neutral-950 transition-colors group-hover/entity-row:!bg-neutral-50 dark:group-hover/entity-row:!bg-neutral-900';
+    return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
   }
 
   let rowRangeMouseDown = $state(false);
@@ -784,7 +784,7 @@
     const baseBg = isHeader
       ? 'bg-neutral-200 dark:bg-neutral-800'
       : 'bg-neutral-100 dark:bg-neutral-900';
-    const left = key === 'uuid' ? 'left-[var(--pb-sticky-left-uuid)]' : 'left-[var(--pb-sticky-left-code)]';
+    const left = key === 'uuid' ? 'left-(--pb-sticky-left-uuid)' : 'left-(--pb-sticky-left-code)';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
     // when sticky columns overlap scrolling content.
@@ -1164,7 +1164,7 @@
     <div
       class={cn(
         'flex flex-col gap-0.5',
-        viewMode === 'cards_list' ? 'min-w-[9rem] max-w-[24rem] shrink-0' : 'min-w-0'
+        viewMode === 'cards_list' ? 'min-w-36 max-w-[24rem] shrink-0' : 'min-w-0'
       )}
     >
       <div class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</div>
@@ -1409,7 +1409,7 @@
             {#if errorView}
               {@render errorView()}
             {:else}
-              <div class="grid min-h-[14rem] place-items-center">
+              <div class="grid min-h-56 place-items-center">
                 <div class="relative flex flex-col items-center gap-2 text-center">
                   <div class="pb-watermark-error">
                     <CircleX class="size-20 text-destructive" />
@@ -1424,7 +1424,7 @@
             {:else}
               <div class="w-full">
                 <LoadingBar size="xs" />
-                <div class="grid min-h-[14rem] place-items-center">
+                <div class="grid min-h-56 place-items-center">
                   <div class="relative flex flex-col items-center gap-2 text-center">
                     <div class="pb-watermark-loading">
                       <Hourglass class="size-20 text-info" />
@@ -1438,7 +1438,7 @@
             {#if emptyView}
               {@render emptyView()}
             {:else}
-              <div class="grid min-h-[14rem] place-items-center">
+              <div class="grid min-h-56 place-items-center">
                 <div class="relative flex flex-col items-center gap-2 text-center">
                   <div class="pb-watermark-empty">
                     <TriangleAlert class="size-20 text-warning" />
@@ -1448,7 +1448,7 @@
               </div>
             {/if}
           {:else if viewRows.length === 0}
-            <div class="grid min-h-[14rem] place-items-center">
+            <div class="grid min-h-56 place-items-center">
               <div class="relative flex flex-col items-center gap-2 text-center">
                 <div class="pb-watermark-empty">
                   <TriangleAlert class="size-20 text-warning" />
@@ -1464,7 +1464,7 @@
             </div>
           {:else}
             <div
-              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur-sm supports-backdrop-filter:bg-background/70"
             >
               <div class="flex flex-wrap items-center gap-2">
                 {#if rowSelectionEnabled}
@@ -1731,18 +1731,18 @@
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
-            'w-full bg-background [&_[data-slot=table]]:isolate [&_[data-slot=table]]:bg-background [&_[data-slot=table-cell]]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
+            'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
             tableDensityClass
           )}
           containerClass="h-full overflow-auto"
           style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
         >
-          <Table.Header class="sticky top-0 z-[80] bg-background">
+          <Table.Header class="sticky top-0 z-80 bg-background">
             <Table.Row>
               {#if rowSelectionEnabled}
                 <Table.Head
                   bind:ref={checkboxHeadRef}
-                  class="w-10 min-w-10 max-w-10 sticky left-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
+                  class="w-10 min-w-10 max-w-10 sticky left-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
                     <Checkbox
@@ -1876,7 +1876,7 @@
             {/each}
             {#if actionsEnabled}
               <Table.Head
-                class="w-10 min-w-10 max-w-10 sticky right-0 z-[70] bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
+                class="w-10 min-w-10 max-w-10 sticky right-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
                   <span class="sr-only">{$t('common.actions')}</span>
@@ -1894,7 +1894,7 @@
             {:else}
               <Table.Row>
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-[14rem] place-items-center p-3">
+                  <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-error">
                         <CircleX class="size-20 text-destructive" />
@@ -1913,7 +1913,7 @@
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
                   <div class="w-full">
                     <LoadingBar size="xs" />
-                    <div class="grid min-h-[14rem] place-items-center p-3">
+                    <div class="grid min-h-56 place-items-center p-3">
                       <div class="relative flex flex-col items-center gap-2 text-center">
                         <div class="pb-watermark-loading">
                           <Hourglass class="size-20 text-info" />
@@ -1931,7 +1931,7 @@
             {:else}
               <Table.Row>
                 <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-[14rem] place-items-center p-3">
+                  <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-empty">
                         <TriangleAlert class="size-20 text-warning" />
@@ -1945,7 +1945,7 @@
           {:else if viewRows.length === 0}
             <Table.Row>
               <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
-                <div class="grid min-h-[14rem] place-items-center p-3">
+                <div class="grid min-h-56 place-items-center p-3">
                   <div class="relative flex flex-col items-center gap-2 text-center">
                     <div class="pb-watermark-empty">
                       <TriangleAlert class="size-20 text-warning" />
@@ -1972,7 +1972,7 @@
                 data-state={rowSelected ? 'selected' : undefined}
                 class={cn(
                   'group/entity-row',
-                  rowSelected ? 'data-[state=selected]:!bg-transparent' : undefined
+                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}

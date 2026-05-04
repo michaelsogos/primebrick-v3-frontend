@@ -118,7 +118,7 @@
 </script>
 
 <header
-  class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground shadow-sm dark:border-border/60 dark:bg-muted/25 dark:backdrop-blur-sm"
+  class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground shadow-sm dark:border-border/60 dark:bg-muted/25 dark:backdrop-blur-xs"
 >
   <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
   <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
@@ -133,7 +133,7 @@
     <div class="flex min-w-0 shrink-0 items-center justify-end gap-2">
       {#if ianaTimeZone}
         <span
-          class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-[14rem]"
+          class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-56"
           title={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
           aria-label={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
         >

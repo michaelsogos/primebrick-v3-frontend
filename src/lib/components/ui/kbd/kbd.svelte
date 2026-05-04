@@ -5,7 +5,7 @@
 		base: "inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold leading-none text-muted-foreground shadow-sm",
 		variants: {
 			size: {
-				key: "h-5 min-w-[1.25rem] px-1 text-[11px]",
+				key: "h-5 min-w-5 px-1 text-[11px]",
 				modifier: "h-5 px-1.5 text-[10px]",
 				icon: "size-5 [&>svg]:size-3.5",
 			},

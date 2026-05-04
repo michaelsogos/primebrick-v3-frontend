@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="event-card-message"
 	class={cn(
-		"mt-0.5 font-sans text-sm font-normal text-foreground/75 dark:text-foreground/80 whitespace-pre-wrap break-words",
+		"mt-0.5 font-sans text-sm font-normal text-foreground/75 dark:text-foreground/80 whitespace-pre-wrap wrap-break-word",
 		className
 	)}
 	{...restProps}

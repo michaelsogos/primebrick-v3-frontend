@@ -1,9 +1,33 @@
-@import "flag-icons/css/flag-icons.min.css";
-@import "@fontsource-variable/inter";
+@import 'flag-icons/css/flag-icons.min.css' layer(base);
+@import '@fontsource-variable/inter' layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@config '../tailwind.config.js';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility avatar-hex {
+  /** Pointy-top hexagon clip; use with Avatar: `class="… rounded-none avatar-hex"` to override default circles. */
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
 
 @layer base {
   html,
@@ -146,16 +170,11 @@
   }
 }
 
-/* Sortable drag mode: keep "grabbing" cursor only inside the active group. */
-.pb-sortable-root--dragging,
-.pb-sortable-root--dragging * {
-  cursor: grabbing !important;
-}
-
 @layer utilities {
-  /** Pointy-top hexagon clip; use with Avatar: `class="… rounded-none avatar-hex"` to override default circles. */
-  .avatar-hex {
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  /* Sortable drag mode: keep "grabbing" cursor only inside the active group. */
+  .pb-sortable-root--dragging,
+  .pb-sortable-root--dragging * {
+    cursor: grabbing !important;
   }
 }
 
@@ -210,7 +229,7 @@
  * Sonner sets `color` on `[data-styled]` and fixed grays on `[data-description]` / dark theme
  * with selectors that beat a lone utility class — target `li.toast-impact-critical …` explicitly.
  */
-/* Plain selectors — `:global()` only works in Svelte <style>, not in this file; invalid rules were ignored. */
+/* Plain selectors — `:global()` only works in Svelte \3c style>, not in this file; invalid rules were ignored. */
 li[data-sonner-toast].toast-impact-critical[data-styled='true'],
 .pb-shell-error-card--critical {
   background: hsl(var(--critical)) !important;
