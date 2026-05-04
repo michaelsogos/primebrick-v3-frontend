@@ -5,6 +5,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
+  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
@@ -923,7 +924,7 @@
         return 'font-semibold text-violet-600 dark:text-violet-400';
       case 'litStar':
       case 'litQ':
-        return 'font-medium text-amber-700/90 dark:text-amber-400/90';
+        return 'font-medium text-amber-700/90 dark:text-amber-400/90 bg-amber-50 dark:bg-amber-950/30 rounded px-0.5';
       case 'sym':
         return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
       case 'bsLit':
@@ -1204,63 +1205,68 @@
 
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
-      <div class="relative w-full">
-        <Search
-          class="pointer-events-none absolute left-2.5 top-1/2 z-20 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <!-- Highlight layer: must match Input padding / font so glyphs line up with transparent text above. -->
-        <div
-          class="pointer-events-none absolute inset-0 z-0 flex min-h-9 items-center overflow-hidden whitespace-pre rounded-md border border-transparent bg-background py-1 pl-8 pr-36 text-base leading-normal md:text-sm"
-          aria-hidden="true"
+      <InputGroup
+        class="
+          group/input
+          w-full
+          bg-sky-50/20 border border-input
+          hover:bg-sky-50/45 hover:border-ring/40
+          focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring
+          dark:bg-input/40 dark:hover:bg-input/55
+          rounded-md transition-all duration-200
+        "
+      >
+        <InputGroupAddon
+          align="inline-start"
+          class="bg-transparent border-none pr-0"
         >
-          {#each searchSyntaxParts as seg, si (si)}
-            <span class={searchSyntaxSpanClass(seg)}>{seg.text}</span>
-          {/each}
-        </div>
-        <Input
-          class="relative z-10 bg-transparent pl-8 pr-36 text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent dark:selection:bg-primary/35 dark:selection:text-transparent"
+          <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
+        </InputGroupAddon>
+
+        <InputGroupInput
+          class="
+            bg-transparent border-none text-sm
+            focus-visible:ring-0 focus-visible:ring-offset-0
+            placeholder:text-muted-foreground/70 placeholder:text-xs
+          "
           value={search}
-          spellcheck={false}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
         />
 
-        <div class="absolute right-1 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
-          {#if search.trim().length > 0}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-              onclick={() => onSearchInput('')}
-              aria-label={$t('common.reset')}
-              title={$t('common.reset')}
-            >
-              <XIcon class="size-4" />
-            </Button>
-          {/if}
-
-          <Button
-            variant="soft"
-            size="xs"
-            type="button"
-            onclick={() =>
-              openSheet(
-                'entity.searchIn',
-                {
-                  searchInKeys,
-                  searchableColumns,
-                  onSearchInKeysChange,
-                  toggleSearchKey,
-                  sheetMenuCheckboxClass: checkboxVisualOnlyClass
-                } as any,
-                { contentClass: 'w-[360px] p-0' }
-              )}
+        {#if search.trim().length > 0}
+          <InputGroupButton
+            variant="ghost"
+            size="icon-xs"
+            class="hover:bg-sky-100/50 dark:hover:bg-white/10"
+            onclick={() => onSearchInput('')}
+            aria-label={$t('common.reset')}
+            title={$t('common.reset')}
           >
-            {searchScopeLabel()}
-          </Button>
-        </div>
-      </div>
+            <XIcon class="size-4" />
+          </InputGroupButton>
+        {/if}
+
+        <InputGroupButton
+          variant="soft"
+          size="xs"
+          class="mr-1 bg-sky-100/50 hover:bg-sky-200/50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+          onclick={() =>
+            openSheet(
+              'entity.searchIn',
+              {
+                searchInKeys,
+                searchableColumns,
+                onSearchInKeysChange,
+                toggleSearchKey,
+                sheetMenuCheckboxClass: checkboxVisualOnlyClass
+              } as any,
+              { contentClass: 'w-[360px] p-0' }
+            )}
+        >
+          {searchScopeLabel()}
+        </InputGroupButton>
+      </InputGroup>
     </div>
 
     <div class="flex items-center justify-end gap-2">
@@ -1487,21 +1493,11 @@
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
                       <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
-                        {#if effectiveSortKey}
-                          {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
-                        {:else}
-                          —
-                        {/if}
+                        {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
                       </Button>
                     {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
-                      onSelect={() => onSortChange(null, defaultSortDir)}
-                    >
-                      —
-                    </DropdownMenu.Item>
                     {#each sortableColumns as col (col.key)}
                       <DropdownMenu.Item
                         class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}

@@ -675,9 +675,10 @@
       {#snippet cell({ row, column })}
         {#if column.key === 'status'}
           {@const cfg = column.badge?.values?.[row.status]}
+          {@const badgeColors = badgeClassesFromToken(cfg?.color ?? null)}
           <Badge
-            variant="outline"
-            class={cn(badgeClassesFromToken(cfg?.color ?? null), 'border-0 shadow-none')}
+            class="shadow-none"
+            style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
           >
             {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
           </Badge>

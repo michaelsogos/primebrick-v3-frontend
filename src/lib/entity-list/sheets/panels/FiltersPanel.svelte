@@ -239,14 +239,15 @@
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
               {#each options as option}
+                {@const badgeColors = badgeClassesFromToken(option.color ?? null)}
                 <DropdownMenuCheckboxItem
                   checked={selectedKeys.includes(option.key)}
                   onCheckedChange={() => toggleBadgeSelection(col.key, option.key)}
                   closeOnSelect={false}
                 >
                   <Badge
-                    variant="outline"
-                    class={cn(badgeClassesFromToken(option.color ?? null), 'border-0 shadow-none')}
+                    class="shadow-none"
+                    style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
                   >
                     {option.label}
                   </Badge>
