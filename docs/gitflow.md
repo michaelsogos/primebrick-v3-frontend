@@ -13,13 +13,12 @@ This repository follows GitFlow. AI agents MUST follow these rules.
 - Do NOT commit even if you think it's "obvious"
 - **ALWAYS wait for explicit user instruction before committing**
 
-## Branch management
+## Branch Creation Rules
 
-- **NEVER work directly on `develop` or `main`**
-- Always create feature branches: `git checkout -b feature/<slug>` from updated `develop`
-- Feature branches for all normal work (bugs, features, fixes)
-- Release branches from `develop` for version bumps only
-- Hotfix branches from `main` for production fixes only
+- **NEVER work directly on `develop` or `main`** - always create feature branches first
+- **Feature branches**: `git checkout -b feature/<slug>` from updated `develop`
+- **Release branches**: `git checkout -b release/<version>` from `develop` (for version bumps)
+- **Hotfix branches**: `git checkout -b hotfix/<version>` from `main` (for production fixes)
 
 ## When to ask user permission
 
@@ -27,33 +26,43 @@ This repository follows GitFlow. AI agents MUST follow these rules.
 - **DO NOT ask permission** to commit changes on existing feature branch
 - **DO NOT ask permission** to close a feature branch (follow proper closing procedure)
 
-## Branch closing procedure
+## Branch Closing Procedure (MANDATORY)
 
 When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 
-1. Merge to appropriate base branch with `--no-ff`
-   - Feature: merge into `develop`
-   - Release/Hotfix: merge into `main`
-2. Push the merged base branch
-3. Delete branch LOCALLY: `git branch -d <branch-name>`
-4. Delete branch on ORIGIN: `git push origin --delete <branch-name>`
-5. For Release/Hotfix: Also merge `main` back to `develop`
+1. **Merge to appropriate base branch**:
+   - Feature: `git merge --no-ff feature/<branch>` into `develop`
+   - Release: `git merge --no-ff release/<version>` into `main`
+   - Hotfix: `git merge --no-ff hotfix/<version>` into `main`
 
-## Version tagging
+2. **Push the merged base branch**: `git push origin <base-branch>`
 
-- NO 'v' prefix for tags (use `0.13.2` not `v0.13.2`)
-- Tag derived from branch name: `release/0.13.2` → tag `0.13.2`
-- Hotfix increments PATCH: `0.13.1` → `hotfix/0.13.2` → tag `0.13.2`
-- Release increments MINOR: `0.13.2` → `release/0.14.0` → tag `0.14.0`
+3. **Delete branch LOCALLY**: `git branch -d <branch-name>`
 
-## Common mistakes to avoid
+4. **Delete branch on ORIGIN**: `git push origin --delete <branch-name>`
 
-- Committing directly on `develop` or `main`
-- Creating commits before creating feature branch
-- Forgetting to delete branches (both local and origin)
-- Using 'v' prefix in tags
-- Not pushing merged base branch
-- Leaving feature branches open after merge
+5. **For Release/Hotfix**: Also merge `main` back to `develop` to stay aligned
+
+## Version Tagging Rules
+
+- **NO 'v' prefix** in branch names: `release/0.13.2` (not `release/v0.13.2`)
+- **NO 'v' prefix** in tags for FE/BE: `0.13.2` (not `v0.13.2`)
+- **Tag derived from branch name**: `release/0.13.2` → tag `0.13.2`
+- **Hotfix increments PATCH**: `0.13.1` → `hotfix/0.13.2` → tag `0.13.2`
+- **Release increments MINOR**: `0.13.2` → `release/0.14.0` → tag `0.14.0`
+
+## Common Mistakes to Avoid
+
+- ❌ Committing directly on `develop` or `main`
+- ❌ Creating commits before creating feature branch
+- ❌ Forgetting to delete branches (both local and origin)
+- ❌ Using 'v' prefix in tags
+- ❌ Not pushing merged base branch
+- ❌ Leaving feature branches open after merge
+
+## Repository-Specific Rules
+
+- When working from meta-workspace root, use `cd frontend && git <command>`
 
 ## Commit rules
 
