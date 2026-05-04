@@ -924,7 +924,7 @@
         return 'font-semibold text-violet-600 dark:text-violet-400';
       case 'litStar':
       case 'litQ':
-        return 'font-medium text-amber-700/90 dark:text-amber-400/90';
+        return 'font-medium text-amber-700/90 dark:text-amber-400/90 bg-amber-50 dark:bg-amber-950/30 rounded px-0.5';
       case 'sym':
         return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
       case 'bsLit':
