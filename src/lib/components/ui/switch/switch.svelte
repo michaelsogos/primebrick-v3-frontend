@@ -21,7 +21,7 @@
   bind:checked
   data-slot="switch"
   class={cn(
-    "group/switch peer relative inline-flex h-5 w-11 shrink-0 cursor-pointer items-center rounded-full px-1 shadow-xs outline-none ring-offset-background transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+    "group/switch peer relative inline-flex h-5 w-11 shrink-0 cursor-pointer items-center rounded-full px-1 shadow-xs outline-hidden ring-offset-background transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
     // Input-like chrome (sky palette when unchecked / browser)
     "border border-sky-200/80 bg-background dark:border-sky-900/55 dark:bg-input/30",
     "hover:border-sky-300/85 hover:bg-sky-50/45 dark:hover:border-sky-700/70 dark:hover:bg-input/38",
@@ -41,7 +41,7 @@
       "border-sky-200/80 dark:border-sky-900/55",
       "group-hover/switch:border-sky-300/85 dark:group-hover/switch:border-sky-700/70",
       "data-[state=checked]:border-amber-200/85 dark:data-[state=checked]:border-amber-900/55",
-      "data-[state=checked]:group-hover/switch:border-amber-300/85 dark:data-[state=checked]:group-hover/switch:border-amber-700/70",
+      "group-hover/switch:data-[state=checked]:border-amber-300/85 dark:group-hover/switch:data-[state=checked]:border-amber-700/70",
       "data-[state=checked]:translate-x-[18px]"
     )}
   >

@@ -21,10 +21,10 @@
 	></div>
 
 	<div
-		class="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent z-2"
+		class="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-background to-transparent z-2"
 	></div>
 	<div
-		class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent z-2"
+		class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-background to-transparent z-2"
 	></div>
 
 	<div class="flex h-full w-full justify-center px-4 z-2 perspective-container">

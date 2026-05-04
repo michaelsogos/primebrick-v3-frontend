@@ -16,7 +16,7 @@
 	bind:this={ref}
 	data-slot="table-row"
 	class={cn(
-		!suppressCellHoverMuted && "hover:[&,&>svelte-css-wrapper]:[&>th,td]:bg-muted",
+		!suppressCellHoverMuted && "[&>th,td]:[&,&>svelte-css-wrapper]:hover:bg-muted",
 		"data-[state=selected]:bg-muted border-b transition-colors",
 		className
 	)}

@@ -284,7 +284,7 @@
 >
 	<div
 		bind:this={contentRef}
-		class="absolute left-0 right-0 top-1/2 w-full -mt-[16px] transform-style-3d will-change-transform"
+		class="absolute left-0 right-0 top-1/2 w-full mt-[-16px] transform-style-3d will-change-transform"
 		style="transform: translate3d(0, {scrollPos}px, 0);"
 	>
 		{@render children()}

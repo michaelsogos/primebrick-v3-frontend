@@ -16,7 +16,7 @@
 	bind:ref
 	data-slot="dropdown-menu-radio-item"
 	class={cn(
-		"relative flex cursor-default select-none items-center gap-2 rounded-md py-1.5 ps-8 pe-2 text-sm outline-hidden data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		"relative flex cursor-default select-none items-center gap-2 rounded-md py-1.5 ps-8 pe-2 text-sm outline-hidden data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 		menuSoftRowBorderBase,
 		menuSoftRowHighlightData,
 		menuSoftFocusKeyboard,
@@ -26,7 +26,7 @@
 >
 	{#snippet children({ checked })}
 		<span
-			class="pointer-events-none absolute start-2 flex size-3.5 items-center justify-center"
+			class="pointer-events-none absolute inset-s-2 flex size-3.5 items-center justify-center"
 		>
 			{#if checked}
 				<CircleIcon class="size-2 fill-current" />

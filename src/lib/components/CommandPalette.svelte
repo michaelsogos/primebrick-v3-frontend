@@ -138,14 +138,14 @@
         )}
       >
         <span
-          class="pointer-events-none absolute left-2 top-1/2 z-[1] -translate-y-1/2 rounded-sm bg-background/70 px-1 text-xs text-muted-foreground"
+          class="pointer-events-none absolute left-2 top-1/2 z-1 -translate-y-1/2 rounded-sm bg-background/70 px-1 text-xs text-muted-foreground"
           aria-hidden="true"
         >
           \
         </span>
         {#if browser}
           <div
-            class="pointer-events-none absolute right-2 top-1/2 z-[1] flex -translate-y-1/2 items-center gap-0.5"
+            class="pointer-events-none absolute right-2 top-1/2 z-1 flex -translate-y-1/2 items-center gap-0.5"
             aria-hidden="true"
           >
             {#if isAppleOs()}
@@ -163,8 +163,8 @@
           bind:ref={inputRef}
           id="pb-command-palette-input"
           class={cn(
-            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-none',
-            browser && 'pr-[5.25rem]',
+            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-hidden',
+            browser && 'pr-21',
             'placeholder:text-muted-foreground',
             'focus-visible:ring-0 focus-visible:ring-offset-0'
           )}
@@ -184,7 +184,7 @@
       <!-- Detached panel: overlays page below the top bar; input stays uncovered -->
       <div
         class={cn(
-          'pointer-events-none absolute left-0 right-0 top-full z-[130] -mt-px pt-0',
+          'pointer-events-none absolute left-0 right-0 top-full z-130 -mt-px pt-0',
           open && 'pointer-events-auto'
         )}
         style="perspective: 1100px; perspective-origin: 50% 0%;"

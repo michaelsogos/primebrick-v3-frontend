@@ -9,10 +9,10 @@
 /** `DropdownMenu.Item` when selected (unprefixed; merged last on the item). */
 export const menuListSelectedSurfaceDropdownClasses = [
 	'border-transparent bg-sky-100 font-semibold text-sky-950 shadow-xs',
-	'data-[highlighted]:bg-sky-200 data-[highlighted]:text-sky-950',
+	'data-highlighted:bg-sky-200 data-highlighted:text-sky-950',
 	'[&_svg]:text-sky-950',
 	'dark:border-transparent dark:bg-neutral-800 dark:text-neutral-50 dark:shadow-xs',
-	'dark:data-[highlighted]:bg-neutral-700 dark:data-[highlighted]:text-neutral-50',
+	'dark:data-highlighted:bg-neutral-700 dark:data-highlighted:text-neutral-50',
 	'dark:[&_svg]:text-neutral-50',
 ].join(' ');
 
@@ -27,38 +27,38 @@ export const menuListOpenSurface =
 export const menuSoftRowBorderBase = 'border border-transparent shadow-none';
 
 export const menuSoftRowHighlightData = [
-	'data-[highlighted]:border-transparent data-[highlighted]:shadow-none',
-	'data-[highlighted]:bg-zinc-200/95 data-[highlighted]:text-foreground',
-	'dark:data-[highlighted]:bg-zinc-700/70 dark:data-[highlighted]:text-foreground',
-	'data-[highlighted]:[&_svg:not([class*="text-"])]:text-muted-foreground',
+	'data-highlighted:border-transparent data-highlighted:shadow-none',
+	'data-highlighted:bg-zinc-200/95 data-highlighted:text-foreground',
+	'dark:data-highlighted:bg-zinc-700/70 dark:data-highlighted:text-foreground',
+	'[&_svg:not([class*="text-"])]:data-highlighted:text-muted-foreground',
 ].join(' ');
 
 export const menuSoftSubTriggerOpenData = [
 	'data-[state=open]:border-transparent data-[state=open]:shadow-none',
 	'data-[state=open]:bg-zinc-200/95 data-[state=open]:text-foreground',
 	'dark:data-[state=open]:bg-zinc-700/70 dark:data-[state=open]:text-foreground',
-	'data-[state=open]:[&_svg:not([class*="text-"])]:text-muted-foreground',
+	'[&_svg:not([class*="text-"])]:data-[state=open]:text-muted-foreground',
 ].join(' ');
 
 export const menuSoftFocusKeyboard = [
 	'focus-visible:border-transparent focus-visible:shadow-none',
 	'focus-visible:bg-zinc-200/95 focus-visible:text-foreground',
 	'dark:focus-visible:bg-zinc-700/70 dark:focus-visible:text-foreground',
-	'focus-visible:[&_svg:not([class*="text-"])]:text-muted-foreground',
+	'[&_svg:not([class*="text-"])]:focus-visible:text-muted-foreground',
 ].join(' ');
 
 export const menuSoftAriaSelected = [
 	'aria-selected:border-transparent aria-selected:bg-sky-100 aria-selected:font-semibold aria-selected:text-sky-950 aria-selected:shadow-xs',
 	'dark:aria-selected:border-transparent dark:aria-selected:bg-neutral-800 dark:aria-selected:text-neutral-50',
-	'aria-selected:[&_svg]:text-sky-950 dark:aria-selected:[&_svg]:text-neutral-50',
-	'aria-selected:data-[highlighted]:bg-sky-200 aria-selected:data-[highlighted]:text-sky-950',
-	'dark:aria-selected:data-[highlighted]:bg-neutral-700 dark:aria-selected:data-[highlighted]:text-neutral-50',
+	'[&_svg]:aria-selected:text-sky-950 dark:[&_svg]:aria-selected:text-neutral-50',
+	'aria-selected:data-highlighted:bg-sky-200 aria-selected:data-highlighted:text-sky-950',
+	'dark:aria-selected:data-highlighted:bg-neutral-700 dark:aria-selected:data-highlighted:text-neutral-50',
 ].join(' ');
 
 /** `Command.Item`: layout + soft frame + highlight + aria-selected */
 export const commandMenuItemClassName = [
-	'relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none',
-	'data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
+	'relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden',
+	'data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
 	menuSoftRowBorderBase,
 	menuSoftRowHighlightData,
 	menuSoftAriaSelected,
@@ -70,5 +70,5 @@ export const menuSidebarActiveChrome = [
 	'dark:data-[active=true]:border-transparent dark:data-[active=true]:bg-neutral-800 dark:data-[active=true]:text-neutral-50',
 	'data-[active=true]:hover:bg-sky-200 data-[active=true]:hover:text-sky-950',
 	'dark:data-[active=true]:hover:bg-neutral-700 dark:data-[active=true]:hover:text-neutral-50',
-	'data-[active=true]:[&>svg]:text-sky-950 dark:data-[active=true]:[&>svg]:text-neutral-50',
+	'[&>svg]:data-[active=true]:text-sky-950 dark:[&>svg]:data-[active=true]:text-neutral-50',
 ].join(' ');
