@@ -1205,12 +1205,30 @@
 
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
-      <InputGroup class="w-full">
-        <InputGroupAddon align="inline-start">
-          <Search class="size-4 text-muted-foreground" />
+      <InputGroup
+        class="
+          group/input
+          w-full
+          bg-sky-50/20 border border-input
+          hover:bg-sky-50/45 hover:border-ring/40
+          focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring
+          dark:bg-input/40 dark:hover:bg-input/55
+          rounded-md transition-all duration-200
+        "
+      >
+        <InputGroupAddon
+          align="inline-start"
+          class="bg-transparent border-none pr-0"
+        >
+          <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
         </InputGroupAddon>
 
         <InputGroupInput
+          class="
+            bg-transparent border-none
+            focus-visible:ring-0 focus-visible:ring-offset-0
+            placeholder:text-muted-foreground/70 placeholder:text-xs
+          "
           value={search}
           oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
           placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
@@ -1220,6 +1238,7 @@
           <InputGroupButton
             variant="ghost"
             size="icon-xs"
+            class="hover:bg-sky-100/50 dark:hover:bg-white/10"
             onclick={() => onSearchInput('')}
             aria-label={$t('common.reset')}
             title={$t('common.reset')}
@@ -1231,7 +1250,7 @@
         <InputGroupButton
           variant="soft"
           size="xs"
-          class="mr-1"
+          class="mr-1 bg-sky-100/50 hover:bg-sky-200/50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
           onclick={() =>
             openSheet(
               'entity.searchIn',

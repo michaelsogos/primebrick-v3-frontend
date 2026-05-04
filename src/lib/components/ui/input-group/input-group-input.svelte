@@ -1,20 +1,21 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import type { ComponentProps } from "svelte";
-	import { Input } from "$lib/components/ui/input/index.js";
+	import type { HTMLInputAttributes } from "svelte/elements";
 
 	let {
 		ref = $bindable(null),
 		value = $bindable(),
 		class: className,
+		type = "text",
 		...props
-	}: ComponentProps<typeof Input> = $props();
+	}: HTMLInputAttributes & { type?: string; ref?: HTMLInputElement | null } = $props();
 </script>
 
-<Input
-	bind:ref
+<input
+	bind:this={ref}
 	data-slot="input-group-control"
-	class={cn("rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent flex-1", className)}
+	{type}
+	class={cn("flex-1 w-full bg-transparent border-none outline-hidden disabled:cursor-not-allowed disabled:opacity-50", className)}
 	bind:value
 	{...props}
 />
