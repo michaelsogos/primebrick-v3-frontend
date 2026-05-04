@@ -163,6 +163,7 @@
       "selectRow": "seleccionar fila",
       "rowActions": "acciones de fila",
       "sortBy": "Ordenar por",
+      "defaultSort": "Predeterminado",
       "inOrder": "en orden",
       "ascending": "Ascendente",
       "descending": "Descendente",

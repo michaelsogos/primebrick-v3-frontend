@@ -1495,6 +1495,8 @@
                       <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
                         {#if effectiveSortKey}
                           {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
+                        {:else if defaultSort}
+                          {$t('entities.list.defaultSort')} {$t(allColumns.find((c) => c.key === defaultSort.key)?.labelKey ?? '')}
                         {:else}
                           —
                         {/if}
@@ -1502,12 +1504,14 @@
                     {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
-                      onSelect={() => onSortChange(null, defaultSortDir)}
-                    >
-                      —
-                    </DropdownMenu.Item>
+                    {#if defaultSort}
+                      <DropdownMenu.Item
+                        class={dropdownMenuSelectedItemClass(effectiveSortKey === null)}
+                        onSelect={() => onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir)}
+                      >
+                        {$t('entities.list.defaultSort')} {$t(allColumns.find((c) => c.key === defaultSort.key)?.labelKey ?? '')}
+                      </DropdownMenu.Item>
+                    {/if}
                     {#each sortableColumns as col (col.key)}
                       <DropdownMenu.Item
                         class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
