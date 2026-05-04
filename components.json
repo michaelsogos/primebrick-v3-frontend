@@ -12,7 +12,7 @@
 		"lib": "$lib"
 	},
 	"typescript": true,
-	"registry": "https://tw3.shadcn-svelte.com/registry/nova",
+	"registry": "https://shadcn-svelte.com/registry",
 	"style": "nova",
 	"iconLibrary": "lucide",
 	"menuColor": "default",

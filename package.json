@@ -18,7 +18,7 @@
     "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/kit": "^2.57.1",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
-    "@tailwindcss/vite": "^4.2.4",
+    "@tailwindcss/postcss": "^4.2.4",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.12.2",
     "bits-ui": "^2.18.1",
