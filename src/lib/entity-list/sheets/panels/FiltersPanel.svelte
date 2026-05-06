@@ -205,26 +205,26 @@
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full pb-14">
+  <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full  overflow-hidden">
     <TabsList
       variant="line"
       class="w-full h-10 py-1 bg-gray-100 dark:bg-input flex-shrink-0"
     >
       <TabsTrigger
         value="standard"
-        class="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
+        class="transition-all duration-400 ease-in-out data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
       >
         {$t("entities.list.standardFilters")}
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
-        class="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
+        class="transition-all duration-400 ease-in-out data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
       >
         {$t("entities.list.advancedFilters")}
       </TabsTrigger>
     </TabsList>
 
-    <TabsContent value="standard" class="flex-1 overflow-y-auto p-4 ">
+    <TabsContent value="standard" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-left data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-left data-[state=inactive]:fade-out">
       {#each filterableColumns as col (col.key)}
         <div class="mb-4">
           <div class="mb-2">
@@ -365,7 +365,7 @@
       {/if}
     </TabsContent>
 
-    <TabsContent value="advanced" class=" flex-1 overflow-y-auto p-4 ">
+    <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
       <div
         class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
       >
