@@ -40,8 +40,8 @@
 {#snippet headerActions()}
   <Button
     variant="ghost"
-    size="icon-sm"
-    class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
+    size="sm"
+    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={() => onResetColumnVisibility()}
     title={t('common.reset')}
   >
@@ -59,9 +59,9 @@
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
+  <div class="min-h-0 flex-1 overflow-auto">
     {#if stickyColumns.length > 0}
-      <div class="my-2 px-2">
+      <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
           <div class="text-xs font-medium text-muted-foreground">{t('entities.list.stickyFields')}</div>
@@ -80,8 +80,8 @@
                 {#snippet children()}
                   <div
                     class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
                   >
                     <Sortable.Handle />
                     <button
@@ -109,7 +109,7 @@
     {/if}
 
     {#if nonAuditingColumns.length > 0}
-      <div class="my-2 px-2">
+      <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
           <div class="text-xs font-medium text-muted-foreground">{t('entities.list.dataFields')}</div>
@@ -128,8 +128,8 @@
                 {#snippet children()}
                   <div
                     class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
                   >
                     <Sortable.Handle />
                     <button
@@ -157,7 +157,7 @@
     {/if}
 
     {#if auditingColumns.length > 0}
-      <div class="my-2 px-2">
+      <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
           <div class="text-xs font-medium text-muted-foreground">{t('entities.list.auditingFields')}</div>
@@ -179,8 +179,8 @@
                 {#snippet children()}
                   <div
                     class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent'}
+                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
                   >
                     <Sortable.Handle />
                     <button
