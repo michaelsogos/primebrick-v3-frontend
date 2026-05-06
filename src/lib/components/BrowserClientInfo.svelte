@@ -154,7 +154,7 @@
 </script>
 
 {#if snapshot}
-  <div class="mt-4 border-t pt-4">
+  <div>
     <div class="mb-3 text-xs font-medium text-primary">{$t('shell.health.clientTitle')}</div>
     <div class="space-y-3">
       <div class="flex items-start justify-between gap-3 text-sm">

@@ -158,13 +158,16 @@
     };
   }
   function resetAllFilters() {
-    onResetFilters?.();
-    // Re-sync date dropper values after reset
+    // Clear temporary filter values (inputs in panel)
+    tempFilterValues = {};
+    // Clear date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key]);
+        dateDropperValues[col.key] = null;
       }
     }
+    // Reset actual applied filters
+    onResetFilters?.();
   }
 </script>
 

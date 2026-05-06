@@ -47,10 +47,10 @@
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <div class="min-h-0 flex-1 overflow-auto px-2 py-2">
+  <div class="min-h-0 flex-1 overflow-auto">
     <button
       type="button"
-      class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+      class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
       onclick={() => onSearchInKeysChange(null)}
     >
       <span class="pointer-events-none shrink-0" aria-hidden="true">
@@ -59,14 +59,14 @@
       <span class="min-w-0 flex-1 truncate">{$t('entities.list.searchInAll')}</span>
     </button>
 
-    <div class="my-2 px-2">
+    <div class="my-2">
       <div class="h-px bg-border"></div>
     </div>
 
     {#each searchableColumns as col (col.key)}
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+        class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
         onclick={() => toggleSearchKey(col.key)}
       >
         <span class="pointer-events-none shrink-0" aria-hidden="true">
