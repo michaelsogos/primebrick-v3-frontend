@@ -15,7 +15,7 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw, ChevronDown } from "lucide-svelte";
+  import { RotateCcw, ChevronDown, Play } from "lucide-svelte";
   import type { MetaColumn } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
@@ -170,18 +170,20 @@
 
 {#snippet headerActions()}
   <Button
-    variant="default"
+    variant="ghost"
     size="sm"
-    class="mr-2"
+    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary gap-2"
     onclick={applyFilters}
     title={$t("common.apply")}
   >
-    {$t("common.apply")}
+    <Play class="size-4" />
+    <span>{$t("common.apply")}</span>
   </Button>
+
   <Button
     variant="ghost"
-    size="icon-sm"
-    class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
+    size="sm"
+    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={resetAllFilters}
     title={$t("common.reset")}
   >
@@ -206,17 +208,17 @@
   <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full pb-14">
     <TabsList
       variant="line"
-      class="w-full bg-gray-100 dark:bg-input flex-shrink-0"
+      class="w-full h-10 py-1 bg-gray-100 dark:bg-input flex-shrink-0"
     >
       <TabsTrigger
         value="standard"
-        class="data-[state=active]:bg-white data-[state=active]:text-foreground dark:data-[state=active]:bg-background"
+        class="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
       >
         {$t("entities.list.standardFilters")}
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
-        class="data-[state=active]:bg-white data-[state=active]:text-foreground dark:data-[state=active]:bg-background"
+        class="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
       >
         {$t("entities.list.advancedFilters")}
       </TabsTrigger>
