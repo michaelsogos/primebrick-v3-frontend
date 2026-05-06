@@ -33,18 +33,25 @@
 	let selectedDay = $state("");
 	let selectedMonth = $state("");
 	let selectedYear = $state("");
+	let hasUserInteracted = $state(false);
 
-	// Initialize from value
+	// Initialize wheelers to today if no value provided, otherwise sync with value
 	$effect(() => {
 		if (value) {
 			selectedDay = value.day.toString();
 			selectedMonth = months[value.month - 1];
 			selectedYear = value.year.toString();
+		} else if (!hasUserInteracted) {
+			const todayDate = today(getLocalTimeZone());
+			selectedDay = todayDate.day.toString();
+			selectedMonth = months[todayDate.month - 1];
+			selectedYear = todayDate.year.toString();
 		}
 	});
 
 	// Update value when selections change
 	function updateValue() {
+		hasUserInteracted = true;
 		if (selectedDay && selectedMonth && selectedYear) {
 			const monthIndex = months.indexOf(selectedMonth);
 			if (monthIndex !== -1) {
@@ -71,10 +78,6 @@
 			}
 		}
 	}
-
-	$effect(() => {
-		updateValue();
-	});
 </script>
 
 <Popover.Root bind:open={isOpen}>
@@ -95,21 +98,21 @@
 
 	<Popover.Content class="w-[320px] p-0 shadow-2xl border-border rounded-none overflow-hidden bg-popover" align="start">
 		<WheelPicker>
-			<WheelPickerGroup bind:value={selectedDay} onValueChange={() => {}}>
+			<WheelPickerGroup bind:value={selectedDay} onValueChange={updateValue}>
 				{#each days as day}
 					<WheelPickerItem value={day}>
 						{day}
 					</WheelPickerItem>
 				{/each}
 			</WheelPickerGroup>
-			<WheelPickerGroup bind:value={selectedMonth} onValueChange={() => {}}>
+			<WheelPickerGroup bind:value={selectedMonth} onValueChange={updateValue}>
 				{#each months as month}
 					<WheelPickerItem value={month}>
 						{month.slice(0, 3)}
 					</WheelPickerItem>
 				{/each}
 			</WheelPickerGroup>
-			<WheelPickerGroup bind:value={selectedYear} onValueChange={() => {}}>
+			<WheelPickerGroup bind:value={selectedYear} onValueChange={updateValue}>
 				{#each years as year}
 					<WheelPickerItem value={year}>
 						{year}
@@ -121,7 +124,7 @@
 		<!-- Footer -->
 		<div class="p-3 border-t bg-muted/10 flex gap-2">
 			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>{$t("common.close")}</Button>
-			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => (isOpen = false)}>{$t("common.done")}</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => { updateValue(); isOpen = false; }}>{$t("common.done")}</Button>
 		</div>
 	</Popover.Content>
 </Popover.Root>
