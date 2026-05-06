@@ -22,6 +22,8 @@
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
+  import { crossfade } from "svelte/transition";
+  import { cubicInOut } from "svelte/easing";
 
   interface $$Props {
     content: any;
@@ -49,6 +51,18 @@
 
   // Tab state
   let tabValue = $state("standard");
+
+  const [send, receive] = crossfade({
+    duration: 300,
+    easing: cubicInOut,
+    fallback(node, params) {
+      return {
+        duration: 300,
+        easing: cubicInOut,
+        css: (t) => `opacity: ${t}`
+      };
+    }
+  });
 
   // Initialize temp values when component loads
   onMount(() => {
@@ -210,20 +224,33 @@
 
   <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full  overflow-hidden">
     <TabsList
-      variant="line"
-      class="w-full h-10 py-1 bg-gray-100 dark:bg-input flex-shrink-0"
+      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0"
     >
       <TabsTrigger
         value="standard"
-        class="transition-all duration-400 ease-in-out data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
-        {$t("entities.list.standardFilters")}
+        {#if tabValue === "standard"}
+          <div
+            in:receive={{ key: "active-pill" }}
+            out:send={{ key: "active-pill" }}
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+          ></div>
+        {/if}
+        <span class="relative z-20">{$t("entities.list.standardFilters")}</span>
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
-        class="transition-all duration-400 ease-in-out data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-neutral-300 dark:data-[state=active]:ring-neutral-600 dark:data-[state=active]:bg-background focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
-        {$t("entities.list.advancedFilters")}
+        {#if tabValue === "advanced"}
+          <div
+            in:receive={{ key: "active-pill" }}
+            out:send={{ key: "active-pill" }}
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+          ></div>
+        {/if}
+        <span class="relative z-20">{$t("entities.list.advancedFilters")}</span>
       </TabsTrigger>
     </TabsList>
 
