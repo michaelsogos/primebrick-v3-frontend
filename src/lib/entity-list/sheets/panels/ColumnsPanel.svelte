@@ -40,8 +40,8 @@
 {#snippet headerActions()}
   <Button
     variant="ghost"
-    size="icon-sm"
-    class="text-muted-foreground opacity-70 hover:bg-accent hover:text-accent-foreground hover:opacity-100"
+    size="sm"
+    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={() => onResetColumnVisibility()}
     title={t('common.reset')}
   >
