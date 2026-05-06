@@ -224,7 +224,7 @@
 
   <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full  overflow-hidden">
     <TabsList
-      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0"
+      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0 rounded-none"
     >
       <TabsTrigger
         value="standard"
@@ -234,7 +234,7 @@
           <div
             in:receive={{ key: "active-pill" }}
             out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
         <span class="relative z-20">{$t("entities.list.standardFilters")}</span>
@@ -247,7 +247,7 @@
           <div
             in:receive={{ key: "active-pill" }}
             out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
         <span class="relative z-20">{$t("entities.list.advancedFilters")}</span>
