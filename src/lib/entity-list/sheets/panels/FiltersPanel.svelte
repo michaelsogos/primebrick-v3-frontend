@@ -15,6 +15,7 @@
   import { CalendarDate, parseDate } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
+  import { onMount } from "svelte";
 
   interface $$Props {
     content: any;
@@ -41,8 +42,8 @@
   // Local state for DateDropper values (CalendarDate objects)
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
 
-  // Initialize temp values when component loads or when filterValues change
-  $effect(() => {
+  // Initialize temp values when component loads
+  onMount(() => {
     tempFilterValues = { ...filterValues };
     // Sync date dropper values
     for (const col of filterableColumns) {
@@ -52,17 +53,6 @@
     }
   });
 
-  // Sync date dropper changes back to temp filter values
-  $effect(() => {
-    for (const col of filterableColumns) {
-      if ((col.type === 'date' || col.type === 'datetime') && dateDropperValues[col.key] !== undefined) {
-        const isoValue = calendarDateToIso(dateDropperValues[col.key]);
-        if (isoValue !== tempFilterValues[col.key]) {
-          tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
-        }
-      }
-    }
-  });
 
   function updateTempFilterValue(key: string, value: any) {
     tempFilterValues = { ...tempFilterValues, [key]: value };
@@ -79,6 +69,13 @@
   }
 
   function applyFilters() {
+    // Sync date dropper values to temp filter values before applying
+    for (const col of filterableColumns) {
+      if ((col.type === 'date' || col.type === 'datetime') && dateDropperValues[col.key] !== undefined) {
+        const isoValue = calendarDateToIso(dateDropperValues[col.key]);
+        tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
+      }
+    }
     onFilterValuesChange?.(tempFilterValues);
   }
 
@@ -145,6 +142,12 @@
   }
   function resetAllFilters() {
     onResetFilters?.();
+    // Re-sync date dropper values after reset
+    for (const col of filterableColumns) {
+      if (col.type === 'date' || col.type === 'datetime') {
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key]);
+      }
+    }
   }
 </script>
 

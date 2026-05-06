@@ -181,9 +181,9 @@
       (async () => {
         const metaRes = await apiFetchWithTimeout('/api/v1/entities/customer/meta', undefined, 30_000);
         if (!metaRes.ok) {
-          const apiCode = await readApiErrorCode(metaRes);
-          const code = apiCode ?? 'GET_METADATA_FAILED';
-          throw new ApiListError(code, metaRes.status);
+          const apiDetails = await readApiErrorDetails(metaRes);
+          const code = apiDetails.code ?? 'GET_METADATA_FAILED';
+          throw new ApiListError(code, metaRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
         }
         const next = (await metaRes.json()) as CustomerMeta;
         setMetaCache(next);
@@ -245,20 +245,29 @@
   class ApiListError extends Error {
     readonly status: number;
     readonly code: string;
+    readonly internalCode?: string;
+    readonly instance?: string;
 
-    constructor(code: string, status: number) {
+    constructor(code: string, status: number, internalCode?: string, instance?: string) {
       super(code);
       this.code = code;
       this.status = status;
+      this.internalCode = internalCode;
+      this.instance = instance;
     }
   }
 
-  async function readApiErrorCode(res: Response): Promise<string | null> {
+  async function readApiErrorDetails(res: Response): Promise<{ code: string | null; internalCode: string | null; instance: string | null; status: number | null }> {
     try {
-      const data = (await res.json()) as { error?: unknown };
-      return typeof data?.error === 'string' ? data.error : null;
+      const data = (await res.json()) as { error?: unknown; title?: unknown; internal_code?: unknown; instance?: unknown; status?: unknown };
+      // Support both legacy format and RFC 7807
+      const code = typeof data?.error === 'string' ? data.error : typeof data?.title === 'string' ? data.title : null;
+      const internalCode = typeof data?.internal_code === 'string' ? data.internal_code : null;
+      const instance = typeof data?.instance === 'string' ? data.instance : null;
+      const status = typeof data?.status === 'number' ? data.status : res.status;
+      return { code, internalCode, instance, status };
     } catch {
-      return null;
+      return { code: null, internalCode: null, instance: null, status: res.status };
     }
   }
 
@@ -324,7 +333,7 @@
     for (const [field, value] of Object.entries(filterValues)) {
       if (value !== undefined && value !== null && value !== '') {
         const col = columns.find(c => c.key === field);
-        const op = col?.type === 'badge' ? '=' : 'ILIKE';
+        const op = col?.type === 'text' ? 'ILIKE' : '=';
 
         // Handle multi-select (array) values for badge fields
         if (col?.type === 'badge' && Array.isArray(value)) {
@@ -359,10 +368,10 @@
       30_000
     );
     if (!listRes.ok) {
-      const apiCode = await readApiErrorCode(listRes);
+      const apiDetails = await readApiErrorDetails(listRes);
       // Convention: prefer backend-provided error codes; otherwise use a stable enum-style code.
-      const code = apiCode ?? 'GET_ENTITY_LIST_FAILED';
-      throw new ApiListError(code, listRes.status);
+      const code = apiDetails.code ?? 'GET_ENTITY_LIST_FAILED';
+      throw new ApiListError(code, listRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
     }
     const list = (await listRes.json()) as ListResponse;
     rows = list.rows;
@@ -403,16 +412,26 @@
       }
 
       error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      const impact = isDbDown ? 'CRITICAL' : 'HIGH';
+      const toneForImpact = 'danger'; // CRITICAL and HIGH both use danger
+      const tags: import('$lib/errors/app-errors').AppErrorTag[] = [
+        { label: code, tone: toneForImpact },
+        ...(status !== null
+          ? [{ label: `HTTP ${status}`, tone: toneForImpact } as const]
+          : []),
+      ];
+      // Add RFC 7807 fields if available from error details
+      if (err instanceof ApiListError && err.internalCode) {
+        tags.push({ label: err.internalCode, tone: toneForImpact });
+      }
+      if (err instanceof ApiListError && err.instance) {
+        tags.push({ label: err.instance, tone: toneForImpact });
+      }
       pushImpactError({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.customersList',
-        tags: [
-          { label: code, tone: isDbDown ? 'danger' : 'warning' },
-          ...(status !== null
-            ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
-            : []),
-        ],
+        tags,
         toast: false,
       });
     } finally {
@@ -458,16 +477,26 @@
       }
 
       error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      const impact = isDbDown ? 'CRITICAL' : 'HIGH';
+      const toneForImpact = 'danger'; // CRITICAL and HIGH both use danger
+      const tags: import('$lib/errors/app-errors').AppErrorTag[] = [
+        { label: code, tone: toneForImpact },
+        ...(status !== null
+          ? [{ label: `HTTP ${status}`, tone: toneForImpact } as const]
+          : []),
+      ];
+      // Add RFC 7807 fields if available from error details
+      if (err instanceof ApiListError && err.internalCode) {
+        tags.push({ label: err.internalCode, tone: toneForImpact });
+      }
+      if (err instanceof ApiListError && err.instance) {
+        tags.push({ label: err.instance, tone: toneForImpact });
+      }
       pushImpactError({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.customersPageInit',
-        tags: [
-          { label: code, tone: isDbDown ? 'danger' : 'warning' },
-          ...(status !== null
-            ? [{ label: `HTTP ${status}`, tone: status >= 500 ? 'danger' : 'info' } as const]
-            : []),
-        ],
+        tags,
         toast: false,
       });
     } finally {

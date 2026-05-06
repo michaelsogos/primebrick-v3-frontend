@@ -139,6 +139,27 @@
               </div>
             {/if}
 
+            {#if (e as any).instance || (e as any).internalCode}
+              <div class="mt-1 flex flex-wrap gap-1">
+                {#if (e as any).internalCode}
+                  <Badge
+                    variant="outline"
+                    class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
+                  >
+                    {(e as any).internalCode}
+                  </Badge>
+                {/if}
+                {#if (e as any).instance}
+                  <Badge
+                    variant="outline"
+                    class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
+                  >
+                    {(e as any).instance}
+                  </Badge>
+                {/if}
+              </div>
+            {/if}
+
             {#if e.detail}
               <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
             {/if}
