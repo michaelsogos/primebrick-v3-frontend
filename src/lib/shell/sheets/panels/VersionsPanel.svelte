@@ -30,8 +30,9 @@
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <div class="min-h-0 flex-1 overflow-auto p-4">
-    <div class="space-y-3">
+  <div class="min-h-0 flex-1 overflow-auto">
+    <!-- Primo blocco: Shell, Backend, moduli -->
+    <div class="px-2 space-y-3">
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
         <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -46,10 +47,10 @@
         </Badge>
       </div>
 
-      <div class="pt-1">
+      <div>
         <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.modulesTitle')}</div>
         {#if health?.modules?.length}
-          <div class="space-y-1">
+          <div>
             {#each health.modules as m (m.id)}
               <div class="flex items-center justify-between gap-3 text-sm">
                 <div class="truncate text-muted-foreground">{m.id}</div>
@@ -65,7 +66,15 @@
           <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
         {/if}
       </div>
+    </div>
 
+    <!-- Secondo blocco: separatore -->
+    <div class="py-2">
+      <div class="h-px bg-border"></div>
+    </div>
+
+    <!-- Terzo blocco: Browser info -->
+    <div class="px-2">
       <BrowserClientInfo />
     </div>
   </div>

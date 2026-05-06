@@ -6,6 +6,7 @@
     shouldSuppressSheetDialogClose,
     type SheetPanelId
   } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { cn } from '$lib/utils';
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
   import VersionsPanel from '$lib/shell/sheets/panels/VersionsPanel.svelte';
@@ -40,7 +41,7 @@
 </script>
 
 <Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={sheetState.contentClass} modal={sheetState.modal}>
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
     {#if Panel}
       <Panel {...panelProps} modal={sheetState.modal} />
     {/if}

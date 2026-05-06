@@ -49,6 +49,17 @@
 		}
 	});
 
+	// Reset to today when value is cleared
+	$effect(() => {
+		if (!value && hasUserInteracted) {
+			hasUserInteracted = false;
+			const todayDate = today(getLocalTimeZone());
+			selectedDay = todayDate.day.toString();
+			selectedMonth = months[todayDate.month - 1];
+			selectedYear = todayDate.year.toString();
+		}
+	});
+
 	// Update value when selections change
 	function updateValue() {
 		hasUserInteracted = true;
