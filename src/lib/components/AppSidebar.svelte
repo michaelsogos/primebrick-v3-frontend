@@ -15,6 +15,7 @@
   import { pushImpactError } from '$lib/errors/app-errors';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
+  import { apiFetch } from '$lib/api';
   import {
     BadgeCheck,
     Bell,
@@ -51,12 +52,33 @@
   const sidebar = Sidebar.useSidebar();
   const collapsed = $derived(sidebar.state === 'collapsed');
 
-  function demoToastProfile() {
-    pushImpactError({
-      impact: 'LOW',
-      messageKey: 'shell.demoToast.profileMessage',
-      scopeKey: 'shell.nav.demoItemProfile'
-    });
+  async function demoToastProfile() {
+    try {
+      // Call customer list API to trigger LIST_FAILED error (when PB_CUSTOMERS_FORCE_ERROR=1)
+      const res = await apiFetch('/api/v1/entities/customer/list?force_error=1');
+      if (!res.ok) {
+        const data = await res.json() as { title?: string; internal_code?: string; instance?: string; status?: number; detail?: string };
+        const toneForImpact = 'danger'; // HIGH impact uses danger
+        pushImpactError({
+          impact: 'HIGH',
+          message: data.title || data.detail || 'List Failed',
+          scope: 'Customer List API',
+          tags: [
+            { label: data.internal_code || 'LIST_FAILED', tone: toneForImpact },
+            ...(data.status ? [{ label: `HTTP ${data.status}`, tone: toneForImpact } as const] : []),
+            ...(data.instance ? [{ label: data.instance, tone: toneForImpact } as const] : []),
+          ],
+          toast: true,
+        });
+      }
+    } catch (e) {
+      pushImpactError({
+        impact: 'HIGH',
+        message: e instanceof Error ? e.message : 'Failed to trigger test error',
+        scope: 'Customer List API',
+        toast: true,
+      });
+    }
   }
 
   function demoToastPreferences() {

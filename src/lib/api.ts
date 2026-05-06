@@ -28,8 +28,11 @@ async function responseIsDatabaseUnavailable(res: Response): Promise<boolean> {
   const ct = res.headers.get('content-type') ?? '';
   if (!ct.includes('application/json')) return false;
   try {
-    const data = (await res.clone().json()) as { error?: unknown };
-    return data.error === 'DATABASE_UNAVAILABLE';
+    const data = (await res.clone().json()) as { error?: unknown; title?: unknown };
+    // Support both legacy format and RFC 7807
+    if (data.error === 'DATABASE_UNAVAILABLE') return true;
+    if (data.title === 'Database Unavailable') return true;
+    return false;
   } catch {
     return false;
   }
