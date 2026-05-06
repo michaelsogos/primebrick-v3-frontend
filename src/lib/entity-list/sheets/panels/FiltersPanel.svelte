@@ -228,7 +228,7 @@
     >
       <TabsTrigger
         value="standard"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
         {#if tabValue === "standard"}
           <div
@@ -241,7 +241,7 @@
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
         {#if tabValue === "advanced"}
           <div
