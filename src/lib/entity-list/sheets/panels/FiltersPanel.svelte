@@ -522,17 +522,17 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             {@const column = filterableColumns.find((c) => c.key === filter.field)}
             {#if index > 0}
               <div class="flex justify-center items-center gap-2">
+                <span class="text-xs font-medium {filter.connector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+                  {$t('entities.list.and')}
+                </span>
                 <Switch
                   checked={filter.connector === 'OR'}
                   onCheckedChange={() => toggleFilterConnector(filter.id)}
                   aria-label={$t('entities.list.connector')}
-                >
-                  {#snippet thumbIcons({ checked })}
-                    <span class="text-[10px] font-bold leading-none">
-                      {checked ? $t('entities.list.or') : $t('entities.list.and')}
-                    </span>
-                  {/snippet}
-                </Switch>
+                />
+                <span class="text-xs font-medium {filter.connector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+                  {$t('entities.list.or')}
+                </span>
               </div>
             {/if}
             <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
