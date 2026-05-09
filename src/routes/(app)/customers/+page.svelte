@@ -364,8 +364,35 @@
     for (const filter of advancedFiltersArray) {
       if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
         qs.set(`filters[${filterIdx}][field]`, filter.field);
-        qs.set(`filters[${filterIdx}][op]`, filter.operator);
-        qs.set(`filters[${filterIdx}][value]`, String(filter.value));
+
+        let operator: string = filter.operator;
+        let value = filter.value;
+
+        // Map frontend operators to backend-supported operators
+        if (Array.isArray(value)) {
+          operator = operator === '!=' ? 'NOT IN' : 'IN';
+        } else if (operator === 'startsWith') {
+          operator = 'ILIKE';
+          value = `${value}%`;
+        } else if (operator === 'endsWith') {
+          operator = 'ILIKE';
+          value = `%${value}`;
+        } else if (operator === 'contains') {
+          operator = 'ILIKE';
+          value = `%${value}%`;
+        }
+
+        qs.set(`filters[${filterIdx}][op]`, operator);
+
+        // Handle array values for badge fields
+        if (Array.isArray(value)) {
+          for (const val of value) {
+            qs.append(`filters[${filterIdx}][value][]`, String(val));
+          }
+        } else {
+          qs.set(`filters[${filterIdx}][value]`, String(value));
+        }
+
         qs.set(`filters[${filterIdx}][connector]`, 'AND');
         filterIdx++;
       }

@@ -138,7 +138,7 @@ export type AdvancedFilter = {
   id: string;
   field: string;
   operator: FilterOperator;
-  value: any;
+  value: any | any[];
 };
 
 /** Get available operators for a given column type. */

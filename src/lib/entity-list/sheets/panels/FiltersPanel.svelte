@@ -61,7 +61,7 @@
   // New filter being created
   let newFilterField = $state<string>("");
   let newFilterOperator = $state<FilterOperator>("=");
-  let newFilterValue = $state<any>("");
+  let newFilterValue = $state<any | any[]>("");
 
   // Edit mode state
   let editingFilterId = $state<string | null>(null);
@@ -239,6 +239,14 @@
     newFilterOperator = filter.operator;
     newFilterValue = filter.value;
     editingFilterId = filter.id;
+  }
+
+  function toggleBadgeFilterValue(key: string) {
+    const currentSelection = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : []);
+    const newSelection = currentSelection.includes(key)
+      ? currentSelection.filter((k) => k !== key)
+      : [...currentSelection, key];
+    newFilterValue = newSelection.length > 0 ? newSelection : "";
   }
 
   function removeAdvancedFilter(id: string) {
@@ -481,7 +489,12 @@
                     {$t(`entities.list.operators.${filter.operator}`)}
                   </span>
                   <span class="italic text-muted-foreground">
-                    {String(filter.value)}
+                    {Array.isArray(filter.value)
+                      ? filter.value.map((v) =>
+                          column?.badge?.values?.[v]?.labelText ||
+                          $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
+                        ).join(", ")
+                      : String(filter.value)}
                   </span>
                 </div>
               </div>
@@ -544,6 +557,7 @@
                     onCheckedChange={() => {
                       newFilterField = col.key;
                       editingFilterId = null;
+                      newFilterValue = "";
                       const columnType = col.type;
                       const operators = getOperatorsForColumnType(columnType);
                       if (!operators.includes(newFilterOperator)) {
@@ -602,6 +616,7 @@
                 {$t("entities.list.value")}
               </label>
               {#if selectedColumn?.type === "badge" && selectedColumn.badge?.values}
+                {@const selectedBadgeKeys = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : [])}
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
@@ -611,14 +626,12 @@
                         {...props}
                       >
                         <span
-                          class={newFilterValue
+                          class={selectedBadgeKeys.length > 0
                             ? "text-foreground"
                             : "text-muted-foreground/70 text-xs"}
                         >
-                          {newFilterValue
-                            ? (selectedColumn.badge?.values?.[newFilterValue]?.labelText ||
-                                $t(selectedColumn.badge?.values?.[newFilterValue]?.labelKey ||
-                                  `entities.customer.status.${newFilterValue}`))
+                          {selectedBadgeKeys.length > 0
+                            ? `${selectedBadgeKeys.length} ${$t("entities.list.selected")}`
                             : $t("entities.list.selectValue")}
                         </span>
                         <ChevronDown class="h-4 w-4 shrink-0" />
@@ -629,9 +642,9 @@
                     {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value]}
                       {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
                       <DropdownMenuCheckboxItem
-                        checked={newFilterValue === key}
-                        onCheckedChange={() => (newFilterValue = key)}
-                        closeOnSelect={true}
+                        checked={selectedBadgeKeys.includes(key)}
+                        onCheckedChange={() => toggleBadgeFilterValue(key)}
+                        closeOnSelect={false}
                       >
                         <Badge
                           class="shadow-none"
@@ -659,7 +672,7 @@
               size="sm"
               class="w-full"
               onclick={addAdvancedFilter}
-              disabled={!newFilterField || !newFilterValue}
+              disabled={!newFilterField || (Array.isArray(newFilterValue) ? newFilterValue.length === 0 : !newFilterValue)}
             >
               {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
             </Button>
