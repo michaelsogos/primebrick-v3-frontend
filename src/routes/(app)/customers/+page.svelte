@@ -20,7 +20,6 @@
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
-  import { buildAdvancedFiltersQueryString } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,

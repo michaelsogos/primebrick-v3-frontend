@@ -168,6 +168,17 @@
       "selectField": "Select field",
       "selectValue": "Select value",
       "addFilter": "Add filter",
+      "operators": {
+        "=": "Equals to",
+        "!=": "Not equals to",
+        ">": "Greater than",
+        "<": "Less than",
+        ">=": "Greater than or equal to",
+        "<=": "Less than or equal to",
+        "contains": "Contains",
+        "startsWith": "Starts with",
+        "endsWith": "Ends with"
+      },
       "searchIn": "Search in",
       "searchInAll": "All fields",
       "searchInFields": "fields",

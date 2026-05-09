@@ -155,6 +155,17 @@
       "selectField": "Selecionar campo",
       "selectValue": "Selecionar valor",
       "addFilter": "Adicionar filtro",
+      "operators": {
+        "=": "Igual a",
+        "!=": "Diferente de",
+        ">": "Maior que",
+        "<": "Menor que",
+        ">=": "Maior ou igual a",
+        "<=": "Menor ou igual a",
+        "contains": "Contém",
+        "startsWith": "Começa com",
+        "endsWith": "Termina com"
+      },
       "searchIn": "Pesquisar em",
       "searchInAll": "Todos os campos",
       "searchInFields": "campos",

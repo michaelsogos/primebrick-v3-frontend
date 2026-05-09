@@ -2,7 +2,8 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Badge } from "$lib/components/ui/badge";
   import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
   import {
@@ -454,7 +455,7 @@
                   {column ? $t(column.labelKey) : filter.field}
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  {filter.operator} {String(filter.value)}
+                  {$t(`entities.list.operators.${filter.operator}`)} {String(filter.value)}
                 </div>
               </div>
               <button
@@ -537,20 +538,22 @@
                       class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
                       {...props}
                     >
-                      <span class="text-foreground">{newFilterOperator}</span>
+                      <span class="text-foreground">
+                        {newFilterOperator ? $t(`entities.list.operators.${newFilterOperator}`) : ''}
+                      </span>
                       <ChevronDown class="h-4 w-4 shrink-0" />
                     </Button>
                   {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start" class="w-full">
                   {#each availableOperators as op}
-                    <DropdownMenuCheckboxItem
-                      checked={newFilterOperator === op}
-                      onCheckedChange={() => (newFilterOperator = op as FilterOperator)}
+                    <DropdownMenu.Item
+                      onSelect={() => (newFilterOperator = op as FilterOperator)}
                       closeOnSelect={true}
+                      class={dropdownMenuItemWithSelectedClass('', newFilterOperator === op)}
                     >
-                      {op}
-                    </DropdownMenuCheckboxItem>
+                      {$t(`entities.list.operators.${op}`)}
+                    </DropdownMenu.Item>
                   {/each}
                 </DropdownMenu.Content>
               </DropdownMenu.Root>

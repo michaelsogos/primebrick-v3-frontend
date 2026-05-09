@@ -155,6 +155,17 @@
       "selectField": "Sélectionner champ",
       "selectValue": "Sélectionner valeur",
       "addFilter": "Ajouter filtre",
+      "operators": {
+        "=": "Égal à",
+        "!=": "Différent de",
+        ">": "Supérieur à",
+        "<": "Inférieur à",
+        ">=": "Supérieur ou égal à",
+        "<=": "Inférieur ou égal à",
+        "contains": "Contient",
+        "startsWith": "Commence par",
+        "endsWith": "Finit par"
+      },
       "searchIn": "Rechercher dans",
       "searchInAll": "Tous les champs",
       "searchInFields": "champs",

@@ -168,6 +168,17 @@
       "selectField": "Seleziona campo",
       "selectValue": "Seleziona valore",
       "addFilter": "Aggiungi filtro",
+      "operators": {
+        "=": "Uguale a",
+        "!=": "Diverso da",
+        ">": "Maggiore di",
+        "<": "Minore di",
+        ">=": "Maggiore o uguale a",
+        "<=": "Minore o uguale a",
+        "contains": "Contiene",
+        "startsWith": "Inizia con",
+        "endsWith": "Termina con"
+      },
       "searchIn": "Cerca in",
       "searchInAll": "Tutti i campi",
       "searchInFields": "campi",

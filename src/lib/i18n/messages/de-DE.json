@@ -155,6 +155,17 @@
       "selectField": "Feld auswählen",
       "selectValue": "Wert auswählen",
       "addFilter": "Filter hinzufügen",
+      "operators": {
+        "=": "Gleich",
+        "!=": "Ungleich",
+        ">": "Größer als",
+        "<": "Kleiner als",
+        ">=": "Größer oder gleich",
+        "<=": "Kleiner oder gleich",
+        "contains": "Enthält",
+        "startsWith": "Beginnt mit",
+        "endsWith": "Endet mit"
+      },
       "searchIn": "Suchen in",
       "searchInAll": "Alle Felder",
       "searchInFields": "Felder",
