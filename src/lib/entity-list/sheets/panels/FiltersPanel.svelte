@@ -103,7 +103,9 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type);
+        const tz = filterValues[`${col.key}_tz_ui`] || browserTimezone || "UTC";
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type, tz);
+        timezoneValues[col.key] = tz;
       }
     }
   });
@@ -137,6 +139,9 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
           const utcIso = calendarDateToUtcIso(dateValue, tz);
           tempFilterValues = { ...tempFilterValues, [col.key]: utcIso };
 
+          // Store timezone in a separate field for UI restoration
+          tempFilterValues = { ...tempFilterValues, [`${col.key}_tz_ui`]: tz };
+
           // Only send IANA field if:
           // 1. Column has datetimeIanaToggle (has IANA field in DB)
           // 2. Selected timezone differs from browser timezone
@@ -144,6 +149,9 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             const ianaField = col.datetimeIanaToggle.recordIanaField;
             tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
           }
+        } else {
+          // Clear timezone if date is cleared
+          delete tempFilterValues[`${col.key}_tz_ui`];
         }
       }
     }
@@ -166,10 +174,31 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   function isoToCalendarDate(
     isoString: string | null | undefined,
     type: "date" | "datetime" = "date",
+    timezone: string = "UTC",
   ): CalendarDate | CalendarDateTime | null {
     if (!isoString) return null;
     try {
       if (type === "datetime") {
+        // For UTC strings (with 'Z'), convert to the specified timezone
+        if (isoString.endsWith('Z')) {
+          const date = new Date(isoString);
+          // Get date parts in the specified timezone using Intl
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          });
+          const parts = formatter.formatToParts(date);
+          const get = (t: string) => parseInt(parts.find(p => p.type === t)?.value || '0', 10);
+          let hour = get('hour');
+          if (hour === 24) hour = 0;
+          return new CalendarDateTime(get('year'), get('month'), get('day'), hour, get('minute'), get('second'));
+        }
         return parseDateTime(isoString);
       }
       return parseDate(isoString);
