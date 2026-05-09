@@ -22,7 +22,9 @@
     "more": "Mais",
     "breadcrumb": "breadcrumb",
     "clear": "Limpar",
-    "selectDate": "Selecionar data"
+    "selectDate": "Selecionar data",
+    "edit": "Editar",
+    "remove": "Remover"
   },
   "shell": {
     "subtitle": "Backoffice",

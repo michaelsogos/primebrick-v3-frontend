@@ -23,7 +23,9 @@
     "more": "More",
     "breadcrumb": "breadcrumb",
     "clear": "Clear",
-    "selectDate": "Select date"
+    "selectDate": "Select date",
+    "edit": "Edit",
+    "remove": "Remove"
   },
   "shell": {
     "subtitle": "Backoffice",

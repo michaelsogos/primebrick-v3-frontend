@@ -16,7 +16,7 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw, ChevronDown, Play } from "lucide-svelte";
+  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX } from "lucide-svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
@@ -62,6 +62,9 @@
   let newFilterField = $state<string>("");
   let newFilterOperator = $state<FilterOperator>("=");
   let newFilterValue = $state<any>("");
+
+  // Edit mode state
+  let editingFilterId = $state<string | null>(null);
 
   // Tab state
   let tabValue = $state("standard");
@@ -201,22 +204,41 @@
     newFilterField = "";
     newFilterOperator = "=";
     newFilterValue = "";
+    editingFilterId = null;
     // Reset actual applied filters
     onResetFilters?.();
   }
 
   function addAdvancedFilter() {
     if (!newFilterField || !newFilterValue) return;
-    const newFilter: AdvancedFilter = {
-      id: crypto.randomUUID(),
-      field: newFilterField,
-      operator: newFilterOperator,
-      value: newFilterValue,
-    };
-    tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
+    if (editingFilterId) {
+      // Update existing filter
+      tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
+        filter.id === editingFilterId
+          ? { ...filter, field: newFilterField, operator: newFilterOperator, value: newFilterValue }
+          : filter
+      );
+      editingFilterId = null;
+    } else {
+      // Add new filter
+      const newFilter: AdvancedFilter = {
+        id: crypto.randomUUID(),
+        field: newFilterField,
+        operator: newFilterOperator,
+        value: newFilterValue,
+      };
+      tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
+    }
     newFilterField = "";
     newFilterOperator = "=";
     newFilterValue = "";
+  }
+
+  function editAdvancedFilter(filter: AdvancedFilter) {
+    newFilterField = filter.field;
+    newFilterOperator = filter.operator;
+    newFilterValue = filter.value;
+    editingFilterId = filter.id;
   }
 
   function removeAdvancedFilter(id: string) {
@@ -451,21 +473,36 @@
             {@const column = filterableColumns.find((c) => c.key === filter.field)}
             <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
               <div class="flex-1 min-w-0">
-                <div class="text-xs font-medium text-foreground truncate">
-                  {column ? $t(column.labelKey) : filter.field}
-                </div>
-                <div class="text-xs text-muted-foreground">
-                  {$t(`entities.list.operators.${filter.operator}`)} {String(filter.value)}
+                <div class="text-xs flex flex-wrap items-center gap-1">
+                  <span class="font-bold text-foreground">
+                    {column ? $t(column.labelKey) : filter.field}
+                  </span>
+                  <span class="text-primary">
+                    {$t(`entities.list.operators.${filter.operator}`)}
+                  </span>
+                  <span class="italic text-muted-foreground">
+                    {String(filter.value)}
+                  </span>
                 </div>
               </div>
-              <button
-                type="button"
-                class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                onclick={() => removeAdvancedFilter(filter.id)}
-                title={$t("common.remove")}
-              >
-                <XIcon class="size-3" />
-              </button>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  onclick={() => editAdvancedFilter(filter)}
+                  title={$t("common.edit")}
+                >
+                  <Pencil class="size-3" />
+                </button>
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  onclick={() => removeAdvancedFilter(filter.id)}
+                  title={$t("common.remove")}
+                >
+                  <FunnelX class="size-3" />
+                </button>
+              </div>
             </div>
           {/each}
         </div>
@@ -506,6 +543,7 @@
                     checked={newFilterField === col.key}
                     onCheckedChange={() => {
                       newFilterField = col.key;
+                      editingFilterId = null;
                       const columnType = col.type;
                       const operators = getOperatorsForColumnType(columnType);
                       if (!operators.includes(newFilterOperator)) {
@@ -623,7 +661,7 @@
               onclick={addAdvancedFilter}
               disabled={!newFilterField || !newFilterValue}
             >
-              {$t("entities.list.addFilter")}
+              {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
             </Button>
           {/if}
         </div>
