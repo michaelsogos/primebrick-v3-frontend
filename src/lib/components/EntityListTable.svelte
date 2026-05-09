@@ -17,7 +17,7 @@
   import { cn } from '$lib/utils.js';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
-  import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName } from '$lib/entity-list/types';
+  import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
   import XIcon from '@lucide/svelte/icons/x';
@@ -99,6 +99,8 @@
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
+    advancedFilters = [],
+    onAdvancedFiltersChange,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -161,6 +163,8 @@
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
+    advancedFilters?: AdvancedFilter[];
+    onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
@@ -397,7 +401,9 @@
         filterableColumns,
         filterValues: filterValues ?? {},
         onFilterValuesChange,
-        onResetFilters
+        onResetFilters,
+        advancedFilters: advancedFilters ?? [],
+        onAdvancedFiltersChange
       } as any;
     }
   });
