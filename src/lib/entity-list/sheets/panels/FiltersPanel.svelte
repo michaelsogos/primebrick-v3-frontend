@@ -122,10 +122,14 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         (col.type === "date" || col.type === "datetime") &&
         dateDropperValues[col.key] !== undefined
       ) {
-        const isoValue = calendarDateToIso(dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null);
-        tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
-        const tz = timezoneValues[col.key] || "UTC";
-        tempFilterValues = { ...tempFilterValues, [`${col.key}_tz`]: tz };
+        const dateValue = dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null;
+        // Only send value and timezone if date is actually selected
+        if (dateValue) {
+          const isoValue = calendarDateToIso(dateValue);
+          tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
+          const tz = timezoneValues[col.key] || "UTC";
+          tempFilterValues = { ...tempFilterValues, [`${col.key}_tz`]: tz };
+        }
       }
     }
     onFilterValuesChange?.(tempFilterValues);
