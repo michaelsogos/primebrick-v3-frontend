@@ -173,6 +173,8 @@
       "connector": "Connettore",
       "and": "e",
       "or": "o",
+      "allCriteria": "Tutti i criteri",
+      "atLeastOneCriteria": "Almeno uno dei criteri",
       "operators": {
         "=": "Uguale a",
         "!=": "Diverso da",

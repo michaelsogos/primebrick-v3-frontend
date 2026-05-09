@@ -160,6 +160,8 @@
       "connector": "Conector",
       "and": "y",
       "or": "o",
+      "allCriteria": "Todos los criterios",
+      "atLeastOneCriteria": "Al menos uno de los criterios",
       "operators": {
         "=": "Igual a",
         "!=": "Distinto de",

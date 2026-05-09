@@ -156,10 +156,12 @@
       "value": "Valeur",
       "selectField": "Sélectionner champ",
       "selectValue": "Sélectionner valeur",
-      "addFilter": "Ajouter filtre",
+      "addFilter": "Ajouter un filtre",
       "connector": "Connecteur",
       "and": "et",
       "or": "ou",
+      "allCriteria": "Tous les critères",
+      "atLeastOneCriteria": "Au moins un des critères",
       "operators": {
         "=": "Égal à",
         "!=": "Différent de",

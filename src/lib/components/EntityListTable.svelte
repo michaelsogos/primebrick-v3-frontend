@@ -164,7 +164,7 @@
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
-    onAdvancedFiltersChange?: (filters: AdvancedFilter[]) => void;
+    onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;

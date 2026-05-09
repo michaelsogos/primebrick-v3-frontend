@@ -36,7 +36,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     onResetFilters?: () => void;
     modal?: boolean;
     advancedFilters?: AdvancedFilter[];
-    onAdvancedFiltersChange?: (filters: AdvancedFilter[]) => void;
+    onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
   }
 
   let {
@@ -57,11 +57,12 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
 
   // Advanced filters state
-  let tempAdvancedFilters = $state<AdvancedFilter[]>([]);
+  let tempAdvancedFilters: AdvancedFilter[] = $state([]);
+  let globalConnector: 'AND' | 'OR' = $state('AND');
 
   // New filter being created
-  let newFilterField = $state<string>("");
-  let newFilterOperator = $state<FilterOperator>("=");
+  let newFilterField = $state<string>(""); 
+  let newFilterOperator = $state<FilterOperator>("="); 
   let newFilterValue = $state<any | any[] | { start: any; end: any }>("");
 
   // BETWEEN operator state
@@ -244,7 +245,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         field: newFilterField,
         operator: newFilterOperator,
         value,
-        connector: 'AND',
       };
       tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
     }
@@ -282,14 +282,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     newFilterValue = newSelection.length > 0 ? newSelection : "";
   }
 
-  function toggleFilterConnector(id: string) {
-    tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
-      filter.id === id
-        ? { ...filter, connector: filter.connector === 'OR' ? 'AND' : 'OR' }
-        : filter
-    );
-  }
-
   function removeAdvancedFilter(id: string) {
     tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
   }
@@ -301,7 +293,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   }
 
   function applyAdvancedFilters() {
-    onAdvancedFiltersChange?.(tempAdvancedFilters);
+    // Apply filters with global connector
+    onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
   }
 </script>
 
@@ -516,25 +509,29 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     </TabsContent>
 
     <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
+      <div class="flex justify-center items-center mb-4">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+            {$t('entities.list.allCriteria')}
+          </span>
+          <Switch
+            checked={globalConnector === 'OR'}
+            onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
+            aria-label={$t('entities.list.connector')}
+          >
+            {#snippet thumbIcons({ checked })}
+              <span class="size-4 flex items-center justify-center rounded-full {checked ? 'bg-amber-200/85 dark:bg-amber-900/55' : 'bg-sky-200/80 dark:bg-sky-900/55'}"></span>
+            {/snippet}
+          </Switch>
+          <span class="text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+            {$t('entities.list.atLeastOneCriteria')}
+          </span>
+        </div>
+      </div>
       {#if tempAdvancedFilters.length > 0}
         <div class="space-y-3 mb-4">
-          {#each tempAdvancedFilters as filter, index (filter.id)}
+          {#each tempAdvancedFilters as filter (filter.id)}
             {@const column = filterableColumns.find((c) => c.key === filter.field)}
-            {#if index > 0}
-              <div class="flex justify-center items-center gap-2">
-                <span class="text-xs font-medium {filter.connector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-                  {$t('entities.list.and')}
-                </span>
-                <Switch
-                  checked={filter.connector === 'OR'}
-                  onCheckedChange={() => toggleFilterConnector(filter.id)}
-                  aria-label={$t('entities.list.connector')}
-                />
-                <span class="text-xs font-medium {filter.connector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-                  {$t('entities.list.or')}
-                </span>
-              </div>
-            {/if}
             <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
               <div class="flex-1 min-w-0">
                 <div class="text-xs flex flex-wrap items-center gap-1">

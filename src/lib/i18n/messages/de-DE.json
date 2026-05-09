@@ -160,6 +160,8 @@
       "connector": "Verbindung",
       "and": "und",
       "or": "oder",
+      "allCriteria": "Alle Kriterien",
+      "atLeastOneCriteria": "Mindestens eines der Kriterien",
       "operators": {
         "=": "Gleich",
         "!=": "Ungleich",

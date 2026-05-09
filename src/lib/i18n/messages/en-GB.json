@@ -173,6 +173,8 @@
       "connector": "Connector",
       "and": "and",
       "or": "or",
+      "allCriteria": "All criteria",
+      "atLeastOneCriteria": "At least one of the criteria",
       "operators": {
         "=": "Equals to",
         "!=": "Not equals to",

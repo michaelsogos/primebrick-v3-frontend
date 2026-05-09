@@ -89,7 +89,8 @@
   let filterValues = $state<Record<string, any>>({});
 
   // Advanced filters
-  let advancedFilters = $state<AdvancedFilter[]>([]);
+  let advancedFilters: AdvancedFilter[] = $state([]);
+  let globalConnector: 'AND' | 'OR' = $state('AND');
 
   let visibleKeys = $state<string[]>([]);
 
@@ -373,7 +374,6 @@
           qs.set(`filters[${filterIdx}][op]`, operator);
           qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
           qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
-          qs.set(`filters[${filterIdx}][connector]`, filter.connector || 'AND');
           filterIdx++;
           continue;
         }
@@ -403,9 +403,13 @@
           qs.set(`filters[${filterIdx}][value]`, String(value));
         }
 
-        qs.set(`filters[${filterIdx}][connector]`, filter.connector || 'AND');
         filterIdx++;
       }
+    }
+
+    // Add global connector parameter
+    if (advancedFiltersArray.length > 0) {
+      qs.set('connector', globalConnector);
     }
     qs.set('page', String(page));
     qs.set('page_size', String(pageSize));
@@ -676,8 +680,9 @@
     void refreshRows({ clampPage: true });
   }
 
-  function onAdvancedFiltersChange(filters: AdvancedFilter[]) {
+  function onAdvancedFiltersChange(filters: AdvancedFilter[], connector: 'AND' | 'OR') {
     advancedFilters = filters;
+    globalConnector = connector;
     page = 1;
     void refreshRows({ clampPage: true });
   }
