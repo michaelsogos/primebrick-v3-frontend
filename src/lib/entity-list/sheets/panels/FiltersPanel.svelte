@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
@@ -27,6 +28,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import { onMount } from "svelte";
   import { crossfade } from "svelte/transition";
   import { cubicInOut } from "svelte/easing";
+  import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 
   interface $$Props {
     content: any;
@@ -54,9 +56,14 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   let tempFilterValues = $state<Record<string, any>>({});
 
   // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
-  let dateDropperValues = $state<Record<string, CalendarDate | CalendarDateTime | null>>({});
-  // Local state for timezone values (IANA strings)
-  let timezoneValues = $state<Record<string, string>>({});
+  let dateDropperValues: Record<string, CalendarDate | CalendarDateTime | null> = $state({});
+  let timezoneValues: Record<string, string> = $state({});
+  let browserTimezone = $state<string | null>(null);
+
+  onMount(() => {
+    if (!browser) return;
+    browserTimezone = getResolvedIanaTimeZone();
+  });
 
   // Advanced filters state
   let tempAdvancedFilters: AdvancedFilter[] = $state([]);
@@ -125,10 +132,18 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         const dateValue = dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null;
         // Only send value and timezone if date is actually selected
         if (dateValue) {
-          const isoValue = calendarDateToIso(dateValue);
-          tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
-          const tz = timezoneValues[col.key] || "UTC";
-          tempFilterValues = { ...tempFilterValues, [`${col.key}_tz`]: tz };
+          const tz = timezoneValues[col.key] || browserTimezone || "UTC";
+          // Always convert to UTC using the selected timezone
+          const utcIso = calendarDateToUtcIso(dateValue, tz);
+          tempFilterValues = { ...tempFilterValues, [col.key]: utcIso };
+
+          // Only send IANA field if:
+          // 1. Column has datetimeIanaToggle (has IANA field in DB)
+          // 2. Selected timezone differs from browser timezone
+          if (col.datetimeIanaToggle && tz !== browserTimezone) {
+            const ianaField = col.datetimeIanaToggle.recordIanaField;
+            tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
+          }
         }
       }
     }
@@ -163,14 +178,41 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     }
   }
 
-  // Conversione da CalendarDate o CalendarDateTime a stringa ISO
-  function calendarDateToIso(date: CalendarDate | CalendarDateTime | null): string | null {
+  // Conversione da CalendarDate o CalendarDateTime a stringa ISO UTC
+  function calendarDateToUtcIso(date: CalendarDate | CalendarDateTime | null, timezone: string): string | null {
     if (!date) return null;
-    return date.toString();
+    if (date instanceof CalendarDate) {
+      // For dates without time, just return the date string
+      return date.toString();
+    }
+    // For CalendarDateTime, convert to UTC using the specified timezone
+    // CalendarDateTime is timezone-naive, so we need to convert it using the timezone
+    const year = date.year;
+    const month = date.month;
+    const day = date.day;
+    const hour = date.hour;
+    const minute = date.minute;
+    const second = date.second;
+
+    // Create a Date object in the specified timezone and convert to UTC ISO string
+    const dateInTimezone = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    // Adjust for timezone offset
+    const offset = getTimezoneOffset(timezone);
+    const utcDate = new Date(dateInTimezone.getTime() - offset * 60 * 1000);
+    return utcDate.toISOString();
+  }
+
+  // Get timezone offset in minutes from UTC
+  function getTimezoneOffset(timezone: string): number {
+    const date = new Date();
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
   }
 
   function renderFilterInput(col: MetaColumn) {
     if (col.type === "badge" && col.badge?.values) {
+      // ... (rest of the code remains the same)
       const options = getBadgeOptions(col);
       const selectedKeys = (tempFilterValues[col.key] as string[]) || [];
 
