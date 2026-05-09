@@ -43,6 +43,26 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 
 5. **For Release/Hotfix**: Also merge `main` back to `develop` to stay aligned
 
+## CRITICAL: Package.json Update Before Closing Release/Hotfix
+
+**BEFORE** merging a release or hotfix branch to main, you MUST:
+
+1. Update the version in `package.json` to match the release/hotfix version
+2. Commit the package.json change on the release/hotfix branch
+3. THEN merge to main (the package.json change will be included in the merge)
+4. This ensures the version file is committed before the merge/rebase with main and develop
+
+**Correct flow for release:**
+1. Create release branch from develop
+2. Update package.json version on release branch
+3. Commit package.json change
+4. Merge release to main (includes package.json change)
+5. Tag main
+6. Push main with tags
+7. Merge main back to develop
+8. Push develop
+9. Delete release branch
+
 ## Version Tagging Rules
 
 - **NO 'v' prefix** in branch names: `release/0.13.2` (not `release/v0.13.2`)
