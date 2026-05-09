@@ -640,8 +640,11 @@
 
   function onSearchInKeysChange(keys: string[] | null) {
     searchInKeys = keys;
-    page = 1;
-    void refreshRows({ clampPage: true });
+    // Only refresh if there's an actual search value
+    if (appliedSearch.trim()) {
+      page = 1;
+      void refreshRows({ clampPage: true });
+    }
   }
 
   function onSortChange(key: string | null, dir: 'asc' | 'desc') {
