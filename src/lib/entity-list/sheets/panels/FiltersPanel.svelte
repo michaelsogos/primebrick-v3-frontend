@@ -61,7 +61,11 @@
   // New filter being created
   let newFilterField = $state<string>("");
   let newFilterOperator = $state<FilterOperator>("=");
-  let newFilterValue = $state<any | any[]>("");
+  let newFilterValue = $state<any | any[] | { start: any; end: any }>("");
+
+  // BETWEEN operator state
+  let newFilterStartDate = $state<any>("");
+  let newFilterEndDate = $state<any>("");
 
   // Edit mode state
   let editingFilterId = $state<string | null>(null);
@@ -210,12 +214,25 @@
   }
 
   function addAdvancedFilter() {
-    if (!newFilterField || !newFilterValue) return;
+    if (!newFilterField) return;
+
+    let value: any | any[] | { start: any; end: any } = newFilterValue;
+
+    // Handle BETWEEN operator
+    if (newFilterOperator === "BETWEEN") {
+      if (!newFilterStartDate || !newFilterEndDate) return;
+      value = { start: newFilterStartDate, end: newFilterEndDate };
+    } else if (Array.isArray(newFilterValue)) {
+      if (newFilterValue.length === 0) return;
+    } else if (!newFilterValue) {
+      return;
+    }
+
     if (editingFilterId) {
       // Update existing filter
       tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
         filter.id === editingFilterId
-          ? { ...filter, field: newFilterField, operator: newFilterOperator, value: newFilterValue }
+          ? { ...filter, field: newFilterField, operator: newFilterOperator, value }
           : filter
       );
       editingFilterId = null;
@@ -225,20 +242,34 @@
         id: crypto.randomUUID(),
         field: newFilterField,
         operator: newFilterOperator,
-        value: newFilterValue,
+        value,
       };
       tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
     }
+
+    // Reset form
     newFilterField = "";
     newFilterOperator = "=";
     newFilterValue = "";
+    newFilterStartDate = "";
+    newFilterEndDate = "";
   }
 
   function editAdvancedFilter(filter: AdvancedFilter) {
     newFilterField = filter.field;
     newFilterOperator = filter.operator;
-    newFilterValue = filter.value;
     editingFilterId = filter.id;
+
+    // Handle BETWEEN operator
+    if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+      newFilterStartDate = filter.value.start;
+      newFilterEndDate = filter.value.end;
+      newFilterValue = "";
+    } else {
+      newFilterValue = filter.value;
+      newFilterStartDate = "";
+      newFilterEndDate = "";
+    }
   }
 
   function toggleBadgeFilterValue(key: string) {
@@ -494,6 +525,8 @@
                           column?.badge?.values?.[v]?.labelText ||
                           $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
                         ).join(", ")
+                      : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
+                      ? `${filter.value.start} e ${filter.value.end}`
                       : String(filter.value)}
                   </span>
                 </div>
@@ -558,6 +591,8 @@
                       newFilterField = col.key;
                       editingFilterId = null;
                       newFilterValue = "";
+                      newFilterStartDate = "";
+                      newFilterEndDate = "";
                       const columnType = col.type;
                       const operators = getOperatorsForColumnType(columnType);
                       if (!operators.includes(newFilterOperator)) {
@@ -600,7 +635,12 @@
                 <DropdownMenu.Content align="start" class="w-full">
                   {#each availableOperators as op}
                     <DropdownMenu.Item
-                      onSelect={() => (newFilterOperator = op as FilterOperator)}
+                      onSelect={() => {
+                        newFilterOperator = op as FilterOperator;
+                        editingFilterId = null;
+                        newFilterStartDate = "";
+                        newFilterEndDate = "";
+                      }}
                       closeOnSelect={true}
                       class={dropdownMenuItemWithSelectedClass('', newFilterOperator === op)}
                     >
@@ -657,6 +697,24 @@
                     {/each}
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
+              {:else if selectedColumn?.type === "date" || selectedColumn?.type === "datetime"}
+                {#if newFilterOperator === "BETWEEN"}
+                  <div class="space-y-2">
+                    <DateWheelPicker
+                      bind:value={newFilterStartDate}
+                      placeholder={$t("entities.list.selectValue")}
+                    />
+                    <DateWheelPicker
+                      bind:value={newFilterEndDate}
+                      placeholder={$t("entities.list.selectValue")}
+                    />
+                  </div>
+                {:else}
+                  <DateWheelPicker
+                    bind:value={newFilterValue}
+                    placeholder={$t("entities.list.selectValue")}
+                  />
+                {/if}
               {:else}
                 <Input
                   placeholder={$t("entities.list.filterPlaceholder")}
@@ -672,7 +730,11 @@
               size="sm"
               class="w-full"
               onclick={addAdvancedFilter}
-              disabled={!newFilterField || (Array.isArray(newFilterValue) ? newFilterValue.length === 0 : !newFilterValue)}
+              disabled={!newFilterField || (
+                newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                !newFilterValue
+              )}
             >
               {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
             </Button>

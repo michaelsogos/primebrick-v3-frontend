@@ -166,7 +166,8 @@
         "<=": "Menor ou igual a",
         "contains": "Contém",
         "startsWith": "Começa com",
-        "endsWith": "Termina com"
+        "endsWith": "Termina com",
+        "BETWEEN": "Entre"
       },
       "searchIn": "Pesquisar em",
       "searchInAll": "Todos os campos",

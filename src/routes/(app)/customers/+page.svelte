@@ -368,6 +368,16 @@
         let operator: string = filter.operator;
         let value = filter.value;
 
+        // Handle BETWEEN operator with start/end values
+        if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
+          qs.set(`filters[${filterIdx}][op]`, operator);
+          qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
+          qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
+          qs.set(`filters[${filterIdx}][connector]`, 'AND');
+          filterIdx++;
+          continue;
+        }
+
         // Map frontend operators to backend-supported operators
         if (Array.isArray(value)) {
           operator = operator === '!=' ? 'NOT IN' : 'IN';

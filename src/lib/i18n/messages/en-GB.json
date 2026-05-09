@@ -179,7 +179,8 @@
         "<=": "Less than or equal to",
         "contains": "Contains",
         "startsWith": "Starts with",
-        "endsWith": "Ends with"
+        "endsWith": "Ends with",
+        "BETWEEN": "Between"
       },
       "searchIn": "Search in",
       "searchInAll": "All fields",

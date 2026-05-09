@@ -131,14 +131,15 @@ export type FilterOperator =
   | '<='
   | 'contains'
   | 'startsWith'
-  | 'endsWith';
+  | 'endsWith'
+  | 'BETWEEN';
 
 /** Advanced filter definition. */
 export type AdvancedFilter = {
   id: string;
   field: string;
   operator: FilterOperator;
-  value: any | any[];
+  value: any | any[] | { start: any; end: any };
 };
 
 /** Get available operators for a given column type. */
@@ -150,7 +151,7 @@ export function getOperatorsForColumnType(columnType: string): FilterOperator[] 
       return ['=', '!='];
     case 'date':
     case 'datetime':
-      return ['=', '!=', '>', '<', '>=', '<='];
+      return ['=', '!=', '>', '<', '>=', '<=', 'BETWEEN'];
     default:
       // Assume numeric for unknown types
       return ['=', '!=', '>', '<', '>=', '<='];

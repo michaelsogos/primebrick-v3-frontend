@@ -179,7 +179,8 @@
         "<=": "Minore o uguale a",
         "contains": "Contiene",
         "startsWith": "Inizia con",
-        "endsWith": "Termina con"
+        "endsWith": "Termina con",
+        "BETWEEN": "Tra"
       },
       "searchIn": "Cerca in",
       "searchInAll": "Tutti i campi",
