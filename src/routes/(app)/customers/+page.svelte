@@ -19,6 +19,7 @@
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
@@ -86,6 +87,10 @@
   
   // Filter values for all filterable columns
   let filterValues = $state<Record<string, any>>({});
+
+  // Advanced filters
+  let advancedFilters: AdvancedFilter[] = $state([]);
+  let globalConnector: 'AND' | 'OR' = $state('AND');
 
   let visibleKeys = $state<string[]>([]);
 
@@ -355,6 +360,57 @@
         }
       }
     }
+    // Add advanced filters to the same filters structure
+    const advancedFiltersArray = Array.isArray(advancedFilters) ? advancedFilters : [];
+    for (const filter of advancedFiltersArray) {
+      if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
+        qs.set(`filters[${filterIdx}][field]`, filter.field);
+
+        let operator: string = filter.operator;
+        let value = filter.value;
+
+        // Handle BETWEEN operator with start/end values
+        if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
+          qs.set(`filters[${filterIdx}][op]`, operator);
+          qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
+          qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
+          filterIdx++;
+          continue;
+        }
+
+        // Map frontend operators to backend-supported operators
+        if (Array.isArray(value)) {
+          operator = operator === '!=' ? 'NOT IN' : 'IN';
+        } else if (operator === 'startsWith') {
+          operator = 'ILIKE';
+          value = `${value}%`;
+        } else if (operator === 'endsWith') {
+          operator = 'ILIKE';
+          value = `%${value}`;
+        } else if (operator === 'contains') {
+          operator = 'ILIKE';
+          value = `%${value}%`;
+        }
+
+        qs.set(`filters[${filterIdx}][op]`, operator);
+
+        // Handle array values for badge fields
+        if (Array.isArray(value)) {
+          for (const val of value) {
+            qs.append(`filters[${filterIdx}][value][]`, String(val));
+          }
+        } else {
+          qs.set(`filters[${filterIdx}][value]`, String(value));
+        }
+
+        filterIdx++;
+      }
+    }
+
+    // Add global connector parameter
+    if (advancedFiltersArray.length > 0) {
+      qs.set('connector', globalConnector);
+    }
     qs.set('page', String(page));
     qs.set('page_size', String(pageSize));
     const effSortKey = sortKey ?? defaultSortKey;
@@ -584,8 +640,11 @@
 
   function onSearchInKeysChange(keys: string[] | null) {
     searchInKeys = keys;
-    page = 1;
-    void refreshRows({ clampPage: true });
+    // Only refresh if there's an actual search value
+    if (appliedSearch.trim()) {
+      page = 1;
+      void refreshRows({ clampPage: true });
+    }
   }
 
   function onSortChange(key: string | null, dir: 'asc' | 'desc') {
@@ -624,8 +683,16 @@
     void refreshRows({ clampPage: true });
   }
 
+  function onAdvancedFiltersChange(filters: AdvancedFilter[], connector: 'AND' | 'OR') {
+    advancedFilters = filters;
+    globalConnector = connector;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
   function onResetFilters() {
     filterValues = {};
+    advancedFilters = [];
     statusFilter = null;
     page = 1;
     void refreshRows({ clampPage: true });
@@ -699,6 +766,8 @@
       {filterValues}
       onFilterValuesChange={onFilterValuesChange}
       onResetFilters={onResetFilters}
+      {advancedFilters}
+      onAdvancedFiltersChange={onAdvancedFiltersChange}
       viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}

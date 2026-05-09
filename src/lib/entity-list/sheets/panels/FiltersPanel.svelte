@@ -2,7 +2,8 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Badge } from "$lib/components/ui/badge";
   import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
   import {
@@ -15,8 +16,10 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw, ChevronDown, Play } from "lucide-svelte";
-  import type { MetaColumn } from "$lib/entity-list/types";
+  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX } from "lucide-svelte";
+import Switch from "$lib/components/ui/switch/switch.svelte";
+  import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
+  import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
@@ -32,6 +35,8 @@
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
     modal?: boolean;
+    advancedFilters?: AdvancedFilter[];
+    onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
   }
 
   let {
@@ -41,6 +46,8 @@
     onFilterValuesChange,
     onResetFilters,
     modal = true,
+    advancedFilters = [],
+    onAdvancedFiltersChange,
   }: $$Props = $props();
 
   // Temporary filter values (being edited by user)
@@ -48,6 +55,22 @@
 
   // Local state for DateDropper values (CalendarDate objects)
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
+
+  // Advanced filters state
+  let tempAdvancedFilters: AdvancedFilter[] = $state([]);
+  let globalConnector: 'AND' | 'OR' = $state('AND');
+
+  // New filter being created
+  let newFilterField = $state<string>(""); 
+  let newFilterOperator = $state<FilterOperator>("="); 
+  let newFilterValue = $state<any | any[] | { start: any; end: any }>("");
+
+  // BETWEEN operator state
+  let newFilterStartDate = $state<any>("");
+  let newFilterEndDate = $state<any>("");
+
+  // Edit mode state
+  let editingFilterId = $state<string | null>(null);
 
   // Tab state
   let tabValue = $state("standard");
@@ -67,6 +90,7 @@
   // Initialize temp values when component loads
   onMount(() => {
     tempFilterValues = { ...filterValues };
+    tempAdvancedFilters = [...advancedFilters];
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
@@ -101,6 +125,7 @@
       }
     }
     onFilterValuesChange?.(tempFilterValues);
+    applyAdvancedFilters();
   }
 
   function getBadgeOptions(col: MetaColumn) {
@@ -180,8 +205,96 @@
         dateDropperValues[col.key] = null;
       }
     }
+    // Clear advanced filters
+    tempAdvancedFilters = [];
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
+    editingFilterId = null;
     // Reset actual applied filters
     onResetFilters?.();
+  }
+
+  function addAdvancedFilter() {
+    if (!newFilterField) return;
+
+    let value: any | any[] | { start: any; end: any } = newFilterValue;
+
+    // Handle BETWEEN operator
+    if (newFilterOperator === "BETWEEN") {
+      if (!newFilterStartDate || !newFilterEndDate) return;
+      value = { start: newFilterStartDate, end: newFilterEndDate };
+    } else if (Array.isArray(newFilterValue)) {
+      if (newFilterValue.length === 0) return;
+    } else if (!newFilterValue) {
+      return;
+    }
+
+    if (editingFilterId) {
+      // Update existing filter
+      tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
+        filter.id === editingFilterId
+          ? { ...filter, field: newFilterField, operator: newFilterOperator, value }
+          : filter
+      );
+      editingFilterId = null;
+    } else {
+      // Add new filter
+      const newFilter: AdvancedFilter = {
+        id: crypto.randomUUID(),
+        field: newFilterField,
+        operator: newFilterOperator,
+        value,
+      };
+      tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
+    }
+
+    // Reset form
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
+    newFilterStartDate = "";
+    newFilterEndDate = "";
+  }
+
+  function editAdvancedFilter(filter: AdvancedFilter) {
+    newFilterField = filter.field;
+    newFilterOperator = filter.operator;
+    editingFilterId = filter.id;
+
+    // Handle BETWEEN operator
+    if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+      newFilterStartDate = filter.value.start;
+      newFilterEndDate = filter.value.end;
+      newFilterValue = "";
+    } else {
+      newFilterValue = filter.value;
+      newFilterStartDate = "";
+      newFilterEndDate = "";
+    }
+  }
+
+  function toggleBadgeFilterValue(key: string) {
+    const currentSelection = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : []);
+    const newSelection = currentSelection.includes(key)
+      ? currentSelection.filter((k) => k !== key)
+      : [...currentSelection, key];
+    newFilterValue = newSelection.length > 0 ? newSelection : "";
+  }
+
+  function removeAdvancedFilter(id: string) {
+    tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
+  }
+
+  function updateAdvancedFilter(id: string, updates: Partial<AdvancedFilter>) {
+    tempAdvancedFilters = tempAdvancedFilters.map((f) =>
+      f.id === id ? { ...f, ...updates } : f
+    );
+  }
+
+  function applyAdvancedFilters() {
+    // Apply filters with global connector
+    onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
   }
 </script>
 
@@ -224,30 +337,30 @@
 
   <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full  overflow-hidden">
     <TabsList
-      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0"
+      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0 rounded-none"
     >
       <TabsTrigger
         value="standard"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
         {#if tabValue === "standard"}
           <div
             in:receive={{ key: "active-pill" }}
             out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
         <span class="relative z-20">{$t("entities.list.standardFilters")}</span>
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0"
+        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
       >
         {#if tabValue === "advanced"}
           <div
             in:receive={{ key: "active-pill" }}
             out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background"
+            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
         <span class="relative z-20">{$t("entities.list.advancedFilters")}</span>
@@ -396,11 +509,268 @@
     </TabsContent>
 
     <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
-      <div
-        class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
-      >
-        <p class="text-sm">{$t("entities.list.advancedFiltersPlaceholder")}</p>
+      <div class="flex justify-center items-center mb-4">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+            {$t('entities.list.allCriteria')}
+          </span>
+          <Switch
+            checked={globalConnector === 'OR'}
+            onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
+            aria-label={$t('entities.list.connector')}
+          >
+            {#snippet thumbIcons({ checked })}
+              <span class="size-4 flex items-center justify-center rounded-full {checked ? 'bg-amber-200/85 dark:bg-amber-900/55' : 'bg-sky-200/80 dark:bg-sky-900/55'}"></span>
+            {/snippet}
+          </Switch>
+          <span class="text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+            {$t('entities.list.atLeastOneCriteria')}
+          </span>
+        </div>
       </div>
+      {#if tempAdvancedFilters.length > 0}
+        <div class="space-y-3 mb-4">
+          {#each tempAdvancedFilters as filter (filter.id)}
+            {@const column = filterableColumns.find((c) => c.key === filter.field)}
+            <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
+              <div class="flex-1 min-w-0">
+                <div class="text-xs flex flex-wrap items-center gap-1">
+                  <span class="font-bold text-foreground">
+                    {column ? $t(column.labelKey) : filter.field}
+                  </span>
+                  <span class="text-primary">
+                    {$t(`entities.list.operators.${filter.operator}`)}
+                  </span>
+                  <span class="italic text-muted-foreground">
+                    {Array.isArray(filter.value)
+                      ? filter.value.map((v) =>
+                          column?.badge?.values?.[v]?.labelText ||
+                          $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
+                        ).join(", ")
+                      : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
+                      ? `${filter.value.start} e ${filter.value.end}`
+                      : String(filter.value)}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  onclick={() => editAdvancedFilter(filter)}
+                  title={$t("common.edit")}
+                >
+                  <Pencil class="size-3" />
+                </button>
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  onclick={() => removeAdvancedFilter(filter.id)}
+                  title={$t("common.remove")}
+                >
+                  <FunnelX class="size-3" />
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="border-t pt-4">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-field">
+              {$t("entities.list.field")}
+            </label>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button
+                    variant="ghost"
+                    class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                    {...props}
+                  >
+                    <span
+                      class={newFilterField
+                        ? "text-foreground"
+                        : "text-muted-foreground/70 text-xs"}
+                    >
+                      {newFilterField
+                        ? (filterableColumns.find((c) => c.key === newFilterField)
+                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.labelKey)
+                            : newFilterField)
+                        : $t("entities.list.selectField")}
+                    </span>
+                    <ChevronDown class="h-4 w-4 shrink-0" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
+                {#each filterableColumns as col}
+                  <DropdownMenu.Item
+                    onSelect={() => {
+                      newFilterField = col.key;
+                      editingFilterId = null;
+                      newFilterValue = "";
+                      newFilterStartDate = "";
+                      newFilterEndDate = "";
+                      const columnType = col.type;
+                      const operators = getOperatorsForColumnType(columnType);
+                      if (!operators.includes(newFilterOperator)) {
+                        newFilterOperator = operators[0];
+                      }
+                    }}
+                    closeOnSelect={true}
+                    class={dropdownMenuItemWithSelectedClass('', newFilterField === col.key)}
+                  >
+                    {$t(col.labelKey)}
+                  </DropdownMenu.Item>
+                {/each}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+
+          {#if newFilterField}
+            {@const selectedColumn = filterableColumns.find((c) => c.key === newFilterField)}
+            {@const availableOperators = selectedColumn
+              ? getOperatorsForColumnType(selectedColumn.type)
+              : []}
+            <div>
+              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-operator">
+                {$t("entities.list.operator")}
+              </label>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  {#snippet child({ props })}
+                    <Button
+                      variant="ghost"
+                      class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                      {...props}
+                    >
+                      <span class="text-foreground">
+                        {newFilterOperator ? $t(`entities.list.operators.${newFilterOperator}`) : ''}
+                      </span>
+                      <ChevronDown class="h-4 w-4 shrink-0" />
+                    </Button>
+                  {/snippet}
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="start" class="w-full">
+                  {#each availableOperators as op}
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        newFilterOperator = op as FilterOperator;
+                        editingFilterId = null;
+                        newFilterStartDate = "";
+                        newFilterEndDate = "";
+                      }}
+                      closeOnSelect={true}
+                      class={dropdownMenuItemWithSelectedClass('', newFilterOperator === op)}
+                    >
+                      {$t(`entities.list.operators.${op}`)}
+                    </DropdownMenu.Item>
+                  {/each}
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
+
+            <div>
+              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-value">
+                {$t("entities.list.value")}
+              </label>
+              {#if selectedColumn?.type === "badge" && selectedColumn.badge?.values}
+                {@const selectedBadgeKeys = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : [])}
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button
+                        variant="ghost"
+                        class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                        {...props}
+                      >
+                        <span
+                          class={selectedBadgeKeys.length > 0
+                            ? "text-foreground"
+                            : "text-muted-foreground/70 text-xs"}
+                        >
+                          {selectedBadgeKeys.length > 0
+                            ? `${selectedBadgeKeys.length} ${$t("entities.list.selected")}`
+                            : $t("entities.list.selectValue")}
+                        </span>
+                        <ChevronDown class="h-4 w-4 shrink-0" />
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
+                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value]}
+                      {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
+                      <DropdownMenuCheckboxItem
+                        checked={selectedBadgeKeys.includes(key)}
+                        onCheckedChange={() => toggleBadgeFilterValue(key)}
+                        closeOnSelect={false}
+                      >
+                        <Badge
+                          class="shadow-none"
+                          style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                        >
+                          {value.labelText ||
+                            $t(value.labelKey || `entities.customer.status.${key}`)}
+                        </Badge>
+                      </DropdownMenuCheckboxItem>
+                    {/each}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              {:else if selectedColumn?.type === "date" || selectedColumn?.type === "datetime"}
+                {#if newFilterOperator === "BETWEEN"}
+                  <div class="space-y-2">
+                    <DateWheelPicker
+                      bind:value={newFilterStartDate}
+                      placeholder={$t("entities.list.selectValue")}
+                    />
+                    <DateWheelPicker
+                      bind:value={newFilterEndDate}
+                      placeholder={$t("entities.list.selectValue")}
+                    />
+                  </div>
+                {:else}
+                  <DateWheelPicker
+                    bind:value={newFilterValue}
+                    placeholder={$t("entities.list.selectValue")}
+                  />
+                {/if}
+              {:else}
+                <Input
+                  placeholder={$t("entities.list.filterPlaceholder")}
+                  value={newFilterValue}
+                  oninput={(e) => (newFilterValue = e.currentTarget.value)}
+                  class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
+                />
+              {/if}
+            </div>
+
+            <Button
+              variant="default"
+              size="sm"
+              class="w-full"
+              onclick={addAdvancedFilter}
+              disabled={!newFilterField || (
+                newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                !newFilterValue
+              )}
+            >
+              {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
+            </Button>
+          {/if}
+        </div>
+      </div>
+
+      {#if filterableColumns.length === 0}
+        <div
+          class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
+        >
+          <p class="text-sm">{$t("entities.list.noFilterableFields")}</p>
+        </div>
+      {/if}
     </TabsContent>
   </Tabs>
 </div>

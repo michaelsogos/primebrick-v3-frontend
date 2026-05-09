@@ -120,3 +120,40 @@ export function sanitizeVisibleKeys(
   if (next.length === 0) next = defaultVisibleColumnKeys(columns, view, viewVisibility);
   return next;
 }
+
+/** Filter operators available for advanced filters. */
+export type FilterOperator =
+  | '='
+  | '!='
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'BETWEEN';
+
+/** Advanced filter definition. */
+export type AdvancedFilter = {
+  id: string;
+  field: string;
+  operator: FilterOperator;
+  value: any | any[] | { start: any; end: any };
+};
+
+/** Get available operators for a given column type. */
+export function getOperatorsForColumnType(columnType: string): FilterOperator[] {
+  switch (columnType) {
+    case 'text':
+      return ['=', '!=', 'contains', 'startsWith', 'endsWith'];
+    case 'badge':
+      return ['=', '!='];
+    case 'date':
+    case 'datetime':
+      return ['=', '!=', '>', '<', '>=', '<=', 'BETWEEN'];
+    default:
+      // Assume numeric for unknown types
+      return ['=', '!=', '>', '<', '>=', '<='];
+  }
+}
