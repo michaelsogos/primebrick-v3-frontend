@@ -21,7 +21,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
-  import { CalendarDate, parseDate } from "@internationalized/date";
+  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
@@ -53,8 +53,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   // Temporary filter values (being edited by user)
   let tempFilterValues = $state<Record<string, any>>({});
 
-  // Local state for DateDropper values (CalendarDate objects)
-  let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
+  // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
+  let dateDropperValues = $state<Record<string, CalendarDate | CalendarDateTime | null>>({});
 
   // Advanced filters state
   let tempAdvancedFilters: AdvancedFilter[] = $state([]);
@@ -94,7 +94,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key]);
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type);
       }
     }
   });
@@ -120,7 +120,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         (col.type === "date" || col.type === "datetime") &&
         dateDropperValues[col.key] !== undefined
       ) {
-        const isoValue = calendarDateToIso(dateDropperValues[col.key]);
+        const isoValue = calendarDateToIso(dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null);
         tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
       }
     }
@@ -139,20 +139,24 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     }));
   }
 
-  // Conversione da stringa ISO (YYYY-MM-DD) a CalendarDate
+  // Conversione da stringa ISO a CalendarDate o CalendarDateTime
   function isoToCalendarDate(
     isoString: string | null | undefined,
-  ): CalendarDate | null {
+    type: "date" | "datetime" = "date",
+  ): CalendarDate | CalendarDateTime | null {
     if (!isoString) return null;
     try {
+      if (type === "datetime") {
+        return parseDateTime(isoString);
+      }
       return parseDate(isoString);
     } catch {
       return null;
     }
   }
 
-  // Conversione da CalendarDate a stringa ISO (YYYY-MM-DD)
-  function calendarDateToIso(date: CalendarDate | null): string | null {
+  // Conversione da CalendarDate o CalendarDateTime a stringa ISO
+  function calendarDateToIso(date: CalendarDate | CalendarDateTime | null): string | null {
     if (!date) return null;
     return date.toString();
   }
@@ -456,6 +460,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               <DateWheelPicker
                 bind:value={dateDropperValues[col.key]}
                 placeholder={$t("entities.list.filterPlaceholder")}
+                includeTime={col.type === "datetime"}
               />
               {#if dateDropperValues[col.key]}
                 <button

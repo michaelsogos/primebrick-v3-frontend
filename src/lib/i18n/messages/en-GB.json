@@ -24,6 +24,8 @@
     "breadcrumb": "breadcrumb",
     "clear": "Clear",
     "selectDate": "Select date",
+    "date": "Date",
+    "time": "Time",
     "edit": "Edit",
     "remove": "Remove"
   },

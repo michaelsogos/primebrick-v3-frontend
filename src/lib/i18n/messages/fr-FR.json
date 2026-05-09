@@ -21,10 +21,12 @@
     "close": "Fermer",
     "more": "Plus",
     "breadcrumb": "breadcrumb",
-    "clear": "Effacer",
-    "selectDate": "Sélectionner une date",
-    "edit": "Modifier",
-    "remove": "Supprimer"
+    "clear": "Clear",
+    "selectDate": "Select date",
+    "date": "Date",
+    "time": "Heure",
+    "edit": "Edit",
+    "remove": "Remove"
   },
   "shell": {
     "subtitle": "Backoffice",

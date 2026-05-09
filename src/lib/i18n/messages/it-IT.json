@@ -24,6 +24,8 @@
     "breadcrumb": "breadcrumb",
     "clear": "Pulisci",
     "selectDate": "Seleziona data",
+    "date": "Data",
+    "time": "Ora",
     "edit": "Modifica",
     "remove": "Rimuovi"
   },
