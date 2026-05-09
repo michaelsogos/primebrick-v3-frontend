@@ -607,9 +607,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
                 {#each filterableColumns as col}
-                  <DropdownMenuCheckboxItem
-                    checked={newFilterField === col.key}
-                    onCheckedChange={() => {
+                  <DropdownMenu.Item
+                    onSelect={() => {
                       newFilterField = col.key;
                       editingFilterId = null;
                       newFilterValue = "";
@@ -622,9 +621,10 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                       }
                     }}
                     closeOnSelect={true}
+                    class={dropdownMenuItemWithSelectedClass('', newFilterField === col.key)}
                   >
                     {$t(col.labelKey)}
-                  </DropdownMenuCheckboxItem>
+                  </DropdownMenu.Item>
                 {/each}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
