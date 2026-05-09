@@ -16,7 +16,8 @@
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
   import { RotateCcw, ChevronDown, Play } from "lucide-svelte";
-  import type { MetaColumn } from "$lib/entity-list/types";
+  import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
+  import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
@@ -32,6 +33,8 @@
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
     modal?: boolean;
+    advancedFilters?: AdvancedFilter[];
+    onAdvancedFiltersChange?: (filters: AdvancedFilter[]) => void;
   }
 
   let {
@@ -41,6 +44,8 @@
     onFilterValuesChange,
     onResetFilters,
     modal = true,
+    advancedFilters = [],
+    onAdvancedFiltersChange,
   }: $$Props = $props();
 
   // Temporary filter values (being edited by user)
@@ -48,6 +53,14 @@
 
   // Local state for DateDropper values (CalendarDate objects)
   let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
+
+  // Advanced filters state
+  let tempAdvancedFilters = $state<AdvancedFilter[]>([]);
+
+  // New filter being created
+  let newFilterField = $state<string>("");
+  let newFilterOperator = $state<FilterOperator>("=");
+  let newFilterValue = $state<any>("");
 
   // Tab state
   let tabValue = $state("standard");
@@ -67,6 +80,7 @@
   // Initialize temp values when component loads
   onMount(() => {
     tempFilterValues = { ...filterValues };
+    tempAdvancedFilters = [...advancedFilters];
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
@@ -101,6 +115,7 @@
       }
     }
     onFilterValuesChange?.(tempFilterValues);
+    applyAdvancedFilters();
   }
 
   function getBadgeOptions(col: MetaColumn) {
@@ -180,8 +195,41 @@
         dateDropperValues[col.key] = null;
       }
     }
+    // Clear advanced filters
+    tempAdvancedFilters = [];
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
     // Reset actual applied filters
     onResetFilters?.();
+  }
+
+  function addAdvancedFilter() {
+    if (!newFilterField || !newFilterValue) return;
+    const newFilter: AdvancedFilter = {
+      id: crypto.randomUUID(),
+      field: newFilterField,
+      operator: newFilterOperator,
+      value: newFilterValue,
+    };
+    tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
+  }
+
+  function removeAdvancedFilter(id: string) {
+    tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
+  }
+
+  function updateAdvancedFilter(id: string, updates: Partial<AdvancedFilter>) {
+    tempAdvancedFilters = tempAdvancedFilters.map((f) =>
+      f.id === id ? { ...f, ...updates } : f
+    );
+  }
+
+  function applyAdvancedFilters() {
+    onAdvancedFiltersChange?.(tempAdvancedFilters);
   }
 </script>
 
@@ -396,11 +444,195 @@
     </TabsContent>
 
     <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
-      <div
-        class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
-      >
-        <p class="text-sm">{$t("entities.list.advancedFiltersPlaceholder")}</p>
+      {#if tempAdvancedFilters.length > 0}
+        <div class="space-y-3 mb-4">
+          {#each tempAdvancedFilters as filter (filter.id)}
+            {@const column = filterableColumns.find((c) => c.key === filter.field)}
+            <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
+              <div class="flex-1 min-w-0">
+                <div class="text-xs font-medium text-foreground truncate">
+                  {column ? $t(column.labelKey) : filter.field}
+                </div>
+                <div class="text-xs text-muted-foreground">
+                  {filter.operator} {String(filter.value)}
+                </div>
+              </div>
+              <button
+                type="button"
+                class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => removeAdvancedFilter(filter.id)}
+                title={$t("common.remove")}
+              >
+                <XIcon class="size-3" />
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="border-t pt-4">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-field">
+              {$t("entities.list.field")}
+            </label>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button
+                    variant="ghost"
+                    class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                    {...props}
+                  >
+                    <span
+                      class={newFilterField
+                        ? "text-foreground"
+                        : "text-muted-foreground/70 text-xs"}
+                    >
+                      {newFilterField
+                        ? (filterableColumns.find((c) => c.key === newFilterField)
+                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.labelKey)
+                            : newFilterField)
+                        : $t("entities.list.selectField")}
+                    </span>
+                    <ChevronDown class="h-4 w-4 shrink-0" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
+                {#each filterableColumns as col}
+                  <DropdownMenuCheckboxItem
+                    checked={newFilterField === col.key}
+                    onCheckedChange={() => {
+                      newFilterField = col.key;
+                      const columnType = col.type;
+                      const operators = getOperatorsForColumnType(columnType);
+                      if (!operators.includes(newFilterOperator)) {
+                        newFilterOperator = operators[0];
+                      }
+                    }}
+                    closeOnSelect={true}
+                  >
+                    {$t(col.labelKey)}
+                  </DropdownMenuCheckboxItem>
+                {/each}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+
+          {#if newFilterField}
+            {@const selectedColumn = filterableColumns.find((c) => c.key === newFilterField)}
+            {@const availableOperators = selectedColumn
+              ? getOperatorsForColumnType(selectedColumn.type)
+              : []}
+            <div>
+              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-operator">
+                {$t("entities.list.operator")}
+              </label>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  {#snippet child({ props })}
+                    <Button
+                      variant="ghost"
+                      class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                      {...props}
+                    >
+                      <span class="text-foreground">{newFilterOperator}</span>
+                      <ChevronDown class="h-4 w-4 shrink-0" />
+                    </Button>
+                  {/snippet}
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="start" class="w-full">
+                  {#each availableOperators as op}
+                    <DropdownMenuCheckboxItem
+                      checked={newFilterOperator === op}
+                      onCheckedChange={() => (newFilterOperator = op as FilterOperator)}
+                      closeOnSelect={true}
+                    >
+                      {op}
+                    </DropdownMenuCheckboxItem>
+                  {/each}
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
+
+            <div>
+              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-value">
+                {$t("entities.list.value")}
+              </label>
+              {#if selectedColumn?.type === "badge" && selectedColumn.badge?.values}
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button
+                        variant="ghost"
+                        class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                        {...props}
+                      >
+                        <span
+                          class={newFilterValue
+                            ? "text-foreground"
+                            : "text-muted-foreground/70 text-xs"}
+                        >
+                          {newFilterValue
+                            ? (selectedColumn.badge?.values?.[newFilterValue]?.labelText ||
+                                $t(selectedColumn.badge?.values?.[newFilterValue]?.labelKey ||
+                                  `entities.customer.status.${newFilterValue}`))
+                            : $t("entities.list.selectValue")}
+                        </span>
+                        <ChevronDown class="h-4 w-4 shrink-0" />
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
+                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value]}
+                      {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
+                      <DropdownMenuCheckboxItem
+                        checked={newFilterValue === key}
+                        onCheckedChange={() => (newFilterValue = key)}
+                        closeOnSelect={true}
+                      >
+                        <Badge
+                          class="shadow-none"
+                          style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                        >
+                          {value.labelText ||
+                            $t(value.labelKey || `entities.customer.status.${key}`)}
+                        </Badge>
+                      </DropdownMenuCheckboxItem>
+                    {/each}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              {:else}
+                <Input
+                  placeholder={$t("entities.list.filterPlaceholder")}
+                  value={newFilterValue}
+                  oninput={(e) => (newFilterValue = e.currentTarget.value)}
+                  class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
+                />
+              {/if}
+            </div>
+
+            <Button
+              variant="default"
+              size="sm"
+              class="w-full"
+              onclick={addAdvancedFilter}
+              disabled={!newFilterField || !newFilterValue}
+            >
+              {$t("entities.list.addFilter")}
+            </Button>
+          {/if}
+        </div>
       </div>
+
+      {#if filterableColumns.length === 0}
+        <div
+          class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
+        >
+          <p class="text-sm">{$t("entities.list.noFilterableFields")}</p>
+        </div>
+      {/if}
     </TabsContent>
   </Tabs>
 </div>

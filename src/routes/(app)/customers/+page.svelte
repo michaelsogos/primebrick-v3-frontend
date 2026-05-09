@@ -19,6 +19,8 @@
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { buildAdvancedFiltersQueryString } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
@@ -86,6 +88,9 @@
   
   // Filter values for all filterable columns
   let filterValues = $state<Record<string, any>>({});
+
+  // Advanced filters
+  let advancedFilters = $state<AdvancedFilter[]>([]);
 
   let visibleKeys = $state<string[]>([]);
 
@@ -353,6 +358,17 @@
           qs.set(`filters[${filterIdx}][connector]`, 'AND');
           filterIdx++;
         }
+      }
+    }
+    // Add advanced filters to the same filters structure
+    const advancedFiltersArray = Array.isArray(advancedFilters) ? advancedFilters : [];
+    for (const filter of advancedFiltersArray) {
+      if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
+        qs.set(`filters[${filterIdx}][field]`, filter.field);
+        qs.set(`filters[${filterIdx}][op]`, filter.operator);
+        qs.set(`filters[${filterIdx}][value]`, String(filter.value));
+        qs.set(`filters[${filterIdx}][connector]`, 'AND');
+        filterIdx++;
       }
     }
     qs.set('page', String(page));
@@ -624,8 +640,15 @@
     void refreshRows({ clampPage: true });
   }
 
+  function onAdvancedFiltersChange(filters: AdvancedFilter[]) {
+    advancedFilters = filters;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
   function onResetFilters() {
     filterValues = {};
+    advancedFilters = [];
     statusFilter = null;
     page = 1;
     void refreshRows({ clampPage: true });
@@ -699,6 +722,8 @@
       {filterValues}
       onFilterValuesChange={onFilterValuesChange}
       onResetFilters={onResetFilters}
+      {advancedFilters}
+      onAdvancedFiltersChange={onAdvancedFiltersChange}
       viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}
