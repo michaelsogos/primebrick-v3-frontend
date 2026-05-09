@@ -373,7 +373,7 @@
           qs.set(`filters[${filterIdx}][op]`, operator);
           qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
           qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
-          qs.set(`filters[${filterIdx}][connector]`, 'AND');
+          qs.set(`filters[${filterIdx}][connector]`, filter.connector || 'AND');
           filterIdx++;
           continue;
         }
@@ -403,7 +403,7 @@
           qs.set(`filters[${filterIdx}][value]`, String(value));
         }
 
-        qs.set(`filters[${filterIdx}][connector]`, 'AND');
+        qs.set(`filters[${filterIdx}][connector]`, filter.connector || 'AND');
         filterIdx++;
       }
     }

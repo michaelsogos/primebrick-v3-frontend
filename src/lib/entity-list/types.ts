@@ -140,6 +140,7 @@ export type AdvancedFilter = {
   field: string;
   operator: FilterOperator;
   value: any | any[] | { start: any; end: any };
+  connector?: 'AND' | 'OR';
 };
 
 /** Get available operators for a given column type. */

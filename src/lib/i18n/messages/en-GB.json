@@ -170,6 +170,9 @@
       "selectField": "Select field",
       "selectValue": "Select value",
       "addFilter": "Add filter",
+      "connector": "Connector",
+      "and": "and",
+      "or": "or",
       "operators": {
         "=": "Equals to",
         "!=": "Not equals to",

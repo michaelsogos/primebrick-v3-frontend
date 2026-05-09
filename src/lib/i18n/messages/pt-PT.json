@@ -157,6 +157,9 @@
       "selectField": "Selecionar campo",
       "selectValue": "Selecionar valor",
       "addFilter": "Adicionar filtro",
+      "connector": "Conector",
+      "and": "e",
+      "or": "ou",
       "operators": {
         "=": "Igual a",
         "!=": "Diferente de",

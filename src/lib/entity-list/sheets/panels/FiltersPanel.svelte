@@ -17,6 +17,7 @@
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
   import { RotateCcw, ChevronDown, Play, Pencil, FunnelX } from "lucide-svelte";
+import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
@@ -243,6 +244,7 @@
         field: newFilterField,
         operator: newFilterOperator,
         value,
+        connector: 'AND',
       };
       tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
     }
@@ -278,6 +280,14 @@
       ? currentSelection.filter((k) => k !== key)
       : [...currentSelection, key];
     newFilterValue = newSelection.length > 0 ? newSelection : "";
+  }
+
+  function toggleFilterConnector(id: string) {
+    tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
+      filter.id === id
+        ? { ...filter, connector: filter.connector === 'OR' ? 'AND' : 'OR' }
+        : filter
+    );
   }
 
   function removeAdvancedFilter(id: string) {
@@ -508,8 +518,23 @@
     <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
       {#if tempAdvancedFilters.length > 0}
         <div class="space-y-3 mb-4">
-          {#each tempAdvancedFilters as filter (filter.id)}
+          {#each tempAdvancedFilters as filter, index (filter.id)}
             {@const column = filterableColumns.find((c) => c.key === filter.field)}
+            {#if index > 0}
+              <div class="flex justify-center items-center gap-2">
+                <Switch
+                  checked={filter.connector === 'OR'}
+                  onCheckedChange={() => toggleFilterConnector(filter.id)}
+                  aria-label={$t('entities.list.connector')}
+                >
+                  {#snippet thumbIcons({ checked })}
+                    <span class="text-[10px] font-bold leading-none">
+                      {checked ? $t('entities.list.or') : $t('entities.list.and')}
+                    </span>
+                  {/snippet}
+                </Switch>
+              </div>
+            {/if}
             <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
               <div class="flex-1 min-w-0">
                 <div class="text-xs flex flex-wrap items-center gap-1">

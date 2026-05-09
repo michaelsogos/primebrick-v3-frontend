@@ -170,6 +170,9 @@
       "selectField": "Seleziona campo",
       "selectValue": "Seleziona valore",
       "addFilter": "Aggiungi filtro",
+      "connector": "Connettore",
+      "and": "e",
+      "or": "o",
       "operators": {
         "=": "Uguale a",
         "!=": "Diverso da",
