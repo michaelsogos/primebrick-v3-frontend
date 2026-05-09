@@ -55,6 +55,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
 
   // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
   let dateDropperValues = $state<Record<string, CalendarDate | CalendarDateTime | null>>({});
+  // Local state for timezone values (IANA strings)
+  let timezoneValues = $state<Record<string, string>>({});
 
   // Advanced filters state
   let tempAdvancedFilters: AdvancedFilter[] = $state([]);
@@ -122,6 +124,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       ) {
         const isoValue = calendarDateToIso(dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null);
         tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
+        const tz = timezoneValues[col.key] || "UTC";
+        tempFilterValues = { ...tempFilterValues, [`${col.key}_tz`]: tz };
       }
     }
     onFilterValuesChange?.(tempFilterValues);
@@ -459,6 +463,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             <div class="relative">
               <DateWheelPicker
                 bind:value={dateDropperValues[col.key]}
+                bind:timezone={timezoneValues[col.key]}
                 placeholder={$t("entities.list.filterPlaceholder")}
                 includeTime={col.type === "datetime"}
               />

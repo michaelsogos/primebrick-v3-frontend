@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Popover from "$lib/components/ui/popover";
 	import { Button } from "$lib/components/ui/button";
-	import { Calendar } from "lucide-svelte";
+	import { Calendar, ChevronsUpDown } from "lucide-svelte";
 	import { DateFormatter, getLocalTimeZone, today, now, CalendarDate, CalendarDateTime } from "@internationalized/date";
 	import { cn } from "$lib/utils";
 	import { inputControlHoverClasses } from "$lib/components/ui/input/input-chrome";
@@ -16,12 +16,17 @@
 		TabsTrigger,
 		TabsContent,
 	} from "$lib/components/ui/tabs/index.js";
+	import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
+	import { onMount } from "svelte";
+	import { Input } from "$lib/components/ui/input";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+	import { dropdownMenuItemWithSelectedClass } from "$lib/components/ui/dropdown-menu/dropdown-menu-item-selected";
 
-	let { value = $bindable(), placeholder = $t("common.selectDate"), includeTime = false, defaultTime = undefined } = $props();
+	let { value = $bindable(), placeholder = $t("common.selectDate"), includeTime = false, defaultTime = undefined, timezone = $bindable() } = $props();
 	let isOpen = $state(false);
 	let activeTab = $derived(includeTime ? "date" : "date");
 
-	let df = $derived(new DateFormatter($uiLang, includeTime ? { dateStyle: "short", timeStyle: "short" } : { dateStyle: "long" }));
+	let df = $derived(new DateFormatter($uiLang, includeTime ? { dateStyle: "long", timeStyle: "medium" } : { dateStyle: "long" }));
 	let monthFormatter = $derived(new DateFormatter($uiLang, { month: "short" }));
 	let timeFormatter = $derived(new DateFormatter($uiLang, { timeStyle: "short" }));
 
@@ -65,6 +70,57 @@
 	let selectedMinute = $state(initialTime.minute);
 	let selectedSecond = $state(initialTime.second);
 	let hasUserInteracted = $state(false);
+
+	// Timezone state
+	let selectedTimezone = $state<string>("UTC");
+	let browserTimezone = $state<string | null>(null);
+	let timezoneSearch = $state("");
+
+	onMount(() => {
+		browserTimezone = getResolvedIanaTimeZone();
+		if (browserTimezone) {
+			selectedTimezone = browserTimezone;
+		}
+	});
+
+	// Sync timezone with prop
+	$effect(() => {
+		timezone = selectedTimezone;
+	});
+
+	// Get all IANA timezones supported by the browser
+	const allTimezones = $derived(() => {
+		let timezones: string[];
+		try {
+			timezones = Intl.supportedValuesOf('timeZone').sort();
+		} catch {
+			// Fallback to common timezones if Intl.supportedValuesOf is not supported
+			timezones = [
+				"UTC",
+				"Europe/Rome",
+				"Europe/London",
+				"Europe/Paris",
+				"Europe/Berlin",
+				"Europe/Madrid",
+				"America/New_York",
+				"America/Los_Angeles",
+				"America/Chicago",
+				"Asia/Tokyo",
+				"Asia/Shanghai",
+				"Asia/Dubai",
+				"Australia/Sydney",
+				"Australia/Melbourne",
+			];
+		}
+		return timezones;
+	});
+
+	// Filter timezones based on search
+	const filteredTimezones = $derived(() => {
+		if (!timezoneSearch) return allTimezones();
+		const search = timezoneSearch.toLowerCase();
+		return allTimezones().filter(tz => tz.toLowerCase().includes(search));
+	});
 
 	// Refresh time to NOW each time the popover opens (if user hasn't interacted and no value set)
 	$effect(() => {
@@ -206,6 +262,51 @@
 						<span class="relative z-20">{$t("common.time")}</span>
 					</TabsTrigger>
 				</TabsList>
+
+				{#if activeTab === "time" && includeTime}
+					<div class="px-4 py-2 border-b border-border">
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<button
+										{...props}
+										class="w-full text-sm bg-background border border-input rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring flex justify-between items-center"
+									>
+										{selectedTimezone || "Select timezone"}
+										<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+									</button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content class="w-full min-w-52 max-h-80 overflow-y-auto">
+								<div class="p-2 sticky top-0 bg-background border-b">
+									<Input
+										bind:value={timezoneSearch}
+										placeholder="Search timezone..."
+										class="text-sm"
+										onkeydown={(e) => e.stopPropagation()}
+									/>
+								</div>
+								{#if filteredTimezones().length === 0}
+									<div class="px-2 py-4 text-sm text-muted-foreground text-center">
+										No timezone found
+									</div>
+								{:else}
+									{#each filteredTimezones() as tz}
+										<DropdownMenu.Item
+											onSelect={() => {
+												selectedTimezone = tz;
+												timezoneSearch = "";
+											}}
+											class={dropdownMenuItemWithSelectedClass("flex items-center gap-2", tz === selectedTimezone)}
+										>
+											{tz}
+										</DropdownMenu.Item>
+									{/each}
+								{/if}
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</div>
+				{/if}
 
 				<TabsContent value="date" class="flex-1 overflow-hidden mt-0">
 					{#if activeTab === "date"}
