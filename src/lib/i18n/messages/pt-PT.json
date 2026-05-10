@@ -25,10 +25,11 @@
     "selectDate": "Select date",
     "date": "Data",
     "time": "Hora",
-    "edit": "Edit",
+    "edit": "Editar",
     "cancel": "Cancelar",
-    "remove": "Remove",
-    "clearAll": "Limpar todos os filtros"
+    "remove": "Remover",
+    "clearAll": "Limpar todos os filtros",
+    "delete": "Eliminar"
   },
   "shell": {
     "subtitle": "Backoffice",

@@ -5,7 +5,7 @@
   "common": {
     "loading": "Loading…",
     "loadFailed": "Load failed",
-    "dbUnavailable": "Database temporarily unavailable. Some data might not load.",
+    "dbUnavailable": "Database temporarily unavailable. Some data may not load.",
     "soon": "Soon",
     "new": "New",
     "prev": "Prev",
@@ -14,8 +14,8 @@
     "reset": "Reset",
     "done": "Done",
     "apply": "Apply",
-    "toggleSidebar": "Toggle Sidebar",
-    "refresh": "refresh",
+    "toggleSidebar": "Toggle sidebar",
+    "refresh": "Refresh",
     "selectRow": "select row",
     "rowActions": "row actions",
     "actions": "actions",
@@ -29,7 +29,10 @@
     "edit": "Edit",
     "cancel": "Cancel",
     "remove": "Remove",
-    "clearAll": "Clear all filters"
+    "clearAll": "Clear all filters",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Are you sure you want to delete this record?",
+    "deleteConfirm": "This action cannot be undone."
   },
   "shell": {
     "subtitle": "Backoffice",

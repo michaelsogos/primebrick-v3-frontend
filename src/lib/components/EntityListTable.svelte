@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -14,6 +14,9 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import { Dialog as DialogPrimitive } from 'bits-ui';
+  import { scale, fade } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
@@ -49,7 +52,9 @@
     MapPin,
     Eye,
     EyeOff,
-    FilterX
+    FilterX,
+    Pencil,
+    Trash2
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -643,6 +648,87 @@
   let selectionSnapshotAtMouseDown: Set<string> | null = null;
   /** After a range brush drag, suppress the following `click` on the row (same gesture as mouseup). */
   let skipNextRowClickSelectToggle = false;
+  /** Row dropdown menu state: which row has the menu open */
+  let dropdownMenuRow = $state<TRow | null>(null);
+  let dropdownKeyboardHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  /** Delete confirmation dialog state */
+  let deleteConfirmDialogOpen = $state(false);
+  let rowToDelete: TRow | null = null;
+  let isDeleting = $state(false);
+
+  /** Open dropdown menu for a specific row */
+  function openRowDropdown(row: TRow) {
+    dropdownMenuRow = row;
+  }
+
+  /** Close dropdown menu */
+  function closeRowDropdown() {
+    dropdownMenuRow = null;
+  }
+
+  /** Handle keyboard shortcuts when dropdown is open */
+  function handleDropdownKeydown(e: KeyboardEvent) {
+    if (!dropdownMenuRow) return;
+
+    // CTRL+SHIFT+E for Edit
+    if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+      e.preventDefault();
+      handleEditRow(dropdownMenuRow);
+      return;
+    }
+
+    // Delete key for Delete action
+    if (e.key === 'Delete') {
+      e.preventDefault();
+      handleDeleteRow(dropdownMenuRow);
+      return;
+    }
+  }
+
+  /** Setup keyboard shortcuts when dropdown opens/closes */
+  function handleDropdownOpenChange(open: boolean) {
+    if (open && dropdownMenuRow) {
+      dropdownKeyboardHandler = handleDropdownKeydown;
+      window.addEventListener('keydown', dropdownKeyboardHandler);
+    } else {
+      if (dropdownKeyboardHandler) {
+        window.removeEventListener('keydown', dropdownKeyboardHandler);
+        dropdownKeyboardHandler = null;
+      }
+      closeRowDropdown();
+    }
+  }
+
+  /** Handle edit action for a row */
+  function handleEditRow(row: TRow) {
+    // TODO: Implement edit action - will be connected to BE later
+    console.log('Edit row:', rowKey(row));
+    closeRowDropdown();
+  }
+
+  /** Handle delete action for a row */
+  function handleDeleteRow(row: TRow) {
+    // Open confirmation dialog instead of deleting directly
+    rowToDelete = row;
+    deleteConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Confirm delete action after dialog confirmation */
+  function confirmDeleteRow() {
+    if (!rowToDelete) return;
+    // TODO: Implement delete action - will be connected to BE later
+    console.log('Delete row:', rowKey(rowToDelete));
+    deleteConfirmDialogOpen = false;
+    rowToDelete = null;
+  }
+
+  /** Cancel delete action */
+  function cancelDeleteRow() {
+    deleteConfirmDialogOpen = false;
+    rowToDelete = null;
+  }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
@@ -1868,9 +1954,42 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={handleDropdownOpenChange}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                    <DropdownMenu.Shortcut>⇧+Ctrl+E</DropdownMenu.Shortcut>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                    <DropdownMenu.Shortcut>Delete</DropdownMenu.Shortcut>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -1917,9 +2036,42 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={handleDropdownOpenChange}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                    <DropdownMenu.Shortcut>⇧+Ctrl+E</DropdownMenu.Shortcut>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                    <DropdownMenu.Shortcut>Delete</DropdownMenu.Shortcut>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -2310,9 +2462,42 @@
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
-                        <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
-                          <MoreVertical class="size-4" />
-                        </Button>
+                        <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={handleDropdownOpenChange}>
+                          <DropdownMenu.Trigger>
+                            {#snippet child({ props })}
+                              <Button 
+                                {...props}
+                                variant="ghost" 
+                                size="icon-sm" 
+                                aria-label="row actions" 
+                                title="actions"
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  openRowDropdown(r);
+                                }}
+                              >
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/snippet}
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content class="w-56" align="end">
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                              <div class="flex items-center gap-2">
+                                <Pencil class="size-4 opacity-70" />
+                                <span>{$t('common.edit')}</span>
+                              </div>
+                              <DropdownMenu.Shortcut>⇧+Ctrl+E</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                              <div class="flex items-center gap-2">
+                                <Trash2 class="size-4 text-destructive/70" />
+                                <span>{$t('common.delete')}</span>
+                              </div>
+                              <DropdownMenu.Shortcut>Delete</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
                       {/if}
                     </div>
                   </Table.Cell>
@@ -2475,6 +2660,38 @@
   </div>
 </div>
 
+<!-- Delete confirmation dialog -->
+<Dialog.Root bind:open={deleteConfirmDialogOpen}>
+  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+      <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary"
+        onclick={() => {
+          deleteConfirmDialogOpen = false;
+          rowToDelete = null;
+        }}
+      >
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        variant="destructive"
+        onclick={() => {
+          if (rowToDelete) {
+            console.log('Delete row:', rowKey(rowToDelete));
+          }
+          deleteConfirmDialogOpen = false;
+          rowToDelete = null;
+        }}
+      >
+        {$t('common.delete')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <style>
   @keyframes pb-watermark-pulse {

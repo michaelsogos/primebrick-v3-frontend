@@ -29,7 +29,10 @@
     "edit": "Modifica",
     "cancel": "Annulla",
     "remove": "Rimuovi",
-    "clearAll": "Annulla tutti i filtri"
+    "clearAll": "Annulla tutti i filtri",
+    "delete": "Elimina",
+    "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
+    "deleteConfirm": "Questa azione non può essere annullata."
   },
   "shell": {
     "subtitle": "Backoffice",
