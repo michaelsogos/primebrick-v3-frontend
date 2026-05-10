@@ -48,7 +48,8 @@
     Globe,
     MapPin,
     Eye,
-    EyeOff
+    EyeOff,
+    FilterX
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -1407,6 +1408,20 @@
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
     {#if hasAppliedFilters}
+      <Button
+        variant="soft"
+        size="xs"
+        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+        onclick={() => {
+          onFilterValuesChange?.({});
+          onAdvancedFiltersChange?.([], 'AND');
+          onResetFilters?.();
+        }}
+      >
+        <FilterX class="size-3.5" />
+        {$t('common.clearAll')}
+      </Button>
+      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
       {#if filterValues && Object.keys(filterValues).length > 0}
         {#each Object.entries(filterValues) as [key, value]}
           {@const col = filterableColumns.find((c) => c.key === key)}
@@ -1461,18 +1476,6 @@
           {/if}
         {/each}
       {/if}
-      <Button
-        variant="ghost"
-        size="xs"
-        class="h-6 text-xs"
-        onclick={() => {
-          onFilterValuesChange?.({});
-          onAdvancedFiltersChange?.([], 'AND');
-          onResetFilters?.();
-        }}
-      >
-        {$t('common.clearAll')}
-      </Button>
     {:else}
       <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
     {/if}
