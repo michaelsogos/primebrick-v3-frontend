@@ -26,7 +26,7 @@ Independent Git repository containing the Primebrick SvelteKit application.
 ## Where to look (order)
 
 1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
-2. **`docs/ai/i18n.md`** — translations rule.
+2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: always add translations immediately when adding labels).
 3. **`docs/ai/`** — skills selection and suggested workflows.
 
 ## GitFlow rules

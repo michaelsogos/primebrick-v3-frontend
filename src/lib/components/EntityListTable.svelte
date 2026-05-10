@@ -830,6 +830,11 @@
     return `${keys.length} ${$t('entities.list.searchInFields')}`;
   });
 
+  const hasAppliedFilters = $derived(
+    (filterValues && Object.keys(filterValues).length > 0) ||
+    (advancedFilters && advancedFilters.length > 0)
+  );
+
   function rowKey(row: TRow): string {
     const v = row[uid as keyof TRow] as unknown;
     return typeof v === 'string' ? v : String(v ?? '');
@@ -1398,6 +1403,79 @@
         </Button>
       {/if}
     </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
+    {#if hasAppliedFilters}
+      {#if filterValues && Object.keys(filterValues).length > 0}
+        {#each Object.entries(filterValues) as [key, value]}
+          {@const col = filterableColumns.find((c) => c.key === key)}
+          {#if col}
+            <Badge
+              variant="secondary"
+              class="gap-1.5 pr-1"
+            >
+              <span class="text-xs font-medium">{$t(col.labelKey)}</span>
+              <span class="text-muted-foreground">{$t('entities.list.filterBadge.separator')}</span>
+              <span class="text-xs">{String(value)}</span>
+              <button
+                type="button"
+                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                onclick={() => {
+                  const next = { ...filterValues };
+                  delete next[key];
+                  onFilterValuesChange?.(next);
+                }}
+                aria-label={$t('common.remove')}
+              >
+                <XIcon class="size-3" />
+              </button>
+            </Badge>
+          {/if}
+        {/each}
+      {/if}
+      {#if advancedFilters && advancedFilters.length > 0}
+        {#each advancedFilters as filter}
+          {@const col = filterableColumns.find((c) => c.key === filter.field)}
+          {#if col}
+            <Badge
+              variant="secondary"
+              class="gap-1.5 pr-1"
+            >
+              <span class="text-xs font-medium">{$t(col.labelKey)}</span>
+              <span class="text-muted-foreground">{$t('entities.list.filterBadge.separator')}</span>
+              <span class="text-xs">{filter.operator}</span>
+              <span class="text-xs">{String(filter.value)}</span>
+              <button
+                type="button"
+                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                onclick={() => {
+                  const next = advancedFilters.filter((f) => f.id !== filter.id);
+                  onAdvancedFiltersChange?.(next, 'AND');
+                }}
+                aria-label={$t('common.remove')}
+              >
+                <XIcon class="size-3" />
+              </button>
+            </Badge>
+          {/if}
+        {/each}
+      {/if}
+      <Button
+        variant="ghost"
+        size="xs"
+        class="h-6 text-xs"
+        onclick={() => {
+          onFilterValuesChange?.({});
+          onAdvancedFiltersChange?.([], 'AND');
+          onResetFilters?.();
+        }}
+      >
+        {$t('common.clearAll')}
+      </Button>
+    {:else}
+      <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+    {/if}
   </div>
 
   <div class="min-h-0 flex-1 overflow-hidden">

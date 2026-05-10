@@ -28,7 +28,8 @@
     "time": "Time",
     "edit": "Edit",
     "cancel": "Cancel",
-    "remove": "Remove"
+    "remove": "Remove",
+    "clearAll": "Clear all"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -223,6 +224,10 @@
         "previousPage": "previous page",
         "nextPage": "next page",
         "lastPage": "last page"
+      },
+      "filterBadge": {
+        "separator": ":",
+        "noFiltersApplied": "No filters applied"
       }
     },
     "crm": {
