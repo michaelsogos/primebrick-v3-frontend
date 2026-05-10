@@ -103,9 +103,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
-        const tz = filterValues[`${col.key}_tz_ui`] || browserTimezone || "UTC";
+        const tz = timezoneValues[col.key] || browserTimezone || "UTC";
         dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type, tz);
-        timezoneValues[col.key] = tz;
       }
     }
   });
@@ -139,8 +138,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
           const utcIso = calendarDateToUtcIso(dateValue, tz);
           tempFilterValues = { ...tempFilterValues, [col.key]: utcIso };
 
-          // Store timezone in a separate field for UI restoration
-          tempFilterValues = { ...tempFilterValues, [`${col.key}_tz_ui`]: tz };
+          // Store timezone in local state for UI restoration (not sent to BE)
+          timezoneValues[col.key] = tz;
 
           // Only send IANA field if:
           // 1. Column has datetimeIanaToggle (has IANA field in DB)
@@ -150,8 +149,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
           }
         } else {
-          // Clear timezone if date is cleared
-          delete tempFilterValues[`${col.key}_tz_ui`];
+          // Clear timezone from local state if date is cleared
+          timezoneValues[col.key] = browserTimezone || "UTC";
         }
       }
     }
