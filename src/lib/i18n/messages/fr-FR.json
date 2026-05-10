@@ -209,6 +209,12 @@
         "cards": "Cartes (grille)",
         "cardsList": "Cartes (liste horizontale)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtre d'état de suppression",
+        "nonDeleted": "Voir uniquement les enregistrements non supprimés",
+        "deleted": "Voir uniquement les enregistrements supprimés",
+        "all": "Voir tous les enregistrements"
+      },
       "emptyField": "Vide",
       "pagination": {
         "firstPage": "première page",

@@ -53,6 +53,9 @@
     MapPin,
     Eye,
     EyeOff,
+    ListCheck,
+    ListX,
+    TextAlignJustify,
     FilterX,
     Pencil,
     Trash2
@@ -111,6 +114,8 @@
     onAdvancedFiltersChange,
     filterValuesStorageKey,
     advancedFiltersStorageKey,
+    deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
+    onDeletionFilterModeChange,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -181,6 +186,8 @@
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
+    deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
+    onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
@@ -222,6 +229,32 @@
     if (typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem(viewModeStorageKey, next);
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+  const deletionFilterStorageKey = $derived(
+    columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
+  );
+  let deletionFilterMode = $state<DeletionFilterMode>(deletionFilterModeProp ?? 'non_deleted');
+
+  function readDeletionFilter(): DeletionFilterMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.sessionStorage.getItem(deletionFilterStorageKey);
+      if (raw === 'non_deleted' || raw === 'deleted' || raw === 'all') return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeDeletionFilter(next: DeletionFilterMode) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(deletionFilterStorageKey, next);
     } catch {
       // ignore quota / blocked storage
     }
@@ -388,6 +421,9 @@
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
 
+    const storedDeletionFilter = readDeletionFilter();
+    if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
+
     // Initialize filters from sessionStorage
     const storedFilterValues = readFilterValues();
     if (Object.keys(storedFilterValues).length > 0) {
@@ -403,6 +439,12 @@
   $effect(() => {
     void viewMode;
     writeViewMode(viewMode);
+  });
+
+  $effect(() => {
+    void deletionFilterMode;
+    writeDeletionFilter(deletionFilterMode);
+    onDeletionFilterModeChange?.(deletionFilterMode);
   });
 
   $effect(() => {
@@ -1530,6 +1572,61 @@
           }}
         >
           <LayoutList class="size-4" />
+        </Button>
+      </div>
+
+      <div
+        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
+        role="group"
+        aria-label={$t('entities.list.deletionFilter.groupAria')}
+      >
+        <Button
+          variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'non_deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'non_deleted'}
+          title={$t('entities.list.deletionFilter.nonDeleted')}
+          onclick={() => {
+            deletionFilterMode = 'non_deleted';
+          }}
+        >
+          <ListCheck class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'deleted'}
+          title={$t('entities.list.deletionFilter.deleted')}
+          onclick={() => {
+            deletionFilterMode = 'deleted';
+          }}
+        >
+          <ListX class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'all' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'all' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'all'}
+          title={$t('entities.list.deletionFilter.all')}
+          onclick={() => {
+            deletionFilterMode = 'all';
+          }}
+        >
+          <TextAlignJustify class="size-4" />
         </Button>
       </div>
 

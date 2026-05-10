@@ -98,6 +98,8 @@
 
   let searchInKeys = $state<string[] | null>(null);
 
+  let deletionFilterMode = $state<'non_deleted' | 'deleted' | 'all'>('non_deleted');
+
   /** Shared with `EntityListTable` IANA header toggle (required when `{#snippet cell}` overrides defaults). */
   let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
   let datetimeIanaRenderTick = $state(0);
@@ -411,6 +413,15 @@
     if (advancedFiltersArray.length > 0) {
       qs.set('connector', globalConnector);
     }
+
+    // Add deletion filter parameter
+    if (deletionFilterMode === 'deleted') {
+      qs.set('deleted_records', 'ONLY');
+    } else if (deletionFilterMode === 'all') {
+      qs.set('deleted_records', 'INCLUDED');
+    }
+    // 'non_deleted' is default (EXCLUDED), so no param needed
+
     qs.set('page', String(page));
     qs.set('page_size', String(pageSize));
     const effSortKey = sortKey ?? defaultSortKey;
@@ -697,6 +708,12 @@
     page = 1;
     void refreshRows({ clampPage: true });
   }
+
+  function onDeletionFilterModeChange(mode: 'non_deleted' | 'deleted' | 'all') {
+    deletionFilterMode = mode;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
 </script>
 
 <AppPageScaffold>
@@ -769,6 +786,8 @@
       onResetFilters={onResetFilters}
       {advancedFilters}
       onAdvancedFiltersChange={onAdvancedFiltersChange}
+      {deletionFilterMode}
+      onDeletionFilterModeChange={onDeletionFilterModeChange}
       viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}

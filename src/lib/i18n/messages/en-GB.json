@@ -221,6 +221,12 @@
         "cards": "Cards (grid)",
         "cardsList": "Cards (horizontal list)"
       },
+      "deletionFilter": {
+        "groupAria": "Deletion status filter",
+        "nonDeleted": "View only non-deleted records",
+        "deleted": "View only deleted records",
+        "all": "View all records"
+      },
       "emptyField": "Empty",
       "pagination": {
         "firstPage": "first page",

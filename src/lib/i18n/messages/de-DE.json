@@ -209,6 +209,12 @@
         "cards": "Karten (Raster)",
         "cardsList": "Karten (horizontale Liste)"
       },
+      "deletionFilter": {
+        "groupAria": "Löschstatus-Filter",
+        "nonDeleted": "Nur nicht gelöschte Datensätze anzeigen",
+        "deleted": "Nur gelöschte Datensätze anzeigen",
+        "all": "Alle Datensätze anzeigen"
+      },
       "emptyField": "Leer",
       "pagination": {
         "firstPage": "erste Seite",

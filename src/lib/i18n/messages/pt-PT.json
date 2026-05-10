@@ -206,6 +206,12 @@
         "cards": "Cartões (grelha)",
         "cardsList": "Cartões (lista horizontal)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtro de estado de eliminação",
+        "nonDeleted": "Ver apenas registos não eliminados",
+        "deleted": "Ver apenas registos eliminados",
+        "all": "Ver todos os registos"
+      },
       "emptyField": "Vazio",
       "pagination": {
         "firstPage": "primeira página",

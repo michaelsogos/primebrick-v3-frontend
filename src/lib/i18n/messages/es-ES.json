@@ -209,6 +209,12 @@
         "cards": "Tarjetas (cuadrícula)",
         "cardsList": "Tarjetas (lista horizontal)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtro de estado de eliminación",
+        "nonDeleted": "Ver solo registros no eliminados",
+        "deleted": "Ver solo registros eliminados",
+        "all": "Ver todos los registros"
+      },
       "emptyField": "Vacío",
       "pagination": {
         "firstPage": "primera página",

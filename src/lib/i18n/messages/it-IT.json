@@ -221,6 +221,12 @@
         "cards": "Card (griglia)",
         "cardsList": "Card (lista orizzontale)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtro stato eliminazione",
+        "nonDeleted": "Vedi solo record non eliminati",
+        "deleted": "Vedi solo record eliminati",
+        "all": "Vedi tutti i record"
+      },
       "emptyField": "Vuoto",
       "pagination": {
         "firstPage": "prima pagina",
