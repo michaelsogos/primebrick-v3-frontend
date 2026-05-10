@@ -18,6 +18,7 @@
   import { Dialog as DialogPrimitive } from 'bits-ui';
   import { scale, fade } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
+  import { apiFetch } from '$lib/api';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -61,6 +62,7 @@
 
   let {
     uid,
+    entity = 'customer',
     columns,
     stickyColumns,
     dataColumns,
@@ -121,6 +123,8 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /** Entity type for API calls (e.g., 'customer', 'product') */
+    entity?: string;
     /**
      * Columns to render/select in the UI.
      * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
@@ -682,12 +686,23 @@
   }
 
   /** Confirm delete action after dialog confirmation */
-  function confirmDeleteRow() {
+  async function confirmDeleteRow() {
     if (!rowToDelete) return;
-    // TODO: Implement delete action - will be connected to BE later
-    console.log('Delete row:', rowKey(rowToDelete));
-    deleteConfirmDialogOpen = false;
-    rowToDelete = null;
+    try {
+      const uuidValue = rowToDelete[uid] as string;
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
+        method: 'DELETE'
+      });
+      deleteConfirmDialogOpen = false;
+      rowToDelete = null;
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      // Keep dialog open on error
+    }
   }
 
   /** Cancel delete action */
@@ -2639,13 +2654,7 @@
       </Button>
       <Button
         variant="destructive"
-        onclick={() => {
-          if (rowToDelete) {
-            console.log('Delete row:', rowKey(rowToDelete));
-          }
-          deleteConfirmDialogOpen = false;
-          rowToDelete = null;
-        }}
+        onclick={confirmDeleteRow}
       >
         {$t('common.delete')}
       </Button>

@@ -725,6 +725,7 @@
   {/snippet}
 
   <EntityListTable
+      entity="customer"
       bind:datetimeIanaModeByKey
       bind:datetimeIanaRenderTick
       uid={meta?.uid ?? 'uuid'}
