@@ -56,13 +56,13 @@ export function badgeClassesFromToken(token: TailwindColorToken | string | null 
 
   const baseColor = colorMap[color] || colorMap.zinc;
 
-  // Generate background, text, and border colors with opacity (matching ONLINE badge: bg-emerald-500/10, border-emerald-500/20)
-  const bgColor = `${baseColor}1A`; // 10% opacity (much lighter, like ONLINE badge)
-  const borderColor = `${baseColor}33`; // 20% opacity (for visible border, like ONLINE badge)
-  const textColor = baseColor;
-  const darkBgColor = `${baseColor}1A`; // 10% opacity (same for dark mode)
-  const darkBorderColor = `${baseColor}33`; // 20% opacity (same for dark mode)
-  const darkTextColor = baseColor; // use the same color for text in dark mode
+  // Generate solid background, text, and border colors (no opacity for better visibility on colored backgrounds)
+  const bgColor = baseColor;
+  const borderColor = baseColor;
+  const textColor = '#ffffff'; // white text for solid colored badges
+  const darkBgColor = baseColor;
+  const darkBorderColor = baseColor;
+  const darkTextColor = '#ffffff'; // white text for dark mode as well
 
   return {
     bgColor,
