@@ -667,12 +667,32 @@
   }
 
   /**
+   * Destructive background for deleted rows (light red): base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveChromeCellClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-300! dark:bg-rose-700! transition-colors group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!'
+      : 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  /**
    * Sticky uuid/code body overlay (dark, not IANA): base from `stickyCellClass`; hover `800`; selected `700` / `600`.
    */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
       ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
+  }
+
+  /**
+   * Destructive sticky uuid/code body overlay for deleted rows: base `200`, hover `300`, selected `400` / `500` (slightly darker than chrome).
+   * Dark: base `800`, hover `700`, selected `600` / `500`.
+   */
+  function entityListDestructiveBandStickyInteractionClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-400! dark:bg-rose-600! transition-colors group-hover/entity-row:bg-rose-500! dark:group-hover/entity-row:bg-rose-500!'
+      : 'bg-rose-200! dark:bg-rose-800! transition-colors group-hover/entity-row:bg-rose-300! dark:group-hover/entity-row:bg-rose-700!';
   }
 
   /**
@@ -684,6 +704,21 @@
       return 'transition-colors bg-neutral-100! dark:bg-neutral-900! group-hover/entity-row:bg-neutral-200! dark:group-hover/entity-row:bg-neutral-800!';
     }
     return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
+  }
+
+  /**
+   * Destructive scroll cells for deleted rows: base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveScrollInteractionClass(rowSelected: boolean): string | undefined {
+    if (rowSelected) {
+      return 'transition-colors bg-rose-300! dark:bg-rose-700! group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!';
+    }
+    return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  function isRowDeleted(row: TRow): boolean {
+    return 'deleted_at' in row && row.deleted_at !== null && row.deleted_at !== undefined;
   }
 
   let rowRangeMouseDown = $state(false);
@@ -811,6 +846,16 @@
       return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600';
     }
     return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800';
+  }
+
+  /** Card view: destructive version for deleted rows — uses rose color scale. */
+  function stickyCardFieldDestructiveChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
+    if (!stickyKeys.has(col.key)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-rose-300/80 bg-rose-300/85 p-2 transition-colors group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600';
+    }
+    return 'rounded-md border border-rose-200/80 bg-rose-100/90 p-2 transition-colors group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800';
   }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -1400,7 +1445,7 @@
     {/if}
   {/snippet}
 
-  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean)}
+  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
         'flex flex-col gap-0.5',
@@ -1413,7 +1458,9 @@
           'min-w-0 text-sm',
           (!isCardFieldEmpty(r, col)
             ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
-            : undefined) ?? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+            : undefined) ?? (rowDeleted
+              ? stickyCardFieldDestructiveChromeClass(col, rowSelectionEnabled && rowSelected)
+              : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
         )}
       >
         {#if isCardFieldEmpty(r, col)}
@@ -1962,6 +2009,7 @@
                 {#each viewRows as r (rowKey(r))}
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+                  {@const rowDeleted = isRowDeleted(r)}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -2073,7 +2121,7 @@
 
                       <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {:else}
@@ -2153,7 +2201,7 @@
 
                       <div class="flex flex-col gap-2">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {/if}
@@ -2403,6 +2451,7 @@
             {#each viewRows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+              {@const rowDeleted = isRowDeleted(r)}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
@@ -2418,7 +2467,9 @@
                   <Table.Cell
                     class={cn(
                       'w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-clip-border p-2',
-                      entityListGrayChromeCellClass(rowSelected)
+                      rowDeleted
+                        ? entityListDestructiveChromeCellClass(rowSelected)
+                        : entityListGrayChromeCellClass(rowSelected)
                     )}
                   >
                     <div class={cn('flex items-center justify-center', rowChromeH)}>
@@ -2441,7 +2492,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2458,7 +2511,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2478,7 +2533,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2495,7 +2552,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2513,7 +2572,9 @@
                         datetimeIanaCellHighlightClass(col, rowSelected),
                         isDatetimeIanaRecordMode(col)
                           ? undefined
-                          : entityListDefaultScrollInteractionClass(rowSelected),
+                          : (rowDeleted
+                            ? entityListDestructiveScrollInteractionClass(rowSelected)
+                            : entityListDefaultScrollInteractionClass(rowSelected)),
                         entityListDataCellValignClass(col)
                       )}
                     >
