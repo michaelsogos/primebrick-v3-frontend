@@ -584,7 +584,7 @@
     return onConnectivityRestored(() => {
       void (async () => {
         if (meta) {
-          await refreshRows({ clampPage: true });
+          await refreshRows();
         } else {
           await bootstrapCustomersList();
         }
@@ -667,7 +667,7 @@
 
   function onPageChange(p: number) {
     page = p;
-    void refreshRows({ clampPage: true });
+    void refreshRows();
   }
 
   function onPageSizeChange(size: number) {
@@ -711,8 +711,7 @@
 
   function onDeletionFilterModeChange(mode: 'non_deleted' | 'deleted' | 'all') {
     deletionFilterMode = mode;
-    page = 1;
-    void refreshRows({ clampPage: true });
+    void refreshRows();
   }
 </script>
 
