@@ -815,7 +815,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     <DropdownMenu.Item
                       onSelect={() => {
                         newFilterOperator = op as FilterOperator;
-                        editingFilterId = null;
                         newFilterStartDate = "";
                         newFilterEndDate = "";
                       }}
