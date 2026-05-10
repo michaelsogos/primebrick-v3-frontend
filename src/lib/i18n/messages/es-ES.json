@@ -21,9 +21,12 @@
     "close": "Cerrar",
     "more": "Más",
     "breadcrumb": "breadcrumb",
-    "clear": "Limpiar",
-    "selectDate": "Seleccionar fecha",
-    "edit": "Editar",
+    "clear": "Clear",
+    "selectDate": "Select date",
+    "date": "Fecha",
+    "time": "Hora",
+    "edit": "Edit",
+    "cancel": "Cancelar",
     "remove": "Eliminar"
   },
   "shell": {

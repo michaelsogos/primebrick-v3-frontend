@@ -24,7 +24,10 @@
     "breadcrumb": "breadcrumb",
     "clear": "Clear",
     "selectDate": "Select date",
+    "date": "Date",
+    "time": "Time",
     "edit": "Edit",
+    "cancel": "Cancel",
     "remove": "Remove"
   },
   "shell": {

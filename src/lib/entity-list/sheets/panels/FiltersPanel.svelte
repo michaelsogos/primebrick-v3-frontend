@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
@@ -13,20 +14,22 @@
     TabsContent,
   } from "$lib/components/ui/tabs/index.js";
   import { t } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX } from "lucide-svelte";
+  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX, X } from "lucide-svelte";
 import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
-  import { CalendarDate, parseDate } from "@internationalized/date";
+  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime, DateFormatter, getLocalTimeZone } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
   import { crossfade } from "svelte/transition";
   import { cubicInOut } from "svelte/easing";
+  import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 
   interface $$Props {
     content: any;
@@ -53,8 +56,15 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   // Temporary filter values (being edited by user)
   let tempFilterValues = $state<Record<string, any>>({});
 
-  // Local state for DateDropper values (CalendarDate objects)
-  let dateDropperValues = $state<Record<string, CalendarDate | null>>({});
+  // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
+  let dateDropperValues: Record<string, CalendarDate | CalendarDateTime | null> = $state({});
+  let timezoneValues: Record<string, string> = $state({});
+  let browserTimezone = $state<string | null>(null);
+
+  onMount(() => {
+    if (!browser) return;
+    browserTimezone = getResolvedIanaTimeZone();
+  });
 
   // Advanced filters state
   let tempAdvancedFilters: AdvancedFilter[] = $state([]);
@@ -94,7 +104,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     // Sync date dropper values
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key]);
+        const tz = timezoneValues[col.key] || browserTimezone || "UTC";
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type, tz);
       }
     }
   });
@@ -120,8 +131,28 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         (col.type === "date" || col.type === "datetime") &&
         dateDropperValues[col.key] !== undefined
       ) {
-        const isoValue = calendarDateToIso(dateDropperValues[col.key]);
-        tempFilterValues = { ...tempFilterValues, [col.key]: isoValue };
+        const dateValue = dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null;
+        // Only send value and timezone if date is actually selected
+        if (dateValue) {
+          const tz = timezoneValues[col.key] || browserTimezone || "UTC";
+          // Always convert to UTC using the selected timezone
+          const utcIso = calendarDateToUtcIso(dateValue, tz);
+          tempFilterValues = { ...tempFilterValues, [col.key]: utcIso };
+
+          // Store timezone in local state for UI restoration (not sent to BE)
+          timezoneValues[col.key] = tz;
+
+          // Only send IANA field if:
+          // 1. Column has datetimeIanaToggle (has IANA field in DB)
+          // 2. Selected timezone differs from browser timezone
+          if (col.datetimeIanaToggle && tz !== browserTimezone) {
+            const ianaField = col.datetimeIanaToggle.recordIanaField;
+            tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
+          }
+        } else {
+          // Clear timezone from local state if date is cleared
+          timezoneValues[col.key] = browserTimezone || "UTC";
+        }
       }
     }
     onFilterValuesChange?.(tempFilterValues);
@@ -139,26 +170,102 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     }));
   }
 
-  // Conversione da stringa ISO (YYYY-MM-DD) a CalendarDate
+  // Format ISO date string for display in advanced filter preview
+  function formatFilterDateValue(isoString: string): string {
+    if (!isoString) return "";
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+
+      // Detect if string is datetime (has T and time) or just date
+      const isDateTime = isoString.includes('T') || isoString.includes(':');
+      const options: Intl.DateTimeFormatOptions = isDateTime
+        ? { dateStyle: "long", timeStyle: "medium" }
+        : { dateStyle: "long" };
+
+      return new Intl.DateTimeFormat($uiLang, options).format(date);
+    } catch {
+      return isoString;
+    }
+  }
+
+  // Check if a string looks like an ISO date
+  function isIsoDateString(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(value);
+  }
+
+  // Conversione da stringa ISO a CalendarDate o CalendarDateTime
   function isoToCalendarDate(
     isoString: string | null | undefined,
-  ): CalendarDate | null {
+    type: "date" | "datetime" = "date",
+    timezone: string = "UTC",
+  ): CalendarDate | CalendarDateTime | null {
     if (!isoString) return null;
     try {
+      if (type === "datetime") {
+        // For UTC strings (with 'Z'), convert to the specified timezone
+        if (isoString.endsWith('Z')) {
+          const date = new Date(isoString);
+          // Get date parts in the specified timezone using Intl
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          });
+          const parts = formatter.formatToParts(date);
+          const get = (t: string) => parseInt(parts.find(p => p.type === t)?.value || '0', 10);
+          let hour = get('hour');
+          if (hour === 24) hour = 0;
+          return new CalendarDateTime(get('year'), get('month'), get('day'), hour, get('minute'), get('second'));
+        }
+        return parseDateTime(isoString);
+      }
       return parseDate(isoString);
     } catch {
       return null;
     }
   }
 
-  // Conversione da CalendarDate a stringa ISO (YYYY-MM-DD)
-  function calendarDateToIso(date: CalendarDate | null): string | null {
+  // Conversione da CalendarDate o CalendarDateTime a stringa ISO UTC
+  function calendarDateToUtcIso(date: CalendarDate | CalendarDateTime | null, timezone: string): string | null {
     if (!date) return null;
-    return date.toString();
+    if (date instanceof CalendarDate) {
+      // For dates without time, just return the date string
+      return date.toString();
+    }
+    // For CalendarDateTime, convert to UTC using the specified timezone
+    // CalendarDateTime is timezone-naive, so we need to convert it using the timezone
+    const year = date.year;
+    const month = date.month;
+    const day = date.day;
+    const hour = date.hour;
+    const minute = date.minute;
+    const second = date.second;
+
+    // Create a Date object in the specified timezone and convert to UTC ISO string
+    const dateInTimezone = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    // Adjust for timezone offset
+    const offset = getTimezoneOffset(timezone);
+    const utcDate = new Date(dateInTimezone.getTime() - offset * 60 * 1000);
+    return utcDate.toISOString();
+  }
+
+  // Get timezone offset in minutes from UTC
+  function getTimezoneOffset(timezone: string): number {
+    const date = new Date();
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
   }
 
   function renderFilterInput(col: MetaColumn) {
     if (col.type === "badge" && col.badge?.values) {
+      // ... (rest of the code remains the same)
       const options = getBadgeOptions(col);
       const selectedKeys = (tempFilterValues[col.key] as string[]) || [];
 
@@ -218,16 +325,37 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   function addAdvancedFilter() {
     if (!newFilterField) return;
 
+    const selectedColumn = filterableColumns.find((c) => c.key === newFilterField);
     let value: any | any[] | { start: any; end: any } = newFilterValue;
 
     // Handle BETWEEN operator
     if (newFilterOperator === "BETWEEN") {
       if (!newFilterStartDate || !newFilterEndDate) return;
-      value = { start: newFilterStartDate, end: newFilterEndDate };
+      // Convert date/datetime values to ISO strings
+      if (selectedColumn?.type === "datetime") {
+        const tz = browserTimezone || "UTC";
+        const startUtc = calendarDateToUtcIso(newFilterStartDate as CalendarDate | CalendarDateTime, tz);
+        const endUtc = calendarDateToUtcIso(newFilterEndDate as CalendarDate | CalendarDateTime, tz);
+        value = { start: startUtc, end: endUtc };
+      } else if (selectedColumn?.type === "date") {
+        // Convert date values to ISO strings
+        const startIso = (newFilterStartDate as CalendarDate)?.toString();
+        const endIso = (newFilterEndDate as CalendarDate)?.toString();
+        value = { start: startIso, end: endIso };
+      } else {
+        value = { start: newFilterStartDate, end: newFilterEndDate };
+      }
     } else if (Array.isArray(newFilterValue)) {
       if (newFilterValue.length === 0) return;
     } else if (!newFilterValue) {
       return;
+    } else if (selectedColumn?.type === "datetime") {
+      // Convert single datetime value to UTC
+      const tz = browserTimezone || "UTC";
+      value = calendarDateToUtcIso(newFilterValue as CalendarDate | CalendarDateTime, tz);
+    } else if (selectedColumn?.type === "date") {
+      // Convert single date value to ISO string
+      value = (newFilterValue as CalendarDate)?.toString();
     }
 
     if (editingFilterId) {
@@ -262,16 +390,38 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     newFilterOperator = filter.operator;
     editingFilterId = filter.id;
 
+    const selectedColumn = filterableColumns.find((c) => c.key === filter.field);
+
     // Handle BETWEEN operator
     if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
-      newFilterStartDate = filter.value.start;
-      newFilterEndDate = filter.value.end;
+      // Convert ISO strings back to CalendarDate/CalendarDateTime using existing helper
+      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
+        newFilterStartDate = isoToCalendarDate(filter.value.start as string, selectedColumn.type, browserTimezone || "UTC");
+        newFilterEndDate = isoToCalendarDate(filter.value.end as string, selectedColumn.type, browserTimezone || "UTC");
+      } else {
+        newFilterStartDate = filter.value.start;
+        newFilterEndDate = filter.value.end;
+      }
       newFilterValue = "";
     } else {
-      newFilterValue = filter.value;
+      // Convert ISO string back to CalendarDate/CalendarDateTime using existing helper
+      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
+        newFilterValue = isoToCalendarDate(filter.value as string, selectedColumn.type, browserTimezone || "UTC");
+      } else {
+        newFilterValue = filter.value;
+      }
       newFilterStartDate = "";
       newFilterEndDate = "";
     }
+  }
+
+  function cancelEditAdvancedFilter() {
+    editingFilterId = null;
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
+    newFilterStartDate = "";
+    newFilterEndDate = "";
   }
 
   function toggleBadgeFilterValue(key: string) {
@@ -455,7 +605,9 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             <div class="relative">
               <DateWheelPicker
                 bind:value={dateDropperValues[col.key]}
+                bind:timezone={timezoneValues[col.key]}
                 placeholder={$t("entities.list.filterPlaceholder")}
+                includeTime={col.type === "datetime"}
               />
               {#if dateDropperValues[col.key]}
                 <button
@@ -548,8 +700,12 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
-                      ? `${filter.value.start} e ${filter.value.end}`
-                      : String(filter.value)}
+                      ? (() => {
+                          const startFormatted = formatFilterDateValue(String(filter.value.start));
+                          const endFormatted = formatFilterDateValue(String(filter.value.end));
+                          return `${startFormatted} e ${endFormatted}`;
+                        })()
+                      : formatFilterDateValue(String(filter.value))}
                   </span>
                 </div>
               </div>
@@ -659,7 +815,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     <DropdownMenu.Item
                       onSelect={() => {
                         newFilterOperator = op as FilterOperator;
-                        editingFilterId = null;
                         newFilterStartDate = "";
                         newFilterEndDate = "";
                       }}
@@ -725,16 +880,19 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     <DateWheelPicker
                       bind:value={newFilterStartDate}
                       placeholder={$t("entities.list.selectValue")}
+                      includeTime={selectedColumn?.type === "datetime"}
                     />
                     <DateWheelPicker
                       bind:value={newFilterEndDate}
                       placeholder={$t("entities.list.selectValue")}
+                      includeTime={selectedColumn?.type === "datetime"}
                     />
                   </div>
                 {:else}
                   <DateWheelPicker
                     bind:value={newFilterValue}
                     placeholder={$t("entities.list.selectValue")}
+                    includeTime={selectedColumn?.type === "datetime"}
                   />
                 {/if}
               {:else}
@@ -747,19 +905,45 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               {/if}
             </div>
 
-            <Button
-              variant="default"
-              size="sm"
-              class="w-full"
-              onclick={addAdvancedFilter}
-              disabled={!newFilterField || (
-                newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
-                Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
-                !newFilterValue
-              )}
-            >
-              {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
-            </Button>
+            {#if editingFilterId}
+              <div class="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="flex-1"
+                  onclick={cancelEditAdvancedFilter}
+                >
+                  {$t("common.cancel")}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="flex-1"
+                  onclick={addAdvancedFilter}
+                  disabled={!newFilterField || (
+                    newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                    Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                    !newFilterValue
+                  )}
+                >
+                  {$t("common.edit")}
+                </Button>
+              </div>
+            {:else}
+              <Button
+                variant="default"
+                size="sm"
+                class="w-full"
+                onclick={addAdvancedFilter}
+                disabled={!newFilterField || (
+                  newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                  Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                  !newFilterValue
+                )}
+              >
+                {$t("entities.list.addFilter")}
+              </Button>
+            {/if}
           {/if}
         </div>
       </div>
