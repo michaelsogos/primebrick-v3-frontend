@@ -28,8 +28,8 @@ export const menuSoftRowBorderBase = 'border border-transparent shadow-none';
 
 export const menuSoftRowHighlightData = [
 	'data-highlighted:border-transparent data-highlighted:shadow-none',
-	'data-highlighted:bg-zinc-200/95 data-highlighted:text-foreground',
-	'dark:data-highlighted:bg-zinc-700/70 dark:data-highlighted:text-foreground',
+	'data-highlighted:bg-zinc-200/95',
+	'dark:data-highlighted:bg-zinc-700/70',
 	'[&_svg:not([class*="text-"])]:data-highlighted:text-muted-foreground',
 ].join(' ');
 
