@@ -102,6 +102,8 @@
     onResetFilters,
     advancedFilters = [],
     onAdvancedFiltersChange,
+    filterValuesStorageKey,
+    advancedFiltersStorageKey,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -126,6 +128,10 @@
     viewVisibility?: ListMetaViewVisibility;
     /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
     columnOrderStorageKey?: string;
+    /** Session-scoped (sessionStorage) storage key for filter values. */
+    filterValuesStorageKey?: string;
+    /** Session-scoped (sessionStorage) storage key for advanced filters. */
+    advancedFiltersStorageKey?: string;
     defaultSort?: { key: string; dir: SortDir };
     pageSizeOptions?: number[];
     searchPlaceholderKey?: string;
@@ -245,6 +251,62 @@
     }
   }
 
+  const filterValuesStorageKeyFull = $derived(
+    filterValuesStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:filterValues` : `pb.entityList:${uid}:filterValues`)
+  );
+
+  function readFilterValues(): Record<string, any> {
+    if (!filterValuesStorageKey && !columnOrderStorageKey) return {};
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.sessionStorage.getItem(filterValuesStorageKeyFull);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== 'object') return {};
+      return parsed as Record<string, any>;
+    } catch {
+      return {};
+    }
+  }
+
+  function writeFilterValues(next: Record<string, any>) {
+    if (!filterValuesStorageKey && !columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(filterValuesStorageKeyFull, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  const advancedFiltersStorageKeyFull = $derived(
+    advancedFiltersStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:advancedFilters` : `pb.entityList:${uid}:advancedFilters`)
+  );
+
+  function readAdvancedFilters(): AdvancedFilter[] {
+    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return [];
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.sessionStorage.getItem(advancedFiltersStorageKeyFull);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed as AdvancedFilter[];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeAdvancedFilters(next: AdvancedFilter[]) {
+    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(advancedFiltersStorageKeyFull, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
   function resetColumnsAndSorting() {
     onResetColumnVisibility('table');
     // Reset column visual order (sticky/data/auditing) to default meta order.
@@ -254,6 +316,14 @@
     writeOrderState({});
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
+  }
+
+  function resetFilters() {
+    onFilterValuesChange?.({});
+    onAdvancedFiltersChange?.([], 'AND');
+    onResetFilters?.();
+    writeFilterValues({});
+    writeAdvancedFilters([]);
   }
 
   function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
@@ -308,11 +378,32 @@
 
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
+
+    // Initialize filters from sessionStorage
+    const storedFilterValues = readFilterValues();
+    if (Object.keys(storedFilterValues).length > 0) {
+      onFilterValuesChange?.(storedFilterValues);
+    }
+
+    const storedAdvancedFilters = readAdvancedFilters();
+    if (storedAdvancedFilters.length > 0) {
+      onAdvancedFiltersChange?.(storedAdvancedFilters, 'AND');
+    }
   });
 
   $effect(() => {
     void viewMode;
     writeViewMode(viewMode);
+  });
+
+  $effect(() => {
+    void filterValues;
+    writeFilterValues(filterValues ?? {});
+  });
+
+  $effect(() => {
+    void advancedFilters;
+    writeAdvancedFilters(advancedFilters ?? []);
   });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
@@ -1439,11 +1530,7 @@
         variant="soft"
         size="xs"
         class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-        onclick={() => {
-          onFilterValuesChange?.({});
-          onAdvancedFiltersChange?.([], 'AND');
-          onResetFilters?.();
-        }}
+        onclick={resetFilters}
       >
         <FilterX class="size-3.5" />
         {$t('common.clearAll')}
