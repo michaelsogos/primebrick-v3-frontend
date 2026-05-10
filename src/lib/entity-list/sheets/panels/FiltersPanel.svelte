@@ -14,6 +14,7 @@
     TabsContent,
   } from "$lib/components/ui/tabs/index.js";
   import { t } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
@@ -22,7 +23,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
-  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime } from "@internationalized/date";
+  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime, DateFormatter, getLocalTimeZone } from "@internationalized/date";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
@@ -169,6 +170,30 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     }));
   }
 
+  // Format ISO date string for display in advanced filter preview
+  function formatFilterDateValue(isoString: string): string {
+    if (!isoString) return "";
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+
+      // Detect if string is datetime (has T and time) or just date
+      const isDateTime = isoString.includes('T') || isoString.includes(':');
+      const options: Intl.DateTimeFormatOptions = isDateTime
+        ? { dateStyle: "long", timeStyle: "medium" }
+        : { dateStyle: "long" };
+
+      return new Intl.DateTimeFormat($uiLang, options).format(date);
+    } catch {
+      return isoString;
+    }
+  }
+
+  // Check if a string looks like an ISO date
+  function isIsoDateString(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(value);
+  }
+
   // Conversione da stringa ISO a CalendarDate o CalendarDateTime
   function isoToCalendarDate(
     isoString: string | null | undefined,
@@ -300,16 +325,37 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   function addAdvancedFilter() {
     if (!newFilterField) return;
 
+    const selectedColumn = filterableColumns.find((c) => c.key === newFilterField);
     let value: any | any[] | { start: any; end: any } = newFilterValue;
 
     // Handle BETWEEN operator
     if (newFilterOperator === "BETWEEN") {
       if (!newFilterStartDate || !newFilterEndDate) return;
-      value = { start: newFilterStartDate, end: newFilterEndDate };
+      // Convert date/datetime values to ISO strings
+      if (selectedColumn?.type === "datetime") {
+        const tz = browserTimezone || "UTC";
+        const startUtc = calendarDateToUtcIso(newFilterStartDate as CalendarDate | CalendarDateTime, tz);
+        const endUtc = calendarDateToUtcIso(newFilterEndDate as CalendarDate | CalendarDateTime, tz);
+        value = { start: startUtc, end: endUtc };
+      } else if (selectedColumn?.type === "date") {
+        // Convert date values to ISO strings
+        const startIso = (newFilterStartDate as CalendarDate)?.toString();
+        const endIso = (newFilterEndDate as CalendarDate)?.toString();
+        value = { start: startIso, end: endIso };
+      } else {
+        value = { start: newFilterStartDate, end: newFilterEndDate };
+      }
     } else if (Array.isArray(newFilterValue)) {
       if (newFilterValue.length === 0) return;
     } else if (!newFilterValue) {
       return;
+    } else if (selectedColumn?.type === "datetime") {
+      // Convert single datetime value to UTC
+      const tz = browserTimezone || "UTC";
+      value = calendarDateToUtcIso(newFilterValue as CalendarDate | CalendarDateTime, tz);
+    } else if (selectedColumn?.type === "date") {
+      // Convert single date value to ISO string
+      value = (newFilterValue as CalendarDate)?.toString();
     }
 
     if (editingFilterId) {
@@ -632,8 +678,12 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
-                      ? `${filter.value.start} e ${filter.value.end}`
-                      : String(filter.value)}
+                      ? (() => {
+                          const startFormatted = formatFilterDateValue(String(filter.value.start));
+                          const endFormatted = formatFilterDateValue(String(filter.value.end));
+                          return `${startFormatted} e ${endFormatted}`;
+                        })()
+                      : formatFilterDateValue(String(filter.value))}
                   </span>
                 </div>
               </div>
@@ -809,16 +859,19 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     <DateWheelPicker
                       bind:value={newFilterStartDate}
                       placeholder={$t("entities.list.selectValue")}
+                      includeTime={selectedColumn?.type === "datetime"}
                     />
                     <DateWheelPicker
                       bind:value={newFilterEndDate}
                       placeholder={$t("entities.list.selectValue")}
+                      includeTime={selectedColumn?.type === "datetime"}
                     />
                   </div>
                 {:else}
                   <DateWheelPicker
                     bind:value={newFilterValue}
                     placeholder={$t("entities.list.selectValue")}
+                    includeTime={selectedColumn?.type === "datetime"}
                   />
                 {/if}
               {:else}
