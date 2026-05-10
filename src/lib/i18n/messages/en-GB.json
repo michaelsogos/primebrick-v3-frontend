@@ -24,8 +24,12 @@
     "breadcrumb": "breadcrumb",
     "clear": "Clear",
     "selectDate": "Select date",
+    "date": "Date",
+    "time": "Time",
     "edit": "Edit",
-    "remove": "Remove"
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "clearAll": "Clear all filters"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -220,6 +224,10 @@
         "previousPage": "previous page",
         "nextPage": "next page",
         "lastPage": "last page"
+      },
+      "filterBadge": {
+        "separator": ":",
+        "noFiltersApplied": "No filters applied"
       }
     },
     "crm": {

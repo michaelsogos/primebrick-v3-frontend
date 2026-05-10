@@ -21,10 +21,14 @@
     "close": "Schließen",
     "more": "Mehr",
     "breadcrumb": "Breadcrumb",
-    "clear": "Leeren",
-    "selectDate": "Datum auswählen",
-    "edit": "Bearbeiten",
-    "remove": "Entfernen"
+    "clear": "Clear",
+    "selectDate": "Select date",
+    "date": "Datum",
+    "time": "Uhrzeit",
+    "edit": "Edit",
+    "cancel": "Abbrechen",
+    "remove": "Remove",
+    "clearAll": "Alle Filter löschen"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -207,6 +211,10 @@
         "previousPage": "vorherige Seite",
         "nextPage": "nächste Seite",
         "lastPage": "letzte Seite"
+      },
+      "filterBadge": {
+        "separator": ":",
+        "noFiltersApplied": "Keine Filter angewendet"
       }
     },
     "crm": {

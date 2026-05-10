@@ -48,7 +48,8 @@
     Globe,
     MapPin,
     Eye,
-    EyeOff
+    EyeOff,
+    FilterX
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -101,6 +102,8 @@
     onResetFilters,
     advancedFilters = [],
     onAdvancedFiltersChange,
+    filterValuesStorageKey,
+    advancedFiltersStorageKey,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -125,6 +128,10 @@
     viewVisibility?: ListMetaViewVisibility;
     /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
     columnOrderStorageKey?: string;
+    /** Session-scoped (sessionStorage) storage key for filter values. */
+    filterValuesStorageKey?: string;
+    /** Session-scoped (sessionStorage) storage key for advanced filters. */
+    advancedFiltersStorageKey?: string;
     defaultSort?: { key: string; dir: SortDir };
     pageSizeOptions?: number[];
     searchPlaceholderKey?: string;
@@ -244,6 +251,62 @@
     }
   }
 
+  const filterValuesStorageKeyFull = $derived(
+    filterValuesStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:filterValues` : `pb.entityList:${uid}:filterValues`)
+  );
+
+  function readFilterValues(): Record<string, any> {
+    if (!filterValuesStorageKey && !columnOrderStorageKey) return {};
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.sessionStorage.getItem(filterValuesStorageKeyFull);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== 'object') return {};
+      return parsed as Record<string, any>;
+    } catch {
+      return {};
+    }
+  }
+
+  function writeFilterValues(next: Record<string, any>) {
+    if (!filterValuesStorageKey && !columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(filterValuesStorageKeyFull, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  const advancedFiltersStorageKeyFull = $derived(
+    advancedFiltersStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:advancedFilters` : `pb.entityList:${uid}:advancedFilters`)
+  );
+
+  function readAdvancedFilters(): AdvancedFilter[] {
+    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return [];
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.sessionStorage.getItem(advancedFiltersStorageKeyFull);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed as AdvancedFilter[];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeAdvancedFilters(next: AdvancedFilter[]) {
+    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(advancedFiltersStorageKeyFull, JSON.stringify(next));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
   function resetColumnsAndSorting() {
     onResetColumnVisibility('table');
     // Reset column visual order (sticky/data/auditing) to default meta order.
@@ -253,6 +316,14 @@
     writeOrderState({});
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
+  }
+
+  function resetFilters() {
+    onFilterValuesChange?.({});
+    onAdvancedFiltersChange?.([], 'AND');
+    onResetFilters?.();
+    writeFilterValues({});
+    writeAdvancedFilters([]);
   }
 
   function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
@@ -307,11 +378,32 @@
 
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
+
+    // Initialize filters from sessionStorage
+    const storedFilterValues = readFilterValues();
+    if (Object.keys(storedFilterValues).length > 0) {
+      onFilterValuesChange?.(storedFilterValues);
+    }
+
+    const storedAdvancedFilters = readAdvancedFilters();
+    if (storedAdvancedFilters.length > 0) {
+      onAdvancedFiltersChange?.(storedAdvancedFilters, 'AND');
+    }
   });
 
   $effect(() => {
     void viewMode;
     writeViewMode(viewMode);
+  });
+
+  $effect(() => {
+    void filterValues;
+    writeFilterValues(filterValues ?? {});
+  });
+
+  $effect(() => {
+    void advancedFilters;
+    writeAdvancedFilters(advancedFilters ?? []);
   });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
@@ -829,6 +921,38 @@
     }
     return `${keys.length} ${$t('entities.list.searchInFields')}`;
   });
+
+  const hasAppliedFilters = $derived(
+    (filterValues && Object.keys(filterValues).length > 0) ||
+    (advancedFilters && advancedFilters.length > 0)
+  );
+
+  function formatBadgeValue(col: MetaColumn, value: any): string {
+    if (col.type === 'badge' && col.badge?.values) {
+      const badgeValue = col.badge.values[value];
+      if (badgeValue) {
+        return badgeValue.labelText || $t(badgeValue.labelKey || `entities.customer.status.${value}`);
+      }
+    }
+    return String(value);
+  }
+
+  function formatFilterDateValue(isoString: string): string {
+    if (!isoString) return "";
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+
+      const isDateTime = isoString.includes('T') || isoString.includes(':');
+      const options: Intl.DateTimeFormatOptions = isDateTime
+        ? { dateStyle: "long", timeStyle: "medium" }
+        : { dateStyle: "long" };
+
+      return new Intl.DateTimeFormat($uiLang, options).format(date);
+    } catch {
+      return isoString;
+    }
+  }
 
   function rowKey(row: TRow): string {
     const v = row[uid as keyof TRow] as unknown;
@@ -1398,6 +1522,91 @@
         </Button>
       {/if}
     </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
+    {#if hasAppliedFilters}
+      <Button
+        variant="soft"
+        size="xs"
+        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+        onclick={resetFilters}
+      >
+        <FilterX class="size-3.5" />
+        {$t('common.clearAll')}
+      </Button>
+      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+      {#if filterValues && Object.keys(filterValues).length > 0}
+        {#each Object.entries(filterValues) as [key, value]}
+          {@const col = filterableColumns.find((c) => c.key === key)}
+          {#if col}
+            {@const operator = col.type === 'text' ? 'contains' : '='}
+            {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
+            <Badge
+              variant="secondary"
+              class="gap-1.5 pr-1"
+            >
+              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+              <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+              <button
+                type="button"
+                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                onclick={() => {
+                  const next = { ...filterValues };
+                  delete next[key];
+                  onFilterValuesChange?.(next);
+                }}
+                aria-label={$t('common.remove')}
+              >
+                <XIcon class="size-3" />
+              </button>
+            </Badge>
+          {/if}
+        {/each}
+      {/if}
+      {#if advancedFilters && advancedFilters.length > 0}
+        {#each advancedFilters as filter}
+          {@const col = filterableColumns.find((c) => c.key === filter.field)}
+          {#if col}
+            {@const formattedValue = (() => {
+              if (Array.isArray(filter.value)) {
+                return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
+              } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+                const startFormatted = formatFilterDateValue(String(filter.value.start));
+                const endFormatted = formatFilterDateValue(String(filter.value.end));
+                return `${startFormatted} e ${endFormatted}`;
+              } else if (col.type === 'date' || col.type === 'datetime') {
+                return formatFilterDateValue(String(filter.value));
+              } else {
+                return formatBadgeValue(col, filter.value);
+              }
+            })()}
+            <Badge
+              variant="secondary"
+              class="gap-1.5 pr-1"
+            >
+              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+              <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+              <button
+                type="button"
+                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                onclick={() => {
+                  const next = advancedFilters.filter((f) => f.id !== filter.id);
+                  onAdvancedFiltersChange?.(next, 'AND');
+                }}
+                aria-label={$t('common.remove')}
+              >
+                <XIcon class="size-3" />
+              </button>
+            </Badge>
+          {/if}
+        {/each}
+      {/if}
+    {:else}
+      <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+    {/if}
   </div>
 
   <div class="min-h-0 flex-1 overflow-hidden">
