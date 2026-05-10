@@ -356,6 +356,7 @@
     orderState.data = undefined;
     orderState.auditing = undefined;
     writeOrderState({});
+    // Reset sorting to default
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
   }

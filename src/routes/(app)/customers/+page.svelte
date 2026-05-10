@@ -108,6 +108,7 @@
   const skVisibleKeys = `${storageKeyPrefix}visibleKeys`;
   const skSearchInKeys = `${storageKeyPrefix}searchInKeys`;
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
+  const skSort = `${storageKeyPrefix}sort`;
 
   const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
   const columns = $derived(orderedColumnsFromListMeta(meta?.list));
@@ -167,8 +168,11 @@
     if (cached) {
       meta = cached;
       const defSort = meta.list.defaultSort;
-      sortKey = null;
-      sortDir = defSort?.dir ?? 'asc';
+      // Only reset sort if not already restored from session storage
+      if (sortKey === null) {
+        sortKey = null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
       pageSize = meta.list.defaultPageSize ?? pageSize;
       ensureVisibleKeys();
       return;
@@ -177,8 +181,11 @@
     if (inFlight) {
       meta = await inFlight;
       const defSort = meta.list.defaultSort;
-      sortKey = null;
-      sortDir = defSort?.dir ?? 'asc';
+      // Only reset sort if not already restored from session storage
+      if (sortKey === null) {
+        sortKey = null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
       pageSize = meta.list.defaultPageSize ?? pageSize;
       ensureVisibleKeys();
       return;
@@ -208,8 +215,11 @@
     const m = meta as unknown as CustomerMeta | null;
     if (!m) return;
     const defSort = m.list.defaultSort;
-    sortKey = null;
-    sortDir = defSort?.dir ?? 'asc';
+    // Only reset sort if not already restored from session storage
+    if (sortKey === null) {
+      sortKey = null;
+      sortDir = defSort?.dir ?? 'asc';
+    }
     pageSize = m.list.defaultPageSize ?? pageSize;
     ensureVisibleKeys();
   }
@@ -233,6 +243,21 @@
           searchInKeys = parsed;
         }
       }
+
+      const rawSort = sessionStorage.getItem(skSort);
+      if (rawSort) {
+        const parsed = JSON.parse(rawSort) as unknown;
+        if (parsed && typeof parsed === 'object') {
+          const obj = parsed as { key: string | null; dir: 'asc' | 'desc' };
+          if (obj.key === null || typeof obj.key === 'string') {
+            if (obj.dir === 'asc' || obj.dir === 'desc') {
+              sortKey = obj.key;
+              sortDir = obj.dir;
+              sortRestored = true;
+            }
+          }
+        }
+      }
     } catch {
       // ignore bad storage payloads
     }
@@ -242,6 +267,7 @@
     try {
       sessionStorage.setItem(skVisibleKeys, JSON.stringify(visibleKeys));
       sessionStorage.setItem(skSearchInKeys, JSON.stringify(searchInKeys));
+      sessionStorage.setItem(skSort, JSON.stringify({ key: sortKey, dir: sortDir }));
     } catch {
       // ignore quota / blocked storage
     }
@@ -600,12 +626,18 @@
   });
 
   // Persist UI state changes (write-only; never mutates state).
+  let sortRestored = $state(false);
   $effect(() => {
     if (!metaLoaded) return;
     // track dependencies
     void visibleKeys;
     void searchInKeys;
-    persistListUiStateToSession();
+    void sortKey;
+    void sortDir;
+    // Only persist if not currently restoring from session storage
+    if (sortRestored) {
+      persistListUiStateToSession();
+    }
   });
 
   /** Mirrors backend list search gate: >=3 “real” chars, or escaped wildcard (`\*` / `\?`) with >=1 real char. */
