@@ -1556,17 +1556,6 @@
     </div>
 
     <div class="flex items-center justify-end gap-2">
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={rowsLoading || refreshDisabled}
-        onclick={() => onRefresh()}
-        aria-label={$t('entities.list.refresh')}
-        title={$t('entities.list.refresh')}
-      >
-        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
-      </Button>
-
       <div
         class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
         role="group"
@@ -1676,6 +1665,17 @@
           <TextAlignJustify class="size-4" />
         </Button>
       </div>
+
+      <Button
+        variant="soft"
+        size="icon-sm"
+        disabled={rowsLoading || refreshDisabled}
+        onclick={() => onRefresh()}
+        aria-label={$t('entities.list.refresh')}
+        title={$t('entities.list.refresh')}
+      >
+        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
+      </Button>
 
       <Button
         variant="soft"
