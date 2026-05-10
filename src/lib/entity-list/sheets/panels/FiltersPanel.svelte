@@ -390,13 +390,26 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     newFilterOperator = filter.operator;
     editingFilterId = filter.id;
 
+    const selectedColumn = filterableColumns.find((c) => c.key === filter.field);
+
     // Handle BETWEEN operator
     if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
-      newFilterStartDate = filter.value.start;
-      newFilterEndDate = filter.value.end;
+      // Convert ISO strings back to CalendarDate/CalendarDateTime using existing helper
+      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
+        newFilterStartDate = isoToCalendarDate(filter.value.start as string, selectedColumn.type, browserTimezone || "UTC");
+        newFilterEndDate = isoToCalendarDate(filter.value.end as string, selectedColumn.type, browserTimezone || "UTC");
+      } else {
+        newFilterStartDate = filter.value.start;
+        newFilterEndDate = filter.value.end;
+      }
       newFilterValue = "";
     } else {
-      newFilterValue = filter.value;
+      // Convert ISO string back to CalendarDate/CalendarDateTime using existing helper
+      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
+        newFilterValue = isoToCalendarDate(filter.value as string, selectedColumn.type, browserTimezone || "UTC");
+      } else {
+        newFilterValue = filter.value;
+      }
       newFilterStartDate = "";
       newFilterEndDate = "";
     }
