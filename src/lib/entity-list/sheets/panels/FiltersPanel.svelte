@@ -18,7 +18,7 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import XIcon from "@lucide/svelte/icons/x";
-  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX } from "lucide-svelte";
+  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX, X } from "lucide-svelte";
 import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
@@ -413,6 +413,15 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       newFilterStartDate = "";
       newFilterEndDate = "";
     }
+  }
+
+  function cancelEditAdvancedFilter() {
+    editingFilterId = null;
+    newFilterField = "";
+    newFilterOperator = "=";
+    newFilterValue = "";
+    newFilterStartDate = "";
+    newFilterEndDate = "";
   }
 
   function toggleBadgeFilterValue(key: string) {
@@ -897,19 +906,45 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               {/if}
             </div>
 
-            <Button
-              variant="default"
-              size="sm"
-              class="w-full"
-              onclick={addAdvancedFilter}
-              disabled={!newFilterField || (
-                newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
-                Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
-                !newFilterValue
-              )}
-            >
-              {editingFilterId ? $t("common.edit") : $t("entities.list.addFilter")}
-            </Button>
+            {#if editingFilterId}
+              <div class="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="flex-1"
+                  onclick={cancelEditAdvancedFilter}
+                >
+                  {$t("common.cancel")}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="flex-1"
+                  onclick={addAdvancedFilter}
+                  disabled={!newFilterField || (
+                    newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                    Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                    !newFilterValue
+                  )}
+                >
+                  {$t("common.edit")}
+                </Button>
+              </div>
+            {:else}
+              <Button
+                variant="default"
+                size="sm"
+                class="w-full"
+                onclick={addAdvancedFilter}
+                disabled={!newFilterField || (
+                  newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
+                  Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
+                  !newFilterValue
+                )}
+              >
+                {$t("entities.list.addFilter")}
+              </Button>
+            {/if}
           {/if}
         </div>
       </div>

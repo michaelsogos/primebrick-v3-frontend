@@ -27,6 +27,7 @@
     "date": "Date",
     "time": "Time",
     "edit": "Edit",
+    "cancel": "Cancel",
     "remove": "Remove"
   },
   "shell": {

@@ -27,6 +27,7 @@
     "date": "Data",
     "time": "Ora",
     "edit": "Modifica",
+    "cancel": "Annulla",
     "remove": "Rimuovi"
   },
   "shell": {
