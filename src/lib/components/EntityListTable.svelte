@@ -1426,13 +1426,14 @@
         {#each Object.entries(filterValues) as [key, value]}
           {@const col = filterableColumns.find((c) => c.key === key)}
           {#if col}
+            {@const operator = col.type === 'text' ? 'contains' : '='}
             <Badge
               variant="secondary"
               class="gap-1.5 pr-1"
             >
-              <span class="text-xs font-medium">{$t(col.labelKey)}</span>
-              <span class="text-muted-foreground">{$t('entities.list.filterBadge.separator')}</span>
-              <span class="text-xs">{String(value)}</span>
+              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+              <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+              <span class="text-xs italic text-muted-foreground">{String(value)}</span>
               <button
                 type="button"
                 class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
@@ -1457,10 +1458,9 @@
               variant="secondary"
               class="gap-1.5 pr-1"
             >
-              <span class="text-xs font-medium">{$t(col.labelKey)}</span>
-              <span class="text-muted-foreground">{$t('entities.list.filterBadge.separator')}</span>
-              <span class="text-xs">{filter.operator}</span>
-              <span class="text-xs">{String(filter.value)}</span>
+              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+              <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+              <span class="text-xs italic text-muted-foreground">{String(filter.value)}</span>
               <button
                 type="button"
                 class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
