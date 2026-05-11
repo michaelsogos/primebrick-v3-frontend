@@ -237,6 +237,13 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "No filters applied"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Bulk actions",
+        "toggleToFilters": "Filters",
+        "delete": "Delete",
+        "duplicate": "Duplicate",
+        "export": "Export"
       }
     },
     "crm": {
