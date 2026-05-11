@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -14,7 +14,11 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import { Dialog as DialogPrimitive } from 'bits-ui';
+  import { scale, fade } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
+  import { apiFetch } from '$lib/api';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -49,13 +53,19 @@
     MapPin,
     Eye,
     EyeOff,
-    FilterX
+    ListCheck,
+    ListX,
+    TextAlignJustify,
+    FilterX,
+    Pencil,
+    Trash2
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
   let {
     uid,
+    entity = 'customer',
     columns,
     stickyColumns,
     dataColumns,
@@ -104,6 +114,8 @@
     onAdvancedFiltersChange,
     filterValuesStorageKey,
     advancedFiltersStorageKey,
+    deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
+    onDeletionFilterModeChange,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -116,6 +128,8 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /** Entity type for API calls (e.g., 'customer', 'product') */
+    entity?: string;
     /**
      * Columns to render/select in the UI.
      * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
@@ -172,6 +186,8 @@
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
+    deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
+    onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
@@ -213,6 +229,32 @@
     if (typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem(viewModeStorageKey, next);
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+  const deletionFilterStorageKey = $derived(
+    columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
+  );
+  let deletionFilterMode = $state<DeletionFilterMode>(deletionFilterModeProp ?? 'non_deleted');
+
+  function readDeletionFilter(): DeletionFilterMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.sessionStorage.getItem(deletionFilterStorageKey);
+      if (raw === 'non_deleted' || raw === 'deleted' || raw === 'all') return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeDeletionFilter(next: DeletionFilterMode) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(deletionFilterStorageKey, next);
     } catch {
       // ignore quota / blocked storage
     }
@@ -314,6 +356,7 @@
     orderState.data = undefined;
     orderState.auditing = undefined;
     writeOrderState({});
+    // Reset sorting to default
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
   }
@@ -379,6 +422,9 @@
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
 
+    const storedDeletionFilter = readDeletionFilter();
+    if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
+
     // Initialize filters from sessionStorage
     const storedFilterValues = readFilterValues();
     if (Object.keys(storedFilterValues).length > 0) {
@@ -394,6 +440,12 @@
   $effect(() => {
     void viewMode;
     writeViewMode(viewMode);
+  });
+
+  $effect(() => {
+    void deletionFilterMode;
+    writeDeletionFilter(deletionFilterMode);
+    onDeletionFilterModeChange?.(deletionFilterMode);
   });
 
   $effect(() => {
@@ -616,12 +668,32 @@
   }
 
   /**
+   * Destructive background for deleted rows (light red): base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveChromeCellClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-300! dark:bg-rose-700! transition-colors group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!'
+      : 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  /**
    * Sticky uuid/code body overlay (dark, not IANA): base from `stickyCellClass`; hover `800`; selected `700` / `600`.
    */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
       ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
+  }
+
+  /**
+   * Destructive sticky uuid/code body overlay for deleted rows: base `200`, hover `300`, selected `400` / `500` (slightly darker than chrome).
+   * Dark: base `800`, hover `700`, selected `600` / `500`.
+   */
+  function entityListDestructiveBandStickyInteractionClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-400! dark:bg-rose-600! transition-colors group-hover/entity-row:bg-rose-500! dark:group-hover/entity-row:bg-rose-500!'
+      : 'bg-rose-200! dark:bg-rose-800! transition-colors group-hover/entity-row:bg-rose-300! dark:group-hover/entity-row:bg-rose-700!';
   }
 
   /**
@@ -635,6 +707,21 @@
     return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
   }
 
+  /**
+   * Destructive scroll cells for deleted rows: base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveScrollInteractionClass(rowSelected: boolean): string | undefined {
+    if (rowSelected) {
+      return 'transition-colors bg-rose-300! dark:bg-rose-700! group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!';
+    }
+    return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  function isRowDeleted(row: TRow): boolean {
+    return 'deleted_at' in row && row.deleted_at !== null && row.deleted_at !== undefined;
+  }
+
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
   let rangeDragActive = $state(false);
@@ -643,6 +730,64 @@
   let selectionSnapshotAtMouseDown: Set<string> | null = null;
   /** After a range brush drag, suppress the following `click` on the row (same gesture as mouseup). */
   let skipNextRowClickSelectToggle = false;
+  /** Row dropdown menu state: which row has the menu open */
+  let dropdownMenuRow = $state<TRow | null>(null);
+
+  /** Delete confirmation dialog state */
+  let deleteConfirmDialogOpen = $state(false);
+  let rowToDelete: TRow | null = null;
+  let isDeleting = $state(false);
+
+  /** Open dropdown menu for a specific row */
+  function openRowDropdown(row: TRow) {
+    dropdownMenuRow = row;
+  }
+
+  /** Close dropdown menu */
+  function closeRowDropdown() {
+    dropdownMenuRow = null;
+  }
+
+  /** Handle edit action for a row */
+  function handleEditRow(row: TRow) {
+    // TODO: Implement edit action - will be connected to BE later
+    console.log('Edit row:', rowKey(row));
+    closeRowDropdown();
+  }
+
+  /** Handle delete action for a row */
+  function handleDeleteRow(row: TRow) {
+    // Open confirmation dialog instead of deleting directly
+    rowToDelete = row;
+    deleteConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Confirm delete action after dialog confirmation */
+  async function confirmDeleteRow() {
+    if (!rowToDelete) return;
+    try {
+      const uuidValue = rowToDelete[uid] as string;
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
+        method: 'DELETE'
+      });
+      deleteConfirmDialogOpen = false;
+      rowToDelete = null;
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      // Keep dialog open on error
+    }
+  }
+
+  /** Cancel delete action */
+  function cancelDeleteRow() {
+    deleteConfirmDialogOpen = false;
+    rowToDelete = null;
+  }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
@@ -702,6 +847,16 @@
       return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600';
     }
     return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800';
+  }
+
+  /** Card view: destructive version for deleted rows — uses rose color scale. */
+  function stickyCardFieldDestructiveChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
+    if (!stickyKeys.has(col.key)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-rose-300/80 bg-rose-300/85 p-2 transition-colors group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600';
+    }
+    return 'rounded-md border border-rose-200/80 bg-rose-100/90 p-2 transition-colors group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800';
   }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -1291,7 +1446,7 @@
     {/if}
   {/snippet}
 
-  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean)}
+  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
         'flex flex-col gap-0.5',
@@ -1304,7 +1459,9 @@
           'min-w-0 text-sm',
           (!isCardFieldEmpty(r, col)
             ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
-            : undefined) ?? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+            : undefined) ?? (rowDeleted
+              ? stickyCardFieldDestructiveChromeClass(col, rowSelectionEnabled && rowSelected)
+              : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
         )}
       >
         {#if isCardFieldEmpty(r, col)}
@@ -1400,17 +1557,6 @@
     </div>
 
     <div class="flex items-center justify-end gap-2">
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={rowsLoading || refreshDisabled}
-        onclick={() => onRefresh()}
-        aria-label={$t('entities.list.refresh')}
-        title={$t('entities.list.refresh')}
-      >
-        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
-      </Button>
-
       <div
         class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
         role="group"
@@ -1465,6 +1611,72 @@
           <LayoutList class="size-4" />
         </Button>
       </div>
+
+      <div
+        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
+        role="group"
+        aria-label={$t('entities.list.deletionFilter.groupAria')}
+      >
+        <Button
+          variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'non_deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'non_deleted'}
+          title={$t('entities.list.deletionFilter.nonDeleted')}
+          onclick={() => {
+            deletionFilterMode = 'non_deleted';
+          }}
+        >
+          <ListCheck class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'deleted'}
+          title={$t('entities.list.deletionFilter.deleted')}
+          onclick={() => {
+            deletionFilterMode = 'deleted';
+          }}
+        >
+          <ListX class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'all' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'all' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'all'}
+          title={$t('entities.list.deletionFilter.all')}
+          onclick={() => {
+            deletionFilterMode = 'all';
+          }}
+        >
+          <TextAlignJustify class="size-4" />
+        </Button>
+      </div>
+
+      <Button
+        variant="soft"
+        size="icon-sm"
+        disabled={rowsLoading || refreshDisabled}
+        onclick={() => onRefresh()}
+        aria-label={$t('entities.list.refresh')}
+        title={$t('entities.list.refresh')}
+      >
+        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
+      </Button>
 
       <Button
         variant="soft"
@@ -1798,6 +2010,7 @@
                 {#each viewRows as r (rowKey(r))}
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+                  {@const rowDeleted = isRowDeleted(r)}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -1868,9 +2081,40 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -1878,7 +2122,7 @@
 
                       <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {:else}
@@ -1917,9 +2161,40 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -1927,7 +2202,7 @@
 
                       <div class="flex flex-col gap-2">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {/if}
@@ -2177,6 +2452,7 @@
             {#each viewRows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+              {@const rowDeleted = isRowDeleted(r)}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
@@ -2192,7 +2468,9 @@
                   <Table.Cell
                     class={cn(
                       'w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-clip-border p-2',
-                      entityListGrayChromeCellClass(rowSelected)
+                      rowDeleted
+                        ? entityListDestructiveChromeCellClass(rowSelected)
+                        : entityListGrayChromeCellClass(rowSelected)
                     )}
                   >
                     <div class={cn('flex items-center justify-center', rowChromeH)}>
@@ -2215,7 +2493,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2232,7 +2512,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2252,7 +2534,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2269,7 +2553,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2287,7 +2573,9 @@
                         datetimeIanaCellHighlightClass(col, rowSelected),
                         isDatetimeIanaRecordMode(col)
                           ? undefined
-                          : entityListDefaultScrollInteractionClass(rowSelected),
+                          : (rowDeleted
+                            ? entityListDestructiveScrollInteractionClass(rowSelected)
+                            : entityListDefaultScrollInteractionClass(rowSelected)),
                         entityListDataCellValignClass(col)
                       )}
                     >
@@ -2310,9 +2598,40 @@
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
-                        <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
-                          <MoreVertical class="size-4" />
-                        </Button>
+                        <DropdownMenu.Root open={dropdownMenuRow === r}>
+                          <DropdownMenu.Trigger>
+                            {#snippet child({ props })}
+                              <Button 
+                                {...props}
+                                variant="ghost" 
+                                size="icon-sm" 
+                                aria-label="row actions" 
+                                title="actions"
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  openRowDropdown(r);
+                                }}
+                              >
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/snippet}
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content class="w-56" align="end">
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                              <div class="flex items-center gap-2">
+                                <Pencil class="size-4 opacity-70" />
+                                <span>{$t('common.edit')}</span>
+                              </div>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                              <div class="flex items-center gap-2">
+                                <Trash2 class="size-4 text-destructive/70" />
+                                <span>{$t('common.delete')}</span>
+                              </div>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
                       {/if}
                     </div>
                   </Table.Cell>
@@ -2475,6 +2794,32 @@
   </div>
 </div>
 
+<!-- Delete confirmation dialog -->
+<Dialog.Root bind:open={deleteConfirmDialogOpen}>
+  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+      <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary"
+        onclick={() => {
+          deleteConfirmDialogOpen = false;
+          rowToDelete = null;
+        }}
+      >
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        variant="destructive"
+        onclick={confirmDeleteRow}
+      >
+        {$t('common.delete')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <style>
   @keyframes pb-watermark-pulse {

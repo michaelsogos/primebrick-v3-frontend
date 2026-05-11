@@ -29,7 +29,10 @@
     "edit": "Modifica",
     "cancel": "Annulla",
     "remove": "Rimuovi",
-    "clearAll": "Annulla tutti i filtri"
+    "clearAll": "Annulla tutti i filtri",
+    "delete": "Elimina",
+    "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
+    "deleteConfirm": "Questa azione non può essere annullata."
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -217,6 +220,12 @@
         "table": "Tabella",
         "cards": "Card (griglia)",
         "cardsList": "Card (lista orizzontale)"
+      },
+      "deletionFilter": {
+        "groupAria": "Filtro stato eliminazione",
+        "nonDeleted": "Vedi solo record non eliminati",
+        "deleted": "Vedi solo record eliminati",
+        "all": "Vedi tutti i record"
       },
       "emptyField": "Vuoto",
       "pagination": {
