@@ -29,7 +29,10 @@
     "cancel": "Cancelar",
     "remove": "Remover",
     "clearAll": "Limpar todos os filtros",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "deleting": "A eliminar…",
+    "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
+    "deleteConfirm": "Esta ação não pode ser desfeita."
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -228,7 +231,8 @@
         "toggleToFilters": "Filtros",
         "delete": "Eliminar",
         "duplicate": "Duplicar",
-        "export": "Exportar"
+        "export": "Exportar",
+        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?"
       }
     },
     "crm": {

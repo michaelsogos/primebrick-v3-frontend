@@ -19,6 +19,7 @@
   import { scale, fade, fly } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
+  import { pushImpactError } from '$lib/errors/app-errors';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -754,6 +755,10 @@
   let rowToDelete: TRow | null = null;
   let isDeleting = $state(false);
 
+  /** Bulk delete confirmation dialog state */
+  let bulkDeleteConfirmDialogOpen = $state(false);
+  let isBulkDeleting = $state(false);
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -807,8 +812,96 @@
 
   /** Bulk action handlers */
   function handleBulkDelete() {
-    console.log('Bulk delete:', selectedKeys);
-    // TODO: Implement bulk delete with BE integration
+    // Open confirmation dialog instead of deleting directly
+    bulkDeleteConfirmDialogOpen = true;
+  }
+
+  /** Confirm bulk delete action after dialog confirmation */
+  async function confirmBulkDelete() {
+    if (selectedKeys.length === 0) return;
+    try {
+      isBulkDeleting = true;
+      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids: selectedKeys })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
+          title?: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+        };
+        
+        const toneForImpact = 'danger'; // HIGH impact uses danger
+        throw {
+          title: data.title || 'Bulk delete failed',
+          status: data.status,
+          detail: data.detail,
+          instance: data.instance,
+          internal_code: data.internal_code,
+          toneForImpact
+        };
+      }
+      
+      // Clear selection after successful deletion
+      selectedKeys = [];
+      // Switch back to filters mode
+      toolbarMode = 'filters';
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      
+      // Show error notification using shell's error handling with RFC 7807 format
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as {
+          title: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+          toneForImpact?: string;
+        };
+        const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
+        pushImpactError({
+          impact: 'HIGH',
+          message: err.title, // RFC 7807 title is the toast message
+          scope: 'Bulk delete API',
+          detail: err.detail, // RFC 7807 detail is the detail
+          tags: [
+            { label: err.internal_code || 'BULK_DELETE_FAILED', tone },
+            ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
+            ...(err.instance ? [{ label: err.instance, tone } as const] : []),
+          ],
+          toast: true,
+        });
+      } else {
+        pushImpactError({
+          impact: 'HIGH',
+          message: 'Bulk delete failed',
+          scope: 'Bulk delete API',
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
+    } finally {
+      isBulkDeleting = false;
+      // Close dialog regardless of success or error
+      bulkDeleteConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel bulk delete action */
+  function cancelBulkDelete() {
+    bulkDeleteConfirmDialogOpen = false;
   }
 
   function handleBulkDuplicate() {
@@ -2905,6 +2998,37 @@
         onclick={confirmDeleteRow}
       >
         {$t('common.delete')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<!-- Bulk delete confirmation dialog -->
+<Dialog.Root bind:open={bulkDeleteConfirmDialogOpen}>
+  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+      <Dialog.Description>
+        Sei sicuro di voler eliminare {selectedKeys.length} elementi?
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary"
+        onclick={cancelBulkDelete}
+      >
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        variant="destructive"
+        onclick={confirmBulkDelete}
+        disabled={isBulkDeleting}
+      >
+        {#if isBulkDeleting}
+          {$t('common.deleting')}
+        {:else}
+          {$t('common.delete')}
+        {/if}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

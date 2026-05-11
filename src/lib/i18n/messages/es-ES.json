@@ -31,6 +31,7 @@
     "remove": "Eliminar",
     "clearAll": "Limpiar todos los filtros",
     "delete": "Eliminar",
+    "deleting": "Eliminando…",
     "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar este registro?",
     "deleteConfirm": "Esta acción no se puede deshacer."
   },
@@ -231,7 +232,8 @@
         "toggleToFilters": "Filtros",
         "delete": "Eliminar",
         "duplicate": "Duplicar",
-        "export": "Exportar"
+        "export": "Exportar",
+        "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar los elementos seleccionados?"
       }
     },
     "crm": {
