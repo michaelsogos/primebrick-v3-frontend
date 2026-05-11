@@ -31,6 +31,7 @@
     "remove": "Entfernen",
     "clearAll": "Alle Filter löschen",
     "delete": "Löschen",
+    "deleting": "Löschen…",
     "deleteConfirmTitle": "Möchten Sie diesen Datensatz wirklich löschen?",
     "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden."
   },
@@ -225,6 +226,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Keine Filter angewendet"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Massenaktionen",
+        "toggleToFilters": "Filter",
+        "delete": "Löschen",
+        "duplicate": "Duplizieren",
+        "export": "Exportieren",
+        "deleteConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich löschen?"
       }
     },
     "crm": {

@@ -31,7 +31,8 @@
     "remove": "Supprimer",
     "clearAll": "Effacer tous les filtres",
     "delete": "Supprimer",
-    "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement?",
+    "deleting": "Suppression…",
+    "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
     "deleteConfirm": "Cette action ne peut pas être annulée."
   },
   "shell": {
@@ -135,8 +136,7 @@
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"
     }
-  }
-  ,
+  },
   "entities": {
     "list": {
       "datetimeIana": {
@@ -225,6 +225,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Aucun filtre appliqué"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Actions groupées",
+        "toggleToFilters": "Filtres",
+        "delete": "Supprimer",
+        "duplicate": "Dupliquer",
+        "export": "Exporter",
+        "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer les éléments sélectionnés ?"
       }
     },
     "crm": {

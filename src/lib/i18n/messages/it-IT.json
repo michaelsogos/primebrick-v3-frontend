@@ -31,6 +31,7 @@
     "remove": "Rimuovi",
     "clearAll": "Annulla tutti i filtri",
     "delete": "Elimina",
+    "deleting": "Eliminazione in corso…",
     "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
     "deleteConfirm": "Questa azione non può essere annullata."
   },
@@ -237,6 +238,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Nessun filtro applicato"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Azioni bulk",
+        "toggleToFilters": "Filtri",
+        "delete": "Elimina",
+        "duplicate": "Duplica",
+        "export": "Esporta",
+        "deleteConfirmTitle": "Sei sicuro di voler eliminare gli elementi selezionati?"
       }
     },
     "crm": {

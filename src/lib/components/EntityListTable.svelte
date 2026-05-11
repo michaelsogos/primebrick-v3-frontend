@@ -16,9 +16,10 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Dialog as DialogPrimitive } from 'bits-ui';
-  import { scale, fade } from 'svelte/transition';
+  import { scale, fade, fly } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
+  import { pushImpactError } from '$lib/errors/app-errors';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -58,7 +59,10 @@
     TextAlignJustify,
     FilterX,
     Pencil,
-    Trash2
+    Trash2,
+    Copy,
+    Download,
+    Funnel
   } from 'lucide-svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
@@ -213,6 +217,9 @@
     columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
   );
   let viewMode = $state<ViewMode>('table');
+
+  type ToolbarMode = 'filters' | 'bulk';
+  let toolbarMode = $state<ToolbarMode>('filters');
 
   function readViewMode(): ViewMode | null {
     if (typeof window === 'undefined') return null;
@@ -456,6 +463,16 @@
   $effect(() => {
     void advancedFilters;
     writeAdvancedFilters(advancedFilters ?? []);
+  });
+
+  // Automatic toolbar mode switching based on selection
+  $effect(() => {
+    void selectedKeys;
+    if (selectedKeys.length >= 2) {
+      toolbarMode = 'bulk';
+    } else {
+      toolbarMode = 'filters';
+    }
   });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
@@ -738,6 +755,10 @@
   let rowToDelete: TRow | null = null;
   let isDeleting = $state(false);
 
+  /** Bulk delete confirmation dialog state */
+  let bulkDeleteConfirmDialogOpen = $state(false);
+  let isBulkDeleting = $state(false);
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -787,6 +808,115 @@
   function cancelDeleteRow() {
     deleteConfirmDialogOpen = false;
     rowToDelete = null;
+  }
+
+  /** Bulk action handlers */
+  function handleBulkDelete() {
+    // Open confirmation dialog instead of deleting directly
+    bulkDeleteConfirmDialogOpen = true;
+  }
+
+  /** Confirm bulk delete action after dialog confirmation */
+  async function confirmBulkDelete() {
+    if (selectedKeys.length === 0) return;
+    try {
+      isBulkDeleting = true;
+      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids: selectedKeys })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
+          title?: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+        };
+        
+        const toneForImpact = 'danger'; // HIGH impact uses danger
+        throw {
+          title: data.title || 'Bulk delete failed',
+          status: data.status,
+          detail: data.detail,
+          instance: data.instance,
+          internal_code: data.internal_code,
+          toneForImpact
+        };
+      }
+      
+      // Clear selection after successful deletion
+      selectedKeys = [];
+      // Switch back to filters mode
+      toolbarMode = 'filters';
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      
+      // Show error notification using shell's error handling with RFC 7807 format
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as {
+          title: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+          toneForImpact?: string;
+        };
+        const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
+        pushImpactError({
+          impact: 'HIGH',
+          message: err.title, // RFC 7807 title is the toast message
+          scope: 'Bulk delete API',
+          detail: err.detail, // RFC 7807 detail is the detail
+          tags: [
+            { label: err.internal_code || 'BULK_DELETE_FAILED', tone },
+            ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
+            ...(err.instance ? [{ label: err.instance, tone } as const] : []),
+          ],
+          toast: true,
+        });
+      } else {
+        pushImpactError({
+          impact: 'HIGH',
+          message: 'Bulk delete failed',
+          scope: 'Bulk delete API',
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
+    } finally {
+      isBulkDeleting = false;
+      // Close dialog regardless of success or error
+      bulkDeleteConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel bulk delete action */
+  function cancelBulkDelete() {
+    bulkDeleteConfirmDialogOpen = false;
+  }
+
+  function handleBulkDuplicate() {
+    console.log('Bulk duplicate:', selectedKeys);
+    // TODO: Implement bulk duplicate with BE integration
+  }
+
+  function handleBulkExport() {
+    console.log('Bulk export:', selectedKeys);
+    // TODO: Implement bulk export with BE integration
+  }
+
+  /** Toggle toolbar mode between filters and bulk */
+  function toggleToolbarMode() {
+    toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
   }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
@@ -1737,87 +1867,139 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-    {#if hasAppliedFilters}
+    {#if selectedKeys.length >= 2}
       <Button
-        variant="soft"
+        variant="outline"
         size="xs"
-        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-        onclick={resetFilters}
+        class="h-6 text-xs"
+        onclick={toggleToolbarMode}
       >
-        <FilterX class="size-3.5" />
-        {$t('common.clearAll')}
+        {#if toolbarMode === 'filters'}
+          <ListCheck class="size-3.5" />
+          {$t('entities.list.bulkActions.toggleToBulk')}
+        {:else}
+          <Funnel class="size-3.5" />
+          {$t('entities.list.bulkActions.toggleToFilters')}
+        {/if}
       </Button>
       <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-      {#if filterValues && Object.keys(filterValues).length > 0}
-        {#each Object.entries(filterValues) as [key, value]}
-          {@const col = filterableColumns.find((c) => c.key === key)}
-          {#if col}
-            {@const operator = col.type === 'text' ? 'contains' : '='}
-            {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
-            <Badge
-              variant="secondary"
-              class="gap-1.5 pr-1"
-            >
-              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-              <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
-              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-              <button
-                type="button"
-                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                onclick={() => {
-                  const next = { ...filterValues };
-                  delete next[key];
-                  onFilterValuesChange?.(next);
-                }}
-                aria-label={$t('common.remove')}
-              >
-                <XIcon class="size-3" />
-              </button>
-            </Badge>
+    {/if}
+
+    {#if toolbarMode === 'filters'}
+      {#if hasAppliedFilters}
+        <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
+          <Button
+            variant="soft"
+            size="xs"
+            class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+            onclick={resetFilters}
+          >
+            <FilterX class="size-3.5" />
+            {$t('common.clearAll')}
+          </Button>
+          <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+          {#if filterValues && Object.keys(filterValues).length > 0}
+            {#each Object.entries(filterValues) as [key, value]}
+              {@const col = filterableColumns.find((c) => c.key === key)}
+              {#if col}
+                {@const operator = col.type === 'text' ? 'contains' : '='}
+                {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
+                <Badge
+                  variant="secondary"
+                  class="gap-1.5 pr-1"
+                >
+                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+                  <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+                  <button
+                    type="button"
+                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                    onclick={() => {
+                      const next = { ...filterValues };
+                      delete next[key];
+                      onFilterValuesChange?.(next);
+                    }}
+                    aria-label={$t('common.remove')}
+                  >
+                    <XIcon class="size-3" />
+                  </button>
+                </Badge>
+              {/if}
+            {/each}
           {/if}
-        {/each}
-      {/if}
-      {#if advancedFilters && advancedFilters.length > 0}
-        {#each advancedFilters as filter}
-          {@const col = filterableColumns.find((c) => c.key === filter.field)}
-          {#if col}
-            {@const formattedValue = (() => {
-              if (Array.isArray(filter.value)) {
-                return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
-              } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
-                const startFormatted = formatFilterDateValue(String(filter.value.start));
-                const endFormatted = formatFilterDateValue(String(filter.value.end));
-                return `${startFormatted} e ${endFormatted}`;
-              } else if (col.type === 'date' || col.type === 'datetime') {
-                return formatFilterDateValue(String(filter.value));
-              } else {
-                return formatBadgeValue(col, filter.value);
-              }
-            })()}
-            <Badge
-              variant="secondary"
-              class="gap-1.5 pr-1"
-            >
-              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-              <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
-              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-              <button
-                type="button"
-                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                onclick={() => {
-                  const next = advancedFilters.filter((f) => f.id !== filter.id);
-                  onAdvancedFiltersChange?.(next, 'AND');
-                }}
-                aria-label={$t('common.remove')}
-              >
-                <XIcon class="size-3" />
-              </button>
-            </Badge>
+          {#if advancedFilters && advancedFilters.length > 0}
+            {#each advancedFilters as filter}
+              {@const col = filterableColumns.find((c) => c.key === filter.field)}
+              {#if col}
+                {@const formattedValue = (() => {
+                  if (Array.isArray(filter.value)) {
+                    return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
+                  } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+                    const startFormatted = formatFilterDateValue(String(filter.value.start));
+                    const endFormatted = formatFilterDateValue(String(filter.value.end));
+                    return `${startFormatted} e ${endFormatted}`;
+                  } else if (col.type === 'date' || col.type === 'datetime') {
+                    return formatFilterDateValue(String(filter.value));
+                  } else {
+                    return formatBadgeValue(col, filter.value);
+                  }
+                })()}
+                <Badge
+                  variant="secondary"
+                  class="gap-1.5 pr-1"
+                >
+                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+                  <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+                  <button
+                    type="button"
+                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                    onclick={() => {
+                      const next = advancedFilters.filter((f) => f.id !== filter.id);
+                      onAdvancedFiltersChange?.(next, 'AND');
+                    }}
+                    aria-label={$t('common.remove')}
+                  >
+                    <XIcon class="size-3" />
+                  </button>
+                </Badge>
+              {/if}
+            {/each}
           {/if}
-        {/each}
+        </div>
+      {:else}
+        <span in:fly={{ y: 20, duration: 200 }} class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
       {/if}
     {:else}
-      <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+      <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkDuplicate}
+        >
+          <Copy class="size-3.5" />
+          {$t('entities.list.bulkActions.duplicate')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkExport}
+        >
+          <Download class="size-3.5" />
+          {$t('entities.list.bulkActions.export')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
+          onclick={handleBulkDelete}
+        >
+          <Trash2 class="size-3.5" />
+          {$t('entities.list.bulkActions.delete')}
+        </Button>
+      </div>
     {/if}
   </div>
 
@@ -2816,6 +2998,37 @@
         onclick={confirmDeleteRow}
       >
         {$t('common.delete')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<!-- Bulk delete confirmation dialog -->
+<Dialog.Root bind:open={bulkDeleteConfirmDialogOpen}>
+  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+      <Dialog.Description>
+        Sei sicuro di voler eliminare {selectedKeys.length} elementi?
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary"
+        onclick={cancelBulkDelete}
+      >
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        variant="destructive"
+        onclick={confirmBulkDelete}
+        disabled={isBulkDeleting}
+      >
+        {#if isBulkDeleting}
+          {$t('common.deleting')}
+        {:else}
+          {$t('common.delete')}
+        {/if}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
