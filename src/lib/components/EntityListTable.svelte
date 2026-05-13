@@ -66,6 +66,11 @@
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
+  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
+  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
+  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
+  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -785,6 +790,7 @@
   let exportConfirmDialogOpen = $state(false);
   let exportFileType = $state<'xlsx' | 'csv' | null>(null);
   let isExporting = $state(false);
+  let exportScope = $state<'selected' | 'all'>('selected');
 
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
@@ -946,14 +952,93 @@
       if (sortKey) params.append('sort_key', sortKey);
       if (sortDir) params.append('sort_dir', sortDir);
       
-      // Add filter values
+      // Build filters array (same format as loadRows)
+      let filterIdx = 0;
+      
+      // Add regular filter values
       if (filterValues && Object.keys(filterValues).length > 0) {
-        params.append('filters', JSON.stringify(filterValues));
+        for (const [field, value] of Object.entries(filterValues)) {
+          if (value !== undefined && value !== null && value !== '') {
+            const col = columns.find(c => c.key === field);
+            const op = col?.type === 'text' ? 'ILIKE' : '=';
+            
+            // Handle multi-select (array) values for badge fields
+            if (col?.type === 'badge' && Array.isArray(value)) {
+              for (let i = 0; i < value.length; i++) {
+                params.set(`filters[${filterIdx}][field]`, field);
+                params.set(`filters[${filterIdx}][op]`, op);
+                params.set(`filters[${filterIdx}][value]`, String(value[i]));
+                const connector = i < value.length - 1 ? 'OR' : 'AND';
+                params.set(`filters[${filterIdx}][connector]`, connector);
+                filterIdx++;
+              }
+            } else {
+              params.set(`filters[${filterIdx}][field]`, field);
+              params.set(`filters[${filterIdx}][op]`, op);
+              params.set(`filters[${filterIdx}][value]`, String(value));
+              params.set(`filters[${filterIdx}][connector]`, 'AND');
+              filterIdx++;
+            }
+          }
+        }
       }
       
       // Add advanced filters
       if (advancedFilters && advancedFilters.length > 0) {
-        params.append('filters', JSON.stringify(advancedFilters));
+        for (const filter of advancedFilters) {
+          if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
+            params.set(`filters[${filterIdx}][field]`, filter.field);
+            
+            let operator: string = filter.operator;
+            let value = filter.value;
+            
+            // Handle BETWEEN operator with start/end values
+            if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
+              params.set(`filters[${filterIdx}][op]`, operator);
+              params.set(`filters[${filterIdx}][value][start]`, String(value.start));
+              params.set(`filters[${filterIdx}][value][end]`, String(value.end));
+              filterIdx++;
+              continue;
+            }
+            
+            // Map frontend operators to backend-supported operators
+            if (Array.isArray(value)) {
+              operator = operator === '!=' ? 'NOT IN' : 'IN';
+            } else if (operator === 'startsWith') {
+              operator = 'ILIKE';
+              value = `${value}%`;
+            } else if (operator === 'endsWith') {
+              operator = 'ILIKE';
+              value = `%${value}`;
+            } else if (operator === 'contains') {
+              operator = 'ILIKE';
+              value = `%${value}%`;
+            }
+            
+            params.set(`filters[${filterIdx}][op]`, operator);
+            
+            // Handle array values for badge fields
+            if (Array.isArray(value)) {
+              for (const val of value) {
+                params.append(`filters[${filterIdx}][value][]`, String(val));
+              }
+            } else {
+              params.set(`filters[${filterIdx}][value]`, String(value));
+            }
+            
+            filterIdx++;
+          }
+        }
+      }
+      
+      // Add UID filter if exporting selected only
+      if (exportScope === 'selected' && selectedKeys.length > 0) {
+        params.set(`filters[${filterIdx}][field]`, uid);
+        params.set(`filters[${filterIdx}][op]`, 'IN');
+        for (const key of selectedKeys) {
+          params.append(`filters[${filterIdx}][value][]`, key);
+        }
+        params.set(`filters[${filterIdx}][connector]`, 'AND');
       }
       
       // Add locale and timezone
@@ -1001,6 +1086,7 @@
 
   function handleBulkExport() {
     exportFileType = null;
+    exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
     exportConfirmDialogOpen = true;
   }
 
@@ -3134,9 +3220,29 @@
     <Dialog.Header>
       <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
       <Dialog.Description>
-        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+        {#if selectedKeys.length > 0}
+          {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+        {:else}
+          {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+        {/if}
       </Dialog.Description>
     </Dialog.Header>
+    {#if selectedKeys.length > 0}
+      <div class="py-4">
+        <Choicebox bind:value={exportScope}>
+          <ChoiceboxItem value="selected">
+            <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+            <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+            <ChoiceboxIndicator />
+          </ChoiceboxItem>
+          <ChoiceboxItem value="all">
+            <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+            <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+            <ChoiceboxIndicator />
+          </ChoiceboxItem>
+        </Choicebox>
+      </div>
+    {/if}
     <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
       <Button
         variant="secondary"
