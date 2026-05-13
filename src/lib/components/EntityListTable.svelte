@@ -1050,7 +1050,9 @@
       const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error('Export failed');
+        // Read RFC 7807 compliant error response
+        const errorData = await response.json();
+        throw errorData;
       }
       
       // Get the blob and create download link
@@ -1068,13 +1070,25 @@
       exportFileType = null;
     } catch (error) {
       console.error('Export failed:', error);
-      // Report error and show toast
-      reportError({
-        error: 'EXPORT_FAILED',
+      // Handle RFC 7807 compliant error response
+      const err = error as {
+        title: string;
+        status?: number;
+        detail?: string;
+        instance?: string;
+        internal_code?: string;
+      };
+      const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
+      pushImpactError({
         impact: 'HIGH',
-        message: 'Export failed',
+        message: err.title || 'Export failed',
         scope: 'Export API',
-        detail: error instanceof Error ? error.message : String(error),
+        detail: err.detail || (error instanceof Error ? error.message : String(error)),
+        tags: [
+          { label: err.internal_code || 'EXPORT_FAILED', tone },
+          ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
+          ...(err.instance ? [{ label: err.instance, tone } as const] : []),
+        ],
         toast: true,
       });
     } finally {
