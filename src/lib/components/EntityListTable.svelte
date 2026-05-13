@@ -467,13 +467,17 @@
     writeAdvancedFilters(advancedFilters ?? []);
   });
 
-  // Automatic toolbar mode switching based on selection
+  // Automatic toolbar mode switching based on filters and selection
   $effect(() => {
     void selectedKeys;
-    if (selectedKeys.length >= 2) {
-      toolbarMode = 'bulk';
-    } else {
+    void filterValues;
+    void advancedFilters;
+
+    // If filters are applied, show filters bar
+    if (hasAppliedFilters) {
       toolbarMode = 'filters';
+    } else {
+      toolbarMode = 'bulk';
     }
   });
 
@@ -1937,23 +1941,21 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-    {#if selectedKeys.length >= 2}
-      <Button
-        variant="outline"
-        size="xs"
-        class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
-        onclick={toggleToolbarMode}
-      >
-        {#if toolbarMode === 'filters'}
-          <ListCheck class="size-3.5" />
-          {$t('entities.list.bulkActions.toggleToBulk')}
-        {:else}
-          <Funnel class="size-3.5" />
-          {$t('entities.list.bulkActions.toggleToFilters')}
-        {/if}
-      </Button>
-      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-    {/if}
+    <Button
+      variant="outline"
+      size="xs"
+      class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
+      onclick={toggleToolbarMode}
+    >
+      {#if toolbarMode === 'filters'}
+        <ListCheck class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToBulk')}
+      {:else}
+        <Funnel class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToFilters')}
+      {/if}
+    </Button>
+    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
 
     {#if toolbarMode === 'filters'}
       {#if hasAppliedFilters}
