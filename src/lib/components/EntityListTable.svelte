@@ -909,13 +909,6 @@
     bulkDeleteConfirmDialogOpen = false;
   }
 
-  /** Handle export action for a row */
-  function handleExportRow(row: TRow, fileType: 'xlsx' | 'csv') {
-    exportFileType = fileType;
-    exportConfirmDialogOpen = true;
-    closeRowDropdown();
-  }
-
   /** Confirm export action after dialog confirmation */
   async function confirmExportRow() {
     if (!exportFileType) return;
@@ -985,8 +978,8 @@
   }
 
   function handleBulkExport() {
-    console.log('Bulk export:', selectedKeys);
-    // TODO: Implement bulk export with BE integration
+    exportFileType = null;
+    exportConfirmDialogOpen = true;
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -2364,19 +2357,6 @@
                                     </div>
                                   </DropdownMenu.Item>
                                   <DropdownMenu.Separator />
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'xlsx'); }} class="text-warning">
-                                    <div class="flex items-center gap-2">
-                                      <Download class="size-4 text-warning/70" />
-                                      <span>{$t('common.exportExcel')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'csv'); }} class="text-warning">
-                                    <div class="flex items-center gap-2">
-                                      <Download class="size-4 text-warning/70" />
-                                      <span>{$t('common.exportCsv')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Separator />
                                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
                                     <div class="flex items-center gap-2">
                                       <Trash2 class="size-4 text-destructive/70" />
@@ -2454,19 +2434,6 @@
                                     <div class="flex items-center gap-2">
                                       <Pencil class="size-4 opacity-70" />
                                       <span>{$t('common.edit')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Separator />
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'xlsx'); }} class="text-warning">
-                                    <div class="flex items-center gap-2">
-                                      <Download class="size-4 text-warning/70" />
-                                      <span>{$t('common.exportExcel')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'csv'); }} class="text-warning">
-                                    <div class="flex items-center gap-2">
-                                      <Download class="size-4 text-warning/70" />
-                                      <span>{$t('common.exportCsv')}</span>
                                     </div>
                                   </DropdownMenu.Item>
                                   <DropdownMenu.Separator />
@@ -3141,27 +3108,40 @@
     <Dialog.Header>
       <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
       <Dialog.Description>
-        {$t('common.exportConfirm')} {total} {entity}{total === 1 ? '' : 's'} as {exportFileType === 'xlsx' ? 'Excel' : 'CSV'}?
+        {$t('common.exportConfirm')} {total} {entity}{total === 1 ? '' : 's'}
       </Dialog.Description>
     </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
       <Button
         variant="secondary"
         onclick={cancelExportRow}
       >
         {$t('common.cancel')}
       </Button>
-      <Button
-        class="bg-warning text-warning-foreground hover:bg-warning/90"
-        onclick={confirmExportRow}
-        disabled={isExporting}
-      >
-        {#if isExporting}
-          {$t('common.exporting')}
-        {:else}
-          {exportFileType === 'xlsx' ? $t('common.exportExcel') : $t('common.exportCsv')}
-        {/if}
-      </Button>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <Button
+          class="bg-warning text-warning-foreground hover:bg-warning/90 flex-1 sm:flex-none"
+          onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
+          disabled={isExporting}
+        >
+          {#if isExporting && exportFileType === 'xlsx'}
+            {$t('common.exporting')}
+          {:else}
+            {$t('common.exportExcel')}
+          {/if}
+        </Button>
+        <Button
+          class="bg-warning text-warning-foreground hover:bg-warning/90 flex-1 sm:flex-none"
+          onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
+          disabled={isExporting}
+        >
+          {#if isExporting && exportFileType === 'csv'}
+            {$t('common.exporting')}
+          {:else}
+            {$t('common.exportCsv')}
+          {/if}
+        </Button>
+      </div>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
