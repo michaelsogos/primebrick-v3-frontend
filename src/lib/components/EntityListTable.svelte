@@ -3116,13 +3116,14 @@
     <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
       <Button
         variant="secondary"
+        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
         onclick={cancelExportRow}
       >
         {$t('common.cancel')}
       </Button>
       <div class="flex gap-2 w-full sm:w-auto">
         <Button
-          class="bg-warning text-warning-foreground hover:bg-warning/90 flex-1 sm:flex-none"
+          class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
           onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
           disabled={isExporting}
         >
@@ -3134,7 +3135,7 @@
           {/if}
         </Button>
         <Button
-          class="bg-warning text-warning-foreground hover:bg-warning/90 flex-1 sm:flex-none"
+          class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
           onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
           disabled={isExporting}
         >
