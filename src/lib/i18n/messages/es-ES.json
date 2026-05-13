@@ -33,7 +33,12 @@
     "delete": "Eliminar",
     "deleting": "Eliminando…",
     "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar este registro?",
-    "deleteConfirm": "Esta acción no se puede deshacer."
+    "deleteConfirm": "Esta acción no se puede deshacer.",
+    "exportExcel": "Exportar a Excel",
+    "exportCsv": "Exportar a CSV",
+    "exportConfirmTitle": "Exportar datos",
+    "exportConfirm": "¿Deseas exportar",
+    "exporting": "Exportando…"
   },
   "shell": {
     "subtitle": "Backoffice",

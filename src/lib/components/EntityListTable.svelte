@@ -759,6 +759,11 @@
   let bulkDeleteConfirmDialogOpen = $state(false);
   let isBulkDeleting = $state(false);
 
+  /** Export confirmation dialog state */
+  let exportConfirmDialogOpen = $state(false);
+  let exportFileType = $state<'xlsx' | 'csv' | null>(null);
+  let isExporting = $state(false);
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -902,6 +907,76 @@
   /** Cancel bulk delete action */
   function cancelBulkDelete() {
     bulkDeleteConfirmDialogOpen = false;
+  }
+
+  /** Handle export action for a row */
+  function handleExportRow(row: TRow, fileType: 'xlsx' | 'csv') {
+    exportFileType = fileType;
+    exportConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Confirm export action after dialog confirmation */
+  async function confirmExportRow() {
+    if (!exportFileType) return;
+    try {
+      isExporting = true;
+      
+      // Build query parameters from current filters, search, sort
+      const params = new URLSearchParams();
+      params.append('file_type', exportFileType);
+      
+      if (search) params.append('search', search);
+      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
+      if (sortKey) params.append('sort_key', sortKey);
+      if (sortDir) params.append('sort_dir', sortDir);
+      
+      // Add filter values
+      if (filterValues && Object.keys(filterValues).length > 0) {
+        params.append('filters', JSON.stringify(filterValues));
+      }
+      
+      // Add advanced filters
+      if (advancedFilters && advancedFilters.length > 0) {
+        params.append('filters', JSON.stringify(advancedFilters));
+      }
+      
+      // Add locale and timezone
+      params.append('locale', $uiLang);
+      params.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+      
+      // Trigger file download
+      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Get the blob and create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.${exportFileType}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      exportConfirmDialogOpen = false;
+      exportFileType = null;
+    } catch (error) {
+      console.error('Export failed:', error);
+      // Keep dialog open on error
+    } finally {
+      isExporting = false;
+    }
+  }
+
+  /** Cancel export action */
+  function cancelExportRow() {
+    exportConfirmDialogOpen = false;
+    exportFileType = null;
   }
 
   function handleBulkDuplicate() {
@@ -2289,6 +2364,19 @@
                                     </div>
                                   </DropdownMenu.Item>
                                   <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'xlsx'); }} class="text-warning">
+                                    <div class="flex items-center gap-2">
+                                      <Download class="size-4 text-warning/70" />
+                                      <span>{$t('common.exportExcel')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'csv'); }} class="text-warning">
+                                    <div class="flex items-center gap-2">
+                                      <Download class="size-4 text-warning/70" />
+                                      <span>{$t('common.exportCsv')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
                                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
                                     <div class="flex items-center gap-2">
                                       <Trash2 class="size-4 text-destructive/70" />
@@ -2366,6 +2454,19 @@
                                     <div class="flex items-center gap-2">
                                       <Pencil class="size-4 opacity-70" />
                                       <span>{$t('common.edit')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'xlsx'); }} class="text-warning">
+                                    <div class="flex items-center gap-2">
+                                      <Download class="size-4 text-warning/70" />
+                                      <span>{$t('common.exportExcel')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleExportRow(r, 'csv'); }} class="text-warning">
+                                    <div class="flex items-center gap-2">
+                                      <Download class="size-4 text-warning/70" />
+                                      <span>{$t('common.exportCsv')}</span>
                                     </div>
                                   </DropdownMenu.Item>
                                   <DropdownMenu.Separator />
@@ -3028,6 +3129,37 @@
           {$t('common.deleting')}
         {:else}
           {$t('common.delete')}
+        {/if}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<!-- Export confirmation dialog -->
+<Dialog.Root bind:open={exportConfirmDialogOpen}>
+  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+      <Dialog.Description>
+        {$t('common.exportConfirm')} {total} {entity}{total === 1 ? '' : 's'} as {exportFileType === 'xlsx' ? 'Excel' : 'CSV'}?
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary"
+        onclick={cancelExportRow}
+      >
+        {$t('common.cancel')}
+      </Button>
+      <Button
+        class="bg-warning text-warning-foreground hover:bg-warning/90"
+        onclick={confirmExportRow}
+        disabled={isExporting}
+      >
+        {#if isExporting}
+          {$t('common.exporting')}
+        {:else}
+          {exportFileType === 'xlsx' ? $t('common.exportExcel') : $t('common.exportCsv')}
         {/if}
       </Button>
     </Dialog.Footer>

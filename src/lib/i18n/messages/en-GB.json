@@ -33,7 +33,12 @@
     "delete": "Delete",
     "deleting": "Deleting…",
     "deleteConfirmTitle": "Are you sure you want to delete this record?",
-    "deleteConfirm": "This action cannot be undone."
+    "deleteConfirm": "This action cannot be undone.",
+    "exportExcel": "Export in Excel",
+    "exportCsv": "Export in CSV",
+    "exportConfirmTitle": "Export data",
+    "exportConfirm": "Do you want to export",
+    "exporting": "Exporting…"
   },
   "shell": {
     "subtitle": "Backoffice",

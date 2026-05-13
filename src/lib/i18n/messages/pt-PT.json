@@ -32,7 +32,12 @@
     "delete": "Eliminar",
     "deleting": "A eliminar…",
     "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
-    "deleteConfirm": "Esta ação não pode ser desfeita."
+    "deleteConfirm": "Esta ação não pode ser desfeita.",
+    "exportExcel": "Exportar para Excel",
+    "exportCsv": "Exportar para CSV",
+    "exportConfirmTitle": "Exportar dados",
+    "exportConfirm": "Deseja exportar",
+    "exporting": "A exportar…"
   },
   "shell": {
     "subtitle": "Backoffice",

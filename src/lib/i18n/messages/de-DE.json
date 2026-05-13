@@ -33,7 +33,12 @@
     "delete": "Löschen",
     "deleting": "Löschen…",
     "deleteConfirmTitle": "Möchten Sie diesen Datensatz wirklich löschen?",
-    "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden."
+    "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "exportExcel": "Als Excel exportieren",
+    "exportCsv": "Als CSV exportieren",
+    "exportConfirmTitle": "Daten exportieren",
+    "exportConfirm": "Möchten Sie exportieren",
+    "exporting": "Exportieren…"
   },
   "shell": {
     "subtitle": "Backoffice",
