@@ -40,7 +40,7 @@
 	onkeydown={handleKeyDown}
 	data-state={isSelected ? 'checked' : 'unchecked'}
 	class={cn(
-		'relative flex cursor-pointer items-start rounded-lg border p-4 shadow-sm outline-none transition-all',
+		'group relative flex cursor-pointer items-start rounded-lg border p-4 shadow-sm outline-none transition-all',
 		'border-input bg-card hover:bg-accent/50 hover:text-accent-foreground',
 		'data-[state=checked]:border-primary data-[state=checked]:ring-1 data-[state=checked]:ring-primary',
 		disabled && 'cursor-not-allowed opacity-50',
