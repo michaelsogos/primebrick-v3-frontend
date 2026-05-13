@@ -1941,7 +1941,7 @@
       <Button
         variant="outline"
         size="xs"
-        class="h-6 text-xs"
+        class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
         onclick={toggleToolbarMode}
       >
         {#if toolbarMode === 'filters'}
@@ -3056,6 +3056,7 @@
     <Dialog.Footer class="gap-2 sm:space-x-0">
       <Button
         variant="secondary"
+        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
         onclick={() => {
           deleteConfirmDialogOpen = false;
           rowToDelete = null;
@@ -3065,6 +3066,7 @@
       </Button>
       <Button
         variant="destructive"
+        class="hover:bg-destructive/80 hover:scale-105 transition-all"
         onclick={confirmDeleteRow}
       >
         {$t('common.delete')}
@@ -3085,12 +3087,14 @@
     <Dialog.Footer class="gap-2 sm:space-x-0">
       <Button
         variant="secondary"
+        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
         onclick={cancelBulkDelete}
       >
         {$t('common.cancel')}
       </Button>
       <Button
         variant="destructive"
+        class="hover:bg-destructive/80 hover:scale-105 transition-all"
         onclick={confirmBulkDelete}
         disabled={isBulkDeleting}
       >
