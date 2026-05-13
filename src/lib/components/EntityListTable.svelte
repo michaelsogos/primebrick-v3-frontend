@@ -468,13 +468,29 @@
   });
 
   // Automatic toolbar mode switching based on filters and selection
+  let lastSelectionChange = $state(0);
+  let lastFilterChange = $state(0);
+
   $effect(() => {
     void selectedKeys;
+    lastSelectionChange = Date.now();
+  });
+
+  $effect(() => {
     void filterValues;
     void advancedFilters;
+    lastFilterChange = Date.now();
+  });
 
-    // If filters are applied, show filters bar
-    if (hasAppliedFilters) {
+  $effect(() => {
+    void lastSelectionChange;
+    void lastFilterChange;
+    void hasAppliedFilters;
+
+    // If selection changed more recently than filters, show bulk
+    if (lastSelectionChange > lastFilterChange) {
+      toolbarMode = 'bulk';
+    } else if (hasAppliedFilters) {
       toolbarMode = 'filters';
     } else {
       toolbarMode = 'bulk';
