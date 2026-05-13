@@ -18,6 +18,7 @@
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
+  import { backendState } from '$lib/backend-availability';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
@@ -609,6 +610,8 @@
     if (!browser) return;
     return onConnectivityRestored(() => {
       void (async () => {
+        // Prevent reload when DB is down (db_offline state)
+        if (backendState.healthChip === 'db_offline') return;
         if (meta) {
           await refreshRows();
         } else {
