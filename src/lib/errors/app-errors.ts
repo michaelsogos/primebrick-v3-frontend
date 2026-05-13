@@ -165,8 +165,9 @@ export function pushRFC7807Error(error: RFC7807Error, options?: { showToast?: bo
   
   pushImpactError({
     impact,
-    message: error.title,
-    detail: error.detail,
+    message: error.detail,
+    scope: error.title,
+    detail: undefined,
     tags,
     toast: options?.showToast !== false,
   });
