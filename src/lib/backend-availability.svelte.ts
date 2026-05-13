@@ -77,7 +77,17 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
     }
     if (!res.ok) {
       // BE reachable but DB unhealthy: same JSON as 200, HTTP 503 (see backend sendHealth).
-      // Treat 503 as failure to trigger offline state and prevent table load loop
+      if (res.status === 503) {
+        let parsed: unknown;
+        try {
+          parsed = await res.json();
+        } catch {
+          return { ok: false, status: 503 };
+        }
+        if (isValidHealthPayload(parsed)) {
+          return { ok: true, payload: parsed };
+        }
+      }
       return { ok: false, status: res.status };
     }
     let parsed: unknown;
@@ -121,8 +131,8 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
       backendState.dbOk = !!r.payload.db?.ok;
       setBackendOffline(false);
       flushHealthChip();
-      // Only dispatch connectivity-restored when health chip is 'ok' (not 'db_offline')
-      // This prevents loop when DB is down but backend is reachable
+      // Only dispatch connectivity-restored when transitioning from offline/db_offline to truly OK
+      // This prevents loop when health check runs every 5 seconds while DB is down
       if (
         (previousChip === 'backend_offline' || previousChip === 'db_offline') &&
         backendState.healthChip === 'ok'
