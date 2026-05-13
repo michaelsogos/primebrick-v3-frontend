@@ -64,6 +64,8 @@
     Download,
     Funnel
   } from 'lucide-svelte';
+  import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
+  import BsFiletypeCsv from '~icons/bi/filetype-csv';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -3108,7 +3110,7 @@
     <Dialog.Header>
       <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
       <Dialog.Description>
-        {$t('common.exportConfirm')} {total} {entity}{total === 1 ? '' : 's'}
+        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
       </Dialog.Description>
     </Dialog.Header>
     <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
@@ -3127,6 +3129,7 @@
           {#if isExporting && exportFileType === 'xlsx'}
             {$t('common.exporting')}
           {:else}
+            <BsFiletypeXlsx class="size-5" />
             {$t('common.exportExcel')}
           {/if}
         </Button>
@@ -3138,6 +3141,7 @@
           {#if isExporting && exportFileType === 'csv'}
             {$t('common.exporting')}
           {:else}
+            <BsFiletypeCsv class="size-5" />
             {$t('common.exportCsv')}
           {/if}
         </Button>
