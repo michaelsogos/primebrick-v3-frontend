@@ -19,7 +19,8 @@
   import { scale, fade, fly } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -896,27 +897,8 @@
       
       // Show error notification using shell's error handling with RFC 7807 format
       if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as {
-          title: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-          toneForImpact?: string;
-        };
-        const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
-        pushImpactError({
-          impact: 'HIGH',
-          message: err.title, // RFC 7807 title is the toast message
-          scope: 'Bulk delete API',
-          detail: err.detail, // RFC 7807 detail is the detail
-          tags: [
-            { label: err.internal_code || 'BULK_DELETE_FAILED', tone },
-            ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
-            ...(err.instance ? [{ label: err.instance, tone } as const] : []),
-          ],
-          toast: true,
-        });
+        const err = error as RFC7807Error;
+        pushRFC7807Error(err, { showToast: true });
       } else {
         pushImpactError({
           impact: 'HIGH',
@@ -1071,26 +1053,8 @@
     } catch (error) {
       console.error('Export failed:', error);
       // Handle RFC 7807 compliant error response
-      const err = error as {
-        title: string;
-        status?: number;
-        detail?: string;
-        instance?: string;
-        internal_code?: string;
-      };
-      const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
-      pushImpactError({
-        impact: 'HIGH',
-        message: err.title || 'Export failed',
-        scope: 'Export API',
-        detail: err.detail || (error instanceof Error ? error.message : String(error)),
-        tags: [
-          { label: err.internal_code || 'EXPORT_FAILED', tone },
-          ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
-          ...(err.instance ? [{ label: err.instance, tone } as const] : []),
-        ],
-        toast: true,
-      });
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
     } finally {
       isExporting = false;
       // Close dialog regardless of success or error
