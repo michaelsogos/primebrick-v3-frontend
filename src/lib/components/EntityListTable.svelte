@@ -71,6 +71,7 @@
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
   import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -3153,133 +3154,125 @@
 </div>
 
 <!-- Delete confirmation dialog -->
-<Dialog.Root bind:open={deleteConfirmDialogOpen}>
-  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary"
-        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
-        onclick={() => {
-          deleteConfirmDialogOpen = false;
-          rowToDelete = null;
-        }}
-      >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="destructive"
-        class="hover:bg-destructive/80 hover:scale-105 transition-all"
-        onclick={confirmDeleteRow}
-      >
-        {$t('common.delete')}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={deleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={() => {
+        deleteConfirmDialogOpen = false;
+        rowToDelete = null;
+      }}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmDeleteRow}
+    >
+      {$t('common.delete')}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
 
 <!-- Bulk delete confirmation dialog -->
-<Dialog.Root bind:open={bulkDeleteConfirmDialogOpen}>
-  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        Sei sicuro di voler eliminare {selectedKeys.length} elementi?
-      </Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary"
-        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
-        onclick={cancelBulkDelete}
-      >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="destructive"
-        class="hover:bg-destructive/80 hover:scale-105 transition-all"
-        onclick={confirmBulkDelete}
-        disabled={isBulkDeleting}
-      >
-        {#if isBulkDeleting}
-          {$t('common.deleting')}
-        {:else}
-          {$t('common.delete')}
-        {/if}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={bulkDeleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler eliminare {selectedKeys.length} elementi?
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelBulkDelete}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmBulkDelete}
+      disabled={isBulkDeleting}
+    >
+      {#if isBulkDeleting}
+        {$t('common.deleting')}
+      {:else}
+        {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
 
 <!-- Export confirmation dialog -->
-<Dialog.Root bind:open={exportConfirmDialogOpen}>
-  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        {#if selectedKeys.length > 0}
-          {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
-        {:else}
-          {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
-        {/if}
-      </Dialog.Description>
-    </Dialog.Header>
-    {#if selectedKeys.length > 0}
-      <div class="py-4">
-        <Choicebox bind:value={exportScope}>
-          <ChoiceboxItem value="selected">
-            <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
-            <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
-            <ChoiceboxIndicator />
-          </ChoiceboxItem>
-          <ChoiceboxItem value="all">
-            <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
-            <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
-            <ChoiceboxIndicator />
-          </ChoiceboxItem>
-        </Choicebox>
-      </div>
-    {/if}
-    <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+<DialogBordered bind:open={exportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedKeys.length > 0}
+        {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedKeys.length > 0}
+    <div class="py-4">
+      <Choicebox bind:value={exportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelExportRow}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <div class="flex gap-2 w-full sm:w-auto">
       <Button
-        variant="secondary"
-        class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
-        onclick={cancelExportRow}
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
+        disabled={isExporting}
       >
-        {$t('common.cancel')}
+        {#if isExporting && exportFileType === 'xlsx'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeXlsx class="size-5" />
+          {$t('common.exportExcel')}
+        {/if}
       </Button>
-      <div class="flex gap-2 w-full sm:w-auto">
-        <Button
-          class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-          onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
-          disabled={isExporting}
-        >
-          {#if isExporting && exportFileType === 'xlsx'}
-            {$t('common.exporting')}
-          {:else}
-            <BsFiletypeXlsx class="size-5" />
-            {$t('common.exportExcel')}
-          {/if}
-        </Button>
-        <Button
-          class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-          onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
-          disabled={isExporting}
-        >
-          {#if isExporting && exportFileType === 'csv'}
-            {$t('common.exporting')}
-          {:else}
-            <BsFiletypeCsv class="size-5" />
-            {$t('common.exportCsv')}
-          {/if}
-        </Button>
-      </div>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+      <Button
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
+        disabled={isExporting}
+      >
+        {#if isExporting && exportFileType === 'csv'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeCsv class="size-5" />
+          {$t('common.exportCsv')}
+        {/if}
+      </Button>
+    </div>
+  </Dialog.Footer>
+</DialogBordered>
 
 <style>
   @keyframes pb-watermark-pulse {
