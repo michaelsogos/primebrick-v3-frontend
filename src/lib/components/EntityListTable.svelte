@@ -2064,15 +2064,6 @@
           variant="soft"
           size="xs"
           class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={handleBulkDuplicate}
-        >
-          <Copy class="size-3.5" />
-          {$t('entities.list.bulkActions.duplicate')}
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
           onclick={handleBulkExport}
         >
           <Download class="size-3.5" />
@@ -2081,8 +2072,19 @@
         <Button
           variant="soft"
           size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkDuplicate}
+          disabled={selectedKeys.length < 2}
+        >
+          <Copy class="size-3.5" />
+          {$t('entities.list.bulkActions.duplicate')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
           class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
           onclick={handleBulkDelete}
+          disabled={selectedKeys.length < 2}
         >
           <Trash2 class="size-3.5" />
           {$t('entities.list.bulkActions.delete')}
