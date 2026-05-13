@@ -1068,9 +1068,19 @@
       exportFileType = null;
     } catch (error) {
       console.error('Export failed:', error);
-      // Keep dialog open on error
+      // Report error and show toast
+      reportError({
+        error: 'EXPORT_FAILED',
+        impact: 'HIGH',
+        message: 'Export failed',
+        scope: 'Export API',
+        detail: error instanceof Error ? error.message : String(error),
+        toast: true,
+      });
     } finally {
       isExporting = false;
+      // Close dialog regardless of success or error
+      exportConfirmDialogOpen = false;
     }
   }
 
