@@ -794,6 +794,15 @@
   let isExporting = $state(false);
   let exportScope = $state<'selected' | 'all'>('selected');
 
+  /** HTML export confirmation dialog state */
+  let htmlExportConfirmDialogOpen = $state(false);
+  let isHtmlExporting = $state(false);
+  let htmlExportScope = $state<'selected' | 'all'>('selected');
+
+  /** HTML preview dialog state */
+  let htmlPreviewDialogOpen = $state(false);
+  let htmlPreviewContent = $state<string>('');
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -1077,6 +1086,113 @@
     exportFileType = null;
     exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
     exportConfirmDialogOpen = true;
+  }
+
+  function handleHtmlExport() {
+    htmlExportScope = selectedKeys.length > 0 ? 'selected' : 'all';
+    htmlExportConfirmDialogOpen = true;
+  }
+
+  function cancelHtmlExport() {
+    htmlExportConfirmDialogOpen = false;
+  }
+
+  async function confirmHtmlExport() {
+    try {
+      isHtmlExporting = true;
+      
+      // Build query parameters from current filters, search, sort
+      const params = new URLSearchParams();
+      params.append('file_type', 'html');
+      
+      if (search) params.append('search', search);
+      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
+      if (sortKey) params.append('sort_key', sortKey);
+      if (sortDir) params.append('sort_dir', sortDir);
+      
+      // Build filters array (same format as loadRows)
+      let filterIdx = 0;
+      const filters: Record<string, any> = {};
+      if (filterValues) {
+        for (const [key, value] of Object.entries(filterValues)) {
+          if (value !== null && value !== undefined && value !== '') {
+            filters[`filter[${filterIdx}].field`] = key;
+            filters[`filter[${filterIdx}].operator`] = 'eq';
+            filters[`filter[${filterIdx}].value`] = value;
+            filterIdx++;
+          }
+        }
+      }
+      
+      // Add advanced filters
+      if (advancedFilters && advancedFilters.length > 0) {
+        advancedFilters.forEach((filter, idx) => {
+          filters[`filter[${filterIdx}].field`] = filter.field;
+          filters[`filter[${filterIdx}].operator`] = filter.operator;
+          filters[`filter[${filterIdx}].value`] = filter.value;
+          filterIdx++;
+        });
+      }
+      
+      // Add scope (selected vs all)
+      if (htmlExportScope === 'selected' && selectedKeys.length > 0) {
+        params.append('uuids', selectedKeys.join(','));
+      }
+      
+      // Add deletion filter mode
+      if (deletionFilterMode !== 'non_deleted') {
+        params.append('deletion_filter_mode', deletionFilterMode);
+      }
+      
+      // Add all filter parameters
+      Object.entries(filters).forEach(([key, value]) => {
+        params.append(key, value);
+      });
+      
+      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        // Read RFC 7807 compliant error response
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
+      // Get HTML content as text
+      const htmlContent = await response.text();
+      
+      // Download as file
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Show preview dialog
+      htmlPreviewContent = htmlContent;
+      htmlPreviewDialogOpen = true;
+      
+      htmlExportConfirmDialogOpen = false;
+    } catch (error) {
+      console.error('HTML export failed:', error);
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isHtmlExporting = false;
+      htmlExportConfirmDialogOpen = false;
+    }
+  }
+
+  function closeHtmlPreview() {
+    htmlPreviewDialogOpen = false;
+    htmlPreviewContent = '';
+  }
+
+  function copyHtmlToClipboard() {
+    navigator.clipboard.writeText(htmlPreviewContent);
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -2143,6 +2259,15 @@
         >
           <Download class="size-3.5" />
           {$t('entities.list.bulkActions.export')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleHtmlExport}
+        >
+          <Download class="size-3.5" />
+          {$t('entities.list.bulkActions.exportHtml')}
         </Button>
         <Button
           variant="soft"
@@ -3261,6 +3386,77 @@
     </div>
   </Dialog.Footer>
 </DialogBordered>
+
+<!-- HTML export confirmation dialog -->
+<DialogBordered bind:open={htmlExportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedKeys.length > 0}
+        {$t('common.exportHtmlConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportHtmlConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedKeys.length > 0}
+    <div class="py-4">
+      <Choicebox bind:value={htmlExportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelHtmlExport}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      onclick={confirmHtmlExport}
+      disabled={isHtmlExporting}
+    >
+      {#if isHtmlExporting}
+        {$t('common.exporting')}
+      {:else}
+        {$t('common.confirm')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- HTML preview full-screen dialog -->
+<Dialog.Root bind:open={htmlPreviewDialogOpen}>
+  <Dialog.Content class="max-w-[95vw] max-h-[95vh] p-0">
+    <Dialog.Header class="px-6 py-4 border-b flex items-center justify-between">
+      <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
+      <Dialog.Close onclick={closeHtmlPreview} />
+    </Dialog.Header>
+    <div class="p-6 overflow-auto max-h-[calc(95vh-8rem)] bg-background">
+      {@html htmlPreviewContent}
+    </div>
+    <Dialog.Footer class="px-6 py-4 border-t gap-2">
+      <Button variant="secondary" onclick={closeHtmlPreview}>
+        {$t('common.close')}
+      </Button>
+      <Button onclick={copyHtmlToClipboard}>
+        {$t('common.copyHtml')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <style>
   @keyframes pb-watermark-pulse {
