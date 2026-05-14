@@ -77,6 +77,11 @@
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import * as Dock from '$lib/components/ui/dock';
+  import * as Resizable from '$lib/components/ui/resizable';
+  import { ScrollArea } from '$lib/components/ui/scroll-area';
+  import { Skeleton } from '$lib/components/ui/skeleton';
+  import { Card, CardContent } from '$lib/components/ui/card';
+  import { Window } from '$lib/components/ui/window';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -808,6 +813,9 @@
   let htmlPreviewContent = $state('');
   let previewMode = $state<'html' | 'pdf' | 'email'>('html');
   let pdfBlobUrl = $state<string | null>(null);
+  let emailHtmlContent = $state('');
+  let isEmailPreparing = $state(false);
+  let emailCopied = $state(false);
 
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
@@ -1226,6 +1234,45 @@
       console.error('PDF generation failed:', error);
       previewMode = 'html';
     }
+  }
+
+  async function prepareEmailHtml() {
+    previewMode = 'email';
+    isEmailPreparing = true;
+    emailHtmlContent = '';
+    emailCopied = false;
+    
+    try {
+      // 1. Sanitize with DOMPurify
+      const DOMPurify = await import('dompurify');
+      const sanitized = (DOMPurify as any).sanitize(htmlPreviewContent);
+      
+      // 2. Inline CSS with inline-css
+      const inlineCss = await import('inline-css');
+      const options = {
+        url: ' ',
+        applyStyleTags: true,
+        removeStyleTags: true,
+        applyLinkTags: false,
+        preserveMediaQueries: true
+      };
+      
+      const optimized = await (inlineCss as any).default(sanitized, options);
+      emailHtmlContent = optimized;
+    } catch (error) {
+      console.error('Email HTML preparation failed:', error);
+      emailHtmlContent = htmlPreviewContent;
+    } finally {
+      isEmailPreparing = false;
+    }
+  }
+
+  function copyEmailHtmlToClipboard() {
+    navigator.clipboard.writeText(emailHtmlContent);
+    emailCopied = true;
+    setTimeout(() => {
+      emailCopied = false;
+    }, 2000);
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -3492,7 +3539,7 @@
         <BsFiletypePdf class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
-        onclick={() => { previewMode = 'email'; pdfBlobUrl = null; }}
+        onclick={prepareEmailHtml}
         tooltip="Email"
       >
         <BsEnvelopeAt class="w-6 h-6" />
@@ -3501,8 +3548,7 @@
   </div>
   
   <!-- Preview content -->
-  <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md shadow-[inset_0_0_6px_rgba(0,0,0,0.2)] relative">
-    <div class="pointer-events-none absolute inset-0 shadow-[inset_0_0_8px_rgba(0,0,0,0.22)] rounded-md z-10"></div>
+  <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">
     {#if previewMode === 'html'}
       <iframe
         srcdoc={htmlPreviewContent}
@@ -3520,8 +3566,78 @@
         <p class="text-muted-foreground">Generating PDF...</p>
       </div>
     {:else if previewMode === 'email'}
-      <div class="flex items-center justify-center h-full">
-        <p class="text-muted-foreground">Email functionality coming soon</p>
+      <div class="w-full h-full">
+        {#if isEmailPreparing}
+          <div class="flex items-center justify-center h-full">
+            <p class="text-muted-foreground">Preparing email HTML...</p>
+          </div>
+        {:else}
+          <Window
+            class="!aspect-auto h-full w-full flex flex-col"
+            contentClass="flex-1 min-h-0 !p-0"
+          >
+            <div class="flex h-full w-full overflow-hidden bg-background">
+              <Resizable.PaneGroup direction="horizontal">
+                <!-- PANNELLO SINISTRO: Elenco Mail (30% larghezza) -->
+                <Resizable.Pane defaultSize={30} minSize={20}>
+                  <ScrollArea class="h-full border-r p-4 bg-muted/20">
+                    <h3 class="text-sm font-semibold mb-4 px-2 tracking-tight text-muted-foreground">Mailbox</h3>
+                    <div class="space-y-2">
+                      <!-- Item Mail Attivo (skeleton evidenziato) -->
+                      <div class="p-3 space-y-2 border rounded-lg bg-card shadow-sm border-primary/50">
+                        <Skeleton class="h-4 w-3/4" />
+                        <Skeleton class="h-3 w-1/2" />
+                      </div>
+                      
+                      <!-- Skeleton per altre mail -->
+                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
+                        <Skeleton class="h-4 w-2/3" />
+                        <Skeleton class="h-3 w-1/3" />
+                      </div>
+                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
+                        <Skeleton class="h-4 w-3/4" />
+                        <Skeleton class="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </Resizable.Pane>
+
+                <Resizable.Handle withHandle />
+
+                <!-- PANNELLO DESTRO: Area di Contenuto (Preview) -->
+                <Resizable.Pane defaultSize={70}>
+                  <div class="flex flex-col h-full bg-background min-h-0">
+                    
+                    <!-- Header dell'email (To, Subject) -->
+                    <div class="p-4 border-b space-y-3 bg-card shrink-0">
+                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
+                        <span class="font-medium">A:</span> 
+                        <span class="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">recipient@example.com</span>
+                      </div>
+                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
+                        <span class="font-medium">Subject:</span>
+                        <Skeleton class="h-4 flex-1" />
+                      </div>
+                    </div>
+
+                    <!-- Area dell'IFrame -->
+                    <div class="flex-1 bg-muted/10 relative h-full min-h-0">
+                      <!-- L'iframe che ospita l'HTML puro del foglio e della tabella -->
+                      <iframe 
+                        title="Email Preview"
+                        srcdoc={emailHtmlContent}
+                        class="w-full h-full border-0 bg-white"
+                        sandbox="allow-same-origin"
+                      ></iframe>
+                    </div>
+
+                  </div>
+                </Resizable.Pane>
+                
+              </Resizable.PaneGroup>
+            </div>
+          </Window>
+        {/if}
       </div>
     {/if}
   </div>
@@ -3530,9 +3646,19 @@
     <Button variant="secondary" onclick={closeHtmlPreview}>
       {$t('common.close')}
     </Button>
-    <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>
-      {$t('common.copyHtml')}
-    </Button>
+    {#if previewMode === 'email'}
+      <Button onclick={copyEmailHtmlToClipboard} disabled={isEmailPreparing || !emailHtmlContent}>
+        {#if emailCopied}
+          Copied!
+        {:else}
+          Copy HTML to Clipboard
+        {/if}
+      </Button>
+    {:else}
+      <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>
+        {$t('common.copyHtml')}
+      </Button>
+    {/if}
   </Dialog.Footer>
 </DialogBordered>
 
