@@ -49,7 +49,7 @@
 			{onclick}
 			class={cn(
 				'flex aspect-square cursor-pointer items-center justify-center rounded-full transition-colors',
-				!transparent && 'hover:bg-gray-100 dark:hover:bg-neutral-800',
+				!transparent && 'hover:bg-primary/20 text-primary',
 				className
 			)}
 		>

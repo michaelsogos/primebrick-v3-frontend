@@ -63,13 +63,13 @@
     Trash2,
     Copy,
     Download,
-    Funnel,
-    FileCode,
-    FileText,
-    Mail
+    Funnel
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import BsFiletypeHtml from '~icons/bi/filetype-html';
+  import BsFiletypePdf from '~icons/bi/filetype-pdf';
+  import BsEnvelopeAt from '~icons/bi/envelope-at';
   import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
   import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
@@ -1218,10 +1218,10 @@
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
       
-      await html2pdf.default().set(opt).from(element).save().then((pdf: any) => {
-        const blob = pdf.output('blob');
-        pdfBlobUrl = URL.createObjectURL(blob);
-      });
+      // Generate PDF as binary blob instead of downloading
+      const worker = html2pdf.default().set(opt).from(element);
+      const pdfBlob = await worker.output('blob');
+      pdfBlobUrl = URL.createObjectURL(pdfBlob);
     } catch (error) {
       console.error('PDF generation failed:', error);
       previewMode = 'html';
@@ -3478,24 +3478,24 @@
   
   <!-- Navigation dock -->
   <div class="relative shrink-0">
-    <Dock.Root class="absolute top-2 left-1/2 -translate-x-1/2 z-10" magnification={70} distance={120}>
+    <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-primary/10 !border-primary/20 dark:!bg-primary/10" magnification={70} distance={120}>
       <Dock.Icon
         onclick={() => { previewMode = 'html'; pdfBlobUrl = null; }}
         tooltip="HTML view"
       >
-        <FileCode class="w-6 h-6" />
+        <BsFiletypeHtml class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={generatePdfPreview}
         tooltip="PDF view"
       >
-        <FileText class="w-6 h-6" />
+        <BsFiletypePdf class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={() => { previewMode = 'email'; pdfBlobUrl = null; }}
         tooltip="Email"
       >
-        <Mail class="w-6 h-6" />
+        <BsEnvelopeAt class="w-6 h-6" />
       </Dock.Icon>
     </Dock.Root>
   </div>
