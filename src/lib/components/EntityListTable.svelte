@@ -3501,7 +3501,8 @@
   </div>
   
   <!-- Preview content -->
-  <div class="flex-1 overflow-hidden bg-background min-h-0">
+  <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md shadow-[inset_0_0_6px_rgba(0,0,0,0.2)] relative">
+    <div class="pointer-events-none absolute inset-0 shadow-[inset_0_0_8px_rgba(0,0,0,0.22)] rounded-md z-10"></div>
     {#if previewMode === 'html'}
       <iframe
         srcdoc={htmlPreviewContent}
