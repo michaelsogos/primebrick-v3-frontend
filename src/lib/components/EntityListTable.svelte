@@ -1205,8 +1205,22 @@
     htmlPreviewContent = '';
   }
 
-  function copyHtmlToClipboard() {
-    navigator.clipboard.writeText(htmlPreviewContent);
+  async function copyHtmlToClipboard() {
+    try {
+      const blobHtml = new Blob([htmlPreviewContent], { type: 'text/html' });
+      const plainText = htmlPreviewContent.replace(/<[^>]*>/g, '');
+      const blobPlain = new Blob([plainText], { type: 'text/plain' });
+      
+      const clipboardItem = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobPlain
+      });
+      
+      await navigator.clipboard.write([clipboardItem]);
+    } catch (err) {
+      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
+      navigator.clipboard.writeText(htmlPreviewContent);
+    }
   }
 
   async function generatePdfPreview() {
@@ -1267,8 +1281,23 @@
     }
   }
 
-  function copyEmailHtmlToClipboard() {
-    navigator.clipboard.writeText(emailHtmlContent);
+  async function copyEmailHtmlToClipboard() {
+    try {
+      const blobHtml = new Blob([emailHtmlContent], { type: 'text/html' });
+      const plainText = emailHtmlContent.replace(/<[^>]*>/g, '');
+      const blobPlain = new Blob([plainText], { type: 'text/plain' });
+      
+      const clipboardItem = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobPlain
+      });
+      
+      await navigator.clipboard.write([clipboardItem]);
+    } catch (err) {
+      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
+      navigator.clipboard.writeText(emailHtmlContent);
+    }
+    
     emailCopied = true;
     setTimeout(() => {
       emailCopied = false;
@@ -3643,7 +3672,11 @@
   </div>
   
   <Dialog.Footer class="gap-2 shrink-0">
-    <Button variant="secondary" onclick={closeHtmlPreview}>
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={closeHtmlPreview}
+    >
       {$t('common.close')}
     </Button>
     {#if previewMode === 'email'}
