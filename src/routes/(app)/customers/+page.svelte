@@ -634,10 +634,7 @@
     void searchInKeys;
     void sortKey;
     void sortDir;
-    // Only persist if not currently restoring from session storage
-    if (sortRestored) {
-      persistListUiStateToSession();
-    }
+    persistListUiStateToSession();
   });
 
   /** Mirrors backend list search gate: >=3 “real” chars, or escaped wildcard (`\*` / `\?`) with >=1 real char. */

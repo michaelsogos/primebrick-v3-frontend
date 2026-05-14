@@ -19,7 +19,8 @@
   import { scale, fade, fly } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -64,6 +65,14 @@
     Download,
     Funnel
   } from 'lucide-svelte';
+  import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
+  import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
+  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
+  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
+  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
+  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -465,13 +474,33 @@
     writeAdvancedFilters(advancedFilters ?? []);
   });
 
-  // Automatic toolbar mode switching based on selection
+  // Automatic toolbar mode switching based on filters and selection
+  let lastSelectionChange = $state(0);
+  let lastFilterChange = $state(0);
+
   $effect(() => {
     void selectedKeys;
-    if (selectedKeys.length >= 2) {
+    lastSelectionChange = Date.now();
+  });
+
+  $effect(() => {
+    void filterValues;
+    void advancedFilters;
+    lastFilterChange = Date.now();
+  });
+
+  $effect(() => {
+    void lastSelectionChange;
+    void lastFilterChange;
+    void hasAppliedFilters;
+
+    // If selection changed more recently than filters, show bulk
+    if (lastSelectionChange > lastFilterChange) {
       toolbarMode = 'bulk';
-    } else {
+    } else if (hasAppliedFilters) {
       toolbarMode = 'filters';
+    } else {
+      toolbarMode = 'bulk';
     }
   });
 
@@ -759,6 +788,12 @@
   let bulkDeleteConfirmDialogOpen = $state(false);
   let isBulkDeleting = $state(false);
 
+  /** Export confirmation dialog state */
+  let exportConfirmDialogOpen = $state(false);
+  let exportFileType = $state<'xlsx' | 'csv' | null>(null);
+  let isExporting = $state(false);
+  let exportScope = $state<'selected' | 'all'>('selected');
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -862,27 +897,8 @@
       
       // Show error notification using shell's error handling with RFC 7807 format
       if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as {
-          title: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-          toneForImpact?: string;
-        };
-        const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
-        pushImpactError({
-          impact: 'HIGH',
-          message: err.title, // RFC 7807 title is the toast message
-          scope: 'Bulk delete API',
-          detail: err.detail, // RFC 7807 detail is the detail
-          tags: [
-            { label: err.internal_code || 'BULK_DELETE_FAILED', tone },
-            ...(err.status ? [{ label: `HTTP ${err.status}`, tone } as const] : []),
-            ...(err.instance ? [{ label: err.instance, tone } as const] : []),
-          ],
-          toast: true,
-        });
+        const err = error as RFC7807Error;
+        pushRFC7807Error(err, { showToast: true });
       } else {
         pushImpactError({
           impact: 'HIGH',
@@ -904,14 +920,163 @@
     bulkDeleteConfirmDialogOpen = false;
   }
 
+  /** Confirm export action after dialog confirmation */
+  async function confirmExportRow() {
+    if (!exportFileType) return;
+    try {
+      isExporting = true;
+      
+      // Build query parameters from current filters, search, sort
+      const params = new URLSearchParams();
+      params.append('file_type', exportFileType);
+      
+      if (search) params.append('search', search);
+      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
+      if (sortKey) params.append('sort_key', sortKey);
+      if (sortDir) params.append('sort_dir', sortDir);
+      
+      // Build filters array (same format as loadRows)
+      let filterIdx = 0;
+      
+      // Add regular filter values
+      if (filterValues && Object.keys(filterValues).length > 0) {
+        for (const [field, value] of Object.entries(filterValues)) {
+          if (value !== undefined && value !== null && value !== '') {
+            const col = columns.find(c => c.key === field);
+            const op = col?.type === 'text' ? 'ILIKE' : '=';
+            
+            // Handle multi-select (array) values for badge fields
+            if (col?.type === 'badge' && Array.isArray(value)) {
+              for (let i = 0; i < value.length; i++) {
+                params.set(`filters[${filterIdx}][field]`, field);
+                params.set(`filters[${filterIdx}][op]`, op);
+                params.set(`filters[${filterIdx}][value]`, String(value[i]));
+                const connector = i < value.length - 1 ? 'OR' : 'AND';
+                params.set(`filters[${filterIdx}][connector]`, connector);
+                filterIdx++;
+              }
+            } else {
+              params.set(`filters[${filterIdx}][field]`, field);
+              params.set(`filters[${filterIdx}][op]`, op);
+              params.set(`filters[${filterIdx}][value]`, String(value));
+              params.set(`filters[${filterIdx}][connector]`, 'AND');
+              filterIdx++;
+            }
+          }
+        }
+      }
+      
+      // Add advanced filters
+      if (advancedFilters && advancedFilters.length > 0) {
+        for (const filter of advancedFilters) {
+          if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
+            params.set(`filters[${filterIdx}][field]`, filter.field);
+            
+            let operator: string = filter.operator;
+            let value = filter.value;
+            
+            // Handle BETWEEN operator with start/end values
+            if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
+              params.set(`filters[${filterIdx}][op]`, operator);
+              params.set(`filters[${filterIdx}][value][start]`, String(value.start));
+              params.set(`filters[${filterIdx}][value][end]`, String(value.end));
+              filterIdx++;
+              continue;
+            }
+            
+            // Map frontend operators to backend-supported operators
+            if (Array.isArray(value)) {
+              operator = operator === '!=' ? 'NOT IN' : 'IN';
+            } else if (operator === 'startsWith') {
+              operator = 'ILIKE';
+              value = `${value}%`;
+            } else if (operator === 'endsWith') {
+              operator = 'ILIKE';
+              value = `%${value}`;
+            } else if (operator === 'contains') {
+              operator = 'ILIKE';
+              value = `%${value}%`;
+            }
+            
+            params.set(`filters[${filterIdx}][op]`, operator);
+            
+            // Handle array values for badge fields
+            if (Array.isArray(value)) {
+              for (const val of value) {
+                params.append(`filters[${filterIdx}][value][]`, String(val));
+              }
+            } else {
+              params.set(`filters[${filterIdx}][value]`, String(value));
+            }
+            
+            filterIdx++;
+          }
+        }
+      }
+      
+      // Add UID filter if exporting selected only
+      if (exportScope === 'selected' && selectedKeys.length > 0) {
+        params.set(`filters[${filterIdx}][field]`, uid);
+        params.set(`filters[${filterIdx}][op]`, 'IN');
+        for (const key of selectedKeys) {
+          params.append(`filters[${filterIdx}][value][]`, key);
+        }
+        params.set(`filters[${filterIdx}][connector]`, 'AND');
+      }
+      
+      // Add locale and timezone
+      params.append('locale', $uiLang);
+      params.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+      
+      // Trigger file download
+      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        // Read RFC 7807 compliant error response
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
+      // Get the blob and create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.${exportFileType}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      exportConfirmDialogOpen = false;
+      exportFileType = null;
+    } catch (error) {
+      console.error('Export failed:', error);
+      // Handle RFC 7807 compliant error response
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isExporting = false;
+      // Close dialog regardless of success or error
+      exportConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel export action */
+  function cancelExportRow() {
+    exportConfirmDialogOpen = false;
+    exportFileType = null;
+  }
+
   function handleBulkDuplicate() {
     console.log('Bulk duplicate:', selectedKeys);
     // TODO: Implement bulk duplicate with BE integration
   }
 
   function handleBulkExport() {
-    console.log('Bulk export:', selectedKeys);
-    // TODO: Implement bulk export with BE integration
+    exportFileType = null;
+    exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
+    exportConfirmDialogOpen = true;
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -1867,23 +2032,21 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-    {#if selectedKeys.length >= 2}
-      <Button
-        variant="outline"
-        size="xs"
-        class="h-6 text-xs"
-        onclick={toggleToolbarMode}
-      >
-        {#if toolbarMode === 'filters'}
-          <ListCheck class="size-3.5" />
-          {$t('entities.list.bulkActions.toggleToBulk')}
-        {:else}
-          <Funnel class="size-3.5" />
-          {$t('entities.list.bulkActions.toggleToFilters')}
-        {/if}
-      </Button>
-      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-    {/if}
+    <Button
+      variant="outline"
+      size="xs"
+      class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
+      onclick={toggleToolbarMode}
+    >
+      {#if toolbarMode === 'filters'}
+        <ListCheck class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToBulk')}
+      {:else}
+        <Funnel class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToFilters')}
+      {/if}
+    </Button>
+    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
 
     {#if toolbarMode === 'filters'}
       {#if hasAppliedFilters}
@@ -1976,15 +2139,6 @@
           variant="soft"
           size="xs"
           class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={handleBulkDuplicate}
-        >
-          <Copy class="size-3.5" />
-          {$t('entities.list.bulkActions.duplicate')}
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
           onclick={handleBulkExport}
         >
           <Download class="size-3.5" />
@@ -1993,8 +2147,19 @@
         <Button
           variant="soft"
           size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkDuplicate}
+          disabled={selectedKeys.length < 2}
+        >
+          <Copy class="size-3.5" />
+          {$t('entities.list.bulkActions.duplicate')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
           class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
           onclick={handleBulkDelete}
+          disabled={selectedKeys.length < 2}
         >
           <Trash2 class="size-3.5" />
           {$t('entities.list.bulkActions.delete')}
@@ -2977,62 +3142,125 @@
 </div>
 
 <!-- Delete confirmation dialog -->
-<Dialog.Root bind:open={deleteConfirmDialogOpen}>
-  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary"
-        onclick={() => {
-          deleteConfirmDialogOpen = false;
-          rowToDelete = null;
-        }}
-      >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="destructive"
-        onclick={confirmDeleteRow}
-      >
-        {$t('common.delete')}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={deleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={() => {
+        deleteConfirmDialogOpen = false;
+        rowToDelete = null;
+      }}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmDeleteRow}
+    >
+      {$t('common.delete')}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
 
 <!-- Bulk delete confirmation dialog -->
-<Dialog.Root bind:open={bulkDeleteConfirmDialogOpen}>
-  <Dialog.Content class="sm:max-w-md" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        Sei sicuro di voler eliminare {selectedKeys.length} elementi?
-      </Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
+<DialogBordered bind:open={bulkDeleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler eliminare {selectedKeys.length} elementi?
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelBulkDelete}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmBulkDelete}
+      disabled={isBulkDeleting}
+    >
+      {#if isBulkDeleting}
+        {$t('common.deleting')}
+      {:else}
+        {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Export confirmation dialog -->
+<DialogBordered bind:open={exportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedKeys.length > 0}
+        {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedKeys.length > 0}
+    <div class="py-4">
+      <Choicebox bind:value={exportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelExportRow}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <div class="flex gap-2 w-full sm:w-auto">
       <Button
-        variant="secondary"
-        onclick={cancelBulkDelete}
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
+        disabled={isExporting}
       >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="destructive"
-        onclick={confirmBulkDelete}
-        disabled={isBulkDeleting}
-      >
-        {#if isBulkDeleting}
-          {$t('common.deleting')}
+        {#if isExporting && exportFileType === 'xlsx'}
+          {$t('common.exporting')}
         {:else}
-          {$t('common.delete')}
+          <BsFiletypeXlsx class="size-5" />
+          {$t('common.exportExcel')}
         {/if}
       </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+      <Button
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
+        disabled={isExporting}
+      >
+        {#if isExporting && exportFileType === 'csv'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeCsv class="size-5" />
+          {$t('common.exportCsv')}
+        {/if}
+      </Button>
+    </div>
+  </Dialog.Footer>
+</DialogBordered>
 
 <style>
   @keyframes pb-watermark-pulse {

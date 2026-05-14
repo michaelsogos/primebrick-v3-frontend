@@ -33,7 +33,12 @@
     "delete": "Supprimer",
     "deleting": "Suppression…",
     "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
-    "deleteConfirm": "Cette action ne peut pas être annulée."
+    "deleteConfirm": "Cette action ne peut pas être annulée.",
+    "exportExcel": "Exporter en Excel",
+    "exportCsv": "Exporter en CSV",
+    "exportConfirmTitle": "Exporter les données",
+    "exportConfirm": "Voulez-vous exporter",
+    "exporting": "Exportation…"
   },
   "shell": {
     "subtitle": "Backoffice",
