@@ -63,7 +63,10 @@
     Trash2,
     Copy,
     Download,
-    Funnel
+    Funnel,
+    FileCode,
+    FileText,
+    Mail
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
@@ -73,6 +76,7 @@
   import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import * as Dock from '$lib/components/ui/dock';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -801,7 +805,9 @@
 
   /** HTML preview dialog state */
   let htmlPreviewDialogOpen = $state(false);
-  let htmlPreviewContent = $state<string>('');
+  let htmlPreviewContent = $state('');
+  let previewMode = $state<'html' | 'pdf' | 'email'>('html');
+  let pdfBlobUrl = $state<string | null>(null);
 
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
@@ -1193,6 +1199,33 @@
 
   function copyHtmlToClipboard() {
     navigator.clipboard.writeText(htmlPreviewContent);
+  }
+
+  async function generatePdfPreview() {
+    previewMode = 'pdf';
+    pdfBlobUrl = null;
+    
+    try {
+      const html2pdf = await import('html2pdf.js');
+      const element = document.createElement('div');
+      element.innerHTML = htmlPreviewContent;
+      
+      const opt = {
+        margin: 10,
+        filename: `${entity}-export.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+      
+      await html2pdf.default().set(opt).from(element).save().then((pdf: any) => {
+        const blob = pdf.output('blob');
+        pdfBlobUrl = URL.createObjectURL(blob);
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      previewMode = 'html';
+    }
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -3438,25 +3471,69 @@
 </DialogBordered>
 
 <!-- HTML preview full-screen dialog -->
-<Dialog.Root bind:open={htmlPreviewDialogOpen}>
-  <Dialog.Content class="max-w-[95vw] max-h-[95vh] p-0">
-    <Dialog.Header class="px-6 py-4 border-b flex items-center justify-between">
-      <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
-      <Dialog.Close onclick={closeHtmlPreview} />
-    </Dialog.Header>
-    <div class="p-6 overflow-auto max-h-[calc(95vh-8rem)] bg-background">
-      {@html htmlPreviewContent}
-    </div>
-    <Dialog.Footer class="px-6 py-4 border-t gap-2">
-      <Button variant="secondary" onclick={closeHtmlPreview}>
-        {$t('common.close')}
-      </Button>
-      <Button onclick={copyHtmlToClipboard}>
-        {$t('common.copyHtml')}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+  <Dialog.Header class="pb-4 shrink-0">
+    <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
+  </Dialog.Header>
+  
+  <!-- Navigation dock -->
+  <div class="relative shrink-0">
+    <Dock.Root class="absolute top-2 left-1/2 -translate-x-1/2 z-10" magnification={70} distance={120}>
+      <Dock.Icon
+        onclick={() => { previewMode = 'html'; pdfBlobUrl = null; }}
+        tooltip="HTML view"
+      >
+        <FileCode class="w-6 h-6" />
+      </Dock.Icon>
+      <Dock.Icon
+        onclick={generatePdfPreview}
+        tooltip="PDF view"
+      >
+        <FileText class="w-6 h-6" />
+      </Dock.Icon>
+      <Dock.Icon
+        onclick={() => { previewMode = 'email'; pdfBlobUrl = null; }}
+        tooltip="Email"
+      >
+        <Mail class="w-6 h-6" />
+      </Dock.Icon>
+    </Dock.Root>
+  </div>
+  
+  <!-- Preview content -->
+  <div class="flex-1 overflow-hidden bg-background min-h-0">
+    {#if previewMode === 'html'}
+      <iframe
+        srcdoc={htmlPreviewContent}
+        class="w-full h-full border-0"
+        title="HTML Preview"
+      ></iframe>
+    {:else if previewMode === 'pdf' && pdfBlobUrl}
+      <iframe
+        src={pdfBlobUrl}
+        class="w-full h-full border-0"
+        title="PDF Preview"
+      ></iframe>
+    {:else if previewMode === 'pdf'}
+      <div class="flex items-center justify-center h-full">
+        <p class="text-muted-foreground">Generating PDF...</p>
+      </div>
+    {:else if previewMode === 'email'}
+      <div class="flex items-center justify-center h-full">
+        <p class="text-muted-foreground">Email functionality coming soon</p>
+      </div>
+    {/if}
+  </div>
+  
+  <Dialog.Footer class="gap-2 shrink-0">
+    <Button variant="secondary" onclick={closeHtmlPreview}>
+      {$t('common.close')}
+    </Button>
+    <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>
+      {$t('common.copyHtml')}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
 
 <style>
   @keyframes pb-watermark-pulse {
