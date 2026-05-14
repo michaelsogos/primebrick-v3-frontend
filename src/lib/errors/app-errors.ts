@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { writable } from 'svelte/store';
 import { toast } from '$lib/errors/toast';
 import { t } from '$lib/i18n';
+import type { RFC7807Error } from '$lib/errors/rfc7807';
 
 export type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -37,10 +38,12 @@ function translate() {
   return get(t);
 }
 
-function baseToastOpts(description?: string) {
+function baseToastOpts(description?: string, tags?: AppErrorTag[], detail?: string) {
   const d = description?.trim();
   return {
     ...(d ? { description: d } : {}),
+    ...(tags?.length ? { tags } : {}),
+    ...(detail ? { detail } : {}),
     duration: TOAST_DURATION_MS
   };
 }
@@ -52,8 +55,10 @@ function baseToastOpts(description?: string) {
  * - MEDIUM: warning
  * - LOW: info
  */
-function showImpactToast(impact: ImpactLevel, message: string, description?: string) {
+function showImpactToast(impact: ImpactLevel, message: string, description?: string, tags?: AppErrorTag[], detail?: string) {
   const opts = baseToastOpts(description);
+  if (tags?.length) opts.tags = tags;
+  if (detail) opts.detail = detail;
   switch (impact) {
     case 'CRITICAL':
       return toast.critical(message, opts);
@@ -123,7 +128,7 @@ export function pushImpactError(input: {
   appErrors.update((xs) => prependCapped(xs, err));
 
   if (input.toast !== false) {
-    showImpactToast(input.impact, message, scope);
+    showImpactToast(input.impact, message, scope, input.tags, input.detail);
   }
 
   return err.id;
@@ -131,4 +136,43 @@ export function pushImpactError(input: {
 
 export function clearAppErrors() {
   appErrors.set([]);
+}
+
+/**
+ * Map RFC 7807 severity to ImpactLevel
+ * Defaults to HIGH if severity is not specified or invalid
+ */
+function mapSeverityToImpact(severity?: string): ImpactLevel {
+  if (severity && ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(severity)) {
+    return severity as ImpactLevel;
+  }
+  // Default to HIGH if not specified
+  return 'HIGH';
+}
+
+/**
+ * Push RFC 7807 compliant error from backend
+ * Accepts the exact RFC 7807 error response from the backend without DTO transformation
+ */
+export function pushRFC7807Error(error: RFC7807Error, options?: { showToast?: boolean }) {
+  const impact = mapSeverityToImpact(error.severity);
+  const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
+  
+  const tags: AppErrorTag[] = [];
+  if (error.internal_code) {
+    tags.push({ label: error.internal_code, tone });
+  }
+  tags.push({ label: `HTTP ${error.status}`, tone });
+  if (error.instance) {
+    tags.push({ label: error.instance, tone });
+  }
+  
+  pushImpactError({
+    impact,
+    message: error.detail,
+    scope: error.title,
+    detail: undefined,
+    tags,
+    toast: options?.showToast !== false,
+  });
 }

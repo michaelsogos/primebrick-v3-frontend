@@ -23,21 +23,6 @@ function isEntityApiRequest(input: RequestInfo | URL): boolean {
   return requestUrlString(input).includes(ENTITY_API_PATH);
 }
 
-async function responseIsDatabaseUnavailable(res: Response): Promise<boolean> {
-  if (!isUnreachableHttpStatus(res.status)) return false;
-  const ct = res.headers.get('content-type') ?? '';
-  if (!ct.includes('application/json')) return false;
-  try {
-    const data = (await res.clone().json()) as { error?: unknown; title?: unknown };
-    // Support both legacy format and RFC 7807
-    if (data.error === 'DATABASE_UNAVAILABLE') return true;
-    if (data.title === 'Database Unavailable') return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   await ensureBackendOnlineOrThrow();
 
@@ -54,14 +39,18 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
       (e instanceof Error && e.name === 'AbortError');
     if (aborted) throw e;
+    // Network error / no response = backend unreachable
     noteGatewayFailure(503);
     throw new ApiUnreachableError(null);
   }
 
+  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop)
+  if (res.status === 503) {
+    throw new ApiDatabaseUnavailableError(503);
+  }
+
+  // 502/504 = gateway/network failure
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
-    if (await responseIsDatabaseUnavailable(res)) {
-      throw new ApiDatabaseUnavailableError(res.status);
-    }
     noteGatewayFailure(res.status);
     throw new ApiUnreachableError(res.status);
   }

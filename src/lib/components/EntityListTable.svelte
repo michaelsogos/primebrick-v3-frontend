@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -14,7 +14,13 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import { Dialog as DialogPrimitive } from 'bits-ui';
+  import { scale, fade, fly } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
+  import { apiFetch } from '$lib/api';
+  import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -49,13 +55,30 @@
     MapPin,
     Eye,
     EyeOff,
-    FilterX
+    ListCheck,
+    ListX,
+    TextAlignJustify,
+    FilterX,
+    Pencil,
+    Trash2,
+    Copy,
+    Download,
+    Funnel
   } from 'lucide-svelte';
+  import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
+  import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
+  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
+  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
+  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
+  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
   let {
     uid,
+    entity = 'customer',
     columns,
     stickyColumns,
     dataColumns,
@@ -104,6 +127,8 @@
     onAdvancedFiltersChange,
     filterValuesStorageKey,
     advancedFiltersStorageKey,
+    deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
+    onDeletionFilterModeChange,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -116,6 +141,8 @@
   }: {
     /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
+    /** Entity type for API calls (e.g., 'customer', 'product') */
+    entity?: string;
     /**
      * Columns to render/select in the UI.
      * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
@@ -172,6 +199,8 @@
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
+    deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
+    onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
     /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
     datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
@@ -198,6 +227,9 @@
   );
   let viewMode = $state<ViewMode>('table');
 
+  type ToolbarMode = 'filters' | 'bulk';
+  let toolbarMode = $state<ToolbarMode>('filters');
+
   function readViewMode(): ViewMode | null {
     if (typeof window === 'undefined') return null;
     try {
@@ -213,6 +245,32 @@
     if (typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem(viewModeStorageKey, next);
+    } catch {
+      // ignore quota / blocked storage
+    }
+  }
+
+  type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+  const deletionFilterStorageKey = $derived(
+    columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
+  );
+  let deletionFilterMode = $state<DeletionFilterMode>(deletionFilterModeProp ?? 'non_deleted');
+
+  function readDeletionFilter(): DeletionFilterMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.sessionStorage.getItem(deletionFilterStorageKey);
+      if (raw === 'non_deleted' || raw === 'deleted' || raw === 'all') return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeDeletionFilter(next: DeletionFilterMode) {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(deletionFilterStorageKey, next);
     } catch {
       // ignore quota / blocked storage
     }
@@ -314,6 +372,7 @@
     orderState.data = undefined;
     orderState.auditing = undefined;
     writeOrderState({});
+    // Reset sorting to default
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
   }
@@ -379,6 +438,9 @@
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
 
+    const storedDeletionFilter = readDeletionFilter();
+    if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
+
     // Initialize filters from sessionStorage
     const storedFilterValues = readFilterValues();
     if (Object.keys(storedFilterValues).length > 0) {
@@ -397,6 +459,12 @@
   });
 
   $effect(() => {
+    void deletionFilterMode;
+    writeDeletionFilter(deletionFilterMode);
+    onDeletionFilterModeChange?.(deletionFilterMode);
+  });
+
+  $effect(() => {
     void filterValues;
     writeFilterValues(filterValues ?? {});
   });
@@ -404,6 +472,36 @@
   $effect(() => {
     void advancedFilters;
     writeAdvancedFilters(advancedFilters ?? []);
+  });
+
+  // Automatic toolbar mode switching based on filters and selection
+  let lastSelectionChange = $state(0);
+  let lastFilterChange = $state(0);
+
+  $effect(() => {
+    void selectedKeys;
+    lastSelectionChange = Date.now();
+  });
+
+  $effect(() => {
+    void filterValues;
+    void advancedFilters;
+    lastFilterChange = Date.now();
+  });
+
+  $effect(() => {
+    void lastSelectionChange;
+    void lastFilterChange;
+    void hasAppliedFilters;
+
+    // If selection changed more recently than filters, show bulk
+    if (lastSelectionChange > lastFilterChange) {
+      toolbarMode = 'bulk';
+    } else if (hasAppliedFilters) {
+      toolbarMode = 'filters';
+    } else {
+      toolbarMode = 'bulk';
+    }
   });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
@@ -616,12 +714,32 @@
   }
 
   /**
+   * Destructive background for deleted rows (light red): base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveChromeCellClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-300! dark:bg-rose-700! transition-colors group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!'
+      : 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  /**
    * Sticky uuid/code body overlay (dark, not IANA): base from `stickyCellClass`; hover `800`; selected `700` / `600`.
    */
   function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
     return rowSelected
       ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
       : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
+  }
+
+  /**
+   * Destructive sticky uuid/code body overlay for deleted rows: base `200`, hover `300`, selected `400` / `500` (slightly darker than chrome).
+   * Dark: base `800`, hover `700`, selected `600` / `500`.
+   */
+  function entityListDestructiveBandStickyInteractionClass(rowSelected: boolean): string {
+    return rowSelected
+      ? 'bg-rose-400! dark:bg-rose-600! transition-colors group-hover/entity-row:bg-rose-500! dark:group-hover/entity-row:bg-rose-500!'
+      : 'bg-rose-200! dark:bg-rose-800! transition-colors group-hover/entity-row:bg-rose-300! dark:group-hover/entity-row:bg-rose-700!';
   }
 
   /**
@@ -635,6 +753,21 @@
     return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
   }
 
+  /**
+   * Destructive scroll cells for deleted rows: base `100`, hover `200`, selected `300`, selected+hover `400`.
+   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
+   */
+  function entityListDestructiveScrollInteractionClass(rowSelected: boolean): string | undefined {
+    if (rowSelected) {
+      return 'transition-colors bg-rose-300! dark:bg-rose-700! group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!';
+    }
+    return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
+  }
+
+  function isRowDeleted(row: TRow): boolean {
+    return 'deleted_at' in row && row.deleted_at !== null && row.deleted_at !== undefined;
+  }
+
   let rowRangeMouseDown = $state(false);
   let rangeAnchorIndex = $state<number | null>(null);
   let rangeDragActive = $state(false);
@@ -643,6 +776,313 @@
   let selectionSnapshotAtMouseDown: Set<string> | null = null;
   /** After a range brush drag, suppress the following `click` on the row (same gesture as mouseup). */
   let skipNextRowClickSelectToggle = false;
+  /** Row dropdown menu state: which row has the menu open */
+  let dropdownMenuRow = $state<TRow | null>(null);
+
+  /** Delete confirmation dialog state */
+  let deleteConfirmDialogOpen = $state(false);
+  let rowToDelete: TRow | null = null;
+  let isDeleting = $state(false);
+
+  /** Bulk delete confirmation dialog state */
+  let bulkDeleteConfirmDialogOpen = $state(false);
+  let isBulkDeleting = $state(false);
+
+  /** Export confirmation dialog state */
+  let exportConfirmDialogOpen = $state(false);
+  let exportFileType = $state<'xlsx' | 'csv' | null>(null);
+  let isExporting = $state(false);
+  let exportScope = $state<'selected' | 'all'>('selected');
+
+  /** Open dropdown menu for a specific row */
+  function openRowDropdown(row: TRow) {
+    dropdownMenuRow = row;
+  }
+
+  /** Close dropdown menu */
+  function closeRowDropdown() {
+    dropdownMenuRow = null;
+  }
+
+  /** Handle edit action for a row */
+  function handleEditRow(row: TRow) {
+    // TODO: Implement edit action - will be connected to BE later
+    console.log('Edit row:', rowKey(row));
+    closeRowDropdown();
+  }
+
+  /** Handle delete action for a row */
+  function handleDeleteRow(row: TRow) {
+    // Open confirmation dialog instead of deleting directly
+    rowToDelete = row;
+    deleteConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Confirm delete action after dialog confirmation */
+  async function confirmDeleteRow() {
+    if (!rowToDelete) return;
+    try {
+      const uuidValue = rowToDelete[uid] as string;
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
+        method: 'DELETE'
+      });
+      deleteConfirmDialogOpen = false;
+      rowToDelete = null;
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      // Keep dialog open on error
+    }
+  }
+
+  /** Cancel delete action */
+  function cancelDeleteRow() {
+    deleteConfirmDialogOpen = false;
+    rowToDelete = null;
+  }
+
+  /** Bulk action handlers */
+  function handleBulkDelete() {
+    // Open confirmation dialog instead of deleting directly
+    bulkDeleteConfirmDialogOpen = true;
+  }
+
+  /** Confirm bulk delete action after dialog confirmation */
+  async function confirmBulkDelete() {
+    if (selectedKeys.length === 0) return;
+    try {
+      isBulkDeleting = true;
+      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids: selectedKeys })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
+          title?: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+        };
+        
+        const toneForImpact = 'danger'; // HIGH impact uses danger
+        throw {
+          title: data.title || 'Bulk delete failed',
+          status: data.status,
+          detail: data.detail,
+          instance: data.instance,
+          internal_code: data.internal_code,
+          toneForImpact
+        };
+      }
+      
+      // Clear selection after successful deletion
+      selectedKeys = [];
+      // Switch back to filters mode
+      toolbarMode = 'filters';
+      // Refresh the list after successful deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      
+      // Show error notification using shell's error handling with RFC 7807 format
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        pushRFC7807Error(err, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'HIGH',
+          message: 'Bulk delete failed',
+          scope: 'Bulk delete API',
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
+    } finally {
+      isBulkDeleting = false;
+      // Close dialog regardless of success or error
+      bulkDeleteConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel bulk delete action */
+  function cancelBulkDelete() {
+    bulkDeleteConfirmDialogOpen = false;
+  }
+
+  /** Confirm export action after dialog confirmation */
+  async function confirmExportRow() {
+    if (!exportFileType) return;
+    try {
+      isExporting = true;
+      
+      // Build query parameters from current filters, search, sort
+      const params = new URLSearchParams();
+      params.append('file_type', exportFileType);
+      
+      if (search) params.append('search', search);
+      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
+      if (sortKey) params.append('sort_key', sortKey);
+      if (sortDir) params.append('sort_dir', sortDir);
+      
+      // Build filters array (same format as loadRows)
+      let filterIdx = 0;
+      
+      // Add regular filter values
+      if (filterValues && Object.keys(filterValues).length > 0) {
+        for (const [field, value] of Object.entries(filterValues)) {
+          if (value !== undefined && value !== null && value !== '') {
+            const col = columns.find(c => c.key === field);
+            const op = col?.type === 'text' ? 'ILIKE' : '=';
+            
+            // Handle multi-select (array) values for badge fields
+            if (col?.type === 'badge' && Array.isArray(value)) {
+              for (let i = 0; i < value.length; i++) {
+                params.set(`filters[${filterIdx}][field]`, field);
+                params.set(`filters[${filterIdx}][op]`, op);
+                params.set(`filters[${filterIdx}][value]`, String(value[i]));
+                const connector = i < value.length - 1 ? 'OR' : 'AND';
+                params.set(`filters[${filterIdx}][connector]`, connector);
+                filterIdx++;
+              }
+            } else {
+              params.set(`filters[${filterIdx}][field]`, field);
+              params.set(`filters[${filterIdx}][op]`, op);
+              params.set(`filters[${filterIdx}][value]`, String(value));
+              params.set(`filters[${filterIdx}][connector]`, 'AND');
+              filterIdx++;
+            }
+          }
+        }
+      }
+      
+      // Add advanced filters
+      if (advancedFilters && advancedFilters.length > 0) {
+        for (const filter of advancedFilters) {
+          if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
+            params.set(`filters[${filterIdx}][field]`, filter.field);
+            
+            let operator: string = filter.operator;
+            let value = filter.value;
+            
+            // Handle BETWEEN operator with start/end values
+            if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
+              params.set(`filters[${filterIdx}][op]`, operator);
+              params.set(`filters[${filterIdx}][value][start]`, String(value.start));
+              params.set(`filters[${filterIdx}][value][end]`, String(value.end));
+              filterIdx++;
+              continue;
+            }
+            
+            // Map frontend operators to backend-supported operators
+            if (Array.isArray(value)) {
+              operator = operator === '!=' ? 'NOT IN' : 'IN';
+            } else if (operator === 'startsWith') {
+              operator = 'ILIKE';
+              value = `${value}%`;
+            } else if (operator === 'endsWith') {
+              operator = 'ILIKE';
+              value = `%${value}`;
+            } else if (operator === 'contains') {
+              operator = 'ILIKE';
+              value = `%${value}%`;
+            }
+            
+            params.set(`filters[${filterIdx}][op]`, operator);
+            
+            // Handle array values for badge fields
+            if (Array.isArray(value)) {
+              for (const val of value) {
+                params.append(`filters[${filterIdx}][value][]`, String(val));
+              }
+            } else {
+              params.set(`filters[${filterIdx}][value]`, String(value));
+            }
+            
+            filterIdx++;
+          }
+        }
+      }
+      
+      // Add UID filter if exporting selected only
+      if (exportScope === 'selected' && selectedKeys.length > 0) {
+        params.set(`filters[${filterIdx}][field]`, uid);
+        params.set(`filters[${filterIdx}][op]`, 'IN');
+        for (const key of selectedKeys) {
+          params.append(`filters[${filterIdx}][value][]`, key);
+        }
+        params.set(`filters[${filterIdx}][connector]`, 'AND');
+      }
+      
+      // Add locale and timezone
+      params.append('locale', $uiLang);
+      params.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+      
+      // Trigger file download
+      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        // Read RFC 7807 compliant error response
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
+      // Get the blob and create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.${exportFileType}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      exportConfirmDialogOpen = false;
+      exportFileType = null;
+    } catch (error) {
+      console.error('Export failed:', error);
+      // Handle RFC 7807 compliant error response
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isExporting = false;
+      // Close dialog regardless of success or error
+      exportConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel export action */
+  function cancelExportRow() {
+    exportConfirmDialogOpen = false;
+    exportFileType = null;
+  }
+
+  function handleBulkDuplicate() {
+    console.log('Bulk duplicate:', selectedKeys);
+    // TODO: Implement bulk duplicate with BE integration
+  }
+
+  function handleBulkExport() {
+    exportFileType = null;
+    exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
+    exportConfirmDialogOpen = true;
+  }
+
+  /** Toggle toolbar mode between filters and bulk */
+  function toggleToolbarMode() {
+    toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
+  }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
@@ -702,6 +1142,16 @@
       return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600';
     }
     return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800';
+  }
+
+  /** Card view: destructive version for deleted rows — uses rose color scale. */
+  function stickyCardFieldDestructiveChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
+    if (!stickyKeys.has(col.key)) return undefined;
+    if (rowSelected) {
+      return 'rounded-md border border-rose-300/80 bg-rose-300/85 p-2 transition-colors group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600';
+    }
+    return 'rounded-md border border-rose-200/80 bg-rose-100/90 p-2 transition-colors group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800';
   }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -1291,7 +1741,7 @@
     {/if}
   {/snippet}
 
-  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean)}
+  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
         'flex flex-col gap-0.5',
@@ -1304,7 +1754,9 @@
           'min-w-0 text-sm',
           (!isCardFieldEmpty(r, col)
             ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
-            : undefined) ?? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected)
+            : undefined) ?? (rowDeleted
+              ? stickyCardFieldDestructiveChromeClass(col, rowSelectionEnabled && rowSelected)
+              : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
         )}
       >
         {#if isCardFieldEmpty(r, col)}
@@ -1400,17 +1852,6 @@
     </div>
 
     <div class="flex items-center justify-end gap-2">
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={rowsLoading || refreshDisabled}
-        onclick={() => onRefresh()}
-        aria-label={$t('entities.list.refresh')}
-        title={$t('entities.list.refresh')}
-      >
-        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
-      </Button>
-
       <div
         class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
         role="group"
@@ -1465,6 +1906,72 @@
           <LayoutList class="size-4" />
         </Button>
       </div>
+
+      <div
+        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
+        role="group"
+        aria-label={$t('entities.list.deletionFilter.groupAria')}
+      >
+        <Button
+          variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'non_deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'non_deleted'}
+          title={$t('entities.list.deletionFilter.nonDeleted')}
+          onclick={() => {
+            deletionFilterMode = 'non_deleted';
+          }}
+        >
+          <ListCheck class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'deleted' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'deleted'}
+          title={$t('entities.list.deletionFilter.deleted')}
+          onclick={() => {
+            deletionFilterMode = 'deleted';
+          }}
+        >
+          <ListX class="size-4" />
+        </Button>
+        <Button
+          variant={deletionFilterMode === 'all' ? 'default' : 'ghost'}
+          size="icon-sm"
+          type="button"
+          class={cn(
+            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
+            deletionFilterMode !== 'all' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
+          )}
+          aria-pressed={deletionFilterMode === 'all'}
+          title={$t('entities.list.deletionFilter.all')}
+          onclick={() => {
+            deletionFilterMode = 'all';
+          }}
+        >
+          <TextAlignJustify class="size-4" />
+        </Button>
+      </div>
+
+      <Button
+        variant="soft"
+        size="icon-sm"
+        disabled={rowsLoading || refreshDisabled}
+        onclick={() => onRefresh()}
+        aria-label={$t('entities.list.refresh')}
+        title={$t('entities.list.refresh')}
+      >
+        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
+      </Button>
 
       <Button
         variant="soft"
@@ -1525,87 +2032,139 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-    {#if hasAppliedFilters}
-      <Button
-        variant="soft"
-        size="xs"
-        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-        onclick={resetFilters}
-      >
-        <FilterX class="size-3.5" />
-        {$t('common.clearAll')}
-      </Button>
-      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-      {#if filterValues && Object.keys(filterValues).length > 0}
-        {#each Object.entries(filterValues) as [key, value]}
-          {@const col = filterableColumns.find((c) => c.key === key)}
-          {#if col}
-            {@const operator = col.type === 'text' ? 'contains' : '='}
-            {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
-            <Badge
-              variant="secondary"
-              class="gap-1.5 pr-1"
-            >
-              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-              <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
-              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-              <button
-                type="button"
-                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                onclick={() => {
-                  const next = { ...filterValues };
-                  delete next[key];
-                  onFilterValuesChange?.(next);
-                }}
-                aria-label={$t('common.remove')}
-              >
-                <XIcon class="size-3" />
-              </button>
-            </Badge>
-          {/if}
-        {/each}
+    <Button
+      variant="outline"
+      size="xs"
+      class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
+      onclick={toggleToolbarMode}
+    >
+      {#if toolbarMode === 'filters'}
+        <ListCheck class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToBulk')}
+      {:else}
+        <Funnel class="size-3.5" />
+        {$t('entities.list.bulkActions.toggleToFilters')}
       {/if}
-      {#if advancedFilters && advancedFilters.length > 0}
-        {#each advancedFilters as filter}
-          {@const col = filterableColumns.find((c) => c.key === filter.field)}
-          {#if col}
-            {@const formattedValue = (() => {
-              if (Array.isArray(filter.value)) {
-                return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
-              } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
-                const startFormatted = formatFilterDateValue(String(filter.value.start));
-                const endFormatted = formatFilterDateValue(String(filter.value.end));
-                return `${startFormatted} e ${endFormatted}`;
-              } else if (col.type === 'date' || col.type === 'datetime') {
-                return formatFilterDateValue(String(filter.value));
-              } else {
-                return formatBadgeValue(col, filter.value);
-              }
-            })()}
-            <Badge
-              variant="secondary"
-              class="gap-1.5 pr-1"
-            >
-              <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-              <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
-              <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-              <button
-                type="button"
-                class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                onclick={() => {
-                  const next = advancedFilters.filter((f) => f.id !== filter.id);
-                  onAdvancedFiltersChange?.(next, 'AND');
-                }}
-                aria-label={$t('common.remove')}
-              >
-                <XIcon class="size-3" />
-              </button>
-            </Badge>
+    </Button>
+    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+
+    {#if toolbarMode === 'filters'}
+      {#if hasAppliedFilters}
+        <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
+          <Button
+            variant="soft"
+            size="xs"
+            class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+            onclick={resetFilters}
+          >
+            <FilterX class="size-3.5" />
+            {$t('common.clearAll')}
+          </Button>
+          <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+          {#if filterValues && Object.keys(filterValues).length > 0}
+            {#each Object.entries(filterValues) as [key, value]}
+              {@const col = filterableColumns.find((c) => c.key === key)}
+              {#if col}
+                {@const operator = col.type === 'text' ? 'contains' : '='}
+                {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
+                <Badge
+                  variant="secondary"
+                  class="gap-1.5 pr-1"
+                >
+                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+                  <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+                  <button
+                    type="button"
+                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                    onclick={() => {
+                      const next = { ...filterValues };
+                      delete next[key];
+                      onFilterValuesChange?.(next);
+                    }}
+                    aria-label={$t('common.remove')}
+                  >
+                    <XIcon class="size-3" />
+                  </button>
+                </Badge>
+              {/if}
+            {/each}
           {/if}
-        {/each}
+          {#if advancedFilters && advancedFilters.length > 0}
+            {#each advancedFilters as filter}
+              {@const col = filterableColumns.find((c) => c.key === filter.field)}
+              {#if col}
+                {@const formattedValue = (() => {
+                  if (Array.isArray(filter.value)) {
+                    return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
+                  } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+                    const startFormatted = formatFilterDateValue(String(filter.value.start));
+                    const endFormatted = formatFilterDateValue(String(filter.value.end));
+                    return `${startFormatted} e ${endFormatted}`;
+                  } else if (col.type === 'date' || col.type === 'datetime') {
+                    return formatFilterDateValue(String(filter.value));
+                  } else {
+                    return formatBadgeValue(col, filter.value);
+                  }
+                })()}
+                <Badge
+                  variant="secondary"
+                  class="gap-1.5 pr-1"
+                >
+                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
+                  <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
+                  <button
+                    type="button"
+                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+                    onclick={() => {
+                      const next = advancedFilters.filter((f) => f.id !== filter.id);
+                      onAdvancedFiltersChange?.(next, 'AND');
+                    }}
+                    aria-label={$t('common.remove')}
+                  >
+                    <XIcon class="size-3" />
+                  </button>
+                </Badge>
+              {/if}
+            {/each}
+          {/if}
+        </div>
+      {:else}
+        <span in:fly={{ y: 20, duration: 200 }} class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
       {/if}
     {:else}
-      <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+      <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkExport}
+        >
+          <Download class="size-3.5" />
+          {$t('entities.list.bulkActions.export')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleBulkDuplicate}
+          disabled={selectedKeys.length < 2}
+        >
+          <Copy class="size-3.5" />
+          {$t('entities.list.bulkActions.duplicate')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
+          onclick={handleBulkDelete}
+          disabled={selectedKeys.length < 2}
+        >
+          <Trash2 class="size-3.5" />
+          {$t('entities.list.bulkActions.delete')}
+        </Button>
+      </div>
     {/if}
   </div>
 
@@ -1798,6 +2357,7 @@
                 {#each viewRows as r (rowKey(r))}
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+                  {@const rowDeleted = isRowDeleted(r)}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -1868,9 +2428,40 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -1878,7 +2469,7 @@
 
                       <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {:else}
@@ -1917,9 +2508,40 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <Button variant="ghost" size="icon-sm" aria-label={$t('entities.list.rowActions')} title={$t('entities.list.rowActions')}>
-                                <MoreVertical class="size-4" />
-                              </Button>
+                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                                <DropdownMenu.Trigger>
+                                  {#snippet child({ props })}
+                                    <Button 
+                                      {...props}
+                                      variant="ghost" 
+                                      size="icon-sm" 
+                                      aria-label={$t('entities.list.rowActions')} 
+                                      title={$t('entities.list.rowActions')}
+                                      onclick={(e) => {
+                                        e.stopPropagation();
+                                        openRowDropdown(r);
+                                      }}
+                                    >
+                                      <MoreVertical class="size-4" />
+                                    </Button>
+                                  {/snippet}
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content class="w-56" align="end">
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <div class="flex items-center gap-2">
+                                      <Pencil class="size-4 opacity-70" />
+                                      <span>{$t('common.edit')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Separator />
+                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                    <div class="flex items-center gap-2">
+                                      <Trash2 class="size-4 text-destructive/70" />
+                                      <span>{$t('common.delete')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Root>
                             {/if}
                           </div>
                         {/if}
@@ -1927,7 +2549,7 @@
 
                       <div class="flex flex-col gap-2">
                         {#each renderColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected)}
+                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
                     {/if}
@@ -2177,6 +2799,7 @@
             {#each viewRows as r, i (rowKey(r))}
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+              {@const rowDeleted = isRowDeleted(r)}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
@@ -2192,7 +2815,9 @@
                   <Table.Cell
                     class={cn(
                       'w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-clip-border p-2',
-                      entityListGrayChromeCellClass(rowSelected)
+                      rowDeleted
+                        ? entityListDestructiveChromeCellClass(rowSelected)
+                        : entityListGrayChromeCellClass(rowSelected)
                     )}
                   >
                     <div class={cn('flex items-center justify-center', rowChromeH)}>
@@ -2215,7 +2840,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2232,7 +2859,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2252,7 +2881,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2269,7 +2900,9 @@
                           datetimeIanaCellHighlightClass(col, rowSelected),
                           isDatetimeIanaRecordMode(col)
                             ? undefined
-                            : entityListGrayBandStickyInteractionClass(rowSelected),
+                            : (rowDeleted
+                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
+                              : entityListGrayBandStickyInteractionClass(rowSelected)),
                           entityListDataCellValignClass(col)
                         )}
                       >
@@ -2287,7 +2920,9 @@
                         datetimeIanaCellHighlightClass(col, rowSelected),
                         isDatetimeIanaRecordMode(col)
                           ? undefined
-                          : entityListDefaultScrollInteractionClass(rowSelected),
+                          : (rowDeleted
+                            ? entityListDestructiveScrollInteractionClass(rowSelected)
+                            : entityListDefaultScrollInteractionClass(rowSelected)),
                         entityListDataCellValignClass(col)
                       )}
                     >
@@ -2310,9 +2945,40 @@
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
-                        <Button variant="ghost" size="icon-sm" aria-label="row actions" title="actions">
-                          <MoreVertical class="size-4" />
-                        </Button>
+                        <DropdownMenu.Root open={dropdownMenuRow === r}>
+                          <DropdownMenu.Trigger>
+                            {#snippet child({ props })}
+                              <Button 
+                                {...props}
+                                variant="ghost" 
+                                size="icon-sm" 
+                                aria-label="row actions" 
+                                title="actions"
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  openRowDropdown(r);
+                                }}
+                              >
+                                <MoreVertical class="size-4" />
+                              </Button>
+                            {/snippet}
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content class="w-56" align="end">
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                              <div class="flex items-center gap-2">
+                                <Pencil class="size-4 opacity-70" />
+                                <span>{$t('common.edit')}</span>
+                              </div>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                              <div class="flex items-center gap-2">
+                                <Trash2 class="size-4 text-destructive/70" />
+                                <span>{$t('common.delete')}</span>
+                              </div>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
                       {/if}
                     </div>
                   </Table.Cell>
@@ -2475,6 +3141,126 @@
   </div>
 </div>
 
+<!-- Delete confirmation dialog -->
+<DialogBordered bind:open={deleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={() => {
+        deleteConfirmDialogOpen = false;
+        rowToDelete = null;
+      }}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmDeleteRow}
+    >
+      {$t('common.delete')}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Bulk delete confirmation dialog -->
+<DialogBordered bind:open={bulkDeleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler eliminare {selectedKeys.length} elementi?
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelBulkDelete}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={confirmBulkDelete}
+      disabled={isBulkDeleting}
+    >
+      {#if isBulkDeleting}
+        {$t('common.deleting')}
+      {:else}
+        {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Export confirmation dialog -->
+<DialogBordered bind:open={exportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedKeys.length > 0}
+        {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedKeys.length > 0}
+    <div class="py-4">
+      <Choicebox bind:value={exportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelExportRow}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <div class="flex gap-2 w-full sm:w-auto">
+      <Button
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
+        disabled={isExporting}
+      >
+        {#if isExporting && exportFileType === 'xlsx'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeXlsx class="size-5" />
+          {$t('common.exportExcel')}
+        {/if}
+      </Button>
+      <Button
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
+        disabled={isExporting}
+      >
+        {#if isExporting && exportFileType === 'csv'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeCsv class="size-5" />
+          {$t('common.exportCsv')}
+        {/if}
+      </Button>
+    </div>
+  </Dialog.Footer>
+</DialogBordered>
 
 <style>
   @keyframes pb-watermark-pulse {

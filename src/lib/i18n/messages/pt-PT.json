@@ -25,10 +25,19 @@
     "selectDate": "Select date",
     "date": "Data",
     "time": "Hora",
-    "edit": "Edit",
+    "edit": "Editar",
     "cancel": "Cancelar",
-    "remove": "Remove",
-    "clearAll": "Limpar todos os filtros"
+    "remove": "Remover",
+    "clearAll": "Limpar todos os filtros",
+    "delete": "Eliminar",
+    "deleting": "A eliminar…",
+    "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
+    "deleteConfirm": "Esta ação não pode ser desfeita.",
+    "exportExcel": "Exportar para Excel",
+    "exportCsv": "Exportar para CSV",
+    "exportConfirmTitle": "Exportar dados",
+    "exportConfirm": "Deseja exportar",
+    "exporting": "A exportar…"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -205,6 +214,12 @@
         "cards": "Cartões (grelha)",
         "cardsList": "Cartões (lista horizontal)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtro de estado de eliminação",
+        "nonDeleted": "Ver apenas registos não eliminados",
+        "deleted": "Ver apenas registos eliminados",
+        "all": "Ver todos os registos"
+      },
       "emptyField": "Vazio",
       "pagination": {
         "firstPage": "primeira página",
@@ -215,6 +230,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Sem filtros aplicados"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Ações em massa",
+        "toggleToFilters": "Filtros",
+        "delete": "Eliminar",
+        "duplicate": "Duplicar",
+        "export": "Exportar",
+        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?"
       }
     },
     "crm": {

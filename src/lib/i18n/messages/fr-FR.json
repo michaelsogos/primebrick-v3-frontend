@@ -4,7 +4,8 @@
   },
   "common": {
     "loading": "Chargement…",
-    "loadFailed": "Chargement échoué",
+    "loadFailed": "Échec du chargement",
+    "dbUnavailable": "Base de données temporairement indisponible. Certaines données peuvent ne pas charger.",
     "soon": "Bientôt",
     "new": "Nouveau",
     "prev": "Préc",
@@ -13,22 +14,31 @@
     "reset": "Réinitialiser",
     "done": "Terminé",
     "apply": "Appliquer",
-    "toggleSidebar": "Basculer la barre latérale",
-    "refresh": "actualiser",
+    "toggleSidebar": "Activer/Désactiver la barre latérale",
+    "refresh": "Actualiser",
     "selectRow": "sélectionner la ligne",
     "rowActions": "actions de ligne",
     "actions": "actions",
     "close": "Fermer",
     "more": "Plus",
-    "breadcrumb": "breadcrumb",
-    "clear": "Clear",
-    "selectDate": "Select date",
+    "breadcrumb": "fil d'Ariane",
+    "clear": "Effacer",
+    "selectDate": "Sélectionner une date",
     "date": "Date",
     "time": "Heure",
-    "edit": "Edit",
+    "edit": "Modifier",
     "cancel": "Annuler",
-    "remove": "Remove",
-    "clearAll": "Effacer tous les filtres"
+    "remove": "Supprimer",
+    "clearAll": "Effacer tous les filtres",
+    "delete": "Supprimer",
+    "deleting": "Suppression…",
+    "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
+    "deleteConfirm": "Cette action ne peut pas être annulée.",
+    "exportExcel": "Exporter en Excel",
+    "exportCsv": "Exporter en CSV",
+    "exportConfirmTitle": "Exporter les données",
+    "exportConfirm": "Voulez-vous exporter",
+    "exporting": "Exportation…"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -131,8 +141,7 @@
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"
     }
-  }
-  ,
+  },
   "entities": {
     "list": {
       "datetimeIana": {
@@ -205,6 +214,12 @@
         "cards": "Cartes (grille)",
         "cardsList": "Cartes (liste horizontale)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtre d'état de suppression",
+        "nonDeleted": "Voir uniquement les enregistrements non supprimés",
+        "deleted": "Voir uniquement les enregistrements supprimés",
+        "all": "Voir tous les enregistrements"
+      },
       "emptyField": "Vide",
       "pagination": {
         "firstPage": "première page",
@@ -215,6 +230,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Aucun filtre appliqué"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Actions groupées",
+        "toggleToFilters": "Filtres",
+        "delete": "Supprimer",
+        "duplicate": "Dupliquer",
+        "export": "Exporter",
+        "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer les éléments sélectionnés ?"
       }
     },
     "crm": {

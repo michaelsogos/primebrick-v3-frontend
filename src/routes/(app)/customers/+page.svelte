@@ -98,6 +98,8 @@
 
   let searchInKeys = $state<string[] | null>(null);
 
+  let deletionFilterMode = $state<'non_deleted' | 'deleted' | 'all'>('non_deleted');
+
   /** Shared with `EntityListTable` IANA header toggle (required when `{#snippet cell}` overrides defaults). */
   let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
   let datetimeIanaRenderTick = $state(0);
@@ -106,6 +108,7 @@
   const skVisibleKeys = `${storageKeyPrefix}visibleKeys`;
   const skSearchInKeys = `${storageKeyPrefix}searchInKeys`;
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
+  const skSort = `${storageKeyPrefix}sort`;
 
   const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
   const columns = $derived(orderedColumnsFromListMeta(meta?.list));
@@ -165,8 +168,11 @@
     if (cached) {
       meta = cached;
       const defSort = meta.list.defaultSort;
-      sortKey = null;
-      sortDir = defSort?.dir ?? 'asc';
+      // Only reset sort if not already restored from session storage
+      if (sortKey === null) {
+        sortKey = null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
       pageSize = meta.list.defaultPageSize ?? pageSize;
       ensureVisibleKeys();
       return;
@@ -175,8 +181,11 @@
     if (inFlight) {
       meta = await inFlight;
       const defSort = meta.list.defaultSort;
-      sortKey = null;
-      sortDir = defSort?.dir ?? 'asc';
+      // Only reset sort if not already restored from session storage
+      if (sortKey === null) {
+        sortKey = null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
       pageSize = meta.list.defaultPageSize ?? pageSize;
       ensureVisibleKeys();
       return;
@@ -206,8 +215,11 @@
     const m = meta as unknown as CustomerMeta | null;
     if (!m) return;
     const defSort = m.list.defaultSort;
-    sortKey = null;
-    sortDir = defSort?.dir ?? 'asc';
+    // Only reset sort if not already restored from session storage
+    if (sortKey === null) {
+      sortKey = null;
+      sortDir = defSort?.dir ?? 'asc';
+    }
     pageSize = m.list.defaultPageSize ?? pageSize;
     ensureVisibleKeys();
   }
@@ -231,6 +243,21 @@
           searchInKeys = parsed;
         }
       }
+
+      const rawSort = sessionStorage.getItem(skSort);
+      if (rawSort) {
+        const parsed = JSON.parse(rawSort) as unknown;
+        if (parsed && typeof parsed === 'object') {
+          const obj = parsed as { key: string | null; dir: 'asc' | 'desc' };
+          if (obj.key === null || typeof obj.key === 'string') {
+            if (obj.dir === 'asc' || obj.dir === 'desc') {
+              sortKey = obj.key;
+              sortDir = obj.dir;
+              sortRestored = true;
+            }
+          }
+        }
+      }
     } catch {
       // ignore bad storage payloads
     }
@@ -240,6 +267,7 @@
     try {
       sessionStorage.setItem(skVisibleKeys, JSON.stringify(visibleKeys));
       sessionStorage.setItem(skSearchInKeys, JSON.stringify(searchInKeys));
+      sessionStorage.setItem(skSort, JSON.stringify({ key: sortKey, dir: sortDir }));
     } catch {
       // ignore quota / blocked storage
     }
@@ -411,6 +439,15 @@
     if (advancedFiltersArray.length > 0) {
       qs.set('connector', globalConnector);
     }
+
+    // Add deletion filter parameter
+    if (deletionFilterMode === 'deleted') {
+      qs.set('deleted_records', 'ONLY');
+    } else if (deletionFilterMode === 'all') {
+      qs.set('deleted_records', 'INCLUDED');
+    }
+    // 'non_deleted' is default (EXCLUDED), so no param needed
+
     qs.set('page', String(page));
     qs.set('page_size', String(pageSize));
     const effSortKey = sortKey ?? defaultSortKey;
@@ -573,7 +610,7 @@
     return onConnectivityRestored(() => {
       void (async () => {
         if (meta) {
-          await refreshRows({ clampPage: true });
+          await refreshRows();
         } else {
           await bootstrapCustomersList();
         }
@@ -589,11 +626,14 @@
   });
 
   // Persist UI state changes (write-only; never mutates state).
+  let sortRestored = $state(false);
   $effect(() => {
     if (!metaLoaded) return;
     // track dependencies
     void visibleKeys;
     void searchInKeys;
+    void sortKey;
+    void sortDir;
     persistListUiStateToSession();
   });
 
@@ -656,7 +696,7 @@
 
   function onPageChange(p: number) {
     page = p;
-    void refreshRows({ clampPage: true });
+    void refreshRows();
   }
 
   function onPageSizeChange(size: number) {
@@ -697,6 +737,11 @@
     page = 1;
     void refreshRows({ clampPage: true });
   }
+
+  function onDeletionFilterModeChange(mode: 'non_deleted' | 'deleted' | 'all') {
+    deletionFilterMode = mode;
+    void refreshRows();
+  }
 </script>
 
 <AppPageScaffold>
@@ -725,6 +770,7 @@
   {/snippet}
 
   <EntityListTable
+      entity="customer"
       bind:datetimeIanaModeByKey
       bind:datetimeIanaRenderTick
       uid={meta?.uid ?? 'uuid'}
@@ -768,6 +814,8 @@
       onResetFilters={onResetFilters}
       {advancedFilters}
       onAdvancedFiltersChange={onAdvancedFiltersChange}
+      {deletionFilterMode}
+      onDeletionFilterModeChange={onDeletionFilterModeChange}
       viewVisibility={viewVisibility}
     >
       {#snippet cell({ row, column })}

@@ -131,6 +131,8 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
       backendState.dbOk = !!r.payload.db?.ok;
       setBackendOffline(false);
       flushHealthChip();
+      // Only dispatch connectivity-restored when transitioning from offline/db_offline to truly OK
+      // This prevents loop when health check runs every 5 seconds while DB is down
       if (
         (previousChip === 'backend_offline' || previousChip === 'db_offline') &&
         backendState.healthChip === 'ok'

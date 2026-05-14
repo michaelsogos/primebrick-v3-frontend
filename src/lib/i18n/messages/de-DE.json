@@ -3,14 +3,15 @@
     "title": "Primebrick"
   },
   "common": {
-    "loading": "Lädt…",
+    "loading": "Laden…",
     "loadFailed": "Laden fehlgeschlagen",
+    "dbUnavailable": "Datenbank vorübergehend nicht verfügbar. Einige Daten werden möglicherweise nicht geladen.",
     "soon": "Bald",
     "new": "Neu",
     "prev": "Zurück",
     "next": "Weiter",
     "all": "Alle",
-    "reset": "Leeren",
+    "reset": "Zurücksetzen",
     "done": "Fertig",
     "apply": "Anwenden",
     "toggleSidebar": "Seitenleiste umschalten",
@@ -21,14 +22,23 @@
     "close": "Schließen",
     "more": "Mehr",
     "breadcrumb": "Breadcrumb",
-    "clear": "Clear",
-    "selectDate": "Select date",
+    "clear": "Löschen",
+    "selectDate": "Datum auswählen",
     "date": "Datum",
     "time": "Uhrzeit",
-    "edit": "Edit",
+    "edit": "Bearbeiten",
     "cancel": "Abbrechen",
-    "remove": "Remove",
-    "clearAll": "Alle Filter löschen"
+    "remove": "Entfernen",
+    "clearAll": "Alle Filter löschen",
+    "delete": "Löschen",
+    "deleting": "Löschen…",
+    "deleteConfirmTitle": "Möchten Sie diesen Datensatz wirklich löschen?",
+    "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "exportExcel": "Als Excel exportieren",
+    "exportCsv": "Als CSV exportieren",
+    "exportConfirmTitle": "Daten exportieren",
+    "exportConfirm": "Möchten Sie exportieren",
+    "exporting": "Exportieren…"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -205,6 +215,12 @@
         "cards": "Karten (Raster)",
         "cardsList": "Karten (horizontale Liste)"
       },
+      "deletionFilter": {
+        "groupAria": "Löschstatus-Filter",
+        "nonDeleted": "Nur nicht gelöschte Datensätze anzeigen",
+        "deleted": "Nur gelöschte Datensätze anzeigen",
+        "all": "Alle Datensätze anzeigen"
+      },
       "emptyField": "Leer",
       "pagination": {
         "firstPage": "erste Seite",
@@ -215,6 +231,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Keine Filter angewendet"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Massenaktionen",
+        "toggleToFilters": "Filter",
+        "delete": "Löschen",
+        "duplicate": "Duplizieren",
+        "export": "Exportieren",
+        "deleteConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich löschen?"
       }
     },
     "crm": {

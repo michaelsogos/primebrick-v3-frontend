@@ -4,7 +4,8 @@
   },
   "common": {
     "loading": "Cargando…",
-    "loadFailed": "Carga fallida",
+    "loadFailed": "Error al cargar",
+    "dbUnavailable": "Base de datos temporalmente no disponible. Algunos datos pueden no cargarse.",
     "soon": "Pronto",
     "new": "Nuevo",
     "prev": "Ant",
@@ -13,22 +14,31 @@
     "reset": "Restablecer",
     "done": "Hecho",
     "apply": "Aplicar",
-    "toggleSidebar": "Alternar barra lateral",
-    "refresh": "actualizar",
+    "toggleSidebar": "Activar/Desactivar barra lateral",
+    "refresh": "Actualizar",
     "selectRow": "seleccionar fila",
     "rowActions": "acciones de fila",
     "actions": "acciones",
     "close": "Cerrar",
     "more": "Más",
-    "breadcrumb": "breadcrumb",
-    "clear": "Clear",
-    "selectDate": "Select date",
+    "breadcrumb": "migas de pan",
+    "clear": "Limpiar",
+    "selectDate": "Seleccionar fecha",
     "date": "Fecha",
     "time": "Hora",
-    "edit": "Edit",
+    "edit": "Editar",
     "cancel": "Cancelar",
     "remove": "Eliminar",
-    "clearAll": "Borrar todos los filtros"
+    "clearAll": "Limpiar todos los filtros",
+    "delete": "Eliminar",
+    "deleting": "Eliminando…",
+    "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar este registro?",
+    "deleteConfirm": "Esta acción no se puede deshacer.",
+    "exportExcel": "Exportar a Excel",
+    "exportCsv": "Exportar a CSV",
+    "exportConfirmTitle": "Exportar datos",
+    "exportConfirm": "¿Deseas exportar",
+    "exporting": "Exportando…"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -205,6 +215,12 @@
         "cards": "Tarjetas (cuadrícula)",
         "cardsList": "Tarjetas (lista horizontal)"
       },
+      "deletionFilter": {
+        "groupAria": "Filtro de estado de eliminación",
+        "nonDeleted": "Ver solo registros no eliminados",
+        "deleted": "Ver solo registros eliminados",
+        "all": "Ver todos los registros"
+      },
       "emptyField": "Vacío",
       "pagination": {
         "firstPage": "primera página",
@@ -215,6 +231,14 @@
       "filterBadge": {
         "separator": ":",
         "noFiltersApplied": "Sin filtros aplicados"
+      },
+      "bulkActions": {
+        "toggleToBulk": "Acciones masivas",
+        "toggleToFilters": "Filtros",
+        "delete": "Eliminar",
+        "duplicate": "Duplicar",
+        "export": "Exportar",
+        "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar los elementos seleccionados?"
       }
     },
     "crm": {
