@@ -1133,27 +1133,22 @@
   async function confirmDuplicate() {
     try {
       isDuplicating = true;
-
       const uuids = duplicateScope === 'single'
         ? [rowKey(singleRowToDuplicate!)]
         : selectedKeys;
-
       const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids })
       });
-
       if (!response.ok) {
-        const errorData = await response.json() as RFC7807Error;
-        throw errorData;
+        const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        // Include duplicateResults as extra field for the error panel
+        const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
+        pushRFC7807Error(enhancedError, { showToast: true });
+        throw enhancedError;
       }
-
       const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
-
-      // Show success message
       if (result.errors.length > 0) {
         pushImpactError({
           impact: 'MEDIUM',
@@ -1174,8 +1169,7 @@
       duplicateConfirmDialogOpen = false;
     } catch (error) {
       console.error('Duplicate failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      // Error already handled by pushRFC7807Error above
     } finally {
       isDuplicating = false;
       duplicateConfirmDialogOpen = false;

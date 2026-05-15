@@ -110,11 +110,13 @@
       "dark": "Zum dunklen Thema wechseln"
     },
     "errors": {
-      "aria": "Fehler",
+      "aria": "Errors",
       "title": "Fehler",
-      "clear": "Leeren",
+      "clear": "Löschen",
       "close": "Schließen",
       "empty": "Keine Fehler.",
+      "viewDetails": "Details anzeigen",
+      "errorDetails": "Fehlerdetails",
       "unhandledRejection": "Nicht behandelte Zurückweisung",
       "unhandledError": "Nicht behandelter Fehler",
       "unhandledRejectionFallback": "Nicht behandelte Zurückweisung",

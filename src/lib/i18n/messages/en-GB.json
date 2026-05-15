@@ -115,6 +115,8 @@
       "clear": "Clear",
       "close": "Close",
       "empty": "No errors.",
+      "viewDetails": "View Details",
+      "errorDetails": "Error Details",
       "unhandledRejection": "Unhandled rejection",
       "unhandledError": "Unhandled error",
       "unhandledRejectionFallback": "Unhandled rejection",

@@ -110,11 +110,13 @@
       "dark": "Cambiar a tema oscuro"
     },
     "errors": {
-      "aria": "Errores",
+      "aria": "Errors",
       "title": "Errores",
       "clear": "Limpiar",
       "close": "Cerrar",
       "empty": "Sin errores.",
+      "viewDetails": "Ver Detalles",
+      "errorDetails": "Detalles del Error",
       "unhandledRejection": "Rechazo no gestionado",
       "unhandledError": "Error no gestionado",
       "unhandledRejectionFallback": "Rechazo no gestionado",

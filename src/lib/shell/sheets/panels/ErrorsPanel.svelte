@@ -3,16 +3,38 @@
   import { Badge } from '$lib/components/ui/badge';
   import * as EventCard from '$lib/components/ui/event-card';
   import * as Sheet from '$lib/components/ui/sheet';
+  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { ThumbsUp, Trash2 } from 'lucide-svelte';
+  import { ThumbsUp, Trash2, Eye } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+  let errorDetailsDialogOpen = $state(false);
+  let selectedErrorDetails = $state<Record<string, any> | null>(null);
+  let selectedErrorColor = $state<'critical' | 'error' | 'warning' | 'info'>('info');
+
+  function openErrorDetails(e: Record<string, any>, color: 'critical' | 'error' | 'warning' | 'info') {
+    selectedErrorDetails = e;
+    selectedErrorColor = color;
+    errorDetailsDialogOpen = true;
+  }
+
+  function closeErrorDetails() {
+    errorDetailsDialogOpen = false;
+    selectedErrorDetails = null;
+  }
+
+  function hasExtraFields(e: Record<string, any>): boolean {
+    const baseFields = ['id', 'impact', 'message', 'messageKey', 'scope', 'scopeKey', 'tags', 'instance', 'internalCode', 'internal_code', 'detail', 'createdAt', 'toast', 'type', 'title', 'status', 'severity'];
+    const extraKeys = Object.keys(e).filter(key => !baseFields.includes(key));
+    return extraKeys.length > 0;
+  }
 
   function errorTagBadgeClass(tone: string | undefined) {
     switch (tone) {
@@ -164,13 +186,45 @@
               <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
             {/if}
 
-            <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+              {#if hasExtraFields(e)}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onclick={() => openErrorDetails(e, eventColor)}
+                >
+                  <Eye class="mr-1 size-3" />
+                  {$t('shell.errors.viewDetails')}
+                </Button>
+              {/if}
+            </div>
           </EventCard.Root>
         {/each}
       </div>
     {/if}
   </div>
 </div>
+
+<!-- Error details fullscreen dialog -->
+<BorderedDialog bind:open={errorDetailsDialogOpen} color="destructive" class="!w-[95vw] !max-w-none !max-h-none !p-0 flex flex-col">
+  <div class="flex flex-col h-full">
+    <div class="p-4 pb-2">
+      <h2 class="text-lg font-semibold">{$t('shell.errors.errorDetails')}</h2>
+    </div>
+
+    {#if selectedErrorDetails}
+      <div class="flex-1 overflow-auto p-4 pt-0">
+        <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto">{JSON.stringify(selectedErrorDetails, null, 2)}</pre>
+      </div>
+    {/if}
+
+    <div class="p-4 pt-2 flex justify-end gap-2">
+      <Button variant="secondary" onclick={closeErrorDetails}>{$t('common.close')}</Button>
+    </div>
+  </div>
+</BorderedDialog>
 
 <style>
   @keyframes pb-watermark-pulse {
