@@ -206,7 +206,7 @@
 </div>
 
 <!-- Error details fullscreen dialog -->
-<RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} />
+<RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} color={selectedErrorColor} />
 
 <style>
   @keyframes pb-watermark-pulse {

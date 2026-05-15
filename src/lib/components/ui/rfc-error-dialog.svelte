@@ -6,7 +6,7 @@
   import { formatUiDateTime, t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
-  import { Code, FileJson } from 'lucide-svelte';
+  import { Code, FileJson, AlertTriangle, Info, AlertCircle } from 'lucide-svelte';
   import JsonTableViewer from './JsonTableViewer.svelte';
 
   type RFC7807Error = {
@@ -34,11 +34,13 @@
   let {
     open = $bindable(),
     error,
-    showCloseButton = false
+    showCloseButton = false,
+    color = 'error'
   }: {
     open: boolean;
     error: RFC7807Error | null;
     showCloseButton?: boolean;
+    color?: 'critical' | 'error' | 'warning' | 'info';
   } = $props();
 
   let previewMode = $state('aesthetic');
@@ -131,7 +133,18 @@
             </div>
             <div>
               <span class="text-xs font-semibold text-muted-foreground">Impact</span>
-              <p class="text-sm">{error.impact || 'N/A'}</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                {#if color === 'critical' || color === 'error'}
+                  <AlertCircle class="w-4 h-4 text-destructive" />
+                  <p class="text-sm font-bold text-destructive">{error.impact || 'N/A'}</p>
+                {:else if color === 'warning'}
+                  <AlertTriangle class="w-4 h-4 text-yellow-600 dark:text-yellow-500" />
+                  <p class="text-sm font-bold text-yellow-600 dark:text-yellow-500">{error.impact || 'N/A'}</p>
+                {:else}
+                  <Info class="w-4 h-4 text-blue-600 dark:text-blue-500" />
+                  <p class="text-sm font-bold text-blue-600 dark:text-blue-500">{error.impact || 'N/A'}</p>
+                {/if}
+              </div>
             </div>
             <div>
               <span class="text-xs font-semibold text-muted-foreground">Scope</span>
