@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
   import { Badge } from '$lib/components/ui/badge';
+  import { badgeClassesFromToken } from '$lib/colors/badge';
   import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import { Switch } from '$lib/components/ui/switch';
@@ -16,7 +17,7 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Dialog as DialogPrimitive } from 'bits-ui';
-  import { scale, fade, fly } from 'svelte/transition';
+  import { scale, fade, fly, slide } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
   import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
@@ -60,7 +61,13 @@
     TextAlignJustify,
     FilterX,
     Pencil,
+    PencilOff,
+    Trash,
     Trash2,
+    ArrowUpFromLine,
+    AlertCircle,
+    PanelRightClose,
+    PanelRightOpen,
     Copy,
     Download,
     Funnel
@@ -82,6 +89,7 @@
   import { Skeleton } from '$lib/components/ui/skeleton';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Window } from '$lib/components/ui/window';
+  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -207,6 +215,7 @@
       duplicate?: boolean;
       delete?: boolean;
       edit?: boolean;
+      preview?: boolean;
     };
     filtersOpen?: boolean;
     filterValues?: Record<string, any>;
@@ -269,7 +278,12 @@
   const deletionFilterStorageKey = $derived(
     columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
   );
-  let deletionFilterMode = $state<DeletionFilterMode>(deletionFilterModeProp ?? 'non_deleted');
+  // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
+  const _initialDeletionKey = columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`;
+  const _rawDeletion = typeof window !== 'undefined' ? window.sessionStorage.getItem(_initialDeletionKey) : null;
+  const _initialDeletionMode: DeletionFilterMode | null =
+    _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
+  let deletionFilterMode = $state<DeletionFilterMode>(_initialDeletionMode ?? deletionFilterModeProp ?? 'non_deleted');
 
   function readDeletionFilter(): DeletionFilterMode | null {
     if (typeof window === 'undefined') return null;
@@ -454,7 +468,13 @@
     if (storedMode) viewMode = storedMode;
 
     const storedDeletionFilter = readDeletionFilter();
-    if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
+    if (storedDeletionFilter) {
+      deletionFilterMode = storedDeletionFilter;
+      // If the restored value differs from what the parent passed, notify the parent so it re-fetches
+      if (storedDeletionFilter !== (deletionFilterModeProp ?? 'non_deleted')) {
+        onDeletionFilterModeChange?.(storedDeletionFilter);
+      }
+    }
 
     // Initialize filters from sessionStorage. Only fire the callback when the stored
     // values actually differ from the current prop, to avoid an unnecessary refresh
@@ -844,6 +864,87 @@
   let duplicateScope = $state<'selected' | 'single'>('selected');
   let singleRowToDuplicate: TRow | null = null;
 
+  /** Entity preview panel state */
+  const previewPanelSessionKey = `pb-preview-panel:${entity ?? 'default'}`;
+  const _sessionRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(previewPanelSessionKey) : null;
+  const _sessionState = _sessionRaw ? JSON.parse(_sessionRaw) : null;
+
+  let previewPanelOpen = $state<boolean>(_sessionState?.open ?? false);
+  let previewRow = $state<TRow | null>(null);
+  let previewRowIndex = $state(0);
+  let previewEditMode = $state(false);
+  let navigatingToNextPage = $state(false);
+  let navigatingToPrevPage = $state(false);
+  let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
+  let isResizing = $state(false);
+  let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
+
+  $effect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      // While restoring, preserve the key from session until previewRow is actually set
+      const rowKey_ = previewRow
+        ? String((previewRow as Record<string, unknown>)[uid])
+        : (_previewRestoredKey ?? null);
+      sessionStorage.setItem(previewPanelSessionKey, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
+    }
+  });
+
+  $effect(() => {
+    if (_previewRestoredKey && previewPanelOpen && !rowsLoading && rows.length > 0) {
+      const idx = rows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+      if (idx !== -1) {
+        previewRow = rows[idx];
+        previewRowIndex = viewRows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+        _previewRestoredKey = null;
+      }
+    }
+  });
+
+  /** Preview panel resize handlers */
+  let resizeStartX = $state(0);
+  let resizeStartWidth = $state(0);
+
+  function startResize(e: MouseEvent) {
+    isResizing = true;
+    resizeStartX = e.clientX;
+    resizeStartWidth = previewPanelWidth;
+    e.preventDefault();
+  }
+
+  function handleResize(e: MouseEvent) {
+    if (!isResizing) return;
+    const container = e.currentTarget as HTMLElement;
+    const containerRect = container.getBoundingClientRect();
+    const deltaX = e.clientX - resizeStartX;
+    const deltaPercent = (deltaX / containerRect.width) * 100;
+    previewPanelWidth = Math.max(15, Math.min(70, resizeStartWidth - deltaPercent));
+  }
+
+  function stopResize() {
+    isResizing = false;
+  }
+
+  // Reset previewRowIndex when page changes
+  $effect(() => {
+    if (previewPanelOpen && viewRows.length > 0) {
+      if (navigatingToNextPage) {
+        // Going to next page - reset to first record
+        previewRowIndex = 0;
+        previewRow = viewRows[0];
+        navigatingToNextPage = false;
+      } else if (navigatingToPrevPage) {
+        // Going to previous page - go to last record
+        previewRowIndex = viewRows.length - 1;
+        previewRow = viewRows[viewRows.length - 1];
+        navigatingToPrevPage = false;
+      } else if (previewRowIndex >= viewRows.length) {
+        // If previewRowIndex is out of bounds after page change, reset it
+        previewRowIndex = 0;
+        previewRow = viewRows[0];
+      }
+    }
+  });
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -859,6 +960,40 @@
     // TODO: Implement edit action - will be connected to BE later
     console.log('Edit row:', rowKey(row));
     closeRowDropdown();
+  }
+
+  /** Handle preview action for a row */
+  function handlePreviewRow(row: TRow) {
+    previewRow = row;
+    previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
+    previewEditMode = false;
+    previewPanelOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Navigate preview records */
+  function navigatePreview(direction: number) {
+    const newIndex = previewRowIndex + direction;
+    if (newIndex >= 0 && newIndex < viewRows.length) {
+      previewRowIndex = newIndex;
+      previewRow = viewRows[newIndex];
+    } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
+      // Trigger next page when reaching end of current page
+      navigatingToNextPage = true;
+      if (footerUsesClientPaging) {
+        clientSelectedPage++;
+      } else {
+        onPageChange(page + 1);
+      }
+    } else if (newIndex < 0 && footerPage > 1) {
+      // Trigger previous page when at start of current page
+      navigatingToPrevPage = true;
+      if (footerUsesClientPaging) {
+        clientSelectedPage--;
+      } else {
+        onPageChange(page - 1);
+      }
+    }
   }
 
   /** Handle delete action for a row */
@@ -2064,6 +2199,241 @@
     {/if}
   {/snippet}
 
+  {#snippet entityPreviewPanel(row: TRow)}
+    {@const rowDeleted = isRowDeleted(row)}
+    <div class="flex h-full flex-col bg-background">
+      {#snippet headerTitle()}
+        <div class="flex items-center gap-2 {rowDeleted ? 'text-destructive' : ''}">
+          {#if rowDeleted}
+            <AlertCircle class="w-4 h-4" />
+          {/if}
+          {$t('entities.list.previewPanelTitle')}
+        </div>
+      {/snippet}
+
+      {#snippet headerActions()}
+        <!-- Micro pagination absolutely centered in header -->
+        <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
+          <Button
+            size="icon-sm"
+            variant="secondary"
+            onclick={() => navigatePreview(-1)}
+            disabled={previewRowIndex === 0 && footerPage === 1}
+            aria-label="Previous record"
+            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </Button>
+          <span class="text-xs font-medium w-16 text-center {rowDeleted ? 'text-destructive' : ''}">
+            {(footerPage - 1) * pageSize + previewRowIndex + 1} / {footerRangeTotal}
+          </span>
+          <Button
+            size="icon-sm"
+            variant="secondary"
+            onclick={() => navigatePreview(1)}
+            disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
+            aria-label="Next record"
+            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </Button>
+        </div>
+
+        <!-- CTAs on right -->
+        {#if rowDeleted}
+          <!-- Restore button for deleted records -->
+          <Button
+            variant="ghost"
+            size="sm"
+            class="mr-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 hover:text-green-700 dark:hover:text-green-400"
+            title="Restore (coming soon)"
+          >
+            <span class="relative flex items-center justify-center">
+              <Trash class="size-4" />
+              <ArrowUpFromLine class="absolute -bottom-[1px]  size-3" />
+            </span>
+          </Button>
+        {:else}
+          <!-- Mode switch with icons only -->
+          <div class="flex items-center gap-2">
+            {#if !previewEditMode}
+              <PencilOff class="w-4 h-4 text-muted-foreground" />
+            {:else}
+              <Pencil class="w-4 h-4 text-muted-foreground" />
+            {/if}
+            <Switch
+              bind:checked={previewEditMode}
+              aria-label={$t('entities.list.editModeLabel')}
+            />
+          </div>
+        {/if}
+
+        <!-- Close button -->
+        <Button
+          onclick={() => previewPanelOpen = false}
+          size="icon-sm"
+          variant="ghost"
+          aria-label={$t('common.close')}
+        >
+          <XIcon class="w-4 h-4" />
+        </Button>
+      {/snippet}
+
+      <SheetHeader title={headerTitle} actions={headerActions} />
+
+      <!-- Scrollable content -->
+      <div class="flex-1 overflow-y-auto">
+        {#if previewEditMode}
+          <div class="px-4 py-3 text-sm text-muted-foreground">
+            Edit mode - coming soon
+          </div>
+        {:else}
+          {#if stickyColumns && stickyColumns.length > 0}
+          <div class="my-2 sticky top-0 z-10 bg-background">
+            <div class="flex items-center gap-2">
+              <div class="h-px flex-1 bg-muted-foreground/50"></div>
+              <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
+              <div class="h-px flex-1 bg-muted-foreground/50"></div>
+            </div>
+          </div>
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
+              {#each stickyColumns as col}
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {@const badgeValue = row[col.key] as string}
+                    {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                    <Badge
+                      class="shadow-none"
+                      style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                    >
+                      {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                    </Badge>
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if dataColumns && dataColumns.length > 0}
+            <div class="my-2 sticky top-0 z-10 bg-background">
+              <div class="flex items-center gap-2">
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
+                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
+              </div>
+            </div>
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
+              {#each dataColumns as col}
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {#if row[col.key]}
+                      {@const badgeValue = row[col.key] as string}
+                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                      <Badge
+                        class="shadow-none"
+                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                      >
+                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                      </Badge>
+                    {/if}
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if auditingColumns && auditingColumns.length > 0}
+            <div class="my-2 sticky top-0 z-10 bg-background">
+              <div class="flex items-center gap-2">
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
+                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
+              </div>
+            </div>
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
+              {#each auditingColumns as col}
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {#if row[col.key]}
+                      {@const badgeValue = row[col.key] as string}
+                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                      <Badge
+                        class="shadow-none"
+                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                      >
+                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                      </Badge>
+                    {/if}
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
+      </div>
+    </div>
+  {/snippet}
+
   {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
@@ -2795,6 +3165,14 @@
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  {#if entityRowActions?.preview !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Eye class="size-4 opacity-70" />
+                                        <span>{$t('entities.list.preview')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
@@ -2887,6 +3265,14 @@
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  {#if entityRowActions?.preview !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Eye class="size-4 opacity-70" />
+                                        <span>{$t('entities.list.preview')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
@@ -2916,7 +3302,9 @@
           {/if}
         </div>
       {:else}
-        <Table.Root
+        <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel" onmousemove={handleResize} onmouseup={stopResize} onmouseleave={stopResize}>
+          <div class="flex-1 min-w-0 overflow-hidden">
+            <Table.Root
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
@@ -3068,7 +3456,26 @@
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
-                  <span class="sr-only">{$t('common.actions')}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onclick={() => {
+                      if (!previewPanelOpen && !previewRow && viewRows.length > 0) {
+                        previewRow = viewRows[0];
+                        previewRowIndex = 0;
+                      }
+                      previewPanelOpen = !previewPanelOpen;
+                    }}
+                    aria-label={$t('entities.list.togglePreviewPanel')}
+                    title={$t('entities.list.togglePreviewPanel')}
+                    class="transition-transform duration-300"
+                  >
+                    {#if previewPanelOpen}
+                      <PanelRightClose class="size-4 transition-transform duration-300 rotate-180" />
+                    {:else}
+                      <PanelRightOpen class="size-4 transition-transform duration-300" />
+                    {/if}
+                  </Button>
                 </div>
               </Table.Head>
             {/if}
@@ -3166,6 +3573,7 @@
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
+                ondblclick={() => handlePreviewRow(r)}
               >
                 {#if rowSelectionEnabled}
                   <Table.Cell
@@ -3357,6 +3765,32 @@
           {/if}
         </Table.Body>
       </Table.Root>
+          </div>
+
+          {#if previewPanelOpen}
+            <!-- Resize handle between table and panel -->
+            <div
+              class="relative h-full w-2 cursor-ew-resize hover:bg-primary/30 z-20 border-l-2 border-transparent hover:border-primary transition-colors flex items-center justify-center"
+              onmousedown={startResize}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize panel"
+            >
+              <div class="w-1 h-8 bg-border rounded-full"></div>
+            </div>
+          {/if}
+
+          <div
+            class="h-full overflow-hidden bg-muted border-l {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
+            style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
+          >
+            <div class="h-full w-full overflow-auto">
+              {#if previewRow}
+                {@render entityPreviewPanel(previewRow)}
+              {/if}
+            </div>
+          </div>
+        </div>
     {/if}
     {/if}
   </div>

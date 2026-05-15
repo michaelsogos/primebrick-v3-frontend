@@ -66,6 +66,7 @@ export type EntityListListMeta = {
     duplicate?: boolean;
     delete?: boolean;
     edit?: boolean;
+    preview?: boolean;
   };
 };
 
