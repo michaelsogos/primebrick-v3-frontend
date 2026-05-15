@@ -787,6 +787,7 @@
       columns={columns}
       rowDensity="compact"
       rowActionsEnabled
+      entityRowActions={meta?.list.rowActions}
       defaultSort={meta?.list.defaultSort}
       pageSizeOptions={meta?.list.pageSizeOptions}
       searchPlaceholderKey={meta?.list.searchPlaceholderKey}

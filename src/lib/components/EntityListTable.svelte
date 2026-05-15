@@ -128,6 +128,7 @@
     refreshDisabled = false,
     rowActionsEnabled = false,
     rowActions,
+    entityRowActions,
     filtersOpen = $bindable(false),
     filterValues = {},
     onFilterValuesChange,
@@ -202,6 +203,11 @@
     refreshDisabled?: boolean;
     rowActionsEnabled?: boolean;
     rowActions?: Snippet<[ { row: TRow } ]>;
+    entityRowActions?: {
+      duplicate?: boolean;
+      delete?: boolean;
+      edit?: boolean;
+    };
     filtersOpen?: boolean;
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
@@ -832,6 +838,12 @@
   let isEmailPreparing = $state(false);
   let emailCopied = $state(false);
 
+  /** Duplicate confirmation dialog state */
+  let duplicateConfirmDialogOpen = $state(false);
+  let isDuplicating = $state(false);
+  let duplicateScope = $state<'selected' | 'single'>('selected');
+  let singleRowToDuplicate: TRow | null = null;
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -1107,8 +1119,72 @@
   }
 
   function handleBulkDuplicate() {
-    console.log('Bulk duplicate:', selectedKeys);
-    // TODO: Implement bulk duplicate with BE integration
+    duplicateScope = 'selected';
+    duplicateConfirmDialogOpen = true;
+  }
+
+  function handleDuplicateRow(row: TRow) {
+    singleRowToDuplicate = row;
+    duplicateScope = 'single';
+    duplicateConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  async function confirmDuplicate() {
+    try {
+      isDuplicating = true;
+
+      const uuids = duplicateScope === 'single'
+        ? [rowKey(singleRowToDuplicate!)]
+        : selectedKeys;
+
+      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as RFC7807Error;
+        throw errorData;
+      }
+
+      const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+
+      // Show success message
+      if (result.errors.length > 0) {
+        pushImpactError({
+          impact: 'MEDIUM',
+          message: `${result.uuids.length} records duplicated, ${result.errors.length} failed`,
+          scope: 'Duplicate API'
+        });
+      } else {
+        pushImpactError({
+          impact: 'LOW',
+          message: `${result.uuids.length} records duplicated successfully`,
+          scope: 'Duplicate API'
+        });
+      }
+
+      // Refresh the list
+      onRefresh();
+
+      duplicateConfirmDialogOpen = false;
+    } catch (error) {
+      console.error('Duplicate failed:', error);
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isDuplicating = false;
+      duplicateConfirmDialogOpen = false;
+    }
+  }
+
+  function cancelDuplicate() {
+    duplicateConfirmDialogOpen = false;
+    singleRowToDuplicate = null;
   }
 
   function handleBulkExport() {
@@ -2698,19 +2774,31 @@
                                   {/snippet}
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
-                                    <div class="flex items-center gap-2">
-                                      <Pencil class="size-4 opacity-70" />
-                                      <span>{$t('common.edit')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Separator />
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                    <div class="flex items-center gap-2">
-                                      <Trash2 class="size-4 text-destructive/70" />
-                                      <span>{$t('common.delete')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
+                                  {#if entityRowActions?.edit !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Pencil class="size-4 opacity-70" />
+                                        <span>{$t('common.edit')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
+                                  {#if entityRowActions?.duplicate !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Copy class="size-4 opacity-70" />
+                                        <span>{$t('common.duplicate')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
+                                  {#if entityRowActions?.delete !== false}
+                                    <DropdownMenu.Separator />
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                      <div class="flex items-center gap-2">
+                                        <Trash2 class="size-4 text-destructive/70" />
+                                        <span>{$t('common.delete')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
                             {/if}
@@ -2778,19 +2866,31 @@
                                   {/snippet}
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
-                                    <div class="flex items-center gap-2">
-                                      <Pencil class="size-4 opacity-70" />
-                                      <span>{$t('common.edit')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Separator />
-                                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                    <div class="flex items-center gap-2">
-                                      <Trash2 class="size-4 text-destructive/70" />
-                                      <span>{$t('common.delete')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
+                                  {#if entityRowActions?.edit !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Pencil class="size-4 opacity-70" />
+                                        <span>{$t('common.edit')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
+                                  {#if entityRowActions?.duplicate !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Copy class="size-4 opacity-70" />
+                                        <span>{$t('common.duplicate')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
+                                  {#if entityRowActions?.delete !== false}
+                                    <DropdownMenu.Separator />
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                      <div class="flex items-center gap-2">
+                                        <Trash2 class="size-4 text-destructive/70" />
+                                        <span>{$t('common.delete')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
                             {/if}
@@ -3215,19 +3315,31 @@
                             {/snippet}
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Content class="w-56" align="end">
-                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
-                              <div class="flex items-center gap-2">
-                                <Pencil class="size-4 opacity-70" />
-                                <span>{$t('common.edit')}</span>
-                              </div>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Separator />
-                            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                              <div class="flex items-center gap-2">
-                                <Trash2 class="size-4 text-destructive/70" />
-                                <span>{$t('common.delete')}</span>
-                              </div>
-                            </DropdownMenu.Item>
+                            {#if entityRowActions?.edit !== false}
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                <div class="flex items-center gap-2">
+                                  <Pencil class="size-4 opacity-70" />
+                                  <span>{$t('common.edit')}</span>
+                                </div>
+                              </DropdownMenu.Item>
+                            {/if}
+                            {#if entityRowActions?.duplicate !== false}
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                                <div class="flex items-center gap-2">
+                                  <Copy class="size-4 opacity-70" />
+                                  <span>{$t('common.duplicate')}</span>
+                                </div>
+                              </DropdownMenu.Item>
+                            {/if}
+                            {#if entityRowActions?.delete !== false}
+                              <DropdownMenu.Separator />
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                <div class="flex items-center gap-2">
+                                  <Trash2 class="size-4 text-destructive/70" />
+                                  <span>{$t('common.delete')}</span>
+                                </div>
+                              </DropdownMenu.Item>
+                            {/if}
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       {/if}
@@ -3556,6 +3668,40 @@
     >
       {#if isHtmlExporting}
         {$t('common.exporting')}
+      {:else}
+        {$t('common.confirm')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Duplicate confirmation dialog -->
+<DialogBordered bind:open={duplicateConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if duplicateScope === 'single'}
+        {$t('common.duplicateConfirmSingle')}?
+      {:else}
+        {$t('common.duplicateConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelDuplicate}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      onclick={confirmDuplicate}
+      disabled={isDuplicating}
+    >
+      {#if isDuplicating}
+        {$t('common.duplicating')}
       {:else}
         {$t('common.confirm')}
       {/if}
