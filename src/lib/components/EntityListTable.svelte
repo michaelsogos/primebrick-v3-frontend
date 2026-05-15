@@ -1119,6 +1119,15 @@
   }
 
   function handleBulkDuplicate() {
+    if (selectedKeys.length > 50) {
+      pushImpactError({
+        impact: 'MEDIUM',
+        message: 'Cannot duplicate more than 50 records at a time',
+        scope: 'Duplicate Action',
+        toast: true
+      });
+      return;
+    }
     duplicateScope = 'selected';
     duplicateConfirmDialogOpen = true;
   }
