@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
   import { Badge } from '$lib/components/ui/badge';
+  import { badgeClassesFromToken } from '$lib/colors/badge';
   import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import { Switch } from '$lib/components/ui/switch';
@@ -2189,7 +2190,7 @@
       <SheetHeader title={headerTitle} actions={headerActions} />
 
       <!-- Scrollable content -->
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-y-auto">
         {#if previewEditMode}
           <div class="px-4 py-3 text-sm text-muted-foreground">
             Edit mode - coming soon
@@ -2203,11 +2204,39 @@
                 <div class="h-px flex-1 bg-border"></div>
               </div>
             </div>
-            <div class="px-2 space-y-2">
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
               {#each stickyColumns as col}
-                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
-                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
-                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {@const badgeValue = row[col.key] as string}
+                    {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                    <Badge
+                      class="shadow-none"
+                      style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                    >
+                      {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                    </Badge>
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
                 </div>
               {/each}
             </div>
@@ -2221,11 +2250,41 @@
                 <div class="h-px flex-1 bg-border"></div>
               </div>
             </div>
-            <div class="px-2 space-y-2">
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
               {#each dataColumns as col}
-                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
-                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
-                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {#if row[col.key]}
+                      {@const badgeValue = row[col.key] as string}
+                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                      <Badge
+                        class="shadow-none"
+                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                      >
+                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                      </Badge>
+                    {/if}
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
                 </div>
               {/each}
             </div>
@@ -2239,11 +2298,41 @@
                 <div class="h-px flex-1 bg-border"></div>
               </div>
             </div>
-            <div class="px-2 space-y-2">
+            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
               {#each auditingColumns as col}
-                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
-                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
-                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
+                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
+                    {#if row[col.key]}
+                      {@const badgeValue = row[col.key] as string}
+                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+                      <Badge
+                        class="shadow-none"
+                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+                      >
+                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+                      </Badge>
+                    {/if}
+                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
+                    {#if isIanaRecordMode && parts.iana}
+                      <div class="flex min-w-0 flex-col gap-1">
+                        <span class="text-sm font-medium break-words">{parts.text}</span>
+                        <Badge
+                          variant="outline"
+                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                        >
+                          {parts.iana}
+                        </Badge>
+                      </div>
+                    {:else}
+                      <span class="text-sm font-medium break-words">{parts.text}</span>
+                    {/if}
+                  {:else}
+                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                  {/if}
                 </div>
               {/each}
             </div>
