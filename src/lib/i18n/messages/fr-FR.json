@@ -218,6 +218,8 @@
       "rowActions": "actions de ligne",
       "preview": "Aperçu",
       "previewPanelTitle": "Détail",
+      "viewModeLabel": "Affichage",
+      "editModeLabel": "Modification",
       "sortBy": "Trier par",
       "inOrder": "dans l'ordre",
       "ascending": "Croissant",

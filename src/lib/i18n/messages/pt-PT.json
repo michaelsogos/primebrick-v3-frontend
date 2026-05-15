@@ -228,6 +228,8 @@
       "rowActions": "ações de linha",
       "preview": "Pré-visualização",
       "previewPanelTitle": "Detalhe",
+      "viewModeLabel": "Visualização",
+      "editModeLabel": "Edição",
       "sortBy": "Ordenar por",
       "inOrder": "em ordem",
       "ascending": "Crescente",

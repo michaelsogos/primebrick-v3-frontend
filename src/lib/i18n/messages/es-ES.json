@@ -219,6 +219,8 @@
       "rowActions": "acciones de fila",
       "preview": "Vista previa",
       "previewPanelTitle": "Detalle",
+      "viewModeLabel": "Visualización",
+      "editModeLabel": "Edición",
       "sortBy": "Ordenar por",
       "inOrder": "en orden",
       "ascending": "Ascendente",

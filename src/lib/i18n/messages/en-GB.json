@@ -239,6 +239,8 @@
       "rowActions": "row actions",
       "preview": "Preview",
       "previewPanelTitle": "Detail",
+      "viewModeLabel": "View",
+      "editModeLabel": "Edit",
       "sortBy": "Sort by",
       "inOrder": "in order",
       "ascending": "Ascending",

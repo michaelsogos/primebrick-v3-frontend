@@ -239,6 +239,8 @@
       "rowActions": "azioni riga",
       "preview": "Anteprima",
       "previewPanelTitle": "Dettaglio",
+      "viewModeLabel": "Visualizzazione",
+      "editModeLabel": "Modifica",
       "sortBy": "Ordina per",
       "inOrder": "in ordine",
       "ascending": "Crescente",

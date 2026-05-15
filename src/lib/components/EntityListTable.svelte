@@ -60,6 +60,7 @@
     TextAlignJustify,
     FilterX,
     Pencil,
+    PencilOff,
     Trash2,
     Copy,
     Download,
@@ -82,6 +83,7 @@
   import { Skeleton } from '$lib/components/ui/skeleton';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Window } from '$lib/components/ui/window';
+  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -848,6 +850,31 @@
   /** Entity preview panel state */
   let previewPanelOpen = $state(false);
   let previewRow = $state<TRow | null>(null);
+  let previewRowIndex = $state(0);
+  let previewEditMode = $state(false);
+  let navigatingToNextPage = $state(false);
+  let navigatingToPrevPage = $state(false);
+
+  // Reset previewRowIndex when page changes
+  $effect(() => {
+    if (previewPanelOpen && viewRows.length > 0) {
+      if (navigatingToNextPage) {
+        // Going to next page - reset to first record
+        previewRowIndex = 0;
+        previewRow = viewRows[0];
+        navigatingToNextPage = false;
+      } else if (navigatingToPrevPage) {
+        // Going to previous page - go to last record
+        previewRowIndex = viewRows.length - 1;
+        previewRow = viewRows[viewRows.length - 1];
+        navigatingToPrevPage = false;
+      } else if (previewRowIndex >= viewRows.length) {
+        // If previewRowIndex is out of bounds after page change, reset it
+        previewRowIndex = 0;
+        previewRow = viewRows[0];
+      }
+    }
+  });
 
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
@@ -869,8 +896,35 @@
   /** Handle preview action for a row */
   function handlePreviewRow(row: TRow) {
     previewRow = row;
+    previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
+    previewEditMode = false;
     previewPanelOpen = true;
     closeRowDropdown();
+  }
+
+  /** Navigate preview records */
+  function navigatePreview(direction: number) {
+    const newIndex = previewRowIndex + direction;
+    if (newIndex >= 0 && newIndex < viewRows.length) {
+      previewRowIndex = newIndex;
+      previewRow = viewRows[newIndex];
+    } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
+      // Trigger next page when reaching end of current page
+      navigatingToNextPage = true;
+      if (footerUsesClientPaging) {
+        clientSelectedPage++;
+      } else {
+        onPageChange(page + 1);
+      }
+    } else if (newIndex < 0 && footerPage > 1) {
+      // Trigger previous page when at start of current page
+      navigatingToPrevPage = true;
+      if (footerUsesClientPaging) {
+        clientSelectedPage--;
+      } else {
+        onPageChange(page - 1);
+      }
+    }
   }
 
   /** Handle delete action for a row */
@@ -2077,9 +2131,51 @@
   {/snippet}
 
   {#snippet entityPreviewPanel(row: TRow)}
-    <div class="space-y-3 bg-muted p-4 rounded-lg h-full overflow-auto">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold">{$t('entities.list.previewPanelTitle')}</h3>
+    <div class="flex h-full flex-col bg-background">
+      {#snippet headerTitle()}
+        {$t('entities.list.previewPanelTitle')}
+      {/snippet}
+
+      {#snippet headerActions()}
+        <!-- Mode switch with icons only -->
+        <div class="flex items-center gap-2">
+          {#if !previewEditMode}
+            <PencilOff class="w-4 h-4 text-muted-foreground" />
+          {:else}
+            <Pencil class="w-4 h-4 text-muted-foreground" />
+          {/if}
+          <Switch
+            bind:checked={previewEditMode}
+            aria-label={$t('entities.list.editModeLabel')}
+          />
+        </div>
+
+        <!-- Micro pagination -->
+        <div class="flex items-center gap-1">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onclick={() => navigatePreview(-1)}
+            disabled={previewRowIndex === 0 && footerPage === 1}
+            aria-label="Previous record"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </Button>
+          <span class="text-xs font-medium w-16 text-center">
+            {(footerPage - 1) * pageSize + previewRowIndex + 1} / {footerRangeTotal}
+          </span>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onclick={() => navigatePreview(1)}
+            disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
+            aria-label="Next record"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </Button>
+        </div>
+
+        <!-- Close button -->
         <Button
           onclick={() => previewPanelOpen = false}
           size="icon-sm"
@@ -2088,49 +2184,72 @@
         >
           <XIcon class="w-4 h-4" />
         </Button>
+      {/snippet}
+
+      <SheetHeader title={headerTitle} actions={headerActions} />
+
+      <!-- Scrollable content -->
+      <div class="flex-1 overflow-auto">
+        {#if previewEditMode}
+          <div class="px-4 py-3 text-sm text-muted-foreground">
+            Edit mode - coming soon
+          </div>
+        {:else}
+          {#if stickyColumns && stickyColumns.length > 0}
+            <div class="my-2">
+              <div class="flex items-center gap-2">
+                <div class="h-px flex-1 bg-border"></div>
+                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
+                <div class="h-px flex-1 bg-border"></div>
+              </div>
+            </div>
+            <div class="px-2 space-y-2">
+              {#each stickyColumns as col}
+                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
+                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
+                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if dataColumns && dataColumns.length > 0}
+            <div class="my-2">
+              <div class="flex items-center gap-2">
+                <div class="h-px flex-1 bg-border"></div>
+                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
+                <div class="h-px flex-1 bg-border"></div>
+              </div>
+            </div>
+            <div class="px-2 space-y-2">
+              {#each dataColumns as col}
+                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
+                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
+                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if auditingColumns && auditingColumns.length > 0}
+            <div class="my-2">
+              <div class="flex items-center gap-2">
+                <div class="h-px flex-1 bg-border"></div>
+                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
+                <div class="h-px flex-1 bg-border"></div>
+              </div>
+            </div>
+            <div class="px-2 space-y-2">
+              {#each auditingColumns as col}
+                <div class="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent">
+                  <span class="min-w-0 flex-1 truncate text-muted-foreground">{$t(col.labelKey)}</span>
+                  <span class="font-medium">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
       </div>
-
-      {#if stickyColumns && stickyColumns.length > 0}
-        <div class="space-y-3 pt-2">
-          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
-            {$t('entities.list.stickyFields')}
-          </div>
-          {#each stickyColumns as col}
-            <div>
-              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
-              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      {#if dataColumns && dataColumns.length > 0}
-        <div class="space-y-3 pt-2">
-          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
-            {$t('entities.list.dataFields')}
-          </div>
-          {#each dataColumns as col}
-            <div>
-              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
-              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      {#if auditingColumns && auditingColumns.length > 0}
-        <div class="space-y-3 pt-2">
-          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
-            {$t('entities.list.auditingFields')}
-          </div>
-          {#each auditingColumns as col}
-            <div>
-              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
-              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
-            </div>
-          {/each}
-        </div>
-      {/if}
     </div>
   {/snippet}
 
@@ -3451,7 +3570,7 @@
           {#if previewPanelOpen}
             <Resizable.Handle withHandle />
             <Resizable.Pane defaultSize={30} minSize={20} maxSize={40}>
-              <div class="h-full overflow-auto p-4">
+              <div class="h-full overflow-auto bg-muted">
                 {#if previewRow}
                   {@render entityPreviewPanel(previewRow)}
                 {/if}
