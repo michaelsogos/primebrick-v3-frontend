@@ -1003,6 +1003,29 @@
     }
   }
 
+  /** Keyboard navigation for preview panel */
+  $effect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!previewPanelOpen) return;
+      
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigatePreview(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigatePreview(1);
+      }
+    }
+
+    if (previewPanelOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  });
+
   /** Handle delete action for a row */
   function handleDeleteRow(row: TRow) {
     // Open confirmation dialog instead of deleting directly
