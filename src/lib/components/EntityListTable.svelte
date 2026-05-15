@@ -278,7 +278,12 @@
   const deletionFilterStorageKey = $derived(
     columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
   );
-  let deletionFilterMode = $state<DeletionFilterMode>(deletionFilterModeProp ?? 'non_deleted');
+  // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
+  const _initialDeletionKey = columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`;
+  const _rawDeletion = typeof window !== 'undefined' ? window.sessionStorage.getItem(_initialDeletionKey) : null;
+  const _initialDeletionMode: DeletionFilterMode | null =
+    _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
+  let deletionFilterMode = $state<DeletionFilterMode>(_initialDeletionMode ?? deletionFilterModeProp ?? 'non_deleted');
 
   function readDeletionFilter(): DeletionFilterMode | null {
     if (typeof window === 'undefined') return null;
@@ -463,7 +468,13 @@
     if (storedMode) viewMode = storedMode;
 
     const storedDeletionFilter = readDeletionFilter();
-    if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
+    if (storedDeletionFilter) {
+      deletionFilterMode = storedDeletionFilter;
+      // If the restored value differs from what the parent passed, notify the parent so it re-fetches
+      if (storedDeletionFilter !== (deletionFilterModeProp ?? 'non_deleted')) {
+        onDeletionFilterModeChange?.(storedDeletionFilter);
+      }
+    }
 
     // Initialize filters from sessionStorage. Only fire the callback when the stored
     // values actually differ from the current prop, to avoid an unnecessary refresh
@@ -866,10 +877,26 @@
   let navigatingToPrevPage = $state(false);
   let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
   let isResizing = $state(false);
+  let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
 
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(previewPanelSessionKey, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth }));
+      // While restoring, preserve the key from session until previewRow is actually set
+      const rowKey_ = previewRow
+        ? String((previewRow as Record<string, unknown>)[uid])
+        : (_previewRestoredKey ?? null);
+      sessionStorage.setItem(previewPanelSessionKey, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
+    }
+  });
+
+  $effect(() => {
+    if (_previewRestoredKey && previewPanelOpen && !rowsLoading && rows.length > 0) {
+      const idx = rows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+      if (idx !== -1) {
+        previewRow = rows[idx];
+        previewRowIndex = viewRows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+        _previewRestoredKey = null;
+      }
     }
   });
 
