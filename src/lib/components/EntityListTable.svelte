@@ -207,6 +207,7 @@
       duplicate?: boolean;
       delete?: boolean;
       edit?: boolean;
+      preview?: boolean;
     };
     filtersOpen?: boolean;
     filterValues?: Record<string, any>;
@@ -844,6 +845,10 @@
   let duplicateScope = $state<'selected' | 'single'>('selected');
   let singleRowToDuplicate: TRow | null = null;
 
+  /** Entity preview panel state */
+  let previewPanelOpen = $state(false);
+  let previewRow = $state<TRow | null>(null);
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -858,6 +863,13 @@
   function handleEditRow(row: TRow) {
     // TODO: Implement edit action - will be connected to BE later
     console.log('Edit row:', rowKey(row));
+    closeRowDropdown();
+  }
+
+  /** Handle preview action for a row */
+  function handlePreviewRow(row: TRow) {
+    previewRow = row;
+    previewPanelOpen = true;
     closeRowDropdown();
   }
 
@@ -2064,6 +2076,64 @@
     {/if}
   {/snippet}
 
+  {#snippet entityPreviewPanel(row: TRow)}
+    <div class="space-y-3 bg-muted p-4 rounded-lg h-full overflow-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">{$t('entities.list.previewPanelTitle')}</h3>
+        <Button
+          onclick={() => previewPanelOpen = false}
+          size="icon-sm"
+          variant="ghost"
+          aria-label={$t('common.close')}
+        >
+          <XIcon class="w-4 h-4" />
+        </Button>
+      </div>
+
+      {#if stickyColumns && stickyColumns.length > 0}
+        <div class="space-y-3 pt-2">
+          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
+            {$t('entities.list.stickyFields')}
+          </div>
+          {#each stickyColumns as col}
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
+              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if dataColumns && dataColumns.length > 0}
+        <div class="space-y-3 pt-2">
+          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
+            {$t('entities.list.dataFields')}
+          </div>
+          {#each dataColumns as col}
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
+              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if auditingColumns && auditingColumns.length > 0}
+        <div class="space-y-3 pt-2">
+          <div class="text-xs font-semibold text-muted-foreground border-b pb-1">
+            {$t('entities.list.auditingFields')}
+          </div>
+          {#each auditingColumns as col}
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">{$t(col.labelKey)}</span>
+              <p class="text-sm">{formatListCellValue(col, row[col.key], $uiLang)}</p>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/snippet}
+
   {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
@@ -2795,6 +2865,14 @@
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  {#if entityRowActions?.preview !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Eye class="size-4 opacity-70" />
+                                        <span>{$t('entities.list.preview')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
@@ -2887,6 +2965,14 @@
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  {#if entityRowActions?.preview !== false}
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
+                                      <div class="flex items-center gap-2">
+                                        <Eye class="size-4 opacity-70" />
+                                        <span>{$t('entities.list.preview')}</span>
+                                      </div>
+                                    </DropdownMenu.Item>
+                                  {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
@@ -2916,7 +3002,9 @@
           {/if}
         </div>
       {:else}
-        <Table.Root
+        <Resizable.PaneGroup direction="horizontal">
+          <Resizable.Pane defaultSize={70} minSize={50}>
+            <Table.Root
           bind:ref={tableRef}
           data-row-density={rowDensity}
           class={cn(
@@ -3166,6 +3254,7 @@
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
+                ondblclick={() => handlePreviewRow(r)}
               >
                 {#if rowSelectionEnabled}
                   <Table.Cell
@@ -3357,6 +3446,19 @@
           {/if}
         </Table.Body>
       </Table.Root>
+          </Resizable.Pane>
+
+          {#if previewPanelOpen}
+            <Resizable.Handle withHandle />
+            <Resizable.Pane defaultSize={30} minSize={20} maxSize={40}>
+              <div class="h-full overflow-auto p-4">
+                {#if previewRow}
+                  {@render entityPreviewPanel(previewRow)}
+                {/if}
+              </div>
+            </Resizable.Pane>
+          {/if}
+        </Resizable.PaneGroup>
     {/if}
     {/if}
   </div>
