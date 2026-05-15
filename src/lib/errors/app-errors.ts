@@ -28,6 +28,8 @@ export type AppError = {
   tags?: AppErrorTag[];
   detail?: string;
   createdAt: number;
+  /** Extra fields beyond standard AppError fields (e.g., RFC7807 extra fields) */
+  [key: string]: any;
 };
 
 export const appErrors = writable<AppError[]>([]);
@@ -109,26 +111,32 @@ export function pushImpactError(input: {
   tags?: AppErrorTag[];
   detail?: string;
   toast?: boolean;
+  [key: string]: any; // Allow extra fields
 }) {
   const tr = translate();
-  const message = input.messageKey ? tr(input.messageKey) : input.message ?? '';
-  const scope = input.scopeKey ? tr(input.scopeKey) : input.scope;
+  const messageValue = input.messageKey ? tr(input.messageKey) : input.message ?? '';
+  const scopeValue = input.scopeKey ? tr(input.scopeKey) : input.scope;
+
+  // Extract standard fields
+  const { impact, messageKey, message, scopeKey, scope, tags, detail, toast, ...extraFields } = input;
 
   const err: AppError = {
     id: uid('err'),
-    impact: input.impact,
-    messageKey: input.messageKey,
-    message: input.message,
-    scopeKey: input.scopeKey,
-    scope: input.scope,
-    tags: input.tags,
-    detail: input.detail,
-    createdAt: Date.now()
+    impact,
+    messageKey,
+    message,
+    scopeKey,
+    scope,
+    tags,
+    detail,
+    createdAt: Date.now(),
+    ...extraFields // Preserve extra fields like duplicateResults
   };
+
   appErrors.update((xs) => prependCapped(xs, err));
 
   if (input.toast !== false) {
-    showImpactToast(input.impact, message, scope, input.tags, input.detail);
+    showImpactToast(input.impact, messageValue, scopeValue, input.tags, input.detail);
   }
 
   return err.id;
@@ -153,11 +161,12 @@ function mapSeverityToImpact(severity?: string): ImpactLevel {
 /**
  * Push RFC 7807 compliant error from backend
  * Accepts the exact RFC 7807 error response from the backend without DTO transformation
+ * Preserves extra fields beyond standard RFC7807 fields for detailed error viewing
  */
-export function pushRFC7807Error(error: RFC7807Error, options?: { showToast?: boolean }) {
+export function pushRFC7807Error(error: RFC7807Error & Record<string, any>, options?: { showToast?: boolean }) {
   const impact = mapSeverityToImpact(error.severity);
   const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
-  
+
   const tags: AppErrorTag[] = [];
   if (error.internal_code) {
     tags.push({ label: error.internal_code, tone });
@@ -166,7 +175,16 @@ export function pushRFC7807Error(error: RFC7807Error, options?: { showToast?: bo
   if (error.instance) {
     tags.push({ label: error.instance, tone });
   }
-  
+
+  // Extract extra fields beyond standard RFC7807 fields
+  const rfc7807Fields = ['type', 'title', 'status', 'detail', 'instance', 'internal_code', 'severity'];
+  const extraFields: Record<string, any> = {};
+  for (const key in error) {
+    if (!rfc7807Fields.includes(key)) {
+      extraFields[key] = error[key];
+    }
+  }
+
   pushImpactError({
     impact,
     message: error.detail,
@@ -174,5 +192,6 @@ export function pushRFC7807Error(error: RFC7807Error, options?: { showToast?: bo
     detail: undefined,
     tags,
     toast: options?.showToast !== false,
+    ...extraFields, // Preserve extra fields like duplicateResults
   });
 }

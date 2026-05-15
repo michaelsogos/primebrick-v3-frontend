@@ -3,16 +3,36 @@
   import { Badge } from '$lib/components/ui/badge';
   import * as EventCard from '$lib/components/ui/event-card';
   import * as Sheet from '$lib/components/ui/sheet';
+  import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { ThumbsUp, Trash2 } from 'lucide-svelte';
+  import { ThumbsUp, Trash2, Eye } from 'lucide-svelte';
   import XIcon from '@lucide/svelte/icons/x';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+  let errorDetailsDialogOpen = $state(false);
+  let selectedErrorDetails = $state<any | null>(null);
+  let selectedErrorColor = $state<'critical' | 'error' | 'warning' | 'info'>('info');
+
+  function openErrorDetails(e: any, color: 'critical' | 'error' | 'warning' | 'info') {
+    selectedErrorDetails = e;
+    selectedErrorColor = color;
+    errorDetailsDialogOpen = true;
+  }
+
+  function closeErrorDetails() {
+    errorDetailsDialogOpen = false;
+    selectedErrorDetails = null;
+  }
+
+  function hasExtraFields(e: Record<string, any>): boolean {
+    return e.extra != null && Object.keys(e.extra).length > 0;
+  }
 
   function errorTagBadgeClass(tone: string | undefined) {
     switch (tone) {
@@ -164,13 +184,29 @@
               <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
             {/if}
 
-            <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+              {#if hasExtraFields(e)}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onclick={() => openErrorDetails(e, eventColor)}
+                >
+                  <Eye class="mr-1 size-3" />
+                  {$t('shell.errors.viewDetails')}
+                </Button>
+              {/if}
+            </div>
           </EventCard.Root>
         {/each}
       </div>
     {/if}
   </div>
 </div>
+
+<!-- Error details fullscreen dialog -->
+<RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} color={selectedErrorColor} />
 
 <style>
   @keyframes pb-watermark-pulse {

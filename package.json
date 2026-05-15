@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.24.0",
+  "version": "0.25.0",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -45,6 +45,7 @@
     "html2pdf.js": "^0.14.0",
     "inline-css": "^4.0.3",
     "lucide-svelte": "^1.0.1",
+    "shiki": "^4.0.2",
     "svelte-motion": "^0.12.2",
     "svelte-sonner": "^1.1.1"
   }

@@ -61,8 +61,9 @@
         const toneForImpact = 'danger'; // HIGH impact uses danger
         pushImpactError({
           impact: 'HIGH',
-          message: data.title || data.detail || 'List Failed',
-          scope: 'Customer List API',
+          message: data.title || data.detail,
+          messageKey: !data.title && !data.detail ? 'shell.listFailed' : undefined,
+          scope: $t('errors.scope.customerListApi'),
           tags: [
             { label: data.internal_code || 'LIST_FAILED', tone: toneForImpact },
             ...(data.status ? [{ label: `HTTP ${data.status}`, tone: toneForImpact } as const] : []),
@@ -74,9 +75,9 @@
     } catch (e) {
       pushImpactError({
         impact: 'HIGH',
-        message: e instanceof Error ? e.message : 'Failed to trigger test error',
-        scope: 'Customer List API',
-        toast: true,
+        messageKey: 'shell.listFailed',
+        scope: $t('errors.scope.customerListApi'),
+        toast: true
       });
     }
   }
