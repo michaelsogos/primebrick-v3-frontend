@@ -218,6 +218,7 @@
       "rowActions": "actions de ligne",
       "preview": "Aperçu",
       "previewPanelTitle": "Détail",
+      "togglePreviewPanel": "Basculer le panneau d'aperçu",
       "viewModeLabel": "Affichage",
       "editModeLabel": "Modification",
       "sortBy": "Trier par",

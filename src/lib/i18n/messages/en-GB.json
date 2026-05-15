@@ -239,6 +239,7 @@
       "rowActions": "row actions",
       "preview": "Preview",
       "previewPanelTitle": "Detail",
+      "togglePreviewPanel": "Toggle preview panel",
       "viewModeLabel": "View",
       "editModeLabel": "Edit",
       "sortBy": "Sort by",

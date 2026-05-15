@@ -9,7 +9,7 @@
   let { title, actions }: $$Props = $props();
 </script>
 
-<div class="flex items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar-accent px-2 py-2 text-sidebar-accent-foreground">
+<div class="relative flex items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar-accent px-2 py-2 text-sidebar-accent-foreground">
   <div class="text-sm font-medium">
     {@render title?.()}
   </div>

@@ -239,6 +239,7 @@
       "rowActions": "azioni riga",
       "preview": "Anteprima",
       "previewPanelTitle": "Dettaglio",
+      "togglePreviewPanel": "Attiva/disattiva pannello anteprima",
       "viewModeLabel": "Visualizzazione",
       "editModeLabel": "Modifica",
       "sortBy": "Ordina per",

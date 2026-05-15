@@ -17,7 +17,7 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Dialog as DialogPrimitive } from 'bits-ui';
-  import { scale, fade, fly } from 'svelte/transition';
+  import { scale, fade, fly, slide } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
   import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
@@ -62,7 +62,12 @@
     FilterX,
     Pencil,
     PencilOff,
+    Trash,
     Trash2,
+    ArrowUpFromLine,
+    AlertCircle,
+    PanelRightClose,
+    PanelRightOpen,
     Copy,
     Download,
     Funnel
@@ -2132,49 +2137,73 @@
   {/snippet}
 
   {#snippet entityPreviewPanel(row: TRow)}
+    {@const rowDeleted = isRowDeleted(row)}
     <div class="flex h-full flex-col bg-background">
       {#snippet headerTitle()}
-        {$t('entities.list.previewPanelTitle')}
+        <div class="flex items-center gap-2 {rowDeleted ? 'text-destructive' : ''}">
+          {#if rowDeleted}
+            <AlertCircle class="w-4 h-4" />
+          {/if}
+          {$t('entities.list.previewPanelTitle')}
+        </div>
       {/snippet}
 
       {#snippet headerActions()}
-        <!-- Mode switch with icons only -->
-        <div class="flex items-center gap-2">
-          {#if !previewEditMode}
-            <PencilOff class="w-4 h-4 text-muted-foreground" />
-          {:else}
-            <Pencil class="w-4 h-4 text-muted-foreground" />
-          {/if}
-          <Switch
-            bind:checked={previewEditMode}
-            aria-label={$t('entities.list.editModeLabel')}
-          />
-        </div>
-
-        <!-- Micro pagination -->
-        <div class="flex items-center gap-1">
+        <!-- Micro pagination absolutely centered in header -->
+        <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
           <Button
             size="icon-sm"
-            variant="ghost"
+            variant="secondary"
             onclick={() => navigatePreview(-1)}
             disabled={previewRowIndex === 0 && footerPage === 1}
             aria-label="Previous record"
+            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
           >
             <ChevronLeft class="w-4 h-4" />
           </Button>
-          <span class="text-xs font-medium w-16 text-center">
+          <span class="text-xs font-medium w-16 text-center {rowDeleted ? 'text-destructive' : ''}">
             {(footerPage - 1) * pageSize + previewRowIndex + 1} / {footerRangeTotal}
           </span>
           <Button
             size="icon-sm"
-            variant="ghost"
+            variant="secondary"
             onclick={() => navigatePreview(1)}
             disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
             aria-label="Next record"
+            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
           >
             <ChevronRight class="w-4 h-4" />
           </Button>
         </div>
+
+        <!-- CTAs on right -->
+        {#if rowDeleted}
+          <!-- Restore button for deleted records -->
+          <Button
+            variant="ghost"
+            size="sm"
+            class="mr-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 hover:text-green-700 dark:hover:text-green-400"
+            title="Restore (coming soon)"
+          >
+            <span class="relative flex items-center justify-center">
+              <Trash class="size-4" />
+              <ArrowUpFromLine class="absolute -bottom-[1px]  size-3" />
+            </span>
+          </Button>
+        {:else}
+          <!-- Mode switch with icons only -->
+          <div class="flex items-center gap-2">
+            {#if !previewEditMode}
+              <PencilOff class="w-4 h-4 text-muted-foreground" />
+            {:else}
+              <Pencil class="w-4 h-4 text-muted-foreground" />
+            {/if}
+            <Switch
+              bind:checked={previewEditMode}
+              aria-label={$t('entities.list.editModeLabel')}
+            />
+          </div>
+        {/if}
 
         <!-- Close button -->
         <Button
@@ -2197,13 +2226,13 @@
           </div>
         {:else}
           {#if stickyColumns && stickyColumns.length > 0}
-            <div class="my-2">
-              <div class="flex items-center gap-2">
-                <div class="h-px flex-1 bg-border"></div>
-                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
-                <div class="h-px flex-1 bg-border"></div>
-              </div>
+          <div class="my-2 sticky top-0 z-10 bg-background">
+            <div class="flex items-center gap-2">
+              <div class="h-px flex-1 bg-muted-foreground/50"></div>
+              <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
+              <div class="h-px flex-1 bg-muted-foreground/50"></div>
             </div>
+          </div>
             <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
               {#each stickyColumns as col}
                 {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
@@ -2243,11 +2272,11 @@
           {/if}
 
           {#if dataColumns && dataColumns.length > 0}
-            <div class="my-2">
+            <div class="my-2 sticky top-0 z-10 bg-background">
               <div class="flex items-center gap-2">
-                <div class="h-px flex-1 bg-border"></div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
                 <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
-                <div class="h-px flex-1 bg-border"></div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
               </div>
             </div>
             <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
@@ -2291,11 +2320,11 @@
           {/if}
 
           {#if auditingColumns && auditingColumns.length > 0}
-            <div class="my-2">
+            <div class="my-2 sticky top-0 z-10 bg-background">
               <div class="flex items-center gap-2">
-                <div class="h-px flex-1 bg-border"></div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
                 <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
-                <div class="h-px flex-1 bg-border"></div>
+                <div class="h-px flex-1 bg-muted-foreground/50"></div>
               </div>
             </div>
             <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
@@ -3210,8 +3239,8 @@
           {/if}
         </div>
       {:else}
-        <Resizable.PaneGroup direction="horizontal">
-          <Resizable.Pane defaultSize={70} minSize={50}>
+        <div class="flex h-full overflow-hidden">
+          <div class="flex-1 min-w-0 overflow-hidden">
             <Table.Root
           bind:ref={tableRef}
           data-row-density={rowDensity}
@@ -3364,7 +3393,26 @@
                 class="w-10 min-w-10 max-w-10 sticky right-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
               >
                 <div class={cn('flex items-center justify-center', rowChromeH)}>
-                  <span class="sr-only">{$t('common.actions')}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onclick={() => {
+                      if (!previewPanelOpen && !previewRow && viewRows.length > 0) {
+                        previewRow = viewRows[0];
+                        previewRowIndex = 0;
+                      }
+                      previewPanelOpen = !previewPanelOpen;
+                    }}
+                    aria-label={$t('entities.list.togglePreviewPanel')}
+                    title={$t('entities.list.togglePreviewPanel')}
+                    class="transition-transform duration-300"
+                  >
+                    {#if previewPanelOpen}
+                      <PanelRightClose class="size-4 transition-transform duration-300 rotate-180" />
+                    {:else}
+                      <PanelRightOpen class="size-4 transition-transform duration-300" />
+                    {/if}
+                  </Button>
                 </div>
               </Table.Head>
             {/if}
@@ -3654,19 +3702,19 @@
           {/if}
         </Table.Body>
       </Table.Root>
-          </Resizable.Pane>
+          </div>
 
-          {#if previewPanelOpen}
-            <Resizable.Handle withHandle />
-            <Resizable.Pane defaultSize={30} minSize={20} maxSize={40}>
-              <div class="h-full overflow-auto bg-muted">
-                {#if previewRow}
-                  {@render entityPreviewPanel(previewRow)}
-                {/if}
-              </div>
-            </Resizable.Pane>
-          {/if}
-        </Resizable.PaneGroup>
+          <div
+            class="h-full overflow-hidden bg-muted border-l transition-[width,min-width] duration-300 ease-in-out"
+            style="width: {previewPanelOpen ? '30%' : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
+          >
+            <div class="h-full w-full overflow-auto">
+              {#if previewRow}
+                {@render entityPreviewPanel(previewRow)}
+              {/if}
+            </div>
+          </div>
+        </div>
     {/if}
     {/if}
   </div>
