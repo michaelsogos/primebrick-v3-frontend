@@ -55,18 +55,16 @@
     try {
       if (!highlighter) {
         highlighter = await createHighlighter({
-          themes: ['github-dark', 'github-light'],
+          themes: ['light-plus'],
           langs: ['json']
         });
       }
 
-      const isDark = document.documentElement.classList.contains('dark');
-      const theme = isDark ? 'github-dark' : 'github-light';
       const jsonString = JSON.stringify(error, null, 2);
       
       highlightedJson = highlighter.codeToHtml(jsonString, {
         lang: 'json',
-        theme: theme
+        theme: 'light-plus'
       });
     } catch (e) {
       console.error('Shiki highlighting error:', e);
