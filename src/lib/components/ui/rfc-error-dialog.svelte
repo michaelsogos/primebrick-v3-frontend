@@ -54,13 +54,13 @@
     
     if (!highlighter) {
       highlighter = await createHighlighter({
-        themes: ['dracula', 'vitesse-dark'],
+        themes: ['monokai', 'one-dark'],
         langs: ['json']
       });
     }
 
     const isDark = document.documentElement.classList.contains('dark');
-    const theme = isDark ? 'dracula' : 'vitesse-dark';
+    const theme = isDark ? 'monokai' : 'one-dark';
     const jsonString = JSON.stringify(error, null, 2);
     
     highlightedJson = highlighter.codeToHtml(jsonString, {
