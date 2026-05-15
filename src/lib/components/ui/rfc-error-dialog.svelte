@@ -5,6 +5,10 @@
   import { Badge } from '$lib/components/ui/badge';
   import { formatUiDateTime } from '$lib/i18n';
   import { cn } from '$lib/utils';
+  import * as Dock from '$lib/components/ui/dock';
+  import { Code, FileJson } from 'lucide-svelte';
+  import { onMount } from 'svelte';
+  import { createHighlighter } from 'shiki';
 
   type RFC7807Error = {
     id?: string;
@@ -31,9 +35,40 @@
     showCloseButton?: boolean;
   } = $props();
 
+  let previewMode = $state('aesthetic');
+  let highlightedJson = $state('');
+  let highlighter: any = $state(null);
+
   function closeDialog() {
     open = false;
   }
+
+  async function highlightJson() {
+    if (!error) return;
+    try {
+      if (!highlighter) {
+        highlighter = await createHighlighter({
+          themes: ['github-light', 'github-dark'],
+          langs: ['json']
+        });
+      }
+      const json = JSON.stringify(error, null, 2);
+      const isDark = document.documentElement.classList.contains('dark');
+      highlightedJson = highlighter.codeToHtml(json, {
+        lang: 'json',
+        theme: isDark ? 'github-dark' : 'github-light'
+      });
+    } catch (e) {
+      console.error('Failed to highlight JSON:', e);
+      highlightedJson = JSON.stringify(error, null, 2);
+    }
+  }
+
+  $effect(() => {
+    if (error && previewMode === 'aesthetic') {
+      highlightJson();
+    }
+  });
 
   function getToneForImpact(impact?: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
     if (!impact) return 'neutral';
@@ -67,11 +102,43 @@
     {/if}
   </Dialog.Header>
 
+  <!-- Navigation dock -->
+  <div class="relative shrink-0">
+    <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-destructive/10 !border-destructive/20 dark:!bg-destructive/10" magnification={70} distance={120}>
+      <Dock.Icon
+        onclick={() => { previewMode = 'aesthetic'; }}
+        tooltip="Preview Estetica"
+        selected={previewMode === 'aesthetic'}
+        transparent={true}
+        class={previewMode === 'aesthetic' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}
+      >
+        <Code class="w-6 h-6" />
+      </Dock.Icon>
+      <Dock.Icon
+        onclick={() => { previewMode = 'raw'; }}
+        tooltip="Raw JSON"
+        selected={previewMode === 'raw'}
+        transparent={true}
+        class={previewMode === 'raw' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}
+      >
+        <FileJson class="w-6 h-6" />
+      </Dock.Icon>
+    </Dock.Root>
+  </div>
+
   {#if error}
     <div class="flex-1 overflow-auto min-h-0 flex gap-2">
       <!-- Main content area -->
       <div class="flex-1 overflow-auto min-h-0 my-4">
-        <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
+        {#if previewMode === 'raw'}
+          <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
+        {:else}
+          <div class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">
+            <div class={document.documentElement.classList.contains('dark') ? '' : 'shiki-light'}>
+              {@html highlightedJson || JSON.stringify(error, null, 2)}
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Right metadata panel -->
@@ -156,3 +223,12 @@
     </Button>
   </Dialog.Footer>
 </BorderedDialog>
+
+<style>
+  .shiki-light :global(pre) {
+    background: transparent !important;
+  }
+  .shiki-light :global(code) {
+    background: transparent !important;
+  }
+</style>
