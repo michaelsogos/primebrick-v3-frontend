@@ -8,6 +8,8 @@
   import * as Dock from '$lib/components/ui/dock';
   import { Code, FileJson, AlertTriangle, Info, AlertCircle } from 'lucide-svelte';
   import JsonTableViewer from './JsonTableViewer.svelte';
+  import { onMount } from 'svelte';
+  import { createHighlighter } from 'shiki';
 
   type RFC7807Error = {
     id?: string;
@@ -44,6 +46,34 @@
   } = $props();
 
   let previewMode = $state('aesthetic');
+  let highlighter: any = $state(null);
+  let highlightedJson = $state('');
+
+  async function highlightJson() {
+    if (!error) return;
+    
+    if (!highlighter) {
+      highlighter = await createHighlighter({
+        themes: ['github-light', 'github-dark'],
+        langs: ['json']
+      });
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const theme = isDark ? 'github-dark' : 'github-light';
+    const jsonString = JSON.stringify(error, null, 2);
+    
+    highlightedJson = highlighter.codeToHtml(jsonString, {
+      lang: 'json',
+      theme: theme
+    });
+  }
+
+  $effect(() => {
+    if (error) {
+      highlightJson();
+    }
+  });
 
   function closeDialog() {
     open = false;
@@ -110,7 +140,9 @@
       <!-- Main content area -->
       <div class="flex-1 overflow-auto min-h-0 my-4">
         {#if previewMode === 'raw'}
-          <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
+          <div class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">
+            {@html highlightedJson}
+          </div>
         {:else}
           <div class="text-xs border border-neutral-300 shadow-inner rounded-lg overflow-auto h-full">
             {#if error.extra?.issues}
