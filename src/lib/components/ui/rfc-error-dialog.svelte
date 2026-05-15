@@ -3,7 +3,7 @@
   import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import { formatUiDateTime } from '$lib/i18n';
+  import { formatUiDateTime, t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
   import { Code, FileJson } from 'lucide-svelte';
@@ -84,7 +84,7 @@
     <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-destructive/10 !border-destructive/20 dark:!bg-destructive/10" magnification={70} distance={120}>
       <Dock.Icon
         onclick={() => { previewMode = 'aesthetic'; }}
-        tooltip="Preview Estetica"
+        tooltip={$t('shell.rfcError.preview')}
         selected={previewMode === 'aesthetic'}
         transparent={true}
         class={previewMode === 'aesthetic' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}
@@ -93,7 +93,7 @@
       </Dock.Icon>
       <Dock.Icon
         onclick={() => { previewMode = 'raw'; }}
-        tooltip="Raw JSON"
+        tooltip={$t('shell.rfcError.source')}
         selected={previewMode === 'raw'}
         transparent={true}
         class={previewMode === 'raw' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}
@@ -110,7 +110,7 @@
         {#if previewMode === 'raw'}
           <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
         {:else}
-          <div class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">
+          <div class="text-xs border border-neutral-300 shadow-inner rounded-lg overflow-auto h-full">
             {#if error.extra?.issues}
               <JsonTableViewer data={error.extra.issues} />
             {:else}

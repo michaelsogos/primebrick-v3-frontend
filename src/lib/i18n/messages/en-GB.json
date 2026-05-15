@@ -122,6 +122,10 @@
       "unhandledRejectionFallback": "Unhandled rejection",
       "unhandledErrorFallback": "Unhandled error"
     },
+    "rfcError": {
+      "preview": "Preview",
+      "source": "Source"
+    },
     "demoToast": {
       "profileMessage": "Demo informational notice (low impact).",
       "preferencesMessage": "Demo warning notice (medium impact).",
