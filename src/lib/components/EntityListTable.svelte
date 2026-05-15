@@ -885,6 +885,7 @@
   let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
   let isResizing = $state(false);
   let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
+  let focusedRowIndex = $state<number | null>(null);
 
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
@@ -902,6 +903,7 @@
       if (idx !== -1) {
         previewRow = rows[idx];
         previewRowIndex = viewRows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+        focusedRowIndex = previewRowIndex;
         _previewRestoredKey = null;
       }
     }
@@ -973,6 +975,7 @@
   function handlePreviewRow(row: TRow) {
     previewRow = row;
     previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
+    focusedRowIndex = previewRowIndex;
     previewEditMode = false;
     previewPanelOpen = true;
     closeRowDropdown();
@@ -984,6 +987,7 @@
     if (newIndex >= 0 && newIndex < viewRows.length) {
       previewRowIndex = newIndex;
       previewRow = viewRows[newIndex];
+      focusedRowIndex = newIndex;
     } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
       // Trigger next page when reaching end of current page
       navigatingToNextPage = true;
@@ -1003,28 +1007,94 @@
     }
   }
 
-  /** Keyboard navigation for preview panel */
+  /** Scroll focused row into view when index changes */
   $effect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (!previewPanelOpen) return;
-      
+    if (focusedRowIndex === null) return;
+    const row = tableRef?.querySelector(`[data-focused-row-index="${focusedRowIndex}"]`) as HTMLElement;
+    if (row) {
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  });
+  /** Unified keyboard handler for preview panel and table row navigation */
+  function handleGlobalKeyDown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+    if (target.closest('[role="menu"]') || target.closest('[role="menuitem"]')) return;
+
+    // Skip table row navigation if any dropdown menu is open (menu has priority)
+    if (dropdownMenuRow !== null || previewDropdownOpen) return;
+
+    if (previewPanelOpen) {
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         navigatePreview(-1);
+        return;
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         navigatePreview(1);
+        return;
       }
     }
 
-    if (previewPanelOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    if (viewRows.length === 0) return;
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  });
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (focusedRowIndex === null) {
+        focusedRowIndex = 0;
+      } else if (focusedRowIndex < viewRows.length - 1) {
+        focusedRowIndex++;
+      } else if (focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
+        // Trigger next page when reaching end of current page
+        navigatingToNextPage = true;
+        if (footerUsesClientPaging) {
+          clientSelectedPage++;
+        } else {
+          onPageChange(page + 1);
+        }
+      }
+      if (previewPanelOpen && focusedRowIndex !== null) {
+        previewRowIndex = focusedRowIndex;
+        previewRow = viewRows[focusedRowIndex];
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (focusedRowIndex === null) {
+        focusedRowIndex = viewRows.length - 1;
+      } else if (focusedRowIndex > 0) {
+        focusedRowIndex--;
+      } else if (focusedRowIndex === 0 && footerPage > 1) {
+        // Trigger previous page when at start of current page
+        navigatingToPrevPage = true;
+        if (footerUsesClientPaging) {
+          clientSelectedPage--;
+        } else {
+          onPageChange(page - 1);
+        }
+      }
+      if (previewPanelOpen && focusedRowIndex !== null) {
+        previewRowIndex = focusedRowIndex;
+        previewRow = viewRows[focusedRowIndex];
+      }
+    } else if (e.key === ' ' && focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[focusedRowIndex];
+      if (row) toggleRowSelect(rowKey(row));
+    } else if (e.key === 'Enter' && focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[focusedRowIndex];
+      if (row) openRowDropdown(row);
+    } else if (e.key === 'Escape') {
+      closeRowDropdown();
+      // Remove focus from kebab button to prevent reopening on arrow key
+      // Use setTimeout to ensure it happens after dropdown's internal focus management
+      setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 0);
+    }
+  }
 
   /** Handle delete action for a row */
   function handleDeleteRow(row: TRow) {
@@ -2243,6 +2313,8 @@
   });
 </script>
 
+<svelte:window onkeydown={handleGlobalKeyDown} />
+
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
   {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
@@ -3170,6 +3242,7 @@
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
                   {@const rowDeleted = isRowDeleted(r)}
+                  {@const rowFocused = focusedRowIndex !== null && viewRows[focusedRowIndex] === r}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -3187,7 +3260,8 @@
                         : undefined,
                       rowSelected
                         ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
-                        : undefined
+                        : undefined,
+                      rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                     )}
                     onclick={(e) => {
                       if (!rowSelectionEnabled) return;
@@ -3240,7 +3314,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                                 <DropdownMenu.Trigger>
                                   {#snippet child({ props })}
                                     <Button 
@@ -3352,7 +3426,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                                 <DropdownMenu.Trigger>
                                   {#snippet child({ props })}
                                     <Button 
@@ -3697,13 +3771,16 @@
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
               {@const rowDeleted = isRowDeleted(r)}
+              {@const rowFocused = focusedRowIndex === i}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
+                data-focused-row-index={rowFocused ? i : undefined}
                 data-state={rowSelected ? 'selected' : undefined}
                 class={cn(
                   'group/entity-row',
-                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined
+                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined,
+                  rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
@@ -3843,7 +3920,7 @@
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
-                        <DropdownMenu.Root open={dropdownMenuRow === r}>
+                        <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                           <DropdownMenu.Trigger>
                             {#snippet child({ props })}
                               <Button 
