@@ -169,8 +169,8 @@
       meta = cached;
       const defSort = meta.list.defaultSort;
       // Only reset sort if not already restored from session storage
-      if (sortKey === null) {
-        sortKey = null;
+      if (!sortRestored && sortKey === null) {
+        sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
       pageSize = meta.list.defaultPageSize ?? pageSize;
@@ -182,8 +182,8 @@
       meta = await inFlight;
       const defSort = meta.list.defaultSort;
       // Only reset sort if not already restored from session storage
-      if (sortKey === null) {
-        sortKey = null;
+      if (!sortRestored && sortKey === null) {
+        sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
       pageSize = meta.list.defaultPageSize ?? pageSize;
@@ -274,6 +274,7 @@
   }
 
   let activeListController: AbortController | null = null;
+  let bootstrapped = $state(false);
 
   class ApiListError extends Error {
     readonly status: number;
@@ -472,6 +473,10 @@
   }
 
   async function refreshRows(opts?: { clampPage?: boolean }) {
+    // Skip refresh during initial bootstrap; bootstrapCustomersList performs the first loadRows
+    // after meta is loaded. This prevents stale-meta calls from filterValues/advancedFilters
+    // restoration in EntityListTable.onMount firing while loadMeta() is still pending.
+    if (!bootstrapped) return;
     loading = true;
     error = null;
     try {
@@ -594,6 +599,7 @@
       });
     } finally {
       loading = false;
+      bootstrapped = true;
     }
   }
 

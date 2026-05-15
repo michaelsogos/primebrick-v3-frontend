@@ -450,14 +450,23 @@
     const storedDeletionFilter = readDeletionFilter();
     if (storedDeletionFilter) deletionFilterMode = storedDeletionFilter;
 
-    // Initialize filters from sessionStorage
+    // Initialize filters from sessionStorage. Only fire the callback when the stored
+    // values actually differ from the current prop, to avoid an unnecessary refresh
+    // when the parent already holds the same values (e.g. after a page refresh where
+    // bootstrap already loaded rows with the restored filters).
     const storedFilterValues = readFilterValues();
-    if (Object.keys(storedFilterValues).length > 0) {
+    if (
+      Object.keys(storedFilterValues).length > 0 &&
+      JSON.stringify(storedFilterValues) !== JSON.stringify(filterValues ?? {})
+    ) {
       onFilterValuesChange?.(storedFilterValues);
     }
 
     const storedAdvancedFilters = readAdvancedFilters();
-    if (storedAdvancedFilters.length > 0) {
+    if (
+      storedAdvancedFilters.length > 0 &&
+      JSON.stringify(storedAdvancedFilters) !== JSON.stringify(advancedFilters ?? [])
+    ) {
       onAdvancedFiltersChange?.(storedAdvancedFilters, 'AND');
     }
   });
@@ -467,10 +476,16 @@
     writeViewMode(viewMode);
   });
 
+  let lastDeletionFilterMode: typeof deletionFilterMode | null = null;
   $effect(() => {
     void deletionFilterMode;
     writeDeletionFilter(deletionFilterMode);
-    onDeletionFilterModeChange?.(deletionFilterMode);
+    // Skip the initial firing so we don't trigger an extra refresh on mount when the
+    // value didn't actually change (the parent already holds the same value).
+    if (lastDeletionFilterMode !== null && lastDeletionFilterMode !== deletionFilterMode) {
+      onDeletionFilterModeChange?.(deletionFilterMode);
+    }
+    lastDeletionFilterMode = deletionFilterMode;
   });
 
   $effect(() => {
@@ -1130,8 +1145,10 @@
       if (filterValues) {
         for (const [key, value] of Object.entries(filterValues)) {
           if (value !== null && value !== undefined && value !== '') {
+            const col = columns.find(c => c.key === key);
+            const op = col?.type === 'text' ? 'ILIKE' : '=';
             filters[`filter[${filterIdx}].field`] = key;
-            filters[`filter[${filterIdx}].operator`] = 'eq';
+            filters[`filter[${filterIdx}].operator`] = op;
             filters[`filter[${filterIdx}].value`] = value;
             filterIdx++;
           }
