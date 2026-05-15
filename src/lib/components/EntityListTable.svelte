@@ -67,12 +67,21 @@
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import BsFiletypeHtml from '~icons/bi/filetype-html';
+  import BsFiletypePdf from '~icons/bi/filetype-pdf';
+  import BsEnvelopeAt from '~icons/bi/envelope-at';
   import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
   import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
   import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import * as Dock from '$lib/components/ui/dock';
+  import * as Resizable from '$lib/components/ui/resizable';
+  import { ScrollArea } from '$lib/components/ui/scroll-area';
+  import { Skeleton } from '$lib/components/ui/skeleton';
+  import { Card, CardContent } from '$lib/components/ui/card';
+  import { Window } from '$lib/components/ui/window';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -794,6 +803,20 @@
   let isExporting = $state(false);
   let exportScope = $state<'selected' | 'all'>('selected');
 
+  /** HTML export confirmation dialog state */
+  let htmlExportConfirmDialogOpen = $state(false);
+  let isHtmlExporting = $state(false);
+  let htmlExportScope = $state<'selected' | 'all'>('selected');
+
+  /** HTML preview dialog state */
+  let htmlPreviewDialogOpen = $state(false);
+  let htmlPreviewContent = $state('');
+  let previewMode = $state<'html' | 'pdf' | 'email'>('html');
+  let pdfBlobUrl = $state<string | null>(null);
+  let emailHtmlContent = $state('');
+  let isEmailPreparing = $state(false);
+  let emailCopied = $state(false);
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -1077,6 +1100,208 @@
     exportFileType = null;
     exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
     exportConfirmDialogOpen = true;
+  }
+
+  function handleHtmlExport() {
+    htmlExportScope = selectedKeys.length > 0 ? 'selected' : 'all';
+    htmlExportConfirmDialogOpen = true;
+  }
+
+  function cancelHtmlExport() {
+    htmlExportConfirmDialogOpen = false;
+  }
+
+  async function confirmHtmlExport() {
+    try {
+      isHtmlExporting = true;
+      
+      // Build query parameters from current filters, search, sort
+      const params = new URLSearchParams();
+      params.append('file_type', 'html');
+      
+      if (search) params.append('search', search);
+      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
+      if (sortKey) params.append('sort_key', sortKey);
+      if (sortDir) params.append('sort_dir', sortDir);
+      
+      // Build filters array (same format as loadRows)
+      let filterIdx = 0;
+      const filters: Record<string, any> = {};
+      if (filterValues) {
+        for (const [key, value] of Object.entries(filterValues)) {
+          if (value !== null && value !== undefined && value !== '') {
+            filters[`filter[${filterIdx}].field`] = key;
+            filters[`filter[${filterIdx}].operator`] = 'eq';
+            filters[`filter[${filterIdx}].value`] = value;
+            filterIdx++;
+          }
+        }
+      }
+      
+      // Add advanced filters
+      if (advancedFilters && advancedFilters.length > 0) {
+        advancedFilters.forEach((filter, idx) => {
+          filters[`filter[${filterIdx}].field`] = filter.field;
+          filters[`filter[${filterIdx}].operator`] = filter.operator;
+          filters[`filter[${filterIdx}].value`] = filter.value;
+          filterIdx++;
+        });
+      }
+      
+      // Add scope (selected vs all)
+      if (htmlExportScope === 'selected' && selectedKeys.length > 0) {
+        params.append('uuids', selectedKeys.join(','));
+      }
+      
+      // Add deletion filter mode
+      if (deletionFilterMode !== 'non_deleted') {
+        params.append('deletion_filter_mode', deletionFilterMode);
+      }
+      
+      // Add all filter parameters
+      Object.entries(filters).forEach(([key, value]) => {
+        params.append(key, value);
+      });
+      
+      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        // Read RFC 7807 compliant error response
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
+      // Get HTML content as text
+      const htmlContent = await response.text();
+      
+      // Show preview dialog
+      htmlPreviewContent = htmlContent;
+      htmlPreviewDialogOpen = true;
+      
+      htmlExportConfirmDialogOpen = false;
+    } catch (error) {
+      console.error('HTML export failed:', error);
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isHtmlExporting = false;
+      htmlExportConfirmDialogOpen = false;
+    }
+  }
+
+  function closeHtmlPreview() {
+    htmlPreviewDialogOpen = false;
+    htmlPreviewContent = '';
+  }
+
+  async function copyHtmlToClipboard() {
+    try {
+      const blobHtml = new Blob([htmlPreviewContent], { type: 'text/html' });
+      const plainText = htmlPreviewContent.replace(/<[^>]*>/g, '');
+      const blobPlain = new Blob([plainText], { type: 'text/plain' });
+      
+      const clipboardItem = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobPlain
+      });
+      
+      await navigator.clipboard.write([clipboardItem]);
+    } catch (err) {
+      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
+      navigator.clipboard.writeText(htmlPreviewContent);
+    }
+  }
+
+  async function generatePdfPreview() {
+    previewMode = 'pdf';
+    pdfBlobUrl = null;
+
+    try {
+      const html2pdf = await import('html2pdf.js');
+      const element = document.createElement('div');
+      element.innerHTML = htmlPreviewContent;
+
+      const opt = {
+        margin: 10,
+        filename: `${entity}-export.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+
+      // Generate PDF as binary blob instead of downloading
+      const worker = html2pdf.default().set(opt).from(element);
+      const pdfBlob = await worker.output('blob');
+      pdfBlobUrl = URL.createObjectURL(pdfBlob);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      previewMode = 'html';
+    }
+  }
+
+  async function downloadPdf() {
+    if (!pdfBlobUrl) return;
+
+    const a = document.createElement('a');
+    a.href = pdfBlobUrl;
+    a.download = `${entity}-export.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function prepareEmailHtml() {
+    previewMode = 'email';
+    isEmailPreparing = true;
+    emailHtmlContent = '';
+    emailCopied = false;
+    
+    try {
+      // 1. Sanitize with DOMPurify
+      const DOMPurify = await import('dompurify');
+      const sanitized = (DOMPurify as any).sanitize(htmlPreviewContent);
+      
+      // 2. Inline CSS with inline-css
+      const inlineCss = await import('inline-css');
+      const options = {
+        url: ' ',
+        applyStyleTags: true,
+        removeStyleTags: true,
+        applyLinkTags: false,
+        preserveMediaQueries: true
+      };
+      
+      const optimized = await (inlineCss as any).default(sanitized, options);
+      emailHtmlContent = optimized;
+    } catch (error) {
+      console.error('Email HTML preparation failed:', error);
+      emailHtmlContent = htmlPreviewContent;
+    } finally {
+      isEmailPreparing = false;
+    }
+  }
+
+  async function copyEmailHtmlToClipboard() {
+    try {
+      const blobHtml = new Blob([emailHtmlContent], { type: 'text/html' });
+      const plainText = emailHtmlContent.replace(/<[^>]*>/g, '');
+      const blobPlain = new Blob([plainText], { type: 'text/plain' });
+      
+      const clipboardItem = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobPlain
+      });
+      
+      await navigator.clipboard.write([clipboardItem]);
+    } catch (err) {
+      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
+      navigator.clipboard.writeText(emailHtmlContent);
+    }
+    
+    emailCopied = true;
+    setTimeout(() => {
+      emailCopied = false;
+    }, 2000);
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -2143,6 +2368,15 @@
         >
           <Download class="size-3.5" />
           {$t('entities.list.bulkActions.export')}
+        </Button>
+        <Button
+          variant="soft"
+          size="xs"
+          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+          onclick={handleHtmlExport}
+        >
+          <Download class="size-3.5" />
+          {$t('entities.list.bulkActions.exportHtml')}
         </Button>
         <Button
           variant="soft"
@@ -3259,6 +3493,212 @@
         {/if}
       </Button>
     </div>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- HTML export confirmation dialog -->
+<DialogBordered bind:open={htmlExportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedKeys.length > 0}
+        {$t('common.exportHtmlConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportHtmlConfirm')} {total} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedKeys.length > 0}
+    <div class="py-4">
+      <Choicebox bind:value={htmlExportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={cancelHtmlExport}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      onclick={confirmHtmlExport}
+      disabled={isHtmlExporting}
+    >
+      {#if isHtmlExporting}
+        {$t('common.exporting')}
+      {:else}
+        {$t('common.confirm')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- HTML preview full-screen dialog -->
+<DialogBordered bind:open={htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+  <Dialog.Header class="pb-4 shrink-0">
+    <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
+  </Dialog.Header>
+  
+  <!-- Navigation dock -->
+  <div class="relative shrink-0">
+    <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-primary/10 !border-primary/20 dark:!bg-primary/10" magnification={70} distance={120}>
+      <Dock.Icon
+        onclick={() => { previewMode = 'html'; pdfBlobUrl = null; }}
+        tooltip="HTML view"
+        selected={previewMode === 'html'}
+      >
+        <BsFiletypeHtml class="w-6 h-6" />
+      </Dock.Icon>
+      <Dock.Icon
+        onclick={generatePdfPreview}
+        tooltip="PDF view"
+        selected={previewMode === 'pdf'}
+      >
+        <BsFiletypePdf class="w-6 h-6" />
+      </Dock.Icon>
+      <Dock.Icon
+        onclick={prepareEmailHtml}
+        tooltip="Email"
+        selected={previewMode === 'email'}
+      >
+        <BsEnvelopeAt class="w-6 h-6" />
+      </Dock.Icon>
+    </Dock.Root>
+  </div>
+  
+  <!-- Preview content -->
+  <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">
+    {#if previewMode === 'html'}
+      <iframe
+        srcdoc={htmlPreviewContent}
+        class="w-full h-full border-0"
+        title="HTML Preview"
+      ></iframe>
+    {:else if previewMode === 'pdf' && pdfBlobUrl}
+      <iframe
+        src={pdfBlobUrl}
+        class="w-full h-full border-0"
+        title="PDF Preview"
+      ></iframe>
+    {:else if previewMode === 'pdf'}
+      <div class="flex items-center justify-center h-full">
+        <p class="text-muted-foreground">Generating PDF...</p>
+      </div>
+    {:else if previewMode === 'email'}
+      <div class="w-full h-full">
+        {#if isEmailPreparing}
+          <div class="flex items-center justify-center h-full">
+            <p class="text-muted-foreground">Preparing email HTML...</p>
+          </div>
+        {:else}
+          <Window
+            class="!aspect-auto h-full w-full flex flex-col"
+            contentClass="flex-1 min-h-0 !p-0"
+          >
+            <div class="flex h-full w-full overflow-hidden bg-background">
+              <Resizable.PaneGroup direction="horizontal">
+                <!-- PANNELLO SINISTRO: Elenco Mail (30% larghezza) -->
+                <Resizable.Pane defaultSize={30} minSize={20}>
+                  <ScrollArea class="h-full border-r p-4 bg-muted/20">
+                    <h3 class="text-sm font-semibold mb-4 px-2 tracking-tight text-muted-foreground">Mailbox</h3>
+                    <div class="space-y-2">
+                      <!-- Item Mail Attivo (skeleton evidenziato) -->
+                      <div class="p-3 space-y-2 border rounded-lg bg-card shadow-sm border-primary/50">
+                        <Skeleton class="h-4 w-3/4" />
+                        <Skeleton class="h-3 w-1/2" />
+                      </div>
+                      
+                      <!-- Skeleton per altre mail -->
+                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
+                        <Skeleton class="h-4 w-2/3" />
+                        <Skeleton class="h-3 w-1/3" />
+                      </div>
+                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
+                        <Skeleton class="h-4 w-3/4" />
+                        <Skeleton class="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </Resizable.Pane>
+
+                <Resizable.Handle withHandle />
+
+                <!-- PANNELLO DESTRO: Area di Contenuto (Preview) -->
+                <Resizable.Pane defaultSize={70}>
+                  <div class="flex flex-col h-full bg-background min-h-0">
+                    
+                    <!-- Header dell'email (To, Subject) -->
+                    <div class="p-4 border-b space-y-3 bg-card shrink-0">
+                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
+                        <span class="font-medium">A:</span> 
+                        <span class="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">recipient@example.com</span>
+                      </div>
+                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
+                        <span class="font-medium">Subject:</span>
+                        <Skeleton class="h-4 flex-1" />
+                      </div>
+                    </div>
+
+                    <!-- Area dell'IFrame -->
+                    <div class="flex-1 bg-muted/10 relative h-full min-h-0">
+                      <!-- L'iframe che ospita l'HTML puro del foglio e della tabella -->
+                      <iframe 
+                        title="Email Preview"
+                        srcdoc={emailHtmlContent}
+                        class="w-full h-full border-0 bg-white"
+                        sandbox="allow-same-origin"
+                      ></iframe>
+                    </div>
+
+                  </div>
+                </Resizable.Pane>
+                
+              </Resizable.PaneGroup>
+            </div>
+          </Window>
+        {/if}
+      </div>
+    {/if}
+  </div>
+  
+  <Dialog.Footer class="gap-2 shrink-0">
+    <Button
+      variant="secondary"
+      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      onclick={closeHtmlPreview}
+    >
+      {$t('common.close')}
+    </Button>
+    {#if previewMode === 'email'}
+      <Button onclick={copyEmailHtmlToClipboard} disabled={isEmailPreparing || !emailHtmlContent}>
+        {#if emailCopied}
+          Copied!
+        {:else}
+          Copy HTML to Clipboard
+        {/if}
+      </Button>
+    {:else if previewMode === 'pdf'}
+      <Button onclick={downloadPdf} disabled={!pdfBlobUrl}>
+        Scarica PDF
+      </Button>
+    {:else}
+      <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>
+        {$t('common.copyHtml')}
+      </Button>
+    {/if}
   </Dialog.Footer>
 </DialogBordered>
 
