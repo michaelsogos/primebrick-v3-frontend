@@ -2,8 +2,13 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
+  import { formatUiDateTime } from '$lib/i18n';
+  import { cn } from '$lib/utils';
 
   type RFC7807Error = {
+    id?: string;
+    impact?: string;
     type: string;
     title: string;
     status: number;
@@ -11,6 +16,8 @@
     instance?: string;
     internal_code?: string;
     severity?: string;
+    createdAt?: number;
+    tags?: Array<{ label: string; tone?: string }>;
     [key: string]: any;
   };
 
@@ -26,6 +33,22 @@
 
   function closeDialog() {
     open = false;
+  }
+
+  function getToneForImpact(impact?: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
+    if (!impact) return 'neutral';
+    switch (impact) {
+      case 'CRITICAL':
+        return 'danger';
+      case 'HIGH':
+        return 'danger';
+      case 'MEDIUM':
+        return 'warning';
+      case 'LOW':
+        return 'info';
+      default:
+        return 'neutral';
+    }
   }
 </script>
 
@@ -45,8 +68,81 @@
   </Dialog.Header>
 
   {#if error}
-    <div class="flex-1 overflow-auto min-h-0 my-4">
-      <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
+    <div class="flex-1 overflow-auto min-h-0 flex gap-2">
+      <!-- Main content area -->
+      <div class="flex-1 overflow-auto min-h-0 my-4">
+        <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
+      </div>
+
+      <!-- Right metadata panel -->
+      <div class="w-80 shrink-0 flex flex-col my-4 ml-2">
+        <div class="space-y-3 bg-muted p-4 rounded-lg h-full overflow-auto">
+          <!-- Error metadata -->
+          <div class="space-y-3">
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">ID</span>
+              <p class="text-sm">{error.id || 'N/A'}</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Impact</span>
+              <p class="text-sm">{error.impact || 'N/A'}</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Scope</span>
+              <p class="text-sm font-semibold">{error.scope || error.title}</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Message</span>
+              <p class="text-sm">{error.message || error.detail}</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Timestamp</span>
+              <p class="text-sm">{error.createdAt ? formatUiDateTime(error.createdAt, 'en-GB') : 'N/A'}</p>
+            </div>
+            {#if error.tags && error.tags.length > 0}
+              <div>
+                <span class="text-xs font-semibold text-muted-foreground">Tags</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  {#each error.tags as tag}
+                    <Badge class="text-xs border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
+                      {tag.label}
+                    </Badge>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+
+          <!-- Separator -->
+          <div class="h-px bg-border"></div>
+
+          <!-- Fake user/ticket info -->
+          <div class="space-y-3">
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Current User</span>
+              <p class="text-sm">john.doe@example.com</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Current Role</span>
+              <p class="text-sm">Administrator</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Last Login at</span>
+              <p class="text-sm">May 15, 2026 at 1:30 PM</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Ticket ID</span>
+              <p class="text-sm">TICKET-2026-0515-001</p>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-muted-foreground">Ticket Link</span>
+              <a href="https://support.example.com/tickets/TICKET-2026-0515-001" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                https://support.example.com/tickets/TICKET-2026-0515-001
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   {/if}
 
