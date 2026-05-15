@@ -828,11 +828,18 @@
   let skipNextRowClickSelectToggle = false;
   /** Row dropdown menu state: which row has the menu open */
   let dropdownMenuRow = $state<TRow | null>(null);
+  /** Preview panel dropdown menu state */
+  let previewDropdownOpen = $state(false);
 
   /** Delete confirmation dialog state */
   let deleteConfirmDialogOpen = $state(false);
   let rowToDelete: TRow | null = null;
   let isDeleting = $state(false);
+
+  /** Restore confirmation dialog state */
+  let restoreConfirmDialogOpen = $state(false);
+  let rowToRestore: TRow | null = null;
+  let isRestoring = $state(false);
 
   /** Bulk delete confirmation dialog state */
   let bulkDeleteConfirmDialogOpen = $state(false);
@@ -1004,6 +1011,14 @@
     closeRowDropdown();
   }
 
+  /** Handle restore action for a row */
+  function handleRestoreRow(row: TRow) {
+    // Open confirmation dialog instead of restoring directly
+    rowToRestore = row;
+    restoreConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
   /** Confirm delete action after dialog confirmation */
   async function confirmDeleteRow() {
     if (!rowToDelete) return;
@@ -1020,7 +1035,35 @@
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      // Keep dialog open on error
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  /** Confirm restore action after dialog confirmation */
+  async function confirmRestoreRow() {
+    if (!rowToRestore) return;
+    try {
+      isRestoring = true;
+      // TODO: Implement restore API call
+      // const uuidValue = rowToRestore[uid] as string;
+      // await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
+      //   method: 'POST'
+      // });
+      restoreConfirmDialogOpen = false;
+      rowToRestore = null;
+      // Refresh the list after successful restore
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Restore failed:', error);
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isRestoring = false;
     }
   }
 
@@ -2240,20 +2283,7 @@
         </div>
 
         <!-- CTAs on right -->
-        {#if rowDeleted}
-          <!-- Restore button for deleted records -->
-          <Button
-            variant="ghost"
-            size="sm"
-            class="mr-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 hover:text-green-700 dark:hover:text-green-400"
-            title="Restore (coming soon)"
-          >
-            <span class="relative flex items-center justify-center">
-              <Trash class="size-4" />
-              <ArrowUpFromLine class="absolute -bottom-[1px]  size-3" />
-            </span>
-          </Button>
-        {:else}
+        {#if !rowDeleted}
           <!-- Mode switch with icons only -->
           <div class="flex items-center gap-2">
             {#if !previewEditMode}
@@ -2268,10 +2298,62 @@
           </div>
         {/if}
 
-        <!-- Kebab menu button (placeholder for now) -->
-        <Button variant="ghost" size="icon-sm" aria-label={$t('common.more')} class="mr-1">
-          <MoreVertical class="w-4 h-4" />
-        </Button>
+        <!-- Kebab menu for row actions -->
+        <DropdownMenu.Root bind:open={previewDropdownOpen}>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button 
+                {...props}
+                variant="ghost" 
+                size="icon-sm" 
+                aria-label={$t('common.more')} 
+                class="mr-1"
+              >
+                <MoreVertical class="w-4 h-4" />
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content class="w-56" align="end">
+            {#if entityRowActions?.edit !== false}
+              <DropdownMenu.Item onclick={() => handleEditRow(row)}>
+                <div class="flex items-center gap-2">
+                  <Pencil class="size-4 opacity-70" />
+                  <span>{$t('common.edit')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+            {#if entityRowActions?.duplicate !== false}
+              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)}>
+                <div class="flex items-center gap-2">
+                  <Copy class="size-4 opacity-70" />
+                  <span>{$t('common.duplicate')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+            {#if entityRowActions?.delete !== false}
+              {#if rowDeleted}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onclick={() => handleRestoreRow(row)} class="text-warning">
+                  <div class="flex items-center gap-2">
+                    <span class="relative flex items-center justify-center">
+                      <Trash2 class="size-4 text-warning/70" />
+                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                    </span>
+                    <span>{$t('common.restore')}</span>
+                  </div>
+                </DropdownMenu.Item>
+              {:else}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onclick={() => handleDeleteRow(row)} class="text-destructive">
+                  <div class="flex items-center gap-2">
+                    <Trash2 class="size-4 text-destructive/70" />
+                    <span>{$t('common.delete')}</span>
+                  </div>
+                </DropdownMenu.Item>
+              {/if}
+            {/if}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
 
         <!-- Close button -->
         <Button
@@ -3180,12 +3262,24 @@
                                   {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                      <div class="flex items-center gap-2">
-                                        <Trash2 class="size-4 text-destructive/70" />
-                                        <span>{$t('common.delete')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
+                                    {#if isRowDeleted(r)}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                        <div class="flex items-center gap-2">
+                                          <span class="relative flex items-center justify-center">
+                                            <Trash2 class="size-4 text-warning/70" />
+                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                          </span>
+                                          <span>{$t('common.restore')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {:else}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                        <div class="flex items-center gap-2">
+                                          <Trash2 class="size-4 text-destructive/70" />
+                                          <span>{$t('common.delete')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {/if}
                                   {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
@@ -3280,12 +3374,24 @@
                                   {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                      <div class="flex items-center gap-2">
-                                        <Trash2 class="size-4 text-destructive/70" />
-                                        <span>{$t('common.delete')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
+                                    {#if isRowDeleted(r)}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                        <div class="flex items-center gap-2">
+                                          <span class="relative flex items-center justify-center">
+                                            <Trash2 class="size-4 text-warning/70" />
+                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                          </span>
+                                          <span>{$t('common.restore')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {:else}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                        <div class="flex items-center gap-2">
+                                          <Trash2 class="size-4 text-destructive/70" />
+                                          <span>{$t('common.delete')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {/if}
                                   {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
@@ -3749,14 +3855,34 @@
                                 </div>
                               </DropdownMenu.Item>
                             {/if}
-                            {#if entityRowActions?.delete !== false}
-                              <DropdownMenu.Separator />
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                            {#if entityRowActions?.preview !== false}
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
                                 <div class="flex items-center gap-2">
-                                  <Trash2 class="size-4 text-destructive/70" />
-                                  <span>{$t('common.delete')}</span>
+                                  <Eye class="size-4 opacity-70" />
+                                  <span>{$t('entities.list.preview')}</span>
                                 </div>
                               </DropdownMenu.Item>
+                            {/if}
+                            {#if entityRowActions?.delete !== false}
+                              <DropdownMenu.Separator />
+                              {#if isRowDeleted(r)}
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                  <div class="flex items-center gap-2">
+                                    <span class="relative flex items-center justify-center">
+                                      <Trash2 class="size-4 text-warning/70" />
+                                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                    </span>
+                                    <span>{$t('common.restore')}</span>
+                                  </div>
+                                </DropdownMenu.Item>
+                              {:else}
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                  <div class="flex items-center gap-2">
+                                    <Trash2 class="size-4 text-destructive/70" />
+                                    <span>{$t('common.delete')}</span>
+                                  </div>
+                                </DropdownMenu.Item>
+                              {/if}
                             {/if}
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
@@ -3970,6 +4096,37 @@
       onclick={confirmDeleteRow}
     >
       {$t('common.delete')}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Restore confirmation dialog -->
+<DialogBordered bind:open={restoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.restoreConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={() => {
+        restoreConfirmDialogOpen = false;
+        rowToRestore = null;
+      }}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
+      onclick={confirmRestoreRow}
+      disabled={isRestoring}
+    >
+      {#if isRestoring}
+        {$t('common.restoring')}
+      {:else}
+        {$t('common.restore')}
+      {/if}
     </Button>
   </Dialog.Footer>
 </DialogBordered>

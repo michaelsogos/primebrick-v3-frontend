@@ -70,7 +70,7 @@
 
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 210 40% 98%;
-    --warning: 47.9 95.8% 53.1%;
+    --warning: 38 92% 50%;
     --warning-foreground: 222.2 84% 4.9%;
     --info: 199 89% 48%;
     --info-foreground: 210 40% 98%;
@@ -133,7 +133,7 @@
 
     --success: 142.1 70.6% 45.3%;
     --success-foreground: 222.2 84% 4.9%;
-    --warning: 47.9 95.8% 53.1%;
+    --warning: 38 92% 50%;
     --warning-foreground: 222.2 84% 4.9%;
     --info: 199 89% 60%;
     --info-foreground: 222.2 84% 4.9%;
@@ -306,16 +306,16 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
 }
 
 .pb-shell-error-card--warning {
-  border: 1px solid hsl(49, 91%, 84%) !important;
-  background: hsl(49, 100%, 97%) !important;
-  color: hsl(31, 92%, 45%) !important;
+  border: 1px solid hsl(38, 92%, 84%) !important;
+  background: hsl(38, 92%, 97%) !important;
+  color: hsl(38, 92%, 45%) !important;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.1) !important;
 }
 
 .dark .pb-shell-error-card--warning {
-  border-color: hsl(60, 100%, 9%) !important;
-  background: hsl(64, 100%, 6%) !important;
-  color: hsl(46, 87%, 65%) !important;
+  border-color: hsl(38, 92%, 15%) !important;
+  background: hsl(38, 92%, 8%) !important;
+  color: hsl(38, 92%, 65%) !important;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.35) !important;
 }
 
@@ -329,11 +329,11 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
 }
 
 .pb-shell-error-card--warning [data-slot='alert-description'] {
-  color: hsl(31 92% 45% / 0.88) !important;
+  color: hsl(38 92% 45% / 0.88) !important;
 }
 
 .dark .pb-shell-error-card--warning [data-slot='alert-description'] {
-  color: hsl(46 87% 65% / 0.88) !important;
+  color: hsl(38 92% 65% / 0.88) !important;
 }
 
 .pb-shell-error-card--info {
