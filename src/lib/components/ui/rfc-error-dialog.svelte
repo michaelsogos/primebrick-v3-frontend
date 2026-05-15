@@ -52,21 +52,27 @@
   async function highlightJson() {
     if (!error) return;
     
-    if (!highlighter) {
-      highlighter = await createHighlighter({
-        themes: ['monokai', 'one-dark'],
-        langs: ['json']
-      });
-    }
+    try {
+      if (!highlighter) {
+        highlighter = await createHighlighter({
+          themes: ['github-dark', 'github-light'],
+          langs: ['json']
+        });
+      }
 
-    const isDark = document.documentElement.classList.contains('dark');
-    const theme = isDark ? 'monokai' : 'one-dark';
-    const jsonString = JSON.stringify(error, null, 2);
-    
-    highlightedJson = highlighter.codeToHtml(jsonString, {
-      lang: 'json',
-      theme: theme
-    });
+      const isDark = document.documentElement.classList.contains('dark');
+      const theme = isDark ? 'github-dark' : 'github-light';
+      const jsonString = JSON.stringify(error, null, 2);
+      
+      highlightedJson = highlighter.codeToHtml(jsonString, {
+        lang: 'json',
+        theme: theme
+      });
+    } catch (e) {
+      console.error('Shiki highlighting error:', e);
+      // Fallback to plain text if highlighting fails
+      highlightedJson = `<pre class="text-xs">${JSON.stringify(error, null, 2)}</pre>`;
+    }
   }
 
   $effect(() => {
