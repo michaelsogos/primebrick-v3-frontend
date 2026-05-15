@@ -38,7 +38,12 @@
     "exportCsv": "Export in CSV",
     "exportConfirmTitle": "Export data",
     "exportConfirm": "Do you want to export",
-    "exporting": "Exporting…"
+    "exporting": "Exporting…",
+    "exportHtmlConfirmTitle": "Export HTML",
+    "exportHtmlConfirm": "Generate HTML preview for",
+    "htmlPreviewTitle": "HTML Preview",
+    "copyHtml": "Copy HTML",
+    "confirm": "Confirm"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -250,6 +255,7 @@
         "delete": "Delete",
         "duplicate": "Duplicate",
         "export": "Export",
+        "exportHtml": "Export HTML",
         "deleteConfirmTitle": "Are you sure you want to delete the selected items?"
       }
     },
