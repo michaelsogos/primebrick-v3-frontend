@@ -3,7 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import * as EventCard from '$lib/components/ui/event-card';
   import * as Sheet from '$lib/components/ui/sheet';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
+  import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
@@ -208,23 +208,7 @@
 </div>
 
 <!-- Error details fullscreen dialog -->
-<BorderedDialog bind:open={errorDetailsDialogOpen} color="destructive" class="!w-[95vw] !max-w-none !max-h-none !p-0 flex flex-col">
-  <div class="flex flex-col h-full">
-    <div class="p-4 pb-2">
-      <h2 class="text-lg font-semibold">{$t('shell.errors.errorDetails')}</h2>
-    </div>
-
-    {#if selectedErrorDetails}
-      <div class="flex-1 overflow-auto p-4 pt-0">
-        <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto">{JSON.stringify(selectedErrorDetails, null, 2)}</pre>
-      </div>
-    {/if}
-
-    <div class="p-4 pt-2 flex justify-end gap-2">
-      <Button variant="secondary" onclick={closeErrorDetails}>{$t('common.close')}</Button>
-    </div>
-  </div>
-</BorderedDialog>
+<RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} />
 
 <style>
   @keyframes pb-watermark-pulse {
