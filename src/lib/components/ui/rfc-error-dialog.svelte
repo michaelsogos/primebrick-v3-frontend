@@ -54,13 +54,13 @@
     
     if (!highlighter) {
       highlighter = await createHighlighter({
-        themes: ['github-light', 'github-dark'],
+        themes: ['dracula', 'vitesse-dark'],
         langs: ['json']
       });
     }
 
     const isDark = document.documentElement.classList.contains('dark');
-    const theme = isDark ? 'github-dark' : 'github-light';
+    const theme = isDark ? 'dracula' : 'vitesse-dark';
     const jsonString = JSON.stringify(error, null, 2);
     
     highlightedJson = highlighter.codeToHtml(jsonString, {
@@ -247,3 +247,12 @@
     </Button>
   </Dialog.Footer>
 </BorderedDialog>
+
+<style>
+  :global(.shiki) {
+    background-color: transparent !important;
+  }
+  :global(.shiki span) {
+    background-color: transparent !important;
+  }
+</style>
