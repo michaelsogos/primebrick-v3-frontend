@@ -1174,17 +1174,6 @@
       // Get HTML content as text
       const htmlContent = await response.text();
       
-      // Download as file
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
       // Show preview dialog
       htmlPreviewContent = htmlContent;
       htmlPreviewDialogOpen = true;
@@ -1226,12 +1215,12 @@
   async function generatePdfPreview() {
     previewMode = 'pdf';
     pdfBlobUrl = null;
-    
+
     try {
       const html2pdf = await import('html2pdf.js');
       const element = document.createElement('div');
       element.innerHTML = htmlPreviewContent;
-      
+
       const opt = {
         margin: 10,
         filename: `${entity}-export.pdf`,
@@ -1239,7 +1228,7 @@
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
-      
+
       // Generate PDF as binary blob instead of downloading
       const worker = html2pdf.default().set(opt).from(element);
       const pdfBlob = await worker.output('blob');
@@ -1248,6 +1237,17 @@
       console.error('PDF generation failed:', error);
       previewMode = 'html';
     }
+  }
+
+  async function downloadPdf() {
+    if (!pdfBlobUrl) return;
+
+    const a = document.createElement('a');
+    a.href = pdfBlobUrl;
+    a.download = `${entity}-export.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   async function prepareEmailHtml() {
@@ -3558,18 +3558,21 @@
       <Dock.Icon
         onclick={() => { previewMode = 'html'; pdfBlobUrl = null; }}
         tooltip="HTML view"
+        selected={previewMode === 'html'}
       >
         <BsFiletypeHtml class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={generatePdfPreview}
         tooltip="PDF view"
+        selected={previewMode === 'pdf'}
       >
         <BsFiletypePdf class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={prepareEmailHtml}
         tooltip="Email"
+        selected={previewMode === 'email'}
       >
         <BsEnvelopeAt class="w-6 h-6" />
       </Dock.Icon>
@@ -3686,6 +3689,10 @@
         {:else}
           Copy HTML to Clipboard
         {/if}
+      </Button>
+    {:else if previewMode === 'pdf'}
+      <Button onclick={downloadPdf} disabled={!pdfBlobUrl}>
+        Scarica PDF
       </Button>
     {:else}
       <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>

@@ -10,13 +10,15 @@
 		children,
 		tooltip,
 		onclick,
-		transparent = false
+		transparent = false,
+		selected = false
 	}: {
 		class?: string;
 		children: Snippet;
 		tooltip?: string;
 		onclick?: () => void;
 		transparent?: boolean;
+		selected?: boolean;
 	} = $props();
 
 	let ref: HTMLElement | undefined = $state();
@@ -50,6 +52,7 @@
 			class={cn(
 				'flex aspect-square cursor-pointer items-center justify-center rounded-full transition-colors',
 				!transparent && 'hover:bg-primary/20 text-primary',
+				selected && !transparent && 'bg-primary text-primary-foreground hover:bg-primary',
 				className
 			)}
 		>
