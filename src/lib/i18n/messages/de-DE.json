@@ -34,6 +34,11 @@
     "deleting": "Löschen…",
     "deleteConfirmTitle": "Möchten Sie diesen Datensatz wirklich löschen?",
     "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "duplicate": "Duplizieren",
+    "duplicating": "Duplizieren…",
+    "duplicateConfirmTitle": "Datensätze duplizieren",
+    "duplicateConfirm": "Möchten Sie duplizieren",
+    "duplicateConfirmSingle": "Möchten Sie diesen Datensatz duplizieren",
     "exportExcel": "Als Excel exportieren",
     "exportCsv": "Als CSV exportieren",
     "exportConfirmTitle": "Daten exportieren",
@@ -105,11 +110,12 @@
       "dark": "Zum dunklen Thema wechseln"
     },
     "errors": {
-      "aria": "Fehler",
+      "aria": "Errors",
       "title": "Fehler",
-      "clear": "Leeren",
       "close": "Schließen",
       "empty": "Keine Fehler.",
+      "viewDetails": "Details anzeigen",
+      "errorDetails": "Fehlerdetails",
       "unhandledRejection": "Nicht behandelte Zurückweisung",
       "unhandledError": "Nicht behandelter Fehler",
       "unhandledRejectionFallback": "Nicht behandelte Zurückweisung",
@@ -125,6 +131,7 @@
       "criticalMessage": "Demo-Hinweis kritisch / dringend (abweichend vom Standardfehler).",
       "criticalAria": "Kritischer Toast — Demo-Dringlichkeits-Toast anzeigen"
     },
+    "listFailed": "Liste fehlgeschlagen",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -148,6 +155,16 @@
     }
   }
   ,
+  "errors": {
+    "scope": {
+      "customersPageInit": "Kundenpage-Initialisierung",
+      "customersList": "Kundenliste",
+      "bulkDeleteApi": "Massenlösch-API",
+      "duplicateAction": "Duplizierungsaktion",
+      "duplicateApi": "Duplizierungs-API",
+      "customerListApi": "Kundenlisten-API"
+    }
+  },
   "entities": {
     "list": {
       "datetimeIana": {
@@ -245,7 +262,11 @@
         "export": "Exportieren",
         "exportHtml": "HTML exportieren",
         "deleteConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich löschen?"
-      }
+      },
+      "bulkDeleteFailed": "Massenlöschung fehlgeschlagen",
+      "duplicateMaxLimit": "Es können nicht mehr als 50 Datensätze gleichzeitig dupliziert werden",
+      "duplicatePartialSuccess": "{count} Datensätze dupliziert, {failed} fehlgeschlagen",
+      "duplicateSuccess": "{count} Datensätze erfolgreich dupliziert"
     },
     "crm": {
       "pipeline": {

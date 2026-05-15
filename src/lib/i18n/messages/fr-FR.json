@@ -34,6 +34,11 @@
     "deleting": "Suppression…",
     "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
     "deleteConfirm": "Cette action ne peut pas être annulée.",
+    "duplicate": "Dupliquer",
+    "duplicating": "Duplication…",
+    "duplicateConfirmTitle": "Dupliquer les enregistrements",
+    "duplicateConfirm": "Voulez-vous dupliquer",
+    "duplicateConfirmSingle": "Voulez-vous dupliquer cet enregistrement",
     "exportExcel": "Exporter en Excel",
     "exportCsv": "Exporter en CSV",
     "exportConfirmTitle": "Exporter les données",
@@ -105,26 +110,29 @@
       "dark": "Passer au thème sombre"
     },
     "errors": {
-      "aria": "Erreurs",
+      "aria": "Errors",
       "title": "Erreurs",
       "clear": "Effacer",
       "close": "Fermer",
       "empty": "Aucune erreur.",
+      "viewDetails": "Voir Détails",
+      "errorDetails": "Détails de l'Erreur",
       "unhandledRejection": "Rejet non géré",
       "unhandledError": "Erreur non gérée",
       "unhandledRejectionFallback": "Rejet non géré",
       "unhandledErrorFallback": "Erreur non gérée"
     },
     "demoToast": {
-      "profileMessage": "Notification d’information de démonstration (impact faible).",
+      "profileMessage": "Notification d'information de démonstration (impact faible).",
       "preferencesMessage": "Avertissement de démonstration (impact moyen).",
       "helpMessage": "Erreur de démonstration (impact élevé).",
-      "profileAria": "Profil — afficher un toast d’information de démo",
-      "preferencesAria": "Préférences — afficher un toast d’avertissement de démo",
-      "helpAria": "Aide et support — afficher un toast d’erreur de démo",
-      "criticalMessage": "Notification critique / urgente de démonstration (distincte de l’erreur standard).",
+      "profileAria": "Profil — afficher un toast d'information de démo",
+      "preferencesAria": "Préférences — afficher un toast d'avertissement de démo",
+      "helpAria": "Aide et support — afficher un toast d'erreur de démo",
+      "criticalMessage": "Notification critique / urgente de démonstration (distincte de l'erreur standard).",
       "criticalAria": "Toast critique — afficher un toast urgent de démo"
     },
+    "listFailed": "Liste échouée",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -244,7 +252,11 @@
         "export": "Exporter",
         "exportHtml": "Exporter HTML",
         "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer les éléments sélectionnés ?"
-      }
+      },
+      "bulkDeleteFailed": "Suppression groupée échouée",
+      "duplicateMaxLimit": "Impossible de dupliquer plus de 50 enregistrements à la fois",
+      "duplicatePartialSuccess": "{count} enregistrements dupliqués, {failed} échoués",
+      "duplicateSuccess": "{count} enregistrements dupliqués avec succès"
     },
     "crm": {
       "pipeline": {

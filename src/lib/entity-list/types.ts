@@ -61,6 +61,12 @@ export type EntityListListMeta = {
   viewVisibility?: ListMetaViewVisibility;
   /** Columns that support filtering. */
   filterFields?: MetaColumn[];
+  /** Row actions supported by this entity */
+  rowActions?: {
+    duplicate?: boolean;
+    delete?: boolean;
+    edit?: boolean;
+  };
 };
 
 /** All columns in the order they should be displayed (sticky -> data -> auditing). */

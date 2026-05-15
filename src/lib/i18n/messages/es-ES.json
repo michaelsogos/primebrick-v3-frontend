@@ -34,6 +34,11 @@
     "deleting": "Eliminando…",
     "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar este registro?",
     "deleteConfirm": "Esta acción no se puede deshacer.",
+    "duplicate": "Duplicar",
+    "duplicating": "Duplicando…",
+    "duplicateConfirmTitle": "Duplicar registros",
+    "duplicateConfirm": "¿Deseas duplicar",
+    "duplicateConfirmSingle": "¿Deseas duplicar este registro",
     "exportExcel": "Exportar a Excel",
     "exportCsv": "Exportar a CSV",
     "exportConfirmTitle": "Exportar datos",
@@ -105,11 +110,13 @@
       "dark": "Cambiar a tema oscuro"
     },
     "errors": {
-      "aria": "Errores",
+      "aria": "Errors",
       "title": "Errores",
       "clear": "Limpiar",
       "close": "Cerrar",
       "empty": "Sin errores.",
+      "viewDetails": "Ver Detalles",
+      "errorDetails": "Detalles del Error",
       "unhandledRejection": "Rechazo no gestionado",
       "unhandledError": "Error no gestionado",
       "unhandledRejectionFallback": "Rechazo no gestionado",
@@ -125,6 +132,7 @@
       "criticalMessage": "Aviso crítico / urgente de demostración (distinto del error estándar).",
       "criticalAria": "Toast crítico — mostrar toast urgente de demostración"
     },
+    "listFailed": "Lista fallida",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -245,7 +253,11 @@
         "export": "Exportar",
         "exportHtml": "Exportar HTML",
         "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar los elementos seleccionados?"
-      }
+      },
+      "bulkDeleteFailed": "Eliminación masiva fallida",
+      "duplicateMaxLimit": "No se pueden duplicar más de 50 registros a la vez",
+      "duplicatePartialSuccess": "{count} registros duplicados, {failed} fallidos",
+      "duplicateSuccess": "{count} registros duplicados con éxito"
     },
     "crm": {
       "pipeline": {

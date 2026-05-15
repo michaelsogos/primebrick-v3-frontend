@@ -33,6 +33,11 @@
     "deleting": "A eliminar…",
     "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
     "deleteConfirm": "Esta ação não pode ser desfeita.",
+    "duplicate": "Duplicar",
+    "duplicating": "A duplicar…",
+    "duplicateConfirmTitle": "Duplicar registos",
+    "duplicateConfirm": "Deseja duplicar",
+    "duplicateConfirmSingle": "Deseja duplicar este registo",
     "exportExcel": "Exportar para Excel",
     "exportCsv": "Exportar para CSV",
     "exportConfirmTitle": "Exportar dados",
@@ -104,11 +109,13 @@
       "dark": "Mudar para tema escuro"
     },
     "errors": {
-      "aria": "Erros",
+      "aria": "Errors",
       "title": "Erros",
       "clear": "Limpar",
       "close": "Fechar",
       "empty": "Sem erros.",
+      "viewDetails": "Ver Detalhes",
+      "errorDetails": "Detalhes do Erro",
       "unhandledRejection": "Rejeição não tratada",
       "unhandledError": "Erro não tratado",
       "unhandledRejectionFallback": "Rejeição não tratada",
@@ -124,6 +131,7 @@
       "criticalMessage": "Aviso crítico / urgente de demonstração (distinto do erro padrão).",
       "criticalAria": "Toast crítico — mostrar toast urgente de demonstração"
     },
+    "listFailed": "Lista falhou",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -147,6 +155,16 @@
     }
   }
   ,
+  "errors": {
+    "scope": {
+      "customersPageInit": "Inicialização página clientes",
+      "customersList": "Lista clientes",
+      "bulkDeleteApi": "API eliminação em massa",
+      "duplicateAction": "Ação duplicar",
+      "duplicateApi": "API duplicar",
+      "customerListApi": "API lista clientes"
+    }
+  },
   "entities": {
     "list": {
       "datetimeIana": {
@@ -244,7 +262,11 @@
         "export": "Exportar",
         "exportHtml": "Exportar HTML",
         "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?"
-      }
+      },
+      "bulkDeleteFailed": "Eliminação em massa falhou",
+      "duplicateMaxLimit": "Não é possível duplicar mais de 50 registos de cada vez",
+      "duplicatePartialSuccess": "{count} registos duplicados, {failed} falharam",
+      "duplicateSuccess": "{count} registos duplicados com sucesso"
     },
     "crm": {
       "pipeline": {
