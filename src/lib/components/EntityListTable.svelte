@@ -854,12 +854,48 @@
   let singleRowToDuplicate: TRow | null = null;
 
   /** Entity preview panel state */
-  let previewPanelOpen = $state(false);
+  const previewPanelSessionKey = `pb-preview-panel:${entity ?? 'default'}`;
+  const _sessionRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(previewPanelSessionKey) : null;
+  const _sessionState = _sessionRaw ? JSON.parse(_sessionRaw) : null;
+
+  let previewPanelOpen = $state<boolean>(_sessionState?.open ?? false);
   let previewRow = $state<TRow | null>(null);
   let previewRowIndex = $state(0);
   let previewEditMode = $state(false);
   let navigatingToNextPage = $state(false);
   let navigatingToPrevPage = $state(false);
+  let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
+  let isResizing = $state(false);
+
+  $effect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(previewPanelSessionKey, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth }));
+    }
+  });
+
+  /** Preview panel resize handlers */
+  let resizeStartX = $state(0);
+  let resizeStartWidth = $state(0);
+
+  function startResize(e: MouseEvent) {
+    isResizing = true;
+    resizeStartX = e.clientX;
+    resizeStartWidth = previewPanelWidth;
+    e.preventDefault();
+  }
+
+  function handleResize(e: MouseEvent) {
+    if (!isResizing) return;
+    const container = e.currentTarget as HTMLElement;
+    const containerRect = container.getBoundingClientRect();
+    const deltaX = e.clientX - resizeStartX;
+    const deltaPercent = (deltaX / containerRect.width) * 100;
+    previewPanelWidth = Math.max(15, Math.min(70, resizeStartWidth - deltaPercent));
+  }
+
+  function stopResize() {
+    isResizing = false;
+  }
 
   // Reset previewRowIndex when page changes
   $effect(() => {
@@ -3239,7 +3275,7 @@
           {/if}
         </div>
       {:else}
-        <div class="flex h-full overflow-hidden">
+        <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel" onmousemove={handleResize} onmouseup={stopResize} onmouseleave={stopResize}>
           <div class="flex-1 min-w-0 overflow-hidden">
             <Table.Root
           bind:ref={tableRef}
@@ -3704,9 +3740,22 @@
       </Table.Root>
           </div>
 
+          {#if previewPanelOpen}
+            <!-- Resize handle between table and panel -->
+            <div
+              class="relative h-full w-2 cursor-ew-resize hover:bg-primary/30 z-20 border-l-2 border-transparent hover:border-primary transition-colors flex items-center justify-center"
+              onmousedown={startResize}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize panel"
+            >
+              <div class="w-1 h-8 bg-border rounded-full"></div>
+            </div>
+          {/if}
+
           <div
-            class="h-full overflow-hidden bg-muted border-l transition-[width,min-width] duration-300 ease-in-out"
-            style="width: {previewPanelOpen ? '30%' : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
+            class="h-full overflow-hidden bg-muted border-l {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
+            style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
               {#if previewRow}
