@@ -2216,11 +2216,11 @@
         <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
           <Button
             size="icon-sm"
-            variant="secondary"
+            variant="secondary-outline"
             onclick={() => navigatePreview(-1)}
             disabled={previewRowIndex === 0 && footerPage === 1}
             aria-label="Previous record"
-            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+            class="pointer-events-auto hover:scale-105 transition-all"
           >
             <ChevronLeft class="w-4 h-4" />
           </Button>
@@ -2229,11 +2229,11 @@
           </span>
           <Button
             size="icon-sm"
-            variant="secondary"
+            variant="secondary-outline"
             onclick={() => navigatePreview(1)}
             disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
             aria-label="Next record"
-            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+            class="pointer-events-auto hover:scale-105 transition-all"
           >
             <ChevronRight class="w-4 h-4" />
           </Button>
@@ -2267,6 +2267,11 @@
             />
           </div>
         {/if}
+
+        <!-- Kebab menu button (placeholder for now) -->
+        <Button variant="ghost" size="icon-sm" aria-label={$t('common.more')} class="mr-1">
+          <MoreVertical class="w-4 h-4" />
+        </Button>
 
         <!-- Close button -->
         <Button
@@ -3471,7 +3476,7 @@
                     class="transition-transform duration-300"
                   >
                     {#if previewPanelOpen}
-                      <PanelRightClose class="size-4 transition-transform duration-300 rotate-180" />
+                      <PanelRightClose class="size-4 transition-transform duration-300" />
                     {:else}
                       <PanelRightOpen class="size-4 transition-transform duration-300" />
                     {/if}
@@ -3951,8 +3956,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={() => {
         deleteConfirmDialogOpen = false;
         rowToDelete = null;
@@ -3979,8 +3984,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelBulkDelete}
     >
       {$t('common.cancel')}
@@ -4029,8 +4034,8 @@
   {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelExportRow}
     >
       {$t('common.cancel')}
@@ -4094,8 +4099,8 @@
   {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelHtmlExport}
     >
       {$t('common.cancel')}
@@ -4128,8 +4133,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelDuplicate}
     >
       {$t('common.cancel')}
@@ -4278,8 +4283,8 @@
   
   <Dialog.Footer class="gap-2 shrink-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={closeHtmlPreview}
     >
       {$t('common.close')}

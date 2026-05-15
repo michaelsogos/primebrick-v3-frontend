@@ -18,7 +18,8 @@
 				outline:
 					"bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border shadow-xs",
 				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs",
-				ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+				"secondary-outline": "bg-neutral-100 border border-neutral-300 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-neutral-800 dark:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-100 shadow-xs",
+				ghost: "hover:bg-neutral-200/80 hover:text-neutral-900 dark:hover:bg-neutral-700/80 dark:hover:text-neutral-100",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {
