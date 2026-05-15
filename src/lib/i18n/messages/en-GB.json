@@ -136,6 +136,7 @@
       "criticalMessage": "Demo urgent / critical impact (distinct from standard error).",
       "criticalAria": "Critical toast — show demo urgent toast"
     },
+    "listFailed": "List Failed",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -161,8 +162,12 @@
   ,
   "errors": {
     "scope": {
-      "customersPageInit": "Customers page init",
-      "customersList": "Customers list"
+      "customersPageInit": "Customers Page Init",
+      "customersList": "Customers List",
+      "bulkDeleteApi": "Bulk Delete API",
+      "duplicateAction": "Duplicate Action",
+      "duplicateApi": "Duplicate API",
+      "customerListApi": "Customer List API"
     }
   },
   "impact": {
@@ -268,7 +273,11 @@
         "export": "Export",
         "exportHtml": "Export HTML",
         "deleteConfirmTitle": "Are you sure you want to delete the selected items?"
-      }
+      },
+      "bulkDeleteFailed": "Bulk delete failed",
+      "duplicateMaxLimit": "Cannot duplicate more than 50 records at a time",
+      "duplicatePartialSuccess": "{count} records duplicated, {failed} failed",
+      "duplicateSuccess": "{count} records duplicated successfully"
     },
     "crm": {
       "pipeline": {

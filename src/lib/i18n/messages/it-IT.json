@@ -133,9 +133,10 @@
       "profileAria": "Profilo — mostra toast informativo di demo",
       "preferencesAria": "Preferenze — mostra toast di avviso di demo",
       "helpAria": "Guida e supporto — mostra toast di errore di demo",
-      "criticalMessage": "Messaggio dimostrativo critico / urgente (distinto dall’errore standard).",
+      "criticalMessage": "Messaggio dimostrativo critico / urgente (distinto dall'errore standard).",
       "criticalAria": "Toast critico — mostra toast urgente di demo"
     },
+    "listFailed": "Elenco fallito",
     "health": {
       "beOnline": "Online",
       "beOffline": "Offline",
@@ -162,7 +163,11 @@
   "errors": {
     "scope": {
       "customersPageInit": "Inizializzazione pagina clienti",
-      "customersList": "Lista clienti"
+      "customersList": "Lista clienti",
+      "bulkDeleteApi": "API eliminazione in blocco",
+      "duplicateAction": "Azione duplicazione",
+      "duplicateApi": "API duplicazione",
+      "customerListApi": "API lista clienti"
     }
   },
   "impact": {
@@ -268,7 +273,11 @@
         "export": "Esporta",
         "exportHtml": "Esporta HTML",
         "deleteConfirmTitle": "Sei sicuro di voler eliminare gli elementi selezionati?"
-      }
+      },
+      "bulkDeleteFailed": "Eliminazione in blocco fallita",
+      "duplicateMaxLimit": "Non è possibile duplicare più di 50 record alla volta",
+      "duplicatePartialSuccess": "{count} record duplicati, {failed} falliti",
+      "duplicateSuccess": "{count} record duplicati con successo"
     },
     "crm": {
       "pipeline": {

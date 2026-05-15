@@ -951,9 +951,9 @@
         pushRFC7807Error(err, { showToast: true });
       } else {
         pushImpactError({
-          impact: 'HIGH',
-          message: 'Bulk delete failed',
-          scope: 'Bulk delete API',
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.bulkDeleteFailed',
+          scope: $t('errors.scope.bulkDeleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -1122,8 +1122,8 @@
     if (selectedKeys.length > 50) {
       pushImpactError({
         impact: 'MEDIUM',
-        message: 'Cannot duplicate more than 50 records at a time',
-        scope: 'Duplicate Action',
+        messageKey: 'entities.list.duplicateMaxLimit',
+        scope: $t('errors.scope.duplicateAction'),
         toast: true
       });
       return;
@@ -1161,14 +1161,16 @@
       if (result.errors.length > 0) {
         pushImpactError({
           impact: 'MEDIUM',
-          message: `${result.uuids.length} records duplicated, ${result.errors.length} failed`,
-          scope: 'Duplicate API'
+          messageKey: 'entities.list.duplicatePartialSuccess',
+          messageParams: { count: result.uuids.length, failed: result.errors.length },
+          scope: $t('errors.scope.duplicateApi')
         });
       } else {
         pushImpactError({
           impact: 'LOW',
-          message: `${result.uuids.length} records duplicated successfully`,
-          scope: 'Duplicate API'
+          messageKey: 'entities.list.duplicateSuccess',
+          messageParams: { count: result.uuids.length },
+          scope: $t('errors.scope.duplicateApi')
         });
       }
 
