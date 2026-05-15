@@ -7,8 +7,7 @@
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
   import { Code, FileJson } from 'lucide-svelte';
-  import { onMount } from 'svelte';
-  import { createHighlighter } from 'shiki';
+  import JsonTableViewer from './JsonTableViewer.svelte';
 
   type RFC7807Error = {
     id?: string;
@@ -22,7 +21,14 @@
     severity?: string;
     createdAt?: number;
     tags?: Array<{ label: string; tone?: string }>;
-    [key: string]: any;
+    scope?: string;
+    message?: string;
+    extra?: {
+      viewer?: string;
+      results?: any;
+      issues?: any;
+      [key: string]: any;
+    };
   };
 
   let {
@@ -36,39 +42,10 @@
   } = $props();
 
   let previewMode = $state('aesthetic');
-  let highlightedJson = $state('');
-  let highlighter: any = $state(null);
 
   function closeDialog() {
     open = false;
   }
-
-  async function highlightJson() {
-    if (!error) return;
-    try {
-      if (!highlighter) {
-        highlighter = await createHighlighter({
-          themes: ['github-light', 'github-dark'],
-          langs: ['json']
-        });
-      }
-      const json = JSON.stringify(error, null, 2);
-      const isDark = document.documentElement.classList.contains('dark');
-      highlightedJson = highlighter.codeToHtml(json, {
-        lang: 'json',
-        theme: isDark ? 'github-dark' : 'github-light'
-      });
-    } catch (e) {
-      console.error('Failed to highlight JSON:', e);
-      highlightedJson = JSON.stringify(error, null, 2);
-    }
-  }
-
-  $effect(() => {
-    if (error && previewMode === 'aesthetic') {
-      highlightJson();
-    }
-  });
 
   function getToneForImpact(impact?: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
     if (!impact) return 'neutral';
@@ -134,9 +111,11 @@
           <pre class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">{JSON.stringify(error, null, 2)}</pre>
         {:else}
           <div class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">
-            <div class={document.documentElement.classList.contains('dark') ? '' : 'shiki-light'}>
-              {@html highlightedJson || JSON.stringify(error, null, 2)}
-            </div>
+            {#if error.extra?.issues}
+              <JsonTableViewer data={error.extra.issues} />
+            {:else}
+              <JsonTableViewer data={error} />
+            {/if}
           </div>
         {/if}
       </div>
@@ -223,12 +202,3 @@
     </Button>
   </Dialog.Footer>
 </BorderedDialog>
-
-<style>
-  .shiki-light :global(pre) {
-    background: transparent !important;
-  }
-  .shiki-light :global(code) {
-    background: transparent !important;
-  }
-</style>

@@ -16,10 +16,10 @@
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
   let errorDetailsDialogOpen = $state(false);
-  let selectedErrorDetails = $state<Record<string, any> | null>(null);
+  let selectedErrorDetails = $state<any | null>(null);
   let selectedErrorColor = $state<'critical' | 'error' | 'warning' | 'info'>('info');
 
-  function openErrorDetails(e: Record<string, any>, color: 'critical' | 'error' | 'warning' | 'info') {
+  function openErrorDetails(e: any, color: 'critical' | 'error' | 'warning' | 'info') {
     selectedErrorDetails = e;
     selectedErrorColor = color;
     errorDetailsDialogOpen = true;
@@ -31,9 +31,7 @@
   }
 
   function hasExtraFields(e: Record<string, any>): boolean {
-    const baseFields = ['id', 'impact', 'message', 'messageKey', 'scope', 'scopeKey', 'tags', 'instance', 'internalCode', 'internal_code', 'detail', 'createdAt', 'toast', 'type', 'title', 'status', 'severity'];
-    const extraKeys = Object.keys(e).filter(key => !baseFields.includes(key));
-    return extraKeys.length > 0;
+    return e.extra != null && Object.keys(e.extra).length > 0;
   }
 
   function errorTagBadgeClass(tone: string | undefined) {
