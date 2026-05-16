@@ -285,9 +285,10 @@
                 <ActionIcon class={cn("size-4", colorClass)} />
               </Timeline.Separator>
               <Timeline.Content>
-                <div class="flex items-baseline gap-2">
-                  <span class={cn("text-sm font-semibold", colorClass)}>{entry.version}</span>
-                  <span class="text-muted-foreground">-</span>
+                <div class="flex items-center gap-2">
+                  <Badge class={cn("text-xs font-semibold", colorClass)} variant="outline">
+                    v{entry.version}
+                  </Badge>
                   <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
                 </div>
                 <Timeline.Title class={colorClass}>
