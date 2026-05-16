@@ -947,12 +947,9 @@
   async function loadVersionHistory(row: TRow) {
     const rowUuid = String((row as Record<string, unknown>)[uid]);
     openSheet('entity.versionHistory', {
-      content: VersionHistoryPanel,
-      props: {
-        entity,
-        rowUuid
-      }
-    } as any);
+      entity,
+      rowUuid
+    });
   }
 
 
