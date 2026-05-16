@@ -331,21 +331,48 @@
         "deleted_by": "Excluído por"
       },
       "versionHistory": {
-        "title": "Histórico de Versões",
+        "title": "Histórico de versões",
         "loading": "Carregando histórico de versões…",
         "error": "Falha ao carregar histórico de versões",
         "empty": "Nenhum histórico de versões disponível",
         "viewMore": "Ver mais",
+        "showDetails": "Mostrar detalhes",
+        "hideDetails": "Ocultar detalhes",
         "actions": {
           "CREATE": "Criação",
+          "INSERT": "Criação",
           "UPDATE": "Modificação",
           "DELETE": "Exclusão",
+          "SOFT_DELETE": "Exclusão",
+          "HARD_DELETE": "Exclusão definitiva",
           "RESTORE": "Restauração"
+        },
+        "field": {
+          "email": "E-mail",
+          "phone": "Telefone",
+          "status": "Status",
+          "first_name": "Nome",
+          "last_name": "Sobrenome",
+          "company_name": "Empresa",
+          "local_address": "Endereço",
+          "local_city": "Cidade",
+          "local_state": "Estado/Região",
+          "local_country": "País",
+          "local_zip": "CEP",
+          "status_reason": "Motivo do status"
         },
         "fieldModified": "Campo {field} modificado de {from} para {to}",
         "notSet": "não definido",
+        "set": "definido como",
+        "unchanged": "inalterado em",
+        "cleared": "limpo",
+        "changedFrom": "alterado de",
+        "to": "para",
+        "null": "vazio",
         "recordCreated": "Registro criado",
         "recordDeleted": "Registro excluído",
+        "recordSoftDeleted": "Registro excluído",
+        "recordHardDeleted": "Registro excluído definitivamente",
         "recordRestored": "Registro restaurado"
       }
     }

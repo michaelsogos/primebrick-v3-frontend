@@ -24,6 +24,7 @@
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
+  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -74,7 +75,8 @@
     Funnel,
     CheckCircle,
     Info,
-    RefreshCw
+    RefreshCw,
+    FileClock
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
@@ -942,114 +944,15 @@
     isResizing = false;
   }
 
-  /** Version History panel state */
-  let versionHistoryPanelOpen = $state<boolean>(false);
-  let versionHistoryRow = $state<TRow | null>(null);
-  let versionHistoryData = $state<any[]>([]);
-  let versionHistoryLoading = $state<boolean>(false);
-  let versionHistoryError = $state<string | null>(null);
-  let versionHistoryPage = $state<number>(1);
-  let versionHistoryLimit = $state<number>(50);
-  let versionHistoryTotal = $state<number>(0);
-  let versionHistoryHasMore = $state<boolean>(false);
-
   async function loadVersionHistory(row: TRow) {
-    versionHistoryRow = row;
-    versionHistoryPanelOpen = true;
-    versionHistoryLoading = true;
-    versionHistoryError = null;
-    versionHistoryPage = 1;
-    versionHistoryData = [];
-
-    try {
-      const rowUuid = String((row as Record<string, unknown>)[uid]);
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
-
-      if (!res.ok) {
-        throw new Error('Failed to load version history');
-      }
-
-      const data = await res.json();
-      versionHistoryData = data.data || [];
-      versionHistoryTotal = data.pagination?.total || 0;
-      versionHistoryHasMore = data.pagination?.hasMore || false;
-    } catch (e) {
-      versionHistoryError = $t('entities.customer.versionHistory.error');
-      console.error('Failed to load version history:', e);
-    } finally {
-      versionHistoryLoading = false;
-    }
+    const rowUuid = String((row as Record<string, unknown>)[uid]);
+    openSheet('entity.versionHistory', {
+      entity,
+      rowUuid,
+      columns: columns
+    });
   }
 
-  async function loadMoreVersionHistory() {
-    if (!versionHistoryRow || versionHistoryLoading || !versionHistoryHasMore) return;
-
-    versionHistoryLoading = true;
-    versionHistoryPage++;
-
-    try {
-      const rowUuid = String((versionHistoryRow as Record<string, unknown>)[uid]);
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
-
-      if (!res.ok) {
-        throw new Error('Failed to load more version history');
-      }
-
-      const data = await res.json();
-      versionHistoryData = [...versionHistoryData, ...(data.data || [])];
-      versionHistoryHasMore = data.pagination?.hasMore || false;
-    } catch (e) {
-      versionHistoryError = $t('entities.customer.versionHistory.error');
-      console.error('Failed to load more version history:', e);
-    } finally {
-      versionHistoryLoading = false;
-    }
-  }
-
-  function formatAuditDelta(delta: Record<string, { from: any; to: any }>) {
-    const descriptions: string[] = [];
-    for (const [field, change] of Object.entries(delta)) {
-      const fieldLabel = $t(`entities.customer.fields.${field}`) || field;
-      const from = change.from === null || change.from === undefined ? $t('entities.customer.versionHistory.notSet') : change.from;
-      const to = change.to === null || change.to === undefined ? $t('entities.customer.versionHistory.notSet') : change.to;
-      descriptions.push(`${$t('entities.customer.versionHistory.fieldModified')}`.replace('{field}', fieldLabel).replace('{from}', from).replace('{to}', to));
-    }
-    return descriptions;
-  }
-
-  function getAuditActionLabel(action: string) {
-    return $t(`entities.customer.versionHistory.actions.${action}`) || action;
-  }
-
-  function getAuditActionColorClass(action: string): string {
-    switch (action) {
-      case 'DELETE':
-        return 'text-destructive bg-destructive/10 dark:text-destructive-foreground dark:bg-destructive/20';
-      case 'CREATE':
-        return 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950';
-      case 'RESTORE':
-        return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950';
-      case 'UPDATE':
-        return 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950';
-      default:
-        return 'text-gray-900 bg-gray-100 dark:text-gray-100 dark:bg-gray-800';
-    }
-  }
-
-  function getAuditActionIcon(action: string) {
-    switch (action) {
-      case 'DELETE':
-        return Trash2;
-      case 'CREATE':
-        return CheckCircle;
-      case 'RESTORE':
-        return RefreshCw;
-      case 'UPDATE':
-        return Pencil;
-      default:
-        return Info;
-    }
-  }
 
   // Reset previewRowIndex when page changes
   $effect(() => {
@@ -2689,7 +2592,7 @@
               onclick={() => loadVersionHistory(row)}
             >
               <div class="flex items-center gap-2">
-                <RefreshCw class="size-4 opacity-70" />
+                <FileClock class="size-4 opacity-70" />
                 <span>{$t('common.versionHistory')}</span>
               </div>
             </DropdownMenu.Item>
@@ -3642,7 +3545,7 @@
                                     onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
                                   >
                                     <div class="flex items-center gap-2">
-                                      <RefreshCw class="size-4 opacity-70" />
+                                      <FileClock class="size-4 opacity-70" />
                                       <span>{$t('common.versionHistory')}</span>
                                     </div>
                                   </DropdownMenu.Item>
@@ -3768,7 +3671,7 @@
                                     onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
                                   >
                                     <div class="flex items-center gap-2">
-                                      <RefreshCw class="size-4 opacity-70" />
+                                      <FileClock class="size-4 opacity-70" />
                                       <span>{$t('common.versionHistory')}</span>
                                     </div>
                                   </DropdownMenu.Item>
@@ -4276,7 +4179,7 @@
                               onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
                             >
                               <div class="flex items-center gap-2">
-                                <RefreshCw class="size-4 opacity-70" />
+                                <FileClock class="size-4 opacity-70" />
                                 <span>{$t('common.versionHistory')}</span>
                               </div>
                             </DropdownMenu.Item>
@@ -4337,7 +4240,7 @@
           {/if}
 
           <div
-            class="h-full overflow-hidden bg-muted border-l {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
+            class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
             style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
@@ -4798,99 +4701,6 @@
     </Dock.Root>
   </div>
 
-<!-- Version History dialog -->
-<DialogBordered bind:open={versionHistoryPanelOpen} color="primary" class="!w-[600px] !max-w-[600px]">
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.customer.versionHistory.title')}</Dialog.Title>
-    <Dialog.Description class="text-muted-foreground">
-      {#if versionHistoryRow}
-        {String((versionHistoryRow as Record<string, unknown>)[uid])}
-      {/if}
-    </Dialog.Description>
-  </Dialog.Header>
-
-  <div class="max-h-[60vh] overflow-y-auto">
-    {#if versionHistoryLoading && versionHistoryData.length === 0}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <Hourglass class="size-8 mx-auto mb-3 text-muted-foreground animate-spin" />
-          <p class="text-muted-foreground">{$t('entities.customer.versionHistory.loading')}</p>
-        </div>
-      </div>
-    {:else if versionHistoryError}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <CircleX class="size-8 mx-auto mb-3 text-destructive" />
-          <p class="text-destructive">{versionHistoryError}</p>
-        </div>
-      </div>
-    {:else if versionHistoryData.length === 0}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <Info class="size-8 mx-auto mb-3 text-muted-foreground" />
-          <p class="text-muted-foreground">{$t('entities.customer.versionHistory.empty')}</p>
-        </div>
-      </div>
-    {:else}
-      <Timeline.Root class="relative">
-        {#each versionHistoryData as entry (entry.id)}
-          {@const colorClass = getAuditActionColorClass(entry.action)}
-          {@const ActionIcon = getAuditActionIcon(entry.action)}
-          {@const descriptions = entry.action === 'CREATE' ? [$t('entities.customer.versionHistory.recordCreated')]
-            : entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordDeleted')]
-            : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
-            : formatAuditDelta(entry.delta)}
-
-          <Timeline.Item class="mb-8">
-            <Timeline.Separator class={colorClass}>
-              <ActionIcon class="size-4" />
-            </Timeline.Separator>
-            <Timeline.Title class={colorClass}>
-              {getAuditActionLabel(entry.action)} - {entry.changed_at}
-            </Timeline.Title>
-            <Timeline.Date class="text-muted-foreground">
-              v{entry.version}
-            </Timeline.Date>
-            <Timeline.Content>
-              <ul class="space-y-1 text-sm">
-                {#each descriptions as desc}
-                  <li class="text-muted-foreground">{desc}</li>
-                {/each}
-              </ul>
-            </Timeline.Content>
-          </Timeline.Item>
-        {/each}
-
-        {#if versionHistoryHasMore}
-          <div class="flex justify-center mt-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onclick={loadMoreVersionHistory}
-              disabled={versionHistoryLoading}
-            >
-              {#if versionHistoryLoading}
-                <Hourglass class="size-4 mr-2 animate-spin" />
-              {:else}
-                <ChevronDown class="size-4 mr-2" />
-              {/if}
-              {$t('entities.customer.versionHistory.viewMore')}
-            </Button>
-          </div>
-        {/if}
-      </Timeline.Root>
-    {/if}
-  </div>
-
-  <Dialog.Footer class="gap-2">
-    <Button
-      variant="secondary"
-      onclick={() => versionHistoryPanelOpen = false}
-    >
-      {$t('common.close')}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
 
 <!-- Preview content -->
   <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">

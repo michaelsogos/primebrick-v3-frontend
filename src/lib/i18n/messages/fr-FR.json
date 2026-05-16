@@ -326,16 +326,43 @@
         "error": "Échec du chargement de l'historique des versions",
         "empty": "Aucun historique de versions disponible",
         "viewMore": "Voir plus",
+        "showDetails": "Afficher les détails",
+        "hideDetails": "Masquer les détails",
         "actions": {
           "CREATE": "Création",
+          "INSERT": "Création",
           "UPDATE": "Modification",
           "DELETE": "Suppression",
+          "SOFT_DELETE": "Suppression",
+          "HARD_DELETE": "Suppression définitive",
           "RESTORE": "Restauration"
+        },
+        "field": {
+          "email": "E-mail",
+          "phone": "Téléphone",
+          "status": "Statut",
+          "first_name": "Prénom",
+          "last_name": "Nom",
+          "company_name": "Entreprise",
+          "local_address": "Adresse",
+          "local_city": "Ville",
+          "local_state": "État/Région",
+          "local_country": "Pays",
+          "local_zip": "Code postal",
+          "status_reason": "Raison du statut"
         },
         "fieldModified": "Champ {field} modifié de {from} à {to}",
         "notSet": "non défini",
+        "set": "défini sur",
+        "unchanged": "inchangé à",
+        "cleared": "effacé",
+        "changedFrom": "changé de",
+        "to": "à",
+        "null": "vide",
         "recordCreated": "Enregistrement créé",
         "recordDeleted": "Enregistrement supprimé",
+        "recordSoftDeleted": "Enregistrement supprimé",
+        "recordHardDeleted": "Enregistrement supprimé définitivement",
         "recordRestored": "Enregistrement restauré"
       }
     }
