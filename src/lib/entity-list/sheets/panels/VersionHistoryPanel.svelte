@@ -189,7 +189,9 @@
       if (oldValue === null && newValue !== null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.set'),
+          operator: $t('entities.customer.versionHistory.changedFrom'),
+          toOperator: $t('entities.customer.versionHistory.to'),
+          oldValue: $t('entities.customer.versionHistory.null'),
           newValue: field === 'deleted_at' ? formatUiDateTime(newValue, $uiLang) : String(newValue),
           isBadge,
           badgeColor,
