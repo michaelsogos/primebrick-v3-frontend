@@ -1,6 +1,6 @@
 <script lang="ts">
   import { apiFetch } from "$lib/api";
-  import { t, formatUiDateTime } from "$lib/i18n";
+  import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
@@ -190,6 +190,18 @@
       const column = columns.find((c: any) => c.key === field);
       const isBadge = column?.type === 'badge' && column?.badge?.values;
 
+      // Format value based on column type (date/datetime)
+      function formatValue(value: any): string {
+        if (value === null || value === undefined) return String(value);
+        if (column?.type === 'date') {
+          return formatUiDate(value, $uiLang);
+        }
+        if (column?.type === 'datetime') {
+          return formatUiDateTime(value, $uiLang);
+        }
+        return String(value);
+      }
+
       let badgeColor: string | undefined;
       let badgeLabelText: string | undefined;
       let badgeLabelKey: string | undefined;
@@ -220,7 +232,7 @@
           operator: isCreateOrInsert ? $t('entities.customer.versionHistory.set') : $t('entities.customer.versionHistory.changedFrom'),
           toOperator: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.to'),
           oldValue: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.null'),
-          newValue: field === 'deleted_at' ? formatUiDateTime(newValue, $uiLang) : String(newValue),
+          newValue: formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -231,7 +243,7 @@
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.changedFrom'),
           toOperator: $t('entities.customer.versionHistory.to'),
-          oldValue: field === 'deleted_at' ? formatUiDateTime(oldValue, $uiLang) : String(oldValue),
+          oldValue: formatValue(oldValue),
           newValue: $t('entities.customer.versionHistory.null'),
           isBadge,
           badgeColor,
@@ -246,8 +258,8 @@
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.changedFrom'),
           toOperator: $t('entities.customer.versionHistory.to'),
-          oldValue: String(oldValue),
-          newValue: String(newValue),
+          oldValue: formatValue(oldValue),
+          newValue: formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
