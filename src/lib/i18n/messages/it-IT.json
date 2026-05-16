@@ -360,7 +360,7 @@
         "notSet": "non impostato",
         "recordCreated": "Record creato",
         "recordDeleted": "Record eliminato",
-        "recordSoftDeleted": "Record spostato nel cestino",
+        "recordSoftDeleted": "Record eliminato",
         "recordHardDeleted": "Record eliminato definitivamente",
         "recordRestored": "Record ripristinato"
       }

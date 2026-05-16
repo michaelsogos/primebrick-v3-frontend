@@ -340,7 +340,7 @@
         "notSet": "no establecido",
         "recordCreated": "Registro creado",
         "recordDeleted": "Registro eliminado",
-        "recordSoftDeleted": "Registro movido a la papelera",
+        "recordSoftDeleted": "Registro eliminado",
         "recordHardDeleted": "Registro eliminado definitivamente",
         "recordRestored": "Registro restaurado"
       }

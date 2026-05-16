@@ -348,7 +348,7 @@
         "notSet": "nicht gesetzt",
         "recordCreated": "Datensatz erstellt",
         "recordDeleted": "Datensatz gelöscht",
-        "recordSoftDeleted": "Datensatz in den Papierkorb verschoben",
+        "recordSoftDeleted": "Datensatz gelöscht",
         "recordHardDeleted": "Datensatz endgültig gelöscht",
         "recordRestored": "Datensatz wiederhergestellt"
       }

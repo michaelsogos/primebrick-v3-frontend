@@ -360,7 +360,7 @@
         "notSet": "not set",
         "recordCreated": "Record created",
         "recordDeleted": "Record deleted",
-        "recordSoftDeleted": "Record moved to trash",
+        "recordSoftDeleted": "Record deleted",
         "recordHardDeleted": "Record permanently deleted",
         "recordRestored": "Record restored"
       }

@@ -339,7 +339,7 @@
         "notSet": "non défini",
         "recordCreated": "Enregistrement créé",
         "recordDeleted": "Enregistrement supprimé",
-        "recordSoftDeleted": "Enregistrement déplacé vers la corbeille",
+        "recordSoftDeleted": "Enregistrement supprimé",
         "recordHardDeleted": "Enregistrement supprimé définitivement",
         "recordRestored": "Enregistrement restauré"
       }
