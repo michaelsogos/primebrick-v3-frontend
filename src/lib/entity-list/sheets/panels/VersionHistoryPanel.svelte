@@ -272,7 +272,7 @@
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.set'),
+          operator: $t('entities.customer.versionHistory.unchanged'),
           newValue: formatValue(newValue),
           isBadge,
           badgeColor,

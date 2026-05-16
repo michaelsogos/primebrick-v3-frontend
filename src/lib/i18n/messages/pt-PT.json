@@ -364,6 +364,7 @@
         "fieldModified": "Campo {field} modificado de {from} para {to}",
         "notSet": "não definido",
         "set": "definido como",
+        "unchanged": "inalterado em",
         "cleared": "limpo",
         "changedFrom": "alterado de",
         "to": "para",

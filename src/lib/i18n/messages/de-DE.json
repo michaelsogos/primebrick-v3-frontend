@@ -363,6 +363,7 @@
         "fieldModified": "Feld {field} geändert von {from} zu {to}",
         "notSet": "nicht gesetzt",
         "set": "gesetzt auf",
+        "unchanged": "unverändert bei",
         "cleared": "gelöscht",
         "changedFrom": "geändert von",
         "to": "zu",
