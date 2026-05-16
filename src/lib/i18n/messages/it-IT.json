@@ -347,6 +347,8 @@
         "error": "Impossibile caricare lo storico versioni",
         "empty": "Nessuno storico versioni disponibile",
         "viewMore": "Vedi altro",
+        "showDetails": "Mostra dettagli",
+        "hideDetails": "Nascondi dettagli",
         "actions": {
           "CREATE": "Creazione",
           "INSERT": "Creazione",

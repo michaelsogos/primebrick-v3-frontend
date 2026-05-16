@@ -326,6 +326,8 @@
         "error": "Échec du chargement de l'historique des versions",
         "empty": "Aucun historique de versions disponible",
         "viewMore": "Voir plus",
+        "showDetails": "Afficher les détails",
+        "hideDetails": "Masquer les détails",
         "actions": {
           "CREATE": "Création",
           "INSERT": "Création",

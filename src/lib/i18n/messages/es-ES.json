@@ -322,11 +322,13 @@
         "deleted_by": "Eliminado por"
       },
       "versionHistory": {
-        "title": "Historial de Versiones",
+        "title": "Historial de versiones",
         "loading": "Cargando historial de versiones…",
         "error": "Error al cargar el historial de versiones",
         "empty": "No hay historial de versiones disponible",
         "viewMore": "Ver más",
+        "showDetails": "Mostrar detalles",
+        "hideDetails": "Ocultar detalles",
         "actions": {
           "CREATE": "Creación",
           "INSERT": "Creación",

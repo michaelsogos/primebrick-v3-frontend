@@ -32,6 +32,16 @@
   let versionHistoryLimit = $state<number>(50);
   let versionHistoryTotal = $state<number>(0);
   let versionHistoryHasMore = $state<boolean>(false);
+  let expandedEntries = $state<Set<number>>(new Set());
+
+  function toggleEntryExpanded(entryId: number) {
+    if (expandedEntries.has(entryId)) {
+      expandedEntries.delete(entryId);
+    } else {
+      expandedEntries.add(entryId);
+    }
+    expandedEntries = new Set(expandedEntries);
+  }
 
   async function loadVersionHistory() {
     versionHistoryLoading = true;
@@ -328,52 +338,67 @@
                 <Timeline.Title class={colorClass}>
                   {getAuditActionLabel(entry.action)} {#if entry.changed_by}({entry.changed_by}){/if}
                 </Timeline.Title>
+                {#if isUpdate}
+                  <div class="mt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onclick={() => toggleEntryExpanded(entry.id)}
+                    >
+                      <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
+                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('entities.customer.versionHistory.hideDetails') : $t('entities.customer.versionHistory.showDetails')}</span>
+                    </Button>
+                  </div>
+                {/if}
                 <div class="mt-1">
                   {#if isUpdate}
-                    <div class="space-y-2">
-                      {#each descriptions as desc}
-                        {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string}}
-                        <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
-                          <div class="flex-1 min-w-0">
-                            <div class="text-xs flex flex-wrap items-center gap-1">
-                              <span class="font-bold text-foreground">{delta.field}</span>
-                              {#if delta.operator}
-                                <span class="text-primary">{delta.operator}</span>
-                              {/if}
-                              {#if delta.oldValue !== undefined}
-                                {#if delta.isBadge && delta.oldBadgeColor}
-                                  {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
-                                  <Badge
-                                    class="shadow-none text-xs"
-                                    style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
-                                  >
-                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
-                                  </Badge>
-                                {:else}
-                                  <span class="italic text-muted-foreground">{delta.oldValue}</span>
+                    {#if expandedEntries.has(entry.id)}
+                      <div class="space-y-2">
+                        {#each descriptions as desc}
+                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string}}
+                          <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
+                            <div class="flex-1 min-w-0">
+                              <div class="text-xs flex flex-wrap items-center gap-1">
+                                <span class="font-bold text-foreground">{delta.field}</span>
+                                {#if delta.operator}
+                                  <span class="text-primary">{delta.operator}</span>
                                 {/if}
-                              {/if}
-                              {#if delta.toOperator}
-                                <span class="text-primary">{delta.toOperator}</span>
-                              {/if}
-                              {#if delta.newValue !== undefined}
-                                {#if delta.isBadge && delta.badgeColor}
-                                  {@const newBadgeColors = badgeClassesFromToken(delta.badgeColor)}
-                                  <Badge
-                                    class="shadow-none text-xs"
-                                    style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
-                                  >
-                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
-                                  </Badge>
-                                {:else}
-                                  <span class="italic text-muted-foreground">{delta.newValue}</span>
+                                {#if delta.oldValue !== undefined}
+                                  {#if delta.isBadge && delta.oldBadgeColor}
+                                    {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
+                                    <Badge
+                                      class="shadow-none text-xs"
+                                      style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
+                                    >
+                                      {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
+                                    </Badge>
+                                  {:else}
+                                    <span class="italic text-muted-foreground">{delta.oldValue}</span>
+                                  {/if}
                                 {/if}
-                              {/if}
+                                {#if delta.toOperator}
+                                  <span class="text-primary">{delta.toOperator}</span>
+                                {/if}
+                                {#if delta.newValue !== undefined}
+                                  {#if delta.isBadge && delta.badgeColor}
+                                    {@const newBadgeColors = badgeClassesFromToken(delta.badgeColor)}
+                                    <Badge
+                                      class="shadow-none text-xs"
+                                      style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
+                                    >
+                                      {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
+                                    </Badge>
+                                  {:else}
+                                    <span class="italic text-muted-foreground">{delta.newValue}</span>
+                                  {/if}
+                                {/if}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      {/each}
-                    </div>
+                        {/each}
+                      </div>
+                    {/if}
                   {:else}
                     <ul class="space-y-1 text-sm text-muted-foreground">
                       {#each descriptions as desc}

@@ -331,10 +331,12 @@
       },
       "versionHistory": {
         "title": "Versionshistorie",
-        "loading": "Versionshistorie laden…",
-        "error": "Fehler beim Laden der Versionshistorie",
+        "loading": "Versionshistorie wird geladen…",
+        "error": "Versionshistorie konnte nicht geladen werden",
         "empty": "Keine Versionshistorie verfügbar",
         "viewMore": "Mehr anzeigen",
+        "showDetails": "Details anzeigen",
+        "hideDetails": "Details ausblenden",
         "actions": {
           "CREATE": "Erstellung",
           "INSERT": "Erstellung",

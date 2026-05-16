@@ -346,7 +346,9 @@
         "loading": "Loading version history…",
         "error": "Failed to load version history",
         "empty": "No version history available",
-        "viewMore": "View More",
+        "viewMore": "View more",
+        "showDetails": "Show details",
+        "hideDetails": "Hide details",
         "actions": {
           "CREATE": "Creation",
           "INSERT": "Creation",
