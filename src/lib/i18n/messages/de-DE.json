@@ -34,6 +34,10 @@
     "deleting": "Löschen…",
     "deleteConfirmTitle": "Möchten Sie diesen Datensatz wirklich löschen?",
     "deleteConfirm": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "restore": "Wiederherstellen",
+    "restoring": "Wiederherstellen…",
+    "restoreConfirmTitle": "Möchten Sie diesen Datensatz wirklich wiederherstellen?",
+    "restoreConfirm": "Diese Aktion stellt den gelöschten Datensatz wieder her.",
     "duplicate": "Duplizieren",
     "duplicating": "Duplizieren…",
     "duplicateConfirmTitle": "Datensätze duplizieren",
@@ -266,9 +270,12 @@
         "duplicate": "Duplizieren",
         "export": "Exportieren",
         "exportHtml": "HTML exportieren",
-        "deleteConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich löschen?"
+        "deleteConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich löschen?",
+        "restore": "Wiederherstellen",
+        "restoreConfirmTitle": "Möchten Sie die ausgewählten Elemente wirklich wiederherstellen?"
       },
       "bulkDeleteFailed": "Massenlöschung fehlgeschlagen",
+      "bulkRestoreFailed": "Massenwiederherstellung fehlgeschlagen",
       "duplicateMaxLimit": "Es können nicht mehr als 50 Datensätze gleichzeitig dupliziert werden",
       "duplicatePartialSuccess": "{count} Datensätze dupliziert, {failed} fehlgeschlagen",
       "duplicateSuccess": "{count} Datensätze erfolgreich dupliziert"

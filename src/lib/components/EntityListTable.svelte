@@ -828,15 +828,26 @@
   let skipNextRowClickSelectToggle = false;
   /** Row dropdown menu state: which row has the menu open */
   let dropdownMenuRow = $state<TRow | null>(null);
+  /** Preview panel dropdown menu state */
+  let previewDropdownOpen = $state(false);
 
   /** Delete confirmation dialog state */
   let deleteConfirmDialogOpen = $state(false);
   let rowToDelete: TRow | null = null;
   let isDeleting = $state(false);
 
+  /** Restore confirmation dialog state */
+  let restoreConfirmDialogOpen = $state(false);
+  let rowToRestore: TRow | null = null;
+  let isRestoring = $state(false);
+
   /** Bulk delete confirmation dialog state */
   let bulkDeleteConfirmDialogOpen = $state(false);
   let isBulkDeleting = $state(false);
+
+  /** Bulk restore confirmation dialog state */
+  let bulkRestoreConfirmDialogOpen = $state(false);
+  let isBulkRestoring = $state(false);
 
   /** Export confirmation dialog state */
   let exportConfirmDialogOpen = $state(false);
@@ -878,6 +889,7 @@
   let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
   let isResizing = $state(false);
   let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
+  let focusedRowIndex = $state<number | null>(null);
 
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
@@ -895,6 +907,7 @@
       if (idx !== -1) {
         previewRow = rows[idx];
         previewRowIndex = viewRows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
+        focusedRowIndex = previewRowIndex;
         _previewRestoredKey = null;
       }
     }
@@ -957,6 +970,10 @@
 
   /** Handle edit action for a row */
   function handleEditRow(row: TRow) {
+    if (isRowDeleted(row)) {
+      console.log('Cannot edit deleted row:', rowKey(row));
+      return;
+    }
     // TODO: Implement edit action - will be connected to BE later
     console.log('Edit row:', rowKey(row));
     closeRowDropdown();
@@ -966,6 +983,7 @@
   function handlePreviewRow(row: TRow) {
     previewRow = row;
     previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
+    focusedRowIndex = previewRowIndex;
     previewEditMode = false;
     previewPanelOpen = true;
     closeRowDropdown();
@@ -977,6 +995,7 @@
     if (newIndex >= 0 && newIndex < viewRows.length) {
       previewRowIndex = newIndex;
       previewRow = viewRows[newIndex];
+      focusedRowIndex = newIndex;
     } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
       // Trigger next page when reaching end of current page
       navigatingToNextPage = true;
@@ -996,11 +1015,108 @@
     }
   }
 
+  /** Scroll focused row into view when index changes */
+  $effect(() => {
+    if (focusedRowIndex === null) return;
+    const row = tableRef?.querySelector(`[data-focused-row-index="${focusedRowIndex}"]`) as HTMLElement;
+    if (row) {
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  });
+  /** Unified keyboard handler for preview panel and table row navigation */
+  function handleGlobalKeyDown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+    if (target.closest('[role="menu"]') || target.closest('[role="menuitem"]')) return;
+
+    // Skip table row navigation if any dropdown menu is open (menu has priority)
+    if (dropdownMenuRow !== null || previewDropdownOpen) return;
+
+    if (previewPanelOpen) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigatePreview(-1);
+        return;
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigatePreview(1);
+        return;
+      }
+    }
+
+    if (viewRows.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (focusedRowIndex === null) {
+        focusedRowIndex = 0;
+      } else if (focusedRowIndex < viewRows.length - 1) {
+        focusedRowIndex++;
+      } else if (focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
+        // Trigger next page when reaching end of current page
+        navigatingToNextPage = true;
+        if (footerUsesClientPaging) {
+          clientSelectedPage++;
+        } else {
+          onPageChange(page + 1);
+        }
+      }
+      if (previewPanelOpen && focusedRowIndex !== null) {
+        previewRowIndex = focusedRowIndex;
+        previewRow = viewRows[focusedRowIndex];
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (focusedRowIndex === null) {
+        focusedRowIndex = viewRows.length - 1;
+      } else if (focusedRowIndex > 0) {
+        focusedRowIndex--;
+      } else if (focusedRowIndex === 0 && footerPage > 1) {
+        // Trigger previous page when at start of current page
+        navigatingToPrevPage = true;
+        if (footerUsesClientPaging) {
+          clientSelectedPage--;
+        } else {
+          onPageChange(page - 1);
+        }
+      }
+      if (previewPanelOpen && focusedRowIndex !== null) {
+        previewRowIndex = focusedRowIndex;
+        previewRow = viewRows[focusedRowIndex];
+      }
+    } else if (e.key === ' ' && focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[focusedRowIndex];
+      if (row) toggleRowSelect(rowKey(row));
+    } else if (e.key === 'Enter' && focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[focusedRowIndex];
+      if (row) openRowDropdown(row);
+    } else if (e.key === 'Escape') {
+      closeRowDropdown();
+      // Remove focus from kebab button to prevent reopening on arrow key
+      // Use setTimeout to ensure it happens after dropdown's internal focus management
+      setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 0);
+    }
+  }
+
   /** Handle delete action for a row */
   function handleDeleteRow(row: TRow) {
     // Open confirmation dialog instead of deleting directly
     rowToDelete = row;
     deleteConfirmDialogOpen = true;
+    closeRowDropdown();
+  }
+
+  /** Handle restore action for a row */
+  function handleRestoreRow(row: TRow) {
+    // Open confirmation dialog instead of restoring directly
+    rowToRestore = row;
+    restoreConfirmDialogOpen = true;
     closeRowDropdown();
   }
 
@@ -1020,7 +1136,34 @@
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      // Keep dialog open on error
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  /** Confirm restore action after dialog confirmation */
+  async function confirmRestoreRow() {
+    if (!rowToRestore) return;
+    try {
+      isRestoring = true;
+      const uuidValue = rowToRestore[uid] as string;
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
+        method: 'POST'
+      });
+      restoreConfirmDialogOpen = false;
+      rowToRestore = null;
+      // Refresh the list after successful restore
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Restore failed:', error);
+      const errorData = error as RFC7807Error;
+      pushRFC7807Error(errorData, { showToast: true });
+    } finally {
+      isRestoring = false;
     }
   }
 
@@ -1103,6 +1246,80 @@
   /** Cancel bulk delete action */
   function cancelBulkDelete() {
     bulkDeleteConfirmDialogOpen = false;
+  }
+
+  function handleBulkRestore() {
+    // Open confirmation dialog instead of restoring directly
+    bulkRestoreConfirmDialogOpen = true;
+  }
+
+  /** Confirm bulk restore action after dialog confirmation */
+  async function confirmBulkRestore() {
+    if (selectedKeys.length === 0) return;
+    try {
+      isBulkRestoring = true;
+      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids: selectedKeys })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
+          title?: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+        };
+
+        const toneForImpact = 'warning'; // HIGH impact uses warning for restore
+        throw {
+          title: data.title || 'Bulk restore failed',
+          status: data.status,
+          detail: data.detail,
+          instance: data.instance,
+          internal_code: data.internal_code,
+          toneForImpact
+        };
+      }
+
+      // Clear selection after successful restore
+      selectedKeys = [];
+      // Switch back to filters mode
+      toolbarMode = 'filters';
+      // Refresh the list after successful restore
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk restore failed:', error);
+
+      // Show error notification using shell's error handling with RFC 7807 format
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        pushRFC7807Error(err, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.bulkRestoreFailed',
+          scope: $t('errors.scope.bulkRestoreApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
+    } finally {
+      isBulkRestoring = false;
+      // Close dialog regardless of success or error
+      bulkRestoreConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel bulk restore action */
+  function cancelBulkRestore() {
+    bulkRestoreConfirmDialogOpen = false;
   }
 
   /** Confirm export action after dialog confirmation */
@@ -1268,6 +1485,10 @@
   }
 
   function handleDuplicateRow(row: TRow) {
+    if (isRowDeleted(row)) {
+      console.log('Cannot duplicate deleted row:', rowKey(row));
+      return;
+    }
     singleRowToDuplicate = row;
     duplicateScope = 'single';
     duplicateConfirmDialogOpen = true;
@@ -1619,6 +1840,16 @@
 
   const orderedSelectedRows = $derived(
     selectedKeys.map((k) => selectedRowByKey.get(k)).filter((r): r is TRow => r !== undefined)
+  );
+
+  // Check if any selected records are deleted
+  const hasDeletedSelected = $derived(
+    orderedSelectedRows.some(r => isRowDeleted(r))
+  );
+
+  // Check if all selected records are deleted
+  const allSelectedDeleted = $derived(
+    orderedSelectedRows.length > 0 && orderedSelectedRows.every(r => isRowDeleted(r))
   );
   const clientSelectedTotalPages = $derived(
     Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)))
@@ -2177,6 +2408,8 @@
   });
 </script>
 
+<svelte:window onkeydown={handleGlobalKeyDown} />
+
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
   {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
@@ -2216,11 +2449,11 @@
         <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
           <Button
             size="icon-sm"
-            variant="secondary"
+            variant="secondary-outline"
             onclick={() => navigatePreview(-1)}
             disabled={previewRowIndex === 0 && footerPage === 1}
             aria-label="Previous record"
-            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+            class="pointer-events-auto hover:scale-105 transition-all"
           >
             <ChevronLeft class="w-4 h-4" />
           </Button>
@@ -2229,31 +2462,18 @@
           </span>
           <Button
             size="icon-sm"
-            variant="secondary"
+            variant="secondary-outline"
             onclick={() => navigatePreview(1)}
             disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
             aria-label="Next record"
-            class="pointer-events-auto border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+            class="pointer-events-auto hover:scale-105 transition-all"
           >
             <ChevronRight class="w-4 h-4" />
           </Button>
         </div>
 
         <!-- CTAs on right -->
-        {#if rowDeleted}
-          <!-- Restore button for deleted records -->
-          <Button
-            variant="ghost"
-            size="sm"
-            class="mr-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 hover:text-green-700 dark:hover:text-green-400"
-            title="Restore (coming soon)"
-          >
-            <span class="relative flex items-center justify-center">
-              <Trash class="size-4" />
-              <ArrowUpFromLine class="absolute -bottom-[1px]  size-3" />
-            </span>
-          </Button>
-        {:else}
+        {#if !rowDeleted}
           <!-- Mode switch with icons only -->
           <div class="flex items-center gap-2">
             {#if !previewEditMode}
@@ -2264,9 +2484,67 @@
             <Switch
               bind:checked={previewEditMode}
               aria-label={$t('entities.list.editModeLabel')}
+              disabled={rowDeleted}
             />
           </div>
         {/if}
+
+        <!-- Kebab menu for row actions -->
+        <DropdownMenu.Root bind:open={previewDropdownOpen}>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button 
+                {...props}
+                variant="ghost" 
+                size="icon-sm" 
+                aria-label={$t('common.more')} 
+                class="mr-1"
+              >
+                <MoreVertical class="w-4 h-4" />
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content class="w-56" align="end">
+            {#if entityRowActions?.edit !== false}
+              <DropdownMenu.Item onclick={() => handleEditRow(row)} data-disabled={rowDeleted}>
+                <div class="flex items-center gap-2">
+                  <Pencil class="size-4 opacity-70" />
+                  <span>{$t('common.edit')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+            {#if entityRowActions?.duplicate !== false}
+              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)} data-disabled={rowDeleted}>
+                <div class="flex items-center gap-2">
+                  <Copy class="size-4 opacity-70" />
+                  <span>{$t('common.duplicate')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+            {#if entityRowActions?.delete !== false}
+              {#if rowDeleted}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onclick={() => handleRestoreRow(row)} class="text-warning">
+                  <div class="flex items-center gap-2">
+                    <span class="relative flex items-center justify-center">
+                      <Trash2 class="size-4 text-warning/70" />
+                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                    </span>
+                    <span>{$t('common.restore')}</span>
+                  </div>
+                </DropdownMenu.Item>
+              {:else}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onclick={() => handleDeleteRow(row)} class="text-destructive">
+                  <div class="flex items-center gap-2">
+                    <Trash2 class="size-4 text-destructive/70" />
+                    <span>{$t('common.delete')}</span>
+                  </div>
+                </DropdownMenu.Item>
+              {/if}
+            {/if}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
 
         <!-- Close button -->
         <Button
@@ -2861,11 +3139,26 @@
           size="xs"
           class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
           onclick={handleBulkDelete}
-          disabled={selectedKeys.length < 2}
+          disabled={selectedKeys.length < 2 || hasDeletedSelected}
         >
           <Trash2 class="size-3.5" />
           {$t('entities.list.bulkActions.delete')}
         </Button>
+        {#if hasDeletedSelected}
+          <Button
+            variant="soft"
+            size="xs"
+            class="h-6 text-xs bg-warning/10 text-warning hover:bg-warning/20 hover:border-warning/50 border-warning/20"
+            onclick={handleBulkRestore}
+            disabled={!allSelectedDeleted}
+          >
+            <span class="relative flex items-center justify-center">
+              <Trash2 class="size-3.5 text-warning/70" />
+              <ArrowUpFromLine class="absolute -bottom-[1px] size-2.5 text-warning/70" />
+            </span>
+            {$t('entities.list.bulkActions.restore')}
+          </Button>
+        {/if}
       </div>
     {/if}
   </div>
@@ -3060,6 +3353,7 @@
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
                   {@const rowDeleted = isRowDeleted(r)}
+                  {@const rowFocused = focusedRowIndex !== null && viewRows[focusedRowIndex] === r}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -3077,7 +3371,8 @@
                         : undefined,
                       rowSelected
                         ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
-                        : undefined
+                        : undefined,
+                      rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                     )}
                     onclick={(e) => {
                       if (!rowSelectionEnabled) return;
@@ -3130,7 +3425,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                                 <DropdownMenu.Trigger>
                                   {#snippet child({ props })}
                                     <Button 
@@ -3150,7 +3445,7 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3158,7 +3453,7 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -3175,12 +3470,24 @@
                                   {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                      <div class="flex items-center gap-2">
-                                        <Trash2 class="size-4 text-destructive/70" />
-                                        <span>{$t('common.delete')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
+                                    {#if isRowDeleted(r)}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                        <div class="flex items-center gap-2">
+                                          <span class="relative flex items-center justify-center">
+                                            <Trash2 class="size-4 text-warning/70" />
+                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                          </span>
+                                          <span>{$t('common.restore')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {:else}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                        <div class="flex items-center gap-2">
+                                          <Trash2 class="size-4 text-destructive/70" />
+                                          <span>{$t('common.delete')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {/if}
                                   {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
@@ -3230,7 +3537,7 @@
                             {#if rowActions}
                               {@render rowActions({ row: r })}
                             {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r}>
+                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                                 <DropdownMenu.Trigger>
                                   {#snippet child({ props })}
                                     <Button 
@@ -3250,7 +3557,7 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3258,7 +3565,7 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -3275,12 +3582,24 @@
                                   {/if}
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
-                                      <div class="flex items-center gap-2">
-                                        <Trash2 class="size-4 text-destructive/70" />
-                                        <span>{$t('common.delete')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
+                                    {#if isRowDeleted(r)}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                        <div class="flex items-center gap-2">
+                                          <span class="relative flex items-center justify-center">
+                                            <Trash2 class="size-4 text-warning/70" />
+                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                          </span>
+                                          <span>{$t('common.restore')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {:else}
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                        <div class="flex items-center gap-2">
+                                          <Trash2 class="size-4 text-destructive/70" />
+                                          <span>{$t('common.delete')}</span>
+                                        </div>
+                                      </DropdownMenu.Item>
+                                    {/if}
                                   {/if}
                                 </DropdownMenu.Content>
                               </DropdownMenu.Root>
@@ -3471,7 +3790,7 @@
                     class="transition-transform duration-300"
                   >
                     {#if previewPanelOpen}
-                      <PanelRightClose class="size-4 transition-transform duration-300 rotate-180" />
+                      <PanelRightClose class="size-4 transition-transform duration-300" />
                     {:else}
                       <PanelRightOpen class="size-4 transition-transform duration-300" />
                     {/if}
@@ -3563,13 +3882,16 @@
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
               {@const rowDeleted = isRowDeleted(r)}
+              {@const rowFocused = focusedRowIndex === i}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
+                data-focused-row-index={rowFocused ? i : undefined}
                 data-state={rowSelected ? 'selected' : undefined}
                 class={cn(
                   'group/entity-row',
-                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined
+                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined,
+                  rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                 )}
                 onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
@@ -3709,7 +4031,7 @@
                       {#if rowActions}
                         {@render rowActions({ row: r })}
                       {:else}
-                        <DropdownMenu.Root open={dropdownMenuRow === r}>
+                        <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
                           <DropdownMenu.Trigger>
                             {#snippet child({ props })}
                               <Button 
@@ -3729,7 +4051,7 @@
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Content class="w-56" align="end">
                             {#if entityRowActions?.edit !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                 <div class="flex items-center gap-2">
                                   <Pencil class="size-4 opacity-70" />
                                   <span>{$t('common.edit')}</span>
@@ -3737,21 +4059,41 @@
                               </DropdownMenu.Item>
                             {/if}
                             {#if entityRowActions?.duplicate !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                 <div class="flex items-center gap-2">
                                   <Copy class="size-4 opacity-70" />
                                   <span>{$t('common.duplicate')}</span>
                                 </div>
                               </DropdownMenu.Item>
                             {/if}
-                            {#if entityRowActions?.delete !== false}
-                              <DropdownMenu.Separator />
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                            {#if entityRowActions?.preview !== false}
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
                                 <div class="flex items-center gap-2">
-                                  <Trash2 class="size-4 text-destructive/70" />
-                                  <span>{$t('common.delete')}</span>
+                                  <Eye class="size-4 opacity-70" />
+                                  <span>{$t('entities.list.preview')}</span>
                                 </div>
                               </DropdownMenu.Item>
+                            {/if}
+                            {#if entityRowActions?.delete !== false}
+                              <DropdownMenu.Separator />
+                              {#if isRowDeleted(r)}
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                  <div class="flex items-center gap-2">
+                                    <span class="relative flex items-center justify-center">
+                                      <Trash2 class="size-4 text-warning/70" />
+                                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
+                                    </span>
+                                    <span>{$t('common.restore')}</span>
+                                  </div>
+                                </DropdownMenu.Item>
+                              {:else}
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                  <div class="flex items-center gap-2">
+                                    <Trash2 class="size-4 text-destructive/70" />
+                                    <span>{$t('common.delete')}</span>
+                                  </div>
+                                </DropdownMenu.Item>
+                              {/if}
                             {/if}
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
@@ -3951,8 +4293,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={() => {
         deleteConfirmDialogOpen = false;
         rowToDelete = null;
@@ -3969,6 +4311,37 @@
   </Dialog.Footer>
 </DialogBordered>
 
+<!-- Restore confirmation dialog -->
+<DialogBordered bind:open={restoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.restoreConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={() => {
+        restoreConfirmDialogOpen = false;
+        rowToRestore = null;
+      }}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
+      onclick={confirmRestoreRow}
+      disabled={isRestoring}
+    >
+      {#if isRestoring}
+        {$t('common.restoring')}
+      {:else}
+        {$t('common.restore')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
 <!-- Bulk delete confirmation dialog -->
 <DialogBordered bind:open={bulkDeleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
@@ -3979,8 +4352,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelBulkDelete}
     >
       {$t('common.cancel')}
@@ -3994,6 +4367,36 @@
         {$t('common.deleting')}
       {:else}
         {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Bulk restore confirmation dialog -->
+<DialogBordered bind:open={bulkRestoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler ripristinare {selectedKeys.length} elementi?
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={cancelBulkRestore}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
+      onclick={confirmBulkRestore}
+      disabled={isBulkRestoring}
+    >
+      {#if isBulkRestoring}
+        {$t('common.restoring')}
+      {:else}
+        {$t('common.restore')}
       {/if}
     </Button>
   </Dialog.Footer>
@@ -4029,8 +4432,8 @@
   {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelExportRow}
     >
       {$t('common.cancel')}
@@ -4094,8 +4497,8 @@
   {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelHtmlExport}
     >
       {$t('common.cancel')}
@@ -4128,8 +4531,8 @@
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={cancelDuplicate}
     >
       {$t('common.cancel')}
@@ -4278,8 +4681,8 @@
   
   <Dialog.Footer class="gap-2 shrink-0">
     <Button
-      variant="secondary"
-      class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
       onclick={closeHtmlPreview}
     >
       {$t('common.close')}

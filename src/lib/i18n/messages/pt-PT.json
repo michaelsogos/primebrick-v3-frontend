@@ -33,6 +33,10 @@
     "deleting": "A eliminar…",
     "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
     "deleteConfirm": "Esta ação não pode ser desfeita.",
+    "restore": "Restaurar",
+    "restoring": "A restaurar…",
+    "restoreConfirmTitle": "Tem certeza de que deseja restaurar este registo?",
+    "restoreConfirm": "Esta ação restaurará o registo eliminado.",
     "duplicate": "Duplicar",
     "duplicating": "A duplicar…",
     "duplicateConfirmTitle": "Duplicar registos",
@@ -266,9 +270,12 @@
         "duplicate": "Duplicar",
         "export": "Exportar",
         "exportHtml": "Exportar HTML",
-        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?"
+        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?",
+        "restore": "Restaurar",
+        "restoreConfirmTitle": "Tem certeza de que deseja restaurar os elementos selecionados?"
       },
       "bulkDeleteFailed": "Eliminação em massa falhou",
+      "bulkRestoreFailed": "Restauração em massa falhou",
       "duplicateMaxLimit": "Não é possível duplicar mais de 50 registos de cada vez",
       "duplicatePartialSuccess": "{count} registos duplicados, {failed} falharam",
       "duplicateSuccess": "{count} registos duplicados com sucesso"
