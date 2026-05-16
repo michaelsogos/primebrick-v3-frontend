@@ -260,9 +260,12 @@
         "duplicate": "Dupliquer",
         "export": "Exporter",
         "exportHtml": "Exporter HTML",
-        "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer les éléments sélectionnés ?"
+        "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer les éléments sélectionnés ?",
+        "restore": "Restaurer",
+        "restoreConfirmTitle": "Êtes-vous sûr de vouloir restaurer les éléments sélectionnés ?"
       },
       "bulkDeleteFailed": "Suppression groupée échouée",
+      "bulkRestoreFailed": "Restauration groupée échouée",
       "duplicateMaxLimit": "Impossible de dupliquer plus de 50 enregistrements à la fois",
       "duplicatePartialSuccess": "{count} enregistrements dupliqués, {failed} échoués",
       "duplicateSuccess": "{count} enregistrements dupliqués avec succès"

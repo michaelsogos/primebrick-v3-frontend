@@ -270,9 +270,12 @@
         "duplicate": "Duplicar",
         "export": "Exportar",
         "exportHtml": "Exportar HTML",
-        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?"
+        "deleteConfirmTitle": "Tem certeza de que deseja eliminar os elementos selecionados?",
+        "restore": "Restaurar",
+        "restoreConfirmTitle": "Tem certeza de que deseja restaurar os elementos selecionados?"
       },
       "bulkDeleteFailed": "Eliminação em massa falhou",
+      "bulkRestoreFailed": "Restauração em massa falhou",
       "duplicateMaxLimit": "Não é possível duplicar mais de 50 registos de cada vez",
       "duplicatePartialSuccess": "{count} registos duplicados, {failed} falharam",
       "duplicateSuccess": "{count} registos duplicados com sucesso"

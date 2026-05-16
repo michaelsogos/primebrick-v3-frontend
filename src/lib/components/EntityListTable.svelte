@@ -845,6 +845,10 @@
   let bulkDeleteConfirmDialogOpen = $state(false);
   let isBulkDeleting = $state(false);
 
+  /** Bulk restore confirmation dialog state */
+  let bulkRestoreConfirmDialogOpen = $state(false);
+  let isBulkRestoring = $state(false);
+
   /** Export confirmation dialog state */
   let exportConfirmDialogOpen = $state(false);
   let exportFileType = $state<'xlsx' | 'csv' | null>(null);
@@ -1140,11 +1144,10 @@
     if (!rowToRestore) return;
     try {
       isRestoring = true;
-      // TODO: Implement restore API call
-      // const uuidValue = rowToRestore[uid] as string;
-      // await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
-      //   method: 'POST'
-      // });
+      const uuidValue = rowToRestore[uid] as string;
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
+        method: 'POST'
+      });
       restoreConfirmDialogOpen = false;
       rowToRestore = null;
       // Refresh the list after successful restore
@@ -1239,6 +1242,80 @@
   /** Cancel bulk delete action */
   function cancelBulkDelete() {
     bulkDeleteConfirmDialogOpen = false;
+  }
+
+  function handleBulkRestore() {
+    // Open confirmation dialog instead of restoring directly
+    bulkRestoreConfirmDialogOpen = true;
+  }
+
+  /** Confirm bulk restore action after dialog confirmation */
+  async function confirmBulkRestore() {
+    if (selectedKeys.length === 0) return;
+    try {
+      isBulkRestoring = true;
+      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uuids: selectedKeys })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
+          title?: string;
+          status?: number;
+          detail?: string;
+          instance?: string;
+          internal_code?: string;
+        };
+
+        const toneForImpact = 'warning'; // HIGH impact uses warning for restore
+        throw {
+          title: data.title || 'Bulk restore failed',
+          status: data.status,
+          detail: data.detail,
+          instance: data.instance,
+          internal_code: data.internal_code,
+          toneForImpact
+        };
+      }
+
+      // Clear selection after successful restore
+      selectedKeys = [];
+      // Switch back to filters mode
+      toolbarMode = 'filters';
+      // Refresh the list after successful restore
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk restore failed:', error);
+
+      // Show error notification using shell's error handling with RFC 7807 format
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        pushRFC7807Error(err, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.bulkRestoreFailed',
+          scope: $t('errors.scope.bulkRestoreApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
+    } finally {
+      isBulkRestoring = false;
+      // Close dialog regardless of success or error
+      bulkRestoreConfirmDialogOpen = false;
+    }
+  }
+
+  /** Cancel bulk restore action */
+  function cancelBulkRestore() {
+    bulkRestoreConfirmDialogOpen = false;
   }
 
   /** Confirm export action after dialog confirmation */
@@ -1755,6 +1832,16 @@
 
   const orderedSelectedRows = $derived(
     selectedKeys.map((k) => selectedRowByKey.get(k)).filter((r): r is TRow => r !== undefined)
+  );
+
+  // Check if any selected records are deleted
+  const hasDeletedSelected = $derived(
+    orderedSelectedRows.some(r => isRowDeleted(r))
+  );
+
+  // Check if all selected records are deleted
+  const allSelectedDeleted = $derived(
+    orderedSelectedRows.length > 0 && orderedSelectedRows.every(r => isRowDeleted(r))
   );
   const clientSelectedTotalPages = $derived(
     Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)))
@@ -3043,11 +3130,26 @@
           size="xs"
           class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
           onclick={handleBulkDelete}
-          disabled={selectedKeys.length < 2}
+          disabled={selectedKeys.length < 2 || hasDeletedSelected}
         >
           <Trash2 class="size-3.5" />
           {$t('entities.list.bulkActions.delete')}
         </Button>
+        {#if hasDeletedSelected}
+          <Button
+            variant="soft"
+            size="xs"
+            class="h-6 text-xs bg-warning/10 text-warning hover:bg-warning/20 hover:border-warning/50 border-warning/20"
+            onclick={handleBulkRestore}
+            disabled={!allSelectedDeleted}
+          >
+            <span class="relative flex items-center justify-center">
+              <Trash2 class="size-3.5 text-warning/70" />
+              <ArrowUpFromLine class="absolute -bottom-[1px] size-2.5 text-warning/70" />
+            </span>
+            {$t('entities.list.bulkActions.restore')}
+          </Button>
+        {/if}
       </div>
     {/if}
   </div>
@@ -4256,6 +4358,36 @@
         {$t('common.deleting')}
       {:else}
         {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
+
+<!-- Bulk restore confirmation dialog -->
+<DialogBordered bind:open={bulkRestoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler ripristinare {selectedKeys.length} elementi?
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={cancelBulkRestore}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
+      onclick={confirmBulkRestore}
+      disabled={isBulkRestoring}
+    >
+      {#if isBulkRestoring}
+        {$t('common.restoring')}
+      {:else}
+        {$t('common.restore')}
       {/if}
     </Button>
   </Dialog.Footer>

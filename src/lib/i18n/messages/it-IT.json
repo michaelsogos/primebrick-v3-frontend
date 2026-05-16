@@ -281,9 +281,12 @@
         "duplicate": "Duplica",
         "export": "Esporta",
         "exportHtml": "Esporta HTML",
-        "deleteConfirmTitle": "Sei sicuro di voler eliminare gli elementi selezionati?"
+        "deleteConfirmTitle": "Sei sicuro di voler eliminare gli elementi selezionati?",
+        "restore": "Ripristina",
+        "restoreConfirmTitle": "Sei sicuro di voler ripristinare gli elementi selezionati?"
       },
       "bulkDeleteFailed": "Eliminazione in blocco fallita",
+      "bulkRestoreFailed": "Ripristino in blocco fallito",
       "duplicateMaxLimit": "Non è possibile duplicare più di 50 record alla volta",
       "duplicatePartialSuccess": "{count} record duplicati, {failed} falliti",
       "duplicateSuccess": "{count} record duplicati con successo"
