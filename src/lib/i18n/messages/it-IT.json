@@ -376,13 +376,12 @@
         "cleared": "cancellato",
         "changedFrom": "cambiato da",
         "to": "a",
+        "null": "vuoto",
         "recordCreated": "Record creato",
-        "recordDeleted": "Record eliminato",
-        "recordSoftDeleted": "Record eliminato",
         "recordHardDeleted": "Record eliminato definitivamente",
+        "recordSoftDeleted": "Record eliminato",
         "recordRestored": "Record ripristinato"
       }
     }
   }
 }
-

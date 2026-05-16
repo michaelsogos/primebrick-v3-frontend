@@ -365,6 +365,7 @@
         "cleared": "limpo",
         "changedFrom": "alterado de",
         "to": "para",
+        "null": "vazio",
         "recordCreated": "Registro criado",
         "recordDeleted": "Registro excluído",
         "recordSoftDeleted": "Registro excluído",

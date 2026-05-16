@@ -364,6 +364,7 @@
         "cleared": "gelöscht",
         "changedFrom": "geändert von",
         "to": "zu",
+        "null": "leer",
         "recordCreated": "Datensatz erstellt",
         "recordDeleted": "Datensatz gelöscht",
         "recordSoftDeleted": "Datensatz gelöscht",

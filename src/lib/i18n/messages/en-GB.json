@@ -376,6 +376,7 @@
         "cleared": "cleared",
         "changedFrom": "changed from",
         "to": "to",
+        "null": "empty",
         "recordCreated": "Record created",
         "recordDeleted": "Record deleted",
         "recordSoftDeleted": "Record deleted",

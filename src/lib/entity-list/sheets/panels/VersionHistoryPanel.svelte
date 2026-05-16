@@ -202,7 +202,7 @@
           operator: $t('entities.customer.versionHistory.changedFrom'),
           toOperator: $t('entities.customer.versionHistory.to'),
           oldValue: field === 'deleted_at' ? formatUiDateTime(oldValue, $uiLang) : String(oldValue),
-          newValue: String(newValue),
+          newValue: $t('entities.customer.versionHistory.null'),
           isBadge,
           badgeColor,
           badgeLabelText,
