@@ -2497,11 +2497,11 @@
     {@const rowDeleted = isRowDeleted(row)}
     <div class="flex h-full flex-col bg-background">
       {#snippet headerTitle()}
-        <div class="flex items-center gap-2 {rowDeleted ? 'text-destructive' : ''}">
+        <div class="relative flex items-center">
+          <div>{$t('entities.list.previewPanelTitle')}</div>
           {#if rowDeleted}
-            <AlertCircle class="w-4 h-4" />
+            <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('common.deletedRecord')}</div>
           {/if}
-          {$t('entities.list.previewPanelTitle')}
         </div>
       {/snippet}
 
@@ -2518,7 +2518,7 @@
           >
             <ChevronLeft class="w-4 h-4" />
           </Button>
-          <span class="text-xs font-medium w-16 text-center {rowDeleted ? 'text-destructive' : ''}">
+          <span class="text-xs font-medium w-16 text-center">
             {(footerPage - 1) * pageSize + previewRowIndex + 1} / {footerRangeTotal}
           </span>
           <Button
