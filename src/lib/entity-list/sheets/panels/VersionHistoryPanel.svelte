@@ -286,7 +286,7 @@
               </Timeline.Separator>
               <Timeline.Content>
                 <div class="flex items-center gap-2">
-                  <Badge class={cn("text-xs font-semibold", colorClass)} variant="outline">
+                  <Badge class="text-xs font-semibold" variant="outline" style="border-color: var(--{colorClass.replace('text-', 'color-')});">
                     v{entry.version}
                   </Badge>
                   <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
