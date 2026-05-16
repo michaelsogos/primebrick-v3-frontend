@@ -127,8 +127,8 @@
       if (field === 'version') continue; // Skip version field
 
       const fieldLabel = $t(`entities.customer.versionHistory.field.${field}`) || field;
-      const oldValue = change.old;
-      const newValue = change.new;
+      const oldValue = change.from;
+      const newValue = change.to;
 
       if (oldValue === null && newValue !== null) {
         descriptions.push(`${fieldLabel}: ${$t('entities.customer.versionHistory.set')} ${newValue}`);
@@ -169,21 +169,21 @@
     {#if versionHistoryLoading && versionHistoryData.length === 0}
       <div class="flex items-center justify-center py-12">
         <div class="text-center">
-          <Hourglass class="size-8 mx-auto mb-3 text-muted-foreground animate-spin" />
+          <Hourglass class="size-20 mx-auto mb-3 text-muted-foreground animate-spin" />
           <p class="text-muted-foreground">{$t('entities.customer.versionHistory.loading')}</p>
         </div>
       </div>
     {:else if versionHistoryError}
       <div class="flex items-center justify-center py-12">
         <div class="text-center">
-          <CircleX class="size-8 mx-auto mb-3 text-destructive" />
+          <CircleX class="size-20 mx-auto mb-3 text-destructive" />
           <p class="text-destructive">{versionHistoryError}</p>
         </div>
       </div>
     {:else if versionHistoryData.length === 0}
       <div class="flex items-center justify-center py-12">
         <div class="text-center">
-          <Info class="size-8 mx-auto mb-3 text-muted-foreground" />
+          <Info class="size-20 mx-auto mb-3 text-muted-foreground" />
           <p class="text-muted-foreground">{$t('entities.customer.versionHistory.empty')}</p>
         </div>
       </div>
