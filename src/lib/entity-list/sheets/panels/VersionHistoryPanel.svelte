@@ -276,9 +276,8 @@
           {#each versionHistoryData as entry (entry.id)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
-            {@const isUpdate = entry.action === 'UPDATE'}
-            {@const descriptions = entry.action === 'CREATE' || entry.action === 'INSERT' ? [$t('entities.customer.versionHistory.recordCreated')]
-              : entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
+            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT'}
+            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
               : entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordSoftDeleted')]
               : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
               : formatAuditDelta(entry.delta)}
