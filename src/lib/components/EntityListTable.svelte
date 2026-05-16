@@ -1136,8 +1136,29 @@
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      // Handle both RFC 7807 errors and non-RFC errors
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        // Ensure required RFC 7807 fields are present
+        const rfcError: RFC7807Error = {
+          type: err.type || 'about:blank',
+          title: err.title || 'Delete failed',
+          status: err.status || 500,
+          detail: err.detail || 'Unknown error',
+          internal_code: err.internal_code,
+          instance: err.instance,
+          severity: err.severity
+        };
+        pushRFC7807Error(rfcError, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.deleteFailed',
+          scope: $t('errors.scope.deleteApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
     } finally {
       isDeleting = false;
     }
@@ -1160,8 +1181,29 @@
       }
     } catch (error) {
       console.error('Restore failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      // Handle both RFC 7807 errors and non-RFC errors
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        // Ensure required RFC 7807 fields are present
+        const rfcError: RFC7807Error = {
+          type: err.type || 'about:blank',
+          title: err.title || 'Restore failed',
+          status: err.status || 500,
+          detail: err.detail || 'Unknown error',
+          internal_code: err.internal_code,
+          instance: err.instance,
+          severity: err.severity
+        };
+        pushRFC7807Error(rfcError, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.restoreFailed',
+          scope: $t('errors.scope.restoreApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
     } finally {
       isRestoring = false;
     }
@@ -1200,12 +1242,13 @@
           instance?: string;
           internal_code?: string;
         };
-        
+
         const toneForImpact = 'danger'; // HIGH impact uses danger
         throw {
+          type: 'about:blank',
           title: data.title || 'Bulk delete failed',
-          status: data.status,
-          detail: data.detail,
+          status: data.status || res.status,
+          detail: data.detail || 'Unknown error',
           instance: data.instance,
           internal_code: data.internal_code,
           toneForImpact
@@ -1277,9 +1320,10 @@
 
         const toneForImpact = 'warning'; // HIGH impact uses warning for restore
         throw {
+          type: 'about:blank',
           title: data.title || 'Bulk restore failed',
-          status: data.status,
-          detail: data.detail,
+          status: data.status || res.status,
+          detail: data.detail || 'Unknown error',
           instance: data.instance,
           internal_code: data.internal_code,
           toneForImpact
@@ -2506,7 +2550,10 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="w-56" align="end">
             {#if entityRowActions?.edit !== false}
-              <DropdownMenu.Item onclick={() => handleEditRow(row)} data-disabled={rowDeleted}>
+              <DropdownMenu.Item
+                onclick={() => { if (rowDeleted) return; handleEditRow(row); }}
+                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              >
                 <div class="flex items-center gap-2">
                   <Pencil class="size-4 opacity-70" />
                   <span>{$t('common.edit')}</span>
@@ -2514,7 +2561,10 @@
               </DropdownMenu.Item>
             {/if}
             {#if entityRowActions?.duplicate !== false}
-              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)} data-disabled={rowDeleted}>
+              <DropdownMenu.Item
+                onclick={() => { if (rowDeleted) return; handleDuplicateRow(row); }}
+                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              >
                 <div class="flex items-center gap-2">
                   <Copy class="size-4 opacity-70" />
                   <span>{$t('common.duplicate')}</span>
@@ -3445,7 +3495,10 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3453,7 +3506,10 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -3557,7 +3613,10 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3565,7 +3624,10 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -4051,7 +4113,10 @@
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Content class="w-56" align="end">
                             {#if entityRowActions?.edit !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                              <DropdownMenu.Item
+                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                              >
                                 <div class="flex items-center gap-2">
                                   <Pencil class="size-4 opacity-70" />
                                   <span>{$t('common.edit')}</span>
@@ -4059,7 +4124,10 @@
                               </DropdownMenu.Item>
                             {/if}
                             {#if entityRowActions?.duplicate !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                              <DropdownMenu.Item
+                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                              >
                                 <div class="flex items-center gap-2">
                                   <Copy class="size-4 opacity-70" />
                                   <span>{$t('common.duplicate')}</span>
