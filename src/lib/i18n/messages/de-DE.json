@@ -342,13 +342,14 @@
           "DELETE": "Löschung",
           "SOFT_DELETE": "Löschung",
           "HARD_DELETE": "Endgültige Löschung",
-          "HARD_RESET": "Vollständiges Zurücksetzen",
           "RESTORE": "Wiederherstellung"
         },
         "fieldModified": "Feld {field} geändert von {from} zu {to}",
         "notSet": "nicht gesetzt",
         "recordCreated": "Datensatz erstellt",
         "recordDeleted": "Datensatz gelöscht",
+        "recordSoftDeleted": "Datensatz in den Papierkorb verschoben",
+        "recordHardDeleted": "Datensatz endgültig gelöscht",
         "recordRestored": "Datensatz wiederhergestellt"
       }
     }

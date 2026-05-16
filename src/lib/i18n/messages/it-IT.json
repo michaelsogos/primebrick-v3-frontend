@@ -354,13 +354,14 @@
           "DELETE": "Eliminazione",
           "SOFT_DELETE": "Eliminazione",
           "HARD_DELETE": "Eliminazione definitiva",
-          "HARD_RESET": "Ripristino completo",
           "RESTORE": "Ripristino"
         },
         "fieldModified": "Campo {field} modificato da {from} a {to}",
         "notSet": "non impostato",
         "recordCreated": "Record creato",
         "recordDeleted": "Record eliminato",
+        "recordSoftDeleted": "Record spostato nel cestino",
+        "recordHardDeleted": "Record eliminato definitivamente",
         "recordRestored": "Record ripristinato"
       }
     }

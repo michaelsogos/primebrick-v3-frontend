@@ -80,7 +80,9 @@
 
   function getAuditActionColorClass(action: string): string {
     const actionLower = action.toLowerCase();
-    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_delete' || actionLower === 'hard_reset') {
+    if (actionLower === 'hard_delete') {
+      return 'text-red-700 dark:text-red-300';
+    } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return 'text-red-600 dark:text-red-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return 'text-emerald-600 dark:text-emerald-400';
@@ -94,7 +96,9 @@
 
   function getAuditActionIcon(action: string) {
     const actionLower = action.toLowerCase();
-    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_delete' || actionLower === 'hard_reset') {
+    if (actionLower === 'hard_delete') {
+      return CircleX;
+    } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return AlertCircle;
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return CheckCircle;
@@ -192,7 +196,8 @@
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const descriptions = entry.action === 'CREATE' || entry.action === 'INSERT' ? [$t('entities.customer.versionHistory.recordCreated')]
-              : entry.action === 'DELETE' || entry.action === 'SOFT_DELETE' || entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordDeleted')]
+              : entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
+              : entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordSoftDeleted')]
               : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
               : formatAuditDelta(entry.delta)}
 
@@ -202,7 +207,9 @@
               </Timeline.Separator>
               <Timeline.Content>
                 <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
-                <Timeline.Title class={colorClass}>{getAuditActionLabel(entry.action)}</Timeline.Title>
+                <Timeline.Title class={colorClass}>
+                  {getAuditActionLabel(entry.action)}{#if entry.changed_by} - {entry.changed_by}{/if}
+                </Timeline.Title>
                 <ul class="space-y-1 text-sm text-muted-foreground mt-1">
                   {#each descriptions as desc}
                     <li>{desc}</li>

@@ -334,13 +334,14 @@
           "DELETE": "Eliminación",
           "SOFT_DELETE": "Eliminación",
           "HARD_DELETE": "Eliminación definitiva",
-          "HARD_RESET": "Restablecimiento completo",
           "RESTORE": "Restauración"
         },
         "fieldModified": "Campo {field} modificado de {from} a {to}",
         "notSet": "no establecido",
         "recordCreated": "Registro creado",
         "recordDeleted": "Registro eliminado",
+        "recordSoftDeleted": "Registro movido a la papelera",
+        "recordHardDeleted": "Registro eliminado definitivamente",
         "recordRestored": "Registro restaurado"
       }
     }

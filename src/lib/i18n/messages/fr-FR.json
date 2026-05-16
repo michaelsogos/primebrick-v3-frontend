@@ -333,13 +333,14 @@
           "DELETE": "Suppression",
           "SOFT_DELETE": "Suppression",
           "HARD_DELETE": "Suppression définitive",
-          "HARD_RESET": "Réinitialisation complète",
           "RESTORE": "Restauration"
         },
         "fieldModified": "Champ {field} modifié de {from} à {to}",
         "notSet": "non défini",
         "recordCreated": "Enregistrement créé",
         "recordDeleted": "Enregistrement supprimé",
+        "recordSoftDeleted": "Enregistrement déplacé vers la corbeille",
+        "recordHardDeleted": "Enregistrement supprimé définitivement",
         "recordRestored": "Enregistrement restauré"
       }
     }

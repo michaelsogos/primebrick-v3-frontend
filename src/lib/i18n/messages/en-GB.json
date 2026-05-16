@@ -354,13 +354,14 @@
           "DELETE": "Deletion",
           "SOFT_DELETE": "Deletion",
           "HARD_DELETE": "Permanent deletion",
-          "HARD_RESET": "Hard reset",
           "RESTORE": "Restoration"
         },
         "fieldModified": "Field {field} changed from {from} to {to}",
         "notSet": "not set",
         "recordCreated": "Record created",
         "recordDeleted": "Record deleted",
+        "recordSoftDeleted": "Record moved to trash",
+        "recordHardDeleted": "Record permanently deleted",
         "recordRestored": "Record restored"
       }
     }

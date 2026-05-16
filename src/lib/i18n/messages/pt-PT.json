@@ -343,13 +343,14 @@
           "DELETE": "Exclusão",
           "SOFT_DELETE": "Exclusão",
           "HARD_DELETE": "Exclusão definitiva",
-          "HARD_RESET": "Redefinição completa",
           "RESTORE": "Restauração"
         },
         "fieldModified": "Campo {field} modificado de {from} para {to}",
         "notSet": "não definido",
         "recordCreated": "Registro criado",
         "recordDeleted": "Registro excluído",
+        "recordSoftDeleted": "Registro movido para a lixeira",
+        "recordHardDeleted": "Registro excluído definitivamente",
         "recordRestored": "Registro restaurado"
       }
     }
