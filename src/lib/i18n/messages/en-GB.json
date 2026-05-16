@@ -349,8 +349,12 @@
         "viewMore": "View More",
         "actions": {
           "CREATE": "Creation",
+          "INSERT": "Creation",
           "UPDATE": "Modification",
           "DELETE": "Deletion",
+          "SOFT_DELETE": "Deletion",
+          "HARD_DELETE": "Permanent deletion",
+          "HARD_RESET": "Hard reset",
           "RESTORE": "Restoration"
         },
         "fieldModified": "Field {field} changed from {from} to {to}",

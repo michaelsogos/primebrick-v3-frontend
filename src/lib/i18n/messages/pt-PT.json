@@ -338,8 +338,12 @@
         "viewMore": "Ver mais",
         "actions": {
           "CREATE": "Criação",
+          "INSERT": "Criação",
           "UPDATE": "Modificação",
           "DELETE": "Exclusão",
+          "SOFT_DELETE": "Exclusão",
+          "HARD_DELETE": "Exclusão definitiva",
+          "HARD_RESET": "Redefinição completa",
           "RESTORE": "Restauração"
         },
         "fieldModified": "Campo {field} modificado de {from} para {to}",

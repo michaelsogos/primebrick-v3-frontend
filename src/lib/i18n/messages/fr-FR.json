@@ -328,8 +328,12 @@
         "viewMore": "Voir plus",
         "actions": {
           "CREATE": "Création",
+          "INSERT": "Création",
           "UPDATE": "Modification",
           "DELETE": "Suppression",
+          "SOFT_DELETE": "Suppression",
+          "HARD_DELETE": "Suppression définitive",
+          "HARD_RESET": "Réinitialisation complète",
           "RESTORE": "Restauration"
         },
         "fieldModified": "Champ {field} modifié de {from} à {to}",

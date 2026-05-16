@@ -1,11 +1,12 @@
 <script lang="ts">
   import { apiFetch } from "$lib/api";
-  import { t } from "$lib/i18n";
+  import { t, formatUiDateTime } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import * as Sheet from "$lib/components/ui/sheet";
   import XIcon from "@lucide/svelte/icons/x";
-  import { Hourglass, CircleX, Info, ChevronDown, CheckCircle, Trash2, RefreshCw, Pencil } from "lucide-svelte";
+  import { Hourglass, CircleX, Info, ChevronDown, CheckCircle, AlertCircle, AlertTriangle } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
@@ -79,46 +80,36 @@
 
   function getAuditActionColorClass(action: string): string {
     const actionLower = action.toLowerCase();
-    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_reset') {
-      return 'bg-destructive text-destructive-foreground';
+    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_delete' || actionLower === 'hard_reset') {
+      return 'text-red-600 dark:text-red-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
-      return 'bg-success text-success-foreground';
+      return 'text-emerald-600 dark:text-emerald-400';
     } else if (actionLower === 'restore') {
-      return 'bg-warning text-warning-foreground';
+      return 'text-amber-600 dark:text-amber-400';
     } else if (actionLower === 'update') {
-      return 'bg-info text-info-foreground';
+      return 'text-sky-600 dark:text-sky-400';
     }
-    return 'bg-neutral-900 text-neutral-50 dark:bg-neutral-100 dark:text-neutral-900';
+    return 'text-foreground';
   }
 
   function getAuditActionIcon(action: string) {
     const actionLower = action.toLowerCase();
-    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_reset') {
-      return Trash2;
+    if (actionLower === 'delete' || actionLower === 'soft_delete' || actionLower === 'hard_delete' || actionLower === 'hard_reset') {
+      return AlertCircle;
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return CheckCircle;
     } else if (actionLower === 'restore') {
-      return RefreshCw;
+      return AlertTriangle;
     } else if (actionLower === 'update') {
-      return Pencil;
+      return Info;
     }
     return Info;
   }
 
   function getAuditActionLabel(action: string): string {
-    const actionLower = action.toLowerCase();
-    if (actionLower === 'delete' || actionLower === 'soft_delete') {
-      return $t('entities.customer.versionHistory.actionDelete');
-    } else if (actionLower === 'hard_reset') {
-      return $t('entities.customer.versionHistory.actionHardReset');
-    } else if (actionLower === 'create' || actionLower === 'insert') {
-      return $t('entities.customer.versionHistory.actionCreate');
-    } else if (actionLower === 'restore') {
-      return $t('entities.customer.versionHistory.actionRestore');
-    } else if (actionLower === 'update') {
-      return $t('entities.customer.versionHistory.actionUpdate');
-    }
-    return action;
+    const key = `entities.customer.versionHistory.actions.${action.toUpperCase()}`;
+    const translated = $t(key);
+    return translated === key ? action : translated;
   }
 
   function formatAuditDelta(delta: Record<string, any>): string[] {
@@ -196,25 +187,23 @@
       </div>
     {:else}
       <div class="p-4">
-        <Timeline.Root class="relative">
+        <Timeline.Root>
           {#each versionHistoryData as entry (entry.id)}
-            {@const isFirst = entry === versionHistoryData[0]}
-            {@const descriptions = entry.action === 'CREATE' ? [$t('entities.customer.versionHistory.recordCreated')]
-              : entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordDeleted')]
+            {@const colorClass = getAuditActionColorClass(entry.action)}
+            {@const ActionIcon = getAuditActionIcon(entry.action)}
+            {@const descriptions = entry.action === 'CREATE' || entry.action === 'INSERT' ? [$t('entities.customer.versionHistory.recordCreated')]
+              : entry.action === 'DELETE' || entry.action === 'SOFT_DELETE' || entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordDeleted')]
               : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
               : formatAuditDelta(entry.delta)}
 
-            <Timeline.Item class="mb-6">
-              <Timeline.Separator class={cn(
-                "w-3 h-3 rounded-full border-2",
-                isFirst ? "bg-sky-500 border-sky-500" : "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600"
-              )}></Timeline.Separator>
-              <Timeline.Title class="text-sm text-muted-foreground mb-1">
-                {entry.changed_at}
-              </Timeline.Title>
+            <Timeline.Item>
+              <Timeline.Separator>
+                <ActionIcon class={cn("size-4", colorClass)} />
+              </Timeline.Separator>
               <Timeline.Content>
-                <div class="font-semibold text-foreground mb-2">{getAuditActionLabel(entry.action)}</div>
-                <ul class="space-y-1 text-sm text-muted-foreground">
+                <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
+                <Timeline.Title class={colorClass}>{getAuditActionLabel(entry.action)}</Timeline.Title>
+                <ul class="space-y-1 text-sm text-muted-foreground mt-1">
                   {#each descriptions as desc}
                     <li>{desc}</li>
                   {/each}
@@ -222,25 +211,25 @@
               </Timeline.Content>
             </Timeline.Item>
           {/each}
-
-          {#if versionHistoryHasMore}
-            <div class="flex justify-center mt-6">
-              <Button
-                variant="ghost"
-                size="sm"
-                onclick={loadMoreVersionHistory}
-                disabled={versionHistoryLoading}
-              >
-                {#if versionHistoryLoading}
-                  <Hourglass class="size-4 mr-2 animate-spin" />
-                {:else}
-                  <ChevronDown class="size-4 mr-2" />
-                {/if}
-                {$t('entities.customer.versionHistory.viewMore')}
-              </Button>
-            </div>
-          {/if}
         </Timeline.Root>
+
+        {#if versionHistoryHasMore}
+          <div class="flex justify-center mt-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onclick={loadMoreVersionHistory}
+              disabled={versionHistoryLoading}
+            >
+              {#if versionHistoryLoading}
+                <Hourglass class="size-4 mr-2 animate-spin" />
+              {:else}
+                <ChevronDown class="size-4 mr-2" />
+              {/if}
+              {$t('entities.customer.versionHistory.viewMore')}
+            </Button>
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

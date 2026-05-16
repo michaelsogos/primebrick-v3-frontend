@@ -337,8 +337,12 @@
         "viewMore": "Mehr anzeigen",
         "actions": {
           "CREATE": "Erstellung",
+          "INSERT": "Erstellung",
           "UPDATE": "Änderung",
           "DELETE": "Löschung",
+          "SOFT_DELETE": "Löschung",
+          "HARD_DELETE": "Endgültige Löschung",
+          "HARD_RESET": "Vollständiges Zurücksetzen",
           "RESTORE": "Wiederherstellung"
         },
         "fieldModified": "Feld {field} geändert von {from} zu {to}",
