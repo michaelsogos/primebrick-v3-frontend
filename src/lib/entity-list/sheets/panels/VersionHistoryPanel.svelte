@@ -120,7 +120,7 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>): Array<{
+  function formatAuditDelta(delta: Record<string, any>, action: string): Array<{
     field: string,
     operator: string,
     toOperator?: string,
@@ -186,12 +186,14 @@
         }
       }
 
+      const isCreateOrInsert = action === 'CREATE' || action === 'INSERT';
+
       if (oldValue === null && newValue !== null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.changedFrom'),
-          toOperator: $t('entities.customer.versionHistory.to'),
-          oldValue: $t('entities.customer.versionHistory.null'),
+          operator: isCreateOrInsert ? $t('entities.customer.versionHistory.set') : $t('entities.customer.versionHistory.changedFrom'),
+          toOperator: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.to'),
+          oldValue: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.null'),
           newValue: field === 'deleted_at' ? formatUiDateTime(newValue, $uiLang) : String(newValue),
           isBadge,
           badgeColor,
@@ -293,7 +295,7 @@
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
-              : formatAuditDelta(entry.delta)}
+              : formatAuditDelta(entry.delta, entry.action)}
 
             <Timeline.Item>
               <Timeline.Separator>
