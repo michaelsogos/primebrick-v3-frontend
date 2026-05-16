@@ -120,7 +120,7 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>): Array<{
+  function formatAuditDelta(delta: Record<string, any>, action: string): Array<{
     field: string,
     operator: string,
     toOperator?: string,
@@ -198,7 +198,7 @@
         } else if (oldValue !== null && newValue === null) {
           descriptions.push({
             field: $t('entities.customer.fields.deleted_at'),
-            operator: '',
+            operator: action === 'RESTORE' ? $t('entities.customer.versionHistory.cleared') : '',
             oldValue: formatUiDateTime(oldValue, $uiLang),
             isBadge
           });
@@ -214,7 +214,7 @@
         } else if (oldValue !== null && newValue === null) {
           descriptions.push({
             field: $t('entities.customer.fields.deleted_by'),
-            operator: '',
+            operator: action === 'RESTORE' ? $t('entities.customer.versionHistory.cleared') : '',
             oldValue: String(oldValue),
             isBadge
           });
@@ -315,7 +315,7 @@
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
-              : formatAuditDelta(entry.delta)}
+              : formatAuditDelta(entry.delta, entry.action)}
 
             <Timeline.Item>
               <Timeline.Separator>
