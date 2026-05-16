@@ -7,6 +7,7 @@
   import XIcon from "@lucide/svelte/icons/x";
   import { Hourglass, CircleX, Info, ChevronDown, CheckCircle, Trash2, RefreshCw, Pencil } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
+  import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
 
   interface $$Props {
@@ -194,33 +195,34 @@
         </div>
       </div>
     {:else}
-      <Timeline.Root class="relative">
+      <div class="space-y-6 p-4">
         {#each versionHistoryData as entry (entry.id)}
-          {@const colorClass = getAuditActionColorClass(entry.action)}
-          {@const ActionIcon = getAuditActionIcon(entry.action)}
+          {@const isFirst = entry === versionHistoryData[0]}
           {@const descriptions = entry.action === 'CREATE' ? [$t('entities.customer.versionHistory.recordCreated')]
             : entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordDeleted')]
             : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
             : formatAuditDelta(entry.delta)}
 
-          <Timeline.Item class="mb-8">
-            <Timeline.Separator class={colorClass}>
-              <ActionIcon class="size-4" />
-            </Timeline.Separator>
-            <Timeline.Title class={colorClass}>
-              {getAuditActionLabel(entry.action)} - {entry.changed_at}
-            </Timeline.Title>
-            <Timeline.Date class="text-muted-foreground">
-              v{entry.version}
-            </Timeline.Date>
-            <Timeline.Content>
-              <ul class="space-y-1 text-sm">
+          <div class="flex gap-4">
+            <div class="flex flex-col items-center">
+              <div class={cn(
+                "w-3 h-3 rounded-full border-2",
+                isFirst ? "bg-sky-500 border-sky-500" : "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600"
+              )}></div>
+              {#if entry !== versionHistoryData[versionHistoryData.length - 1]}
+                <div class="w-0.5 flex-1 bg-neutral-200 dark:bg-neutral-700 my-2"></div>
+              {/if}
+            </div>
+            <div class="flex-1 pb-4">
+              <div class="text-sm text-muted-foreground mb-1">{entry.changed_at}</div>
+              <div class="font-semibold text-foreground mb-2">{getAuditActionLabel(entry.action)}</div>
+              <ul class="space-y-1 text-sm text-muted-foreground">
                 {#each descriptions as desc}
-                  <li class="text-muted-foreground">{desc}</li>
+                  <li>{desc}</li>
                 {/each}
               </ul>
-            </Timeline.Content>
-          </Timeline.Item>
+            </div>
+          </div>
         {/each}
 
         {#if versionHistoryHasMore}
@@ -240,7 +242,7 @@
             </Button>
           </div>
         {/if}
-      </Timeline.Root>
+      </div>
     {/if}
   </div>
 </div>
