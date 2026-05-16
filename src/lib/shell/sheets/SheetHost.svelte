@@ -13,13 +13,15 @@
   import SearchInPanel from '$lib/entity-list/sheets/panels/SearchInPanel.svelte';
   import ColumnsPanel from '$lib/entity-list/sheets/panels/ColumnsPanel.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
+  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
     'shell.versions': VersionsPanel,
     'entity.searchIn': SearchInPanel,
     'entity.columns': ColumnsPanel,
-    'entity.filters': FiltersPanel
+    'entity.filters': FiltersPanel,
+    'entity.versionHistory': VersionHistoryPanel
   };
 
   const panelId = $derived(sheetState.panelId);

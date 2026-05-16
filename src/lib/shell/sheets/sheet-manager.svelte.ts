@@ -5,7 +5,8 @@ export type SheetPanelId =
   | 'shell.versions'
   | 'entity.searchIn'
   | 'entity.columns'
-  | 'entity.filters';
+  | 'entity.filters'
+  | 'entity.versionHistory';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -29,6 +30,10 @@ export type SheetPanelPropsMap = {
      * leaking Snippet generics across the whole app.
      */
     content: unknown;
+  };
+  'entity.versionHistory': {
+    entity: string;
+    rowUuid: string;
   };
 };
 
