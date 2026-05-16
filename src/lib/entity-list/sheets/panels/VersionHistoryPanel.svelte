@@ -205,12 +205,10 @@
               : formatAuditDelta(entry.delta)}
 
             <Timeline.Item class="mb-6">
-              <Timeline.Separator class={isFirst ? "bg-sky-500" : "bg-neutral-300 dark:bg-neutral-600"}>
-                <div class={cn(
-                  "w-3 h-3 rounded-full border-2",
-                  isFirst ? "bg-sky-500 border-sky-500" : "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600"
-                )}></div>
-              </Timeline.Separator>
+              <Timeline.Separator class={cn(
+                "w-3 h-3 rounded-full border-2",
+                isFirst ? "bg-sky-500 border-sky-500" : "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600"
+              )}></Timeline.Separator>
               <Timeline.Title class="text-sm text-muted-foreground mb-1">
                 {entry.changed_at}
               </Timeline.Title>
