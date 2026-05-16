@@ -152,7 +152,11 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      const fieldLabel = $t(`entities.customer.versionHistory.field.${field}`) || field;
+      let fieldLabel = $t(`entities.customer.versionHistory.field.${field}`);
+      if (fieldLabel === `entities.customer.versionHistory.field.${field}`) {
+        // Fallback to fields translation if versionHistory field doesn't exist
+        fieldLabel = $t(`entities.customer.fields.${field}`) || field;
+      }
       const oldValue = change.from || change.old;
       const newValue = change.to || change.new;
 
