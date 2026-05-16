@@ -4240,7 +4240,7 @@
           {/if}
 
           <div
-            class="h-full overflow-hidden bg-muted border-l {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
+            class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
             style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
