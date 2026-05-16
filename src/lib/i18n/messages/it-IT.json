@@ -43,6 +43,7 @@
     "duplicateConfirmTitle": "Duplica record",
     "duplicateConfirm": "Vuoi duplicare",
     "duplicateConfirmSingle": "Vuoi duplicare questo record",
+    "versionHistory": "Registro delle Modifiche",
     "exportExcel": "Esporta in Excel",
     "exportCsv": "Esporta in CSV",
     "exportConfirmTitle": "Esporta dati",
@@ -339,6 +340,24 @@
         "version": "Versione",
         "deleted_at": "Eliminato il",
         "deleted_by": "Eliminato da"
+      },
+      "versionHistory": {
+        "title": "Storico Versioni",
+        "loading": "Caricamento storico versioni…",
+        "error": "Impossibile caricare lo storico versioni",
+        "empty": "Nessuno storico versioni disponibile",
+        "viewMore": "Vedi altro",
+        "actions": {
+          "CREATE": "Creazione",
+          "UPDATE": "Modifica",
+          "DELETE": "Eliminazione",
+          "RESTORE": "Ripristino"
+        },
+        "fieldModified": "Campo {field} modificato da {from} a {to}",
+        "notSet": "non impostato",
+        "recordCreated": "Record creato",
+        "recordDeleted": "Record eliminato",
+        "recordRestored": "Record ripristinato"
       }
     }
   }

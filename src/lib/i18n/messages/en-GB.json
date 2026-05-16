@@ -43,6 +43,7 @@
     "duplicateConfirmTitle": "Duplicate records",
     "duplicateConfirm": "Do you want to duplicate",
     "duplicateConfirmSingle": "Do you want to duplicate this record",
+    "versionHistory": "Edit Log",
     "exportExcel": "Export in Excel",
     "exportCsv": "Export in CSV",
     "exportConfirmTitle": "Export data",
@@ -339,6 +340,24 @@
         "version": "Version",
         "deleted_at": "Deleted at",
         "deleted_by": "Deleted by"
+      },
+      "versionHistory": {
+        "title": "Version History",
+        "loading": "Loading version history…",
+        "error": "Failed to load version history",
+        "empty": "No version history available",
+        "viewMore": "View More",
+        "actions": {
+          "CREATE": "Creation",
+          "UPDATE": "Modification",
+          "DELETE": "Deletion",
+          "RESTORE": "Restoration"
+        },
+        "fieldModified": "Field {field} changed from {from} to {to}",
+        "notSet": "not set",
+        "recordCreated": "Record created",
+        "recordDeleted": "Record deleted",
+        "recordRestored": "Record restored"
       }
     }
   }

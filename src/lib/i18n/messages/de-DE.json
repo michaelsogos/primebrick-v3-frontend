@@ -52,7 +52,8 @@
     "exportHtmlConfirm": "HTML-Vorschau generieren für",
     "htmlPreviewTitle": "HTML-Vorschau",
     "copyHtml": "HTML kopieren",
-    "confirm": "Bestätigen"
+    "confirm": "Bestätigen",
+    "versionHistory": "Änderungsprotokoll"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -157,8 +158,7 @@
       "browser": "Browser-Name",
       "browserVersion": "Browserversion"
     }
-  }
-  ,
+  },
   "errors": {
     "scope": {
       "customersPageInit": "Kundenpage-Initialisierung",
@@ -328,8 +328,25 @@
         "version": "Version",
         "deleted_at": "Gelöscht am",
         "deleted_by": "Gelöscht von"
+      },
+      "versionHistory": {
+        "title": "Versionshistorie",
+        "loading": "Versionshistorie laden…",
+        "error": "Fehler beim Laden der Versionshistorie",
+        "empty": "Keine Versionshistorie verfügbar",
+        "viewMore": "Mehr anzeigen",
+        "actions": {
+          "CREATE": "Erstellung",
+          "UPDATE": "Änderung",
+          "DELETE": "Löschung",
+          "RESTORE": "Wiederherstellung"
+        },
+        "fieldModified": "Feld {field} geändert von {from} zu {to}",
+        "notSet": "nicht gesetzt",
+        "recordCreated": "Datensatz erstellt",
+        "recordDeleted": "Datensatz gelöscht",
+        "recordRestored": "Datensatz wiederhergestellt"
       }
     }
   }
 }
-

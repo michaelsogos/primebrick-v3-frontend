@@ -43,6 +43,7 @@
     "duplicateConfirmTitle": "Duplicar registros",
     "duplicateConfirm": "¿Deseas duplicar",
     "duplicateConfirmSingle": "¿Deseas duplicar este registro",
+    "versionHistory": "Registro de Cambios",
     "exportExcel": "Exportar a Excel",
     "exportCsv": "Exportar a CSV",
     "exportConfirmTitle": "Exportar datos",
@@ -300,16 +301,16 @@
         "first_name": "Nombre",
         "last_name": "Apellido",
         "company_name": "Empresa",
-        "email": "Email",
+        "email": "Correo electrónico",
         "phone": "Teléfono",
         "status": "Estado",
-        "onboarding_at": "Activado el",
-        "onboarding_time_zone": "Zona horaria onboarding",
+        "onboarding_at": "Incorporado el",
+        "onboarding_time_zone": "Zona horaria de incorporación",
         "uuid": "UUID",
         "status_reason": "Motivo del estado",
         "local_address": "Dirección",
         "local_city": "Ciudad",
-        "local_state": "Provincia/Región",
+        "local_state": "Estado/Región",
         "local_country": "País",
         "local_zip": "Código postal",
         "created_at": "Creado el",
@@ -319,8 +320,25 @@
         "version": "Versión",
         "deleted_at": "Eliminado el",
         "deleted_by": "Eliminado por"
+      },
+      "versionHistory": {
+        "title": "Historial de Versiones",
+        "loading": "Cargando historial de versiones…",
+        "error": "Error al cargar el historial de versiones",
+        "empty": "No hay historial de versiones disponible",
+        "viewMore": "Ver más",
+        "actions": {
+          "CREATE": "Creación",
+          "UPDATE": "Modificación",
+          "DELETE": "Eliminación",
+          "RESTORE": "Restauración"
+        },
+        "fieldModified": "Campo {field} modificado de {from} a {to}",
+        "notSet": "no establecido",
+        "recordCreated": "Registro creado",
+        "recordDeleted": "Registro eliminado",
+        "recordRestored": "Registro restaurado"
       }
     }
   }
 }
-
