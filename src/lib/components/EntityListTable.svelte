@@ -970,6 +970,10 @@
 
   /** Handle edit action for a row */
   function handleEditRow(row: TRow) {
+    if (isRowDeleted(row)) {
+      console.log('Cannot edit deleted row:', rowKey(row));
+      return;
+    }
     // TODO: Implement edit action - will be connected to BE later
     console.log('Edit row:', rowKey(row));
     closeRowDropdown();
@@ -1481,6 +1485,10 @@
   }
 
   function handleDuplicateRow(row: TRow) {
+    if (isRowDeleted(row)) {
+      console.log('Cannot duplicate deleted row:', rowKey(row));
+      return;
+    }
     singleRowToDuplicate = row;
     duplicateScope = 'single';
     duplicateConfirmDialogOpen = true;
@@ -2498,7 +2506,7 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="w-56" align="end">
             {#if entityRowActions?.edit !== false}
-              <DropdownMenu.Item onclick={() => handleEditRow(row)} disabled={rowDeleted}>
+              <DropdownMenu.Item onclick={() => handleEditRow(row)} data-disabled={rowDeleted}>
                 <div class="flex items-center gap-2">
                   <Pencil class="size-4 opacity-70" />
                   <span>{$t('common.edit')}</span>
@@ -2506,7 +2514,7 @@
               </DropdownMenu.Item>
             {/if}
             {#if entityRowActions?.duplicate !== false}
-              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)} disabled={rowDeleted}>
+              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)} data-disabled={rowDeleted}>
                 <div class="flex items-center gap-2">
                   <Copy class="size-4 opacity-70" />
                   <span>{$t('common.duplicate')}</span>
@@ -3437,7 +3445,7 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3445,7 +3453,7 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -3549,7 +3557,7 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3557,7 +3565,7 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
@@ -4043,7 +4051,7 @@
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Content class="w-56" align="end">
                             {#if entityRowActions?.edit !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }}>
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
                                 <div class="flex items-center gap-2">
                                   <Pencil class="size-4 opacity-70" />
                                   <span>{$t('common.edit')}</span>
@@ -4051,7 +4059,7 @@
                               </DropdownMenu.Item>
                             {/if}
                             {#if entityRowActions?.duplicate !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }}>
+                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
                                 <div class="flex items-center gap-2">
                                   <Copy class="size-4 opacity-70" />
                                   <span>{$t('common.duplicate')}</span>
