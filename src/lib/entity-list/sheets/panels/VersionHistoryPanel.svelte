@@ -116,8 +116,8 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>): string[] {
-    const descriptions: string[] = [];
+  function formatAuditDelta(delta: Record<string, any>): Array<{field: string, operator: string, value: string}> {
+    const descriptions: Array<{field: string, operator: string, value: string}> = [];
 
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
@@ -127,11 +127,23 @@
       const newValue = change.to || change.new;
 
       if (oldValue === null && newValue !== null) {
-        descriptions.push(`${fieldLabel}: ${$t('entities.customer.versionHistory.set')} ${newValue}`);
+        descriptions.push({
+          field: fieldLabel,
+          operator: $t('entities.customer.versionHistory.set'),
+          value: String(newValue)
+        });
       } else if (oldValue !== null && newValue === null) {
-        descriptions.push(`${fieldLabel}: ${$t('entities.customer.versionHistory.cleared')}`);
+        descriptions.push({
+          field: fieldLabel,
+          operator: $t('entities.customer.versionHistory.cleared'),
+          value: ''
+        });
       } else if (oldValue !== newValue) {
-        descriptions.push(`${fieldLabel}: ${$t('entities.customer.versionHistory.changedFrom')} ${oldValue} ${$t('entities.customer.versionHistory.to')} ${newValue}`);
+        descriptions.push({
+          field: fieldLabel,
+          operator: $t('entities.customer.versionHistory.changedFrom'),
+          value: `${String(oldValue)} ${$t('entities.customer.versionHistory.to')} ${String(newValue)}`
+        });
       }
     }
 
@@ -195,6 +207,7 @@
           {#each versionHistoryData as entry (entry.id)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
+            {@const isUpdate = entry.action === 'UPDATE'}
             {@const descriptions = entry.action === 'CREATE' || entry.action === 'INSERT' ? [$t('entities.customer.versionHistory.recordCreated')]
               : entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
               : entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordSoftDeleted')]
@@ -211,11 +224,31 @@
                   {getAuditActionLabel(entry.action)} {#if entry.changed_by}({entry.changed_by}){/if}
                 </Timeline.Title>
                 <div class="mt-1">
-                  <ul class="space-y-1 text-sm text-muted-foreground">
-                    {#each descriptions as desc}
-                      <li>{desc}</li>
-                    {/each}
-                  </ul>
+                  {#if isUpdate}
+                    <div class="space-y-2">
+                      {#each descriptions as desc}
+                        {@const delta = desc as {field: string, operator: string, value: string}}
+                        <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
+                          <div class="flex-1 min-w-0">
+                            <div class="text-xs flex flex-wrap items-center gap-1">
+                              <span class="font-bold text-foreground">{delta.field}</span>
+                              <span class="text-primary">{delta.operator}</span>
+                              {#if delta.value}
+                                <span class="italic text-muted-foreground">{delta.value}</span>
+                              {/if}
+                            </div>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <ul class="space-y-1 text-sm text-muted-foreground">
+                      {#each descriptions as desc}
+                        {@const text = desc as string}
+                        <li>{text}</li>
+                      {/each}
+                    </ul>
+                  {/if}
                 </div>
               </Timeline.Content>
             </Timeline.Item>
