@@ -159,32 +159,38 @@
 {/snippet}
 
 {#snippet headerTitle()}
-  {$t('entities.customer.versionHistory.title')} - {rowUuid}
+  {$t('entities.customer.versionHistory.title')}
 {/snippet}
 
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <div class="flex-1 overflow-y-auto p-4">
+  <div class="min-h-0 flex-1 overflow-auto p-2">
     {#if versionHistoryLoading && versionHistoryData.length === 0}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <Hourglass class="size-20 mx-auto mb-3 text-muted-foreground animate-spin" />
-          <p class="text-muted-foreground">{$t('entities.customer.versionHistory.loading')}</p>
+      <div class="grid h-full place-items-center p-3">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <Hourglass class="size-20 text-info animate-spin" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('entities.customer.versionHistory.loading')}</div>
         </div>
       </div>
     {:else if versionHistoryError}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <CircleX class="size-20 mx-auto mb-3 text-destructive" />
-          <p class="text-destructive">{versionHistoryError}</p>
+      <div class="grid h-full place-items-center p-3">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <CircleX class="size-20 text-destructive" />
+          </div>
+          <div class="text-sm font-medium text-destructive">{versionHistoryError}</div>
         </div>
       </div>
     {:else if versionHistoryData.length === 0}
-      <div class="flex items-center justify-center py-12">
-        <div class="text-center">
-          <Info class="size-20 mx-auto mb-3 text-muted-foreground" />
-          <p class="text-muted-foreground">{$t('entities.customer.versionHistory.empty')}</p>
+      <div class="grid h-full place-items-center p-3">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <Info class="size-20 text-info" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('entities.customer.versionHistory.empty')}</div>
         </div>
       </div>
     {:else}
@@ -238,3 +244,22 @@
     {/if}
   </div>
 </div>
+
+<style>
+  @keyframes pb-watermark-pulse {
+    0%,
+    100% {
+      opacity: 0.12;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 0.22;
+      transform: translateY(-6px) scale(1.06);
+    }
+  }
+
+  .pb-watermark-empty {
+    transform-origin: center;
+    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+  }
+</style>
