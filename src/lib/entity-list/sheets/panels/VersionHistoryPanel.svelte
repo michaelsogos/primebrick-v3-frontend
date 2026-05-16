@@ -8,17 +8,21 @@
   import XIcon from "@lucide/svelte/icons/x";
   import { Hourglass, CircleX, Info, ChevronDown, CheckCircle, AlertCircle, AlertTriangle } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
+  import { Badge } from "$lib/components/ui/badge";
+  import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
 
   interface $$Props {
     entity: string;
     rowUuid: string;
+    columns?: any[];
   }
 
   let {
     entity,
     rowUuid,
+    columns = [],
   }: $$Props = $props();
 
   let versionHistoryData = $state<any[]>([]);
@@ -116,8 +120,34 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>): Array<{field: string, operator: string, value: string}> {
-    const descriptions: Array<{field: string, operator: string, value: string}> = [];
+  function formatAuditDelta(delta: Record<string, any>): Array<{
+    field: string,
+    operator: string,
+    toOperator?: string,
+    oldValue?: string,
+    newValue?: string,
+    isBadge?: boolean,
+    badgeColor?: string,
+    badgeLabelText?: string,
+    badgeLabelKey?: string,
+    oldBadgeColor?: string,
+    oldBadgeLabelText?: string,
+    oldBadgeLabelKey?: string
+  }> {
+    const descriptions: Array<{
+      field: string,
+      operator: string,
+      toOperator?: string,
+      oldValue?: string,
+      newValue?: string,
+      isBadge?: boolean,
+      badgeColor?: string,
+      badgeLabelText?: string,
+      badgeLabelKey?: string,
+      oldBadgeColor?: string,
+      oldBadgeLabelText?: string,
+      oldBadgeLabelKey?: string
+    }> = [];
 
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
@@ -126,23 +156,62 @@
       const oldValue = change.from || change.old;
       const newValue = change.to || change.new;
 
+      // Check if this is a badge field using column metadata
+      const column = columns.find((c: any) => c.key === field);
+      const isBadge = column?.type === 'badge' && column?.badge?.values;
+
+      let badgeColor: string | undefined;
+      let badgeLabelText: string | undefined;
+      let badgeLabelKey: string | undefined;
+      let oldBadgeColor: string | undefined;
+      let oldBadgeLabelText: string | undefined;
+      let oldBadgeLabelKey: string | undefined;
+
+      if (isBadge) {
+        if (newValue) {
+          const newBadgeConfig = column.badge.values[newValue as string];
+          badgeColor = newBadgeConfig?.color;
+          badgeLabelText = newBadgeConfig?.labelText;
+          badgeLabelKey = newBadgeConfig?.labelKey;
+        }
+        if (oldValue) {
+          const oldBadgeConfig = column.badge.values[oldValue as string];
+          oldBadgeColor = oldBadgeConfig?.color;
+          oldBadgeLabelText = oldBadgeConfig?.labelText;
+          oldBadgeLabelKey = oldBadgeConfig?.labelKey;
+        }
+      }
+
       if (oldValue === null && newValue !== null) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.set'),
-          value: String(newValue)
+          newValue: String(newValue),
+          isBadge,
+          badgeColor,
+          badgeLabelText,
+          badgeLabelKey
         });
       } else if (oldValue !== null && newValue === null) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.cleared'),
-          value: ''
+          isBadge
         });
       } else if (oldValue !== newValue) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.changedFrom'),
-          value: `${String(oldValue)} ${$t('entities.customer.versionHistory.to')} ${String(newValue)}`
+          toOperator: $t('entities.customer.versionHistory.to'),
+          oldValue: String(oldValue),
+          newValue: String(newValue),
+          isBadge,
+          badgeColor,
+          badgeLabelText,
+          badgeLabelKey,
+          oldBadgeColor,
+          oldBadgeLabelText,
+          oldBadgeLabelKey
         });
       }
     }
@@ -227,14 +296,40 @@
                   {#if isUpdate}
                     <div class="space-y-2">
                       {#each descriptions as desc}
-                        {@const delta = desc as {field: string, operator: string, value: string}}
+                        {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string}}
                         <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
                           <div class="flex-1 min-w-0">
                             <div class="text-xs flex flex-wrap items-center gap-1">
                               <span class="font-bold text-foreground">{delta.field}</span>
                               <span class="text-primary">{delta.operator}</span>
-                              {#if delta.value}
-                                <span class="italic text-muted-foreground">{delta.value}</span>
+                              {#if delta.oldValue !== undefined}
+                                {#if delta.isBadge && delta.oldBadgeColor}
+                                  {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
+                                  <Badge
+                                    class="shadow-none text-xs"
+                                    style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
+                                  >
+                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
+                                  </Badge>
+                                {:else}
+                                  <span class="italic text-muted-foreground">{delta.oldValue}</span>
+                                {/if}
+                              {/if}
+                              {#if delta.toOperator}
+                                <span class="text-primary">{delta.toOperator}</span>
+                              {/if}
+                              {#if delta.newValue !== undefined}
+                                {#if delta.isBadge && delta.badgeColor}
+                                  {@const newBadgeColors = badgeClassesFromToken(delta.badgeColor)}
+                                  <Badge
+                                    class="shadow-none text-xs"
+                                    style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
+                                  >
+                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
+                                  </Badge>
+                                {:else}
+                                  <span class="italic text-muted-foreground">{delta.newValue}</span>
+                                {/if}
                               {/if}
                             </div>
                           </div>

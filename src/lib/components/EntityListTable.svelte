@@ -948,7 +948,8 @@
     const rowUuid = String((row as Record<string, unknown>)[uid]);
     openSheet('entity.versionHistory', {
       entity,
-      rowUuid
+      rowUuid,
+      columns: columns
     });
   }
 

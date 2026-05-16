@@ -34,6 +34,7 @@ export type SheetPanelPropsMap = {
   'entity.versionHistory': {
     entity: string;
     rowUuid: string;
+    columns?: any[];
   };
 };
 
