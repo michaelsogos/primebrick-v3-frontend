@@ -192,14 +192,14 @@
           descriptions.push({
             field: $t('entities.customer.fields.deleted_at'),
             operator: '',
-            newValue: String(newValue),
+            newValue: formatUiDateTime(newValue, $uiLang),
             isBadge
           });
         } else if (oldValue !== null && newValue === null) {
           descriptions.push({
             field: $t('entities.customer.fields.deleted_at'),
             operator: '',
-            oldValue: String(oldValue),
+            oldValue: formatUiDateTime(oldValue, $uiLang),
             isBadge
           });
         }
