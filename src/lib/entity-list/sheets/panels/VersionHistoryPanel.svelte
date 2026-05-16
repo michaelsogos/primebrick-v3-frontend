@@ -186,7 +186,40 @@
         }
       }
 
-      if (oldValue === null && newValue !== null) {
+      // Special handling for deleted_at and deleted_by fields
+      if (field === 'deleted_at') {
+        if (oldValue === null && newValue !== null) {
+          descriptions.push({
+            field: $t('entities.customer.fields.deleted_at'),
+            operator: '',
+            newValue: String(newValue),
+            isBadge
+          });
+        } else if (oldValue !== null && newValue === null) {
+          descriptions.push({
+            field: $t('entities.customer.fields.deleted_at'),
+            operator: '',
+            oldValue: String(oldValue),
+            isBadge
+          });
+        }
+      } else if (field === 'deleted_by') {
+        if (oldValue === null && newValue !== null) {
+          descriptions.push({
+            field: $t('entities.customer.fields.deleted_by'),
+            operator: '',
+            newValue: String(newValue),
+            isBadge
+          });
+        } else if (oldValue !== null && newValue === null) {
+          descriptions.push({
+            field: $t('entities.customer.fields.deleted_by'),
+            operator: '',
+            oldValue: String(oldValue),
+            isBadge
+          });
+        }
+      } else if (oldValue === null && newValue !== null) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.set'),
@@ -307,7 +340,9 @@
                           <div class="flex-1 min-w-0">
                             <div class="text-xs flex flex-wrap items-center gap-1">
                               <span class="font-bold text-foreground">{delta.field}</span>
-                              <span class="text-primary">{delta.operator}</span>
+                              {#if delta.operator}
+                                <span class="text-primary">{delta.operator}</span>
+                              {/if}
                               {#if delta.oldValue !== undefined}
                                 {#if delta.isBadge && delta.oldBadgeColor}
                                   {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
