@@ -120,7 +120,7 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>, action: string): Array<{
+  function formatAuditDelta(delta: Record<string, any>): Array<{
     field: string,
     operator: string,
     toOperator?: string,
@@ -186,44 +186,11 @@
         }
       }
 
-      // Special handling for deleted_at and deleted_by fields
-      if (field === 'deleted_at') {
-        if (oldValue === null && newValue !== null) {
-          descriptions.push({
-            field: $t('entities.customer.fields.deleted_at'),
-            operator: '',
-            newValue: formatUiDateTime(newValue, $uiLang),
-            isBadge
-          });
-        } else if (oldValue !== null && newValue === null) {
-          descriptions.push({
-            field: $t('entities.customer.fields.deleted_at'),
-            operator: action === 'RESTORE' ? $t('entities.customer.versionHistory.cleared') : '',
-            oldValue: formatUiDateTime(oldValue, $uiLang),
-            isBadge
-          });
-        }
-      } else if (field === 'deleted_by') {
-        if (oldValue === null && newValue !== null) {
-          descriptions.push({
-            field: $t('entities.customer.fields.deleted_by'),
-            operator: '',
-            newValue: String(newValue),
-            isBadge
-          });
-        } else if (oldValue !== null && newValue === null) {
-          descriptions.push({
-            field: $t('entities.customer.fields.deleted_by'),
-            operator: action === 'RESTORE' ? $t('entities.customer.versionHistory.cleared') : '',
-            oldValue: String(oldValue),
-            isBadge
-          });
-        }
-      } else if (oldValue === null && newValue !== null) {
+      if (oldValue === null && newValue !== null) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.customer.versionHistory.set'),
-          newValue: String(newValue),
+          newValue: field === 'deleted_at' ? formatUiDateTime(newValue, $uiLang) : String(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -232,8 +199,17 @@
       } else if (oldValue !== null && newValue === null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.cleared'),
-          isBadge
+          operator: $t('entities.customer.versionHistory.changedFrom'),
+          toOperator: $t('entities.customer.versionHistory.to'),
+          oldValue: field === 'deleted_at' ? formatUiDateTime(oldValue, $uiLang) : String(oldValue),
+          newValue: String(newValue),
+          isBadge,
+          badgeColor,
+          badgeLabelText,
+          badgeLabelKey,
+          oldBadgeColor,
+          oldBadgeLabelText,
+          oldBadgeLabelKey
         });
       } else if (oldValue !== newValue) {
         descriptions.push({
@@ -315,7 +291,7 @@
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
-              : formatAuditDelta(entry.delta, entry.action)}
+              : formatAuditDelta(entry.delta)}
 
             <Timeline.Item>
               <Timeline.Separator>
