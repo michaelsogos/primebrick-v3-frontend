@@ -276,10 +276,8 @@
           {#each versionHistoryData as entry (entry.id)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
-            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT'}
+            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
-              : entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' ? [$t('entities.customer.versionHistory.recordSoftDeleted')]
-              : entry.action === 'RESTORE' ? [$t('entities.customer.versionHistory.recordRestored')]
               : formatAuditDelta(entry.delta)}
 
             <Timeline.Item>
@@ -287,7 +285,11 @@
                 <ActionIcon class={cn("size-4", colorClass)} />
               </Timeline.Separator>
               <Timeline.Content>
-                <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
+                <div class="flex items-baseline gap-2">
+                  <span class={cn("text-sm font-semibold", colorClass)}>{entry.version}</span>
+                  <span class="text-muted-foreground">-</span>
+                  <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
+                </div>
                 <Timeline.Title class={colorClass}>
                   {getAuditActionLabel(entry.action)} {#if entry.changed_by}({entry.changed_by}){/if}
                 </Timeline.Title>
