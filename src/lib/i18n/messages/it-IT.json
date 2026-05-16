@@ -43,6 +43,7 @@
     "duplicateConfirmTitle": "Duplica record",
     "duplicateConfirm": "Vuoi duplicare",
     "duplicateConfirmSingle": "Vuoi duplicare questo record",
+    "versionHistory": "Registro delle Modifiche",
     "exportExcel": "Esporta in Excel",
     "exportCsv": "Esporta in CSV",
     "exportConfirmTitle": "Esporta dati",
@@ -339,8 +340,51 @@
         "version": "Versione",
         "deleted_at": "Eliminato il",
         "deleted_by": "Eliminato da"
+      },
+      "versionHistory": {
+        "title": "Storico Versioni",
+        "loading": "Caricamento storico versioni…",
+        "error": "Impossibile caricare lo storico versioni",
+        "empty": "Nessuno storico versioni disponibile",
+        "viewMore": "Vedi altro",
+        "showDetails": "Mostra dettagli",
+        "hideDetails": "Nascondi dettagli",
+        "actions": {
+          "CREATE": "Creazione",
+          "INSERT": "Creazione",
+          "UPDATE": "Modifica",
+          "DELETE": "Eliminazione",
+          "SOFT_DELETE": "Eliminazione",
+          "HARD_DELETE": "Eliminazione definitiva",
+          "RESTORE": "Ripristino"
+        },
+        "field": {
+          "email": "Email",
+          "phone": "Telefono",
+          "status": "Stato",
+          "first_name": "Nome",
+          "last_name": "Cognome",
+          "company_name": "Azienda",
+          "local_address": "Indirizzo",
+          "local_city": "Città",
+          "local_state": "Provincia/Regione",
+          "local_country": "Paese",
+          "local_zip": "CAP",
+          "status_reason": "Motivo stato"
+        },
+        "fieldModified": "Campo {field} modificato da {from} a {to}",
+        "notSet": "non impostato",
+        "set": "impostato a",
+        "unchanged": "invariato a",
+        "cleared": "cancellato",
+        "changedFrom": "cambiato da",
+        "to": "a",
+        "null": "vuoto",
+        "recordCreated": "Record creato",
+        "recordHardDeleted": "Record eliminato definitivamente",
+        "recordSoftDeleted": "Record eliminato",
+        "recordRestored": "Record ripristinato"
       }
     }
   }
 }
-

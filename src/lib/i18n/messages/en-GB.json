@@ -43,6 +43,7 @@
     "duplicateConfirmTitle": "Duplicate records",
     "duplicateConfirm": "Do you want to duplicate",
     "duplicateConfirmSingle": "Do you want to duplicate this record",
+    "versionHistory": "Edit Log",
     "exportExcel": "Export in Excel",
     "exportCsv": "Export in CSV",
     "exportConfirmTitle": "Export data",
@@ -339,6 +340,51 @@
         "version": "Version",
         "deleted_at": "Deleted at",
         "deleted_by": "Deleted by"
+      },
+      "versionHistory": {
+        "title": "Version History",
+        "loading": "Loading version history…",
+        "error": "Failed to load version history",
+        "empty": "No version history available",
+        "viewMore": "View more",
+        "showDetails": "Show details",
+        "hideDetails": "Hide details",
+        "actions": {
+          "CREATE": "Creation",
+          "INSERT": "Creation",
+          "UPDATE": "Modification",
+          "DELETE": "Deletion",
+          "SOFT_DELETE": "Deletion",
+          "HARD_DELETE": "Permanent deletion",
+          "RESTORE": "Restoration"
+        },
+        "field": {
+          "email": "Email",
+          "phone": "Phone",
+          "status": "Status",
+          "first_name": "First name",
+          "last_name": "Last name",
+          "company_name": "Company",
+          "local_address": "Address",
+          "local_city": "City",
+          "local_state": "State/Region",
+          "local_country": "Country",
+          "local_zip": "ZIP",
+          "status_reason": "Status reason"
+        },
+        "fieldModified": "Field {field} changed from {from} to {to}",
+        "notSet": "not set",
+        "set": "set to",
+        "unchanged": "unchanged at",
+        "cleared": "cleared",
+        "changedFrom": "changed from",
+        "to": "to",
+        "null": "empty",
+        "recordCreated": "Record created",
+        "recordDeleted": "Record deleted",
+        "recordSoftDeleted": "Record deleted",
+        "recordHardDeleted": "Record permanently deleted",
+        "recordRestored": "Record restored"
       }
     }
   }

@@ -24,6 +24,7 @@
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
+  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -48,6 +49,7 @@
     ChevronsLeft,
     ChevronsRight,
     ChevronUp,
+    ChevronDown,
     RotateCw,
     RotateCcw,
     MoreVertical,
@@ -70,7 +72,11 @@
     PanelRightOpen,
     Copy,
     Download,
-    Funnel
+    Funnel,
+    CheckCircle,
+    Info,
+    RefreshCw,
+    FileClock
   } from 'lucide-svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
@@ -90,6 +96,7 @@
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Window } from '$lib/components/ui/window';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import * as Timeline from '$lib/components/ui/timeline';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -937,6 +944,16 @@
     isResizing = false;
   }
 
+  async function loadVersionHistory(row: TRow) {
+    const rowUuid = String((row as Record<string, unknown>)[uid]);
+    openSheet('entity.versionHistory', {
+      entity,
+      rowUuid,
+      columns: columns
+    });
+  }
+
+
   // Reset previewRowIndex when page changes
   $effect(() => {
     if (previewPanelOpen && viewRows.length > 0) {
@@ -1136,8 +1153,29 @@
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      // Handle both RFC 7807 errors and non-RFC errors
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        // Ensure required RFC 7807 fields are present
+        const rfcError: RFC7807Error = {
+          type: err.type || 'about:blank',
+          title: err.title || 'Delete failed',
+          status: err.status || 500,
+          detail: err.detail || 'Unknown error',
+          internal_code: err.internal_code,
+          instance: err.instance,
+          severity: err.severity
+        };
+        pushRFC7807Error(rfcError, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.deleteFailed',
+          scope: $t('errors.scope.deleteApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
     } finally {
       isDeleting = false;
     }
@@ -1160,8 +1198,29 @@
       }
     } catch (error) {
       console.error('Restore failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      // Handle both RFC 7807 errors and non-RFC errors
+      if (error && typeof error === 'object' && 'title' in error) {
+        const err = error as RFC7807Error;
+        // Ensure required RFC 7807 fields are present
+        const rfcError: RFC7807Error = {
+          type: err.type || 'about:blank',
+          title: err.title || 'Restore failed',
+          status: err.status || 500,
+          detail: err.detail || 'Unknown error',
+          internal_code: err.internal_code,
+          instance: err.instance,
+          severity: err.severity
+        };
+        pushRFC7807Error(rfcError, { showToast: true });
+      } else {
+        pushImpactError({
+          impact: 'MEDIUM',
+          messageKey: 'entities.list.restoreFailed',
+          scope: $t('errors.scope.restoreApi'),
+          detail: error instanceof Error ? error.message : String(error),
+          toast: true,
+        });
+      }
     } finally {
       isRestoring = false;
     }
@@ -1200,12 +1259,13 @@
           instance?: string;
           internal_code?: string;
         };
-        
+
         const toneForImpact = 'danger'; // HIGH impact uses danger
         throw {
+          type: 'about:blank',
           title: data.title || 'Bulk delete failed',
-          status: data.status,
-          detail: data.detail,
+          status: data.status || res.status,
+          detail: data.detail || 'Unknown error',
           instance: data.instance,
           internal_code: data.internal_code,
           toneForImpact
@@ -1277,9 +1337,10 @@
 
         const toneForImpact = 'warning'; // HIGH impact uses warning for restore
         throw {
+          type: 'about:blank',
           title: data.title || 'Bulk restore failed',
-          status: data.status,
-          detail: data.detail,
+          status: data.status || res.status,
+          detail: data.detail || 'Unknown error',
           instance: data.instance,
           internal_code: data.internal_code,
           toneForImpact
@@ -2506,7 +2567,10 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="w-56" align="end">
             {#if entityRowActions?.edit !== false}
-              <DropdownMenu.Item onclick={() => handleEditRow(row)} data-disabled={rowDeleted}>
+              <DropdownMenu.Item
+                onclick={() => { if (rowDeleted) return; handleEditRow(row); }}
+                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              >
                 <div class="flex items-center gap-2">
                   <Pencil class="size-4 opacity-70" />
                   <span>{$t('common.edit')}</span>
@@ -2514,13 +2578,24 @@
               </DropdownMenu.Item>
             {/if}
             {#if entityRowActions?.duplicate !== false}
-              <DropdownMenu.Item onclick={() => handleDuplicateRow(row)} data-disabled={rowDeleted}>
+              <DropdownMenu.Item
+                onclick={() => { if (rowDeleted) return; handleDuplicateRow(row); }}
+                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              >
                 <div class="flex items-center gap-2">
                   <Copy class="size-4 opacity-70" />
                   <span>{$t('common.duplicate')}</span>
                 </div>
               </DropdownMenu.Item>
             {/if}
+            <DropdownMenu.Item
+              onclick={() => loadVersionHistory(row)}
+            >
+              <div class="flex items-center gap-2">
+                <FileClock class="size-4 opacity-70" />
+                <span>{$t('common.versionHistory')}</span>
+              </div>
+            </DropdownMenu.Item>
             {#if entityRowActions?.delete !== false}
               {#if rowDeleted}
                 <DropdownMenu.Separator />
@@ -3445,7 +3520,10 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3453,13 +3531,24 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  <DropdownMenu.Item
+                                    onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
+                                  >
+                                    <div class="flex items-center gap-2">
+                                      <FileClock class="size-4 opacity-70" />
+                                      <span>{$t('common.versionHistory')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
                                   {#if entityRowActions?.preview !== false}
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
                                       <div class="flex items-center gap-2">
@@ -3557,7 +3646,10 @@
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content class="w-56" align="end">
                                   {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Pencil class="size-4 opacity-70" />
                                         <span>{$t('common.edit')}</span>
@@ -3565,13 +3657,24 @@
                                     </DropdownMenu.Item>
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                                    <DropdownMenu.Item
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                    >
                                       <div class="flex items-center gap-2">
                                         <Copy class="size-4 opacity-70" />
                                         <span>{$t('common.duplicate')}</span>
                                       </div>
                                     </DropdownMenu.Item>
                                   {/if}
+                                  <DropdownMenu.Item
+                                    onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
+                                  >
+                                    <div class="flex items-center gap-2">
+                                      <FileClock class="size-4 opacity-70" />
+                                      <span>{$t('common.versionHistory')}</span>
+                                    </div>
+                                  </DropdownMenu.Item>
                                   {#if entityRowActions?.preview !== false}
                                     <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
                                       <div class="flex items-center gap-2">
@@ -4051,7 +4154,10 @@
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Content class="w-56" align="end">
                             {#if entityRowActions?.edit !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleEditRow(r); }} data-disabled={isRowDeleted(r)}>
+                              <DropdownMenu.Item
+                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
+                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                              >
                                 <div class="flex items-center gap-2">
                                   <Pencil class="size-4 opacity-70" />
                                   <span>{$t('common.edit')}</span>
@@ -4059,13 +4165,24 @@
                               </DropdownMenu.Item>
                             {/if}
                             {#if entityRowActions?.duplicate !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDuplicateRow(r); }} data-disabled={isRowDeleted(r)}>
+                              <DropdownMenu.Item
+                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                              >
                                 <div class="flex items-center gap-2">
                                   <Copy class="size-4 opacity-70" />
                                   <span>{$t('common.duplicate')}</span>
                                 </div>
                               </DropdownMenu.Item>
                             {/if}
+                            <DropdownMenu.Item
+                              onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
+                            >
+                              <div class="flex items-center gap-2">
+                                <FileClock class="size-4 opacity-70" />
+                                <span>{$t('common.versionHistory')}</span>
+                              </div>
+                            </DropdownMenu.Item>
                             {#if entityRowActions?.preview !== false}
                               <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
                                 <div class="flex items-center gap-2">
@@ -4123,7 +4240,7 @@
           {/if}
 
           <div
-            class="h-full overflow-hidden bg-muted border-l {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
+            class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
             style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
@@ -4556,7 +4673,7 @@
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>
-  
+
   <!-- Navigation dock -->
   <div class="relative shrink-0">
     <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-primary/10 !border-primary/20 dark:!bg-primary/10" magnification={70} distance={120}>
@@ -4583,8 +4700,9 @@
       </Dock.Icon>
     </Dock.Root>
   </div>
-  
-  <!-- Preview content -->
+
+
+<!-- Preview content -->
   <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">
     {#if previewMode === 'html'}
       <iframe
