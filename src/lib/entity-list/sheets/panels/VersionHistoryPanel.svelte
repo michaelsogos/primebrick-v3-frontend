@@ -123,8 +123,8 @@
       if (field === 'version') continue; // Skip version field
 
       const fieldLabel = $t(`entities.customer.versionHistory.field.${field}`) || field;
-      const oldValue = change.from;
-      const newValue = change.to;
+      const oldValue = change.from || change.old;
+      const newValue = change.to || change.new;
 
       if (oldValue === null && newValue !== null) {
         descriptions.push(`${fieldLabel}: ${$t('entities.customer.versionHistory.set')} ${newValue}`);
@@ -208,13 +208,15 @@
               <Timeline.Content>
                 <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
                 <Timeline.Title class={colorClass}>
-                  {getAuditActionLabel(entry.action)}{#if entry.changed_by} - {entry.changed_by}{/if}
+                  {getAuditActionLabel(entry.action)} {#if entry.changed_by}({entry.changed_by}){/if}
                 </Timeline.Title>
-                <ul class="space-y-1 text-sm text-muted-foreground mt-1">
-                  {#each descriptions as desc}
-                    <li>{desc}</li>
-                  {/each}
-                </ul>
+                <div class="mt-1">
+                  <ul class="space-y-1 text-sm text-muted-foreground">
+                    {#each descriptions as desc}
+                      <li>{desc}</li>
+                    {/each}
+                  </ul>
+                </div>
               </Timeline.Content>
             </Timeline.Item>
           {/each}
