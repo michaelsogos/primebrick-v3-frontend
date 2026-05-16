@@ -98,6 +98,22 @@
     return 'text-foreground';
   }
 
+  function getAuditActionBorderClass(action: string): string {
+    const actionLower = action.toLowerCase();
+    if (actionLower === 'hard_delete') {
+      return 'border-red-700 dark:border-red-300';
+    } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
+      return 'border-red-600 dark:border-red-400';
+    } else if (actionLower === 'create' || actionLower === 'insert') {
+      return 'border-emerald-600 dark:border-emerald-400';
+    } else if (actionLower === 'restore') {
+      return 'border-amber-600 dark:border-amber-400';
+    } else if (actionLower === 'update') {
+      return 'border-sky-600 dark:border-sky-400';
+    }
+    return 'border-foreground';
+  }
+
   function getAuditActionIcon(action: string) {
     const actionLower = action.toLowerCase();
     if (actionLower === 'hard_delete') {
@@ -292,6 +308,7 @@
         <Timeline.Root>
           {#each versionHistoryData as entry (entry.id)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
+            {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
@@ -303,7 +320,7 @@
               </Timeline.Separator>
               <Timeline.Content>
                 <div class="flex items-center gap-2">
-                  <Badge class={cn("text-xs font-semibold border", colorClass.replace('text-', 'border-'))} variant="outline">
+                  <Badge class={cn("text-xs font-semibold border", borderClass)} variant="outline">
                     v{entry.version}
                   </Badge>
                   <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
