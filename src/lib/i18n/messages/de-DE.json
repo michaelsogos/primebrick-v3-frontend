@@ -53,6 +53,7 @@
     "htmlPreviewTitle": "HTML-Vorschau",
     "copyHtml": "HTML kopieren",
     "confirm": "Bestätigen",
+    "deletedRecord": "Gelöschter Datensatz",
     "versionHistory": "Änderungsprotokoll"
   },
   "shell": {

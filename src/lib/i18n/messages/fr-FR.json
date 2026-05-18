@@ -53,7 +53,8 @@
     "exportHtmlConfirm": "Générer l'aperçu HTML pour",
     "htmlPreviewTitle": "Aperçu HTML",
     "copyHtml": "Copier HTML",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "deletedRecord": "Enregistrement supprimé"
   },
   "shell": {
     "subtitle": "Backoffice",

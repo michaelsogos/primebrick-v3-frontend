@@ -52,7 +52,8 @@
     "exportHtmlConfirm": "Gerar pré-visualização HTML para",
     "htmlPreviewTitle": "Pré-visualização HTML",
     "copyHtml": "Copiar HTML",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "deletedRecord": "Registro excluído"
   },
   "shell": {
     "subtitle": "Backoffice",
