@@ -53,9 +53,39 @@
             : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
+  // Dynamic hero system
+  const heroes = [
+    {
+      image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      quote: 'The solid, modular, and efficient management platform for complete control of your projects.',
+      author: 'Focus & Structure'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+      quote: 'Build the future of your business, one digital brick at a time.',
+      author: 'Modular Innovation'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1200&q=80',
+      quote: 'Optimize workflows and granular control. All in one ecosystem.',
+      author: 'Operational Efficiency'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+      quote: 'Simplify complexity. Transform raw data into strategic decisions.',
+      author: 'Data Driven'
+    }
+  ];
+
+  let currentHero = $state(heroes[0]);
+
   onMount(() => {
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
+    
+    // Select random hero
+    const randomIndex = Math.floor(Math.random() * heroes.length);
+    currentHero = heroes[randomIndex];
   });
 
   async function handleLogin() {
@@ -106,11 +136,20 @@
 <div class="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
   
   <!-- Right Column: Aesthetic Panel (Hidden on Mobile, Visible on Desktop) -->
-  <div class="relative hidden h-full flex-col bg-zinc-900 p-10 text-white dark:border-r lg:flex">
-    <!-- Background gradient -->
-    <div class="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black z-0"></div>
+  <div class="relative hidden h-full flex-col p-10 text-white lg:flex border-r border-zinc-800 bg-zinc-950 overflow-hidden">
+    <!-- Dynamic image with transition -->
+    {#key currentHero.image}
+      <img 
+        src={currentHero.image} 
+        alt="PrimeBrick Hero" 
+        class="absolute inset-0 h-full w-full object-cover z-0 transition-opacity duration-500" 
+      />
+    {/key}
     
-    <!-- Logo in top left of panel -->
+    <!-- Dark overlay for text contrast -->
+    <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/75 to-zinc-950/40 z-10"></div>
+    
+    <!-- Logo PrimeBrick -->
     <div class="relative z-20 flex items-center text-lg font-medium tracking-tight">
       <Avatar class="size-8 rounded-none avatar-hex mr-3">
         <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
@@ -120,12 +159,15 @@
       <span class="text-xl font-semibold">PrimeBrick</span>
     </div>
     
-    <!-- Quote in bottom left -->
+    <!-- Dynamic quote -->
     <div class="relative z-20 mt-auto">
       <blockquote class="space-y-2">
-        <p class="text-lg font-light text-zinc-300">
-          "The solid, modular, and efficient management platform for complete control of your projects."
+        <p class="text-xl font-light leading-relaxed text-zinc-100 tracking-wide max-w-lg drop-shadow-md">
+          "{currentHero.quote}"
         </p>
+        <footer class="text-xs font-mono uppercase tracking-wider text-zinc-400">
+          // {currentHero.author}
+        </footer>
       </blockquote>
     </div>
 
