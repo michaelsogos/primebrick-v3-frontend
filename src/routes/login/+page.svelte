@@ -159,8 +159,8 @@
       <span class="text-xl font-semibold">PrimeBrick</span>
     </div>
     
-    <!-- Dynamic quote -->
-    <div class="relative z-20 mt-auto">
+    <!-- Dynamic quote - vertically centered -->
+    <div class="relative z-20 flex-1 flex items-center justify-center">
       <blockquote class="space-y-2">
         <p class="text-xl font-light leading-relaxed text-zinc-100 tracking-wide max-w-lg drop-shadow-md">
           "{currentHero.quote}"
@@ -170,12 +170,15 @@
         </footer>
       </blockquote>
     </div>
+  </div>
 
-    <!-- Health badge in bottom left -->
-    <div class="relative z-20 mt-auto">
+  <!-- Left Column: Login Form (Always visible) -->
+  <div class="lg:p-8 flex min-h-screen items-center justify-center bg-background relative">
+    <!-- Health badge in bottom left (desktop) -->
+    <div class="absolute bottom-8 left-8 hidden lg:block">
       <Badge
         variant="outline"
-        class={cn('gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium bg-transparent border-zinc-700 text-zinc-300', healthChipClass)}
+        class={cn('gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium', healthChipClass)}
         title={healthChipLabel}
       >
         {#if healthChip === 'backend_offline'}
@@ -192,10 +195,7 @@
         <span>{healthChipLabel}</span>
       </Badge>
     </div>
-  </div>
 
-  <!-- Left Column: Login Form (Always visible) -->
-  <div class="lg:p-8 flex min-h-screen items-center justify-center bg-background relative">
     <!-- Theme and language selectors in top right (desktop) -->
     <div class="absolute top-8 right-8 hidden lg:flex items-center gap-2">
       <ThemeToggle />
