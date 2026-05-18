@@ -142,14 +142,16 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identitätsanbieter",
       "versionsTitle": "Versionen",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
       "modulesTitle": "Module",
       "clientTitle": "Dieser Browser",
-      "ianaTimezone": "IANA Zeitzone",
+      "ianaTimezone": "IANA-Zeitzone",
       "preferredLanguages": "Bevorzugte Sprachen",
-      "resolvedLocale": "Datums-/Uhrzeit-Locale",
+      "resolvedLocale": "Datums/Uhrzeit-Locale",
       "calendarSystem": "Kalender",
       "numberingSystem": "Zahlensystem",
       "hourCycle": "Stundenzyklus",
@@ -157,7 +159,7 @@
       "osVersion": "OS-Version",
       "osArch": "Architektur",
       "browser": "Browser-Name",
-      "browserVersion": "Browserversion"
+      "browserVersion": "Browser-Version"
     }
   },
   "errors": {

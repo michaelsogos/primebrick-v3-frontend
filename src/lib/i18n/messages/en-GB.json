@@ -147,22 +147,24 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identity Provider",
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
       "modulesTitle": "Modules",
       "clientTitle": "This browser",
-      "ianaTimezone": "IANA time zone",
+      "ianaTimezone": "IANA timezone",
       "preferredLanguages": "Preferred languages",
       "resolvedLocale": "Date/time locale",
       "calendarSystem": "Calendar",
       "numberingSystem": "Numbering system",
       "hourCycle": "Hour cycle",
       "operatingSystem": "Operating System",
-      "osVersion": "OS Version",
+      "osVersion": "OS version",
       "osArch": "Architecture",
-      "browser": "Browser Name",
-      "browserVersion": "Browser Version"
+      "browser": "Browser name",
+      "browserVersion": "Browser version"
     }
   }
   ,

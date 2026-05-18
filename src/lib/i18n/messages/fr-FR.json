@@ -140,9 +140,11 @@
     },
     "listFailed": "Liste échouée",
     "health": {
-      "beOnline": "Online",
-      "beOffline": "Offline",
-      "dbOffline": "DB offline",
+      "beOnline": "En ligne",
+      "beOffline": "Hors ligne",
+      "dbOffline": "DB hors ligne",
+      "idpOffline": "IDP hors ligne",
+      "identityProvider": "Fournisseur d'identité",
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
@@ -155,7 +157,7 @@
       "numberingSystem": "Système de numération",
       "hourCycle": "Cycle horaire",
       "operatingSystem": "Système d'exploitation",
-      "osVersion": "Version OS",
+      "osVersion": "Version SE",
       "osArch": "Architecture",
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"

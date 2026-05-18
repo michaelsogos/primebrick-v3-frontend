@@ -34,6 +34,7 @@
     Package,
     Receipt,
     Settings,
+    ShieldAlert,
     Sparkles,
     User,
     Users
@@ -134,9 +135,11 @@
       ? $t('shell.health.beOffline')
       : healthChip === 'db_offline'
         ? $t('shell.health.dbOffline')
-        : healthChip === 'ok'
-          ? $t('shell.health.beOnline')
-          : $t('common.loading')
+        : healthChip === 'idp_offline'
+          ? $t('shell.health.idpOffline')
+          : healthChip === 'ok'
+            ? $t('shell.health.beOnline')
+            : $t('common.loading')
   );
 
   const healthChipClass = $derived(
@@ -144,9 +147,11 @@
       ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
       : healthChip === 'db_offline'
         ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthChip === 'ok'
-          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-          : 'border-border/60 bg-muted/30 text-muted-foreground'
+        : healthChip === 'idp_offline'
+          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+          : healthChip === 'ok'
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+            : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
   const userAvatarSeed = 'PB';
@@ -503,6 +508,8 @@
             <CloudOff class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else if healthChip === 'db_offline'}
             <Database class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
+          {:else if healthChip === 'idp_offline'}
+            <ShieldAlert class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else}
             <Cloud class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {/if}

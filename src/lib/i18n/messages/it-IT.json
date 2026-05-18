@@ -147,6 +147,8 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identity Provider",
       "versionsTitle": "Versioni",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
@@ -156,13 +158,13 @@
       "preferredLanguages": "Lingue preferite",
       "resolvedLocale": "Locale data/ora",
       "calendarSystem": "Calendario",
-      "numberingSystem": "Sistema numerico",
-      "hourCycle": "Ciclo orario (12/24h)",
+      "numberingSystem": "Sistema di numerazione",
+      "hourCycle": "Ciclo orario",
       "operatingSystem": "Sistema Operativo",
       "osVersion": "Versione SO",
       "osArch": "Architettura",
-      "browser": "Nome Browser",
-      "browserVersion": "Versione Browser"
+      "browser": "Nome del browser",
+      "browserVersion": "Versione del browser"
     }
   }
   ,
