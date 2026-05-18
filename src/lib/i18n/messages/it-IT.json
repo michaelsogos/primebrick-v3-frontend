@@ -2,6 +2,18 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Accedi",
+    "description": "Inserisci le tue credenziali per accedere a Primebrick",
+    "username": "Nome utente",
+    "usernamePlaceholder": "Inserisci il tuo nome utente",
+    "password": "Password",
+    "passwordPlaceholder": "Inserisci la tua password",
+    "button": "Accedi",
+    "buttonLoading": "Accesso in corso...",
+    "error": "Inserisci nome utente e password",
+    "invalidCredentials": "Nome utente o password non validi"
+  },
   "common": {
     "loading": "Caricamento…",
     "loadFailed": "Caricamento fallito",

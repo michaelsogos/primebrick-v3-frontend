@@ -2,6 +2,18 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Anmelden",
+    "description": "Geben Sie Ihre Anmeldedaten ein, um auf Primebrick zuzugreifen",
+    "username": "Benutzername",
+    "usernamePlaceholder": "Geben Sie Ihren Benutzernamen ein",
+    "password": "Passwort",
+    "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+    "button": "Anmelden",
+    "buttonLoading": "Anmeldung läuft...",
+    "error": "Bitte geben Sie Benutzernamen und Passwort ein",
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort"
+  },
   "common": {
     "loading": "Laden…",
     "loadFailed": "Laden fehlgeschlagen",

@@ -1,4 +1,5 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
+import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import {
   ApiDatabaseUnavailableError,
   ApiUnreachableError,
@@ -47,6 +48,34 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop)
   if (res.status === 503) {
     throw new ApiDatabaseUnavailableError(503);
+  }
+
+  // 401 = unauthorized - check IDP health and redirect to login if healthy
+  if (res.status === 401) {
+    // Save current URL for redirect after login
+    if (typeof window !== 'undefined') {
+      saveRedirectUrl(window.location.pathname + window.location.search);
+    }
+
+    // Check IDP health before redirecting
+    try {
+      const healthRes = await fetch('/api/v1/health');
+      if (healthRes.ok) {
+        const healthData = (await healthRes.json()) as HealthPayload;
+        if (healthData.idp.ok) {
+          // IDP is healthy, redirect to login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
+      }
+    } catch (e) {
+      // Health check failed, let the error propagate
+      console.error('[api] Health check failed during 401 handling:', e);
+    }
+
+    // If we reach here, redirect didn't happen or health check failed
+    // Let the original 401 error propagate
   }
 
   // 502/504 = gateway/network failure
