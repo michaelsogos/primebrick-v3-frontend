@@ -12,7 +12,17 @@
     "button": "Anmelden",
     "buttonLoading": "Anmeldung läuft...",
     "error": "Bitte geben Sie Benutzernamen und Passwort ein",
-    "invalidCredentials": "Ungültiger Benutzername oder Passwort"
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort",
+    "hero": {
+      "quote1": "Die solide, modulare und effiziente Management-Plattform für die vollständige Kontrolle Ihrer Projekte.",
+      "author1": "Fokus & Struktur",
+      "quote2": "Bauen Sie die Zukunft Ihres Unternehmens auf, einen digitalen Stein nach dem anderen.",
+      "author2": "Modulare Innovation",
+      "quote3": "Optimieren Sie Workflows und granulare Kontrolle. Alles in einem Ökosystem.",
+      "author3": "Operationale Effizienz",
+      "quote4": "Vereinfachen Sie Komplexität. Verwandeln Sie Rohdaten in strategische Entscheidungen.",
+      "author4": "Data Driven"
+    }
   },
   "common": {
     "loading": "Laden…",

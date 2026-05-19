@@ -1,13 +1,16 @@
 <script lang="ts">
+  import { z } from 'zod';
+  import { superForm, defaults } from 'sveltekit-superforms';
+  import { zod4 } from 'sveltekit-superforms/adapters';
   import { apiFetch } from '$lib/api';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+  import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { cn } from '$lib/utils';
   import { toast } from 'svelte-sonner';
   import { t } from '$lib/i18n';
@@ -18,9 +21,76 @@
   import { Cloud, CloudOff, Database, ShieldAlert } from 'lucide-svelte';
   import { onMount } from 'svelte';
 
-  let username = $state('');
-  let password = $state('');
-  let isLoading = $state(false);
+  // 1. Definisci lo schema Zod
+  const loginSchema = z.object({
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required'),
+  });
+
+  type LoginForm = z.infer<typeof loginSchema>;
+
+  // 2. Configura Superforms in SPA mode
+  const superFormObj = superForm(
+    defaults(zod4(loginSchema)),
+    {
+      SPA: true,
+      validators: zod4(loginSchema),
+      invalidateAll: false,
+
+      // In Superforms, per fare chiamate API asincrone in SPA mode,
+      // il posto corretto è `onUpdate` invece di bloccare `onSubmit` col cancel()
+      async onUpdate({ form: updateForm }) {
+        // Se la validazione Zod fallisce, si ferma qui e mostra gli errori nella UI
+        if (!updateForm.valid) return;
+
+        try {
+          const response = await apiFetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            // Prendi i dati tipizzati e validati direttamente dal form
+            body: JSON.stringify(updateForm.data),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+
+            if (response.status === 401) {
+              // Assegna gli errori ai rispettivi campi in modo reattivo
+              (updateForm.errors as Record<string, string[]>).username = [errorData.detail || 'Invalid credentials'];
+              (updateForm.errors as Record<string, string[]>).password = [errorData.detail || 'Invalid credentials'];
+              toast.error(errorData.detail || 'Invalid credentials');
+              return;
+            } else if (response.status === 400 && errorData.issues) {
+              // Map validation errors from backend
+              for (const issue of errorData.issues) {
+                (updateForm.errors as Record<string, string[]>)[issue.path[0] as string] = [issue.message];
+              }
+            } else {
+              superFormObj.message.set(errorData.detail || 'Login failed');
+            }
+            return;
+          }
+
+          const data = await response.json();
+
+          if (data.success && data.user) {
+            sessionStorage.setItem('user', JSON.stringify(data.user));
+          }
+
+          const redirectUrl = getAndClearRedirectUrl();
+          window.location.href = redirectUrl || '/';
+
+        } catch (error) {
+          console.error('[Login Error]', error);
+          superFormObj.message.set('Errore di connessione o login fallito.');
+        }
+      }
+    }
+  );
+
+  const { form, errors, message, enhance, submitting } = superFormObj;
 
   const userAvatarSeed = 'PB';
   const avatarChromeFallbackClass = avatarFallbackChromeClasses(userAvatarSeed);
@@ -87,49 +157,6 @@
     // Select random hero
     heroIndex = Math.floor(Math.random() * heroes.length);
   });
-
-  async function handleLogin() {
-    if (!username || !password) {
-      toast.error($t('login.error'));
-      return;
-    }
-
-    isLoading = true;
-    try {
-      // Call backend login endpoint (proxies to Casdoor)
-      const response = await apiFetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      
-      // Save user profile data to session storage
-      if (data.success && data.user) {
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-      }
-      
-      // Redirect to saved URL or default
-      const redirectUrl = getAndClearRedirectUrl();
-      window.location.href = redirectUrl || '/';
-    } catch (error) {
-      console.error('[Login Error]', error);
-      toast.error($t('login.invalidCredentials'));
-    } finally {
-      isLoading = false;
-    }
-  }
 </script>
 
 <div class="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
@@ -226,17 +253,55 @@
           <CardDescription>{$t('login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
-          <div class="space-y-2">
-            <Label for="username">{$t('login.username')}</Label>
-            <Input id="username" type="text" bind:value={username} placeholder={$t('login.usernamePlaceholder')} />
-          </div>
-          <div class="space-y-2">
-            <Label for="password">{$t('login.password')}</Label>
-            <Input id="password" type="password" bind:value={password} placeholder={$t('login.passwordPlaceholder')} />
-          </div>
-          <Button class="w-full" onclick={handleLogin} disabled={isLoading}>
-            {isLoading ? $t('login.buttonLoading') : $t('login.button')}
-          </Button>
+          <form method="POST" action="?/login" use:enhance>
+            <div class="space-y-4">
+      <!-- Campo Username -->
+      <FormField form={superFormObj} name="username">
+        <FormControl>
+          <!-- SINTASSI CORRETTA SVELTE 5: Snippet al posto di let:attrs -->
+          {#snippet children({ props })}
+            <div class="space-y-2">
+              <!-- Usiamo props.id anzichè attrs.id -->
+              <FormLabel for={props.id}>{$t('login.username')}</FormLabel>
+              <Input
+                type="text"
+                placeholder={$t('login.usernamePlaceholder')}
+                bind:value={$form.username}
+                {...props}
+              />
+            </div>
+          {/snippet}
+        </FormControl>
+        <FormFieldErrors />
+      </FormField>
+
+      <!-- Campo Password -->
+      <FormField form={superFormObj} name="password">
+        <FormControl>
+          {#snippet children({ props })}
+            <div class="space-y-2">
+              <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
+              <Input
+                type="password"
+                placeholder={$t('login.passwordPlaceholder')}
+                bind:value={$form.password}
+                {...props}
+              />
+            </div>
+          {/snippet}
+        </FormControl>
+        <FormFieldErrors />
+      </FormField>
+
+              {#if $message}
+                <div class="text-sm text-destructive">{$message}</div>
+              {/if}
+
+              <Button type="submit" class="w-full" disabled={$submitting}>
+                {$submitting ? $t('login.buttonLoading') : $t('login.button')}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 
