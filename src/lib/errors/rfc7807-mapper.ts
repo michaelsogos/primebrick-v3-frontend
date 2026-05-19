@@ -5,21 +5,23 @@
  */
 
 export function mapRFC7807ToMessageKey(
-	error: { status: number; internal_code?: string }
-): string | undefined {
+	error: { status: number; internal_code?: string; detail?: string }
+): { key: string; minutes?: number } | undefined {
 	if (error.status === 401) {
 		// Whitelist: these internal_code are camouflaged with the same generic message for security
 		const genericAuthCodes = ['invalid_grant', 'user_not_found', 'account_disabled'];
 
-		if (!error.internal_code || genericAuthCodes.includes(error.internal_code)) {
-			return 'login.invalidCredentials';
+		if (error.internal_code === 'account_locked') {
+			// Account locked - extract minutes from detail if available
+			// Detail format: "Account locked due to too many failed attempts. Wait X minutes."
+			const minutesMatch = error.detail?.match(/Wait (\d+) minutes/);
+			const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+			return { key: 'login.accountLocked', minutes };
 		}
 
-		// Future: other 401 with specific internal_code can have custom messages
-		// Example:
-		// if (error.internal_code === 'account_locked') {
-		//   return 'login.accountLocked';
-		// }
+		if (!error.internal_code || genericAuthCodes.includes(error.internal_code)) {
+			return { key: 'login.invalidCredentials' };
+		}
 	}
 
 	// For other status codes (400, 500, etc.), return undefined to use the raw detail message

@@ -66,12 +66,20 @@
 
             // Map error to inline message for 401 (translated)
             if (response.status === 401) {
-              const messageKey = mapRFC7807ToMessageKey({
+              const mappedError = mapRFC7807ToMessageKey({
                 status: response.status,
-                internal_code: errorData.internal_code
+                internal_code: errorData.internal_code,
+                detail: errorData.detail
               });
 
-              const errorMsg = messageKey ? $t(messageKey) : (errorData.detail || 'Invalid credentials');
+              let errorMsg = errorData.detail || 'Invalid credentials';
+              if (mappedError) {
+                let translatedMsg = $t(mappedError.key);
+                if (mappedError.minutes !== undefined) {
+                  translatedMsg = translatedMsg.replace('{minutes}', mappedError.minutes.toString());
+                }
+                errorMsg = translatedMsg;
+              }
 
               // Use the destructured store directly (closure captures message lazily)
               message.set(errorMsg);

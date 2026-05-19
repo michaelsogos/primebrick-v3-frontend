@@ -13,6 +13,7 @@
     "buttonLoading": "Iniciando sesión...",
     "error": "Por favor ingrese nombre de usuario y contraseña",
     "invalidCredentials": "Nombre de usuario o contraseña inválidos",
+    "accountLocked": "Cuenta bloqueada temporalmente. Por favor intente nuevamente en {minutes} minutos.",
     "hero": {
       "quote1": "La plataforma de gestión sólida, modular y eficiente para el control completo de sus proyectos.",
       "author1": "Enfoque y Estructura",
