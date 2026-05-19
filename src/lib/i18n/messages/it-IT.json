@@ -121,6 +121,7 @@
     "userMenu": {
       "aria": "Menu utente",
       "title": "Profilo",
+      "profileLabel": "Profilo",
       "accountSoon": "Impostazioni account (presto)",
       "signOutSoon": "Esci (presto)",
       "itemUpgrade": "Upgrade",

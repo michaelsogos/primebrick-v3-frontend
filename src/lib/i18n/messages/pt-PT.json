@@ -120,6 +120,7 @@
     "userMenu": {
       "aria": "Menu do utilizador",
       "title": "Perfil",
+      "profileLabel": "Perfil",
       "accountSoon": "Definições da conta (em breve)",
       "signOutSoon": "Terminar sessão (em breve)",
       "itemUpgrade": "Upgrade",

@@ -121,6 +121,7 @@
     "userMenu": {
       "aria": "User menu",
       "title": "Profile",
+      "profileLabel": "Profile",
       "accountSoon": "Account settings (soon)",
       "signOutSoon": "Sign out (soon)",
       "itemUpgrade": "Upgrade",
