@@ -7,7 +7,7 @@ import {
 import { dispatchConnectivityRestored } from '$lib/app-connectivity-events';
 
 /** Sidebar / shell: single source of truth so offline vs DB is never inconsistent. */
-export type HealthChipState = 'backend_offline' | 'db_offline' | 'ok' | 'loading';
+export type HealthChipState = 'backend_offline' | 'db_offline' | 'idp_offline' | 'ok' | 'loading';
 
 type HealthResult = { ok: true; payload: HealthPayload } | { ok: false; status: number | null };
 
@@ -19,6 +19,8 @@ export const backendState = $state({
   offline: false,
   /** null = unknown/not yet checked */
   dbOk: null as boolean | null,
+  /** null = unknown/not yet checked */
+  idpOk: null as boolean | null,
   /** last successful health payload (if any) */
   health: null as HealthPayload | null,
   offlineSince: null as number | null,
@@ -40,6 +42,7 @@ function computeHealthChip(): HealthChipState {
   if (backendState.offline) return 'backend_offline';
   if (backendState.health === null) return 'loading';
   if (!backendState.health.db.ok) return 'db_offline';
+  if (!backendState.health.idp.ok) return 'idp_offline';
   return 'ok';
 }
 
@@ -129,12 +132,13 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
     if (r.ok) {
       backendState.health = r.payload;
       backendState.dbOk = !!r.payload.db?.ok;
+      backendState.idpOk = !!r.payload.idp?.ok;
       setBackendOffline(false);
       flushHealthChip();
-      // Only dispatch connectivity-restored when transitioning from offline/db_offline to truly OK
+      // Only dispatch connectivity-restored when transitioning from offline/db_offline/idp_offline to truly OK
       // This prevents loop when health check runs every 5 seconds while DB is down
       if (
-        (previousChip === 'backend_offline' || previousChip === 'db_offline') &&
+        (previousChip === 'backend_offline' || previousChip === 'db_offline' || previousChip === 'idp_offline') &&
         backendState.healthChip === 'ok'
       ) {
         dispatchConnectivityRestored({ previous: previousChip });
@@ -142,6 +146,7 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
     } else {
       backendState.health = null;
       backendState.dbOk = null;
+      backendState.idpOk = null;
       setBackendOffline(true);
       flushHealthChip();
     }

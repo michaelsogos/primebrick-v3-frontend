@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Anmelden",
+    "description": "Geben Sie Ihre Anmeldedaten ein, um auf Primebrick zuzugreifen",
+    "username": "Benutzername",
+    "usernamePlaceholder": "Geben Sie Ihren Benutzernamen ein",
+    "password": "Passwort",
+    "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+    "button": "Anmelden",
+    "buttonLoading": "Anmeldung läuft...",
+    "error": "Bitte geben Sie Benutzernamen und Passwort ein",
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort",
+    "accountLocked": "Konto vorübergehend gesperrt. Bitte versuchen Sie es in {minutes} Minuten erneut.",
+    "userNoPermission": "Benutzer hat keine Berechtigung!",
+    "hero": {
+      "quote1": "Die solide, modulare und effiziente Management-Plattform für die vollständige Kontrolle Ihrer Projekte.",
+      "author1": "Fokus & Struktur",
+      "quote2": "Bauen Sie die Zukunft Ihres Unternehmens auf, einen digitalen Stein nach dem anderen.",
+      "author2": "Modulare Innovation",
+      "quote3": "Optimieren Sie Workflows und granulare Kontrolle. Alles in einem Ökosystem.",
+      "author3": "Operationale Effizienz",
+      "quote4": "Vereinfachen Sie Komplexität. Verwandeln Sie Rohdaten in strategische Entscheidungen.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "Laden…",
     "loadFailed": "Laden fehlgeschlagen",
@@ -53,6 +77,7 @@
     "htmlPreviewTitle": "HTML-Vorschau",
     "copyHtml": "HTML kopieren",
     "confirm": "Bestätigen",
+    "deletedRecord": "Gelöschter Datensatz",
     "versionHistory": "Änderungsprotokoll"
   },
   "shell": {
@@ -96,6 +121,7 @@
     "userMenu": {
       "aria": "Benutzermenü",
       "title": "Profil",
+      "profileLabel": "Profil",
       "accountSoon": "Kontoeinstellungen (bald)",
       "signOutSoon": "Abmelden (bald)",
       "itemUpgrade": "Upgrade",
@@ -141,14 +167,16 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identitätsanbieter",
       "versionsTitle": "Versionen",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
       "modulesTitle": "Module",
       "clientTitle": "Dieser Browser",
-      "ianaTimezone": "IANA Zeitzone",
+      "ianaTimezone": "IANA-Zeitzone",
       "preferredLanguages": "Bevorzugte Sprachen",
-      "resolvedLocale": "Datums-/Uhrzeit-Locale",
+      "resolvedLocale": "Datums/Uhrzeit-Locale",
       "calendarSystem": "Kalender",
       "numberingSystem": "Zahlensystem",
       "hourCycle": "Stundenzyklus",
@@ -156,7 +184,7 @@
       "osVersion": "OS-Version",
       "osArch": "Architektur",
       "browser": "Browser-Name",
-      "browserVersion": "Browserversion"
+      "browserVersion": "Browser-Version"
     }
   },
   "errors": {

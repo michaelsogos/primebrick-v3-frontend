@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Entrar",
+    "description": "Insira as suas credenciais para aceder ao Primebrick",
+    "username": "Nome de utilizador",
+    "usernamePlaceholder": "Insira o seu nome de utilizador",
+    "password": "Palavra-passe",
+    "passwordPlaceholder": "Insira a sua palavra-passe",
+    "button": "Entrar",
+    "buttonLoading": "A entrar...",
+    "error": "Por favor insira nome de utilizador e palavra-passe",
+    "invalidCredentials": "Nome de utilizador ou palavra-passe inválidos",
+    "accountLocked": "Conta bloqueada temporariamente. Por favor tente novamente em {minutes} minutos.",
+    "userNoPermission": "O usuário não tem permissão!",
+    "hero": {
+      "quote1": "A plataforma de gestão sólida, modular e eficiente para controlo completo dos seus projetos.",
+      "author1": "Foco e Estrutura",
+      "quote2": "Construa o futuro do seu negócio, um tijolo digital de cada vez.",
+      "author2": "Inovação Modular",
+      "quote3": "Otimize fluxos de trabalho e controlo granular. Tudo num ecossistema.",
+      "author3": "Eficiência Operacional",
+      "quote4": "Simplifique a complexidade. Transforme dados brutos em decisões estratégicas.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "A carregar…",
     "loadFailed": "Carregamento falhou",
@@ -52,7 +76,8 @@
     "exportHtmlConfirm": "Gerar pré-visualização HTML para",
     "htmlPreviewTitle": "Pré-visualização HTML",
     "copyHtml": "Copiar HTML",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "deletedRecord": "Registro excluído"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -95,6 +120,7 @@
     "userMenu": {
       "aria": "Menu do utilizador",
       "title": "Perfil",
+      "profileLabel": "Perfil",
       "accountSoon": "Definições da conta (em breve)",
       "signOutSoon": "Terminar sessão (em breve)",
       "itemUpgrade": "Upgrade",
@@ -141,6 +167,8 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Fornecedor de identidade",
       "versionsTitle": "Versões",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
@@ -150,7 +178,7 @@
       "preferredLanguages": "Idiomas preferidos",
       "resolvedLocale": "Locale data/hora",
       "calendarSystem": "Calendário",
-      "numberingSystem": "Sistema numérico",
+      "numberingSystem": "Sistema de numeração",
       "hourCycle": "Ciclo horário",
       "operatingSystem": "Sistema Operativo",
       "osVersion": "Versão SO",
