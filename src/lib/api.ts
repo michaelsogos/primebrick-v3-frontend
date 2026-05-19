@@ -1,5 +1,6 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
+import { pushRFC7807Error } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
   ApiUnreachableError,
@@ -91,6 +92,27 @@ function isEntityApiRequest(input: RequestInfo | URL): boolean {
   return requestUrlString(input).includes(ENTITY_API_PATH);
 }
 
+/**
+ * Handle RFC7807 error responses automatically by pushing to error panel
+ * Returns the response so callers can still handle it if needed
+ */
+async function handleRFC7807Error(res: Response): Promise<Response> {
+  try {
+    const contentType = res.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      const errorData = await res.json();
+      // Check if it looks like RFC7807 format (has type, title, status)
+      if (errorData.type && errorData.title && errorData.status) {
+        pushRFC7807Error(errorData);
+      }
+    }
+  } catch (e) {
+    // If parsing fails, just return the response as-is
+    console.warn('[api] Failed to parse RFC7807 error:', e);
+  }
+  return res;
+}
+
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   await ensureBackendOnlineOrThrow();
 
@@ -152,6 +174,12 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
     noteGatewayFailure(res.status);
     throw new ApiUnreachableError(res.status);
+  }
+
+  // Auto-handle RFC7807 errors for non-auth endpoints
+  const url = requestUrlString(input);
+  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh')) {
+    await handleRFC7807Error(res);
   }
 
   return res;
