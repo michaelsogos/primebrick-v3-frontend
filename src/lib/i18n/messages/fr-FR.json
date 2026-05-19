@@ -14,6 +14,7 @@
     "error": "Veuillez entrer un nom d'utilisateur et un mot de passe",
     "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
     "accountLocked": "Compte temporairement verrouillé. Veuillez réessayer dans {minutes} minutes.",
+    "userNoPermission": "L'utilisateur n'a pas la permission!",
     "hero": {
       "quote1": "La plateforme de gestion solide, modulaire et efficace pour un contrôle complet de vos projets.",
       "author1": "Focus & Structure",

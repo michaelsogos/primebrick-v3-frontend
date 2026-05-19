@@ -14,6 +14,7 @@
     "error": "Please enter username and password",
     "invalidCredentials": "Invalid username or password",
     "accountLocked": "Account temporarily locked. Please try again in {minutes} minutes.",
+    "userNoPermission": "User doesn't have permission!",
     "hero": {
       "quote1": "The solid, modular, and efficient management platform for complete control of your projects.",
       "author1": "Focus & Structure",

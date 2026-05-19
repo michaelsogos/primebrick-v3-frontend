@@ -14,6 +14,7 @@
     "error": "Por favor insira nome de utilizador e palavra-passe",
     "invalidCredentials": "Nome de utilizador ou palavra-passe inválidos",
     "accountLocked": "Conta bloqueada temporariamente. Por favor tente novamente em {minutes} minutos.",
+    "userNoPermission": "O usuário não tem permissão!",
     "hero": {
       "quote1": "A plataforma de gestão sólida, modular e eficiente para controlo completo dos seus projetos.",
       "author1": "Foco e Estrutura",

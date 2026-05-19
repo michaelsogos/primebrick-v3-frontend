@@ -14,6 +14,7 @@
     "error": "Bitte geben Sie Benutzernamen und Passwort ein",
     "invalidCredentials": "Ungültiger Benutzername oder Passwort",
     "accountLocked": "Konto vorübergehend gesperrt. Bitte versuchen Sie es in {minutes} Minuten erneut.",
+    "userNoPermission": "Benutzer hat keine Berechtigung!",
     "hero": {
       "quote1": "Die solide, modulare und effiziente Management-Plattform für die vollständige Kontrolle Ihrer Projekte.",
       "author1": "Fokus & Struktur",

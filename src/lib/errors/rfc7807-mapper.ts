@@ -24,6 +24,12 @@ export function mapRFC7807ToMessageKey(
 		}
 	}
 
+	if (error.status === 403) {
+		if (error.internal_code === 'user_no_permission') {
+			return { key: 'login.userNoPermission' };
+		}
+	}
+
 	// For other status codes (400, 500, etc.), return undefined to use the raw detail message
 	// The error card in the ErrorsPanel will show the exact backend message
 	return undefined;
