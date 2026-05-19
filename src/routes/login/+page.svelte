@@ -1,6 +1,6 @@
 <script lang="ts">
   import { z } from 'zod';
-  import { superForm, defaults, setError } from 'sveltekit-superforms';
+  import { superForm, defaults, setError, setMessage } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { apiFetch } from '$lib/api';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
@@ -11,6 +11,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
+  import { Alert, AlertDescription } from '$lib/components/ui/alert';
+  import { Spinner } from '$lib/components/ui/spinner';
   import * as Password from '$lib/components/ui/password';
   import { cn } from '$lib/utils';
   import { toast } from 'svelte-sonner';
@@ -42,7 +44,7 @@
 
       // In Superforms, per fare chiamate API asincrone in SPA mode,
       // il posto corretto è `onUpdate` invece di bloccare `onSubmit` col cancel()
-      async onUpdate({ form: updateForm }) {
+      async onUpdate({ form: updateForm, cancel }) {
         // Se la validazione Zod fallisce, si ferma qui e mostra gli errori nella UI
         if (!updateForm.valid) return;
 
@@ -71,21 +73,21 @@
 
               const errorMsg = messageKey ? $t(messageKey) : (errorData.detail || 'Invalid credentials');
 
-              // Use setError for field errors (updates reactive store)
-              setError(updateForm, 'username', errorMsg);
-              setError(updateForm, 'password', errorMsg);
-              // Cannot use superFormObj.message.set() here due to temporal dead zone
-              // Will fix by using destructured message after superForm call
+              // Use the destructured store directly (closure captures message lazily)
+              message.set(errorMsg);
             } else if (response.status === 400 && errorData.issues) {
               // Map validation errors from backend using setError
               for (const issue of errorData.issues) {
                 const fieldName = issue.path[0];
                 setError(updateForm, fieldName, issue.message);
               }
-              // Cannot use superFormObj.message.set() here due to temporal dead zone
+              message.set(errorData.detail || 'Validation error');
             } else {
-              // Cannot use superFormObj.message.set() here due to temporal dead zone
+              // Other errors - show in message
+              message.set(errorData.detail || 'Login failed');
             }
+            // Cancel form commit to prevent message/errors reset
+            cancel();
             return;
           }
 
@@ -100,65 +102,14 @@
 
         } catch (error) {
           console.error('[Login Error]', error);
-          // Cannot use superFormObj.message.set() here due to temporal dead zone
+          message.set('Errore di connessione o login fallito.');
+          cancel();
         }
       }
     }
   );
 
   const { form, errors, message, enhance, submitting } = superFormObj;
-
-  // Fix temporal dead zone by redefining onUpdate with access to destructured stores
-  superFormObj.options.onUpdate = async ({ form: updateForm }) => {
-    if (!updateForm.valid) return;
-
-    try {
-      const response = await apiFetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateForm.data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        pushRFC7807Error(errorData, { showToast: false });
-
-        if (response.status === 401) {
-          const messageKey = mapRFC7807ToMessageKey({
-            status: response.status,
-            internal_code: errorData.internal_code
-          });
-          const errorMsg = messageKey ? $t(messageKey) : (errorData.detail || 'Invalid credentials');
-          setError(updateForm, 'username', errorMsg);
-          setError(updateForm, 'password', errorMsg);
-          message.set(errorMsg);
-        } else if (response.status === 400 && errorData.issues) {
-          for (const issue of errorData.issues) {
-            const fieldName = issue.path[0];
-            setError(updateForm, fieldName, issue.message);
-          }
-          message.set(errorData.detail || 'Validation error');
-        } else {
-          message.set(errorData.detail || 'Login failed');
-        }
-        return;
-      }
-
-      const data = await response.json();
-      if (data.success && data.user) {
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-      }
-
-      const redirectUrl = getAndClearRedirectUrl();
-      window.location.href = redirectUrl || '/';
-
-    } catch (error) {
-      console.error('[Login Error]', error);
-      message.set('Errore di connessione o login fallito.');
-    }
-  };
 
   const userAvatarSeed = 'PB';
   const avatarChromeFallbackClass = avatarFallbackChromeClasses(userAvatarSeed);
@@ -364,13 +315,19 @@
         </FormControl>
       </FormField>
 
-              {#if $message}
-                <div class="text-sm text-destructive">{$message}</div>
-              {/if}
-
               <Button type="submit" class="w-full" disabled={$submitting}>
+                {#if $submitting}
+                  <Spinner class="mr-2" />
+                {/if}
                 {$submitting ? $t('login.buttonLoading') : $t('login.button')}
               </Button>
+
+              {#if $message}
+                <Alert variant="destructive" class="mt-4">
+                  <ShieldAlert class="size-4" />
+                  <AlertDescription>{$message}</AlertDescription>
+                </Alert>
+              {/if}
             </div>
           </form>
         </CardContent>
