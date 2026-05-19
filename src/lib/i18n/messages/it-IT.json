@@ -12,7 +12,17 @@
     "button": "Accedi",
     "buttonLoading": "Accesso in corso...",
     "error": "Inserisci nome utente e password",
-    "invalidCredentials": "Nome utente o password non validi"
+    "invalidCredentials": "Nome utente o password non validi",
+    "hero": {
+      "quote1": "La piattaforma di gestione solida, modulare ed efficiente per il controllo completo dei tuoi progetti.",
+      "author1": "Focus & Struttura",
+      "quote2": "Costruisci il futuro della tua azienda, un mattone digitale alla volta.",
+      "author2": "Innovazione Modulare",
+      "quote3": "Ottimizza i flussi di lavoro e il controllo granulare. Tutto in un unico ecosistema.",
+      "author3": "Efficienza Operativa",
+      "quote4": "Semplifica la complessità. Trasforma i dati grezzi in decisioni strategiche.",
+      "author4": "Data Driven"
+    }
   },
   "common": {
     "loading": "Caricamento…",

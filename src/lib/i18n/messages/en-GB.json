@@ -12,7 +12,17 @@
     "button": "Login",
     "buttonLoading": "Logging in...",
     "error": "Please enter username and password",
-    "invalidCredentials": "Invalid username or password"
+    "invalidCredentials": "Invalid username or password",
+    "hero": {
+      "quote1": "The solid, modular, and efficient management platform for complete control of your projects.",
+      "author1": "Focus & Structure",
+      "quote2": "Build the future of your business, one digital brick at a time.",
+      "author2": "Modular Innovation",
+      "quote3": "Optimize workflows and granular control. All in one ecosystem.",
+      "author3": "Operational Efficiency",
+      "quote4": "Simplify complexity. Transform raw data into strategic decisions.",
+      "author4": "Data Driven"
+    }
   },
   "common": {
     "loading": "Loading…",

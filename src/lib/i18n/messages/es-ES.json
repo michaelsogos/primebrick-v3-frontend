@@ -12,7 +12,17 @@
     "button": "Iniciar sesión",
     "buttonLoading": "Iniciando sesión...",
     "error": "Por favor ingrese nombre de usuario y contraseña",
-    "invalidCredentials": "Nombre de usuario o contraseña inválidos"
+    "invalidCredentials": "Nombre de usuario o contraseña inválidos",
+    "hero": {
+      "quote1": "La plataforma de gestión sólida, modular y eficiente para el control completo de sus proyectos.",
+      "author1": "Enfoque y Estructura",
+      "quote2": "Construya el futuro de su negocio, un ladrillo digital a la vez.",
+      "author2": "Innovación Modular",
+      "quote3": "Optimice flujos de trabajo y control granular. Todo en un ecosistema.",
+      "author3": "Eficiencia Operacional",
+      "quote4": "Simplifique la complejidad. Transforme datos brutos en decisiones estratégicas.",
+      "author4": "Data Driven"
+    }
   },
   "common": {
     "loading": "Cargando…",

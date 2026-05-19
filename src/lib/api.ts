@@ -119,6 +119,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
   // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
+    // Skip refresh for auth endpoints - user doesn't have tokens yet
+    const url = requestUrlString(input);
+    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
+      // Let the 401 propagate to the caller for proper error handling
+      return res;
+    }
+
     // Check if token is expired locally
     if (isTokenExpired()) {
       // Token is expired, try to refresh
