@@ -484,17 +484,11 @@
             <DropdownMenu.Separator />
 
             <DropdownMenu.Group>
-              <DropdownMenu.Item disabled>
-                <Sparkles />
-                <span>{$t('shell.userMenu.itemUpgrade')}</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item disabled>
-                <BadgeCheck />
-                <span>{$t('shell.userMenu.itemAccount')}</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item disabled>
-                <CreditCard />
-                <span>{$t('shell.userMenu.itemBilling')}</span>
+              <DropdownMenu.Item asChild>
+                <a href="/system/settings" class="flex items-center gap-2">
+                  <Settings />
+                  <span>{$t('shell.userMenu.itemSettings')}</span>
+                </a>
               </DropdownMenu.Item>
               <DropdownMenu.Item disabled>
                 <Bell />

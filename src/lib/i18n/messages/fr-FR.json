@@ -127,6 +127,7 @@
       "itemUpgrade": "Mise à niveau",
       "itemAccount": "Compte",
       "itemBilling": "Facturation",
+      "itemSettings": "Paramètres",
       "itemNotifications": "Notifications",
       "itemSignOut": "Déconnexion"
     },
@@ -136,9 +137,66 @@
       "acme": "ACME",
       "johnDoe": "John Doe SRL"
     },
+    "system": "Système",
     "theme": {
       "light": "Passer au thème clair",
       "dark": "Passer au thème sombre"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "tabs": {
+        "profile": "Profil",
+        "security": "Sécurité",
+        "modules": "Modules",
+        "templates": "Modèles"
+      },
+      "profile": {
+        "title": "Profil",
+        "avatarColor": "Couleur de l'avatar",
+        "selectColor": "Sélectionner la couleur {color}",
+        "displayName": "Nom d'affichage",
+        "displayNamePlaceholder": "Votre nom",
+        "email": "E-mail",
+        "emailPlaceholder": "votre@email.com"
+      },
+      "security": {
+        "title": "Sécurité",
+        "changePassword": "Changer le mot de passe",
+        "currentPassword": "Mot de passe actuel",
+        "currentPasswordPlaceholder": "Entrez le mot de passe actuel",
+        "newPassword": "Nouveau mot de passe",
+        "newPasswordPlaceholder": "Entrez le nouveau mot de passe",
+        "confirmPassword": "Confirmer le mot de passe",
+        "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe",
+        "changePasswordButton": "Changer le mot de passe",
+        "oidcParams": "Paramètres OIDC",
+        "oidcIssuer": "Émetteur OIDC",
+        "oidcClientId": "ID client",
+        "oidcClientSecret": "Secret client",
+        "oidcSaveButton": "Enregistrer les paramètres OIDC",
+        "deleteAccount": "Supprimer le compte",
+        "deleteAccountButton": "Supprimer le compte",
+        "deleteAccountWarning": "Cette action est irréversible. Toutes vos données seront définitivement supprimées.",
+        "confirmDeleteAccount": "Confirmer la suppression"
+      },
+      "modules": {
+        "title": "Modules",
+        "uploadModule": "Télécharger un module",
+        "selectModuleFile": "Sélectionner un fichier de module (.zip, .tar.gz)",
+        "installButton": "Installer",
+        "installedModules": "Modules installés",
+        "version": "Version",
+        "active": "Actif",
+        "inactive": "Inactif"
+      },
+      "templates": {
+        "title": "Modèles",
+        "uploadTemplate": "Télécharger un modèle",
+        "selectTemplateFile": "Sélectionner un fichier de modèle (.pdf, .html, .xlsx, .xls)",
+        "uploadButton": "Télécharger",
+        "templatesList": "Liste des modèles",
+        "createTemplate": "Créer un modèle"
+      }
     },
     "errors": {
       "aria": "Errors",

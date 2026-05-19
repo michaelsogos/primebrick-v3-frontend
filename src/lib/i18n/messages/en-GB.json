@@ -127,6 +127,7 @@
       "itemUpgrade": "Upgrade",
       "itemAccount": "Account",
       "itemBilling": "Billing",
+      "itemSettings": "Settings",
       "itemNotifications": "Notifications",
       "itemSignOut": "Sign out"
     },
@@ -136,9 +137,66 @@
       "acme": "ACME",
       "johnDoe": "John Doe SRL"
     },
+    "system": "System",
     "theme": {
       "light": "Switch to light theme",
       "dark": "Switch to dark theme"
+    },
+    "settings": {
+      "title": "Settings",
+      "tabs": {
+        "profile": "Profile",
+        "security": "Security",
+        "modules": "Modules",
+        "templates": "Templates"
+      },
+      "profile": {
+        "title": "Profile",
+        "avatarColor": "Avatar Color",
+        "selectColor": "Select color {color}",
+        "displayName": "Display Name",
+        "displayNamePlaceholder": "Your name",
+        "email": "Email",
+        "emailPlaceholder": "your@email.com"
+      },
+      "security": {
+        "title": "Security",
+        "changePassword": "Change Password",
+        "currentPassword": "Current Password",
+        "currentPasswordPlaceholder": "Enter current password",
+        "newPassword": "New Password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPassword": "Confirm Password",
+        "confirmPasswordPlaceholder": "Confirm new password",
+        "changePasswordButton": "Change Password",
+        "oidcParams": "OIDC Parameters",
+        "oidcIssuer": "OIDC Issuer",
+        "oidcClientId": "Client ID",
+        "oidcClientSecret": "Client Secret",
+        "oidcSaveButton": "Save OIDC Parameters",
+        "deleteAccount": "Delete Account",
+        "deleteAccountButton": "Delete Account",
+        "deleteAccountWarning": "This action is irreversible. All your data will be permanently deleted.",
+        "confirmDeleteAccount": "Confirm Deletion"
+      },
+      "modules": {
+        "title": "Modules",
+        "uploadModule": "Upload Module",
+        "selectModuleFile": "Select module file (.zip, .tar.gz)",
+        "installButton": "Install",
+        "installedModules": "Installed Modules",
+        "version": "Version",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "templates": {
+        "title": "Templates",
+        "uploadTemplate": "Upload Template",
+        "selectTemplateFile": "Select template file (.pdf, .html, .xlsx, .xls)",
+        "uploadButton": "Upload",
+        "templatesList": "Templates List",
+        "createTemplate": "Create Template"
+      }
     },
     "errors": {
       "aria": "Errors",
