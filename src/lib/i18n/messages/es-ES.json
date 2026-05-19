@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Iniciar sesión",
+    "description": "Ingrese sus credenciales para acceder a Primebrick",
+    "username": "Nombre de usuario",
+    "usernamePlaceholder": "Ingrese su nombre de usuario",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Ingrese su contraseña",
+    "button": "Iniciar sesión",
+    "buttonLoading": "Iniciando sesión...",
+    "error": "Por favor ingrese nombre de usuario y contraseña",
+    "invalidCredentials": "Nombre de usuario o contraseña inválidos",
+    "accountLocked": "Cuenta bloqueada temporalmente. Por favor intente nuevamente en {minutes} minutos.",
+    "userNoPermission": "¡El usuario no tiene permisos!",
+    "hero": {
+      "quote1": "La plataforma de gestión sólida, modular y eficiente para el control completo de sus proyectos.",
+      "author1": "Enfoque y Estructura",
+      "quote2": "Construya el futuro de su negocio, un ladrillo digital a la vez.",
+      "author2": "Innovación Modular",
+      "quote3": "Optimice flujos de trabajo y control granular. Todo en un ecosistema.",
+      "author3": "Eficiencia Operacional",
+      "quote4": "Simplifique la complejidad. Transforme datos brutos en decisiones estratégicas.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "Cargando…",
     "loadFailed": "Error al cargar",
@@ -97,6 +121,7 @@
     "userMenu": {
       "aria": "Menú de usuario",
       "title": "Perfil",
+      "profileLabel": "Perfil",
       "accountSoon": "Ajustes de la cuenta (pronto)",
       "signOutSoon": "Cerrar sesión (pronto)",
       "itemUpgrade": "Mejorar",
@@ -140,9 +165,11 @@
     },
     "listFailed": "Lista fallida",
     "health": {
-      "beOnline": "Online",
-      "beOffline": "Offline",
-      "dbOffline": "DB offline",
+      "beOnline": "En línea",
+      "beOffline": "Sin conexión",
+      "dbOffline": "DB sin conexión",
+      "idpOffline": "IDP sin conexión",
+      "identityProvider": "Proveedor de identidad",
       "versionsTitle": "Versiones",
       "shellVersion": "Shell",
       "backendVersion": "Backend",

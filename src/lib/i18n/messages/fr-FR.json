@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Connexion",
+    "description": "Entrez vos identifiants pour accéder à Primebrick",
+    "username": "Nom d'utilisateur",
+    "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "button": "Connexion",
+    "buttonLoading": "Connexion en cours...",
+    "error": "Veuillez entrer un nom d'utilisateur et un mot de passe",
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
+    "accountLocked": "Compte temporairement verrouillé. Veuillez réessayer dans {minutes} minutes.",
+    "userNoPermission": "L'utilisateur n'a pas la permission!",
+    "hero": {
+      "quote1": "La plateforme de gestion solide, modulaire et efficace pour un contrôle complet de vos projets.",
+      "author1": "Focus & Structure",
+      "quote2": "Construisez l'avenir de votre entreprise, une brique numérique à la fois.",
+      "author2": "Innovation Modulaire",
+      "quote3": "Optimisez les flux de travail et le contrôle granulaire. Tout dans un écosystème.",
+      "author3": "Efficacité Opérationnelle",
+      "quote4": "Simplifiez la complexité. Transformez les données brutes en décisions stratégiques.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "Chargement…",
     "loadFailed": "Échec du chargement",
@@ -97,6 +121,7 @@
     "userMenu": {
       "aria": "Menu utilisateur",
       "title": "Profil",
+      "profileLabel": "Profil",
       "accountSoon": "Paramètres du compte (bientôt)",
       "signOutSoon": "Déconnexion (bientôt)",
       "itemUpgrade": "Mise à niveau",
@@ -140,9 +165,11 @@
     },
     "listFailed": "Liste échouée",
     "health": {
-      "beOnline": "Online",
-      "beOffline": "Offline",
-      "dbOffline": "DB offline",
+      "beOnline": "En ligne",
+      "beOffline": "Hors ligne",
+      "dbOffline": "DB hors ligne",
+      "idpOffline": "IDP hors ligne",
+      "identityProvider": "Fournisseur d'identité",
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
@@ -155,7 +182,7 @@
       "numberingSystem": "Système de numération",
       "hourCycle": "Cycle horaire",
       "operatingSystem": "Système d'exploitation",
-      "osVersion": "Version OS",
+      "osVersion": "Version SE",
       "osArch": "Architecture",
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"

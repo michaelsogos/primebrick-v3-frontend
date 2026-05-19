@@ -11,6 +11,7 @@ export type HealthPayload = {
   version: string;
   modules: HealthModule[];
   db: { ok: boolean };
+  idp: { ok: boolean; type?: string; version?: string };
 };
 
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */
@@ -23,7 +24,10 @@ export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (!Array.isArray(o.modules)) return false;
   const db = o.db;
   if (!db || typeof db !== 'object') return false;
-  return typeof (db as { ok?: unknown }).ok === 'boolean';
+  if (typeof (db as { ok?: unknown }).ok !== 'boolean') return false;
+  const idp = o.idp;
+  if (!idp || typeof idp !== 'object') return false;
+  return typeof (idp as { ok?: unknown }).ok === 'boolean';
 }
 
 /** Proxy/gateway/timeouts: backend likely down or unreachable. */

@@ -4,7 +4,7 @@ import { browser } from '$app/environment';
 export const CONNECTIVITY_RESTORED_EVENT = 'primebrick:connectivity-restored' as const;
 
 export type ConnectivityRestoredDetail = {
-  previous: 'backend_offline' | 'db_offline';
+  previous: 'backend_offline' | 'db_offline' | 'idp_offline';
 };
 
 export function dispatchConnectivityRestored(detail: ConnectivityRestoredDetail): void {
@@ -26,7 +26,7 @@ export function onConnectivityRestored(
     const d = ce.detail;
     if (
       d &&
-      (d.previous === 'backend_offline' || d.previous === 'db_offline')
+      (d.previous === 'backend_offline' || d.previous === 'db_offline' || d.previous === 'idp_offline')
     ) {
       handler(d);
     }

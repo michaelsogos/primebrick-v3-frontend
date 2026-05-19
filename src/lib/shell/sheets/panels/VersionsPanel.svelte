@@ -47,6 +47,24 @@
         </Badge>
       </div>
 
+      <div class="flex items-center justify-between gap-3 text-sm">
+        <div class="text-muted-foreground">{$t('shell.health.identityProvider')}</div>
+        <div class="flex items-center gap-2">
+          {#if health?.idp?.ok}
+            <Badge variant="outline" class="font-mono text-[11px] font-medium">
+              {health.idp.type || 'Casdoor'}
+            </Badge>
+            <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+              {health.idp.version || 'unknown'}
+            </Badge>
+          {:else}
+            <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+              Offline
+            </Badge>
+          {/if}
+        </div>
+      </div>
+
       <div>
         <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.modulesTitle')}</div>
         {#if health?.modules?.length}

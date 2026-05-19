@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Accedi",
+    "description": "Inserisci le tue credenziali per accedere a Primebrick",
+    "username": "Nome utente",
+    "usernamePlaceholder": "Inserisci il tuo nome utente",
+    "password": "Password",
+    "passwordPlaceholder": "Inserisci la tua password",
+    "button": "Accedi",
+    "buttonLoading": "Accesso in corso...",
+    "error": "Inserisci nome utente e password",
+    "invalidCredentials": "Nome utente o password non validi",
+    "accountLocked": "Account bloccato temporaneamente. Riprova tra {minutes} minuti.",
+    "userNoPermission": "L'utente non ha permessi!",
+    "hero": {
+      "quote1": "La piattaforma di gestione solida, modulare ed efficiente per il controllo completo dei tuoi progetti.",
+      "author1": "Focus & Struttura",
+      "quote2": "Costruisci il futuro della tua azienda, un mattone digitale alla volta.",
+      "author2": "Innovazione Modulare",
+      "quote3": "Ottimizza i flussi di lavoro e il controllo granulare. Tutto in un unico ecosistema.",
+      "author3": "Efficienza Operativa",
+      "quote4": "Semplifica la complessità. Trasforma i dati grezzi in decisioni strategiche.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "Caricamento…",
     "loadFailed": "Caricamento fallito",
@@ -97,6 +121,7 @@
     "userMenu": {
       "aria": "Menu utente",
       "title": "Profilo",
+      "profileLabel": "Profilo",
       "accountSoon": "Impostazioni account (presto)",
       "signOutSoon": "Esci (presto)",
       "itemUpgrade": "Upgrade",
@@ -147,6 +172,8 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identity Provider",
       "versionsTitle": "Versioni",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
@@ -156,13 +183,13 @@
       "preferredLanguages": "Lingue preferite",
       "resolvedLocale": "Locale data/ora",
       "calendarSystem": "Calendario",
-      "numberingSystem": "Sistema numerico",
-      "hourCycle": "Ciclo orario (12/24h)",
+      "numberingSystem": "Sistema di numerazione",
+      "hourCycle": "Ciclo orario",
       "operatingSystem": "Sistema Operativo",
       "osVersion": "Versione SO",
       "osArch": "Architettura",
-      "browser": "Nome Browser",
-      "browserVersion": "Versione Browser"
+      "browser": "Nome del browser",
+      "browserVersion": "Versione del browser"
     }
   }
   ,

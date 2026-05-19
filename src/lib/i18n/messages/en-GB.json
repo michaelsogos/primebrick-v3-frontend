@@ -2,6 +2,30 @@
   "app": {
     "title": "Primebrick"
   },
+  "login": {
+    "title": "Login",
+    "description": "Enter your credentials to access Primebrick",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "button": "Login",
+    "buttonLoading": "Logging in...",
+    "error": "Please enter username and password",
+    "invalidCredentials": "Invalid username or password",
+    "accountLocked": "Account temporarily locked. Please try again in {minutes} minutes.",
+    "userNoPermission": "User doesn't have permission!",
+    "hero": {
+      "quote1": "The solid, modular, and efficient management platform for complete control of your projects.",
+      "author1": "Focus & Structure",
+      "quote2": "Build the future of your business, one digital brick at a time.",
+      "author2": "Modular Innovation",
+      "quote3": "Optimize workflows and granular control. All in one ecosystem.",
+      "author3": "Operational Efficiency",
+      "quote4": "Simplify complexity. Transform raw data into strategic decisions.",
+      "author4": "Data Driven"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "loadFailed": "Load failed",
@@ -97,6 +121,7 @@
     "userMenu": {
       "aria": "User menu",
       "title": "Profile",
+      "profileLabel": "Profile",
       "accountSoon": "Account settings (soon)",
       "signOutSoon": "Sign out (soon)",
       "itemUpgrade": "Upgrade",
@@ -147,22 +172,24 @@
       "beOnline": "Online",
       "beOffline": "Offline",
       "dbOffline": "DB offline",
+      "idpOffline": "IDP offline",
+      "identityProvider": "Identity Provider",
       "versionsTitle": "Versions",
       "shellVersion": "Shell",
       "backendVersion": "Backend",
       "modulesTitle": "Modules",
       "clientTitle": "This browser",
-      "ianaTimezone": "IANA time zone",
+      "ianaTimezone": "IANA timezone",
       "preferredLanguages": "Preferred languages",
       "resolvedLocale": "Date/time locale",
       "calendarSystem": "Calendar",
       "numberingSystem": "Numbering system",
       "hourCycle": "Hour cycle",
       "operatingSystem": "Operating System",
-      "osVersion": "OS Version",
+      "osVersion": "OS version",
       "osArch": "Architecture",
-      "browser": "Browser Name",
-      "browserVersion": "Browser Version"
+      "browser": "Browser name",
+      "browserVersion": "Browser version"
     }
   }
   ,

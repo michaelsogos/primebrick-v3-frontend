@@ -34,6 +34,7 @@
     Package,
     Receipt,
     Settings,
+    ShieldAlert,
     Sparkles,
     User,
     Users
@@ -106,6 +107,18 @@
     });
   }
 
+  async function handleLogout() {
+    // Clear cookies by setting them with past expiration
+    document.cookie = 'access_token=; path=/; max-age=0';
+    document.cookie = 'refresh_token=; path=/api/v1/auth/refresh; max-age=0';
+
+    // Clear sessionStorage
+    sessionStorage.removeItem('user');
+
+    // Redirect to login page
+    window.location.href = '/login';
+  }
+
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
   const healthChip = $derived(backendState.healthChip);
@@ -134,9 +147,11 @@
       ? $t('shell.health.beOffline')
       : healthChip === 'db_offline'
         ? $t('shell.health.dbOffline')
-        : healthChip === 'ok'
-          ? $t('shell.health.beOnline')
-          : $t('common.loading')
+        : healthChip === 'idp_offline'
+          ? $t('shell.health.idpOffline')
+          : healthChip === 'ok'
+            ? $t('shell.health.beOnline')
+            : $t('common.loading')
   );
 
   const healthChipClass = $derived(
@@ -144,13 +159,27 @@
       ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
       : healthChip === 'db_offline'
         ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthChip === 'ok'
-          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-          : 'border-border/60 bg-muted/30 text-muted-foreground'
+        : healthChip === 'idp_offline'
+          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+          : healthChip === 'ok'
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+            : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
+  // Load user data from sessionStorage (saved by login page)
+  let userData = $state<{ username?: string; displayName?: string; email?: string; organization?: string } | null>(null);
+  try {
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      userData = JSON.parse(storedUser);
+    }
+  } catch {
+    userData = null;
+  }
+
   const userAvatarSeed = 'PB';
-  const userName = 'Prime Brick';
+  const userName = $derived(userData?.displayName || userData?.username || 'Prime Brick');
+  const userEmail = $derived(userData?.email || 'm@example.com');
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 
   $effect(() => {
@@ -424,7 +453,7 @@
                 {#if !collapsed}
                   <div class="grid min-w-0 flex-1 text-left leading-tight">
                     <span class="truncate text-sm font-medium">{userName}</span>
-                    <span class="truncate text-xs text-muted-foreground">{$t('shell.userMenu.title')}</span>
+                    <span class="truncate text-xs text-muted-foreground">{$t('shell.userMenu.profileLabel')}</span>
                   </div>
                 {/if}
 
@@ -447,7 +476,7 @@
                 </Avatar>
                 <div class="grid flex-1 text-left leading-tight">
                   <span class="truncate font-medium">{userName}</span>
-                  <span class="truncate text-xs text-muted-foreground">m@example.com</span>
+                  <span class="truncate text-xs text-muted-foreground">{userEmail}</span>
                 </div>
               </div>
             </DropdownMenu.Label>
@@ -475,7 +504,7 @@
 
             <DropdownMenu.Separator />
 
-            <DropdownMenu.Item variant="destructive" disabled>
+            <DropdownMenu.Item variant="destructive" onclick={handleLogout}>
               <LogOut />
               <span>{$t('shell.userMenu.itemSignOut')}</span>
             </DropdownMenu.Item>
@@ -503,6 +532,8 @@
             <CloudOff class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else if healthChip === 'db_offline'}
             <Database class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
+          {:else if healthChip === 'idp_offline'}
+            <ShieldAlert class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {:else}
             <Cloud class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
           {/if}

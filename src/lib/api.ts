@@ -1,4 +1,6 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
+import { saveRedirectUrl } from '$lib/auth/redirect-cache';
+import { pushRFC7807Error } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
   ApiUnreachableError,
@@ -13,6 +15,73 @@ export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStat
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
 
+// Concurrency control for token refresh
+let refreshPromise: Promise<void> | null = null;
+
+/**
+ * Check if the access token is expired by comparing expiresAt from session storage
+ */
+function isTokenExpired(): boolean {
+  if (typeof window === 'undefined') return true;
+  
+  try {
+    const userStr = sessionStorage.getItem('user');
+    if (!userStr) return true;
+    
+    const user = JSON.parse(userStr);
+    if (!user.expiresAt) return true;
+    
+    // Add 30 seconds buffer to account for clock skew
+    const now = Date.now();
+    return user.expiresAt - 30000 < now;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Refresh the access token by calling the backend refresh endpoint
+ * Updates session storage with new user data on success
+ */
+async function refreshAccessToken(): Promise<void> {
+  try {
+    const response = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Token Refresh] Failed:', errorData);
+      throw new Error(errorData.detail || 'Token refresh failed');
+    }
+
+    const data = await response.json();
+    
+    // Update session storage with new user data
+    if (data.success && data.user) {
+      sessionStorage.setItem('user', JSON.stringify(data.user));
+      console.log('[Token Refresh] Successfully refreshed token');
+    }
+  } catch (error) {
+    console.error('[Token Refresh] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Trigger token refresh with concurrency control
+ * Multiple simultaneous calls will wait for the same refresh operation
+ */
+async function triggerRefresh(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  await refreshPromise;
+}
+
 function requestUrlString(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.toString();
@@ -21,6 +90,27 @@ function requestUrlString(input: RequestInfo | URL): string {
 
 function isEntityApiRequest(input: RequestInfo | URL): boolean {
   return requestUrlString(input).includes(ENTITY_API_PATH);
+}
+
+/**
+ * Handle RFC7807 error responses automatically by pushing to error panel
+ * Returns the response so callers can still handle it if needed
+ */
+async function handleRFC7807Error(res: Response): Promise<Response> {
+  try {
+    const contentType = res.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      const errorData = await res.json();
+      // Check if it looks like RFC7807 format (has type, title, status)
+      if (errorData.type && errorData.title && errorData.status) {
+        pushRFC7807Error(errorData);
+      }
+    }
+  } catch (e) {
+    // If parsing fails, just return the response as-is
+    console.warn('[api] Failed to parse RFC7807 error:', e);
+  }
+  return res;
 }
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -49,10 +139,47 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     throw new ApiDatabaseUnavailableError(503);
   }
 
+  // 401 = unauthorized - implement fast retry logic
+  if (res.status === 401) {
+    // Skip refresh for auth endpoints - user doesn't have tokens yet
+    const url = requestUrlString(input);
+    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
+      // Let the 401 propagate to the caller for proper error handling
+      return res;
+    }
+
+    // Check if token is expired locally
+    if (isTokenExpired()) {
+      // Token is expired, try to refresh
+      try {
+        await triggerRefresh();
+        // Retry the original request after successful refresh
+        return await apiFetch(input, nextInit);
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        console.error('[api] Token refresh failed, redirecting to login:', refreshError);
+        if (typeof window !== 'undefined') {
+          saveRedirectUrl(window.location.pathname + window.location.search);
+          window.location.href = '/login';
+        }
+        throw new Error('Token refresh failed');
+      }
+    } else {
+      // Token is not expired - this is a permission error, let it propagate
+      // The caller will handle showing the RFC error toast
+    }
+  }
+
   // 502/504 = gateway/network failure
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
     noteGatewayFailure(res.status);
     throw new ApiUnreachableError(res.status);
+  }
+
+  // Auto-handle RFC7807 errors for non-auth endpoints
+  const url = requestUrlString(input);
+  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh')) {
+    await handleRFC7807Error(res);
   }
 
   return res;

@@ -45,12 +45,14 @@
     };
   });
 
-  /** One interval: poll while BE is unreachable, or while BE is up but DB is down (503 health). */
+  /** Poll while BE is unreachable, or while BE is up but DB or IDP is down (503 health). */
   $effect(() => {
     if (!browser) return;
     const dbDown =
       backendState.health !== null && !backendState.health.db.ok;
-    if (!backendState.offline && !dbDown) return;
+    const idpDown =
+      backendState.health !== null && !backendState.health.idp.ok;
+    if (!backendState.offline && !dbDown && !idpDown) return;
     const id = setInterval(() => void probeHealth(), 5000);
     return () => clearInterval(id);
   });
