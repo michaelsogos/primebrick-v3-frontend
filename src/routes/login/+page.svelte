@@ -11,6 +11,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
+  import * as Password from '$lib/components/ui/password';
   import { cn } from '$lib/utils';
   import { toast } from 'svelte-sonner';
   import { t } from '$lib/i18n';
@@ -20,6 +21,8 @@
   import LangSelect from '$lib/components/LangSelect.svelte';
   import { Cloud, CloudOff, Database, ShieldAlert } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
+  import { pushRFC7807Error } from '$lib/errors/app-errors';
 
   // 1. Definisci lo schema Zod
   const loginSchema = z.object({
@@ -56,18 +59,36 @@
           if (!response.ok) {
             const errorData = await response.json();
 
+            // Push error to global error panel (no toast in login page)
+            pushRFC7807Error(errorData, { showToast: false });
+
+            // Map error to inline message for 401 (translated)
             if (response.status === 401) {
-              // Assegna gli errori ai rispettivi campi in modo reattivo
-              (updateForm.errors as Record<string, string[]>).username = [errorData.detail || 'Invalid credentials'];
-              (updateForm.errors as Record<string, string[]>).password = [errorData.detail || 'Invalid credentials'];
-              toast.error(errorData.detail || 'Invalid credentials');
-              return;
+              const messageKey = mapRFC7807ToMessageKey({
+                status: response.status,
+                internal_code: errorData.internal_code
+              });
+
+              if (messageKey) {
+                // Show translated message inline
+                superFormObj.message.set($t(messageKey));
+                // Also set field errors for better UX
+                (updateForm.errors as Record<string, string[]>).username = [$t(messageKey)];
+                (updateForm.errors as Record<string, string[]>).password = [$t(messageKey)];
+              } else {
+                // Fallback to raw detail
+                superFormObj.message.set(errorData.detail || 'Invalid credentials');
+                (updateForm.errors as Record<string, string[]>).username = [errorData.detail || 'Invalid credentials'];
+                (updateForm.errors as Record<string, string[]>).password = [errorData.detail || 'Invalid credentials'];
+              }
             } else if (response.status === 400 && errorData.issues) {
               // Map validation errors from backend
               for (const issue of errorData.issues) {
                 (updateForm.errors as Record<string, string[]>)[issue.path[0] as string] = [issue.message];
               }
+              superFormObj.message.set(errorData.detail || 'Validation error');
             } else {
+              // For other errors, show the raw detail inline
               superFormObj.message.set(errorData.detail || 'Login failed');
             }
             return;
@@ -253,7 +274,7 @@
           <CardDescription>{$t('login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
-          <form method="POST" action="?/login" use:enhance>
+          <form use:enhance>
             <div class="space-y-4">
       <!-- Campo Username -->
       <FormField form={superFormObj} name="username">
@@ -269,10 +290,10 @@
                 bind:value={$form.username}
                 {...props}
               />
+              <FormFieldErrors />
             </div>
           {/snippet}
         </FormControl>
-        <FormFieldErrors />
       </FormField>
 
       <!-- Campo Password -->
@@ -281,16 +302,19 @@
           {#snippet children({ props })}
             <div class="space-y-2">
               <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
-              <Input
-                type="password"
-                placeholder={$t('login.passwordPlaceholder')}
-                bind:value={$form.password}
-                {...props}
-              />
+              <Password.Root>
+                <Password.Input
+                  placeholder={$t('login.passwordPlaceholder')}
+                  bind:value={$form.password}
+                  {...props}
+                >
+                  <Password.ToggleVisibility />
+                </Password.Input>
+              </Password.Root>
+              <FormFieldErrors />
             </div>
           {/snippet}
         </FormControl>
-        <FormFieldErrors />
       </FormField>
 
               {#if $message}
