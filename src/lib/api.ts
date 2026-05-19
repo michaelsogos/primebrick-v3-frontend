@@ -14,6 +14,73 @@ export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStat
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
 
+// Concurrency control for token refresh
+let refreshPromise: Promise<void> | null = null;
+
+/**
+ * Check if the access token is expired by comparing expiresAt from session storage
+ */
+function isTokenExpired(): boolean {
+  if (typeof window === 'undefined') return true;
+  
+  try {
+    const userStr = sessionStorage.getItem('user');
+    if (!userStr) return true;
+    
+    const user = JSON.parse(userStr);
+    if (!user.expiresAt) return true;
+    
+    // Add 30 seconds buffer to account for clock skew
+    const now = Date.now();
+    return user.expiresAt - 30000 < now;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Refresh the access token by calling the backend refresh endpoint
+ * Updates session storage with new user data on success
+ */
+async function refreshAccessToken(): Promise<void> {
+  try {
+    const response = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Token Refresh] Failed:', errorData);
+      throw new Error(errorData.detail || 'Token refresh failed');
+    }
+
+    const data = await response.json();
+    
+    // Update session storage with new user data
+    if (data.success && data.user) {
+      sessionStorage.setItem('user', JSON.stringify(data.user));
+      console.log('[Token Refresh] Successfully refreshed token');
+    }
+  } catch (error) {
+    console.error('[Token Refresh] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Trigger token refresh with concurrency control
+ * Multiple simultaneous calls will wait for the same refresh operation
+ */
+async function triggerRefresh(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  await refreshPromise;
+}
+
 function requestUrlString(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.toString();
@@ -50,32 +117,28 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     throw new ApiDatabaseUnavailableError(503);
   }
 
-  // 401 = unauthorized - check IDP health and redirect to login if healthy
+  // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
-    // Save current URL for redirect after login
-    if (typeof window !== 'undefined') {
-      saveRedirectUrl(window.location.pathname + window.location.search);
-    }
-
-    // Check IDP health before redirecting
-    try {
-      const healthRes = await fetch('/api/v1/health');
-      if (healthRes.ok) {
-        const healthData = (await healthRes.json()) as HealthPayload;
-        if (healthData.idp.ok) {
-          // IDP is healthy, redirect to login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
+    // Check if token is expired locally
+    if (isTokenExpired()) {
+      // Token is expired, try to refresh
+      try {
+        await triggerRefresh();
+        // Retry the original request after successful refresh
+        return await apiFetch(input, nextInit);
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        console.error('[api] Token refresh failed, redirecting to login:', refreshError);
+        if (typeof window !== 'undefined') {
+          saveRedirectUrl(window.location.pathname + window.location.search);
+          window.location.href = '/login';
         }
+        throw new Error('Token refresh failed');
       }
-    } catch (e) {
-      // Health check failed, let the error propagate
-      console.error('[api] Health check failed during 401 handling:', e);
+    } else {
+      // Token is not expired - this is a permission error, let it propagate
+      // The caller will handle showing the RFC error toast
     }
-
-    // If we reach here, redirect didn't happen or health check failed
-    // Let the original 401 error propagate
   }
 
   // 502/504 = gateway/network failure

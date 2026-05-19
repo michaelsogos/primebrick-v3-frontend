@@ -54,38 +54,38 @@
   );
 
   // Dynamic hero system
-  const heroes = [
+  const heroes = $derived([
     {
       image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      quote: 'The solid, modular, and efficient management platform for complete control of your projects.',
-      author: 'Focus & Structure'
+      quote: $t('login.hero.quote1'),
+      author: $t('login.hero.author1')
     },
     {
       image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      quote: 'Build the future of your business, one digital brick at a time.',
-      author: 'Modular Innovation'
+      quote: $t('login.hero.quote2'),
+      author: $t('login.hero.author2')
     },
     {
       image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1200&q=80',
-      quote: 'Optimize workflows and granular control. All in one ecosystem.',
-      author: 'Operational Efficiency'
+      quote: $t('login.hero.quote3'),
+      author: $t('login.hero.author3')
     },
     {
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      quote: 'Simplify complexity. Transform raw data into strategic decisions.',
-      author: 'Data Driven'
+      quote: $t('login.hero.quote4'),
+      author: $t('login.hero.author4')
     }
-  ];
+  ]);
 
-  let currentHero = $state(heroes[0]);
+  let heroIndex = $state(0);
+  const currentHero = $derived(heroes[heroIndex]);
 
   onMount(() => {
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
-    
+
     // Select random hero
-    const randomIndex = Math.floor(Math.random() * heroes.length);
-    currentHero = heroes[randomIndex];
+    heroIndex = Math.floor(Math.random() * heroes.length);
   });
 
   async function handleLogin() {
@@ -96,36 +96,35 @@
 
     isLoading = true;
     try {
-      // Call Casdoor OAuth token endpoint
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'password');
-      formData.append('client_id', 'primebrick-api');
-      formData.append('client_secret', 'TODO'); // This should come from backend config
-      formData.append('username', username);
-      formData.append('password', password);
-      formData.append('scope', 'openid profile email');
-
-      const response = await fetch('http://localhost:8000/api/login/oauth/access-token', {
+      // Call backend login endpoint (proxies to Casdoor)
+      const response = await apiFetch('/api/v1/auth/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
       }
 
       const data = await response.json();
       
-      // Save token to cookie or localStorage
-      // TODO: Implement proper token storage
+      // Save user profile data to session storage
+      if (data.success && data.user) {
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+      }
       
       // Redirect to saved URL or default
       const redirectUrl = getAndClearRedirectUrl();
       window.location.href = redirectUrl || '/';
     } catch (error) {
+      console.error('[Login Error]', error);
       toast.error($t('login.invalidCredentials'));
     } finally {
       isLoading = false;
