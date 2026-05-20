@@ -38,6 +38,7 @@
     "reset": "Reset",
     "done": "Fatto",
     "apply": "Applica",
+    "save": "Salva",
     "toggleSidebar": "Attiva/Disattiva barra laterale",
     "refresh": "Aggiorna",
     "selectRow": "seleziona riga",
@@ -127,6 +128,7 @@
       "itemUpgrade": "Upgrade",
       "itemAccount": "Account",
       "itemBilling": "Fatturazione",
+      "itemSettings": "Impostazioni",
       "itemNotifications": "Notifiche",
       "itemSignOut": "Esci"
     },
@@ -136,9 +138,71 @@
       "acme": "ACME",
       "johnDoe": "John Doe SRL"
     },
+    "system": "Sistema",
     "theme": {
       "light": "Passa al tema chiaro",
       "dark": "Passa al tema scuro"
+    },
+    "settings": {
+      "title": "Impostazioni",
+      "tabs": {
+        "profile": "Profilo",
+        "security": "Sicurezza",
+        "modules": "Moduli",
+        "templates": "Template"
+      },
+      "profile": {
+        "title": "Profilo",
+        "avatarColor": "Colore Avatar",
+        "selectColor": "Seleziona colore {color}",
+        "displayName": "Nome Visualizzato",
+        "displayNamePlaceholder": "Il tuo nome",
+        "email": "Email",
+        "emailPlaceholder": "la tua@email.com",
+        "createdAt": "Creato il",
+        "createdBy": "Creato da",
+        "updatedAt": "Aggiornato il",
+        "updatedBy": "Aggiornato da",
+        "version": "Versione"
+      },
+      "security": {
+        "title": "Sicurezza",
+        "changePassword": "Cambia Password",
+        "currentPassword": "Password Attuale",
+        "currentPasswordPlaceholder": "Inserisci password attuale",
+        "newPassword": "Nuova Password",
+        "newPasswordPlaceholder": "Inserisci nuova password",
+        "confirmPassword": "Conferma Password",
+        "confirmPasswordPlaceholder": "Conferma nuova password",
+        "changePasswordButton": "Cambia Password",
+        "oidcParams": "Parametri OIDC",
+        "oidcIssuer": "Issuer OIDC",
+        "oidcClientId": "Client ID",
+        "oidcClientSecret": "Client Secret",
+        "oidcSaveButton": "Salva Parametri OIDC",
+        "deleteAccount": "Elimina Account",
+        "deleteAccountButton": "Elimina Account",
+        "deleteAccountWarning": "Questa azione è irreversibile. Tutti i tuoi dati verranno eliminati definitivamente.",
+        "confirmDeleteAccount": "Conferma Eliminazione"
+      },
+      "modules": {
+        "title": "Moduli",
+        "uploadModule": "Carica Modulo",
+        "selectModuleFile": "Seleziona file modulo (.zip, .tar.gz)",
+        "installButton": "Installa",
+        "installedModules": "Moduli Installati",
+        "version": "Versione",
+        "active": "Attivo",
+        "inactive": "Inattivo"
+      },
+      "templates": {
+        "title": "Template",
+        "uploadTemplate": "Carica Template",
+        "selectTemplateFile": "Seleziona file template (.pdf, .html, .xlsx, .xls)",
+        "uploadButton": "Carica",
+        "templatesList": "Lista Template",
+        "createTemplate": "Crea Template"
+      }
     },
     "errors": {
       "aria": "Errors",
@@ -210,6 +274,9 @@
     "criticalError": "Errore critico"
   },
   "entities": {
+    "userProfile": {
+      "title": "Profilo Utente"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Visualizzato nel fuso del browser. Clic per usare l’IANA salvata sulla riga.",

@@ -27,16 +27,18 @@
     }
   },
   "common": {
-    "loading": "A carregar…",
-    "loadFailed": "Carregamento falhou",
+    "loading": "Carregando…",
+    "loadFailed": "Falha ao carregar",
+    "dbUnavailable": "Base de dados temporariamente indisponível. Alguns dados podem não carregar.",
     "soon": "Em breve",
     "new": "Novo",
     "prev": "Ant",
-    "next": "Seg",
+    "next": "Próx",
     "all": "Todos",
-    "reset": "Limpar",
+    "reset": "Repor",
     "done": "Concluído",
     "apply": "Aplicar",
+    "save": "Guardar",
     "toggleSidebar": "Alternar barra lateral",
     "refresh": "atualizar",
     "selectRow": "selecionar linha",
@@ -126,6 +128,7 @@
       "itemUpgrade": "Upgrade",
       "itemAccount": "Conta",
       "itemBilling": "Faturação",
+      "itemSettings": "Definições",
       "itemNotifications": "Notificações",
       "itemSignOut": "Terminar sessão"
     },
@@ -135,9 +138,71 @@
       "acme": "ACME",
       "johnDoe": "John Doe SRL"
     },
+    "system": "Sistema",
     "theme": {
       "light": "Mudar para tema claro",
       "dark": "Mudar para tema escuro"
+    },
+    "settings": {
+      "title": "Definições",
+      "tabs": {
+        "profile": "Perfil",
+        "security": "Segurança",
+        "modules": "Módulos",
+        "templates": "Modelos"
+      },
+      "profile": {
+        "title": "Perfil",
+        "avatarColor": "Cor do avatar",
+        "selectColor": "Selecionar cor {color}",
+        "displayName": "Nome de exibição",
+        "displayNamePlaceholder": "Seu nome",
+        "email": "E-mail",
+        "emailPlaceholder": "seu@email.com",
+        "createdAt": "Criado em",
+        "createdBy": "Criado por",
+        "updatedAt": "Atualizado em",
+        "updatedBy": "Atualizado por",
+        "version": "Versão"
+      },
+      "security": {
+        "title": "Segurança",
+        "changePassword": "Alterar senha",
+        "currentPassword": "Senha atual",
+        "currentPasswordPlaceholder": "Digite a senha atual",
+        "newPassword": "Nova senha",
+        "newPasswordPlaceholder": "Digite a nova senha",
+        "confirmPassword": "Confirmar senha",
+        "confirmPasswordPlaceholder": "Confirme a nova senha",
+        "changePasswordButton": "Alterar senha",
+        "oidcParams": "Parâmetros OIDC",
+        "oidcIssuer": "Emissor OIDC",
+        "oidcClientId": "ID do cliente",
+        "oidcClientSecret": "Segredo do cliente",
+        "oidcSaveButton": "Salvar parâmetros OIDC",
+        "deleteAccount": "Excluir conta",
+        "deleteAccountButton": "Excluir conta",
+        "deleteAccountWarning": "Esta ação é irreversível. Todos os seus dados serão excluídos permanentemente.",
+        "confirmDeleteAccount": "Confirmar exclusão"
+      },
+      "modules": {
+        "title": "Módulos",
+        "uploadModule": "Carregar módulo",
+        "selectModuleFile": "Selecionar arquivo de módulo (.zip, .tar.gz)",
+        "installButton": "Instalar",
+        "installedModules": "Módulos instalados",
+        "version": "Versão",
+        "active": "Ativo",
+        "inactive": "Inativo"
+      },
+      "templates": {
+        "title": "Modelos",
+        "uploadTemplate": "Carregar modelo",
+        "selectTemplateFile": "Selecionar arquivo de modelo (.pdf, .html, .xlsx, .xls)",
+        "uploadButton": "Carregar",
+        "templatesList": "Lista de modelos",
+        "createTemplate": "Criar modelo"
+      }
     },
     "errors": {
       "aria": "Errors",
@@ -199,6 +264,9 @@
     }
   },
   "entities": {
+    "userProfile": {
+      "title": "Perfil de Usuário"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Mostrado no fuso do navegador. Clique para usar a IANA guardada na linha.",
