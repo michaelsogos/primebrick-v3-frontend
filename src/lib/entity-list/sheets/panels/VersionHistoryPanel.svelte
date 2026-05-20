@@ -142,8 +142,8 @@
 
   function getChangedByDisplay(entry: any): string {
     // If display_name is available from the join, use it
-    if (entry.changed_by_display_name) {
-      return entry.changed_by_display_name;
+    if (entry.changed_by_name) {
+      return entry.changed_by_name;
     }
     // Otherwise fallback to idp_code (e.g., "admin", "system")
     if (entry.changed_by_idp_code) {
