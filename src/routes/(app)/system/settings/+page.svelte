@@ -70,7 +70,7 @@
   <div class="flex min-h-0 flex-1">
     <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v} orientation="vertical" class="flex w-full h-full">
       <div class="flex flex-col w-1/5 border-r h-full bg-muted/30">
-        <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full">
+        <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
           {#each tabs as tab (tab.id)}
             {@const Icon = tab.icon}
             <Tabs.Trigger value={tab.id} class="flex items-center gap-2 justify-start w-full px-4 py-2 rounded-md hover:bg-background/50 data-[state=active]:bg-background data-[state=active]:font-medium border border-transparent data-[state=active]:border-sky-200/80 dark:data-[state=active]:border-sky-900/55 data-[state=active]:text-primary">
@@ -106,31 +106,26 @@
         <div class="bg-muted/50 border-t p-4">
           <div class="text-xs">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {#if version}
+                <Badge class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400")} variant="outline">
+                  v{version}
+                </Badge>
+              {/if}
               <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.createdAt')}</span>
-                <span class="text-muted-foreground">{createdAt || '-'}</span>
+                <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
+                <span class="italic text-muted-foreground">{createdAt || '-'}</span>
               </div>
               <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.createdBy')}</span>
-                <span class="text-muted-foreground">{createdBy || '-'}</span>
+                <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
+                <span class="italic text-muted-foreground">{createdBy || '-'}</span>
               </div>
               <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.updatedAt')}</span>
-                <span class="text-muted-foreground">{updatedAt || '-'}</span>
+                <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
+                <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
               </div>
               <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.updatedBy')}</span>
-                <span class="text-muted-foreground">{updatedBy || '-'}</span>
-              </div>
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.version')}</span>
-                {#if version}
-                  <Badge class={cn("text-xs font-semibold border")} variant="outline">
-                    v{version}
-                  </Badge>
-                {:else}
-                  <span class="text-muted-foreground">-</span>
-                {/if}
+                <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
+                <span class="italic text-muted-foreground">{updatedBy || '-'}</span>
               </div>
             </div>
           </div>
