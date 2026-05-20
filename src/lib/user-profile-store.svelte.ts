@@ -33,6 +33,7 @@ export const userProfileStore = {
   get current() { return currentProfile; },
   
   set(profile: Partial<UserProfile>) {
+    console.log('[userProfileStore] set called with:', profile);
     if (!currentProfile) {
       currentProfile = {
         idp_code: profile.idp_code,
@@ -52,8 +53,10 @@ export const userProfileStore = {
         version: profile.version
       };
     } else {
-      Object.assign(currentProfile, profile);
+      // Full object replacement ensures reactivity
+      currentProfile = { ...currentProfile, ...profile };
     }
+    console.log('[userProfileStore] updated currentProfile:', currentProfile);
     sessionStorage.setItem('user', JSON.stringify(currentProfile));
   }
 };

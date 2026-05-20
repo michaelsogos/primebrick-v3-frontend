@@ -61,6 +61,8 @@
           const data = await response.json();
           if (data.success && data.profile) {
             console.log('Profile updated successfully');
+            console.log('[profile-tab] Response data:', data.profile);
+            console.log('[profile-tab] avatar_color from response:', data.profile.avatar_color);
             
             // Update form with response data
             $form.idp_code = data.profile.idp_code || $form.idp_code;
