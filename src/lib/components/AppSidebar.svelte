@@ -9,14 +9,14 @@
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
+  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { pushImpactError } from '$lib/errors/app-errors';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
   import { apiFetch } from '$lib/api';
-  import { userProfileStore, getUserName, getUserEmail, getUserAvatarStyle } from '$lib/user-profile-store.svelte';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import {
     BadgeCheck,
     Bell,
@@ -167,10 +167,15 @@
             : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
-  // Use reactive user profile store
-  const userName = $derived(getUserName());
-  const userEmail = $derived(getUserEmail());
-  const avatarStyle = $derived(getUserAvatarStyle());
+  // Use reactive user profile store — read .current directly so Svelte 5 tracks mutations
+  const userName = $derived(userProfileStore.current?.displayName || userProfileStore.current?.username || 'Prime Brick');
+  const userEmail = $derived(userProfileStore.current?.email || 'm@example.com');
+  const avatarStyle = $derived.by(() => {
+    const color = userProfileStore.current?.avatar_color;
+    if (!color) return null;
+    const textColor = getContrastTextColor(color);
+    return { style: `background-color: ${color}; color: ${textColor};`, class: 'rounded-none text-xs font-semibold' };
+  });
   const userAvatarSeed = 'PB';
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 

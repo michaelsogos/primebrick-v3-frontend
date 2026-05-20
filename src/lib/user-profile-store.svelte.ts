@@ -7,6 +7,15 @@ interface UserProfile {
   email?: string;
   organization?: string;
   avatar_color?: string | null;
+  // Audit fields
+  uuid?: string;
+  created_at?: string;
+  created_by?: string;
+  created_by_name?: string;
+  updated_at?: string;
+  updated_by?: string;
+  updated_by_name?: string;
+  version?: number;
 }
 
 function loadFromStorage(): UserProfile | null {
@@ -31,7 +40,16 @@ export const userProfileStore = {
         displayName: profile.displayName,
         email: profile.email,
         organization: profile.organization,
-        avatar_color: profile.avatar_color
+        avatar_color: profile.avatar_color,
+        // Audit fields
+        uuid: profile.uuid,
+        created_at: profile.created_at,
+        created_by: profile.created_by,
+        created_by_name: profile.created_by_name,
+        updated_at: profile.updated_at,
+        updated_by: profile.updated_by,
+        updated_by_name: profile.updated_by_name,
+        version: profile.version
       };
     } else {
       Object.assign(currentProfile, profile);

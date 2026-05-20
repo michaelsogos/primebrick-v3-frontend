@@ -17,7 +17,16 @@
             idp_code: data.profile.idp_code,
             displayName: data.profile.display_name,
             email: data.profile.email,
-            avatar_color: data.profile.avatar_color
+            avatar_color: data.profile.avatar_color,
+            // Audit fields
+            uuid: data.profile.uuid,
+            created_at: data.profile.created_at,
+            created_by: data.profile.created_by,
+            created_by_name: data.profile.created_by_name,
+            updated_at: data.profile.updated_at,
+            updated_by: data.profile.updated_by,
+            updated_by_name: data.profile.updated_by_name,
+            version: data.profile.version
           });
         }
       }

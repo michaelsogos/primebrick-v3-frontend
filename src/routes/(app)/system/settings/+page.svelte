@@ -17,40 +17,23 @@
   import { cn } from '$lib/utils';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { beforeNavigate } from '$app/navigation';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
 
   let activeTab = $state('profile');
 
-  let createdAt = $state('');
-  let createdBy = $state('');
-  let createdByName = $state('');
-  let updatedAt = $state('');
-  let updatedBy = $state('');
-  let updatedByName = $state('');
-  let version = $state(0);
-  let userUuid = $state('');
   let hasAudit = $state(false);
   let hasChanges = $state(false);
 
-  async function loadAuditData() {
-    try {
-      const res = await apiFetch('/api/v1/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.profile) {
-          createdAt = data.profile.created_at ? formatUiDateTime(data.profile.created_at, $uiLang) : '';
-          createdBy = data.profile.created_by || '';
-          createdByName = data.profile.created_by_name || '';
-          updatedAt = data.profile.updated_at ? formatUiDateTime(data.profile.updated_at, $uiLang) : '';
-          updatedBy = data.profile.updated_by || '';
-          updatedByName = data.profile.updated_by_name || '';
-          version = data.profile.version || 0;
-          userUuid = data.profile.uuid || '';
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load audit data:', error);
-    }
-  }
+  // Reactive derived values from store
+  const profile = $derived(userProfileStore.current);
+  const createdAt = $derived.by(() => profile?.created_at ? formatUiDateTime(profile.created_at, $uiLang) : '');
+  const createdBy = $derived(profile?.created_by || '');
+  const createdByName = $derived(profile?.created_by_name || '');
+  const updatedAt = $derived.by(() => profile?.updated_at ? formatUiDateTime(profile.updated_at, $uiLang) : '');
+  const updatedBy = $derived(profile?.updated_by || '');
+  const updatedByName = $derived(profile?.updated_by_name || '');
+  const version = $derived(profile?.version || 0);
+  const userUuid = $derived(profile?.uuid || '');
 
   async function loadEntityMetadata() {
     try {
@@ -93,7 +76,6 @@
   }
 
   onMount(() => {
-    loadAuditData();
     loadEntityMetadata();
   });
 
