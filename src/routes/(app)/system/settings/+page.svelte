@@ -22,8 +22,10 @@
 
   let createdAt = $state('');
   let createdBy = $state('');
+  let createdByName = $state('');
   let updatedAt = $state('');
   let updatedBy = $state('');
+  let updatedByName = $state('');
   let version = $state(0);
   let userUuid = $state('');
   let hasAudit = $state(false);
@@ -37,8 +39,10 @@
         if (data.success && data.profile) {
           createdAt = data.profile.createdAt ? formatUiDateTime(data.profile.createdAt, $uiLang) : '';
           createdBy = data.profile.createdBy || '';
+          createdByName = data.profile.createdByName || '';
           updatedAt = data.profile.updatedAt ? formatUiDateTime(data.profile.updatedAt, $uiLang) : '';
           updatedBy = data.profile.updatedBy || '';
+          updatedByName = data.profile.updatedByName || '';
           version = data.profile.version || 0;
           userUuid = data.profile.uuid || '';
         }
@@ -179,7 +183,7 @@
               </div>
               <div class="flex items-center gap-x-2">
                 <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
-                <span class="italic text-muted-foreground">{createdBy || '-'}</span>
+                <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
               </div>
               <div class="flex items-center gap-x-2">
                 <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
@@ -187,7 +191,7 @@
               </div>
               <div class="flex items-center gap-x-2">
                 <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
-                <span class="italic text-muted-foreground">{updatedBy || '-'}</span>
+                <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
               </div>
             </div>
           </div>
