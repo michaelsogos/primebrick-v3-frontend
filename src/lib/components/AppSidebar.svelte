@@ -9,13 +9,14 @@
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
+  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { pushImpactError } from '$lib/errors/app-errors';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
   import { apiFetch } from '$lib/api';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import {
     BadgeCheck,
     Bell,
@@ -166,20 +167,16 @@
             : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
-  // Load user data from sessionStorage (saved by login page)
-  let userData = $state<{ username?: string; displayName?: string; email?: string; organization?: string } | null>(null);
-  try {
-    const storedUser = sessionStorage.getItem('user');
-    if (storedUser) {
-      userData = JSON.parse(storedUser);
-    }
-  } catch {
-    userData = null;
-  }
-
+  // Use reactive user profile store — read .current directly so Svelte 5 tracks mutations
+  const userName = $derived(userProfileStore.current?.displayName || userProfileStore.current?.username || 'Prime Brick');
+  const userEmail = $derived(userProfileStore.current?.email || 'm@example.com');
+  const avatarStyle = $derived.by(() => {
+    const color = userProfileStore.current?.avatar_color;
+    if (!color) return null;
+    const textColor = getContrastTextColor(color);
+    return { style: `background-color: ${color}; color: ${textColor};`, class: 'rounded-none text-xs font-semibold' };
+  });
   const userAvatarSeed = 'PB';
-  const userName = $derived(userData?.displayName || userData?.username || 'Prime Brick');
-  const userEmail = $derived(userData?.email || 'm@example.com');
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 
   $effect(() => {
@@ -444,11 +441,19 @@
                 title={userName}
                 class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <Avatar class="size-8 rounded-none avatar-hex">
-                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                    {userAvatarSeed}
-                  </AvatarFallback>
-                </Avatar>
+                <div class={cn("flex items-center", collapsed && "w-full justify-center")}>
+                  <Avatar class={cn(collapsed ? 'size-7' : 'size-8', 'rounded-none avatar-hex')}>
+                    {#if avatarStyle}
+                      <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
+                        {userAvatarSeed}
+                      </AvatarFallback>
+                    {:else}
+                      <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                        {userAvatarSeed}
+                      </AvatarFallback>
+                    {/if}
+                  </Avatar>
+                </div>
 
                 {#if !collapsed}
                   <div class="grid min-w-0 flex-1 text-left leading-tight">
@@ -470,9 +475,15 @@
             <DropdownMenu.Label class="p-0 font-normal">
               <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
                 <Avatar class="size-8 rounded-none avatar-hex">
-                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                    {userAvatarSeed}
-                  </AvatarFallback>
+                  {#if avatarStyle}
+                    <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
+                      {userAvatarSeed}
+                    </AvatarFallback>
+                  {:else}
+                    <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                      {userAvatarSeed}
+                    </AvatarFallback>
+                  {/if}
                 </Avatar>
                 <div class="grid flex-1 text-left leading-tight">
                   <span class="truncate font-medium">{userName}</span>
@@ -484,17 +495,11 @@
             <DropdownMenu.Separator />
 
             <DropdownMenu.Group>
-              <DropdownMenu.Item disabled>
-                <Sparkles />
-                <span>{$t('shell.userMenu.itemUpgrade')}</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item disabled>
-                <BadgeCheck />
-                <span>{$t('shell.userMenu.itemAccount')}</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item disabled>
-                <CreditCard />
-                <span>{$t('shell.userMenu.itemBilling')}</span>
+              <DropdownMenu.Item asChild>
+                <a href="/system/settings" class="flex items-center gap-2">
+                  <Settings />
+                  <span>{$t('shell.userMenu.itemSettings')}</span>
+                </a>
               </DropdownMenu.Item>
               <DropdownMenu.Item disabled>
                 <Bell />

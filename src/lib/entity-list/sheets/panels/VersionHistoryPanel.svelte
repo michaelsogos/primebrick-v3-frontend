@@ -140,6 +140,15 @@
     return Info;
   }
 
+  function getChangedByDisplay(entry: any): string {
+    // If display_name is available from the join, use it
+    if (entry.changed_by_name) {
+      return entry.changed_by_name;
+    }
+    // Last resort: fallback to UUID
+    return entry.changed_by || '';
+  }
+
   function getAuditActionLabel(action: string): string {
     const key = `entities.customer.versionHistory.actions.${action.toUpperCase()}`;
     const translated = $t(key);
@@ -359,7 +368,7 @@
                   <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
                 </div>
                 <Timeline.Title class={colorClass}>
-                  {getAuditActionLabel(entry.action)} {#if entry.changed_by}({entry.changed_by}){/if}
+                  {getAuditActionLabel(entry.action)} {#if entry.changed_by}({getChangedByDisplay(entry)}){/if}
                 </Timeline.Title>
                 {#if isUpdate}
                   <div class="mt-1">

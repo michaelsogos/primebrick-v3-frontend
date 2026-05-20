@@ -29,7 +29,7 @@
   "common": {
     "loading": "Cargando…",
     "loadFailed": "Error al cargar",
-    "dbUnavailable": "Base de datos temporalmente no disponible. Algunos datos pueden no cargarse.",
+    "dbUnavailable": "Base de datos temporalmente no disponible. Es posible que algunos datos no se carguen.",
     "soon": "Pronto",
     "new": "Nuevo",
     "prev": "Ant",
@@ -38,6 +38,7 @@
     "reset": "Restablecer",
     "done": "Hecho",
     "apply": "Aplicar",
+    "save": "Guardar",
     "toggleSidebar": "Activar/Desactivar barra lateral",
     "refresh": "Actualizar",
     "selectRow": "seleccionar fila",
@@ -127,6 +128,7 @@
       "itemUpgrade": "Mejorar",
       "itemAccount": "Cuenta",
       "itemBilling": "Facturación",
+      "itemSettings": "Ajustes",
       "itemNotifications": "Notificaciones",
       "itemSignOut": "Cerrar sesión"
     },
@@ -136,9 +138,71 @@
       "acme": "ACME",
       "johnDoe": "John Doe SRL"
     },
+    "system": "Sistema",
     "theme": {
       "light": "Cambiar a tema claro",
       "dark": "Cambiar a tema oscuro"
+    },
+    "settings": {
+      "title": "Ajustes",
+      "tabs": {
+        "profile": "Perfil",
+        "security": "Seguridad",
+        "modules": "Módulos",
+        "templates": "Plantillas"
+      },
+      "profile": {
+        "title": "Perfil",
+        "avatarColor": "Color de avatar",
+        "selectColor": "Seleccionar color {color}",
+        "displayName": "Nombre para mostrar",
+        "displayNamePlaceholder": "Tu nombre",
+        "email": "Correo electrónico",
+        "emailPlaceholder": "tu@email.com",
+        "createdAt": "Creado el",
+        "createdBy": "Creado por",
+        "updatedAt": "Actualizado el",
+        "updatedBy": "Actualizado por",
+        "version": "Versión"
+      },
+      "security": {
+        "title": "Seguridad",
+        "changePassword": "Cambiar contraseña",
+        "currentPassword": "Contraseña actual",
+        "currentPasswordPlaceholder": "Ingresa contraseña actual",
+        "newPassword": "Nueva contraseña",
+        "newPasswordPlaceholder": "Ingresa nueva contraseña",
+        "confirmPassword": "Confirmar contraseña",
+        "confirmPasswordPlaceholder": "Confirma nueva contraseña",
+        "changePasswordButton": "Cambiar contraseña",
+        "oidcParams": "Parámetros OIDC",
+        "oidcIssuer": "Emisor OIDC",
+        "oidcClientId": "ID de cliente",
+        "oidcClientSecret": "Secreto de cliente",
+        "oidcSaveButton": "Guardar parámetros OIDC",
+        "deleteAccount": "Eliminar cuenta",
+        "deleteAccountButton": "Eliminar cuenta",
+        "deleteAccountWarning": "Esta acción es irreversible. Todos tus datos serán eliminados permanentemente.",
+        "confirmDeleteAccount": "Confirmar eliminación"
+      },
+      "modules": {
+        "title": "Módulos",
+        "uploadModule": "Subir módulo",
+        "selectModuleFile": "Seleccionar archivo de módulo (.zip, .tar.gz)",
+        "installButton": "Instalar",
+        "installedModules": "Módulos instalados",
+        "version": "Versión",
+        "active": "Activo",
+        "inactive": "Inactivo"
+      },
+      "templates": {
+        "title": "Plantillas",
+        "uploadTemplate": "Subir plantilla",
+        "selectTemplateFile": "Seleccionar archivo de plantilla (.pdf, .html, .xlsx, .xls)",
+        "uploadButton": "Subir",
+        "templatesList": "Lista de plantillas",
+        "createTemplate": "Crear plantilla"
+      }
     },
     "errors": {
       "aria": "Errors",
@@ -190,6 +254,9 @@
   }
   ,
   "entities": {
+    "userProfile": {
+      "title": "Perfil de Usuario"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Mostrado en la zona horaria del navegador. Clic para usar la IANA guardada.",
