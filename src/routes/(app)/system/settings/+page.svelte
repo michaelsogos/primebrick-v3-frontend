@@ -200,6 +200,6 @@
     </Tabs.Root>
   </div>
   <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-    <Button type="submit" disabled={!hasChanges}>{$t('common.save')}</Button>
+    <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
   </div>
 </AppPageScaffold>

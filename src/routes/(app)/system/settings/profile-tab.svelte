@@ -8,7 +8,7 @@
   import { Input } from '$lib/components/ui/input';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { cn } from '$lib/utils';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
+  import { avatarFallbackChromeClasses, hashSeedToIndex, avatarChromePaletteToHex, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
   import { Paintbrush } from 'lucide-svelte';
@@ -35,6 +35,7 @@
       SPA: true,
       validators: zod4(profileSchema),
       invalidateAll: false,
+      resetForm: false,
       async onUpdate({ form: updateForm, cancel }) {
         if (!updateForm.valid) return;
 
@@ -57,8 +58,14 @@
           }
 
           const data = await response.json();
-          if (data.success) {
+          if (data.success && data.profile) {
             console.log('Profile updated successfully');
+            
+            // Update form with response data
+            $form.idp_code = data.profile.idp_code || $form.idp_code;
+            $form.display_name = data.profile.display_name || $form.display_name;
+            $form.email = data.profile.email || $form.email;
+            $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
           }
         } catch (error) {
           console.error('Failed to update profile:', error);
@@ -89,7 +96,10 @@
           $form.idp_code = data.profile.idp_code || '';
           $form.display_name = data.profile.display_name || '';
           $form.email = data.profile.email || '';
-          $form.avatar_color = data.profile.avatar_color || '';
+          
+          // If avatar_color is null, use the hex value from the palette
+          const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
+          $form.avatar_color = data.profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
         }
       }
     } catch (error) {
@@ -112,7 +122,16 @@
       <!-- Avatar with displayname and email -->
       <div class="flex items-center gap-4">
         <Avatar class="size-14 rounded-none avatar-hex">
-          <AvatarFallback class={cn('rounded-none text-2xl font-semibold', avatarChromeFallbackClass)}>
+          <AvatarFallback 
+            class={cn(
+              'rounded-none text-2xl font-semibold', 
+              $form.avatar_color ? '' : avatarChromeFallbackClass
+            )}
+            style={$form.avatar_color 
+              ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};` 
+              : ''
+            }
+          >
             {userAvatarSeed}
           </AvatarFallback>
         </Avatar>
@@ -155,7 +174,7 @@
   </div>
 
   <!-- Form Fields Section: 2 columns 50/50 -->
-  <form use:enhance>
+  <form use:enhance id="profile-form">
     <div class="grid grid-cols-2 gap-6">
       <!-- Column 1: Display Name + Email -->
       <div class="space-y-4">
