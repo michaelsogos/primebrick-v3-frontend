@@ -20,6 +20,7 @@
 
   // Zod schema for profile form
   const profileSchema = z.object({
+    idp_code: z.string().optional(),
     display_name: z.string().min(1, 'Display name is required'),
     email: z.string().email('Invalid email address'),
     avatar_color: z.string().min(1, 'Color is required'),
@@ -38,12 +39,14 @@
         if (!updateForm.valid) return;
 
         try {
+          // Exclude idp_code from PATCH request
+          const { idp_code, ...requestData } = updateForm.data;
           const response = await apiFetch('/api/v1/auth/me', {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(updateForm.data),
+            body: JSON.stringify(requestData),
           });
 
           if (!response.ok) {
@@ -83,6 +86,7 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.profile) {
+          $form.idp_code = data.profile.idp_code || '';
           $form.display_name = data.profile.display_name || '';
           $form.email = data.profile.email || '';
           $form.avatar_color = data.profile.avatar_color || '';
@@ -192,8 +196,24 @@
         </FormField>
       </div>
 
-      <!-- Column 2: Empty -->
-      <div class="space-y-4"></div>
+      <!-- Column 2: idp_code (readonly) -->
+      <div class="space-y-4">
+        <FormField form={superFormObj} name="idp_code">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>IDP Code</FormLabel>
+                <Input
+                  type="text"
+                  bind:value={$form.idp_code}
+                  readonly
+                  class="mt-2 bg-muted"
+                />
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+      </div>
     </div>
   </form>
 </div>

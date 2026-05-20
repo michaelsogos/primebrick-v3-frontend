@@ -145,10 +145,6 @@
     if (entry.changed_by_name) {
       return entry.changed_by_name;
     }
-    // Otherwise fallback to idp_code (e.g., "admin", "system")
-    if (entry.changed_by_idp_code) {
-      return entry.changed_by_idp_code;
-    }
     // Last resort: fallback to UUID
     return entry.changed_by || '';
   }
