@@ -27,16 +27,18 @@
     }
   },
   "common": {
-    "loading": "A carregar…",
-    "loadFailed": "Carregamento falhou",
+    "loading": "Carregando…",
+    "loadFailed": "Falha ao carregar",
+    "dbUnavailable": "Base de dados temporariamente indisponível. Alguns dados podem não carregar.",
     "soon": "Em breve",
     "new": "Novo",
     "prev": "Ant",
-    "next": "Seg",
+    "next": "Próx",
     "all": "Todos",
-    "reset": "Limpar",
+    "reset": "Repor",
     "done": "Concluído",
     "apply": "Aplicar",
+    "save": "Guardar",
     "toggleSidebar": "Alternar barra lateral",
     "refresh": "atualizar",
     "selectRow": "selecionar linha",
@@ -156,7 +158,12 @@
         "displayName": "Nome de exibição",
         "displayNamePlaceholder": "Seu nome",
         "email": "E-mail",
-        "emailPlaceholder": "seu@email.com"
+        "emailPlaceholder": "seu@email.com",
+        "createdAt": "Criado em",
+        "createdBy": "Criado por",
+        "updatedAt": "Atualizado em",
+        "updatedBy": "Atualizado por",
+        "version": "Versão"
       },
       "security": {
         "title": "Segurança",

@@ -2471,7 +2471,7 @@
 
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
-<div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
+<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
   {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
     {@const parts = formatDatetimeCellDisplay(

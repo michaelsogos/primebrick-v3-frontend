@@ -29,7 +29,7 @@
   "common": {
     "loading": "Cargando…",
     "loadFailed": "Error al cargar",
-    "dbUnavailable": "Base de datos temporalmente no disponible. Algunos datos pueden no cargarse.",
+    "dbUnavailable": "Base de datos temporalmente no disponible. Es posible que algunos datos no se carguen.",
     "soon": "Pronto",
     "new": "Nuevo",
     "prev": "Ant",
@@ -38,6 +38,7 @@
     "reset": "Restablecer",
     "done": "Hecho",
     "apply": "Aplicar",
+    "save": "Guardar",
     "toggleSidebar": "Activar/Desactivar barra lateral",
     "refresh": "Actualizar",
     "selectRow": "seleccionar fila",
@@ -157,7 +158,12 @@
         "displayName": "Nombre para mostrar",
         "displayNamePlaceholder": "Tu nombre",
         "email": "Correo electrónico",
-        "emailPlaceholder": "tu@email.com"
+        "emailPlaceholder": "tu@email.com",
+        "createdAt": "Creado el",
+        "createdBy": "Creado por",
+        "updatedAt": "Actualizado el",
+        "updatedBy": "Actualizado por",
+        "version": "Versión"
       },
       "security": {
         "title": "Seguridad",

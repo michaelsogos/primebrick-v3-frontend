@@ -29,15 +29,16 @@
   "common": {
     "loading": "Chargement…",
     "loadFailed": "Échec du chargement",
-    "dbUnavailable": "Base de données temporairement indisponible. Certaines données peuvent ne pas charger.",
+    "dbUnavailable": "Base de données temporairement indisponible. Certaines données risquent de ne pas charger.",
     "soon": "Bientôt",
     "new": "Nouveau",
     "prev": "Préc",
     "next": "Suiv",
     "all": "Tous",
     "reset": "Réinitialiser",
-    "done": "Terminé",
+    "done": "Fait",
     "apply": "Appliquer",
+    "save": "Enregistrer",
     "toggleSidebar": "Activer/Désactiver la barre latérale",
     "refresh": "Actualiser",
     "selectRow": "sélectionner la ligne",
@@ -157,7 +158,12 @@
         "displayName": "Nom d'affichage",
         "displayNamePlaceholder": "Votre nom",
         "email": "E-mail",
-        "emailPlaceholder": "votre@email.com"
+        "emailPlaceholder": "votre@email.com",
+        "createdAt": "Créé le",
+        "createdBy": "Créé par",
+        "updatedAt": "Mis à jour le",
+        "updatedBy": "Mis à jour par",
+        "version": "Version"
       },
       "security": {
         "title": "Sécurité",

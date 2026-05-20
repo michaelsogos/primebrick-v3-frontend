@@ -38,6 +38,7 @@
     "reset": "Zurücksetzen",
     "done": "Fertig",
     "apply": "Anwenden",
+    "save": "Speichern",
     "toggleSidebar": "Seitenleiste umschalten",
     "refresh": "Aktualisieren",
     "selectRow": "Zeile auswählen",
@@ -157,7 +158,12 @@
         "displayName": "Anzeigename",
         "displayNamePlaceholder": "Ihr Name",
         "email": "E-Mail",
-        "emailPlaceholder": "ihre@email.com"
+        "emailPlaceholder": "ihre@email.com",
+        "createdAt": "Erstellt am",
+        "createdBy": "Erstellt von",
+        "updatedAt": "Aktualisiert am",
+        "updatedBy": "Aktualisiert von",
+        "version": "Version"
       },
       "security": {
         "title": "Sicherheit",

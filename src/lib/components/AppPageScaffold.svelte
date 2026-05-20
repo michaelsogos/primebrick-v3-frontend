@@ -21,7 +21,7 @@
       <header class="shrink-0">{@render header()}</header>
     {/if}
     {#if children}
-      <div class="flex min-h-0 flex-1 flex-col">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
         {@render children()}
       </div>
     {/if}

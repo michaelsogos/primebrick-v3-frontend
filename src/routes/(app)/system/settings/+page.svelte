@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import * as Tabs from '$lib/components/ui/tabs';
+  import { Button } from '$lib/components/ui/button';
   import { User, Shield, Package, FileText } from 'lucide-svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -33,31 +34,40 @@
     </div>
   {/snippet}
 
-  <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v}>
-    <Tabs.List class="grid w-full grid-cols-4">
-      {#each tabs as tab (tab.id)}
-        {@const Icon = tab.icon}
-        <Tabs.Trigger value={tab.id} class="flex items-center gap-2">
-          <Icon class="size-4" />
-          <span>{tab.label}</span>
-        </Tabs.Trigger>
-      {/each}
-    </Tabs.List>
+  <div class="flex min-h-0 flex-1">
+    <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v} orientation="vertical" class="flex w-full h-full">
+      <div class="flex flex-col w-1/5 border-r h-full bg-muted/30">
+        <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full">
+          {#each tabs as tab (tab.id)}
+            {@const Icon = tab.icon}
+            <Tabs.Trigger value={tab.id} class="flex items-center gap-2 justify-start w-full px-4 py-2 rounded-md hover:bg-background/50 data-[state=active]:bg-background data-[state=active]:font-medium border border-transparent data-[state=active]:border-sky-200/80 dark:data-[state=active]:border-sky-900/55 data-[state=active]:text-primary">
+              <Icon class="size-4" />
+              <span>{tab.label}</span>
+            </Tabs.Trigger>
+          {/each}
+        </Tabs.List>
+      </div>
 
-    <Tabs.Content value="profile" class="mt-6">
-      <ProfileTab />
-    </Tabs.Content>
+      <div class="flex-1 overflow-auto p-6">
+        <Tabs.Content value="profile" class="space-y-3">
+          <ProfileTab />
+        </Tabs.Content>
 
-    <Tabs.Content value="security" class="mt-6">
-      <SecurityTab />
-    </Tabs.Content>
+        <Tabs.Content value="security" class="space-y-3">
+          <SecurityTab />
+        </Tabs.Content>
 
-    <Tabs.Content value="modules" class="mt-6">
-      <ModulesTab />
-    </Tabs.Content>
+        <Tabs.Content value="modules" class="space-y-3">
+          <ModulesTab />
+        </Tabs.Content>
 
-    <Tabs.Content value="templates" class="mt-6">
-      <TemplatesTab />
-    </Tabs.Content>
-  </Tabs.Root>
+        <Tabs.Content value="templates" class="space-y-3">
+          <TemplatesTab />
+        </Tabs.Content>
+      </div>
+    </Tabs.Root>
+  </div>
+  <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    <Button type="submit">{$t('common.save')}</Button>
+  </div>
 </AppPageScaffold>

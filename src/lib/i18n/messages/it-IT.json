@@ -38,6 +38,7 @@
     "reset": "Reset",
     "done": "Fatto",
     "apply": "Applica",
+    "save": "Salva",
     "toggleSidebar": "Attiva/Disattiva barra laterale",
     "refresh": "Aggiorna",
     "selectRow": "seleziona riga",
@@ -157,7 +158,12 @@
         "displayName": "Nome Visualizzato",
         "displayNamePlaceholder": "Il tuo nome",
         "email": "Email",
-        "emailPlaceholder": "la tua@email.com"
+        "emailPlaceholder": "la tua@email.com",
+        "createdAt": "Creato il",
+        "createdBy": "Creato da",
+        "updatedAt": "Aggiornato il",
+        "updatedBy": "Aggiornato da",
+        "version": "Versione"
       },
       "security": {
         "title": "Sicurezza",

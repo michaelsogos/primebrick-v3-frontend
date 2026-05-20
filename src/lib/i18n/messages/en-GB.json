@@ -38,6 +38,7 @@
     "reset": "Reset",
     "done": "Done",
     "apply": "Apply",
+    "save": "Save",
     "toggleSidebar": "Toggle sidebar",
     "refresh": "Refresh",
     "selectRow": "select row",
@@ -157,7 +158,12 @@
         "displayName": "Display Name",
         "displayNamePlaceholder": "Your name",
         "email": "Email",
-        "emailPlaceholder": "your@email.com"
+        "emailPlaceholder": "your@email.com",
+        "createdAt": "Created at",
+        "createdBy": "Created by",
+        "updatedAt": "Updated at",
+        "updatedBy": "Updated by",
+        "version": "Version"
       },
       "security": {
         "title": "Security",
