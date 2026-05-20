@@ -274,6 +274,9 @@
     "criticalError": "Critical error"
   },
   "entities": {
+    "userProfile": {
+      "title": "User Profile"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Shown in your browser time zone. Click to use the stored IANA from the row.",

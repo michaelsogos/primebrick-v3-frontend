@@ -262,6 +262,9 @@
     }
   },
   "entities": {
+    "userProfile": {
+      "title": "Benutzerprofil"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "In der Browser-Zeitzone. Klick für gespeicherte IANA der Zeile.",

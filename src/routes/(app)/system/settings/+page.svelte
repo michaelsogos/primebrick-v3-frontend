@@ -15,6 +15,8 @@
   import { onMount } from 'svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { cn } from '$lib/utils';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { beforeNavigate } from '$app/navigation';
 
   let activeTab = $state('profile');
 
@@ -23,6 +25,9 @@
   let updatedAt = $state('');
   let updatedBy = $state('');
   let version = $state(0);
+  let userUuid = $state('');
+  let hasAudit = $state(false);
+  let hasChanges = $state(false);
 
   async function loadAuditData() {
     try {
@@ -35,6 +40,7 @@
           updatedAt = data.profile.updatedAt ? formatUiDateTime(data.profile.updatedAt, $uiLang) : '';
           updatedBy = data.profile.updatedBy || '';
           version = data.profile.version || 0;
+          userUuid = data.profile.uuid || '';
         }
       }
     } catch (error) {
@@ -42,8 +48,49 @@
     }
   }
 
+  async function loadEntityMetadata() {
+    try {
+      const res = await apiFetch('/api/v1/entities/user_profiles/meta');
+      if (res.ok) {
+        const data = await res.json();
+        hasAudit = !!data.list?.auditingColumns?.length;
+      }
+    } catch (error) {
+      console.error('Failed to load entity metadata:', error);
+    }
+  }
+
+  function openVersionHistory() {
+    openSheet(
+      'entity.versionHistory',
+      {
+        entity: 'user_profiles',
+        rowUuid: userUuid
+      }
+    );
+  }
+
+  // Block internal navigation when there are changes
+  beforeNavigate((navigation) => {
+    if (hasChanges) {
+      const confirmLeave = confirm('Hai delle modifiche non salvate. Vuoi davvero uscire?');
+      if (!confirmLeave) {
+        navigation.cancel();
+      }
+    }
+  });
+
+  // Block external navigation (tab close, browser back/forward)
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (hasChanges) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   onMount(() => {
     loadAuditData();
+    loadEntityMetadata();
   });
 
   const tabs = [
@@ -57,7 +104,14 @@
     { label: $t('shell.system') },
     { label: $t('shell.settings.title') }
   ];
+
+  // Expose function for profile tab to set dirty state
+  function setHasChanges(value: boolean) {
+    hasChanges = value;
+  }
 </script>
+
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <AppPageScaffold>
   {#snippet header()}
@@ -67,9 +121,9 @@
     </div>
   {/snippet}
 
-  <div class="flex min-h-0 flex-1">
-    <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v} orientation="vertical" class="flex w-full h-full">
-      <div class="flex flex-col w-1/5 border-r h-full bg-muted/30">
+  <div class="flex min-h-0 flex-1 gap-0">
+    <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v} orientation="vertical" class="flex w-full h-full gap-0">
+      <div class="flex flex-col w-1/5 h-full bg-muted/30">
         <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
           {#each tabs as tab (tab.id)}
             {@const Icon = tab.icon}
@@ -85,7 +139,7 @@
         <div class="flex-1 overflow-auto">
           <div class="p-6">
             <Tabs.Content value="profile" class="space-y-3">
-              <ProfileTab />
+              <ProfileTab onHasChange={(v) => hasChanges = v} />
             </Tabs.Content>
 
             <Tabs.Content value="security" class="space-y-3">
@@ -106,7 +160,15 @@
         <div class="bg-muted/50 border-t p-4">
           <div class="text-xs">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {#if version}
+              {#if version && hasAudit}
+                <Badge
+                  class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20")}
+                  variant="outline"
+                  onclick={openVersionHistory}
+                >
+                  v{version}
+                </Badge>
+              {:else if version}
                 <Badge class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400")} variant="outline">
                   v{version}
                 </Badge>
@@ -134,6 +196,6 @@
     </Tabs.Root>
   </div>
   <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-    <Button type="submit">{$t('common.save')}</Button>
+    <Button type="submit" disabled={!hasChanges}>{$t('common.save')}</Button>
   </div>
 </AppPageScaffold>

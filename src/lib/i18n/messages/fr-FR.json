@@ -253,6 +253,9 @@
     }
   },
   "entities": {
+    "userProfile": {
+      "title": "Profil Utilisateur"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Affiché dans le fuseau du navigateur. Clic pour l’IANA enregistrée sur la ligne.",

@@ -1,8 +1,12 @@
 <script lang="ts">
+  import { z } from 'zod';
+  import { superForm, defaults } from 'sveltekit-superforms';
+  import { zod4 } from 'sveltekit-superforms/adapters';
   import { t } from '$lib/i18n';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { cn } from '$lib/utils';
   import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
@@ -11,13 +15,67 @@
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
 
-  let displayName = $state('');
-  let email = $state('');
-  let idpCode = $state('');
-  let popoverColor = $state('#3b82f6');
+  // Props
+  let { onHasChange }: { onHasChange: (hasChanges: boolean) => void } = $props();
+
+  // Zod schema for profile form
+  const profileSchema = z.object({
+    displayName: z.string().min(1, 'Display name is required'),
+    email: z.string().email('Invalid email address'),
+    popoverColor: z.string().min(1, 'Color is required'),
+  });
+
+  type ProfileForm = z.infer<typeof profileSchema>;
+
+  // Superforms in SPA mode
+  const superFormObj = superForm(
+    defaults(zod4(profileSchema)),
+    {
+      SPA: true,
+      validators: zod4(profileSchema),
+      invalidateAll: false,
+      async onUpdate({ form: updateForm, cancel }) {
+        if (!updateForm.valid) return;
+
+        try {
+          const response = await apiFetch('/api/v1/auth/me', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateForm.data),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Failed to update profile:', errorData);
+            cancel();
+            return;
+          }
+
+          const data = await response.json();
+          if (data.success) {
+            console.log('Profile updated successfully');
+          }
+        } catch (error) {
+          console.error('Failed to update profile:', error);
+          cancel();
+        }
+      }
+    }
+  );
+
+  const { form, errors, enhance, tainted, isTainted } = superFormObj;
 
   const userAvatarSeed = 'PB';
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
+
+  const hasChanges = $derived(isTainted($tainted));
+
+  // Notify parent when hasChanges changes
+  $effect(() => {
+    onHasChange(hasChanges);
+  });
 
   async function loadProfile() {
     try {
@@ -25,9 +83,9 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.profile) {
-          displayName = data.profile.displayName || '';
-          email = data.profile.email || '';
-          idpCode = data.profile.idpCode || '';
+          $form.displayName = data.profile.displayName || '';
+          $form.email = data.profile.email || '';
+          $form.popoverColor = data.profile.avatarColor || '';
         }
       }
     } catch (error) {
@@ -38,11 +96,6 @@
   onMount(() => {
     loadProfile();
   });
-
-  function handleSave() {
-    // TODO: Implement save logic
-    console.log('Saving profile:', { displayName, email, popoverColor });
-  }
 </script>
 
 <div class="space-y-6">
@@ -60,8 +113,8 @@
           </AvatarFallback>
         </Avatar>
         <div>
-          <p class="font-medium">{displayName || $t('shell.settings.profile.displayNamePlaceholder')}</p>
-          <p class="text-sm text-muted-foreground">{email || $t('shell.settings.profile.emailPlaceholder')}</p>
+          <p class="font-medium">{$form.displayName || $t('shell.settings.profile.displayNamePlaceholder')}</p>
+          <p class="text-sm text-muted-foreground">{$form.email || $t('shell.settings.profile.emailPlaceholder')}</p>
         </div>
       </div>
 
@@ -76,16 +129,16 @@
               {#snippet child({ props })}
                 <Button {...props} variant="outline">
                   <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-full border shadow-sm" style="background-color: {popoverColor};"></div>
+                    <div class="w-8 h-8 rounded-full border shadow-sm" style="background-color: {$form.popoverColor};"></div>
                     <Paintbrush class="mr-2 h-4 w-4" />
-                    {popoverColor}
+                    {$form.popoverColor}
                   </div>
                 </Button>
               {/snippet}
             </Popover.Trigger>
             <Popover.Content class="w-auto p-0">
               <div class="p-3">
-                <ColorPicker.Root bind:value={popoverColor} />
+                <ColorPicker.Root bind:value={$form.popoverColor} />
               </div>
             </Popover.Content>
           </Popover.Root>
@@ -98,50 +151,49 @@
   </div>
 
   <!-- Form Fields Section: 2 columns 50/50 -->
-  <div class="grid grid-cols-2 gap-6">
-    <!-- Column 1: Display Name + Email -->
-    <div class="space-y-4">
-      <div>
-        <label for="displayName" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {$t('shell.settings.profile.displayName')}
-        </label>
-        <Input
-          id="displayName"
-          type="text"
-          bind:value={displayName}
-          placeholder={$t('shell.settings.profile.displayNamePlaceholder')}
-          class="mt-2"
-        />
+  <form use:enhance>
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Column 1: Display Name + Email -->
+      <div class="space-y-4">
+        <FormField form={superFormObj} name="displayName">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t('shell.settings.profile.displayName')}</FormLabel>
+                <Input
+                  type="text"
+                  placeholder={$t('shell.settings.profile.displayNamePlaceholder')}
+                  bind:value={$form.displayName}
+                  {...props}
+                  class="mt-2"
+                />
+                <FormFieldErrors />
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+
+        <FormField form={superFormObj} name="email">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t('shell.settings.profile.email')}</FormLabel>
+                <Input
+                  type="email"
+                  placeholder={$t('shell.settings.profile.emailPlaceholder')}
+                  bind:value={$form.email}
+                  {...props}
+                  class="mt-2"
+                />
+                <FormFieldErrors />
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
       </div>
 
-      <div>
-        <label for="email" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {$t('shell.settings.profile.email')}
-        </label>
-        <Input
-          id="email"
-          type="email"
-          bind:value={email}
-          placeholder={$t('shell.settings.profile.emailPlaceholder')}
-          class="mt-2"
-        />
-      </div>
+      <!-- Column 2: Empty -->
+      <div class="space-y-4"></div>
     </div>
-
-    <!-- Column 2: idp_code -->
-    <div class="space-y-4">
-      <div>
-        <label for="idpCode" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          IDP Code
-        </label>
-        <Input
-          id="idpCode"
-          type="text"
-          bind:value={idpCode}
-          readonly
-          class="mt-2 bg-muted"
-        />
-      </div>
-    </div>
-  </div>
+  </form>
 </div>

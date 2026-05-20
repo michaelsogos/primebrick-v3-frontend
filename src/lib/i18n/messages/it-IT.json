@@ -274,6 +274,9 @@
     "criticalError": "Errore critico"
   },
   "entities": {
+    "userProfile": {
+      "title": "Profilo Utente"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Visualizzato nel fuso del browser. Clic per usare l’IANA salvata sulla riga.",

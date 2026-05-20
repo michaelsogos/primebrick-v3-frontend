@@ -264,6 +264,9 @@
     }
   },
   "entities": {
+    "userProfile": {
+      "title": "Perfil de Usuário"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Mostrado no fuso do navegador. Clique para usar a IANA guardada na linha.",

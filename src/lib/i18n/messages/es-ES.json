@@ -254,6 +254,9 @@
   }
   ,
   "entities": {
+    "userProfile": {
+      "title": "Perfil de Usuario"
+    },
     "list": {
       "datetimeIana": {
         "hintBrowser": "Mostrado en la zona horaria del navegador. Clic para usar la IANA guardada.",
