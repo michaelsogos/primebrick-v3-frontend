@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+  import { t, formatUiDateTime } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import * as Tabs from '$lib/components/ui/tabs';
   import { Button } from '$lib/components/ui/button';
   import { User, Shield, Package, FileText } from 'lucide-svelte';
@@ -12,6 +13,8 @@
   import TemplatesTab from './templates-tab.svelte';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
+  import { Badge } from '$lib/components/ui/badge';
+  import { cn } from '$lib/utils';
 
   let activeTab = $state('profile');
 
@@ -27,9 +30,9 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.profile) {
-          createdAt = data.profile.createdAt ? new Date(data.profile.createdAt).toLocaleString() : '';
+          createdAt = data.profile.createdAt ? formatUiDateTime(data.profile.createdAt, $uiLang) : '';
           createdBy = data.profile.createdBy || '';
-          updatedAt = data.profile.updatedAt ? new Date(data.profile.updatedAt).toLocaleString() : '';
+          updatedAt = data.profile.updatedAt ? formatUiDateTime(data.profile.updatedAt, $uiLang) : '';
           updatedBy = data.profile.updatedBy || '';
           version = data.profile.version || 0;
         }
@@ -101,31 +104,33 @@
 
         <!-- Audit Bar -->
         <div class="bg-muted/50 border-t p-4">
-          <div class="grid grid-cols-2 gap-6 text-sm">
-            <!-- Column 1: created_at, created_by -->
-            <div class="space-y-2">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('shell.settings.profile.createdAt')}:</span>
-                <span class="font-medium">{createdAt || '-'}</span>
+          <div class="text-xs">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.profile.createdAt')}</span>
+                <span class="text-muted-foreground">{createdAt || '-'}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('shell.settings.profile.createdBy')}:</span>
-                <span class="font-medium">{createdBy || '-'}</span>
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.profile.createdBy')}</span>
+                <span class="text-muted-foreground">{createdBy || '-'}</span>
               </div>
-            </div>
-            <!-- Column 2: updated_at, updated_by, version -->
-            <div class="space-y-2">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('shell.settings.profile.updatedAt')}:</span>
-                <span class="font-medium">{updatedAt || '-'}</span>
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.profile.updatedAt')}</span>
+                <span class="text-muted-foreground">{updatedAt || '-'}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('shell.settings.profile.updatedBy')}:</span>
-                <span class="font-medium">{updatedBy || '-'}</span>
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.profile.updatedBy')}</span>
+                <span class="text-muted-foreground">{updatedBy || '-'}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('shell.settings.profile.version')}:</span>
-                <span class="font-medium">{version || '-'}</span>
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.profile.version')}</span>
+                {#if version}
+                  <Badge class={cn("text-xs font-semibold border")} variant="outline">
+                    v{version}
+                  </Badge>
+                {:else}
+                  <span class="text-muted-foreground">-</span>
+                {/if}
               </div>
             </div>
           </div>
