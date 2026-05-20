@@ -15,11 +15,6 @@
   let email = $state('');
   let idpCode = $state('');
   let popoverColor = $state('#3b82f6');
-  let createdAt = $state('');
-  let createdBy = $state('');
-  let updatedAt = $state('');
-  let updatedBy = $state('');
-  let version = $state(0);
 
   const userAvatarSeed = 'PB';
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
@@ -33,11 +28,6 @@
           displayName = data.profile.displayName || '';
           email = data.profile.email || '';
           idpCode = data.profile.idpCode || '';
-          createdAt = data.profile.createdAt ? new Date(data.profile.createdAt).toLocaleString() : '';
-          createdBy = data.profile.createdBy || '';
-          updatedAt = data.profile.updatedAt ? new Date(data.profile.updatedAt).toLocaleString() : '';
-          updatedBy = data.profile.updatedBy || '';
-          version = data.profile.version || 0;
         }
       }
     } catch (error) {
@@ -151,38 +141,6 @@
           readonly
           class="mt-2 bg-muted"
         />
-      </div>
-    </div>
-  </div>
-
-  <!-- Sticky Audit Bar -->
-  <div class="sticky bottom-0 bg-muted/50 border-t p-4">
-    <div class="grid grid-cols-2 gap-6 text-sm">
-      <!-- Column 1: created_at, created_by -->
-      <div class="space-y-2">
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">{$t('shell.settings.profile.createdAt')}:</span>
-          <span class="font-medium">{createdAt || '-'}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">{$t('shell.settings.profile.createdBy')}:</span>
-          <span class="font-medium">{createdBy || '-'}</span>
-        </div>
-      </div>
-      <!-- Column 2: updated_at, updated_by, version -->
-      <div class="space-y-2">
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">{$t('shell.settings.profile.updatedAt')}:</span>
-          <span class="font-medium">{updatedAt || '-'}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">{$t('shell.settings.profile.updatedBy')}:</span>
-          <span class="font-medium">{updatedBy || '-'}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">{$t('shell.settings.profile.version')}:</span>
-          <span class="font-medium">{version || '-'}</span>
-        </div>
       </div>
     </div>
   </div>

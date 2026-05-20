@@ -10,8 +10,38 @@
   import SecurityTab from './security-tab.svelte';
   import ModulesTab from './modules-tab.svelte';
   import TemplatesTab from './templates-tab.svelte';
+  import { apiFetch } from '$lib/api';
+  import { onMount } from 'svelte';
 
   let activeTab = $state('profile');
+
+  let createdAt = $state('');
+  let createdBy = $state('');
+  let updatedAt = $state('');
+  let updatedBy = $state('');
+  let version = $state(0);
+
+  async function loadAuditData() {
+    try {
+      const res = await apiFetch('/api/v1/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.profile) {
+          createdAt = data.profile.createdAt ? new Date(data.profile.createdAt).toLocaleString() : '';
+          createdBy = data.profile.createdBy || '';
+          updatedAt = data.profile.updatedAt ? new Date(data.profile.updatedAt).toLocaleString() : '';
+          updatedBy = data.profile.updatedBy || '';
+          version = data.profile.version || 0;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load audit data:', error);
+    }
+  }
+
+  onMount(() => {
+    loadAuditData();
+  });
 
   const tabs = [
     { id: 'profile', label: $t('shell.settings.tabs.profile'), icon: User },
@@ -48,22 +78,58 @@
         </Tabs.List>
       </div>
 
-      <div class="flex-1 overflow-auto p-6">
-        <Tabs.Content value="profile" class="space-y-3">
-          <ProfileTab />
-        </Tabs.Content>
+      <div class="flex-1 flex flex-col min-h-0">
+        <div class="flex-1 overflow-auto">
+          <div class="p-6">
+            <Tabs.Content value="profile" class="space-y-3">
+              <ProfileTab />
+            </Tabs.Content>
 
-        <Tabs.Content value="security" class="space-y-3">
-          <SecurityTab />
-        </Tabs.Content>
+            <Tabs.Content value="security" class="space-y-3">
+              <SecurityTab />
+            </Tabs.Content>
 
-        <Tabs.Content value="modules" class="space-y-3">
-          <ModulesTab />
-        </Tabs.Content>
+            <Tabs.Content value="modules" class="space-y-3">
+              <ModulesTab />
+            </Tabs.Content>
 
-        <Tabs.Content value="templates" class="space-y-3">
-          <TemplatesTab />
-        </Tabs.Content>
+            <Tabs.Content value="templates" class="space-y-3">
+              <TemplatesTab />
+            </Tabs.Content>
+          </div>
+        </div>
+
+        <!-- Audit Bar -->
+        <div class="bg-muted/50 border-t p-4">
+          <div class="grid grid-cols-2 gap-6 text-sm">
+            <!-- Column 1: created_at, created_by -->
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{$t('shell.settings.profile.createdAt')}:</span>
+                <span class="font-medium">{createdAt || '-'}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{$t('shell.settings.profile.createdBy')}:</span>
+                <span class="font-medium">{createdBy || '-'}</span>
+              </div>
+            </div>
+            <!-- Column 2: updated_at, updated_by, version -->
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{$t('shell.settings.profile.updatedAt')}:</span>
+                <span class="font-medium">{updatedAt || '-'}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{$t('shell.settings.profile.updatedBy')}:</span>
+                <span class="font-medium">{updatedBy || '-'}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{$t('shell.settings.profile.version')}:</span>
+                <span class="font-medium">{version || '-'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Tabs.Root>
   </div>
