@@ -37,12 +37,12 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.profile) {
-          createdAt = data.profile.createdAt ? formatUiDateTime(data.profile.createdAt, $uiLang) : '';
-          createdBy = data.profile.createdBy || '';
-          createdByName = data.profile.createdByName || '';
-          updatedAt = data.profile.updatedAt ? formatUiDateTime(data.profile.updatedAt, $uiLang) : '';
-          updatedBy = data.profile.updatedBy || '';
-          updatedByName = data.profile.updatedByName || '';
+          createdAt = data.profile.created_at ? formatUiDateTime(data.profile.created_at, $uiLang) : '';
+          createdBy = data.profile.created_by || '';
+          createdByName = data.profile.created_by_name || '';
+          updatedAt = data.profile.updated_at ? formatUiDateTime(data.profile.updated_at, $uiLang) : '';
+          updatedBy = data.profile.updated_by || '';
+          updatedByName = data.profile.updated_by_name || '';
           version = data.profile.version || 0;
           userUuid = data.profile.uuid || '';
         }

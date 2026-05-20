@@ -20,9 +20,9 @@
 
   // Zod schema for profile form
   const profileSchema = z.object({
-    displayName: z.string().min(1, 'Display name is required'),
+    display_name: z.string().min(1, 'Display name is required'),
     email: z.string().email('Invalid email address'),
-    popoverColor: z.string().min(1, 'Color is required'),
+    avatar_color: z.string().min(1, 'Color is required'),
   });
 
   type ProfileForm = z.infer<typeof profileSchema>;
@@ -83,9 +83,9 @@
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.profile) {
-          $form.displayName = data.profile.displayName || '';
+          $form.display_name = data.profile.display_name || '';
           $form.email = data.profile.email || '';
-          $form.popoverColor = data.profile.avatarColor || '';
+          $form.avatar_color = data.profile.avatar_color || '';
         }
       }
     } catch (error) {
@@ -107,13 +107,13 @@
     <div class="space-y-4">
       <!-- Avatar with displayname and email -->
       <div class="flex items-center gap-4">
-        <Avatar class="size-20 rounded-none avatar-hex">
+        <Avatar class="size-14 rounded-none avatar-hex">
           <AvatarFallback class={cn('rounded-none text-2xl font-semibold', avatarChromeFallbackClass)}>
             {userAvatarSeed}
           </AvatarFallback>
         </Avatar>
         <div>
-          <p class="font-medium">{$form.displayName || $t('shell.settings.profile.displayNamePlaceholder')}</p>
+          <p class="font-medium">{$form.display_name || $t('shell.settings.profile.displayNamePlaceholder')}</p>
           <p class="text-sm text-muted-foreground">{$form.email || $t('shell.settings.profile.emailPlaceholder')}</p>
         </div>
       </div>
@@ -129,16 +129,16 @@
               {#snippet child({ props })}
                 <Button {...props} variant="outline">
                   <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-full border shadow-sm" style="background-color: {$form.popoverColor};"></div>
+                    <div class="w-8 h-8 rounded-full border shadow-sm" style="background-color: {$form.avatar_color};"></div>
                     <Paintbrush class="mr-2 h-4 w-4" />
-                    {$form.popoverColor}
+                    {$form.avatar_color}
                   </div>
                 </Button>
               {/snippet}
             </Popover.Trigger>
             <Popover.Content class="w-auto p-0">
               <div class="p-3">
-                <ColorPicker.Root bind:value={$form.popoverColor} />
+                <ColorPicker.Root bind:value={$form.avatar_color} />
               </div>
             </Popover.Content>
           </Popover.Root>
@@ -155,7 +155,7 @@
     <div class="grid grid-cols-2 gap-6">
       <!-- Column 1: Display Name + Email -->
       <div class="space-y-4">
-        <FormField form={superFormObj} name="displayName">
+        <FormField form={superFormObj} name="display_name">
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
@@ -163,7 +163,7 @@
                 <Input
                   type="text"
                   placeholder={$t('shell.settings.profile.displayNamePlaceholder')}
-                  bind:value={$form.displayName}
+                  bind:value={$form.display_name}
                   {...props}
                   class="mt-2"
                 />
