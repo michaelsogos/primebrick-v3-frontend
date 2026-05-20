@@ -25,6 +25,7 @@
   import { onMount } from 'svelte';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushRFC7807Error } from '$lib/errors/app-errors';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
 
   // 1. Definisci lo schema Zod
   const loginSchema = z.object({
@@ -102,7 +103,7 @@
           const data = await response.json();
 
           if (data.success && data.user) {
-            sessionStorage.setItem('user', JSON.stringify(data.user));
+            userProfileStore.set(data.user);
           }
 
           const redirectUrl = getAndClearRedirectUrl();

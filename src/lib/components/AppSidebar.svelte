@@ -16,6 +16,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
   import { apiFetch } from '$lib/api';
+  import { userProfileStore, getUserName, getUserEmail, getUserAvatarStyle } from '$lib/user-profile-store.svelte';
   import {
     BadgeCheck,
     Bell,
@@ -166,20 +167,11 @@
             : 'border-border/60 bg-muted/30 text-muted-foreground'
   );
 
-  // Load user data from sessionStorage (saved by login page)
-  let userData = $state<{ username?: string; displayName?: string; email?: string; organization?: string } | null>(null);
-  try {
-    const storedUser = sessionStorage.getItem('user');
-    if (storedUser) {
-      userData = JSON.parse(storedUser);
-    }
-  } catch {
-    userData = null;
-  }
-
+  // Use reactive user profile store
+  const userName = $derived(getUserName());
+  const userEmail = $derived(getUserEmail());
+  const avatarStyle = $derived(getUserAvatarStyle());
   const userAvatarSeed = 'PB';
-  const userName = $derived(userData?.displayName || userData?.username || 'Prime Brick');
-  const userEmail = $derived(userData?.email || 'm@example.com');
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 
   $effect(() => {
@@ -446,9 +438,15 @@
               >
                 <div class={cn("flex items-center", collapsed && "w-full justify-center")}>
                   <Avatar class={cn(collapsed ? 'size-7' : 'size-8', 'rounded-none avatar-hex')}>
-                    <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                      {userAvatarSeed}
-                    </AvatarFallback>
+                    {#if avatarStyle}
+                      <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
+                        {userAvatarSeed}
+                      </AvatarFallback>
+                    {:else}
+                      <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                        {userAvatarSeed}
+                      </AvatarFallback>
+                    {/if}
                   </Avatar>
                 </div>
 
@@ -472,9 +470,15 @@
             <DropdownMenu.Label class="p-0 font-normal">
               <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
                 <Avatar class="size-8 rounded-none avatar-hex">
-                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                    {userAvatarSeed}
-                  </AvatarFallback>
+                  {#if avatarStyle}
+                    <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
+                      {userAvatarSeed}
+                    </AvatarFallback>
+                  {:else}
+                    <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                      {userAvatarSeed}
+                    </AvatarFallback>
+                  {/if}
                 </Avatar>
                 <div class="grid flex-1 text-left leading-tight">
                   <span class="truncate font-medium">{userName}</span>

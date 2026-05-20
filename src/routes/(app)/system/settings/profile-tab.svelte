@@ -14,6 +14,7 @@
   import { Paintbrush } from 'lucide-svelte';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
 
   // Props
   let { onHasChange }: { onHasChange: (hasChanges: boolean) => void } = $props();
@@ -66,6 +67,14 @@
             $form.display_name = data.profile.display_name || $form.display_name;
             $form.email = data.profile.email || $form.email;
             $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
+            
+            // Update store (automatically refreshes AppSidebar)
+            userProfileStore.set({
+              idp_code: data.profile.idp_code,
+              displayName: data.profile.display_name,
+              email: data.profile.email,
+              avatar_color: data.profile.avatar_color
+            });
           }
         } catch (error) {
           console.error('Failed to update profile:', error);
@@ -87,24 +96,17 @@
     onHasChange(hasChanges);
   });
 
-  async function loadProfile() {
-    try {
-      const res = await apiFetch('/api/v1/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.profile) {
-          $form.idp_code = data.profile.idp_code || '';
-          $form.display_name = data.profile.display_name || '';
-          $form.email = data.profile.email || '';
-          
-          // If avatar_color is null, use the hex value from the palette
-          const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
-          $form.avatar_color = data.profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-    }
+  function loadProfile() {
+    const profile = userProfileStore.current;
+    if (!profile) return;
+    
+    $form.idp_code = profile.idp_code || '';
+    $form.display_name = profile.displayName || '';
+    $form.email = profile.email || '';
+    
+    // If avatar_color is null, use the hex value from the palette
+    const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
+    $form.avatar_color = profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
   }
 
   onMount(() => {
