@@ -444,11 +444,13 @@
                 title={userName}
                 class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <Avatar class="size-8 rounded-none avatar-hex">
-                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                    {userAvatarSeed}
-                  </AvatarFallback>
-                </Avatar>
+                <div class={cn("flex items-center", collapsed && "w-full justify-center")}>
+                  <Avatar class={cn(collapsed ? 'size-7' : 'size-8', 'rounded-none avatar-hex')}>
+                    <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
+                      {userAvatarSeed}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
 
                 {#if !collapsed}
                   <div class="grid min-w-0 flex-1 text-left leading-tight">
