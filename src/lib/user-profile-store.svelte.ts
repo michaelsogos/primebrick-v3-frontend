@@ -3,6 +3,8 @@ import { getContrastTextColor } from './avatar-chrome-palette';
 interface UserProfile {
   username?: string;
   idp_code?: string;
+  idp_org?: string;
+  idp_username?: string;
   displayName?: string;
   email?: string;
   organization?: string;
@@ -37,6 +39,8 @@ export const userProfileStore = {
     if (!currentProfile) {
       currentProfile = {
         idp_code: profile.idp_code,
+        idp_org: profile.idp_org,
+        idp_username: profile.idp_username,
         username: profile.username,
         displayName: profile.displayName,
         email: profile.email,

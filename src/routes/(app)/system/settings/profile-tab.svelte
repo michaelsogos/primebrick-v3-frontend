@@ -24,6 +24,8 @@
   // Zod schema for profile form
   const profileSchema = z.object({
     idp_code: z.string().optional(),
+    idp_org: z.string().optional(),
+    idp_username: z.string().optional(),
     display_name: z.string().min(1, 'Display name is required'),
     email: z.string().email('Invalid email address'),
     avatar_color: z.string().min(1, 'Color is required'),
@@ -43,8 +45,8 @@
         if (!updateForm.valid) return;
 
         try {
-          // Exclude idp_code from PATCH request
-          const { idp_code, ...requestData } = updateForm.data;
+          // Exclude immutable IDP fields from PATCH request
+          const { idp_code, idp_org, idp_username, ...requestData } = updateForm.data;
           const response = await apiFetch('/api/v1/auth/me', {
             method: 'PATCH',
             headers: {
@@ -68,6 +70,8 @@
             
             // Update form with response data
             $form.idp_code = data.profile.idp_code || $form.idp_code;
+            $form.idp_org = data.profile.idp_org || $form.idp_org;
+            $form.idp_username = data.profile.idp_username || $form.idp_username;
             $form.display_name = data.profile.display_name || $form.display_name;
             $form.email = data.profile.email || $form.email;
             $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
@@ -75,6 +79,8 @@
             // Update store (automatically refreshes AppSidebar)
             userProfileStore.set({
               idp_code: data.profile.idp_code,
+              idp_org: data.profile.idp_org,
+              idp_username: data.profile.idp_username,
               displayName: data.profile.display_name,
               email: data.profile.email,
               avatar_color: data.profile.avatar_color,
@@ -112,18 +118,54 @@
   function loadProfile() {
     const profile = userProfileStore.current;
     if (!profile) return;
-    
+
     $form.idp_code = profile.idp_code || '';
+    $form.idp_org = profile.idp_org || '';
+    $form.idp_username = profile.idp_username || '';
     $form.display_name = profile.displayName || '';
     $form.email = profile.email || '';
-    
+
     // If avatar_color is null, use the hex value from the palette
     const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
     $form.avatar_color = profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
   }
 
-  onMount(() => {
+  onMount(async () => {
+    // Load from cache immediately so form is populated
     loadProfile();
+
+    // Then refresh from server in the background
+    try {
+      const response = await apiFetch('/api/v1/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.profile) {
+          // Update store with fresh data from server
+          userProfileStore.set({
+            idp_code: data.profile.idp_code,
+            idp_org: data.profile.idp_org,
+            idp_username: data.profile.idp_username,
+            displayName: data.profile.display_name,
+            email: data.profile.email,
+            avatar_color: data.profile.avatar_color,
+            // Audit fields
+            uuid: data.profile.uuid,
+            created_at: data.profile.created_at,
+            created_by: data.profile.created_by,
+            created_by_name: data.profile.created_by_name,
+            updated_at: data.profile.updated_at,
+            updated_by: data.profile.updated_by,
+            updated_by_name: data.profile.updated_by_name,
+            version: data.profile.version
+          });
+          // Reload form with fresh data
+          loadProfile();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      // Form already loaded from cache, no action needed
+    }
   });
 </script>
 
@@ -167,7 +209,7 @@
               {#snippet child({ props })}
                 <Button {...props} variant="outline">
                   <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-full border shadow-sm" style="background-color: {$form.avatar_color};"></div>
+                    <div class="w-5 h-5 rounded-full border shadow-sm" style="background-color: {$form.avatar_color};"></div>
                     <Paintbrush class="mr-2 h-4 w-4" />
                     {$form.avatar_color}
                   </div>
@@ -202,6 +244,7 @@
                   type="text"
                   placeholder={$t('shell.settings.profile.displayNamePlaceholder')}
                   bind:value={$form.display_name}
+                  autofocus
                   {...props}
                   class="mt-2"
                 />
@@ -230,7 +273,7 @@
         </FormField>
       </div>
 
-      <!-- Column 2: idp_code (readonly) -->
+      <!-- Column 2: idp_code, idp_org, idp_username (readonly) -->
       <div class="space-y-4">
         <FormField form={superFormObj} name="idp_code">
           <FormControl>
@@ -261,6 +304,82 @@
                           {/snippet}
                         </Tooltip.Trigger>
                         <Tooltip.Content>{$t('shell.settings.profile.copyIdpCode')}</Tooltip.Content>
+                      </Tooltip.Root>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+
+        <FormField form={superFormObj} name="idp_org">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t('shell.settings.profile.idpOrg')}</FormLabel>
+                <div class="relative">
+                  <Input
+                    type="text"
+                    bind:value={$form.idp_org}
+                    readonly
+                    class="mt-2 bg-muted pr-10"
+                    {...props}
+                  />
+                  {#if $form.idp_org}
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {#snippet child({ props: tooltipProps })}
+                            <CopyButton
+                              text={$form.idp_org || ''}
+                              variant="ghost"
+                              size="icon"
+                              class="h-8 w-8 hover:bg-transparent"
+                              animationDuration={2000}
+                              {...tooltipProps}
+                            />
+                          {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{$t('shell.settings.profile.copyIdpOrg')}</Tooltip.Content>
+                      </Tooltip.Root>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+
+        <FormField form={superFormObj} name="idp_username">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t('shell.settings.profile.idpUsername')}</FormLabel>
+                <div class="relative">
+                  <Input
+                    type="text"
+                    bind:value={$form.idp_username}
+                    readonly
+                    class="mt-2 bg-muted pr-10"
+                    {...props}
+                  />
+                  {#if $form.idp_username}
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {#snippet child({ props: tooltipProps })}
+                            <CopyButton
+                              text={$form.idp_username || ''}
+                              variant="ghost"
+                              size="icon"
+                              class="h-8 w-8 hover:bg-transparent"
+                              animationDuration={2000}
+                              {...tooltipProps}
+                            />
+                          {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{$t('shell.settings.profile.copyIdpUsername')}</Tooltip.Content>
                       </Tooltip.Root>
                     </div>
                   {/if}
