@@ -11,7 +11,9 @@
   import { avatarFallbackChromeClasses, hashSeedToIndex, avatarChromePaletteToHex, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { Paintbrush } from 'lucide-svelte';
+  import { CopyButton } from '$lib/components/ui/copy-button';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
@@ -234,13 +236,35 @@
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
-                <FormLabel for={props.id}>IDP Code</FormLabel>
-                <Input
-                  type="text"
-                  bind:value={$form.idp_code}
-                  readonly
-                  class="mt-2 bg-muted"
-                />
+                <FormLabel for={props.id}>{$t('shell.settings.profile.idpCode')}</FormLabel>
+                <div class="relative">
+                  <Input
+                    type="text"
+                    bind:value={$form.idp_code}
+                    readonly
+                    class="mt-2 bg-muted pr-10"
+                    {...props}
+                  />
+                  {#if $form.idp_code}
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {#snippet child({ props: tooltipProps })}
+                            <CopyButton
+                              text={$form.idp_code || ''}
+                              variant="ghost"
+                              size="icon"
+                              class="h-8 w-8 hover:bg-transparent"
+                              animationDuration={2000}
+                              {...tooltipProps}
+                            />
+                          {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{$t('shell.settings.profile.copyIdpCode')}</Tooltip.Content>
+                      </Tooltip.Root>
+                    </div>
+                  {/if}
+                </div>
               </div>
             {/snippet}
           </FormControl>
