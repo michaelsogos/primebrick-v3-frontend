@@ -166,6 +166,8 @@
         "idpUsername": "IDP Username",
         "copyIdpUsername": "Copiar IDP Username",
         "admin": "Administrador",
+        "verified": "Verificado",
+        "emailVerified": "Email Verificado",
         "createdAt": "Creado el",
         "createdBy": "Creado por",
         "updatedAt": "Actualizado el",

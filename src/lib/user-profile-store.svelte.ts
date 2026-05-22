@@ -12,6 +12,7 @@ interface UserProfile {
   avatar_initials?: string | null;
   is_admin?: boolean;
   is_verified?: boolean;
+  email_verified?: boolean;
   issuer?: string;
   // Audit fields
   created_at?: string;
@@ -52,6 +53,7 @@ export const userProfileStore = {
         avatar_initials: profile.avatar_initials,
         is_admin: profile.is_admin,
         is_verified: profile.is_verified,
+        email_verified: profile.email_verified,
         issuer: profile.issuer,
         // Audit fields
         created_at: profile.created_at,

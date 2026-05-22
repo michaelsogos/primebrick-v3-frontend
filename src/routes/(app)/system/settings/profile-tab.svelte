@@ -44,6 +44,7 @@
     avatar_initials: z.string().min(1, "Initials are required"),
     is_admin: z.boolean().optional(),
     is_verified: z.boolean().optional(),
+    email_verified: z.boolean().optional(),
     issuer: z.string().optional(),
   });
 
@@ -103,6 +104,10 @@
             data.profile.is_verified !== undefined
               ? data.profile.is_verified
               : $form.is_verified;
+          $form.email_verified =
+            data.profile.email_verified !== undefined
+              ? data.profile.email_verified
+              : $form.email_verified;
           $form.issuer = data.profile.issuer || $form.issuer;
 
           // Update store (automatically refreshes AppSidebar)
@@ -116,6 +121,7 @@
             avatar_initials: data.profile.avatar_initials,
             is_admin: data.profile.is_admin,
             is_verified: data.profile.is_verified,
+            email_verified: data.profile.email_verified,
             issuer: data.profile.issuer,
             // Audit fields
             created_at: data.profile.created_at,
@@ -189,6 +195,7 @@
     $form.avatar_initials = profile.avatar_initials || userAvatarSeed;
     $form.is_admin = profile.is_admin !== undefined ? profile.is_admin : false;
     $form.is_verified = profile.is_verified;
+    $form.email_verified = profile.email_verified;
     $form.issuer = profile.issuer || "";
   }
 
@@ -213,6 +220,7 @@
             avatar_initials: data.profile.avatar_initials,
             is_admin: data.profile.is_admin,
             is_verified: data.profile.is_verified,
+            email_verified: data.profile.email_verified,
             issuer: data.profile.issuer,
             // Audit fields
             created_at: data.profile.created_at,
@@ -485,27 +493,6 @@
           </FormControl>
         </FormField>
 
-        <FormField form={superFormObj} name="is_verified">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}>Email Verified</FormLabel>
-                <div class="mt-2 flex items-center gap-2">
-                  {#if $form.is_verified === true}
-                    <Badge variant="default" class="bg-green-500"
-                      >Verified</Badge
-                    >
-                  {:else if $form.is_verified === false}
-                    <Badge variant="destructive">Not Verified</Badge>
-                  {:else}
-                    <Badge variant="secondary">Unknown</Badge>
-                  {/if}
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
         <FormField form={superFormObj} name="issuer">
           <FormControl>
             {#snippet children({ props })}
@@ -518,6 +505,38 @@
                   class="mt-2 bg-muted"
                   {...props}
                 />
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+
+        <FormField form={superFormObj} name="is_verified">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t("shell.settings.profile.verified")}</FormLabel>
+                <div class="mt-2 flex items-center gap-2">
+                  <Checkbox
+                    checked={$form.is_verified === true}
+                    disabled
+                  />
+                </div>
+              </div>
+            {/snippet}
+          </FormControl>
+        </FormField>
+
+        <FormField form={superFormObj} name="email_verified">
+          <FormControl>
+            {#snippet children({ props })}
+              <div class="space-y-2">
+                <FormLabel for={props.id}>{$t("shell.settings.profile.emailVerified")}</FormLabel>
+                <div class="mt-2 flex items-center gap-2">
+                  <Checkbox
+                    checked={$form.email_verified === true}
+                    disabled
+                  />
+                </div>
               </div>
             {/snippet}
           </FormControl>
