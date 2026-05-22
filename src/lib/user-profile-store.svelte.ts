@@ -10,6 +10,9 @@ interface UserProfile {
   organization?: string;
   avatar_color?: string | null;
   avatar_initials?: string | null;
+  is_admin?: boolean;
+  is_verified?: boolean;
+  issuer?: string;
   // Audit fields
   created_at?: string;
   created_by?: string;
@@ -47,6 +50,9 @@ export const userProfileStore = {
         organization: profile.organization,
         avatar_color: profile.avatar_color,
         avatar_initials: profile.avatar_initials,
+        is_admin: profile.is_admin,
+        is_verified: profile.is_verified,
+        issuer: profile.issuer,
         // Audit fields
         created_at: profile.created_at,
         created_by: profile.created_by,

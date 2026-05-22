@@ -7,7 +7,7 @@
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
-  import { Switch } from "$lib/components/ui/switch";
+  import { Checkbox } from "$lib/components/ui/checkbox";
   import {
     FormField,
     FormLabel,
@@ -95,7 +95,10 @@
           $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
           $form.avatar_initials =
             data.profile.avatar_initials || $form.avatar_initials;
-          $form.is_admin = data.profile.is_admin;
+          $form.is_admin =
+            data.profile.is_admin !== undefined
+              ? data.profile.is_admin
+              : $form.is_admin;
           $form.is_verified =
             data.profile.is_verified !== undefined
               ? data.profile.is_verified
@@ -184,7 +187,7 @@
     $form.avatar_color =
       profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
     $form.avatar_initials = profile.avatar_initials || userAvatarSeed;
-    $form.is_admin = profile.is_admin;
+    $form.is_admin = profile.is_admin !== undefined ? profile.is_admin : false;
     $form.is_verified = profile.is_verified;
     $form.issuer = profile.issuer || "";
   }
@@ -526,11 +529,9 @@
               <div class="space-y-2">
                 <FormLabel for={props.id}>{$t("shell.settings.profile.admin")}</FormLabel>
                 <div class="mt-2 flex items-center gap-2">
-                  <Switch
+                  <Checkbox
                     checked={$form.is_admin === true}
                     disabled
-                    class="data-[state=checked]:border-neutral-400/85 data-[state=checked]:bg-neutral-100/55 dark:data-[state=checked]:border-neutral-600/55 dark:data-[state=checked]:bg-neutral-800/30 data-[state=checked]:hover:border-neutral-500/85 data-[state=checked]:hover:bg-neutral-200/70 dark:data-[state=checked]:hover:border-neutral-500/70 dark:data-[state=checked]:hover:bg-neutral-700/38 [&_[data-slot=switch-thumb]]:data-[state=checked]:border-neutral-400/85 dark:[&_[data-slot=switch-thumb]]:data-[state=checked]:border-neutral-600/55 [&_[data-slot=switch-thumb]]:data-[state=checked]:bg-neutral-400 dark:[&_[data-slot=switch-thumb]]:data-[state=checked]:bg-neutral-600 [&_[data-slot=switch-thumb]]:group-hover/switch:data-[state=checked]:border-neutral-500/85 dark:[&_[data-slot=switch-thumb]]:group-hover/switch:data-[state=checked]:border-neutral-500/70 [&_[data-slot=switch-thumb]]:group-hover/switch:data-[state=checked]:bg-neutral-500 dark:[&_[data-slot=switch-thumb]]:group-hover/switch:data-[state=checked]:bg-neutral-500"
-                    {...props}
                   />
                 </div>
               </div>
