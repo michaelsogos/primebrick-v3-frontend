@@ -117,6 +117,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   await ensureBackendOnlineOrThrow();
 
   const nextInit: RequestInit = init ? { ...init } : {};
+  nextInit.credentials = 'include';
   if (isEntityApiRequest(input) && nextInit.cache === undefined) {
     nextInit.cache = 'no-store';
   }

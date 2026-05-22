@@ -3,12 +3,18 @@ import { getContrastTextColor } from './avatar-chrome-palette';
 interface UserProfile {
   username?: string;
   idp_code?: string;
+  idp_org?: string;
+  idp_username?: string;
   displayName?: string;
   email?: string;
   organization?: string;
   avatar_color?: string | null;
+  avatar_initials?: string | null;
+  is_admin?: boolean;
+  is_verified?: boolean;
+  email_verified?: boolean;
+  issuer?: string;
   // Audit fields
-  uuid?: string;
   created_at?: string;
   created_by?: string;
   created_by_name?: string;
@@ -33,16 +39,23 @@ export const userProfileStore = {
   get current() { return currentProfile; },
   
   set(profile: Partial<UserProfile>) {
+    console.log('[userProfileStore] set called with:', profile);
     if (!currentProfile) {
       currentProfile = {
         idp_code: profile.idp_code,
+        idp_org: profile.idp_org,
+        idp_username: profile.idp_username,
         username: profile.username,
         displayName: profile.displayName,
         email: profile.email,
         organization: profile.organization,
         avatar_color: profile.avatar_color,
+        avatar_initials: profile.avatar_initials,
+        is_admin: profile.is_admin,
+        is_verified: profile.is_verified,
+        email_verified: profile.email_verified,
+        issuer: profile.issuer,
         // Audit fields
-        uuid: profile.uuid,
         created_at: profile.created_at,
         created_by: profile.created_by,
         created_by_name: profile.created_by_name,
@@ -52,8 +65,10 @@ export const userProfileStore = {
         version: profile.version
       };
     } else {
-      Object.assign(currentProfile, profile);
+      // Full object replacement ensures reactivity
+      currentProfile = { ...currentProfile, ...profile };
     }
+    console.log('[userProfileStore] updated currentProfile:', currentProfile);
     sessionStorage.setItem('user', JSON.stringify(currentProfile));
   }
 };
