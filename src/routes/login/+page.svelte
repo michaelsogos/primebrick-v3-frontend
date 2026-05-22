@@ -59,6 +59,11 @@
             body: JSON.stringify(updateForm.data),
           });
 
+          // DEBUG: Log response details
+          console.log('[Login Debug] Response status:', response.status);
+          console.log('[Login Debug] Response headers:', Object.fromEntries(response.headers.entries()));
+          console.log('[Login Debug] Set-Cookie header:', response.headers.get('set-cookie'));
+
           if (!response.ok) {
             const errorData = await response.json();
 
@@ -101,6 +106,12 @@
           }
 
           const data = await response.json();
+
+          // DEBUG: Log response data and token size
+          console.log('[Login Debug] Response data:', data);
+          if (data.user) {
+            console.log('[Login Debug] User data size:', JSON.stringify(data.user).length, 'bytes');
+          }
 
           if (data.success && data.user) {
             userProfileStore.set(data.user);
