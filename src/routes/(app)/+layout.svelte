@@ -19,7 +19,6 @@
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             // Audit fields
-            uuid: data.profile.uuid,
             created_at: data.profile.created_at,
             created_by: data.profile.created_by,
             created_by_name: data.profile.created_by_name,

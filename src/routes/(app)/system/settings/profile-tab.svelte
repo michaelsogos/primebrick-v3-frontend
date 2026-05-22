@@ -12,7 +12,6 @@
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Paintbrush } from 'lucide-svelte';
   import { CopyButton } from '$lib/components/ui/copy-button';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
@@ -29,6 +28,7 @@
     display_name: z.string().min(1, 'Display name is required'),
     email: z.string().email('Invalid email address'),
     avatar_color: z.string().min(1, 'Color is required'),
+    avatar_initials: z.string().min(1, 'Initials are required'),
   });
 
   type ProfileForm = z.infer<typeof profileSchema>;
@@ -67,7 +67,7 @@
             console.log('Profile updated successfully');
             console.log('[profile-tab] Response data:', data.profile);
             console.log('[profile-tab] avatar_color from response:', data.profile.avatar_color);
-            
+
             // Update form with response data
             $form.idp_code = data.profile.idp_code || $form.idp_code;
             $form.idp_org = data.profile.idp_org || $form.idp_org;
@@ -75,7 +75,8 @@
             $form.display_name = data.profile.display_name || $form.display_name;
             $form.email = data.profile.email || $form.email;
             $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
-            
+            $form.avatar_initials = data.profile.avatar_initials || $form.avatar_initials;
+
             // Update store (automatically refreshes AppSidebar)
             userProfileStore.set({
               idp_code: data.profile.idp_code,
@@ -84,8 +85,8 @@
               displayName: data.profile.display_name,
               email: data.profile.email,
               avatar_color: data.profile.avatar_color,
+              avatar_initials: data.profile.avatar_initials,
               // Audit fields
-              uuid: data.profile.uuid,
               created_at: data.profile.created_at,
               created_by: data.profile.created_by,
               created_by_name: data.profile.created_by_name,
@@ -105,7 +106,20 @@
 
   const { form, errors, enhance, tainted, isTainted } = superFormObj;
 
-  const userAvatarSeed = 'PB';
+  // Derive initials from display_name for preview
+  const userAvatarSeed = $derived.by(() => {
+    if (!$form.display_name) return 'PB';
+    const words = $form.display_name.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return 'PB';
+    const firstLetter = words[0][0].toUpperCase();
+    if (words.length > 1) {
+      const lastLetter = words[words.length - 1][0].toUpperCase();
+      return firstLetter + lastLetter;
+    } else {
+      return words[0].slice(0, 2).toUpperCase() || firstLetter;
+    }
+  });
+
   const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed));
 
   const hasChanges = $derived(isTainted($tainted));
@@ -113,6 +127,14 @@
   // Notify parent when hasChanges changes
   $effect(() => {
     onHasChange(hasChanges);
+  });
+
+  // Sync derived initials to form when display_name changes
+  $effect(() => {
+    const newInitials = userAvatarSeed;
+    if ($form.avatar_initials !== newInitials) {
+      $form.avatar_initials = newInitials;
+    }
   });
 
   function loadProfile() {
@@ -128,6 +150,7 @@
     // If avatar_color is null, use the hex value from the palette
     const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
     $form.avatar_color = profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
+    $form.avatar_initials = profile.avatar_initials || userAvatarSeed;
   }
 
   onMount(async () => {
@@ -148,8 +171,8 @@
             displayName: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
+            avatar_initials: data.profile.avatar_initials,
             // Audit fields
-            uuid: data.profile.uuid,
             created_at: data.profile.created_at,
             created_by: data.profile.created_by,
             created_by_name: data.profile.created_by_name,
@@ -210,7 +233,6 @@
                 <Button {...props} variant="outline">
                   <div class="flex items-center gap-4">
                     <div class="w-5 h-5 rounded-full border shadow-sm" style="background-color: {$form.avatar_color};"></div>
-                    <Paintbrush class="mr-2 h-4 w-4" />
                     {$form.avatar_color}
                   </div>
                 </Button>

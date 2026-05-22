@@ -9,8 +9,8 @@ interface UserProfile {
   email?: string;
   organization?: string;
   avatar_color?: string | null;
+  avatar_initials?: string | null;
   // Audit fields
-  uuid?: string;
   created_at?: string;
   created_by?: string;
   created_by_name?: string;
@@ -46,8 +46,8 @@ export const userProfileStore = {
         email: profile.email,
         organization: profile.organization,
         avatar_color: profile.avatar_color,
+        avatar_initials: profile.avatar_initials,
         // Audit fields
-        uuid: profile.uuid,
         created_at: profile.created_at,
         created_by: profile.created_by,
         created_by_name: profile.created_by_name,

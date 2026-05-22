@@ -33,7 +33,7 @@
   const updatedBy = $derived(profile?.updated_by || '');
   const updatedByName = $derived(profile?.updated_by_name || '');
   const version = $derived(profile?.version || 0);
-  const userUuid = $derived(profile?.uuid || '');
+  const userUuid = $derived(profile?.idp_code || '');
 
   async function loadEntityMetadata() {
     try {
@@ -95,6 +95,9 @@
   function setHasChanges(value: boolean) {
     hasChanges = value;
   }
+
+  // Memoize callback to prevent unnecessary re-renders
+  const handleHasChange = $derived.by(() => setHasChanges);
 </script>
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
@@ -125,7 +128,7 @@
         <div class="flex-1 overflow-auto">
           <div class="p-6">
             <Tabs.Content value="profile" class="space-y-3">
-              <ProfileTab onHasChange={(v) => hasChanges = v} />
+              <ProfileTab onHasChange={handleHasChange} />
             </Tabs.Content>
 
             <Tabs.Content value="security" class="space-y-3">
