@@ -373,7 +373,7 @@
 
 	<div class="flex gap-3 items-center">
 		<div
-			class="h-8 w-8 shrink-0 rounded-md border shadow-sm relative overflow-hidden mt-1 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')]"
+			class="h-5 w-5 shrink-0 rounded-md border shadow-sm relative overflow-hidden mt-1 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')]"
 		>
 			<div class="absolute inset-0" style:background-color={hsvToHex(h, s, v, a)} />
 		</div>

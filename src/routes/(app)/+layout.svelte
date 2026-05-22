@@ -15,11 +15,16 @@
         if (data.success && data.profile) {
           userProfileStore.set({
             idp_code: data.profile.idp_code,
+            idp_org: data.profile.idp_org,
+            idp_username: data.profile.idp_username,
             displayName: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
+            avatar_initials: data.profile.avatar_initials,
+            is_admin: data.profile.is_admin,
+            is_verified: data.profile.is_verified,
+            issuer: data.profile.issuer,
             // Audit fields
-            uuid: data.profile.uuid,
             created_at: data.profile.created_at,
             created_by: data.profile.created_by,
             created_by_name: data.profile.created_by_name,
