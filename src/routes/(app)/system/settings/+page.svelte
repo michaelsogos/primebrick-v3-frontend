@@ -7,6 +7,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
+  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
   import ProfileTab from './profile-tab.svelte';
   import OrganizationsTab from './organizations-tab.svelte';
   import SecurityTab from './security-tab.svelte';
@@ -100,10 +101,15 @@
     { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText }
   ];
 
-  const breadcrumbSegments: AppBreadcrumbSegment[] = [
+  const breadcrumbSegments: AppBreadcrumbSegment[] = $derived([
     { label: $t('shell.system') },
-    { label: $t('shell.settings.title') }
-  ];
+    { label: $t('shell.settings.title'), href: '/system/settings' },
+    settingsTabMenuSegment({
+      pathname: page.url.pathname,
+      searchParams: page.url.searchParams,
+      t: (key) => $t(key)
+    })
+  ]);
 
   // Expose function for profile tab to set dirty state
   function setHasChanges(value: boolean) {
@@ -124,8 +130,9 @@
     </div>
   {/snippet}
 
-  <div class="flex min-h-0 flex-1 gap-0">
-    <Tabs.Root value={activeTab} onValueChange={(v) => goto(`/system/settings?tab=${v}`)} orientation="vertical" class="flex w-full h-full gap-0">
+  <div class="flex min-h-0 flex-1 flex-col gap-0">
+    <div class="flex-1 overflow-hidden">
+      <Tabs.Root value={activeTab} onValueChange={(v) => goto(`/system/settings?tab=${v}`)} orientation="vertical" class="flex w-full h-full gap-0">
       <div class="flex flex-col w-1/5 h-full bg-muted/30">
         <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
           {#each tabs as tab (tab.id)}
@@ -201,12 +208,13 @@
         {/if}
       </div>
     </Tabs.Root>
-  </div>
-  <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    </div>
+    <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
     {#if activeTab === 'profile'}
       <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
     {:else if activeTab === 'organizations'}
       <Button onclick={openNewOrganization}>{$t('common.new')}</Button>
     {/if}
+  </div>
   </div>
 </AppPageScaffold>

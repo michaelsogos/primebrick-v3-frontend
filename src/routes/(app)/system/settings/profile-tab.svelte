@@ -132,6 +132,9 @@
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
           });
+
+          // Reset baseline to clear taint state after successful save
+          reset({ data: $form });
         }
       } catch (error) {
         console.error("Failed to update profile:", error);
@@ -140,7 +143,7 @@
     },
   });
 
-  const { form, errors, enhance, tainted, isTainted } = superFormObj;
+  const { form, errors, enhance, tainted, isTainted, reset } = superFormObj;
 
   // Derive initials from display_name for preview
   const userAvatarSeed = $derived.by(() => {
@@ -178,32 +181,42 @@
     }
   });
 
+  // Reactively load profile when store changes
+  $effect(() => {
+    loadProfile();
+  });
+
   function loadProfile() {
     const profile = userProfileStore.current;
     if (!profile) return;
 
-    $form.idp_code = profile.idp_code || "";
-    $form.idp_org = profile.idp_org || "";
-    $form.idp_username = profile.idp_username || "";
-    $form.display_name = profile.displayName || "";
-    $form.email = profile.email || "";
-
     // If avatar_color is null, use the hex value from the palette
-    const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
-    $form.avatar_color =
-      profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
-    $form.avatar_initials = profile.avatar_initials || userAvatarSeed;
-    $form.is_admin = profile.is_admin !== undefined ? profile.is_admin : false;
-    $form.is_verified = profile.is_verified;
-    $form.email_verified = profile.email_verified;
-    $form.issuer = profile.issuer || "";
+    const seed = profile.displayName || "PB";
+    const words = seed.trim().split(/\s+/).filter((w) => w.length > 0);
+    const firstLetter = words[0]?.[0]?.toUpperCase() || "P";
+    const lastLetter = words.length > 1 ? words[words.length - 1][0].toUpperCase() : words[0]?.slice(1, 2)?.toUpperCase() || "B";
+    const calculatedInitials = words.length > 1 ? firstLetter + lastLetter : words[0]?.slice(0, 2)?.toUpperCase() || firstLetter;
+    const paletteIndex = hashSeedToIndex(calculatedInitials, 10);
+
+    reset({
+      data: {
+        idp_code: profile.idp_code || "",
+        idp_org: profile.idp_org || "",
+        idp_username: profile.idp_username || "",
+        display_name: profile.displayName || "",
+        email: profile.email || "",
+        avatar_color: profile.avatar_color || avatarChromePaletteToHex(paletteIndex),
+        avatar_initials: profile.avatar_initials || calculatedInitials,
+        is_admin: profile.is_admin !== undefined ? profile.is_admin : false,
+        is_verified: profile.is_verified,
+        email_verified: profile.email_verified,
+        issuer: profile.issuer || ""
+      }
+    });
   }
 
+  // Refresh profile from server on mount
   onMount(async () => {
-    // Load from cache immediately so form is populated
-    loadProfile();
-
-    // Then refresh from server in the background
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -231,13 +244,10 @@
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
           });
-          // Reload form with fresh data
-          loadProfile();
         }
       }
     } catch (error) {
       console.error("Failed to refresh profile:", error);
-      // Form already loaded from cache, no action needed
     }
   });
 </script>
