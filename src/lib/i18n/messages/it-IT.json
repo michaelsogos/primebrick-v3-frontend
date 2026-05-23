@@ -498,6 +498,15 @@
       "title": "Gestione organizzazioni",
       "singular": "organizzazione",
       "plural": "organizzazioni",
+      "create": {
+        "title": "Crea nuova organizzazione",
+        "description": "Compila il modulo per creare una nuova organizzazione",
+        "body1": "Questa pagina ti permette di creare una nuova organizzazione nel sistema.",
+        "body2": "Dopo aver creato l'organizzazione, potrai gestire i suoi membri e le sue configurazioni.",
+        "fake1": "Definisci il nome e il codice dell'organizzazione",
+        "fake2": "Configura i permessi e i ruoli",
+        "fake3": "Assegna gli utenti all'organizzazione"
+      },
       "fields": {
         "uuid": "UUID",
         "idp_code": "Codice IDP",

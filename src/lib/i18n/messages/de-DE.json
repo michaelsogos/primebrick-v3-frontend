@@ -487,6 +487,15 @@
       "title": "Organisationsverwaltung",
       "singular": "Organisation",
       "plural": "Organisationen",
+      "create": {
+        "title": "Neue Organisation erstellen",
+        "description": "Füllen Sie das Formular aus, um eine neue Organisation zu erstellen",
+        "body1": "Diese Seite ermöglicht es Ihnen, eine neue Organisation im System zu erstellen.",
+        "body2": "Nach der Erstellung der Organisation können Sie ihre Mitglieder und Konfigurationen verwalten.",
+        "fake1": "Definieren Sie den Namen und den Code der Organisation",
+        "fake2": "Konfigurieren Sie Berechtigungen und Rollen",
+        "fake3": "Weisen Sie Benutzer der Organisation zu"
+      },
       "fields": {
         "uuid": "UUID",
         "idp_code": "IDP-Code",

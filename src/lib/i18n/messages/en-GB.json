@@ -500,6 +500,15 @@
       "title": "Organization Management",
       "singular": "organization",
       "plural": "organizations",
+      "create": {
+        "title": "Create new organization",
+        "description": "Fill out the form to create a new organization",
+        "body1": "This page allows you to create a new organization in the system.",
+        "body2": "After creating the organization, you can manage its members and configurations.",
+        "fake1": "Define the organization name and code",
+        "fake2": "Configure permissions and roles",
+        "fake3": "Assign users to the organization"
+      },
       "fields": {
         "uuid": "UUID",
         "idp_code": "IDP Code",

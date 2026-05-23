@@ -58,6 +58,16 @@
     );
   }
 
+  function openNewOrganization() {
+    const url = '/organizations/create';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
+
   // Block internal navigation when there are changes
   beforeNavigate((navigation) => {
     if (hasChanges) {
@@ -128,29 +138,25 @@
 
       <div class="flex-1 flex flex-col min-h-0">
         <div class="flex-1 overflow-auto">
-          <div class="p-6">
-            <Tabs.Content value="profile" class="space-y-3">
-              <ProfileTab onHasChange={handleHasChange} />
-            </Tabs.Content>
-          </div>
+          <Tabs.Content value="profile" class="p-6 space-y-3">
+            <ProfileTab onHasChange={handleHasChange} />
+          </Tabs.Content>
 
           <Tabs.Content value="organizations" class="h-full">
             <OrganizationsTab />
           </Tabs.Content>
 
-          <div class="p-6">
-            <Tabs.Content value="security" class="space-y-3">
-              <SecurityTab />
-            </Tabs.Content>
+          <Tabs.Content value="security" class="p-6 space-y-3">
+            <SecurityTab />
+          </Tabs.Content>
 
-            <Tabs.Content value="modules" class="space-y-3">
-              <ModulesTab />
-            </Tabs.Content>
+          <Tabs.Content value="modules" class="p-6 space-y-3">
+            <ModulesTab />
+          </Tabs.Content>
 
-            <Tabs.Content value="templates" class="space-y-3">
-              <TemplatesTab />
-            </Tabs.Content>
-          </div>
+          <Tabs.Content value="templates" class="p-6 space-y-3">
+            <TemplatesTab />
+          </Tabs.Content>
         </div>
 
         <!-- Audit Bar (only for profile) -->
@@ -195,6 +201,10 @@
     </Tabs.Root>
   </div>
   <div class="bg-muted/50 shrink-0 border-t p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-    <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
+    {#if activeTab === 'profile'}
+      <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
+    {:else if activeTab === 'organizations'}
+      <Button onclick={openNewOrganization}>{$t('common.new')}</Button>
+    {/if}
   </div>
 </AppPageScaffold>

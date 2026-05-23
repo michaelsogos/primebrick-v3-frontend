@@ -14,6 +14,9 @@
   } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
+  import { onDestroy } from 'svelte';
+
+  const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -98,6 +101,24 @@
   const rowsLoading = $derived(metaLoaded && loading);
   const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'uuid');
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
+
+  // BroadcastChannel for sync with child windows
+  let syncChannel: BroadcastChannel | null = null;
+
+  if (browser) {
+    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+    syncChannel.onmessage = (event) => {
+      if (event.data === 'refresh') {
+        void refreshRows();
+      }
+    };
+  }
+
+  onDestroy(() => {
+    if (syncChannel) {
+      syncChannel.close();
+    }
+  });
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
