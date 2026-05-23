@@ -26,7 +26,7 @@
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { apiFetch } from "$lib/api";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
 
   // Props
@@ -173,17 +173,16 @@
     onHasChange(hasChanges);
   });
 
-  // Sync derived initials to form when display_name changes
-  $effect(() => {
-    const newInitials = userAvatarSeed;
-    if ($form.avatar_initials !== newInitials) {
-      $form.avatar_initials = newInitials;
-    }
-  });
-
   // Reactively load profile when store changes
   $effect(() => {
-    loadProfile();
+    // Explicitly track ONLY the profile store
+    const currentProfile = userProfileStore.current;
+
+    if (currentProfile) {
+      untrack(() => {
+        loadProfile(); // Runs cleanly without creating unintended dependencies
+      });
+    }
   });
 
   function loadProfile() {
