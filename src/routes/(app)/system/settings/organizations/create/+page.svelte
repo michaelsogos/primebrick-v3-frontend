@@ -5,6 +5,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { Building2 } from 'lucide-svelte';
   import { onDestroy } from 'svelte';
+  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -35,13 +36,14 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          {
-            label: $t('shell.settings.tabs.organizations'),
-            href: '/system/settings'
-          },
-          {
-            label: $t('common.new')
-          }
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings' },
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          }),
+          { label: $t('common.new') }
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('entities.organization.singular')} - {$t('common.new')}</h1>

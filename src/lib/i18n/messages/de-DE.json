@@ -145,8 +145,10 @@
     },
     "settings": {
       "title": "Einstellungen",
+      "breadcrumbMenu": "Einstellungsregisterkarten",
       "tabs": {
         "profile": "Profil",
+        "organizations": "Organisationen",
         "security": "Sicherheit",
         "modules": "Module",
         "templates": "Vorlagen"

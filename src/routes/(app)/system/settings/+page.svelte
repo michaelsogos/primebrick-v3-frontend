@@ -17,10 +17,12 @@
   import { Badge } from '$lib/components/ui/badge';
   import { cn } from '$lib/utils';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { beforeNavigate } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
 
-  let activeTab = $state('profile');
+  // Read tab from URL query parameter, default to 'profile'
+  let activeTab = $state(page.url.searchParams.get('tab') || 'profile');
 
   let hasAudit = $state(false);
   let hasChanges = $state(false);
@@ -59,7 +61,7 @@
   }
 
   function openNewOrganization() {
-    const url = '/organizations/create';
+    const url = '/system/settings/organizations/create?tab=organizations';
     const childWindow = window.open(url, '_blank');
     if (childWindow) {
       childWindow.focus();
@@ -123,7 +125,7 @@
   {/snippet}
 
   <div class="flex min-h-0 flex-1 gap-0">
-    <Tabs.Root value={activeTab} onValueChange={(v) => activeTab = v} orientation="vertical" class="flex w-full h-full gap-0">
+    <Tabs.Root value={activeTab} onValueChange={(v) => goto(`/system/settings?tab=${v}`)} orientation="vertical" class="flex w-full h-full gap-0">
       <div class="flex flex-col w-1/5 h-full bg-muted/30">
         <Tabs.List class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
           {#each tabs as tab (tab.id)}

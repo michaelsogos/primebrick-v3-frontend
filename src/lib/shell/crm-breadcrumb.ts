@@ -42,3 +42,45 @@ export function crmModuleMenuSegment(args: {
     ]
   };
 }
+
+/** Settings tab menu segment for breadcrumb dropdown (Profile / Organizations / Security / Modules / Templates). */
+export function settingsTabMenuSegment(args: {
+  pathname: string;
+  searchParams: URLSearchParams;
+  t: (key: string) => string;
+}): AppBreadcrumbMenuSegment {
+  const pathname = args.pathname;
+  const currentTab = args.searchParams.get('tab') || 'profile';
+  return {
+    kind: 'menu',
+    label: args.t('shell.settings.tabs.organizations'),
+    menuAriaLabel: args.t('shell.settings.breadcrumbMenu'),
+    items: [
+      {
+        label: args.t('shell.settings.tabs.profile'),
+        href: '/system/settings?tab=profile',
+        current: pathname === '/system/settings' && currentTab === 'profile'
+      },
+      {
+        label: args.t('shell.settings.tabs.organizations'),
+        href: '/system/settings?tab=organizations',
+        current: (pathname === '/system/settings' && currentTab === 'organizations') || pathname.startsWith('/system/settings/organizations/')
+      },
+      {
+        label: args.t('shell.settings.tabs.security'),
+        href: '/system/settings?tab=security',
+        current: pathname === '/system/settings' && currentTab === 'security'
+      },
+      {
+        label: args.t('shell.settings.tabs.modules'),
+        href: '/system/settings?tab=modules',
+        current: pathname === '/system/settings' && currentTab === 'modules'
+      },
+      {
+        label: args.t('shell.settings.tabs.templates'),
+        href: '/system/settings?tab=templates',
+        current: pathname === '/system/settings' && currentTab === 'templates'
+      }
+    ]
+  };
+}

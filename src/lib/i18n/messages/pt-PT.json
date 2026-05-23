@@ -145,8 +145,10 @@
     },
     "settings": {
       "title": "Definições",
+      "breadcrumbMenu": "Separadores de definições",
       "tabs": {
         "profile": "Perfil",
+        "organizations": "Organizações",
         "security": "Segurança",
         "modules": "Módulos",
         "templates": "Modelos"

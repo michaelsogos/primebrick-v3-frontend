@@ -145,8 +145,10 @@
     },
     "settings": {
       "title": "Paramètres",
+      "breadcrumbMenu": "Onglets de paramètres",
       "tabs": {
         "profile": "Profil",
+        "organizations": "Organisations",
         "security": "Sécurité",
         "modules": "Modules",
         "templates": "Modèles"

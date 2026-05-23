@@ -145,6 +145,7 @@
     },
     "settings": {
       "title": "Settings",
+      "breadcrumbMenu": "Settings tabs",
       "tabs": {
         "profile": "Profile",
         "organizations": "Organizations",
