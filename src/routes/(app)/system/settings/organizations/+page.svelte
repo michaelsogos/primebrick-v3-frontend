@@ -2,6 +2,7 @@
   import { t, formatListCellValue } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import EntityListTable from '$lib/components/EntityListTable.svelte';
+  import { Button } from '$lib/components/ui/button';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
@@ -17,6 +18,16 @@
   import { onDestroy } from 'svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
+
+  function openNewOrganization() {
+    const url = '/system/settings/organizations/create?tab=organizations';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -758,4 +769,9 @@
       {formatListCellValue(column, row[column.key as keyof OrganizationListRow], $uiLang)}
     {/snippet}
   </EntityListTable>
+</div>
+
+<!-- New Organization Button -->
+<div class="flex justify-end mt-6">
+  <Button onclick={openNewOrganization}>{$t('common.new')}</Button>
 </div>

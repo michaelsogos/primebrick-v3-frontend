@@ -50,7 +50,6 @@ export function settingsTabMenuSegment(args: {
   t: (key: string) => string;
 }): AppBreadcrumbMenuSegment {
   const pathname = args.pathname;
-  const currentTab = args.searchParams.get('tab') || 'profile';
   return {
     kind: 'menu',
     label: args.t('shell.settings.tabs.organizations'),
@@ -58,28 +57,28 @@ export function settingsTabMenuSegment(args: {
     items: [
       {
         label: args.t('shell.settings.tabs.profile'),
-        href: '/system/settings?tab=profile',
-        current: pathname === '/system/settings' && currentTab === 'profile'
+        href: '/system/settings/profile',
+        current: pathname === '/system/settings/profile'
       },
       {
         label: args.t('shell.settings.tabs.organizations'),
-        href: '/system/settings?tab=organizations',
-        current: (pathname === '/system/settings' && currentTab === 'organizations') || pathname.startsWith('/system/settings/organizations/')
+        href: '/system/settings/organizations',
+        current: pathname === '/system/settings/organizations' || pathname.startsWith('/system/settings/organizations/')
       },
       {
         label: args.t('shell.settings.tabs.security'),
-        href: '/system/settings?tab=security',
-        current: pathname === '/system/settings' && currentTab === 'security'
+        href: '/system/settings/security',
+        current: pathname === '/system/settings/security'
       },
       {
         label: args.t('shell.settings.tabs.modules'),
-        href: '/system/settings?tab=modules',
-        current: pathname === '/system/settings' && currentTab === 'modules'
+        href: '/system/settings/modules',
+        current: pathname === '/system/settings/modules'
       },
       {
         label: args.t('shell.settings.tabs.templates'),
-        href: '/system/settings?tab=templates',
-        current: pathname === '/system/settings' && currentTab === 'templates'
+        href: '/system/settings/templates',
+        current: pathname === '/system/settings/templates'
       }
     ]
   };

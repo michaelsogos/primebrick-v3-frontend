@@ -27,11 +27,8 @@
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
+  import { beforeNavigate } from "$app/navigation";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-
-  // Props
-  let { onHasChange }: { onHasChange: (hasChanges: boolean) => void } =
-    $props();
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -168,10 +165,23 @@
 
   const hasChanges = $derived(isTainted($tainted));
 
-  // Notify parent when hasChanges changes
-  $effect(() => {
-    onHasChange(hasChanges);
+  // Block internal navigation when there are changes
+  beforeNavigate((navigation) => {
+    if (hasChanges) {
+      const confirmLeave = confirm('Hai delle modifiche non salvate. Vuoi davvero uscire?');
+      if (!confirmLeave) {
+        navigation.cancel();
+      }
+    }
   });
+
+  // Block external navigation (tab close, browser back/forward)
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (hasChanges) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
 
   // Reactively load profile when store changes
   $effect(() => {
@@ -250,6 +260,8 @@
     }
   });
 </script>
+
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <div class="space-y-6">
   <!-- Top Section: 2 columns 50/50 -->
@@ -567,4 +579,9 @@
       </div>
     </div>
   </form>
+</div>
+
+<!-- Save Button -->
+<div class="flex justify-end mt-6">
+  <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
 </div>
