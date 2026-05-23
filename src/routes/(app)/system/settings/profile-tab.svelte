@@ -243,8 +243,6 @@
 </script>
 
 <div class="space-y-6">
-  <h2 class="text-2xl font-semibold">{$t("shell.settings.profile.title")}</h2>
-
   <!-- Top Section: 2 columns 50/50 -->
   <div class="grid grid-cols-2 gap-6">
     <!-- Column 1: Avatar + Color Picker -->

@@ -493,6 +493,25 @@
         "recordSoftDeleted": "Record eliminato",
         "recordRestored": "Record ripristinato"
       }
+    },
+    "organization": {
+      "title": "Gestione organizzazioni",
+      "singular": "organizzazione",
+      "plural": "organizzazioni",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "Codice IDP",
+        "display_name": "Nome visualizzato",
+        "website_url": "URL sito web",
+        "user_count": "Numero utenti",
+        "created_at": "Creato il",
+        "updated_at": "Aggiornato il",
+        "created_by": "Creato da",
+        "updated_by": "Aggiornato da",
+        "version": "Versione",
+        "deleted_at": "Eliminato il",
+        "deleted_by": "Eliminato da"
+      }
     }
   }
 }

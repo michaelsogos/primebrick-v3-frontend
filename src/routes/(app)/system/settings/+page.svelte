@@ -3,11 +3,12 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import * as Tabs from '$lib/components/ui/tabs';
   import { Button } from '$lib/components/ui/button';
-  import { User, Shield, Package, FileText } from 'lucide-svelte';
+  import { User, Shield, Package, FileText, Building2 } from 'lucide-svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
   import ProfileTab from './profile-tab.svelte';
+  import OrganizationsTab from './organizations-tab.svelte';
   import SecurityTab from './security-tab.svelte';
   import ModulesTab from './modules-tab.svelte';
   import TemplatesTab from './templates-tab.svelte';
@@ -81,6 +82,7 @@
 
   const tabs = [
     { id: 'profile', label: $t('shell.settings.tabs.profile'), icon: User },
+    { id: 'organizations', label: $t('shell.settings.tabs.organizations'), icon: Building2 },
     { id: 'security', label: $t('shell.settings.tabs.security'), icon: Shield },
     { id: 'modules', label: $t('shell.settings.tabs.modules'), icon: Package },
     { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText }
@@ -130,7 +132,13 @@
             <Tabs.Content value="profile" class="space-y-3">
               <ProfileTab onHasChange={handleHasChange} />
             </Tabs.Content>
+          </div>
 
+          <Tabs.Content value="organizations" class="h-full">
+            <OrganizationsTab />
+          </Tabs.Content>
+
+          <div class="p-6">
             <Tabs.Content value="security" class="space-y-3">
               <SecurityTab />
             </Tabs.Content>
@@ -145,42 +153,44 @@
           </div>
         </div>
 
-        <!-- Audit Bar -->
-        <div class="bg-muted/50 border-t p-4">
-          <div class="text-xs">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {#if version && hasAudit}
-                <Badge
-                  class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20")}
-                  variant="outline"
-                  onclick={openVersionHistory}
-                >
-                  v{version}
-                </Badge>
-              {:else if version}
-                <Badge class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400")} variant="outline">
-                  v{version}
-                </Badge>
-              {/if}
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
-                <span class="italic text-muted-foreground">{createdAt || '-'}</span>
-              </div>
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
-                <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
-              </div>
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
-                <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
-              </div>
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
-                <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
+        <!-- Audit Bar (only for profile) -->
+        {#if activeTab === 'profile'}
+          <div class="bg-muted/50 border-t p-4">
+            <div class="text-xs">
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {#if version && hasAudit}
+                  <Badge
+                    class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20")}
+                    variant="outline"
+                    onclick={openVersionHistory}
+                  >
+                    v{version}
+                  </Badge>
+                {:else if version}
+                  <Badge class={cn("text-xs font-semibold border border-sky-600 dark:border-sky-400")} variant="outline">
+                    v{version}
+                  </Badge>
+                {/if}
+                <div class="flex items-center gap-x-2">
+                  <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
+                  <span class="italic text-muted-foreground">{createdAt || '-'}</span>
+                </div>
+                <div class="flex items-center gap-x-2">
+                  <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
+                  <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
+                </div>
+                <div class="flex items-center gap-x-2">
+                  <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
+                  <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
+                </div>
+                <div class="flex items-center gap-x-2">
+                  <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
+                  <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        {/if}
       </div>
     </Tabs.Root>
   </div>

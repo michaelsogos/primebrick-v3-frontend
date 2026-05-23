@@ -147,6 +147,7 @@
       "title": "Settings",
       "tabs": {
         "profile": "Profile",
+        "organizations": "Organizations",
         "security": "Security",
         "modules": "Modules",
         "templates": "Templates"
@@ -493,6 +494,25 @@
         "recordSoftDeleted": "Record deleted",
         "recordHardDeleted": "Record permanently deleted",
         "recordRestored": "Record restored"
+      }
+    },
+    "organization": {
+      "title": "Organization Management",
+      "singular": "organization",
+      "plural": "organizations",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Display Name",
+        "website_url": "Website URL",
+        "user_count": "User Count",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
       }
     }
   }

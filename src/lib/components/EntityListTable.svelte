@@ -23,8 +23,12 @@
   import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
-  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
+  import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel } from './entity-list-table/panels';
+  import { SearchBar, ViewModeToggle, DeletionFilterToggle, BulkActions } from './entity-list-table/toolbar';
+  import { TableHeader, TableCell } from './entity-list-table/table';
+  import { CardField, CardGrid, CardList } from './entity-list-table/cards';
+  import { DeleteDialog, RestoreDialog, ExportDialog, DuplicateDialog } from './entity-list-table/dialogs';
+  import { Pagination } from './entity-list-table/pagination';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';

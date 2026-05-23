@@ -482,6 +482,25 @@
         "recordHardDeleted": "Datensatz endgültig gelöscht",
         "recordRestored": "Datensatz wiederhergestellt"
       }
+    },
+    "organization": {
+      "title": "Organisationsverwaltung",
+      "singular": "Organisation",
+      "plural": "Organisationen",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP-Code",
+        "display_name": "Anzeigename",
+        "website_url": "Website-URL",
+        "user_count": "Benutzeranzahl",
+        "created_at": "Erstellt am",
+        "updated_at": "Aktualisiert am",
+        "created_by": "Erstellt von",
+        "updated_by": "Aktualisiert von",
+        "version": "Version",
+        "deleted_at": "Gelöscht am",
+        "deleted_by": "Gelöscht von"
+      }
     }
   }
 }
