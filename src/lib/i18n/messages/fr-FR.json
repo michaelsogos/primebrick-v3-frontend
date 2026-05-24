@@ -189,8 +189,17 @@
           "displayName": "Nom d'affichage",
           "displayNamePlaceholder": "Nom de l'organisation",
           "websiteUrl": "URL du site web",
-          "idpCode": "IDP code",
-          "copyIdpCode": "Copier IDP code",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "unsavedChanges": "Vous avez des modifications non enregistrées. Quitter quand même?"
+        },
+        "update": {
+          "uuid": "UUID",
+          "displayName": "Nom d'affichage",
+          "displayNamePlaceholder": "Nom de l'organisation",
+          "websiteUrl": "URL du site web",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
           "unsavedChanges": "Vous avez des modifications non enregistrées. Quitter quand même?"
         }
       },

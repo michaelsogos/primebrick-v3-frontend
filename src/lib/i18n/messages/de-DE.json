@@ -189,8 +189,17 @@
           "displayName": "Anzeigename",
           "displayNamePlaceholder": "Organisationsname",
           "websiteUrl": "Website-URL",
-          "idpCode": "IDP code",
-          "copyIdpCode": "IDP code kopieren",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "unsavedChanges": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?"
+        },
+        "update": {
+          "uuid": "UUID",
+          "displayName": "Anzeigename",
+          "displayNamePlaceholder": "Organisationsname",
+          "websiteUrl": "Website-URL",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
           "unsavedChanges": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?"
         }
       },

@@ -189,8 +189,17 @@
           "displayName": "Nombre para mostrar",
           "displayNamePlaceholder": "Nombre de la organización",
           "websiteUrl": "URL del sitio web",
-          "idpCode": "IDP code",
-          "copyIdpCode": "Copiar IDP code",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "unsavedChanges": "Tienes cambios sin guardar. ¿Salir de todos modos?"
+        },
+        "update": {
+          "uuid": "UUID",
+          "displayName": "Nombre para mostrar",
+          "displayNamePlaceholder": "Nombre de la organización",
+          "websiteUrl": "URL del sitio web",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
           "unsavedChanges": "Tienes cambios sin guardar. ¿Salir de todos modos?"
         }
       },

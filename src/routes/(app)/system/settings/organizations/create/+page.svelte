@@ -17,7 +17,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { beforeNavigate } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
   import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
@@ -41,7 +41,8 @@
     uuid: z.string().optional().default(''),
     display_name: z.string().min(1, 'Display name is required'),
     website_url: z.string().url().max(2048).optional().or(z.literal('')),
-    idp_code: z.string().min(1).max(255),
+    idp_owner: z.string().min(1).max(255).default('admin'),
+    idp_name: z.string().min(1).max(255),
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -57,7 +58,8 @@
 
       try {
         const body = {
-          idp_code: updateForm.data.idp_code,
+          idp_owner: updateForm.data.idp_owner,
+          idp_name: updateForm.data.idp_name,
           display_name: updateForm.data.display_name,
           website_url: updateForm.data.website_url || undefined,
         };
@@ -92,8 +94,8 @@
 
           // Notify parent window to refresh
           syncChannel?.postMessage('refresh');
-          // Close the window
-          window.close();
+          // Navigate to the update page for the newly created organization
+          await goto(`/system/settings/organizations/${data.organization.uuid}`);
         }
       } catch (error) {
         console.error('Failed to create organization:', error);
@@ -110,15 +112,15 @@
     return Object.values(t).some((v) => v === true);
   });
 
-  // Auto-slug idp_code from display_name when idp_code is empty
+  // Auto-slug idp_name from display_name when idp_name is empty
   $effect(() => {
-    if (!$form.idp_code && $form.display_name) {
+    if (!$form.idp_name && $form.display_name) {
       const slug = $form.display_name
         .toLowerCase()
         .trim()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
-      $form.idp_code = slug;
+      $form.idp_name = slug;
     }
   });
 
@@ -256,14 +258,30 @@
 
         <!-- Column 2 -->
         <div class="space-y-4">
-          <FormField form={superFormObj} name="idp_code">
+          <FormField form={superFormObj} name="idp_owner">
             <FormControl>
               {#snippet children({ props })}
                 <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpCode')}</FormLabel>
+                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
                   <Input
                     id={props.id}
-                    bind:value={$form.idp_code}
+                    bind:value={$form.idp_owner}
+                    placeholder="admin"
+                  />
+                  <FormFieldErrors {props} />
+                </div>
+              {/snippet}
+            </FormControl>
+          </FormField>
+
+          <FormField form={superFormObj} name="idp_name">
+            <FormControl>
+              {#snippet children({ props })}
+                <div class="space-y-2">
+                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
+                  <Input
+                    id={props.id}
+                    bind:value={$form.idp_name}
                     placeholder="acme-corp"
                   />
                   <FormFieldErrors {props} />
