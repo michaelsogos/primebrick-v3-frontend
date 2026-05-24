@@ -29,6 +29,9 @@
   import { onMount, untrack } from "svelte";
   import { beforeNavigate } from "$app/navigation";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
+  import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
+  import { formatUiDateTime } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -78,11 +81,6 @@
         const data = await response.json();
         if (data.success && data.profile) {
           console.log("Profile updated successfully");
-          console.log("[profile-tab] Response data:", data.profile);
-          console.log(
-            "[profile-tab] avatar_color from response:",
-            data.profile.avatar_color,
-          );
 
           // Update form with response data
           $form.idp_code = data.profile.idp_code || $form.idp_code;
@@ -165,6 +163,34 @@
 
   const hasChanges = $derived(isTainted($tainted));
 
+  // Audit derived values from store
+  const profile = $derived(userProfileStore.current);
+  const version = $derived(profile?.version || 0);
+  const createdAt = $derived.by(() => profile?.created_at ? formatUiDateTime(profile.created_at, $uiLang) : '');
+  const createdBy = $derived(profile?.created_by || '');
+  const createdByName = $derived(profile?.created_by_name || '');
+  const updatedAt = $derived.by(() => profile?.updated_at ? formatUiDateTime(profile.updated_at, $uiLang) : '');
+  const updatedBy = $derived(profile?.updated_by || '');
+  const updatedByName = $derived(profile?.updated_by_name || '');
+  const userUuid = $derived(profile?.idp_code || '');
+  let hasAudit = $state(false);
+
+  async function loadEntityMetadata() {
+    try {
+      const res = await apiFetch('/api/v1/entities/user_profiles/meta');
+      if (res.ok) {
+        const data = await res.json();
+        hasAudit = !!data.list?.auditingColumns?.length;
+      }
+    } catch (error) {
+      console.error('Failed to load entity metadata:', error);
+    }
+  }
+
+  function openVersionHistory() {
+    openSheet('entity.versionHistory', { entity: 'user_profiles', rowUuid: userUuid });
+  }
+
   // Block internal navigation when there are changes
   beforeNavigate((navigation) => {
     if (hasChanges) {
@@ -226,6 +252,7 @@
 
   // Refresh profile from server on mount
   onMount(async () => {
+    loadEntityMetadata();
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -263,7 +290,9 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-<div class="space-y-6">
+<!-- FORM CONTENT -->
+<div class="flex-1 overflow-auto">
+  <div class="space-y-6">
   <!-- Top Section: 2 columns 50/50 -->
   <div class="grid grid-cols-2 gap-6">
     <!-- Column 1: Avatar + Color Picker -->
@@ -579,9 +608,54 @@
       </div>
     </div>
   </form>
+  </div>
 </div>
 
-<!-- Save Button -->
-<div class="flex justify-end mt-6">
-  <Button type="submit" form="profile-form" disabled={!hasChanges}>{$t('common.save')}</Button>
+<!-- COMBINED FOOTER BAR -->
+<div class="bg-muted/50 shrink-0 border-t p-4">
+  <div class="flex items-center justify-between gap-4">
+    <!-- Left: Audit info (60%) -->
+    <div class="flex-1">
+      <div class="text-xs">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {#if version && hasAudit}
+            <Badge
+              class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20"
+              variant="outline"
+              onclick={openVersionHistory}
+            >
+              v{version}
+            </Badge>
+          {:else if version}
+            <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
+              v{version}
+            </Badge>
+          {/if}
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
+            <span class="italic text-muted-foreground">{createdAt || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
+            <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
+            <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
+            <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: CTA (40%) -->
+    <div class="shrink-0">
+      <Button type="submit" form="profile-form" disabled={!hasChanges}>
+        {$t('common.save')}
+      </Button>
+    </div>
+  </div>
 </div>
