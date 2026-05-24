@@ -110,7 +110,7 @@
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
-            displayName: data.profile.display_name,
+            display_name: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
@@ -126,6 +126,7 @@
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
+            last_synced_at: data.profile.last_synced_at,
           });
 
           // Reset baseline to clear taint state after successful save
@@ -172,6 +173,7 @@
   const updatedAt = $derived.by(() => profile?.updated_at ? formatUiDateTime(profile.updated_at, $uiLang) : '');
   const updatedBy = $derived(profile?.updated_by || '');
   const updatedByName = $derived(profile?.updated_by_name || '');
+  const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
   const userUuid = $derived(profile?.idp_code || '');
   let hasAudit = $state(false);
 
@@ -226,7 +228,7 @@
     if (!profile) return;
 
     // If avatar_color is null, use the hex value from the palette
-    const seed = profile.displayName || "PB";
+    const seed = profile.display_name || "PB";
     const words = seed.trim().split(/\s+/).filter((w) => w.length > 0);
     const firstLetter = words[0]?.[0]?.toUpperCase() || "P";
     const lastLetter = words.length > 1 ? words[words.length - 1][0].toUpperCase() : words[0]?.slice(1, 2)?.toUpperCase() || "B";
@@ -238,7 +240,7 @@
         idp_code: profile.idp_code || "",
         idp_org: profile.idp_org || "",
         idp_username: profile.idp_username || "",
-        display_name: profile.displayName || "",
+        display_name: profile.display_name || "",
         email: profile.email || "",
         avatar_color: profile.avatar_color || avatarChromePaletteToHex(paletteIndex),
         avatar_initials: profile.avatar_initials || calculatedInitials,
@@ -263,7 +265,7 @@
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
-            displayName: data.profile.display_name,
+            display_name: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
@@ -279,6 +281,7 @@
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
+            last_synced_at: data.profile.last_synced_at,
           });
         }
       }
@@ -646,6 +649,10 @@
           <div class="flex items-center gap-x-2">
             <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
             <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
+            <span class="italic text-muted-foreground">{lastSyncedAt || '-'}</span>
           </div>
         </div>
       </div>

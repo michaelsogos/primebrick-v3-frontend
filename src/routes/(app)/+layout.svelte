@@ -17,7 +17,7 @@
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
-            displayName: data.profile.display_name,
+            display_name: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,

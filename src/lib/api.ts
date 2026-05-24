@@ -19,7 +19,26 @@ const ENTITY_API_PATH = '/api/v1/entities';
 let refreshPromise: Promise<void> | null = null;
 
 /**
+ * Check if there is a local user session in sessionStorage
+ */
+function hasLocalSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const userStr = sessionStorage.getItem('user');
+    if (!userStr) return false;
+    
+    const user = JSON.parse(userStr);
+    // Consider session valid if it has at least an idp_code or username
+    return !!(user.idp_code || user.username);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if the access token is expired by comparing expiresAt from session storage
+ * Supports both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
  */
 function isTokenExpired(): boolean {
   if (typeof window === 'undefined') return true;
@@ -29,11 +48,13 @@ function isTokenExpired(): boolean {
     if (!userStr) return true;
     
     const user = JSON.parse(userStr);
-    if (!user.expiresAt) return true;
+    // Support both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
+    const expiresAt = user.expires_at || user.expiresAt;
+    if (!expiresAt) return true;
     
     // Add 30 seconds buffer to account for clock skew
     const now = Date.now();
-    return user.expiresAt - 30000 < now;
+    return expiresAt - 30000 < now;
   } catch {
     return true;
   }
@@ -149,6 +170,17 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       return res;
     }
 
+    // Check if we have a local session before attempting refresh
+    if (!hasLocalSession()) {
+      // No local session - redirect to login without attempting refresh
+      console.error('[api] No local session, redirecting to login');
+      if (typeof window !== 'undefined') {
+        saveRedirectUrl(window.location.pathname + window.location.search);
+        window.location.href = '/login';
+      }
+      throw new Error('No local session');
+    }
+
     // Check if token is expired locally
     if (isTokenExpired()) {
       // Token is expired, try to refresh
@@ -160,6 +192,8 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
         // Refresh failed, redirect to login
         console.error('[api] Token refresh failed, redirecting to login:', refreshError);
         if (typeof window !== 'undefined') {
+          // Clear corrupted session data before redirect
+          sessionStorage.removeItem('user');
           saveRedirectUrl(window.location.pathname + window.location.search);
           window.location.href = '/login';
         }

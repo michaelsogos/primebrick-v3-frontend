@@ -28,6 +28,7 @@
     updatedAt: '',
     updatedBy: '',
     updatedByName: '',
+    lastSyncedAt: '',
     hasAudit: false
   });
 
@@ -184,6 +185,10 @@
           <div class="flex items-center gap-x-2">
             <span class="text-primary">{$t('shell.settings.audit.updatedBy')}:</span>
             <span class="italic text-muted-foreground">{auditInfo.updatedByName || auditInfo.updatedBy || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
+            <span class="italic text-muted-foreground">{auditInfo.lastSyncedAt || '-'}</span>
           </div>
         </div>
       </div>

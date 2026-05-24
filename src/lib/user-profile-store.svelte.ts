@@ -5,7 +5,7 @@ interface UserProfile {
   idp_code?: string;
   idp_org?: string;
   idp_username?: string;
-  displayName?: string;
+  display_name?: string;
   email?: string;
   organization?: string;
   avatar_color?: string | null;
@@ -22,6 +22,7 @@ interface UserProfile {
   updated_by?: string;
   updated_by_name?: string;
   version?: number;
+  last_synced_at?: string;
 }
 
 function loadFromStorage(): UserProfile | null {
@@ -46,7 +47,7 @@ export const userProfileStore = {
         idp_org: profile.idp_org,
         idp_username: profile.idp_username,
         username: profile.username,
-        displayName: profile.displayName,
+        display_name: profile.display_name,
         email: profile.email,
         organization: profile.organization,
         avatar_color: profile.avatar_color,
@@ -62,7 +63,8 @@ export const userProfileStore = {
         updated_at: profile.updated_at,
         updated_by: profile.updated_by,
         updated_by_name: profile.updated_by_name,
-        version: profile.version
+        version: profile.version,
+        last_synced_at: profile.last_synced_at
       };
     } else {
       // Full object replacement ensures reactivity
@@ -83,7 +85,7 @@ export function getUserAvatarStyle(): { style: string; class: string } | null {
 }
 
 export function getUserName(): string {
-  return currentProfile?.displayName || currentProfile?.username || 'Prime Brick';
+  return currentProfile?.display_name || currentProfile?.username || 'Prime Brick';
 }
 
 export function getUserEmail(): string {

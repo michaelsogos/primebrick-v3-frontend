@@ -176,6 +176,24 @@
         "updatedBy": "Atualizado por",
         "version": "Versão"
       },
+      "audit": {
+        "createdAt": "Criado em",
+        "createdBy": "Criado por",
+        "updatedAt": "Atualizado em",
+        "updatedBy": "Atualizado por",
+        "lastSyncedAt": "Última sincronização"
+      },
+      "organizations": {
+        "create": {
+          "uuid": "UUID",
+          "displayName": "Nome de exibição",
+          "displayNamePlaceholder": "Nome da organização",
+          "websiteUrl": "URL do site",
+          "idpCode": "IDP code",
+          "copyIdpCode": "Copiar IDP code",
+          "unsavedChanges": "Você tem alterações não salvas. Sair mesmo assim?"
+        }
+      },
       "security": {
         "title": "Segurança",
         "changePassword": "Alterar senha",
@@ -510,6 +528,7 @@
         "updated_at": "Atualizado em",
         "created_by": "Criado por",
         "updated_by": "Atualizado por",
+        "last_synced_at": "Última sincronização",
         "version": "Versão",
         "deleted_at": "Excluído em",
         "deleted_by": "Excluído por"
