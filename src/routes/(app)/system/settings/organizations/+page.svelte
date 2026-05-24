@@ -701,6 +701,16 @@
     deletionFilterMode = mode;
     void refreshRows();
   }
+
+  function openNewOrganization() {
+    const url = '/system/settings/organizations/create';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
 </script>
 
 <div class="h-full flex flex-col">
@@ -717,6 +727,7 @@
     rowDensity="compact"
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
+    onCreateAction={openNewOrganization}
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}

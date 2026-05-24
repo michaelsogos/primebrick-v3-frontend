@@ -148,6 +148,7 @@
     rowActionsEnabled = false,
     rowActions,
     entityRowActions,
+    onCreateAction,
     filtersOpen = $bindable(false),
     filterValues = {},
     onFilterValuesChange,
@@ -228,6 +229,7 @@
       edit?: boolean;
       preview?: boolean;
     };
+    onCreateAction?: () => void;
     filtersOpen?: boolean;
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
@@ -3076,6 +3078,18 @@
         >
           <SlidersHorizontal class="size-4" />
           {$t('entities.list.filters')}
+        </Button>
+      {/if}
+
+      {#if onCreateAction}
+        <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+        <Button
+          variant="default"
+          size="sm"
+          type="button"
+          onclick={onCreateAction}
+        >
+          {$t('common.new')}
         </Button>
       {/if}
     </div>
