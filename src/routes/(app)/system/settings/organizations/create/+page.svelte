@@ -204,11 +204,10 @@
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
-          }),
-          { label: $t('common.new') }
+          })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('entities.organization.singular')} - {$t('common.new')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.organizations.create.title')}</h1>
     </div>
   {/snippet}
 
@@ -217,22 +216,6 @@
       <div class="grid grid-cols-2 gap-6 p-4">
         <!-- Column 1 -->
         <div class="space-y-4">
-          <FormField form={superFormObj} name="uuid">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.uuid')}</FormLabel>
-                  <Input
-                    id={props.id}
-                    bind:value={$form.uuid}
-                    readonly
-                    class="bg-muted"
-                  />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
           <FormField form={superFormObj} name="display_name">
             <FormControl>
               {#snippet children({ props })}

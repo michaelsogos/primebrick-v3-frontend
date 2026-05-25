@@ -191,6 +191,7 @@
           "websiteUrl": "Website URL",
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
+          "title": "New Organization",
           "unsavedChanges": "You have unsaved changes. Leave anyway?"
         },
         "update": {
@@ -200,7 +201,7 @@
           "websiteUrl": "Website URL",
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
-          "unsavedChanges": "You have unsaved changes. Leave anyway?"
+          "unsavedChanges": "There are unsaved changes. Are you sure you want to leave?"
         }
       },
       "security": {
@@ -312,6 +313,53 @@
     "criticalError": "Critical error"
   },
   "entities": {
+    "versionHistory": {
+      "title": "Version History",
+      "loading": "Loading version history…",
+      "error": "Failed to load version history",
+      "empty": "No version history available",
+      "viewMore": "View more",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "actions": {
+        "CREATE": "Creation",
+        "INSERT": "Creation",
+        "UPDATE": "Update",
+        "DELETE": "Deletion",
+        "SOFT_DELETE": "Deletion",
+        "HARD_DELETE": "Hard deletion",
+        "RESTORE": "Restore"
+      },
+      "field": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "idp_owner": "IDP Owner",
+        "idp_name": "IDP Name",
+        "display_name": "Display Name",
+        "website_url": "Website URL",
+        "user_count": "User Count",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "last_synced_at": "Last synced at",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
+      },
+      "fieldModified": "Field {field} changed from {from} to {to}",
+      "notSet": "not set",
+      "set": "set to",
+      "unchanged": "unchanged at",
+      "cleared": "cleared",
+      "changedFrom": "changed from",
+      "to": "to",
+      "null": "empty",
+      "recordCreated": "Record created",
+      "recordHardDeleted": "Record hard deleted",
+      "recordSoftDeleted": "Record deleted",
+      "recordRestored": "Record restored"
+    },
     "userProfile": {
       "title": "User Profile"
     },

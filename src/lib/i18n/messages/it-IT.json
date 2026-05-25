@@ -191,6 +191,7 @@
           "websiteUrl": "URL sito web",
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
+          "title": "Nuova Organizzazione",
           "unsavedChanges": "Hai modifiche non salvate. Uscire comunque?"
         },
         "update": {
@@ -200,7 +201,7 @@
           "websiteUrl": "URL sito web",
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
-          "unsavedChanges": "Hai modifiche non salvate. Uscire comunque?"
+          "unsavedChanges": "Ci sono modifiche non salvate. Sei sicuro di voler uscire?"
         }
       },
       "security": {
@@ -312,6 +313,53 @@
     "criticalError": "Errore critico"
   },
   "entities": {
+    "versionHistory": {
+      "title": "Storico Versioni",
+      "loading": "Caricamento storico versioni…",
+      "error": "Impossibile caricare lo storico versioni",
+      "empty": "Nessuno storico versioni disponibile",
+      "viewMore": "Vedi altro",
+      "showDetails": "Mostra dettagli",
+      "hideDetails": "Nascondi dettagli",
+      "actions": {
+        "CREATE": "Creazione",
+        "INSERT": "Creazione",
+        "UPDATE": "Modifica",
+        "DELETE": "Eliminazione",
+        "SOFT_DELETE": "Eliminazione",
+        "HARD_DELETE": "Eliminazione definitiva",
+        "RESTORE": "Ripristino"
+      },
+      "field": {
+        "uuid": "UUID",
+        "idp_code": "Codice IDP",
+        "idp_owner": "Proprietario IDP",
+        "idp_name": "Nome IDP",
+        "display_name": "Nome Visualizzato",
+        "website_url": "URL sito web",
+        "user_count": "Numero utenti",
+        "created_at": "Creato il",
+        "updated_at": "Aggiornato il",
+        "created_by": "Creato da",
+        "updated_by": "Aggiornato da",
+        "last_synced_at": "Ultima sincronizzazione",
+        "version": "Versione",
+        "deleted_at": "Eliminato il",
+        "deleted_by": "Eliminato da"
+      },
+      "fieldModified": "Campo {field} modificato da {from} a {to}",
+      "notSet": "non impostato",
+      "set": "impostato a",
+      "unchanged": "invariato a",
+      "cleared": "cancellato",
+      "changedFrom": "cambiato da",
+      "to": "a",
+      "null": "vuoto",
+      "recordCreated": "Record creato",
+      "recordHardDeleted": "Record eliminato definitivamente",
+      "recordSoftDeleted": "Record eliminato",
+      "recordRestored": "Record ripristinato"
+    },
     "userProfile": {
       "title": "Profilo Utente"
     },

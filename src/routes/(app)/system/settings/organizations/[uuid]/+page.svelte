@@ -21,6 +21,9 @@
   import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { interpolateTemplate } from '$lib/template-interpolate';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
 
   const uuid = $derived(page.params.uuid);
 
@@ -76,6 +79,8 @@
     last_synced_at?: string;
   } | null>(null);
 
+  let meta = $state<{ updatePageTitle?: string } | null>(null);
+  let pageTitle = $state(''); // Frozen title, computed once after load
   let loading = $state(true);
 
   // Superforms in SPA mode
@@ -150,10 +155,29 @@
           idp_name: data.idp_name || data.idp_code?.split('/')[1] || data.idp_code || '',
         },
       });
+      // Compute frozen page title from meta expression
+      if (meta?.updatePageTitle && organization) {
+        pageTitle = interpolateTemplate(meta.updatePageTitle, organization);
+      } else {
+        pageTitle = organization?.display_name || '';
+      }
     } catch (error) {
       console.error('Failed to load organization:', error);
     } finally {
       loading = false;
+    }
+  }
+
+  async function loadMeta() {
+    try {
+      const response = await apiFetch('/api/v1/entities/organization/meta');
+      if (!response.ok) {
+        console.error('Failed to load organization meta');
+        return;
+      }
+      meta = await response.json();
+    } catch (error) {
+      console.error('Failed to load meta:', error);
     }
   }
 
@@ -185,6 +209,7 @@
   });
 
   onMount(() => {
+    void loadMeta();
     void loadOrganization();
   });
 
@@ -203,6 +228,17 @@
     history.back();
   }
 
+  function openVersionHistory() {
+    openSheet(
+      'entity.versionHistory',
+      {
+        entity: 'organization',
+        rowUuid: uuid!,
+        columns: []
+      }
+    );
+  }
+
   beforeNavigate((navigation) => {
     if (hasChanges) {
       const confirmLeave = confirm($t('shell.settings.organizations.update.unsavedChanges'));
@@ -215,7 +251,7 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-<AppPageScaffold>
+<AppPageScaffold title={pageTitle}>
   {#snippet header()}
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
@@ -227,10 +263,9 @@
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
           }),
-          { label: organization?.display_name || $t('common.loading') }
+          { label: pageTitle || $t('common.loading') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('entities.organization.singular')} - {organization?.display_name || ''}</h1>
     </div>
   {/snippet}
 
@@ -340,13 +375,27 @@
         <div class="text-xs">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             {#if auditInfo.version && auditInfo.hasAudit}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
+              <button
+                type="button"
+                onclick={openVersionHistory}
+                class="inline-flex"
+                title={$t('entities.versionHistory.title')}
+              >
+                <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-600/10 transition-colors" variant="outline">
+                  v{auditInfo.version}
+                </Badge>
+              </button>
             {:else if auditInfo.version}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
+              <button
+                type="button"
+                onclick={openVersionHistory}
+                class="inline-flex"
+                title={$t('entities.versionHistory.title')}
+              >
+                <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-600/10 transition-colors" variant="outline">
+                  v{auditInfo.version}
+                </Badge>
+              </button>
             {/if}
             <div class="flex items-center gap-x-2">
               <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>
