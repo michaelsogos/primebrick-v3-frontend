@@ -85,9 +85,10 @@
   "validation": {
     "required": "Dieses Feld ist erforderlich",
     "invalidUrl": "Ungültiges URL-Format",
-    "tooShort": "Muss mindestens {min} Zeichen lang sein",
+    "tooShort": "Muss mindestens 5 Zeichen lang sein",
     "tooLong": "Darf maximal {max} Zeichen lang sein",
-    "invalid": "Ungültiger Wert"
+    "invalid": "Ungültiger Wert",
+    "nameTaken": "Dieser Name ist bereits vergeben"
   },
   "shell": {
     "subtitle": "Backoffice",

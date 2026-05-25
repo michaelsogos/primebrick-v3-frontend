@@ -2,7 +2,7 @@
 	import { cn } from "$lib/utils.js";
 	import Input from "$lib/components/ui/input/input.svelte";
 	import { CircleCheckBig, TicketX, LoaderCircle, AlertTriangle } from "lucide-svelte";
-	import type { ValidationResult } from "$lib/types/validation.js";
+	import type { ValidationResult, ValidationStatus } from "$lib/types/validation.js";
 
 	type Props = {
 		value: string;
@@ -15,6 +15,7 @@
 		class?: string;
 		type?: string;
 		hasError?: boolean;
+		onStatusChange?: (status: ValidationStatus) => void;
 	};
 
 	let {
@@ -28,10 +29,10 @@
 		class: className,
 		type = "text",
 		hasError = false,
+		onStatusChange,
 	}: Props = $props();
 
-	type Status = "idle" | "loading" | "valid" | "not-valid" | "api-error";
-	let status = $state<Status>("idle");
+	let status = $state<ValidationStatus>("idle");
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const DEBOUNCE_DELAY = 300;
@@ -42,6 +43,13 @@
 	);
 
 	let isLoading = $derived(status === "loading");
+
+	// Notify parent when status changes
+	$effect(() => {
+		if (onStatusChange) {
+			onStatusChange(status);
+		}
+	});
 
 	async function performValidation(val: string) {
 		status = "loading";

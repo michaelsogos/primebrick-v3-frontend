@@ -13,10 +13,19 @@
 		errorClasses?: string | undefined | null;
 	} = $props();
 
-	function translateError(error: string): string {
-		// If the error is a translation key, translate it
+	function translateError(error: string, errorObj?: any): string {
+		// If the error is a translation key, translate it with parameters
 		if (error.startsWith('validation.')) {
-			return $t(error);
+			// Extract parameters from Zod error object
+			const params: Record<string, any> = {};
+			
+			if (errorObj) {
+				// Handle Zod error parameters
+				if (errorObj.minimum !== undefined) params.min = errorObj.minimum;
+				if (errorObj.maximum !== undefined) params.max = errorObj.maximum;
+			}
+			
+			return $t(error, params);
 		}
 		// Otherwise return as-is
 		return error;

@@ -24,6 +24,7 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult } from '$lib/types/validation.js';
+  import type { ValidationStatus } from '$lib/types/validation.js';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = $state(null);
@@ -52,10 +53,10 @@
   // Zod schema for organization create form
   const createSchema = z.object({
     uuid: z.string().optional().default(''),
-    display_name: z.string().min(1, 'validation.required'),
-    website_url: z.string().url('validation.invalidUrl').max(2048, 'validation.tooLong').optional().or(z.literal('')),
-    idp_owner: z.string().min(1, 'validation.required').max(255, 'validation.tooLong').default('admin'),
-    idp_name: z.string().min(1, 'validation.required').max(255, 'validation.tooLong'),
+    display_name: z.string().min(5, { message: 'validation.tooShort' }),
+    website_url: z.string().url({ message: 'validation.invalidUrl' }).max(2048, { message: 'validation.tooLong' }).optional().or(z.literal('')),
+    idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: 'validation.tooLong' }).default('admin'),
+    idp_name: z.string().min(1, { message: 'validation.required' }).max(255, { message: 'validation.tooLong' }),
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -216,6 +217,13 @@
       return ValidationResult.ERROR_API;
     }
   }
+
+  // Track validation status for idp_name
+  let idpNameValidationStatus = $state<ValidationStatus>("idle");
+
+  function handleIdpNameStatusChange(status: ValidationStatus) {
+    idpNameValidationStatus = status;
+  }
 </script>
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
@@ -305,9 +313,15 @@
                     onChange={(v) => $form.idp_name = v}
                     validateFn={checkIdpNameAvailability}
                     placeholder="acme-corp"
-                    hasError={$errors.idp_name !== undefined}
+                    hasError={$errors.idp_name !== undefined || idpNameValidationStatus === 'not-valid'}
+                    onStatusChange={handleIdpNameStatusChange}
                   />
                   <TranslatedFormFieldErrors {props} />
+                  {#if idpNameValidationStatus === 'not-valid'}
+                    <div class="text-destructive text-xs font-medium">
+                      {$t('validation.nameTaken')}
+                    </div>
+                  {/if}
                 </div>
               {/snippet}
             </FormControl>
