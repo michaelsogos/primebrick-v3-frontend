@@ -184,6 +184,7 @@
         "lastSyncedAt": "Ultima sincronizzazione"
       },
       "organizations": {
+        "title": "Organizzazioni",
         "create": {
           "uuid": "UUID",
           "displayName": "Nome visualizzato",

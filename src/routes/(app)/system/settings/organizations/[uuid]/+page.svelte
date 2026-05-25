@@ -262,10 +262,10 @@
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
-          }),
-          { label: pageTitle || $t('common.loading') }
+          })
         ]}
       />
+      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('common.loading')}</h1>
     </div>
   {/snippet}
 
