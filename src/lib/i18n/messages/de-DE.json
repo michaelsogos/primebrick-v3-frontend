@@ -82,6 +82,13 @@
     "deletedRecord": "Gelöschter Datensatz",
     "versionHistory": "Änderungsprotokoll"
   },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "invalidUrl": "Ungültiges URL-Format",
+    "tooShort": "Muss mindestens {min} Zeichen lang sein",
+    "tooLong": "Darf maximal {max} Zeichen lang sein",
+    "invalid": "Ungültiger Wert"
+  },
   "shell": {
     "subtitle": "Backoffice",
     "serverUnreachable": "Server nicht erreichbar. Stellen Sie sicher, dass Ihre Netzwerkverbindung den Server erreichen kann.",

@@ -82,6 +82,13 @@
     "confirm": "Confirmer",
     "deletedRecord": "Enregistrement supprimé"
   },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "invalidUrl": "Format d'URL invalide",
+    "tooShort": "Doit contenir au moins {min} caractères",
+    "tooLong": "Ne doit pas dépasser {max} caractères",
+    "invalid": "Valeur invalide"
+  },
   "shell": {
     "subtitle": "Backoffice",
     "serverUnreachable": "Impossible de joindre le serveur. Vérifiez que votre connexion réseau permet d'atteindre le serveur.",

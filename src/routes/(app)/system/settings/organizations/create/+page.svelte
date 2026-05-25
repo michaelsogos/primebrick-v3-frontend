@@ -12,6 +12,7 @@
     FormLabel,
     FormControl,
     FormFieldErrors,
+    TranslatedFormFieldErrors,
   } from '$lib/components/ui/form';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
@@ -21,6 +22,8 @@
   import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
+  import { ValidationResult } from '$lib/types/validation.js';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = $state(null);
@@ -49,10 +52,10 @@
   // Zod schema for organization create form
   const createSchema = z.object({
     uuid: z.string().optional().default(''),
-    display_name: z.string().min(1, 'Display name is required'),
-    website_url: z.string().url().max(2048).optional().or(z.literal('')),
-    idp_owner: z.string().min(1).max(255).default('admin'),
-    idp_name: z.string().min(1).max(255),
+    display_name: z.string().min(1, 'validation.required'),
+    website_url: z.string().url('validation.invalidUrl').max(2048, 'validation.tooLong').optional().or(z.literal('')),
+    idp_owner: z.string().min(1, 'validation.required').max(255, 'validation.tooLong').default('admin'),
+    idp_name: z.string().min(1, 'validation.required').max(255, 'validation.tooLong'),
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -189,6 +192,30 @@
       }
     }
   });
+
+  // Validation function for idp_name availability
+  async function checkIdpNameAvailability(idpName: string): Promise<ValidationResult> {
+    try {
+      const idpOwner = $form.idp_owner || 'admin';
+      const response = await apiFetch(
+        `/api/v1/entities/organization/check-availability?idp_owner=${encodeURIComponent(idpOwner)}&idp_name=${encodeURIComponent(idpName)}`
+      );
+
+      if (!response.ok) {
+        return ValidationResult.ERROR_API;
+      }
+
+      const data = await response.json();
+      if (data.available === true) {
+        return ValidationResult.VALID;
+      } else {
+        return ValidationResult.NOT_VALID;
+      }
+    } catch (error) {
+      console.error('Error checking idp_name availability:', error);
+      return ValidationResult.ERROR_API;
+    }
+  }
 </script>
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
@@ -226,7 +253,7 @@
                     bind:value={$form.display_name}
                     placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
                   />
-                  <FormFieldErrors {props} />
+                  <TranslatedFormFieldErrors {props} />
                 </div>
               {/snippet}
             </FormControl>
@@ -242,7 +269,7 @@
                     bind:value={$form.website_url}
                     placeholder="https://example.com"
                   />
-                  <FormFieldErrors {props} />
+                  <TranslatedFormFieldErrors {props} />
                 </div>
               {/snippet}
             </FormControl>
@@ -261,7 +288,7 @@
                     bind:value={$form.idp_owner}
                     placeholder="admin"
                   />
-                  <FormFieldErrors {props} />
+                  <TranslatedFormFieldErrors {props} />
                 </div>
               {/snippet}
             </FormControl>
@@ -272,12 +299,15 @@
               {#snippet children({ props })}
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
-                  <Input
+                  <AsyncValidatedInput
                     id={props.id}
-                    bind:value={$form.idp_name}
+                    value={$form.idp_name}
+                    onChange={(v) => $form.idp_name = v}
+                    validateFn={checkIdpNameAvailability}
                     placeholder="acme-corp"
+                    hasError={$errors.idp_name !== undefined}
                   />
-                  <FormFieldErrors {props} />
+                  <TranslatedFormFieldErrors {props} />
                 </div>
               {/snippet}
             </FormControl>
