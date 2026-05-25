@@ -149,6 +149,7 @@
     rowActions,
     entityRowActions,
     onCreateAction,
+    onEditAction,
     filtersOpen = $bindable(false),
     filterValues = {},
     onFilterValuesChange,
@@ -230,6 +231,7 @@
       preview?: boolean;
     };
     onCreateAction?: () => void;
+    onEditAction?: (row: TRow) => void;
     filtersOpen?: boolean;
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
@@ -695,6 +697,31 @@
   }
 
   /**
+   * Get audit field value with _name fallback.
+   * For audit fields (created_by, updated_by, deleted_by), checks for the corresponding
+   * _name field (e.g., created_by_name) and uses it as fallback to show human-readable names.
+   */
+  function getAuditFieldValue(row: TRow, col: MetaColumn): string {
+    const r = row as Record<string, unknown>;
+    const raw = r[col.key];
+
+    // Check if this is an audit field that should have a _name variant
+    const auditFields = ['created_by', 'updated_by', 'deleted_by'];
+    if (auditFields.includes(col.key)) {
+      const nameField = `${col.key}_name`;
+      const nameValue = r[nameField];
+      // Use _name if present and non-empty, otherwise use original value
+      if (!isBlankish(nameValue)) {
+        return String(nameValue);
+      }
+    }
+
+    // For non-audit fields or if _name is empty, use original value
+    if (isBlankish(raw)) return '-';
+    return formatListCellValue(col, raw, $uiLang);
+  }
+
+  /**
    * Card view empty-state detection.
    *
    * Note: when a route provides `{#snippet cell}`, we cannot reliably infer rendered emptiness;
@@ -997,8 +1024,9 @@
       console.log('Cannot edit deleted row:', rowKey(row));
       return;
     }
-    // TODO: Implement edit action - will be connected to BE later
-    console.log('Edit row:', rowKey(row));
+    if (onEditAction) {
+      onEditAction(row);
+    }
     closeRowDropdown();
   }
 
@@ -2782,7 +2810,7 @@
                       <span class="text-sm font-medium break-words">{parts.text}</span>
                     {/if}
                   {:else}
-                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
+                    <span class="text-sm font-medium break-words">{getAuditFieldValue(row, col)}</span>
                   {/if}
                 </div>
               {/each}

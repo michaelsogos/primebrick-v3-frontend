@@ -711,6 +711,16 @@
       alert('Popup bloccato dal browser! Controlla le impostazioni.');
     }
   }
+
+  function openEditOrganization(row: OrganizationListRow) {
+    const url = `/system/settings/organizations/${row.uuid}`;
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
 </script>
 
 <div class="h-full flex flex-col">
@@ -728,6 +738,7 @@
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
     onCreateAction={openNewOrganization}
+    onEditAction={openEditOrganization}
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}

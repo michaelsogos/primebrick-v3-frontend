@@ -106,8 +106,6 @@
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Failed to update organization:', errorData);
           cancel();
           return;
         }
@@ -119,6 +117,10 @@
           await loadOrganization();
           // Notify parent window to refresh
           notifyParentRefresh();
+          // Close popup if opened as child window
+          if (window.opener) {
+            window.close();
+          }
         }
       } catch (error) {
         console.error('Failed to update organization:', error);
@@ -225,7 +227,13 @@
       const ok = confirm($t('shell.settings.organizations.update.unsavedChanges'));
       if (!ok) return;
     }
-    history.back();
+    if (window.opener) {
+      // Opened as child window from organizations list
+      window.close();
+    } else {
+      // Direct navigation — go back
+      history.back();
+    }
   }
 
   function openVersionHistory() {
@@ -424,7 +432,7 @@
       <!-- Right: CTA (40%) -->
       <div class="shrink-0 flex gap-2">
         <Button variant="outline" onclick={handleCancel}>
-          {$t('common.cancel')}
+          {hasChanges ? $t('common.cancel') : $t('common.exit')}
         </Button>
         <Button type="submit" form="org-update-form" disabled={!hasChanges}>
           {$t('common.save')}
