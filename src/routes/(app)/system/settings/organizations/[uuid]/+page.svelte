@@ -34,9 +34,19 @@
     return () => {
       if (syncChannel) {
         syncChannel.close();
+        syncChannel = null;
       }
     };
   });
+
+  function notifyParentRefresh() {
+    if (!syncChannel) return;
+    try {
+      syncChannel.postMessage('refresh');
+    } catch (e) {
+      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
+    }
+  }
 
   // Zod schema for organization update form
   const updateSchema = z.object({
@@ -103,7 +113,7 @@
           // Refresh the organization data to show updated audit info
           await loadOrganization();
           // Notify parent window to refresh
-          syncChannel?.postMessage('refresh');
+          notifyParentRefresh();
         }
       } catch (error) {
         console.error('Failed to update organization:', error);

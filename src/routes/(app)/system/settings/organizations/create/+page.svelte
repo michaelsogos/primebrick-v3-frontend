@@ -32,9 +32,19 @@
     return () => {
       if (syncChannel) {
         syncChannel.close();
+        syncChannel = null;
       }
     };
   });
+
+  function notifyParentRefresh() {
+    if (!syncChannel) return;
+    try {
+      syncChannel.postMessage('refresh');
+    } catch (e) {
+      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
+    }
+  }
 
   // Zod schema for organization create form
   const createSchema = z.object({
@@ -92,8 +102,8 @@
           auditInfo.lastSyncedAt = data.organization.last_synced_at ? formatUiDateTime(data.organization.last_synced_at, $uiLang) : '';
           auditInfo.hasAudit = true;
 
-          // Notify parent window to refresh
-          syncChannel?.postMessage('refresh');
+          // Notify parent BEFORE navigating away; after goto the component may unmount and close the channel
+          notifyParentRefresh();
           // Navigate to the update page for the newly created organization
           await goto(`/system/settings/organizations/${data.organization.uuid}`);
         }
