@@ -61,7 +61,7 @@
       versionHistoryTotal = data.pagination?.total || 0;
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('entities.customer.versionHistory.error');
+      versionHistoryError = $t('entities.versionHistory.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -85,7 +85,7 @@
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('entities.customer.versionHistory.error');
+      versionHistoryError = $t('entities.versionHistory.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -150,7 +150,7 @@
   }
 
   function getAuditActionLabel(action: string): string {
-    const key = `entities.customer.versionHistory.actions.${action.toUpperCase()}`;
+    const key = `entities.versionHistory.actions.${action.toUpperCase()}`;
     const translated = $t(key);
     return translated === key ? action : translated;
   }
@@ -187,8 +187,8 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      let fieldLabel = $t(`entities.customer.versionHistory.field.${field}`);
-      if (fieldLabel === `entities.customer.versionHistory.field.${field}`) {
+      let fieldLabel = $t(`entities.versionHistory.field.${field}`);
+      if (fieldLabel === `entities.versionHistory.field.${field}`) {
         // Fallback to fields translation if versionHistory field doesn't exist
         fieldLabel = $t(`entities.customer.fields.${field}`) || field;
       }
@@ -235,25 +235,25 @@
 
       const isCreateOrInsert = action === 'CREATE' || action === 'INSERT';
 
-      if (oldValue === null && newValue !== null) {
+      if (oldValue == null && newValue != null) {
         descriptions.push({
           field: fieldLabel,
-          operator: isCreateOrInsert ? $t('entities.customer.versionHistory.set') : $t('entities.customer.versionHistory.changedFrom'),
-          toOperator: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.to'),
-          oldValue: isCreateOrInsert ? undefined : $t('entities.customer.versionHistory.null'),
+          operator: isCreateOrInsert ? $t('entities.versionHistory.set') : $t('entities.versionHistory.changedFrom'),
+          toOperator: isCreateOrInsert ? undefined : $t('entities.versionHistory.to'),
+          oldValue: isCreateOrInsert ? undefined : $t('entities.versionHistory.null'),
           newValue: formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
           badgeLabelKey
         });
-      } else if (oldValue !== null && newValue === null) {
+      } else if (oldValue != null && newValue == null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.changedFrom'),
-          toOperator: $t('entities.customer.versionHistory.to'),
+          operator: $t('entities.versionHistory.changedFrom'),
+          toOperator: $t('entities.versionHistory.to'),
           oldValue: formatValue(oldValue),
-          newValue: $t('entities.customer.versionHistory.null'),
+          newValue: $t('entities.versionHistory.null'),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -262,11 +262,11 @@
           oldBadgeLabelText,
           oldBadgeLabelKey
         });
-      } else if (oldValue !== newValue) {
+      } else if (oldValue != newValue) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.changedFrom'),
-          toOperator: $t('entities.customer.versionHistory.to'),
+          operator: $t('entities.versionHistory.changedFrom'),
+          toOperator: $t('entities.versionHistory.to'),
           oldValue: formatValue(oldValue),
           newValue: formatValue(newValue),
           isBadge,
@@ -281,7 +281,7 @@
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.customer.versionHistory.unchanged'),
+          operator: $t('entities.versionHistory.unchanged'),
           newValue: formatValue(newValue),
           isBadge,
           badgeColor,
@@ -311,7 +311,7 @@
 {/snippet}
 
 {#snippet headerTitle()}
-  {$t('entities.customer.versionHistory.title')}
+  {$t('entities.versionHistory.title')}
 {/snippet}
 
 <div class="flex h-full flex-col">
@@ -324,7 +324,7 @@
           <div class="pb-watermark-empty">
             <Hourglass class="size-20 text-info animate-spin" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('entities.customer.versionHistory.loading')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('entities.versionHistory.loading')}</div>
         </div>
       </div>
     {:else if versionHistoryError}
@@ -342,7 +342,7 @@
           <div class="pb-watermark-empty">
             <Info class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('entities.customer.versionHistory.empty')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('entities.versionHistory.empty')}</div>
         </div>
       </div>
     {:else}
@@ -353,7 +353,7 @@
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
-            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.customer.versionHistory.recordHardDeleted')]
+            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.versionHistory.recordHardDeleted')]
               : formatAuditDelta(entry.delta, entry.action)}
 
             <Timeline.Item>
@@ -379,7 +379,7 @@
                       onclick={() => toggleEntryExpanded(entry.id)}
                     >
                       <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
-                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('entities.customer.versionHistory.hideDetails') : $t('entities.customer.versionHistory.showDetails')}</span>
+                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('entities.versionHistory.hideDetails') : $t('entities.versionHistory.showDetails')}</span>
                     </Button>
                   </div>
                 {/if}
@@ -458,7 +458,7 @@
               {:else}
                 <ChevronDown class="size-4 mr-2" />
               {/if}
-              {$t('entities.customer.versionHistory.viewMore')}
+              {$t('entities.versionHistory.viewMore')}
             </Button>
           </div>
         {/if}

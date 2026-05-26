@@ -4,7 +4,7 @@ import Icons from 'unplugin-icons/vite';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
-	const apiOrigin = (env.API_ORIGIN || 'http://127.0.0.1:3001').replace(/\/$/, '');
+	const apiOrigin = (env.API_ORIGIN || 'http://localhost:3001').replace(/\/+$/, '');
 
 	return {
 		plugins: [

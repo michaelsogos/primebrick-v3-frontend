@@ -32,13 +32,21 @@ function getPath(obj: Dict, path: string): string | undefined {
   return typeof cur === 'string' ? cur : undefined;
 }
 
+function interpolate(template: string, params: Record<string, any>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    return params[key] !== undefined ? String(params[key]) : match;
+  });
+}
+
 export const dict = derived(uiLang, ($uiLang) => DICTS[$uiLang]);
 
-export const t: Readable<(key: string) => string> = derived(
+export const t: Readable<(key: string, params?: Record<string, any>) => string> = derived(
   dict,
   ($dict) =>
-    (key: string) =>
-      getPath($dict, key) ?? getPath(enGB as Dict, key) ?? key
+    (key: string, params?: Record<string, any>) => {
+      const template = getPath($dict, key) ?? getPath(enGB as Dict, key) ?? key;
+      return params ? interpolate(template, params) : template;
+    }
 );
 
 export {

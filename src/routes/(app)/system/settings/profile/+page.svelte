@@ -26,12 +26,12 @@
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { apiFetch } from "$lib/api";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { beforeNavigate } from "$app/navigation";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-
-  // Props
-  let { onHasChange }: { onHasChange: (hasChanges: boolean) => void } =
-    $props();
+  import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
+  import { formatUiDateTime } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -81,11 +81,6 @@
         const data = await response.json();
         if (data.success && data.profile) {
           console.log("Profile updated successfully");
-          console.log("[profile-tab] Response data:", data.profile);
-          console.log(
-            "[profile-tab] avatar_color from response:",
-            data.profile.avatar_color,
-          );
 
           // Update form with response data
           $form.idp_code = data.profile.idp_code || $form.idp_code;
@@ -112,10 +107,11 @@
 
           // Update store (automatically refreshes AppSidebar)
           userProfileStore.set({
+            uuid: data.profile.uuid,
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
-            displayName: data.profile.display_name,
+            display_name: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
@@ -131,7 +127,11 @@
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
+            last_synced_at: data.profile.last_synced_at,
           });
+
+          // Reset baseline to clear taint state after successful save
+          reset({ data: $form });
         }
       } catch (error) {
         console.error("Failed to update profile:", error);
@@ -140,7 +140,7 @@
     },
   });
 
-  const { form, errors, enhance, tainted, isTainted } = superFormObj;
+  const { form, errors, enhance, tainted, isTainted, reset } = superFormObj;
 
   // Derive initials from display_name for preview
   const userAvatarSeed = $derived.by(() => {
@@ -165,16 +165,62 @@
 
   const hasChanges = $derived(isTainted($tainted));
 
-  // Notify parent when hasChanges changes
-  $effect(() => {
-    onHasChange(hasChanges);
+  // Audit derived values from store
+  const profile = $derived(userProfileStore.current);
+  const version = $derived(profile?.version || 0);
+  const createdAt = $derived.by(() => profile?.created_at ? formatUiDateTime(profile.created_at, $uiLang) : '');
+  const createdBy = $derived(profile?.created_by || '');
+  const createdByName = $derived(profile?.created_by_name || '');
+  const updatedAt = $derived.by(() => profile?.updated_at ? formatUiDateTime(profile.updated_at, $uiLang) : '');
+  const updatedBy = $derived(profile?.updated_by || '');
+  const updatedByName = $derived(profile?.updated_by_name || '');
+  const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
+  const userUuid = $derived(profile?.uuid || '');
+  let hasAudit = $state(false);
+
+  async function loadEntityMetadata() {
+    try {
+      const res = await apiFetch('/api/v1/entities/user_profiles/meta');
+      if (res.ok) {
+        const data = await res.json();
+        hasAudit = !!data.list?.auditingColumns?.length;
+      }
+    } catch (error) {
+      console.error('Failed to load entity metadata:', error);
+    }
+  }
+
+  function openVersionHistory() {
+    openSheet('entity.versionHistory', { entity: 'user_profiles', rowUuid: userUuid });
+  }
+
+  // Block internal navigation when there are changes
+  beforeNavigate((navigation) => {
+    if (hasChanges) {
+      const confirmLeave = confirm('Hai delle modifiche non salvate. Vuoi davvero uscire?');
+      if (!confirmLeave) {
+        navigation.cancel();
+      }
+    }
   });
 
-  // Sync derived initials to form when display_name changes
+  // Block external navigation (tab close, browser back/forward)
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (hasChanges) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  // Reactively load profile when store changes
   $effect(() => {
-    const newInitials = userAvatarSeed;
-    if ($form.avatar_initials !== newInitials) {
-      $form.avatar_initials = newInitials;
+    // Explicitly track ONLY the profile store
+    const currentProfile = userProfileStore.current;
+
+    if (currentProfile) {
+      untrack(() => {
+        loadProfile(); // Runs cleanly without creating unintended dependencies
+      });
     }
   });
 
@@ -182,28 +228,34 @@
     const profile = userProfileStore.current;
     if (!profile) return;
 
-    $form.idp_code = profile.idp_code || "";
-    $form.idp_org = profile.idp_org || "";
-    $form.idp_username = profile.idp_username || "";
-    $form.display_name = profile.displayName || "";
-    $form.email = profile.email || "";
-
     // If avatar_color is null, use the hex value from the palette
-    const paletteIndex = hashSeedToIndex(userAvatarSeed, 10);
-    $form.avatar_color =
-      profile.avatar_color || avatarChromePaletteToHex(paletteIndex);
-    $form.avatar_initials = profile.avatar_initials || userAvatarSeed;
-    $form.is_admin = profile.is_admin !== undefined ? profile.is_admin : false;
-    $form.is_verified = profile.is_verified;
-    $form.email_verified = profile.email_verified;
-    $form.issuer = profile.issuer || "";
+    const seed = profile.display_name || "PB";
+    const words = seed.trim().split(/\s+/).filter((w) => w.length > 0);
+    const firstLetter = words[0]?.[0]?.toUpperCase() || "P";
+    const lastLetter = words.length > 1 ? words[words.length - 1][0].toUpperCase() : words[0]?.slice(1, 2)?.toUpperCase() || "B";
+    const calculatedInitials = words.length > 1 ? firstLetter + lastLetter : words[0]?.slice(0, 2)?.toUpperCase() || firstLetter;
+    const paletteIndex = hashSeedToIndex(calculatedInitials, 10);
+
+    reset({
+      data: {
+        idp_code: profile.idp_code || "",
+        idp_org: profile.idp_org || "",
+        idp_username: profile.idp_username || "",
+        display_name: profile.display_name || "",
+        email: profile.email || "",
+        avatar_color: profile.avatar_color || avatarChromePaletteToHex(paletteIndex),
+        avatar_initials: profile.avatar_initials || calculatedInitials,
+        is_admin: profile.is_admin !== undefined ? profile.is_admin : false,
+        is_verified: profile.is_verified,
+        email_verified: profile.email_verified,
+        issuer: profile.issuer || ""
+      }
+    });
   }
 
+  // Refresh profile from server on mount
   onMount(async () => {
-    // Load from cache immediately so form is populated
-    loadProfile();
-
-    // Then refresh from server in the background
+    loadEntityMetadata();
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -211,10 +263,11 @@
         if (data.success && data.profile) {
           // Update store with fresh data from server
           userProfileStore.set({
+            uuid: data.profile.uuid,
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
-            displayName: data.profile.display_name,
+            display_name: data.profile.display_name,
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
@@ -230,21 +283,21 @@
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
+            last_synced_at: data.profile.last_synced_at,
           });
-          // Reload form with fresh data
-          loadProfile();
         }
       }
     } catch (error) {
       console.error("Failed to refresh profile:", error);
-      // Form already loaded from cache, no action needed
     }
   });
 </script>
 
-<div class="space-y-6">
-  <h2 class="text-2xl font-semibold">{$t("shell.settings.profile.title")}</h2>
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
+<!-- FORM CONTENT -->
+<div class="flex-1 overflow-auto">
+  <div class="space-y-6">
   <!-- Top Section: 2 columns 50/50 -->
   <div class="grid grid-cols-2 gap-6">
     <!-- Column 1: Avatar + Color Picker -->
@@ -278,6 +331,7 @@
       <!-- Color Picker -->
       <div>
         <label
+          for="avatar-color-trigger"
           class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {$t("shell.settings.profile.avatarColor")}
@@ -286,7 +340,7 @@
           <Popover.Root>
             <Popover.Trigger>
               {#snippet child({ props })}
-                <Button {...props} variant="outline">
+                <Button {...props} variant="outline" id="avatar-color-trigger">
                   <div class="flex items-center gap-4">
                     <div
                       class="w-5 h-5 rounded-full border shadow-sm"
@@ -410,7 +464,7 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpOrg")}</FormLabel
+                  >{$t("shell.settings.profile.idpOwner")}</FormLabel
                 >
                 <div class="relative">
                   <Input
@@ -437,7 +491,7 @@
                         </Tooltip.Trigger>
                         <Tooltip.Content
                           >{$t(
-                            "shell.settings.profile.copyIdpOrg",
+                            "shell.settings.profile.copyIdpOwner",
                           )}</Tooltip.Content
                         >
                       </Tooltip.Root>
@@ -454,7 +508,7 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpUsername")}</FormLabel
+                  >{$t("shell.settings.profile.idpName")}</FormLabel
                 >
                 <div class="relative">
                   <Input
@@ -481,7 +535,7 @@
                         </Tooltip.Trigger>
                         <Tooltip.Content
                           >{$t(
-                            "shell.settings.profile.copyIdpUsername",
+                            "shell.settings.profile.copyIdpName",
                           )}</Tooltip.Content
                         >
                       </Tooltip.Root>
@@ -498,13 +552,34 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}>Issuer</FormLabel>
-                <Input
-                  type="text"
-                  bind:value={$form.issuer}
-                  readonly
-                  class="mt-2 bg-muted"
-                  {...props}
-                />
+                <div class="relative">
+                  <Input
+                    type="text"
+                    bind:value={$form.issuer}
+                    readonly
+                    class="mt-2 bg-muted pr-10"
+                    {...props}
+                  />
+                  {#if $form.issuer}
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {#snippet child({ props: tooltipProps })}
+                            <CopyButton
+                              text={$form.issuer || ""}
+                              variant="ghost"
+                              size="icon"
+                              class="h-8 w-8 hover:bg-transparent"
+                              animationDuration={2000}
+                              {...tooltipProps}
+                            />
+                          {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>Copy Issuer</Tooltip.Content>
+                      </Tooltip.Root>
+                    </div>
+                  {/if}
+                </div>
               </div>
             {/snippet}
           </FormControl>
@@ -560,4 +635,64 @@
       </div>
     </div>
   </form>
+  </div>
+</div>
+
+<!-- COMBINED FOOTER BAR -->
+<div class="bg-muted/50 shrink-0 border-t p-4">
+  <div class="flex items-center justify-between gap-4">
+    <!-- Left: Audit info (60%) -->
+    <div class="flex-1">
+      <div class="text-xs">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {#if version && hasAudit}
+            <Badge
+              class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20"
+              variant="outline"
+              onclick={openVersionHistory}
+            >
+              v{version}
+            </Badge>
+          {:else if version}
+            <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
+              v{version}
+            </Badge>
+          {/if}
+          {#if userUuid}
+            <div class="flex items-center gap-x-2">
+              <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
+              <span class="italic text-muted-foreground">{userUuid}</span>
+            </div>
+          {/if}
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
+            <span class="italic text-muted-foreground">{createdAt || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
+            <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
+            <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
+            <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
+          </div>
+          <div class="flex items-center gap-x-2">
+            <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
+            <span class="italic text-muted-foreground">{lastSyncedAt || '-'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: CTA (40%) -->
+    <div class="shrink-0">
+      <Button type="submit" form="profile-form" disabled={!hasChanges}>
+        {$t('common.save')}
+      </Button>
+    </div>
+  </div>
 </div>

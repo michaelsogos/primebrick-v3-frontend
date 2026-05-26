@@ -53,6 +53,7 @@
     "time": "Time",
     "edit": "Edit",
     "cancel": "Cancel",
+    "exit": "Exit",
     "remove": "Remove",
     "clearAll": "Clear all filters",
     "delete": "Delete",
@@ -80,6 +81,15 @@
     "copyHtml": "Copy HTML",
     "confirm": "Confirm",
     "deletedRecord": "Deleted record"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidUrl": "Invalid URL format",
+    "tooShort": "Must be at least 5 characters",
+    "tooLong": "Must be at most {max} characters",
+    "invalid": "Invalid value",
+    "nameTaken": "This name is already taken",
+    "invalidFormat": "Must start and end with a letter or number"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -145,8 +155,10 @@
     },
     "settings": {
       "title": "Settings",
+      "breadcrumbMenu": "Settings tabs",
       "tabs": {
         "profile": "Profile",
+        "organizations": "Organizations",
         "security": "Security",
         "modules": "Modules",
         "templates": "Templates"
@@ -161,10 +173,10 @@
         "emailPlaceholder": "your@email.com",
         "idpCode": "IDP Code",
         "copyIdpCode": "Copy IDP Code",
-        "idpOrg": "IDP Organization",
-        "copyIdpOrg": "Copy IDP Organization",
-        "idpUsername": "IDP Username",
-        "copyIdpUsername": "Copy IDP Username",
+        "idpOwner": "IDP Owner",
+        "copyIdpOwner": "Copy IDP Owner",
+        "idpName": "IDP Name",
+        "copyIdpName": "Copy IDP Name",
         "admin": "Admin",
         "verified": "Verified",
         "emailVerified": "Email Verified",
@@ -173,6 +185,40 @@
         "updatedAt": "Updated at",
         "updatedBy": "Updated by",
         "version": "Version"
+      },
+      "audit": {
+        "id": "ID",
+        "createdAt": "Created at",
+        "createdBy": "Created by",
+        "updatedAt": "Updated at",
+        "updatedBy": "Updated by",
+        "lastSyncedAt": "Last synced"
+      },
+      "organizations": {
+        "title": "Organizations",
+        "create": {
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copy IDP Code",
+          "displayName": "Display name",
+          "displayNamePlaceholder": "Organization name",
+          "websiteUrl": "Website URL",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "title": "New Organization",
+          "unsavedChanges": "You have unsaved changes. Leave anyway?"
+        },
+        "update": {
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copy IDP Code",
+          "copyIdpOwner": "Copy IDP Owner",
+          "copyIdpName": "Copy IDP Name",
+          "displayName": "Display name",
+          "displayNamePlaceholder": "Organization name",
+          "websiteUrl": "Website URL",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "unsavedChanges": "There are unsaved changes. Are you sure you want to leave?"
+        }
       },
       "security": {
         "title": "Security",
@@ -283,6 +329,53 @@
     "criticalError": "Critical error"
   },
   "entities": {
+    "versionHistory": {
+      "title": "Version History",
+      "loading": "Loading version history…",
+      "error": "Failed to load version history",
+      "empty": "No version history available",
+      "viewMore": "View more",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "actions": {
+        "CREATE": "Creation",
+        "INSERT": "Creation",
+        "UPDATE": "Update",
+        "DELETE": "Deletion",
+        "SOFT_DELETE": "Deletion",
+        "HARD_DELETE": "Hard deletion",
+        "RESTORE": "Restore"
+      },
+      "field": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "idp_owner": "IDP Owner",
+        "idp_name": "IDP Name",
+        "display_name": "Display Name",
+        "website_url": "Website URL",
+        "user_count": "User Count",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "last_synced_at": "Last synced at",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
+      },
+      "fieldModified": "Field {field} changed from {from} to {to}",
+      "notSet": "not set",
+      "set": "set to",
+      "unchanged": "unchanged at",
+      "cleared": "cleared",
+      "changedFrom": "changed from",
+      "to": "to",
+      "null": "empty",
+      "recordCreated": "Record created",
+      "recordHardDeleted": "Record hard deleted",
+      "recordSoftDeleted": "Record deleted",
+      "recordRestored": "Record restored"
+    },
     "userProfile": {
       "title": "User Profile"
     },
@@ -493,6 +586,35 @@
         "recordSoftDeleted": "Record deleted",
         "recordHardDeleted": "Record permanently deleted",
         "recordRestored": "Record restored"
+      }
+    },
+    "organization": {
+      "title": "Organization Management",
+      "singular": "organization",
+      "plural": "organizations",
+      "create": {
+        "title": "Create new organization",
+        "description": "Fill out the form to create a new organization",
+        "body1": "This page allows you to create a new organization in the system.",
+        "body2": "After creating the organization, you can manage its members and configurations.",
+        "fake1": "Define the organization name and code",
+        "fake2": "Configure permissions and roles",
+        "fake3": "Assign users to the organization"
+      },
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Display Name",
+        "website_url": "Website URL",
+        "user_count": "User Count",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "last_synced_at": "Last synced",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
       }
     }
   }
