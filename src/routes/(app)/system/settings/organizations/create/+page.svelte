@@ -25,6 +25,8 @@
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult } from '$lib/types/validation.js';
   import type { ValidationStatus } from '$lib/types/validation.js';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { CopyButton } from '$lib/components/ui/copy-button';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -58,7 +60,6 @@
 
   // Zod schema for organization create form
   const createSchema = z.object({
-    uuid: z.string().optional().default(''),
     display_name: z.string()
       .min(5, { message: 'validation.tooShort' })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
@@ -121,6 +122,7 @@
         if (data.success && data.organization) {
           console.log('Organization created successfully');
           // Update audit state from response
+          auditInfo.uuid = data.organization.uuid || '';
           auditInfo.version = data.organization.version || 1;
           auditInfo.createdAt = data.organization.created_at ? formatUiDateTime(data.organization.created_at, $uiLang) : '';
           auditInfo.createdBy = data.organization.created_by || '';
@@ -176,8 +178,16 @@
     didAutoSlugIdpName = true;
   });
 
+  // Computed idp_code from idp_owner and idp_name (reactive, not sent to API)
+  const idpCode = $derived.by(() => {
+    const owner = $form.idp_owner || 'admin';
+    const name = $form.idp_name || '';
+    return name ? `${owner}/${name}` : '';
+  });
+
   // Audit state (local for create page)
   let auditInfo = $state({
+    uuid: '', // Will be populated after creation
     version: 0,
     createdAt: '',
     createdBy: '',
@@ -327,6 +337,39 @@
 
         <!-- Column 2 -->
         <div class="space-y-4">
+          <div class="space-y-2">
+            <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {$t('shell.settings.organizations.create.idpCode')}
+            </label>
+            <div class="relative">
+              <Input
+                id="idp-code-display"
+                value={idpCode}
+                readonly
+                class="bg-muted pr-10"
+              />
+              {#if idpCode}
+                <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      {#snippet child({ props: tooltipProps })}
+                        <CopyButton
+                          text={idpCode}
+                          variant="ghost"
+                          size="icon"
+                          class="h-8 w-8 hover:bg-transparent"
+                          animationDuration={2000}
+                          {...tooltipProps}
+                        />
+                      {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>{$t('shell.settings.organizations.create.copyIdpCode')}</Tooltip.Content>
+                  </Tooltip.Root>
+                </div>
+              {/if}
+            </div>
+          </div>
+
           <FormField form={superFormObj} name="idp_owner">
             <FormControl>
               {#snippet children({ props })}
@@ -389,6 +432,12 @@
               <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
                 v{auditInfo.version}
               </Badge>
+            {/if}
+            {#if auditInfo.uuid}
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
+                <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
+              </div>
             {/if}
             <div class="flex items-center gap-x-2">
               <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>

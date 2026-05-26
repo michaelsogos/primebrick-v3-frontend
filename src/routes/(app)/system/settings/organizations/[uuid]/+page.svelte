@@ -12,6 +12,7 @@
     FormLabel,
     FormControl,
     FormFieldErrors,
+    TranslatedFormFieldErrors,
   } from '$lib/components/ui/form';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
@@ -24,21 +25,20 @@
   import { interpolateTemplate } from '$lib/template-interpolate';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { CopyButton } from '$lib/components/ui/copy-button';
 
   const uuid = $derived(page.params.uuid);
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
-  let syncChannel: BroadcastChannel | null = $state(null);
+  let syncChannel: BroadcastChannel | null = null;
 
-  $effect(() => {
-    if (!syncChannel) {
-      syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    }
+  onMount(() => {
+    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+
     return () => {
-      if (syncChannel) {
-        syncChannel.close();
-        syncChannel = null;
-      }
+      syncChannel?.close();
+      syncChannel = null;
     };
   });
 
@@ -53,9 +53,13 @@
 
   // Zod schema for organization update form
   const updateSchema = z.object({
-    uuid: z.string(),
-    display_name: z.string().min(1, 'Display name is required'),
-    website_url: z.string().url().max(2048).optional().or(z.literal('')),
+    idp_code: z.string().optional(),
+    display_name: z.string().min(5, { message: 'validation.tooShort' }),
+    website_url: z.string()
+      .url({ message: 'validation.invalidUrl' })
+      .max(2048, { message: 'validation.tooLong' })
+      .optional()
+      .or(z.literal('')),
     idp_owner: z.string().min(1).max(255),
     idp_name: z.string().min(1).max(255),
   });
@@ -87,6 +91,7 @@
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
     SPA: true,
     validators: zod4(updateSchema),
+    validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
@@ -146,7 +151,7 @@
       // Reset form with loaded data
       reset({
         data: {
-          uuid: data.uuid,
+          idp_code: data.idp_code || '',
           display_name: data.display_name || '',
           website_url: data.website_url || '',
           idp_owner: data.idp_owner || data.idp_code?.split('/')[0] || 'admin',
@@ -181,6 +186,7 @@
 
   // Audit state
   let auditInfo = $state({
+    uuid: '',
     version: 0,
     createdAt: '',
     createdBy: '',
@@ -194,6 +200,7 @@
 
   $effect(() => {
     if (organization) {
+      auditInfo.uuid = organization.uuid || '';
       auditInfo.version = organization.version || 1;
       auditInfo.createdAt = organization.created_at ? formatUiDateTime(organization.created_at, $uiLang) : '';
       auditInfo.createdBy = organization.created_by || '';
@@ -283,22 +290,6 @@
         <div class="grid grid-cols-2 gap-6 p-4">
           <!-- Column 1 -->
           <div class="space-y-4">
-            <FormField form={superFormObj} name="uuid">
-              <FormControl>
-                {#snippet children({ props })}
-                  <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.organizations.update.uuid')}</FormLabel>
-                    <Input
-                      {...props}
-                      bind:value={$form.uuid}
-                      readonly
-                      class="bg-muted"
-                    />
-                  </div>
-                {/snippet}
-              </FormControl>
-            </FormField>
-
             <FormField form={superFormObj} name="display_name">
               <FormControl>
                 {#snippet children({ props })}
@@ -309,7 +300,7 @@
                       bind:value={$form.display_name}
                       placeholder={$t('shell.settings.organizations.update.displayNamePlaceholder')}
                     />
-                    <FormFieldErrors />
+                    <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
               </FormControl>
@@ -325,7 +316,7 @@
                       bind:value={$form.website_url}
                       placeholder="https://example.com"
                     />
-                    <FormFieldErrors />
+                    <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
               </FormControl>
@@ -334,17 +325,75 @@
 
           <!-- Column 2 -->
           <div class="space-y-4">
+            <FormField form={superFormObj} name="idp_code">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpCode')}</FormLabel>
+                    <div class="relative">
+                      <Input
+                        {...props}
+                        bind:value={$form.idp_code}
+                        readonly
+                        class="bg-muted pr-10"
+                      />
+                      {#if $form.idp_code}
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                          <Tooltip.Root>
+                            <Tooltip.Trigger>
+                              {#snippet child({ props: tooltipProps })}
+                                <CopyButton
+                                  text={$form.idp_code || ""}
+                                  variant="ghost"
+                                  size="icon"
+                                  class="h-8 w-8 hover:bg-transparent"
+                                  animationDuration={2000}
+                                  {...tooltipProps}
+                                />
+                              {/snippet}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>{$t('shell.settings.organizations.update.copyIdpCode')}</Tooltip.Content>
+                          </Tooltip.Root>
+                        </div>
+                      {/if}
+                    </div>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
             <FormField form={superFormObj} name="idp_owner">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpOwner')}</FormLabel>
-                    <Input
-                      {...props}
-                      bind:value={$form.idp_owner}
-                      readonly
-                      class="bg-muted"
-                    />
+                    <div class="relative">
+                      <Input
+                        {...props}
+                        bind:value={$form.idp_owner}
+                        readonly
+                        class="bg-muted pr-10"
+                      />
+                      {#if $form.idp_owner}
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                          <Tooltip.Root>
+                            <Tooltip.Trigger>
+                              {#snippet child({ props: tooltipProps })}
+                                <CopyButton
+                                  text={$form.idp_owner || ""}
+                                  variant="ghost"
+                                  size="icon"
+                                  class="h-8 w-8 hover:bg-transparent"
+                                  animationDuration={2000}
+                                  {...tooltipProps}
+                                />
+                              {/snippet}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>{$t('shell.settings.organizations.update.copyIdpOwner')}</Tooltip.Content>
+                          </Tooltip.Root>
+                        </div>
+                      {/if}
+                    </div>
                   </div>
                 {/snippet}
               </FormControl>
@@ -355,12 +404,33 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpName')}</FormLabel>
-                    <Input
-                      {...props}
-                      bind:value={$form.idp_name}
-                      readonly
-                      class="bg-muted"
-                    />
+                    <div class="relative">
+                      <Input
+                        {...props}
+                        bind:value={$form.idp_name}
+                        readonly
+                        class="bg-muted pr-10"
+                      />
+                      {#if $form.idp_name}
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                          <Tooltip.Root>
+                            <Tooltip.Trigger>
+                              {#snippet child({ props: tooltipProps })}
+                                <CopyButton
+                                  text={$form.idp_name || ""}
+                                  variant="ghost"
+                                  size="icon"
+                                  class="h-8 w-8 hover:bg-transparent"
+                                  animationDuration={2000}
+                                  {...tooltipProps}
+                                />
+                              {/snippet}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>{$t('shell.settings.organizations.update.copyIdpName')}</Tooltip.Content>
+                          </Tooltip.Root>
+                        </div>
+                      {/if}
+                    </div>
                   </div>
                 {/snippet}
               </FormControl>
@@ -400,6 +470,12 @@
                   v{auditInfo.version}
                 </Badge>
               </button>
+            {/if}
+            {#if auditInfo.uuid}
+              <div class="flex items-center gap-x-2">
+                <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
+                <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
+              </div>
             {/if}
             <div class="flex items-center gap-x-2">
               <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>

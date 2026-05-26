@@ -173,10 +173,10 @@
         "emailPlaceholder": "ihre@email.com",
         "idpCode": "IDP Code",
         "copyIdpCode": "IDP Code kopieren",
-        "idpOrg": "IDP Organization",
-        "copyIdpOrg": "IDP Organization kopieren",
-        "idpUsername": "IDP Username",
-        "copyIdpUsername": "IDP Username kopieren",
+        "idpOwner": "IDP Owner",
+        "copyIdpOwner": "IDP Owner kopieren",
+        "idpName": "IDP Name",
+        "copyIdpName": "IDP Name kopieren",
         "admin": "Administrator",
         "verified": "Verifiziert",
         "emailVerified": "E-Mail Verifiziert",
@@ -187,6 +187,7 @@
         "version": "Version"
       },
       "audit": {
+        "id": "ID",
         "createdAt": "Erstellt am",
         "createdBy": "Erstellt von",
         "updatedAt": "Aktualisiert am",
@@ -196,7 +197,8 @@
       "organizations": {
         "title": "Organisationen",
         "create": {
-          "uuid": "UUID",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "IDP Code kopieren",
           "displayName": "Anzeigename",
           "displayNamePlaceholder": "Organisationsname",
           "websiteUrl": "Website-URL",
@@ -206,7 +208,10 @@
           "unsavedChanges": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?"
         },
         "update": {
-          "uuid": "UUID",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "IDP Code kopieren",
+          "copyIdpOwner": "IDP Owner kopieren",
+          "copyIdpName": "IDP Name kopieren",
           "displayName": "Anzeigename",
           "displayNamePlaceholder": "Organisationsname",
           "websiteUrl": "Website-URL",

@@ -107,6 +107,7 @@
 
           // Update store (automatically refreshes AppSidebar)
           userProfileStore.set({
+            uuid: data.profile.uuid,
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
@@ -174,7 +175,7 @@
   const updatedBy = $derived(profile?.updated_by || '');
   const updatedByName = $derived(profile?.updated_by_name || '');
   const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
-  const userUuid = $derived(profile?.idp_code || '');
+  const userUuid = $derived(profile?.uuid || '');
   let hasAudit = $state(false);
 
   async function loadEntityMetadata() {
@@ -262,6 +263,7 @@
         if (data.success && data.profile) {
           // Update store with fresh data from server
           userProfileStore.set({
+            uuid: data.profile.uuid,
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,
@@ -461,7 +463,7 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpOrg")}</FormLabel
+                  >{$t("shell.settings.profile.idpOwner")}</FormLabel
                 >
                 <div class="relative">
                   <Input
@@ -488,7 +490,7 @@
                         </Tooltip.Trigger>
                         <Tooltip.Content
                           >{$t(
-                            "shell.settings.profile.copyIdpOrg",
+                            "shell.settings.profile.copyIdpOwner",
                           )}</Tooltip.Content
                         >
                       </Tooltip.Root>
@@ -505,7 +507,7 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpUsername")}</FormLabel
+                  >{$t("shell.settings.profile.idpName")}</FormLabel
                 >
                 <div class="relative">
                   <Input
@@ -532,7 +534,7 @@
                         </Tooltip.Trigger>
                         <Tooltip.Content
                           >{$t(
-                            "shell.settings.profile.copyIdpUsername",
+                            "shell.settings.profile.copyIdpName",
                           )}</Tooltip.Content
                         >
                       </Tooltip.Root>
@@ -549,13 +551,34 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}>Issuer</FormLabel>
-                <Input
-                  type="text"
-                  bind:value={$form.issuer}
-                  readonly
-                  class="mt-2 bg-muted"
-                  {...props}
-                />
+                <div class="relative">
+                  <Input
+                    type="text"
+                    bind:value={$form.issuer}
+                    readonly
+                    class="mt-2 bg-muted pr-10"
+                    {...props}
+                  />
+                  {#if $form.issuer}
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {#snippet child({ props: tooltipProps })}
+                            <CopyButton
+                              text={$form.issuer || ""}
+                              variant="ghost"
+                              size="icon"
+                              class="h-8 w-8 hover:bg-transparent"
+                              animationDuration={2000}
+                              {...tooltipProps}
+                            />
+                          {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>Copy Issuer</Tooltip.Content>
+                      </Tooltip.Root>
+                    </div>
+                  {/if}
+                </div>
               </div>
             {/snippet}
           </FormControl>
@@ -633,6 +656,12 @@
             <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
               v{version}
             </Badge>
+          {/if}
+          {#if userUuid}
+            <div class="flex items-center gap-x-2">
+              <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
+              <span class="italic text-muted-foreground">{userUuid}</span>
+            </div>
           {/if}
           <div class="flex items-center gap-x-2">
             <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>

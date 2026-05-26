@@ -21,6 +21,7 @@
 
   // Audit state
   let auditInfo = $state({
+    uuid: 'current', // Security settings use 'current' as UUID
     version: 0,
     createdAt: '',
     createdBy: '',
@@ -169,6 +170,12 @@
             <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
               v{auditInfo.version}
             </Badge>
+          {/if}
+          {#if auditInfo.uuid}
+            <div class="flex items-center gap-x-2">
+              <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
+              <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
+            </div>
           {/if}
           <div class="flex items-center gap-x-2">
             <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>

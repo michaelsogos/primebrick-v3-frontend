@@ -14,6 +14,7 @@
         const data = await res.json();
         if (data.success && data.profile) {
           userProfileStore.set({
+            uuid: data.profile.uuid,
             idp_code: data.profile.idp_code,
             idp_org: data.profile.idp_org,
             idp_username: data.profile.idp_username,

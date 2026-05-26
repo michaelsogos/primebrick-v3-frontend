@@ -173,10 +173,10 @@
         "emailPlaceholder": "seu@email.com",
         "idpCode": "IDP Code",
         "copyIdpCode": "Copiar IDP Code",
-        "idpOrg": "IDP Organization",
-        "copyIdpOrg": "Copiar IDP Organization",
-        "idpUsername": "IDP Username",
-        "copyIdpUsername": "Copiar IDP Username",
+        "idpOwner": "IDP Owner",
+        "copyIdpOwner": "Copiar IDP Owner",
+        "idpName": "IDP Name",
+        "copyIdpName": "Copiar IDP Name",
         "admin": "Administrador",
         "verified": "Verificado",
         "emailVerified": "E-mail Verificado",
@@ -187,6 +187,7 @@
         "version": "Versão"
       },
       "audit": {
+        "id": "ID",
         "createdAt": "Criado em",
         "createdBy": "Criado por",
         "updatedAt": "Atualizado em",
@@ -196,7 +197,8 @@
       "organizations": {
         "title": "Organizações",
         "create": {
-          "uuid": "UUID",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
           "displayName": "Nome de exibição",
           "displayNamePlaceholder": "Nome da organização",
           "websiteUrl": "URL do site",
@@ -206,7 +208,10 @@
           "unsavedChanges": "Você tem alterações não salvas. Sair mesmo assim?"
         },
         "update": {
-          "uuid": "UUID",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
+          "copyIdpOwner": "Copiar IDP Owner",
+          "copyIdpName": "Copiar IDP Name",
           "displayName": "Nome de exibição",
           "displayNamePlaceholder": "Nome da organização",
           "websiteUrl": "URL do site",
