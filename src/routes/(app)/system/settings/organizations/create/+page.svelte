@@ -89,17 +89,11 @@
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
     validators: zod4(createSchema),
+    validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
-      // TEMP: Log validation state for diagnosis
-      if (!updateForm.valid) {
-        console.log('[DEBUG] Validation failed:', {
-          errors: updateForm.errors,
-          data: updateForm.data
-        });
-        return;
-      }
+      if (!updateForm.valid) return;
 
       try {
         const body = {
@@ -308,7 +302,7 @@
                     bind:value={$form.display_name}
                     placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
                   />
-                  <FormFieldErrors />
+                  <TranslatedFormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -324,7 +318,7 @@
                     bind:value={$form.website_url}
                     placeholder="https://example.com"
                   />
-                  <FormFieldErrors />
+                  <TranslatedFormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -343,7 +337,7 @@
                     bind:value={$form.idp_owner}
                     placeholder="admin"
                   />
-                  <FormFieldErrors />
+                  <TranslatedFormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -352,6 +346,7 @@
           <FormField form={superFormObj} name="idp_name">
             <FormControl>
               {#snippet children({ props })}
+                {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
                   <AsyncValidatedInput
@@ -360,11 +355,12 @@
                     validateFn={checkIdpNameAvailability}
                     placeholder="acme-corp"
                     onStatusChange={handleIdpNameStatusChange}
+                    externalInvalid={hasZodError}
                     aria-invalid={hasAsyncError ? true : props['aria-invalid']}
                     data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
                   />
-                  <FormFieldErrors />
-                  {#if hasAsyncError}
+                  <TranslatedFormFieldErrors />
+                  {#if hasAsyncError && !hasZodError}
                     <div class="text-destructive text-xs font-medium">
                       {$t('validation.nameTaken')}
                     </div>

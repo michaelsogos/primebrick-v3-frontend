@@ -11,6 +11,7 @@
 		onChange?: (value: string) => void;
 		validateFn: (value: string) => Promise<ValidationResult>;
 		onStatusChange?: (status: ValidationStatus) => void;
+		externalInvalid?: boolean;
 		// All standard input attributes
 		name?: string;
 		id?: string;
@@ -37,6 +38,7 @@
 		onChange,
 		validateFn,
 		onStatusChange,
+		externalInvalid = false,
 		name,
 		id,
 		placeholder,
@@ -61,6 +63,8 @@
 
 	const DEBOUNCE_DELAY = 300;
 	const MIN_CHARS = 3;
+
+	let uiStatus = $derived(externalInvalid ? 'not-valid' : status);
 
 	let isValid = $derived(
 		status === "valid" || status === "idle" || status === "api-error"
@@ -164,15 +168,15 @@
 	/>
 
 	<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-		{#if status === "idle"}
+		{#if uiStatus === "idle"}
 			<CircleCheckBig class="h-4 w-4 text-muted-foreground/50" />
-		{:else if status === "loading"}
+		{:else if uiStatus === "loading"}
 			<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
-		{:else if status === "valid"}
+		{:else if uiStatus === "valid"}
 			<CircleCheckBig class="h-4 w-4 text-green-500" />
-		{:else if status === "not-valid"}
+		{:else if uiStatus === "not-valid"}
 			<TicketX class="h-4 w-4 text-destructive" />
-		{:else if status === "api-error"}
+		{:else if uiStatus === "api-error"}
 			<AlertTriangle class="h-4 w-4 text-yellow-500" />
 		{/if}
 	</div>
