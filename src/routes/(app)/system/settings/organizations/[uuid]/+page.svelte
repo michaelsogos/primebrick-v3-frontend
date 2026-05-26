@@ -129,13 +129,9 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset } = superFormObj;
+  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
 
-  const hasChanges = $derived.by(() => {
-    const t = $tainted;
-    if (!t) return false;
-    return Object.values(t).some((v) => v === true);
-  });
+  const hasChanges = $derived(isTainted($tainted));
 
   async function loadOrganization() {
     loading = true;
@@ -293,7 +289,7 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.uuid')}</FormLabel>
                     <Input
-                      id={props.id}
+                      {...props}
                       bind:value={$form.uuid}
                       readonly
                       class="bg-muted"
@@ -309,11 +305,11 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.displayName')}</FormLabel>
                     <Input
-                      id={props.id}
+                      {...props}
                       bind:value={$form.display_name}
                       placeholder={$t('shell.settings.organizations.update.displayNamePlaceholder')}
                     />
-                    <FormFieldErrors {props} />
+                    <FormFieldErrors />
                   </div>
                 {/snippet}
               </FormControl>
@@ -325,11 +321,11 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.websiteUrl')}</FormLabel>
                     <Input
-                      id={props.id}
+                      {...props}
                       bind:value={$form.website_url}
                       placeholder="https://example.com"
                     />
-                    <FormFieldErrors {props} />
+                    <FormFieldErrors />
                   </div>
                 {/snippet}
               </FormControl>
@@ -344,7 +340,7 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpOwner')}</FormLabel>
                     <Input
-                      id={props.id}
+                      {...props}
                       bind:value={$form.idp_owner}
                       readonly
                       class="bg-muted"
@@ -360,7 +356,7 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpName')}</FormLabel>
                     <Input
-                      id={props.id}
+                      {...props}
                       bind:value={$form.idp_name}
                       readonly
                       class="bg-muted"

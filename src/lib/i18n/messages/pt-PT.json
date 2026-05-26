@@ -88,7 +88,8 @@
     "tooShort": "Deve ter pelo menos 5 caracteres",
     "tooLong": "Não deve exceder {max} caracteres",
     "invalid": "Valor inválido",
-    "nameTaken": "Este nome já está em uso"
+    "nameTaken": "Este nome já está em uso",
+    "invalidFormat": "Deve começar e terminar com uma letra ou um número"
   },
   "shell": {
     "subtitle": "Backoffice",

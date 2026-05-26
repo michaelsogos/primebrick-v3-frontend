@@ -3,33 +3,57 @@
 	import Input from "$lib/components/ui/input/input.svelte";
 	import { CircleCheckBig, TicketX, LoaderCircle, AlertTriangle } from "lucide-svelte";
 	import type { ValidationResult, ValidationStatus } from "$lib/types/validation.js";
+	import type { HTMLInputTypeAttribute } from "svelte/elements";
 
+	// Accept all standard input attributes + our custom props
 	type Props = {
-		value: string;
-		onChange: (value: string) => void;
+		value?: string;
+		onChange?: (value: string) => void;
 		validateFn: (value: string) => Promise<ValidationResult>;
+		onStatusChange?: (status: ValidationStatus) => void;
+		// All standard input attributes
 		name?: string;
 		id?: string;
 		placeholder?: string;
 		disabled?: boolean;
 		class?: string;
-		type?: string;
-		hasError?: boolean;
-		onStatusChange?: (status: ValidationStatus) => void;
+		type?: HTMLInputTypeAttribute;
+		required?: boolean;
+		minlength?: number;
+		maxlength?: number;
+		pattern?: string;
+		"aria-invalid"?: string | boolean;
+		"aria-describedby"?: string;
+		"aria-required"?: string | boolean;
+		"data-fs-error"?: string;
+		// Event handlers - we will compose these
+		oninput?: (e: Event) => void;
+		onblur?: (e: FocusEvent) => void;
+		onchange?: (e: Event) => void;
 	};
 
 	let {
 		value = $bindable(""),
 		onChange,
 		validateFn,
+		onStatusChange,
 		name,
 		id,
 		placeholder,
 		disabled = false,
 		class: className,
 		type = "text",
-		hasError = false,
-		onStatusChange,
+		required,
+		minlength,
+		maxlength,
+		pattern,
+		"aria-invalid": ariaInvalid,
+		"aria-describedby": ariaDescribedby,
+		"aria-required": ariaRequired,
+		"data-fs-error": dataFsError,
+		oninput,
+		onblur,
+		onchange,
 	}: Props = $props();
 
 	let status = $state<ValidationStatus>("idle");
@@ -75,8 +99,11 @@
 	}
 
 	function handleInputChange(e: Event) {
+		// Call parent's oninput first
+		oninput?.(e);
 		const val = (e.currentTarget as HTMLInputElement).value;
-		onChange(val);
+		value = val;
+		onChange?.(val);
 
 		// Clear existing timer
 		if (debounceTimer) {
@@ -94,6 +121,14 @@
 		debounceTimer = setTimeout(() => {
 			performValidation(val);
 		}, DEBOUNCE_DELAY);
+	}
+
+	function handleBlur(e: FocusEvent) {
+		onblur?.(e);
+	}
+
+	function handleChange(e: Event) {
+		onchange?.(e);
 	}
 
 	// Cleanup timer on unmount
@@ -114,12 +149,18 @@
 		{placeholder}
 		{disabled}
 		{type}
-		class={cn(
-			"pr-10",
-			hasError && "border-destructive hover:border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
-			className
-		)}
+		{required}
+		{minlength}
+		{maxlength}
+		{pattern}
+		aria-invalid={ariaInvalid === "true" || ariaInvalid === true}
+		aria-describedby={ariaDescribedby}
+		aria-required={ariaRequired === "true" || ariaRequired === true}
+		data-fs-error={dataFsError}
+		class={cn("pr-10", className)}
 		oninput={handleInputChange}
+		onblur={handleBlur}
+		onchange={handleChange}
 	/>
 
 	<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">

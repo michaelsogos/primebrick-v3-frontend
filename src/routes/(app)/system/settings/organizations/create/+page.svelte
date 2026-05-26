@@ -27,17 +27,23 @@
   import type { ValidationStatus } from '$lib/types/validation.js';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
-  let syncChannel: BroadcastChannel | null = $state(null);
+  let syncChannel: BroadcastChannel | null = null;
 
-  $effect(() => {
-    if (!syncChannel) {
-      syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    }
+  // Custom refinement to ensure strings start and end with alphanumeric characters
+  function startsAndEndsWithAlphanumeric(value: string): boolean {
+    if (!value || value.length === 0) return true; // Skip empty strings (handled by required)
+    const firstChar = value[0];
+    const lastChar = value[value.length - 1];
+    const alphanumericRegex = /^[a-z0-9]$/i;
+    return alphanumericRegex.test(firstChar) && alphanumericRegex.test(lastChar);
+  }
+
+  onMount(() => {
+    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+
     return () => {
-      if (syncChannel) {
-        syncChannel.close();
-        syncChannel = null;
-      }
+      syncChannel?.close();
+      syncChannel = null;
     };
   });
 
@@ -53,10 +59,28 @@
   // Zod schema for organization create form
   const createSchema = z.object({
     uuid: z.string().optional().default(''),
-    display_name: z.string().min(5, { message: 'validation.tooShort' }),
-    website_url: z.string().url({ message: 'validation.invalidUrl' }).max(2048, { message: 'validation.tooLong' }).optional().or(z.literal('')),
-    idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: 'validation.tooLong' }).default('admin'),
-    idp_name: z.string().min(1, { message: 'validation.required' }).max(255, { message: 'validation.tooLong' }),
+    display_name: z.string()
+      .min(5, { message: 'validation.tooShort' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
+    website_url: z.string()
+      .url({ message: 'validation.invalidUrl' })
+      .max(2048, { message: 'validation.tooLong' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
+      .optional()
+      .or(z.literal('')),
+    idp_owner: z.string()
+      .min(1, { message: 'validation.required' })
+      .max(255, { message: 'validation.tooLong' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
+      .default('admin'),
+    idp_name: z.string()
+      .min(5, { message: 'validation.tooShort' })
+      .max(255, { message: 'validation.tooLong' })
+      .superRefine((value, ctx) => {
+        if (!startsAndEndsWithAlphanumeric(value)) {
+          ctx.addIssue({ code: 'custom', message: 'validation.invalidFormat' });
+        }
+      }),
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -68,7 +92,14 @@
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
-      if (!updateForm.valid) return;
+      // TEMP: Log validation state for diagnosis
+      if (!updateForm.valid) {
+        console.log('[DEBUG] Validation failed:', {
+          errors: updateForm.errors,
+          data: updateForm.data
+        });
+        return;
+      }
 
       try {
         const body = {
@@ -108,6 +139,8 @@
 
           // Notify parent BEFORE navigating away; after goto the component may unmount and close the channel
           notifyParentRefresh();
+          // Reset taint baseline so hasChanges becomes false before navigation
+          reset({ data: $form });
           // Navigate to the update page for the newly created organization
           await goto(`/system/settings/organizations/${data.organization.uuid}`);
         }
@@ -118,24 +151,35 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset } = superFormObj;
+  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
 
-  const hasChanges = $derived.by(() => {
-    const t = $tainted;
-    if (!t) return false;
-    return Object.values(t).some((v) => v === true);
-  });
+  const hasChanges = $derived(isTainted($tainted));
 
-  // Auto-slug idp_name from display_name when idp_name is empty
+  // Auto-slug idp_name from display_name when idp_name is empty (set once only)
+  let didAutoSlugIdpName = $state(false);
+
   $effect(() => {
-    if (!$form.idp_name && $form.display_name) {
-      const slug = $form.display_name
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      $form.idp_name = slug;
+    if (didAutoSlugIdpName) return;
+
+    // If user already has an idp_name (e.g. loaded defaults), stop
+    if ($form.idp_name) {
+      didAutoSlugIdpName = true;
+      return;
     }
+
+    const display = $form.display_name?.trim();
+    if (!display) return;
+
+    const slug = display
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    // Important: do not write an empty slug (prevents infinite loop)
+    if (!slug) return;
+
+    $form.idp_name = slug;
+    didAutoSlugIdpName = true;
   });
 
   // Audit state (local for create page)
@@ -220,9 +264,12 @@
 
   // Track validation status for idp_name
   let idpNameValidationStatus = $state<ValidationStatus>("idle");
+  let hasAsyncError = $derived(idpNameValidationStatus === 'not-valid');
 
   function handleIdpNameStatusChange(status: ValidationStatus) {
     idpNameValidationStatus = status;
+    // Async error is now tracked via status only
+    // Zod errors are handled by Superforms/Formsnap
   }
 </script>
 
@@ -257,11 +304,11 @@
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
                   <Input
-                    id={props.id}
+                    {...props}
                     bind:value={$form.display_name}
                     placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
                   />
-                  <TranslatedFormFieldErrors {props} />
+                  <FormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -273,11 +320,11 @@
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
                   <Input
-                    id={props.id}
+                    {...props}
                     bind:value={$form.website_url}
                     placeholder="https://example.com"
                   />
-                  <TranslatedFormFieldErrors {props} />
+                  <FormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -292,11 +339,11 @@
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
                   <Input
-                    id={props.id}
+                    {...props}
                     bind:value={$form.idp_owner}
                     placeholder="admin"
                   />
-                  <TranslatedFormFieldErrors {props} />
+                  <FormFieldErrors />
                 </div>
               {/snippet}
             </FormControl>
@@ -308,16 +355,16 @@
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
                   <AsyncValidatedInput
-                    id={props.id}
-                    value={$form.idp_name}
-                    onChange={(v) => $form.idp_name = v}
+                    {...props}
+                    bind:value={$form.idp_name}
                     validateFn={checkIdpNameAvailability}
                     placeholder="acme-corp"
-                    hasError={$errors.idp_name !== undefined || idpNameValidationStatus === 'not-valid'}
                     onStatusChange={handleIdpNameStatusChange}
+                    aria-invalid={hasAsyncError ? true : props['aria-invalid']}
+                    data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
                   />
-                  <TranslatedFormFieldErrors {props} />
-                  {#if idpNameValidationStatus === 'not-valid'}
+                  <FormFieldErrors />
+                  {#if hasAsyncError}
                     <div class="text-destructive text-xs font-medium">
                       {$t('validation.nameTaken')}
                     </div>
