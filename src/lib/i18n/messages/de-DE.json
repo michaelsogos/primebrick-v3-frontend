@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Profil",
         "organizations": "Organisationen",
+        "users": "Benutzer",
         "security": "Sicherheit",
         "modules": "Module",
         "templates": "Vorlagen"
@@ -218,6 +219,44 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "Es gibt ungespeicherte Änderungen. Sind Sie sicher, dass Sie verlassen möchten?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Benutzer erstellen",
+          "username": "Benutzername",
+          "usernamePlaceholder": "Benutzername eingeben",
+          "password": "Passwort",
+          "passwordPlaceholder": "Passwort eingeben",
+          "displayName": "Anzeigename",
+          "displayNamePlaceholder": "Anzeigename eingeben",
+          "email": "E-Mail",
+          "emailPlaceholder": "E-Mail eingeben",
+          "roles": "Rollen",
+          "avatarInitials": "Avatar-Initialen",
+          "avatarInitialsPlaceholder": "Initialen eingeben (z.B. JD)",
+          "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie verlassen möchten?"
+        },
+        "update": {
+          "title": "Benutzer bearbeiten",
+          "displayName": "Anzeigename",
+          "displayNamePlaceholder": "Anzeigename eingeben",
+          "email": "E-Mail",
+          "emailPlaceholder": "E-Mail eingeben",
+          "username": "Benutzername",
+          "avatarInitials": "Avatar-Initialen",
+          "avatarInitialsPlaceholder": "Initialen eingeben (z.B. JD)",
+          "avatarColor": "Avatar-Farbe",
+          "isActive": "Aktiv",
+          "isAdmin": "Administrator",
+          "roles": "Rollen",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "IDP Code kopieren",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "IDP Owner kopieren",
+          "idpName": "IDP Benutzername",
+          "copyIdpName": "IDP Benutzername kopieren",
+          "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie verlassen möchten?"
         }
       },
       "security": {
@@ -365,7 +404,26 @@
       "recordRestored": "Datensatz wiederhergestellt"
     },
     "userProfile": {
-      "title": "Benutzerprofil"
+      "title": "Benutzer",
+      "singular": "Benutzer",
+      "plural": "Benutzer",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Anzeigename",
+        "email": "E-Mail",
+        "is_active": "Aktiv",
+        "is_admin": "Administrator",
+        "is_verified": "Verifiziert",
+        "email_verified": "E-Mail Verifiziert",
+        "created_at": "Erstellt am",
+        "created_by": "Erstellt von",
+        "updated_at": "Aktualisiert am",
+        "updated_by": "Aktualisiert von",
+        "version": "Version",
+        "deleted_at": "Gelöscht am",
+        "deleted_by": "Gelöscht von"
+      }
     },
     "list": {
       "datetimeIana": {

@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Perfil",
         "organizations": "Organizações",
+        "users": "Utilizadores",
         "security": "Segurança",
         "modules": "Módulos",
         "templates": "Modelos"
@@ -218,6 +219,44 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "Há alterações não guardadas. Tem a certeza de que quer sair?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Criar Utilizador",
+          "username": "Nome de utilizador",
+          "usernamePlaceholder": "Introduzir nome de utilizador",
+          "password": "Palavra-passe",
+          "passwordPlaceholder": "Introduzir palavra-passe",
+          "displayName": "Nome de exibição",
+          "displayNamePlaceholder": "Introduzir nome de exibição",
+          "email": "E-mail",
+          "emailPlaceholder": "Introduzir e-mail",
+          "roles": "Funções",
+          "avatarInitials": "Iniciais do Avatar",
+          "avatarInitialsPlaceholder": "Introduzir iniciais (ex. JD)",
+          "unsavedChanges": "Tem alterações não guardadas. Tem a certeza de que deseja sair?"
+        },
+        "update": {
+          "title": "Editar Utilizador",
+          "displayName": "Nome de exibição",
+          "displayNamePlaceholder": "Introduzir nome de exibição",
+          "email": "E-mail",
+          "emailPlaceholder": "Introduzir e-mail",
+          "username": "Nome de Utilizador",
+          "avatarInitials": "Iniciais do Avatar",
+          "avatarInitialsPlaceholder": "Introduzir iniciais (ex. JD)",
+          "avatarColor": "Cor do avatar",
+          "isActive": "Ativo",
+          "isAdmin": "Administrador",
+          "roles": "Funções",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "Copiar IDP Owner",
+          "idpName": "IDP Nome de Utilizador",
+          "copyIdpName": "Copiar IDP Nome de Utilizador",
+          "unsavedChanges": "Tem alterações não guardadas. Tem a certeza de que deseja sair?"
         }
       },
       "security": {
@@ -367,7 +406,26 @@
       "recordRestored": "Registo restaurado"
     },
     "userProfile": {
-      "title": "Perfil de Usuário"
+      "title": "Utilizadores",
+      "singular": "Utilizador",
+      "plural": "Utilizadores",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Nome de exibição",
+        "email": "E-mail",
+        "is_active": "Ativo",
+        "is_admin": "Administrador",
+        "is_verified": "Verificado",
+        "email_verified": "E-mail Verificado",
+        "created_at": "Criado em",
+        "created_by": "Criado por",
+        "updated_at": "Atualizado em",
+        "updated_by": "Atualizado por",
+        "version": "Versão",
+        "deleted_at": "Eliminado em",
+        "deleted_by": "Eliminado por"
+      }
     },
     "list": {
       "datetimeIana": {

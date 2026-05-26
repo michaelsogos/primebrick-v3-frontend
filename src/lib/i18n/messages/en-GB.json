@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Profile",
         "organizations": "Organizations",
+        "users": "Users",
         "security": "Security",
         "modules": "Modules",
         "templates": "Templates"
@@ -218,6 +219,44 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "There are unsaved changes. Are you sure you want to leave?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Create User",
+          "username": "Username",
+          "usernamePlaceholder": "Enter username",
+          "password": "Password",
+          "passwordPlaceholder": "Enter password",
+          "displayName": "Display Name",
+          "displayNamePlaceholder": "Enter display name",
+          "email": "Email",
+          "emailPlaceholder": "Enter email",
+          "roles": "Roles",
+          "avatarInitials": "Avatar Initials",
+          "avatarInitialsPlaceholder": "Enter initials (e.g., JD)",
+          "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+        },
+        "update": {
+          "title": "Edit User",
+          "username": "Username",
+          "displayName": "Display Name",
+          "displayNamePlaceholder": "Enter display name",
+          "email": "Email",
+          "emailPlaceholder": "Enter email",
+          "avatarInitials": "Avatar Initials",
+          "avatarInitialsPlaceholder": "Enter initials (e.g., JD)",
+          "avatarColor": "Avatar Color",
+          "isActive": "Active",
+          "isAdmin": "Admin",
+          "roles": "Roles",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copy IDP Code",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "Copy IDP Owner",
+          "idpName": "IDP Username",
+          "copyIdpName": "Copy IDP Username",
+          "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
         }
       },
       "security": {
@@ -377,7 +416,26 @@
       "recordRestored": "Record restored"
     },
     "userProfile": {
-      "title": "User Profile"
+      "title": "Users",
+      "singular": "User",
+      "plural": "Users",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Display Name",
+        "email": "Email",
+        "is_active": "Active",
+        "is_admin": "Admin",
+        "is_verified": "Verified",
+        "email_verified": "Email Verified",
+        "created_at": "Created At",
+        "created_by": "Created By",
+        "updated_at": "Updated At",
+        "updated_by": "Updated By",
+        "version": "Version",
+        "deleted_at": "Deleted At",
+        "deleted_by": "Deleted By"
+      }
     },
     "list": {
       "datetimeIana": {

@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Profil",
         "organizations": "Organisations",
+        "users": "Utilisateurs",
         "security": "Sécurité",
         "modules": "Modules",
         "templates": "Modèles"
@@ -218,6 +219,44 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "Il y a des modifications non enregistrées. Êtes-vous sûr de vouloir partir?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Créer Utilisateur",
+          "username": "Nom d'utilisateur",
+          "usernamePlaceholder": "Entrez le nom d'utilisateur",
+          "password": "Mot de passe",
+          "passwordPlaceholder": "Entrez le mot de passe",
+          "displayName": "Nom d'affichage",
+          "displayNamePlaceholder": "Entrez le nom d'affichage",
+          "email": "E-mail",
+          "emailPlaceholder": "Entrez l'e-mail",
+          "roles": "Rôles",
+          "avatarInitials": "Initiales de l'avatar",
+          "avatarInitialsPlaceholder": "Entrez les initiales (ex. JD)",
+          "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
+        },
+        "update": {
+          "title": "Modifier Utilisateur",
+          "displayName": "Nom d'affichage",
+          "displayNamePlaceholder": "Entrez le nom d'affichage",
+          "email": "E-mail",
+          "emailPlaceholder": "Entrez l'e-mail",
+          "username": "Nom d'utilisateur",
+          "avatarInitials": "Initiales de l'avatar",
+          "avatarInitialsPlaceholder": "Entrez les initiales (ex. JD)",
+          "avatarColor": "Couleur de l'avatar",
+          "isActive": "Actif",
+          "isAdmin": "Administrateur",
+          "roles": "Rôles",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copier IDP Code",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "Copier IDP Owner",
+          "idpName": "IDP Nom d'utilisateur",
+          "copyIdpName": "Copier IDP Nom d'utilisateur",
+          "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
         }
       },
       "security": {
@@ -356,7 +395,26 @@
       "recordRestored": "Enregistrement restauré"
     },
     "userProfile": {
-      "title": "Profil Utilisateur"
+      "title": "Utilisateurs",
+      "singular": "Utilisateur",
+      "plural": "Utilisateurs",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Nom d'affichage",
+        "email": "E-mail",
+        "is_active": "Actif",
+        "is_admin": "Administrateur",
+        "is_verified": "Vérifié",
+        "email_verified": "E-mail Vérifié",
+        "created_at": "Créé le",
+        "created_by": "Créé par",
+        "updated_at": "Mis à jour le",
+        "updated_by": "Mis à jour par",
+        "version": "Version",
+        "deleted_at": "Supprimé le",
+        "deleted_by": "Supprimé par"
+      }
     },
     "list": {
       "datetimeIana": {

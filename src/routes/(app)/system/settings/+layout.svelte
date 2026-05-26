@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { User, ShieldCheck, Package, FileText, Building2 } from 'lucide-svelte';
+  import { User, ShieldCheck, Package, FileText, Building2, Users } from 'lucide-svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
@@ -16,6 +16,7 @@
   const tabs = [
     { id: 'profile', label: $t('shell.settings.tabs.profile'), icon: User, href: '/system/settings/profile' },
     { id: 'organizations', label: $t('shell.settings.tabs.organizations'), icon: Building2, href: '/system/settings/organizations' },
+    { id: 'users', label: $t('shell.settings.tabs.users'), icon: Users, href: '/system/settings/users' },
     { id: 'security', label: $t('shell.settings.tabs.security'), icon: ShieldCheck, href: '/system/settings/security' },
     { id: 'modules', label: $t('shell.settings.tabs.modules'), icon: Package, href: '/system/settings/modules' },
     { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText, href: '/system/settings/templates' }
