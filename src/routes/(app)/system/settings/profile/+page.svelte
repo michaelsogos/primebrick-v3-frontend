@@ -331,6 +331,7 @@
       <!-- Color Picker -->
       <div>
         <label
+          for="avatar-color-trigger"
           class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {$t("shell.settings.profile.avatarColor")}
@@ -339,7 +340,7 @@
           <Popover.Root>
             <Popover.Trigger>
               {#snippet child({ props })}
-                <Button {...props} variant="outline">
+                <Button {...props} variant="outline" id="avatar-color-trigger">
                   <div class="flex items-center gap-4">
                     <div
                       class="w-5 h-5 rounded-full border shadow-sm"
