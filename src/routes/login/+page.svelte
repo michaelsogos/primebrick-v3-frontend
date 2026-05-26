@@ -62,7 +62,6 @@
           // DEBUG: Log response details
           console.log('[Login Debug] Response status:', response.status);
           console.log('[Login Debug] Response headers:', Object.fromEntries(response.headers.entries()));
-          console.log('[Login Debug] Set-Cookie header:', response.headers.get('set-cookie'));
 
           if (!response.ok) {
             const errorData = await response.json();
@@ -115,6 +114,7 @@
 
           if (data.success && data.user) {
             userProfileStore.set(data.user);
+            console.log('[Login Debug] Cookies after login:', document.cookie);
           }
 
           const redirectUrl = getAndClearRedirectUrl();

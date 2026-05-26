@@ -68,6 +68,8 @@ export type EntityListListMeta = {
     edit?: boolean;
     preview?: boolean;
   };
+  /** Whether the create action is enabled for this entity */
+  enableCreateAction?: boolean;
 };
 
 /** All columns in the order they should be displayed (sticky -> data -> auditing). */

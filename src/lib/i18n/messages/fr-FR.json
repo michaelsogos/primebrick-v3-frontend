@@ -53,6 +53,7 @@
     "time": "Heure",
     "edit": "Modifier",
     "cancel": "Annuler",
+    "exit": "Quitter",
     "remove": "Supprimer",
     "clearAll": "Effacer tous les filtres",
     "delete": "Supprimer",
@@ -80,6 +81,15 @@
     "copyHtml": "Copier HTML",
     "confirm": "Confirmer",
     "deletedRecord": "Enregistrement supprimé"
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "invalidUrl": "Format d'URL invalide",
+    "tooShort": "Doit contenir au moins 5 caractères",
+    "tooLong": "Ne doit pas dépasser {max} caractères",
+    "invalid": "Valeur invalide",
+    "nameTaken": "Ce nom est déjà utilisé",
+    "invalidFormat": "Doit commencer et finir par une lettre ou un chiffre"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -145,8 +155,10 @@
     },
     "settings": {
       "title": "Paramètres",
+      "breadcrumbMenu": "Onglets de paramètres",
       "tabs": {
         "profile": "Profil",
+        "organizations": "Organisations",
         "security": "Sécurité",
         "modules": "Modules",
         "templates": "Modèles"
@@ -161,10 +173,10 @@
         "emailPlaceholder": "votre@email.com",
         "idpCode": "IDP Code",
         "copyIdpCode": "Copier IDP Code",
-        "idpOrg": "IDP Organization",
-        "copyIdpOrg": "Copier IDP Organization",
-        "idpUsername": "IDP Username",
-        "copyIdpUsername": "Copier IDP Username",
+        "idpOwner": "IDP Owner",
+        "copyIdpOwner": "Copier IDP Owner",
+        "idpName": "IDP Name",
+        "copyIdpName": "Copier IDP Name",
         "admin": "Administrateur",
         "verified": "Vérifié",
         "emailVerified": "E-mail Vérifié",
@@ -173,6 +185,40 @@
         "updatedAt": "Mis à jour le",
         "updatedBy": "Mis à jour par",
         "version": "Version"
+      },
+      "audit": {
+        "id": "ID",
+        "createdAt": "Créé le",
+        "createdBy": "Créé par",
+        "updatedAt": "Mis à jour le",
+        "updatedBy": "Mis à jour par",
+        "lastSyncedAt": "Dernière synchronisation"
+      },
+      "organizations": {
+        "title": "Organisations",
+        "create": {
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copier IDP Code",
+          "displayName": "Nom d'affichage",
+          "displayNamePlaceholder": "Nom de l'organisation",
+          "websiteUrl": "URL du site web",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "title": "Nouvelle Organisation",
+          "unsavedChanges": "Vous avez des modifications non enregistrées. Quitter quand même?"
+        },
+        "update": {
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copier IDP Code",
+          "copyIdpOwner": "Copier IDP Owner",
+          "copyIdpName": "Copier IDP Name",
+          "displayName": "Nom d'affichage",
+          "displayNamePlaceholder": "Nom de l'organisation",
+          "websiteUrl": "URL du site web",
+          "idpOwner": "IDP Owner",
+          "idpName": "IDP Name",
+          "unsavedChanges": "Il y a des modifications non enregistrées. Êtes-vous sûr de vouloir partir?"
+        }
       },
       "security": {
         "title": "Sécurité",
@@ -262,6 +308,53 @@
     }
   },
   "entities": {
+    "versionHistory": {
+      "title": "Historique des Versions",
+      "loading": "Chargement de l'historique des versions…",
+      "error": "Échec du chargement de l'historique des versions",
+      "empty": "Aucun historique de versions disponible",
+      "viewMore": "Voir plus",
+      "showDetails": "Afficher les détails",
+      "hideDetails": "Masquer les détails",
+      "actions": {
+        "CREATE": "Création",
+        "INSERT": "Création",
+        "UPDATE": "Mise à jour",
+        "DELETE": "Suppression",
+        "SOFT_DELETE": "Suppression",
+        "HARD_DELETE": "Suppression définitive",
+        "RESTORE": "Restauration"
+      },
+      "field": {
+        "uuid": "UUID",
+        "idp_code": "Code IDP",
+        "idp_owner": "Propriétaire IDP",
+        "idp_name": "Nom IDP",
+        "display_name": "Nom d'affichage",
+        "website_url": "URL du site web",
+        "user_count": "Nombre d'utilisateurs",
+        "created_at": "Créé le",
+        "updated_at": "Mis à jour le",
+        "created_by": "Créé par",
+        "updated_by": "Mis à jour par",
+        "last_synced_at": "Dernière synchronisation",
+        "version": "Version",
+        "deleted_at": "Supprimé le",
+        "deleted_by": "Supprimé par"
+      },
+      "fieldModified": "Champ {field} modifié de {from} à {to}",
+      "notSet": "non défini",
+      "set": "défini à",
+      "unchanged": "inchangé à",
+      "cleared": "effacé",
+      "changedFrom": "modifié de",
+      "to": "à",
+      "null": "vide",
+      "recordCreated": "Enregistrement créé",
+      "recordHardDeleted": "Enregistrement supprimé définitivement",
+      "recordSoftDeleted": "Enregistrement supprimé",
+      "recordRestored": "Enregistrement restauré"
+    },
     "userProfile": {
       "title": "Profil Utilisateur"
     },
@@ -472,6 +565,35 @@
         "recordSoftDeleted": "Enregistrement supprimé",
         "recordHardDeleted": "Enregistrement supprimé définitivement",
         "recordRestored": "Enregistrement restauré"
+      }
+    },
+    "organization": {
+      "title": "Gestion des organisations",
+      "singular": "organisation",
+      "plural": "organisations",
+      "create": {
+        "title": "Créer une nouvelle organisation",
+        "description": "Remplissez le formulaire pour créer une nouvelle organisation",
+        "body1": "Cette page vous permet de créer une nouvelle organisation dans le système.",
+        "body2": "Après avoir créé l'organisation, vous pouvez gérer ses membres et ses configurations.",
+        "fake1": "Définissez le nom et le code de l'organisation",
+        "fake2": "Configurez les autorisations et les rôles",
+        "fake3": "Attribuez des utilisateurs à l'organisation"
+      },
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "Code IDP",
+        "display_name": "Nom d'affichage",
+        "website_url": "URL du site web",
+        "user_count": "Nombre d'utilisateurs",
+        "created_at": "Créé le",
+        "updated_at": "Mis à jour le",
+        "created_by": "Créé par",
+        "updated_by": "Mis à jour par",
+        "last_synced_at": "Dernière synchronisation",
+        "version": "Version",
+        "deleted_at": "Supprimé le",
+        "deleted_by": "Supprimé par"
       }
     }
   }

@@ -168,7 +168,7 @@
   );
 
   // Use reactive user profile store — read .current directly so Svelte 5 tracks mutations
-  const userName = $derived(userProfileStore.current?.displayName || userProfileStore.current?.username || 'Prime Brick');
+  const userName = $derived(userProfileStore.current?.display_name || userProfileStore.current?.username || 'Prime Brick');
   const userEmail = $derived(userProfileStore.current?.email || 'm@example.com');
   const avatarStyle = $derived.by(() => {
     const color = userProfileStore.current?.avatar_color;
@@ -496,7 +496,7 @@
 
             <DropdownMenu.Group>
               <DropdownMenu.Item asChild>
-                <a href="/system/settings" class="flex items-center gap-2">
+                <a href="/system/settings/profile" class="flex items-center gap-2">
                   <Settings />
                   <span>{$t('shell.userMenu.itemSettings')}</span>
                 </a>
