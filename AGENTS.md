@@ -8,6 +8,22 @@
 - This applies to ALL situations - no exceptions
 - See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules including commit rules
 
+
+## Svelte 5 & TypeScript Mandatory Rules
+You are an expert Svelte 5 and TypeScript developer. You MUST EXCLUSIVELY use Svelte 5 Runes and native types.
+
+1. **STATE**: Use `let x = $state<Type>(value)`.
+2. **PROPS**: Use typed destructuring directly from `$props()`.
+   - Example: `let { name, age }: { name: string; age: number } = $props();`
+   - Optional with defaults: `let { value = 0 }: { value?: number } = $props();`
+3. **DERIVED**: Use `$derived(expression)`. 
+   - WARNING: Do NOT put anonymous functions inside `$derived()`. Write `$derived(a + b)` and NOT `$derived(() => a + b)`.
+   - For complex logic, loops, or multiple conditions, you MUST use `$derived.by<Type>(() => { ... return value; })`.
+4. **EVENTS**: Do NOT use `createEventDispatcher`. Use callbacks passed as props, typing them as functions.
+   - Example: `let { onchange }: { onchange: (v: string) => void } = $props();`
+5. **CHILDREN & SNIPPETS**: To pass HTML elements or components as children, use the `Snippet` type.
+   - Example: `let { children }: { children: Snippet } = $props();` inside `{#render children()}`
+
 ## Repository overview
 
 Independent Git repository containing the Primebrick SvelteKit application.
