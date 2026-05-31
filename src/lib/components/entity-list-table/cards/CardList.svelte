@@ -72,13 +72,12 @@
     {@const rk = rowKey(r)}
     {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
     {@const rowDeleted = isRowDeleted(r)}
-    <div
-      role="button"
-      tabindex={rowSelectionEnabled ? 0 : -1}
-      aria-disabled={!rowSelectionEnabled}
+    <button
+      type="button"
+      disabled={!rowSelectionEnabled}
       data-state={rowSelected ? 'selected' : undefined}
       class={cn(
-        'group rounded-md border bg-background p-3 shadow-sm transition-colors flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4',
+        'group rounded-md border bg-background p-3 shadow-sm transition-colors flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 text-left',
         rowSelectionEnabled
           ? rowSelected
             ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800'
@@ -165,6 +164,6 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       {/if}
-    </div>
+    </button>
   {/each}
 </div>

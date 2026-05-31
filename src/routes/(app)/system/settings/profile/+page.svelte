@@ -61,7 +61,7 @@
 
       try {
         // Exclude immutable IDP fields from PATCH request
-        const { idp_code, idp_org, idp_username, ...requestData } =
+        const { idp_code, idp_org, idp_username, is_admin, is_verified, email_verified, issuer, ...requestData } =
           updateForm.data;
         const response = await apiFetch("/api/v1/auth/me", {
           method: "PATCH",
@@ -296,7 +296,7 @@
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
 <!-- FORM CONTENT -->
-<div class="flex-1 overflow-auto">
+<div class="flex-1 overflow-auto p-4">
   <div class="space-y-6">
   <!-- Top Section: 2 columns 50/50 -->
   <div class="grid grid-cols-2 gap-6">
