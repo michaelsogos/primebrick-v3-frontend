@@ -19,7 +19,7 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { beforeNavigate } from '$app/navigation';
-  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { interpolateTemplate } from '$lib/template-interpolate';

@@ -3,7 +3,7 @@
   import { t } from '$lib/i18n';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { crmModuleMenuSegment } from '$lib/breadcrumb/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
 </script>
 

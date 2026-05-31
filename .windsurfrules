@@ -1,0 +1,30 @@
+# ============================================================================
+# AGENT EXECUTION BEHAVIOR DEFINITION (CRITICAL OVERRIDES)
+# ============================================================================
+
+[PLANNING AND MODE DISCIPLINE]
+- When the user selects "PLAN" mode or explicitly mentions planning, you MUST STOP after outputting the Markdown plan.
+- DO NOT transition to CODE mode automatically. 
+- DO NOT execute file modifications, creation, or code tools until the user explicitly responds with approval (e.g., "proceed", "go ahead", "execute").
+- If you write code before receiving a clear approval prompt, you are violating protocol.
+
+[IMMEDIATE INSPECTION & VERIFICATION RULE]
+- The word "verifica" (or verify/check) means IMMEDIATE ACTION IN THE PRESENT MOMENT.
+- When a verification or check is requested to prepare a plan, you MUST execute the reading/inspection tools (read_file, grep, directory_list, etc.) NOW, during the current turn.
+- DO NOT postpone verifications to runtime or put them as a "step to do later" inside the plan.
+- You must gather all necessary data from the codebase first, analyze it, and use THAT real-time evidence to construct the final plan.
+
+[PACKAGE MANAGEMENT & VERSION VERIFICATION PROTOCOL]
+- ALWAYS use `pnpm view <package> version` as the absolute primary source for package versions.
+- DO NOT rely on web search results for package versions, as they can be stale or misread. 
+- You must verify version data using local terminal commands in the current workspace.
+- Document the exact source of each critical piece of information directly inside your generated plans.
+- Cross-verify all version information with multiple local sources (e.g., package.json, pnpm-lock.yaml) before making architectural choices.
+
+
+[ICON & EXTERNAL DEPENDENCY VERIFICATION PROTOCOL]
+- When working with Lucide icons or any external dependency, ALWAYS verify the correct icon/component names empirically on the official website (e.g., https://lucide.dev/icons/).
+- DO NOT assume that existing code uses correct names - verify systematically.
+- For boolean icons: use CircleCheck (NOT CheckCircle) and CircleX (NOT XCircle).
+- Never make assumptions about external dependency names without verification.
+- Apply empirical verification to ALL external dependencies, not just the ones being changed.

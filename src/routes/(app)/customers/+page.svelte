@@ -12,7 +12,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import { browser } from '$app/environment';
-  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { crmModuleMenuSegment } from '$lib/breadcrumb/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';

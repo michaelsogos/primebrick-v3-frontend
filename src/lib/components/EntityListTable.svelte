@@ -77,7 +77,7 @@
     Copy,
     Download,
     Funnel,
-    CheckCircle,
+    CircleCheck,
     Info,
     RefreshCw,
     FileClock
@@ -2507,23 +2507,48 @@
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
   {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
-    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
-    {@const parts = formatDatetimeCellDisplay(
-      col,
-      row as Record<string, unknown>,
-      $uiLang,
-      mode
-    )}
-    {#if isDatetimeIanaRecordMode(col) && parts.iana}
-      <div class="flex min-w-0 flex-col gap-1">
-        <span class="min-w-0 truncate">{parts.text}</span>
-        <Badge
-          variant="outline"
-          class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-        >{parts.iana}</Badge>
-      </div>
+    {@const value = row[col.key]}
+    {#if col.type === 'boolean'}
+      {#if value === true}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <CircleCheck class="size-4 text-green-600 shrink-0" />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p>{$t(`entities.userProfile.fields.${col.key}`)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else if value === false}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <CircleX class="size-4 text-muted-foreground shrink-0" />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p>{$t(`entities.userProfile.fields.${col.key}_false`)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else}
+        <span class="min-w-0 truncate">-</span>
+      {/if}
     {:else}
-      <span class="min-w-0 truncate">{parts.text}</span>
+      {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+      {@const parts = formatDatetimeCellDisplay(
+        col,
+        row as Record<string, unknown>,
+        $uiLang,
+        mode
+      )}
+      {#if isDatetimeIanaRecordMode(col) && parts.iana}
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="min-w-0 truncate">{parts.text}</span>
+          <Badge
+            variant="outline"
+            class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+          >{parts.iana}</Badge>
+        </div>
+      {:else}
+        <span class="min-w-0 truncate">{parts.text}</span>
+      {/if}
     {/if}
   {/snippet}
 

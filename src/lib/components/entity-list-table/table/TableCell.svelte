@@ -5,6 +5,8 @@
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { uiLang } from '$lib/i18n/store.svelte';
+  import { CircleCheck, CircleX } from 'lucide-svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {
     row,
@@ -38,6 +40,28 @@
 {:else if column.type === 'datetime' || column.type === 'date'}
   {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}
   {formatListCellValue(column, value, $uiLang)}
+{:else if column.type === 'boolean'}
+  {#if value === true}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <CircleCheck class="size-4 text-green-600" />
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <p>{$t(`entities.userProfile.fields.${column.key}`)}</p>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {:else if value === false}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <CircleX class="size-4 text-muted-foreground" />
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <p>{$t(`entities.userProfile.fields.${column.key}_false`)}</p>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {:else}
+    -
+  {/if}
 {:else}
   {formatListCellValue(column, value, $uiLang)}
 {/if}
