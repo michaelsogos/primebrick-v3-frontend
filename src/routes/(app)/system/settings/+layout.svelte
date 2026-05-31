@@ -3,8 +3,8 @@
   import { User, ShieldCheck, Package, FileText, Building2, Users } from 'lucide-svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
-  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { page } from '$app/state';
 
   let { children } = $props();

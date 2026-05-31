@@ -14,6 +14,7 @@
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
 
@@ -546,7 +547,15 @@
     }
   }
 
-  init();
+  onMount(async () => {
+    try {
+      await init();
+    } catch (err) {
+      console.error("Failed to initialize users list:", err);
+    } finally {
+      loading = false;
+    }
+  });
 
   onConnectivityRestored(() => {
     void refreshRows();

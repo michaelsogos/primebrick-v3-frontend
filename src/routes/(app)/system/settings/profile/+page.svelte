@@ -551,7 +551,7 @@
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
-                <FormLabel for={props.id}>Issuer</FormLabel>
+                <FormLabel for={props.id}>{$t("shell.settings.profile.idpIssuer")}</FormLabel>
                 <div class="relative">
                   <Input
                     type="text"
@@ -575,7 +575,7 @@
                             />
                           {/snippet}
                         </Tooltip.Trigger>
-                        <Tooltip.Content>Copy Issuer</Tooltip.Content>
+                        <Tooltip.Content>{$t("shell.settings.profile.copyIdpIssuer")}</Tooltip.Content>
                       </Tooltip.Root>
                     </div>
                   {/if}
@@ -589,7 +589,7 @@
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.verified")}</FormLabel>
+                <FormLabel for={props.id}>{$t("shell.settings.profile.idpVerified")}</FormLabel>
                 <div class="mt-2 flex items-center gap-2">
                   <Checkbox
                     checked={$form.is_verified === true}
@@ -605,7 +605,7 @@
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.emailVerified")}</FormLabel>
+                <FormLabel for={props.id}>{$t("shell.settings.profile.idpEmailVerified")}</FormLabel>
                 <div class="mt-2 flex items-center gap-2">
                   <Checkbox
                     checked={$form.email_verified === true}
@@ -621,7 +621,7 @@
           <FormControl>
             {#snippet children({ props })}
               <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.admin")}</FormLabel>
+                <FormLabel for={props.id}>{$t("shell.settings.profile.idpAdmin")}</FormLabel>
                 <div class="mt-2 flex items-center gap-2">
                   <Checkbox
                     checked={$form.is_admin === true}

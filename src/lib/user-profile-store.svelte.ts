@@ -41,7 +41,7 @@ export const userProfileStore = {
   get current() { return currentProfile; },
   
   set(profile: Partial<UserProfile>) {
-    console.log('[userProfileStore] set called with:', profile);
+    console.log('[userProfileStore] set called with:', $state.snapshot(profile));
     if (!currentProfile) {
       currentProfile = {
         uuid: profile.uuid,
@@ -72,7 +72,7 @@ export const userProfileStore = {
       // Full object replacement ensures reactivity
       currentProfile = { ...currentProfile, ...profile };
     }
-    console.log('[userProfileStore] updated currentProfile:', currentProfile);
+    console.log('[userProfileStore] updated currentProfile:', $state.snapshot(currentProfile));
     sessionStorage.setItem('user', JSON.stringify(currentProfile));
   }
 };

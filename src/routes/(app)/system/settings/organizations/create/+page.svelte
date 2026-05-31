@@ -19,7 +19,7 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { beforeNavigate, goto } from '$app/navigation';
-  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
