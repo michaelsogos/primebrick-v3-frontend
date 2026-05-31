@@ -20,8 +20,8 @@
 
 	setDockContext({
 		mouseX,
-		magnification,
-		distance
+		get magnification() { return magnification; },
+		get distance() { return distance; }
 	});
 
 	function handleMouseMove(e: MouseEvent) {
@@ -34,6 +34,7 @@
 </script>
 
 <div
+	role="region"
 	class={cn(
 		'mx-auto flex h-[58px] w-max items-center gap-2 rounded-2xl border bg-white px-4 dark:bg-black',
 		className

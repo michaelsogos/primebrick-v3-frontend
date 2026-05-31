@@ -46,7 +46,7 @@
     <div class="flex-1 overflow-hidden">
       <div class="flex w-full h-full gap-0">
         <!-- Tab Navigation -->
-        <div class="flex flex-col w-1/5 h-full bg-muted/30">
+        <div class="flex flex-col w-1/5 h-full bg-muted/30 border-r">
           <nav class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
             {#each tabs as tab (tab.id)}
               {@const Icon = tab.icon}

@@ -294,8 +294,11 @@
     columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
   );
   // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
-  const _initialDeletionKey = columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`;
-  const _rawDeletion = typeof window !== 'undefined' ? window.sessionStorage.getItem(_initialDeletionKey) : null;
+  const _rawDeletion = (() => {
+    if (typeof window === 'undefined') return null;
+    const key = columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`;
+    return window.sessionStorage.getItem(key);
+  })();
   const _initialDeletionMode: DeletionFilterMode | null =
     _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
   let deletionFilterMode = $state<DeletionFilterMode>(_initialDeletionMode ?? deletionFilterModeProp ?? 'non_deleted');
@@ -916,8 +919,11 @@
   let singleRowToDuplicate: TRow | null = null;
 
   /** Entity preview panel state */
-  const previewPanelSessionKey = `pb-preview-panel:${entity ?? 'default'}`;
-  const _sessionRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(previewPanelSessionKey) : null;
+  const _sessionRaw = (() => {
+    if (typeof sessionStorage === 'undefined') return null;
+    const key = `pb-preview-panel:${entity ?? 'default'}`;
+    return sessionStorage.getItem(key);
+  })();
   const _sessionState = _sessionRaw ? JSON.parse(_sessionRaw) : null;
 
   let previewPanelOpen = $state<boolean>(_sessionState?.open ?? false);
@@ -937,7 +943,8 @@
       const rowKey_ = previewRow
         ? String((previewRow as Record<string, unknown>)[uid])
         : (_previewRestoredKey ?? null);
-      sessionStorage.setItem(previewPanelSessionKey, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
+      const key = `pb-preview-panel:${entity ?? 'default'}`;
+      sessionStorage.setItem(key, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
     }
   });
 
@@ -3795,6 +3802,7 @@
           {/if}
         </div>
       {:else}
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel" onmousemove={handleResize} onmouseup={stopResize} onmouseleave={stopResize}>
           <div class="flex-1 min-w-0 overflow-hidden">
             <Table.Root
@@ -4299,15 +4307,14 @@
 
           {#if previewPanelOpen}
             <!-- Resize handle between table and panel -->
-            <div
+            <button
+              type="button"
               class="relative h-full w-2 cursor-ew-resize hover:bg-primary/30 z-20 border-l-2 border-transparent hover:border-primary transition-colors flex items-center justify-center"
               onmousedown={startResize}
-              role="separator"
-              aria-orientation="vertical"
               aria-label="Resize panel"
             >
               <div class="w-1 h-8 bg-border rounded-full"></div>
-            </div>
+            </button>
           {/if}
 
           <div

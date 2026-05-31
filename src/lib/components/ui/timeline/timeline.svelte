@@ -12,6 +12,6 @@
 </script>
 
 <div class={cn('relative flex flex-col', className)}>
-	<div class="absolute left-[11.5px] top-0 bottom-0 w-px bg-border" />
+	<div class="absolute left-[11.5px] top-0 bottom-0 w-px bg-border"></div>
 	{@render children()}
 </div>
