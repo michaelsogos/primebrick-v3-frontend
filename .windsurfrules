@@ -28,3 +28,10 @@
 - For boolean icons: use CircleCheck (NOT CheckCircle) and CircleX (NOT XCircle).
 - Never make assumptions about external dependency names without verification.
 - Apply empirical verification to ALL external dependencies, not just the ones being changed.
+
+[GITFLOW ENFORCEMENT PROTOCOL]
+- When performing ANY Git operations (merge, branch, tag, release), ALWAYS read the project-specific GitFlow documentation first
+- NEVER assume standard GitFlow - each project may have custom rules
+- For Primebrick projects: Read `docs/gitflow.md` in the specific repository before any Git operations
+- NEVER skip: package.json updates, git tags, --no-ff merges, main→develop back-merges
+- If uncertain about GitFlow steps, STOP and ask the user before proceeding

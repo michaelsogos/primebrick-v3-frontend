@@ -5,6 +5,7 @@ import {
   type HealthPayload
 } from '$lib/api-types';
 import { dispatchConnectivityRestored } from '$lib/app-connectivity-events';
+import { PUBLIC_API_ORIGIN } from '$env/static/public';
 
 /** Sidebar / shell: single source of truth so offline vs DB is never inconsistent. */
 export type HealthChipState = 'backend_offline' | 'db_offline' | 'idp_offline' | 'ok' | 'loading';
@@ -70,7 +71,14 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
   try {
     let res: Response;
     try {
-      res = await fetch('/api/v1/health', {
+      let healthUrl = '/api/v1/health';
+
+      // Use public environment variable in SSR
+      if (typeof window === 'undefined') {
+        healthUrl = `${PUBLIC_API_ORIGIN}${healthUrl}`;
+      }
+
+      res = await fetch(healthUrl, {
         signal: ctrl.signal,
         cache: 'no-store',
         headers: { Accept: 'application/json' },

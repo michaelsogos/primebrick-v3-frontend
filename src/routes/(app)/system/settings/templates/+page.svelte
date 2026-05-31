@@ -15,7 +15,7 @@
     { id: 4, name: 'Report HTML', type: 'html', fileName: 'report.html' }
   ]);
 
-  const templateTypes = [
+  const templateTypes: Array<{ id: 'pdf' | 'email' | 'excel' | 'html'; label: string; icon: typeof FileText }> = [
     { id: 'pdf', label: 'PDF', icon: FileText },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'excel', label: 'Excel', icon: FileSpreadsheet },
