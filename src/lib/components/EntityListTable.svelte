@@ -1901,15 +1901,8 @@
     applyKeyOrder(
       stickyColumns ??
       (() => {
-        // Back-compat: legacy behavior (uuid/code pinned in the selector).
-        const cols = allColumns;
-        const byKey = new Map(cols.map((c) => [c.key, c] as const));
-        const out: MetaColumn[] = [];
-        const uuid = byKey.get('uuid');
-        const code = byKey.get('code');
-        if (uuid) out.push(uuid);
-        if (code) out.push(code);
-        return out;
+        // Back-compat: use sticky flag from column metadata
+        return allColumns.filter((c) => c.sticky === true);
       })(),
       orderState.sticky
     )
@@ -2032,38 +2025,76 @@
 
   // Sticky offsets (measured widths so we can keep columns auto-sized).
   let checkboxHeadRef = $state<HTMLElement | null>(null);
-  let uuidHeadRef = $state<HTMLElement | null>(null);
-  let codeHeadRef = $state<HTMLElement | null>(null);
-  let uuidFirstCellRef = $state<HTMLElement | null>(null);
-  let codeFirstCellRef = $state<HTMLElement | null>(null);
-  let stickyLeftUuidPx = $state(0);
-  let stickyLeftCodePx = $state(0);
+  let stickyHeadRefs = $state<Map<string, HTMLElement>>(new Map());
+  let stickyCellRefs = $state<Map<string, HTMLElement>>(new Map());
+  let stickyLeftOffsets = $state<Map<string, number>>(new Map());
   let stickyRO: ResizeObserver | null = null;
+
+  // Svelte action for sticky column refs
+  function stickyRef(node: HTMLElement, params: { key: string; isHead: boolean }) {
+    let currentKey = params.key;
+    let currentIsHead = params.isHead;
+
+    // Initial registration
+    let refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+    refs.set(currentKey, node);
+    queueMicrotask(() => updateStickyOffsets());
+
+    return {
+      update(newParams: { key: string; isHead: boolean }) {
+        // If key changes (e.g., due to dynamic column reordering)
+        if (newParams.key !== currentKey || newParams.isHead !== currentIsHead) {
+          // Clean up old association
+          refs.delete(currentKey);
+
+          // Update current parameters
+          currentKey = newParams.key;
+          currentIsHead = newParams.isHead;
+
+          // Register on correct Map
+          refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+          refs.set(currentKey, node);
+        }
+        queueMicrotask(() => updateStickyOffsets());
+      },
+      destroy() {
+        // Final cleanup on page change or row destruction
+        const finalRefs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+        finalRefs.delete(currentKey);
+        queueMicrotask(() => updateStickyOffsets());
+      }
+    };
+  }
 
   function updateStickyOffsets() {
     const checkboxW = rowSelectionEnabled ? (checkboxHeadRef?.getBoundingClientRect().width ?? 0) : 0;
-    // With table-layout:auto, body cells often drive the final column width.
-    const uuidHeadW = uuidHeadRef?.getBoundingClientRect().width ?? 0;
-    const codeHeadW = codeHeadRef?.getBoundingClientRect().width ?? 0;
-    const uuidCellW = uuidFirstCellRef?.getBoundingClientRect().width ?? 0;
-    const codeCellW = codeFirstCellRef?.getBoundingClientRect().width ?? 0;
-    const uuidW = Math.max(uuidHeadW, uuidCellW);
-    const codeW = Math.max(codeHeadW, codeCellW);
 
-    const stickyVisibleKeys = stickyColumnsGroup
-      .filter((c) => visibleKeys.includes(c.key))
-      .filter((c) => c.key === 'uuid' || c.key === 'code')
-      .map((c) => c.key);
-    const firstKey = stickyVisibleKeys[0] ?? 'uuid';
-    const firstW = firstKey === 'uuid' ? uuidW : codeW;
+    // Get visible sticky columns in their persisted order
+    const visibleStickyCols = stickyColumnsGroup
+      .filter((c) => visibleKeys.includes(c.key));
 
-    // If the user reorders sticky columns, swap their left offsets accordingly.
-    const nextLeftUuid = Math.round(firstKey === 'uuid' ? checkboxW : checkboxW + firstW);
-    const nextLeftCode = Math.round(firstKey === 'code' ? checkboxW : checkboxW + firstW);
+    // Calculate offsets cumulatively based on order
+    let currentLeft = checkboxW;
+    const newOffsets = new Map<string, number>();
 
-    // Avoid update loops when called from afterUpdate(): only write if changed.
-    if (stickyLeftUuidPx !== nextLeftUuid) stickyLeftUuidPx = nextLeftUuid;
-    if (stickyLeftCodePx !== nextLeftCode) stickyLeftCodePx = nextLeftCode;
+    for (const col of visibleStickyCols) {
+      const headRef = stickyHeadRefs.get(col.key);
+      const cellRef = stickyCellRefs.get(col.key);
+      const headW = headRef?.getBoundingClientRect().width ?? 0;
+      const cellW = cellRef?.getBoundingClientRect().width ?? 0;
+      const colW = Math.max(headW, cellW);
+
+      // If refs are not available (loading state), use existing offset or estimate
+      if (colW === 0 && stickyLeftOffsets.has(col.key)) {
+        newOffsets.set(col.key, stickyLeftOffsets.get(col.key)!);
+      } else {
+        newOffsets.set(col.key, currentLeft);
+        currentLeft += colW;
+      }
+    }
+
+    // Reassign for maximum Svelte 5 reactivity
+    stickyLeftOffsets = new Map(newOffsets);
   }
 
   onMount(() => {
@@ -2077,11 +2108,10 @@
 
   // Keep offsets correct across HMR/theme/style changes without requiring a full refresh.
   $effect(() => {
+    // Track visible keys and sticky columns to re-trigger effect when structure changes
     void checkboxHeadRef;
-    void uuidHeadRef;
-    void codeHeadRef;
-    void uuidFirstCellRef;
-    void codeFirstCellRef;
+    void visibleKeys;
+    void stickyColumnsGroup;
 
     stickyRO?.disconnect();
     stickyRO = null;
@@ -2092,10 +2122,12 @@
     });
 
     if (checkboxHeadRef) stickyRO.observe(checkboxHeadRef);
-    if (uuidHeadRef) stickyRO.observe(uuidHeadRef);
-    if (codeHeadRef) stickyRO.observe(codeHeadRef);
-    if (uuidFirstCellRef) stickyRO.observe(uuidFirstCellRef);
-    if (codeFirstCellRef) stickyRO.observe(codeFirstCellRef);
+    for (const ref of stickyHeadRefs.values()) {
+      if (ref) stickyRO.observe(ref);
+    }
+    for (const ref of stickyCellRefs.values()) {
+      if (ref) stickyRO.observe(ref);
+    }
 
     requestAnimationFrame(() => updateStickyOffsets());
 
@@ -2116,19 +2148,26 @@
   });
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
-    if (key !== 'uuid' && key !== 'code') return undefined;
+    const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
+    const isSticky = visibleStickyCols.some(c => c.key === key);
+    if (!isSticky) return undefined;
+
+    const isLastSticky = visibleStickyCols[visibleStickyCols.length - 1]?.key === key;
+
+    // Add right border for last sticky column to separate from scrolling content
+    const borderClass = isLastSticky ? 'border-r-2 border-gray-300 dark:border-neutral-600' : '';
+
     /**
-     * Sticky uuid/code: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
      * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
      */
     const baseBg = isHeader
       ? 'bg-neutral-200 dark:bg-neutral-800'
       : 'bg-neutral-100 dark:bg-neutral-900';
-    const left = key === 'uuid' ? 'left-(--pb-sticky-left-uuid)' : 'left-(--pb-sticky-left-code)';
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
     // when sticky columns overlap scrolling content.
-    return `sticky ${left} ${z} ${baseBg} bg-clip-border`.trim();
+    return `sticky ${z} ${baseBg} ${borderClass} bg-clip-border`.trim();
   }
 
   const auditingKeySet = new Set([
@@ -3813,7 +3852,6 @@
             tableDensityClass
           )}
           containerClass="h-full overflow-auto"
-          style={`--pb-sticky-left-uuid: ${stickyLeftUuidPx}px; --pb-sticky-left-code: ${stickyLeftCodePx}px;`}
         >
           <Table.Header class="sticky top-0 z-80 bg-background">
             <Table.Row>
@@ -3834,9 +3872,9 @@
                 </Table.Head>
               {/if}
               {#each renderColumns as col, colIdx (col.key)}
-                {#if col.key === 'uuid'}
+                {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                   <Table.Head
-                    bind:ref={uuidHeadRef}
+                    style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
                     class={stickyCellClass(col.key, colIdx, true) ??
                       (col.sortable !== false
                         ? rowsLoading
@@ -3845,6 +3883,7 @@
                         : 'relative z-10')}
                     onclick={() => handleSortClick(col)}
                   >
+                  <div use:stickyRef={{ key: col.key, isHead: true }}>
                   <span class="inline-flex items-center gap-1">
                     {$t(col.labelKey)}
                     {#if col.sortable !== false}
@@ -3857,30 +3896,7 @@
                       {/if}
                     {/if}
                   </span>
-                  </Table.Head>
-                {:else if col.key === 'code'}
-                  <Table.Head
-                    bind:ref={codeHeadRef}
-                    class={stickyCellClass(col.key, colIdx, true) ??
-                      (col.sortable !== false
-                        ? rowsLoading
-                          ? 'relative z-10 select-none opacity-60'
-                          : 'relative z-10 cursor-pointer select-none'
-                        : 'relative z-10')}
-                    onclick={() => handleSortClick(col)}
-                  >
-                    <span class="inline-flex items-center gap-1">
-                      {$t(col.labelKey)}
-                      {#if col.sortable !== false}
-                        {#if sortKey !== col.key}
-                          <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
-                        {:else if sortDir === 'asc'}
-                          <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                        {:else}
-                          <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
-                        {/if}
-                      {/if}
-                    </span>
+                  </div>
                   </Table.Head>
                 {:else}
                 <Table.Head
@@ -4099,10 +4115,10 @@
                   </Table.Cell>
                 {/if}
                 {#each renderColumns as col, colIdx (col.key)}
-                  {#if col.key === 'uuid'}
+                  {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                     {#if i === 0}
                       <Table.Cell
-                        bind:ref={uuidFirstCellRef}
+                        style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
@@ -4114,55 +4130,17 @@
                           entityListDataCellValignClass(col)
                         )}
                       >
+                        <div use:stickyRef={{ key: col.key, isHead: false }}>
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
                           {@render listDefaultCellValue(r, col)}
                         {/if}
+                        </div>
                       </Table.Cell>
                     {:else}
                       <Table.Cell
-                        class={cn(
-                          stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected),
-                          isDatetimeIanaRecordMode(col)
-                            ? undefined
-                            : (rowDeleted
-                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
-                              : entityListGrayBandStickyInteractionClass(rowSelected)),
-                          entityListDataCellValignClass(col)
-                        )}
-                      >
-                        {#if cell}
-                          {@render cell({ row: r, column: col })}
-                        {:else}
-                          {@render listDefaultCellValue(r, col)}
-                        {/if}
-                      </Table.Cell>
-                    {/if}
-                  {:else if col.key === 'code'}
-                    {#if i === 0}
-                      <Table.Cell
-                        bind:ref={codeFirstCellRef}
-                        class={cn(
-                          stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected),
-                          isDatetimeIanaRecordMode(col)
-                            ? undefined
-                            : (rowDeleted
-                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
-                              : entityListGrayBandStickyInteractionClass(rowSelected)),
-                          entityListDataCellValignClass(col)
-                        )}
-                      >
-                        {#if cell}
-                          {@render cell({ row: r, column: col })}
-                        {:else}
-                          {@render listDefaultCellValue(r, col)}
-                        {/if}
-                      </Table.Cell>
-                    {:else}
-                      <Table.Cell
+                        style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
