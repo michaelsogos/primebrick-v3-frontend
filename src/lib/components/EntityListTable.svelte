@@ -2080,8 +2080,10 @@
     for (const col of visibleStickyCols) {
       const headRef = stickyHeadRefs.get(col.key);
       const cellRef = stickyCellRefs.get(col.key);
-      const headW = headRef?.getBoundingClientRect().width ?? 0;
-      const cellW = cellRef?.getBoundingClientRect().width ?? 0;
+      
+      // Measure parent cell width instead of wrapper div width
+      const headW = headRef?.parentElement?.getBoundingClientRect().width ?? 0;
+      const cellW = cellRef?.parentElement?.getBoundingClientRect().width ?? 0;
       const colW = Math.max(headW, cellW);
 
       // If refs are not available (loading state), use existing offset or estimate
