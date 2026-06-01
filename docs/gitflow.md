@@ -91,6 +91,15 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 - Write appropriate commit messages directly when instructed
 - DO NOT open editor for commit approval
 
+## Commit and Push Guidelines
+
+When instructed to "commit and push everything" or similar commands:
+- Run `git add -A` in ALL repositories in the workspace
+- Commit ALL staged files in each repository
+- Push ALL branches to origin
+- Do NOT filter files by task relevance - commit everything that has changed
+- This applies to multi-repository workspaces: commit changes in frontend, backend, and microservices repositories
+
 ## New task workflow
 
 When the user starts a fresh piece of work with phrases such as "Let's start a new task", "Iniziamo un nuovo task", or equivalent:
