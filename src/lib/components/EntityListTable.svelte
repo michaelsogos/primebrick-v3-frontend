@@ -2152,11 +2152,6 @@
     const isSticky = visibleStickyCols.some(c => c.key === key);
     if (!isSticky) return undefined;
 
-    const isLastSticky = visibleStickyCols[visibleStickyCols.length - 1]?.key === key;
-
-    // Add right border for last sticky column to separate from scrolling content
-    const borderClass = isLastSticky ? 'border-r-2 border-gray-300 dark:border-neutral-600' : '';
-
     /**
      * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
      * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
@@ -2167,7 +2162,7 @@
     const z = isHeader ? 'z-50' : 'z-40';
     // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
     // when sticky columns overlap scrolling content.
-    return `sticky ${z} ${baseBg} ${borderClass} bg-clip-border`.trim();
+    return `sticky ${z} ${baseBg} bg-clip-border`.trim();
   }
 
   const auditingKeySet = new Set([
