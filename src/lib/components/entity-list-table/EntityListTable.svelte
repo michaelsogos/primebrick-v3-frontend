@@ -28,6 +28,13 @@
   import { CardField, CardGrid, CardList } from './cards';
   import { DeleteDialog, RestoreDialog, ExportDialog, DuplicateDialog } from './dialogs';
   import { Pagination } from './pagination';
+  import {
+    useStickyColumns,
+    useScrollPreservation,
+    useRowRangeSelection,
+    useFilterPersistence,
+    useToolbarMode
+  } from './composables';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -263,9 +270,6 @@
   );
   let viewMode = $state<ViewMode>('table');
 
-  type ToolbarMode = 'filters' | 'bulk';
-  let toolbarMode = $state<ToolbarMode>('filters');
-
   function readViewMode(): ViewMode | null {
     if (typeof window === 'undefined') return null;
     try {
@@ -353,61 +357,6 @@
     }
   }
 
-  const filterValuesStorageKeyFull = $derived(
-    filterValuesStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:filterValues` : `pb.entityList:${uid}:filterValues`)
-  );
-
-  function readFilterValues(): Record<string, any> {
-    if (!filterValuesStorageKey && !columnOrderStorageKey) return {};
-    if (typeof window === 'undefined') return {};
-    try {
-      const raw = window.sessionStorage.getItem(filterValuesStorageKeyFull);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object') return {};
-      return parsed as Record<string, any>;
-    } catch {
-      return {};
-    }
-  }
-
-  function writeFilterValues(next: Record<string, any>) {
-    if (!filterValuesStorageKey && !columnOrderStorageKey) return;
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(filterValuesStorageKeyFull, JSON.stringify(next));
-    } catch {
-      // ignore quota / blocked storage
-    }
-  }
-
-  const advancedFiltersStorageKeyFull = $derived(
-    advancedFiltersStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:advancedFilters` : `pb.entityList:${uid}:advancedFilters`)
-  );
-
-  function readAdvancedFilters(): AdvancedFilter[] {
-    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return [];
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = window.sessionStorage.getItem(advancedFiltersStorageKeyFull);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as unknown;
-      if (!Array.isArray(parsed)) return [];
-      return parsed as AdvancedFilter[];
-    } catch {
-      return [];
-    }
-  }
-
-  function writeAdvancedFilters(next: AdvancedFilter[]) {
-    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return;
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(advancedFiltersStorageKeyFull, JSON.stringify(next));
-    } catch {
-      // ignore quota / blocked storage
-    }
-  }
 
   function resetColumnsAndSorting() {
     onResetColumnVisibility('table');
@@ -425,8 +374,8 @@
     onFilterValuesChange?.({});
     onAdvancedFiltersChange?.([], 'AND');
     onResetFilters?.();
-    writeFilterValues({});
-    writeAdvancedFilters([]);
+    filterPersistence.writeFilterValues({});
+    filterPersistence.writeAdvancedFilters([]);
   }
 
   function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
@@ -495,7 +444,7 @@
     // values actually differ from the current prop, to avoid an unnecessary refresh
     // when the parent already holds the same values (e.g. after a page refresh where
     // bootstrap already loaded rows with the restored filters).
-    const storedFilterValues = readFilterValues();
+    const storedFilterValues = filterPersistence.readFilterValues();
     if (
       Object.keys(storedFilterValues).length > 0 &&
       JSON.stringify(storedFilterValues) !== JSON.stringify(filterValues ?? {})
@@ -503,7 +452,7 @@
       onFilterValuesChange?.(storedFilterValues);
     }
 
-    const storedAdvancedFilters = readAdvancedFilters();
+    const storedAdvancedFilters = filterPersistence.readAdvancedFilters();
     if (
       storedAdvancedFilters.length > 0 &&
       JSON.stringify(storedAdvancedFilters) !== JSON.stringify(advancedFilters ?? [])
@@ -531,43 +480,14 @@
 
   $effect(() => {
     void filterValues;
-    writeFilterValues(filterValues ?? {});
+    filterPersistence.writeFilterValues(filterValues ?? {});
   });
 
   $effect(() => {
     void advancedFilters;
-    writeAdvancedFilters(advancedFilters ?? []);
+    filterPersistence.writeAdvancedFilters(advancedFilters ?? []);
   });
 
-  // Automatic toolbar mode switching based on filters and selection
-  let lastSelectionChange = $state(0);
-  let lastFilterChange = $state(0);
-
-  $effect(() => {
-    void selectedKeys;
-    lastSelectionChange = Date.now();
-  });
-
-  $effect(() => {
-    void filterValues;
-    void advancedFilters;
-    lastFilterChange = Date.now();
-  });
-
-  $effect(() => {
-    void lastSelectionChange;
-    void lastFilterChange;
-    void hasAppliedFilters;
-
-    // If selection changed more recently than filters, show bulk
-    if (lastSelectionChange > lastFilterChange) {
-      toolbarMode = 'bulk';
-    } else if (hasAppliedFilters) {
-      toolbarMode = 'filters';
-    } else {
-      toolbarMode = 'bulk';
-    }
-  });
 
   // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
   let lastPanelId = $state<string | null>(null);
@@ -858,14 +778,6 @@
     return 'deleted_at' in row && row.deleted_at !== null && row.deleted_at !== undefined;
   }
 
-  let rowRangeMouseDown = $state(false);
-  let rangeAnchorIndex = $state<number | null>(null);
-  let rangeDragActive = $state(false);
-  let lastRangeEndIndex = $state<number | null>(null);
-  /** Selection at mousedown; current drag applies symmetric diff with the active range vs this snapshot. */
-  let selectionSnapshotAtMouseDown: Set<string> | null = null;
-  /** After a range brush drag, suppress the following `click` on the row (same gesture as mouseup). */
-  let skipNextRowClickSelectToggle = false;
   /** Row dropdown menu state: which row has the menu open */
   let dropdownMenuRow = $state<TRow | null>(null);
   /** Preview panel dropdown menu state */
@@ -1313,7 +1225,7 @@
       // Clear selection after successful deletion
       selectedKeys = [];
       // Switch back to filters mode
-      toolbarMode = 'filters';
+      toolbarModeState.toolbarMode = 'filters';
       // Refresh the list after successful deletion
       if (onRefresh) {
         onRefresh();
@@ -1388,7 +1300,7 @@
       // Clear selection after successful restore
       selectedKeys = [];
       // Switch back to filters mode
-      toolbarMode = 'filters';
+      toolbarModeState.toolbarMode = 'filters';
       // Refresh the list after successful restore
       if (onRefresh) {
         onRefresh();
@@ -1859,7 +1771,7 @@
 
   /** Toggle toolbar mode between filters and bulk */
   function toggleToolbarMode() {
-    toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
+    toolbarModeState.toggle();
   }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
@@ -1975,39 +1887,6 @@
 
   /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
   let tableRef = $state<HTMLTableElement | null>(null);
-  let savedTableScrollLeft = $state(0);
-  let prevRowsLoadingForScrollSave = $state(false);
-  let prevRowsLoadingForScrollRestore = $state(false);
-
-  function tableScrollHost(table: HTMLTableElement | null): HTMLElement | null {
-    if (!table) return null;
-    return table.closest('[data-slot=table-container]');
-  }
-
-  /** Capture horizontal scroll before the loading skeleton replaces row markup (browser often resets both axes). */
-  $effect.pre(() => {
-    void rowsLoading;
-    void tableRef;
-    const host = tableScrollHost(tableRef);
-    if (rowsLoading && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
-    prevRowsLoadingForScrollSave = rowsLoading;
-  });
-
-  $effect(() => {
-    void rowsLoading;
-    void tableRef;
-    const host = tableScrollHost(tableRef);
-    if (!rowsLoading && prevRowsLoadingForScrollRestore && host) {
-      const left = savedTableScrollLeft;
-      queueMicrotask(() => {
-        host.scrollLeft = left;
-        requestAnimationFrame(() => {
-          if (host.scrollLeft !== left) host.scrollLeft = left;
-        });
-      });
-    }
-    prevRowsLoadingForScrollRestore = rowsLoading;
-  });
 
   /** Any server list reload (sort, search, filters, page) exits client-only selection view. */
   let prevRowsLoadingForServerList = $state(false);
@@ -2021,130 +1900,40 @@
   });
 
   // Sticky offsets (measured widths so we can keep columns auto-sized).
-  let checkboxHeadRef = $state<HTMLElement | null>(null);
-  let stickyHeadRefs = $state<Map<string, HTMLElement>>(new Map());
-  let stickyCellRefs = $state<Map<string, HTMLElement>>(new Map());
-  let stickyLeftOffsets = $state<Map<string, number>>(new Map());
-  let stickyRO: ResizeObserver | null = null;
-
-  // Svelte action for sticky column refs
-  function stickyRef(node: HTMLElement, params: { key: string; isHead: boolean }) {
-    let currentKey = params.key;
-    let currentIsHead = params.isHead;
-
-    // Initial registration
-    let refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
-    refs.set(currentKey, node);
-    queueMicrotask(() => updateStickyOffsets());
-
-    return {
-      update(newParams: { key: string; isHead: boolean }) {
-        // If key changes (e.g., due to dynamic column reordering)
-        if (newParams.key !== currentKey || newParams.isHead !== currentIsHead) {
-          // Clean up old association
-          refs.delete(currentKey);
-
-          // Update current parameters
-          currentKey = newParams.key;
-          currentIsHead = newParams.isHead;
-
-          // Register on correct Map
-          refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
-          refs.set(currentKey, node);
-        }
-        queueMicrotask(() => updateStickyOffsets());
-      },
-      destroy() {
-        // Final cleanup on page change or row destruction
-        const finalRefs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
-        finalRefs.delete(currentKey);
-        queueMicrotask(() => updateStickyOffsets());
-      }
-    };
-  }
-
-  function updateStickyOffsets() {
-    const checkboxW = rowSelectionEnabled ? (checkboxHeadRef?.getBoundingClientRect().width ?? 0) : 0;
-
-    // Get visible sticky columns in their persisted order
-    const visibleStickyCols = stickyColumnsGroup
-      .filter((c) => visibleKeys.includes(c.key));
-
-    // Calculate offsets cumulatively based on order
-    let currentLeft = checkboxW;
-    const newOffsets = new Map<string, number>();
-
-    for (const col of visibleStickyCols) {
-      const headRef = stickyHeadRefs.get(col.key);
-      const cellRef = stickyCellRefs.get(col.key);
-      
-      // Measure parent cell width instead of wrapper div width
-      const headW = headRef?.parentElement?.getBoundingClientRect().width ?? 0;
-      const cellW = cellRef?.parentElement?.getBoundingClientRect().width ?? 0;
-      const colW = Math.max(headW, cellW);
-
-      // If refs are not available (loading state), use existing offset or estimate
-      if (colW === 0 && stickyLeftOffsets.has(col.key)) {
-        newOffsets.set(col.key, stickyLeftOffsets.get(col.key)!);
-      } else {
-        newOffsets.set(col.key, currentLeft);
-        currentLeft += colW;
-      }
-    }
-
-    // Reassign for maximum Svelte 5 reactivity
-    stickyLeftOffsets = new Map(newOffsets);
-  }
-
-  onMount(() => {
-    const onResize = () => {
-      requestAnimationFrame(() => updateStickyOffsets());
-    };
-    window.addEventListener('resize', onResize);
-    requestAnimationFrame(() => updateStickyOffsets());
-    return () => window.removeEventListener('resize', onResize);
+  const stickyColumnsState = useStickyColumns({
+    rowSelectionEnabled: () => rowSelectionEnabled,
+    stickyColumnsGroup: () => stickyColumnsGroup,
+    visibleKeys: () => visibleKeys
   });
 
-  // Keep offsets correct across HMR/theme/style changes without requiring a full refresh.
-  $effect(() => {
-    // Track visible keys and sticky columns to re-trigger effect when structure changes
-    void checkboxHeadRef;
-    void visibleKeys;
-    void stickyColumnsGroup;
+  // Scroll preservation
+  const scrollPreservation = useScrollPreservation(tableRef, rowsLoading);
 
-    stickyRO?.disconnect();
-    stickyRO = null;
+  // Row range selection
+  const rowRangeSelection = useRowRangeSelection(
+    rowSelectionEnabled,
+    selectedKeys,
+    onSelectedKeysChange,
+    viewRows,
+    rowKey,
+    rowsLoading,
+    error
+  );
 
-    if (typeof ResizeObserver === 'undefined') return;
-    stickyRO = new ResizeObserver(() => {
-      requestAnimationFrame(() => updateStickyOffsets());
-    });
+  // Filter persistence
+  const filterPersistence = useFilterPersistence(
+    uid,
+    filterValuesStorageKey,
+    advancedFiltersStorageKey,
+    columnOrderStorageKey
+  );
 
-    if (checkboxHeadRef) stickyRO.observe(checkboxHeadRef);
-    for (const ref of stickyHeadRefs.values()) {
-      if (ref) stickyRO.observe(ref);
-    }
-    for (const ref of stickyCellRefs.values()) {
-      if (ref) stickyRO.observe(ref);
-    }
-
-    requestAnimationFrame(() => updateStickyOffsets());
-
-    return () => {
-      stickyRO?.disconnect();
-      stickyRO = null;
-    };
-  });
-
-  // Recompute offsets when column set changes (but not on scroll).
-  $effect(() => {
-    void rowSelectionEnabled;
-    void actionsEnabled;
-    void visibleKeys;
-    void columns;
-    void orderState.sticky;
-    requestAnimationFrame(() => updateStickyOffsets());
-  });
+  // Toolbar mode
+  const toolbarModeState = useToolbarMode(
+    selectedKeys,
+    filterValues,
+    advancedFilters
+  );
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
@@ -2187,10 +1976,6 @@
   );
 
 
-  const hasAppliedFilters = $derived(
-    (filterValues && Object.keys(filterValues).length > 0) ||
-    (advancedFilters && advancedFilters.length > 0)
-  );
 
   function formatBadgeValue(col: MetaColumn, value: any): string {
     if (col.type === 'badge' && col.badge?.values) {
@@ -2371,8 +2156,8 @@
     ) {
       return;
     }
-    if (skipNextRowClickSelectToggle) {
-      skipNextRowClickSelectToggle = false;
+    if (rowRangeSelection.skipNextRowClickSelectToggle) {
+      rowRangeSelection.skipNextRowClickSelectToggle = false;
       return;
     }
     toggleRowSelect(key);
@@ -2406,102 +2191,7 @@
     onSelectedKeysChange([...next]);
   }
 
-  function resetRowRangeSelect() {
-    // Read brush state without subscribing the caller `$effect` (page/rowsLoading/…): otherwise
-    // setting `rowRangeMouseDown` true on mousedown re-runs that effect and clears range before mousemove.
-    if (untrack(() => rowRangeMouseDown && rangeDragActive)) skipNextRowClickSelectToggle = true;
-    rowRangeMouseDown = false;
-    rangeAnchorIndex = null;
-    rangeDragActive = false;
-    lastRangeEndIndex = null;
-    selectionSnapshotAtMouseDown = null;
-  }
 
-  function canStartRowRangeSelect(e: MouseEvent): boolean {
-    if (!rowSelectionEnabled || rowsLoading || error || viewRows.length === 0) return false;
-    if (e.button !== 0) return false;
-    const t = e.target as HTMLElement | null;
-    if (!t) return false;
-    if (t.closest('input, button, a, textarea, select, [role="button"]')) return false;
-    return true;
-  }
-
-  /** Rows in [anchor, end] toggle vs `selectionSnapshotAtMouseDown` (additive across strokes; rubber-band). */
-  function applyRowRangeBrush(anchor: number, end: number) {
-    const snap = selectionSnapshotAtMouseDown;
-    if (!snap) return;
-
-    const lo = Math.min(anchor, end);
-    const hi = Math.max(anchor, end);
-    const rangeKeys = viewRows.slice(lo, hi + 1).map((r) => rowKey(r));
-    const rangeSet = new Set(rangeKeys);
-    const pageKeySet = new Set(pageKeys);
-
-    const next = new Set<string>();
-    for (const k of snap) {
-      if (!pageKeySet.has(k)) {
-        next.add(k);
-        continue;
-      }
-      if (rangeSet.has(k)) continue;
-      next.add(k);
-    }
-    for (const k of rangeKeys) {
-      if (!snap.has(k)) next.add(k);
-    }
-    onSelectedKeysChange([...next]);
-  }
-
-  function onRowRangeMouseDown(i: number, e: MouseEvent) {
-    if (!rowSelectionEnabled) return;
-    // New pointer gesture on a data row: clear a stale suppressor from an earlier range-drag mouseup.
-    skipNextRowClickSelectToggle = false;
-    if (!canStartRowRangeSelect(e)) return;
-    e.preventDefault();
-    selectionSnapshotAtMouseDown = new Set(selectedKeys);
-    rowRangeMouseDown = true;
-    rangeAnchorIndex = i;
-    rangeDragActive = false;
-    lastRangeEndIndex = null;
-  }
-
-  function onRowRangeMouseMove(e: MouseEvent) {
-    if (!rowRangeMouseDown || rangeAnchorIndex === null) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const tr = el?.closest?.('tr[data-row-index]');
-    if (!(tr instanceof HTMLElement)) return;
-    const raw = tr.dataset.rowIndex;
-    const idx = raw === undefined ? NaN : Number(raw);
-    if (!Number.isFinite(idx) || idx < 0 || idx >= viewRows.length) return;
-
-    if (!rangeDragActive) {
-      if (idx === rangeAnchorIndex) return;
-      rangeDragActive = true;
-    }
-    if (lastRangeEndIndex === idx) return;
-    lastRangeEndIndex = idx;
-    applyRowRangeBrush(rangeAnchorIndex, idx);
-  }
-
-  $effect(() => {
-    void page;
-    void pageSize;
-    void rowsLoading;
-    void error;
-    resetRowRangeSelect();
-  });
-
-  $effect(() => {
-    if (!rowRangeMouseDown) return;
-    const move = (e: MouseEvent) => onRowRangeMouseMove(e);
-    const up = () => resetRowRangeSelect();
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
-    return () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
-    };
-  });
 
   const loadingText = $derived(loadingMessage ?? $t('common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
@@ -3144,7 +2834,7 @@
       class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
       onclick={toggleToolbarMode}
     >
-      {#if toolbarMode === 'filters'}
+      {#if toolbarModeState.toolbarMode === 'filters'}
         <ListCheck class="size-3.5" />
         {$t('entities.list.bulkActions.toggleToBulk')}
       {:else}
@@ -3154,8 +2844,8 @@
     </Button>
     <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
 
-    {#if toolbarMode === 'filters'}
-      {#if hasAppliedFilters}
+    {#if toolbarModeState.toolbarMode === 'filters'}
+      {#if toolbarModeState.hasAppliedFilters}
         <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
           <Button
             variant="soft"
@@ -3799,7 +3489,7 @@
             <Table.Row>
               {#if rowSelectionEnabled}
                 <Table.Head
-                  bind:ref={checkboxHeadRef}
+                  bind:ref={stickyColumnsState.checkboxHeadRef}
                   class="w-10 min-w-10 max-w-10 sticky left-0 z-70 bg-neutral-200 dark:bg-neutral-800 bg-clip-border px-2"
                 >
                   <div class={cn('flex items-center justify-center', rowChromeH)}>
@@ -3816,7 +3506,7 @@
               {#each renderColumns as col, colIdx (col.key)}
                 {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                   <Table.Head
-                    style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
+                    style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
                     class={stickyCellClass(col.key, colIdx, true) ??
                       (col.sortable !== false
                         ? rowsLoading
@@ -3825,7 +3515,7 @@
                         : 'relative z-10')}
                     onclick={() => handleSortClick(col)}
                   >
-                  <div use:stickyRef={{ key: col.key, isHead: true }}>
+                  <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
                   <span class="inline-flex items-center gap-1">
                     {$t(col.labelKey)}
                     {#if col.sortable !== false}
@@ -3941,7 +3631,7 @@
           </Table.Row>
         </Table.Header>
         <Table.Body
-          class={rowSelectionEnabled && rowRangeMouseDown && rangeDragActive ? 'select-none' : undefined}
+          class={rowSelectionEnabled && rowRangeSelection.rowRangeMouseDown && rowRangeSelection.rangeDragActive ? 'select-none' : undefined}
         >
           {#if error}
             {#if errorView}
@@ -4033,7 +3723,7 @@
                   rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined,
                   rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                 )}
-                onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(i, e) : undefined}
+                onmousedown={rowSelectionEnabled ? (e) => rowRangeSelection.onRowRangeMouseDown(i, e) : undefined}
                 onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
                 ondblclick={() => handlePreviewRow(r)}
               >
@@ -4060,7 +3750,7 @@
                   {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                     {#if i === 0}
                       <Table.Cell
-                        style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
+                        style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),
@@ -4072,7 +3762,7 @@
                           entityListDataCellValignClass(col)
                         )}
                       >
-                        <div use:stickyRef={{ key: col.key, isHead: false }}>
+                        <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: false }}>
                         {#if cell}
                           {@render cell({ row: r, column: col })}
                         {:else}
@@ -4082,7 +3772,7 @@
                       </Table.Cell>
                     {:else}
                       <Table.Cell
-                        style="left: {stickyLeftOffsets.get(col.key) ?? 0}px;"
+                        style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
                           datetimeIanaCellHighlightClass(col, rowSelected),

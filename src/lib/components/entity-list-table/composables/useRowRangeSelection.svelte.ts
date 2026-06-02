@@ -15,7 +15,7 @@ export function useRowRangeSelection<T>(
   let skipNextRowClickSelectToggle = false;
 
   function onRowRangeMouseDown(i: number, e: MouseEvent) {
-    if (!rowSelectionEnabled || rowsLoading || error) return;
+    if (!rowSelectionEnabled) return;
     rowRangeMouseDown = true;
     rangeAnchorIndex = i;
     rangeDragActive = false;

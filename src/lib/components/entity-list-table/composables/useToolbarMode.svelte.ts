@@ -7,14 +7,17 @@ export function useToolbarMode(
   filterValues: Record<string, any>,
   advancedFilters: AdvancedFilter[]
 ) {
+  const safeFilterValues = $derived(filterValues ?? {});
+  const safeAdvancedFilters = $derived(advancedFilters ?? []);
+
   let toolbarMode = $state<ToolbarMode>('filters');
-  
+
   let lastSelectionChange = $state(0);
   let lastFilterChange = $state(0);
 
   const hasAppliedFilters = $derived(
-    (filterValues && Object.keys(filterValues).length > 0) ||
-    (advancedFilters && advancedFilters.length > 0)
+    (safeFilterValues && Object.keys(safeFilterValues).length > 0) ||
+    (safeAdvancedFilters && safeAdvancedFilters.length > 0)
   );
 
   $effect(() => {
@@ -44,6 +47,7 @@ export function useToolbarMode(
 
   return {
     toolbarMode,
+    hasAppliedFilters,
     toggle: () => {
       toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
     }
