@@ -1,7 +1,7 @@
-export function useScrollPreservation(
-  tableRef: HTMLTableElement | null,
-  rowsLoading: boolean
-) {
+export function useScrollPreservation(options: {
+  tableRef: () => HTMLTableElement | null;
+  rowsLoading: () => boolean;
+}) {
   let savedTableScrollLeft = $state(0);
   let prevRowsLoadingForScrollSave = $state(false);
   let prevRowsLoadingForScrollRestore = $state(false);
@@ -13,18 +13,18 @@ export function useScrollPreservation(
 
   /** Capture horizontal scroll before the loading skeleton replaces row markup (browser often resets both axes). */
   $effect.pre(() => {
-    void rowsLoading;
-    void tableRef;
-    const host = tableScrollHost(tableRef);
-    if (rowsLoading && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
-    prevRowsLoadingForScrollSave = rowsLoading;
+    void options.rowsLoading();
+    void options.tableRef();
+    const host = tableScrollHost(options.tableRef());
+    if (options.rowsLoading() && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
+    prevRowsLoadingForScrollSave = options.rowsLoading();
   });
 
   $effect(() => {
-    void rowsLoading;
-    void tableRef;
-    const host = tableScrollHost(tableRef);
-    if (!rowsLoading && prevRowsLoadingForScrollRestore && host) {
+    void options.rowsLoading();
+    void options.tableRef();
+    const host = tableScrollHost(options.tableRef());
+    if (!options.rowsLoading() && prevRowsLoadingForScrollRestore && host) {
       const left = savedTableScrollLeft;
       queueMicrotask(() => {
         host.scrollLeft = left;
@@ -33,7 +33,7 @@ export function useScrollPreservation(
         });
       });
     }
-    prevRowsLoadingForScrollRestore = rowsLoading;
+    prevRowsLoadingForScrollRestore = options.rowsLoading();
   });
 
   return {

@@ -1907,36 +1907,43 @@
   });
 
   // Scroll preservation
-  const scrollPreservation = useScrollPreservation(tableRef, rowsLoading);
+  const scrollPreservation = useScrollPreservation({
+    tableRef: () => tableRef,
+    rowsLoading: () => rowsLoading
+  });
 
   // Row range selection
   const rowRangeSelection = useRowRangeSelection({
     rowSelectionEnabled: () => rowSelectionEnabled,
     selectedKeys: () => selectedKeys,
+    // svelte-ignore state_referenced_locally
     onSelectedKeysChange,
     viewRows: () => viewRows,
     pageKeys: () => pageKeys,
     rowKey,
-    rowsLoading,
-    error,
+    rowsLoading: () => rowsLoading,
+    error: () => error,
     page: () => clientSelectedPage,
     pageSize: () => pageSize
   });
 
   // Filter persistence
-  const filterPersistence = useFilterPersistence(
-    uid,
+  const filterPersistence = useFilterPersistence({
+    uid: () => uid,
+    // svelte-ignore state_referenced_locally
     filterValuesStorageKey,
+    // svelte-ignore state_referenced_locally
     advancedFiltersStorageKey,
+    // svelte-ignore state_referenced_locally
     columnOrderStorageKey
-  );
+  });
 
   // Toolbar mode
-  const toolbarModeState = useToolbarMode(
-    selectedKeys,
-    filterValues,
-    advancedFilters
-  );
+  const toolbarModeState = useToolbarMode({
+    selectedKeys: () => selectedKeys,
+    filterValues: () => filterValues,
+    advancedFilters: () => advancedFilters
+  });
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));

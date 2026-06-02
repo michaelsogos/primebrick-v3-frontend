@@ -1,21 +1,21 @@
 import type { AdvancedFilter } from '$lib/entity-list/types';
 
-export function useFilterPersistence(
-  uid: string,
-  filterValuesStorageKey?: string,
-  advancedFiltersStorageKey?: string,
-  columnOrderStorageKey?: string
-) {
+export function useFilterPersistence(options: {
+  uid: () => string;
+  filterValuesStorageKey?: string;
+  advancedFiltersStorageKey?: string;
+  columnOrderStorageKey?: string;
+}) {
   const filterValuesStorageKeyFull = $derived(
-    filterValuesStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:filterValues` : `pb.entityList:${uid}:filterValues`)
+    options.filterValuesStorageKey || (options.columnOrderStorageKey ? `${options.columnOrderStorageKey}:filterValues` : `pb.entityList:${options.uid()}:filterValues`)
   );
 
   const advancedFiltersStorageKeyFull = $derived(
-    advancedFiltersStorageKey || (columnOrderStorageKey ? `${columnOrderStorageKey}:advancedFilters` : `pb.entityList:${uid}:advancedFilters`)
+    options.advancedFiltersStorageKey || (options.columnOrderStorageKey ? `${options.columnOrderStorageKey}:advancedFilters` : `pb.entityList:${options.uid()}:advancedFilters`)
   );
 
   function readFilterValues(): Record<string, any> {
-    if (!filterValuesStorageKey && !columnOrderStorageKey) return {};
+    if (!options.filterValuesStorageKey && !options.columnOrderStorageKey) return {};
     if (typeof window === 'undefined') return {};
     try {
       const raw = window.sessionStorage.getItem(filterValuesStorageKeyFull);
@@ -29,7 +29,7 @@ export function useFilterPersistence(
   }
 
   function writeFilterValues(next: Record<string, any>) {
-    if (!filterValuesStorageKey && !columnOrderStorageKey) return;
+    if (!options.filterValuesStorageKey && !options.columnOrderStorageKey) return;
     if (typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem(filterValuesStorageKeyFull, JSON.stringify(next));
@@ -39,7 +39,7 @@ export function useFilterPersistence(
   }
 
   function readAdvancedFilters(): AdvancedFilter[] {
-    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return [];
+    if (!options.advancedFiltersStorageKey && !options.columnOrderStorageKey) return [];
     if (typeof window === 'undefined') return [];
     try {
       const raw = window.sessionStorage.getItem(advancedFiltersStorageKeyFull);
@@ -53,7 +53,7 @@ export function useFilterPersistence(
   }
 
   function writeAdvancedFilters(next: AdvancedFilter[]) {
-    if (!advancedFiltersStorageKey && !columnOrderStorageKey) return;
+    if (!options.advancedFiltersStorageKey && !options.columnOrderStorageKey) return;
     if (typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem(advancedFiltersStorageKeyFull, JSON.stringify(next));

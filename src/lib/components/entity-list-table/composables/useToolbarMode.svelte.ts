@@ -2,13 +2,13 @@ import type { AdvancedFilter } from '$lib/entity-list/types';
 
 export type ToolbarMode = 'filters' | 'bulk';
 
-export function useToolbarMode(
-  selectedKeys: string[],
-  filterValues: Record<string, any>,
-  advancedFilters: AdvancedFilter[]
-) {
-  const safeFilterValues = $derived(filterValues ?? {});
-  const safeAdvancedFilters = $derived(advancedFilters ?? []);
+export function useToolbarMode(options: {
+  selectedKeys: () => string[];
+  filterValues: () => Record<string, any>;
+  advancedFilters: () => AdvancedFilter[];
+}) {
+  const safeFilterValues = $derived(options.filterValues() ?? {});
+  const safeAdvancedFilters = $derived(options.advancedFilters() ?? []);
 
   let toolbarMode = $state<ToolbarMode>('filters');
 
@@ -21,13 +21,13 @@ export function useToolbarMode(
   );
 
   $effect(() => {
-    void selectedKeys;
+    void options.selectedKeys();
     lastSelectionChange = Date.now();
   });
 
   $effect(() => {
-    void filterValues;
-    void advancedFilters;
+    void options.filterValues();
+    void options.advancedFilters();
     lastFilterChange = Date.now();
   });
 

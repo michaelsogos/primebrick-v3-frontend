@@ -7,8 +7,8 @@ export function useRowRangeSelection<T>(options: {
   viewRows: () => T[];
   pageKeys: () => string[];
   rowKey: (row: T) => string;
-  rowsLoading: boolean;
-  error: string | null;
+  rowsLoading: () => boolean;
+  error: () => string | null;
   page: () => number;
   pageSize: () => number;
 }) {
@@ -20,7 +20,7 @@ export function useRowRangeSelection<T>(options: {
   let skipNextRowClickSelectToggle = false;
 
   function canStartRowRangeSelect(e: MouseEvent): boolean {
-    if (!options.rowSelectionEnabled() || options.rowsLoading || options.error || options.viewRows().length === 0) return false;
+    if (!options.rowSelectionEnabled() || options.rowsLoading() || options.error() || options.viewRows().length === 0) return false;
     if (e.button !== 0) return false;
     const t = e.target as HTMLElement | null;
     if (!t) return false;
@@ -98,8 +98,8 @@ export function useRowRangeSelection<T>(options: {
   $effect(() => {
     void options.page();
     void options.pageSize();
-    void options.rowsLoading;
-    void options.error;
+    void options.rowsLoading();
+    void options.error();
     resetRowRangeSelect();
   });
 
@@ -121,6 +121,7 @@ export function useRowRangeSelection<T>(options: {
     get rowRangeMouseDown() { return rowRangeMouseDown; },
     get rangeDragActive() { return rangeDragActive; },
     get skipNextRowClickSelectToggle() { return skipNextRowClickSelectToggle; },
+    set skipNextRowClickSelectToggle(value: boolean) { skipNextRowClickSelectToggle = value; },
     onRowRangeMouseDown,
     resetRowRangeSelect
   };
