@@ -18,5 +18,8 @@ export * from './dialogs';
 // Pagination sub-components
 export * from './pagination';
 
+// Search sub-components
+export * from './search';
+
 // Composables
 export * from './composables';

@@ -23,12 +23,12 @@
   import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel } from './entity-list-table/panels';
-  import { SearchBar, ViewModeToggle, DeletionFilterToggle, BulkActions } from './entity-list-table/toolbar';
-  import { TableHeader, TableCell } from './entity-list-table/table';
-  import { CardField, CardGrid, CardList } from './entity-list-table/cards';
-  import { DeleteDialog, RestoreDialog, ExportDialog, DuplicateDialog } from './entity-list-table/dialogs';
-  import { Pagination } from './entity-list-table/pagination';
+  import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel } from './panels';
+  import { SearchBar, ViewModeToggle, DeletionFilterToggle, BulkActions } from './toolbar';
+  import { TableHeader, TableCell } from './table';
+  import { CardField, CardGrid, CardList } from './cards';
+  import { DeleteDialog, RestoreDialog, ExportDialog, DuplicateDialog } from './dialogs';
+  import { Pagination } from './pagination';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -142,7 +142,6 @@
     selectedKeys,
     onSelectedKeysChange,
     rowSelectionEnabled = true,
-    rowDensity = 'default',
     onRefresh,
     refreshDisabled = false,
     rowActionsEnabled = false,
@@ -219,7 +218,6 @@
     selectedKeys: string[];
     onSelectedKeysChange: (keys: string[]) => void;
     rowSelectionEnabled?: boolean;
-    rowDensity?: 'default' | 'compact';
     onRefresh: () => void;
     refreshDisabled?: boolean;
     rowActionsEnabled?: boolean;
@@ -673,7 +671,7 @@
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
   });
 
-  const compactRows = $derived(rowDensity === 'compact');
+  const compactRows = $derived(true);
   const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
   /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
@@ -2573,7 +2571,16 @@
       {:else}
         <span class="min-w-0 truncate">-</span>
       {/if}
-    {:else}
+    {:else if col.badge?.values && value}
+      {@const badgeValue = value as string}
+      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+      <Badge
+        class="shadow-none"
+        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+      >
+        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+      </Badge>
+    {:else if col.type === 'datetime'}
       {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
       {@const parts = formatDatetimeCellDisplay(
         col,
@@ -2592,6 +2599,8 @@
       {:else}
         <span class="min-w-0 truncate">{parts.text}</span>
       {/if}
+    {:else}
+      <span class="min-w-0 truncate">{formatListCellValue(col, value, $uiLang)}</span>
     {/if}
   {/snippet}
 
@@ -3843,7 +3852,6 @@
           <div class="flex-1 min-w-0 overflow-hidden">
             <Table.Root
           bind:ref={tableRef}
-          data-row-density={rowDensity}
           class={cn(
             'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
             tableDensityClass

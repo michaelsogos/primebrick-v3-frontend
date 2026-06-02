@@ -304,7 +304,7 @@
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.versionHistory.unchanged'),
-          newValue: formatValue(newValue),
+          newValue: newValue == null ? $t('entities.versionHistory.null') : formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,

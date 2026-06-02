@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t, formatListCellValue } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import EntityListTable from '$lib/components/EntityListTable.svelte';
+  import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
@@ -734,7 +734,6 @@
     {auditingColumns}
     columnOrderStorageKey={skColumnOrder}
     columns={columns}
-    rowDensity="compact"
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
     onCreateAction={openNewOrganization}
@@ -776,7 +775,7 @@
     onDeletionFilterModeChange={onDeletionFilterModeChange}
     viewVisibility={viewVisibility}
   >
-    {#snippet cell({ row, column })}
+    {#snippet cell({ row, column }: { row: OrganizationListRow; column: MetaColumn })}
       {formatListCellValue(column, row[column.key as keyof OrganizationListRow], $uiLang)}
     {/snippet}
   </EntityListTable>
