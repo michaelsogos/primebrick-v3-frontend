@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
+  import { InputGroup, InputGroupAddon, InputGroupButton, HighlightedInput } from '$lib/components/ui/input-group';
   import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import { cn } from '$lib/utils.js';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -54,14 +54,10 @@
     <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
   </InputGroupAddon>
 
-  <InputGroupInput
-    class="
-      bg-transparent border-none text-sm
-      focus-visible:ring-0 focus-visible:ring-offset-0
-      placeholder:text-muted-foreground/70 placeholder:text-xs
-    "
+  <HighlightedInput
+    class="text-sm placeholder:text-muted-foreground/70"
     value={search}
-    oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
+    oninput={(e: Event) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
     placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
   />
 

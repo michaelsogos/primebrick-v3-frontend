@@ -5,7 +5,6 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Button } from '$lib/components/ui/button';
-  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '$lib/components/ui/input-group';
   import { Badge } from '$lib/components/ui/badge';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import { Checkbox, checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
@@ -2187,15 +2186,6 @@
     )
   );
 
-  const searchScopeLabel = $derived(() => {
-    if (!searchInKeys || searchInKeys.length === 0) return $t('entities.list.searchInAll');
-    const keys = searchInKeys;
-    if (keys.length === 1) {
-      const col = searchableColumns.find((c) => c.key === keys[0]);
-      return col ? $t(col.labelKey) : keys[0];
-    }
-    return `${keys.length} ${$t('entities.list.searchInFields')}`;
-  });
 
   const hasAppliedFilters = $derived(
     (filterValues && Object.keys(filterValues).length > 0) ||
@@ -2944,68 +2934,15 @@
 
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
-      <InputGroup
-        class="
-          group/input
-          w-full
-          bg-sky-50/20 border border-input
-          hover:bg-sky-50/45 hover:border-ring/40
-          focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring
-          dark:bg-input/40 dark:hover:bg-input/55
-          rounded-md transition-all duration-200
-        "
-      >
-        <InputGroupAddon
-          align="inline-start"
-          class="bg-transparent border-none pr-0"
-        >
-          <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
-        </InputGroupAddon>
-
-        <InputGroupInput
-          class="
-            bg-transparent border-none text-sm
-            focus-visible:ring-0 focus-visible:ring-offset-0
-            placeholder:text-muted-foreground/70 placeholder:text-xs
-          "
-          value={search}
-          oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
-          placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
-        />
-
-        {#if search.trim().length > 0}
-          <InputGroupButton
-            variant="ghost"
-            size="icon-xs"
-            class="hover:bg-sky-100/50 dark:hover:bg-white/10"
-            onclick={() => onSearchInput('')}
-            aria-label={$t('common.reset')}
-            title={$t('common.reset')}
-          >
-            <XIcon class="size-4" />
-          </InputGroupButton>
-        {/if}
-
-        <InputGroupButton
-          variant="soft"
-          size="xs"
-          class="mr-1 bg-sky-100/50 hover:bg-sky-200/50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
-          onclick={() =>
-            openSheet(
-              'entity.searchIn',
-              {
-                searchInKeys,
-                searchableColumns,
-                onSearchInKeysChange,
-                toggleSearchKey,
-                sheetMenuCheckboxClass: checkboxVisualOnlyClass
-              } as any,
-              { contentClass: 'w-[360px] p-0' }
-            )}
-        >
-          {searchScopeLabel()}
-        </InputGroupButton>
-      </InputGroup>
+      <SearchBar
+        search={search}
+        onSearchInput={onSearchInput}
+        searchPlaceholderKey={searchPlaceholderKey}
+        searchInKeys={searchInKeys}
+        searchableColumns={searchableColumns}
+        onSearchInKeysChange={onSearchInKeysChange}
+        toggleSearchKey={toggleSearchKey}
+      />
     </div>
 
     <div class="flex items-center justify-end gap-2">
