@@ -62,6 +62,18 @@
   {:else}
     -
   {/if}
+{:else if column.type === 'color' && value}
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <div
+        class="w-5 h-5 rounded-full border shadow-sm"
+        style="background-color: {value};"
+      ></div>
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      <p>{value}</p>
+    </Tooltip.Content>
+  </Tooltip.Root>
 {:else}
   {formatListCellValue(column, value, $uiLang)}
 {/if}

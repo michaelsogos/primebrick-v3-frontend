@@ -416,12 +416,19 @@
         "idp_code": "IDP Code",
         "display_name": "Nome de exibição",
         "email": "E-mail",
+        "avatar_color": "Cor do avatar",
+        "avatar_initials": "Iniciais do avatar",
+        "idp_org": "Proprietário IDP",
+        "idp_username": "Nome de utilizador IDP",
         "is_active": "Ativo",
         "is_active_false": "Inativo",
         "is_admin": "Administrador",
         "is_admin_false": "Não administrador",
         "is_verified": "Verificado",
         "email_verified": "E-mail Verificado",
+        "issuer": "Emissor IDP",
+        "roles": "Funções",
+        "last_synced_at": "Última sincronização",
         "created_at": "Criado em",
         "created_by": "Criado por",
         "updated_at": "Atualizado em",
@@ -429,6 +436,11 @@
         "version": "Versão",
         "deleted_at": "Eliminado em",
         "deleted_by": "Eliminado por"
+      }
+    },
+    "user_profiles": {
+      "fields": {
+        "avatar_color": "Cor do avatar"
       }
     },
     "list": {

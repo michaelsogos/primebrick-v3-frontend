@@ -426,12 +426,19 @@
         "idp_code": "IDP Code",
         "display_name": "Display Name",
         "email": "Email",
+        "avatar_color": "Avatar Color",
+        "avatar_initials": "Avatar Initials",
+        "idp_org": "IDP Owner",
+        "idp_username": "IDP Username",
         "is_active": "Active",
         "is_active_false": "Inactive",
         "is_admin": "Admin",
         "is_admin_false": "Non-admin",
         "is_verified": "Verified",
         "email_verified": "Email Verified",
+        "issuer": "IDP Issuer",
+        "roles": "Roles",
+        "last_synced_at": "Last Synced At",
         "created_at": "Created At",
         "created_by": "Created By",
         "updated_at": "Updated At",
@@ -439,6 +446,11 @@
         "version": "Version",
         "deleted_at": "Deleted At",
         "deleted_by": "Deleted By"
+      }
+    },
+    "user_profiles": {
+      "fields": {
+        "avatar_color": "Avatar Color"
       }
     },
     "list": {

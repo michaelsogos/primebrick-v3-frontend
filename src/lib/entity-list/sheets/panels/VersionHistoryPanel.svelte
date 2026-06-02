@@ -12,6 +12,7 @@
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
+  import * as Tooltip from "$lib/components/ui/tooltip";
 
   interface $$Props {
     entity: string;
@@ -181,7 +182,10 @@
       badgeLabelKey?: string,
       oldBadgeColor?: string,
       oldBadgeLabelText?: string,
-      oldBadgeLabelKey?: string
+      oldBadgeLabelKey?: string,
+      isColor?: boolean,
+      colorValue?: string,
+      oldColorValue?: string
     }> = [];
 
     for (const [field, change] of Object.entries(delta)) {
@@ -189,15 +193,17 @@
 
       let fieldLabel = $t(`entities.versionHistory.field.${field}`);
       if (fieldLabel === `entities.versionHistory.field.${field}`) {
-        // Fallback to fields translation if versionHistory field doesn't exist
-        fieldLabel = $t(`entities.customer.fields.${field}`) || field;
+        // Fallback to entity-specific fields translation if versionHistory field doesn't exist
+        fieldLabel = $t(`entities.${entity}.fields.${field}`) || field;
       }
-      const oldValue = change.from || change.old;
-      const newValue = change.to || change.new;
+      // Use display_name for audit fields if available, otherwise use raw value
+      const oldValue = change.old_display_name || change.from || change.old;
+      const newValue = change.new_display_name || change.to || change.new;
 
-      // Check if this is a badge field using column metadata
+      // Check if this is a badge or color field using column metadata
       const column = columns.find((c: any) => c.key === field);
       const isBadge = column?.type === 'badge' && column?.badge?.values;
+      const isColor = column?.type === 'color';
 
       // Format value based on column type (date/datetime)
       function formatValue(value: any): string {
@@ -217,6 +223,8 @@
       let oldBadgeColor: string | undefined;
       let oldBadgeLabelText: string | undefined;
       let oldBadgeLabelKey: string | undefined;
+      let colorValue: string | undefined;
+      let oldColorValue: string | undefined;
 
       if (isBadge) {
         if (newValue) {
@@ -230,6 +238,13 @@
           oldBadgeColor = oldBadgeConfig?.color;
           oldBadgeLabelText = oldBadgeConfig?.labelText;
           oldBadgeLabelKey = oldBadgeConfig?.labelKey;
+        }
+      } else if (isColor) {
+        if (newValue) {
+          colorValue = newValue as string;
+        }
+        if (oldValue) {
+          oldColorValue = oldValue as string;
         }
       }
 
@@ -245,7 +260,9 @@
           isBadge,
           badgeColor,
           badgeLabelText,
-          badgeLabelKey
+          badgeLabelKey,
+          isColor,
+          colorValue
         });
       } else if (oldValue != null && newValue == null) {
         descriptions.push({
@@ -260,7 +277,9 @@
           badgeLabelKey,
           oldBadgeColor,
           oldBadgeLabelText,
-          oldBadgeLabelKey
+          oldBadgeLabelKey,
+          isColor,
+          oldColorValue
         });
       } else if (oldValue != newValue) {
         descriptions.push({
@@ -275,7 +294,10 @@
           badgeLabelKey,
           oldBadgeColor,
           oldBadgeLabelText,
-          oldBadgeLabelKey
+          oldBadgeLabelKey,
+          isColor,
+          colorValue,
+          oldColorValue
         });
       } else {
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
@@ -286,7 +308,9 @@
           isBadge,
           badgeColor,
           badgeLabelText,
-          badgeLabelKey
+          badgeLabelKey,
+          isColor,
+          colorValue
         });
       }
     }
@@ -388,7 +412,7 @@
                     {#if expandedEntries.has(entry.id)}
                       <div class="space-y-2">
                         {#each descriptions as desc}
-                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string}}
+                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string}}
                           <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
                             <div class="flex-1 min-w-0">
                               <div class="text-xs flex flex-wrap items-center gap-1">
@@ -405,6 +429,18 @@
                                     >
                                       {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
                                     </Badge>
+                                  {:else if delta.isColor && delta.oldColorValue}
+                                    <Tooltip.Root>
+                                      <Tooltip.Trigger>
+                                        <div
+                                          class="w-5 h-5 rounded-full border shadow-sm inline-block"
+                                          style="background-color: {delta.oldColorValue};"
+                                        ></div>
+                                      </Tooltip.Trigger>
+                                      <Tooltip.Content>
+                                        <p>{delta.oldColorValue}</p>
+                                      </Tooltip.Content>
+                                    </Tooltip.Root>
                                   {:else}
                                     <span class="italic text-muted-foreground">{delta.oldValue}</span>
                                   {/if}
@@ -421,6 +457,18 @@
                                     >
                                       {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
                                     </Badge>
+                                  {:else if delta.isColor && delta.colorValue}
+                                    <Tooltip.Root>
+                                      <Tooltip.Trigger>
+                                        <div
+                                          class="w-5 h-5 rounded-full border shadow-sm inline-block"
+                                          style="background-color: {delta.colorValue};"
+                                        ></div>
+                                      </Tooltip.Trigger>
+                                      <Tooltip.Content>
+                                        <p>{delta.colorValue}</p>
+                                      </Tooltip.Content>
+                                    </Tooltip.Root>
                                   {:else}
                                     <span class="italic text-muted-foreground">{delta.newValue}</span>
                                   {/if}
