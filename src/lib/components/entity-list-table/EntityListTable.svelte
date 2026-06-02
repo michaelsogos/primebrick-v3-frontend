@@ -1910,15 +1910,18 @@
   const scrollPreservation = useScrollPreservation(tableRef, rowsLoading);
 
   // Row range selection
-  const rowRangeSelection = useRowRangeSelection(
-    rowSelectionEnabled,
-    selectedKeys,
+  const rowRangeSelection = useRowRangeSelection({
+    rowSelectionEnabled: () => rowSelectionEnabled,
+    selectedKeys: () => selectedKeys,
     onSelectedKeysChange,
-    viewRows,
+    viewRows: () => viewRows,
+    pageKeys: () => pageKeys,
     rowKey,
     rowsLoading,
-    error
-  );
+    error,
+    page: () => clientSelectedPage,
+    pageSize: () => pageSize
+  });
 
   // Filter persistence
   const filterPersistence = useFilterPersistence(
