@@ -52,7 +52,6 @@
     bind:this={inputRef}
     {type}
     bind:value
-    {placeholder}
     oninput={syncScroll}
     onscroll={syncScroll}
     class={cn(
