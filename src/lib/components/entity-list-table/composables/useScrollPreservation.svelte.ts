@@ -38,6 +38,6 @@ export function useScrollPreservation(options: {
 
   return {
     tableScrollHost,
-    savedTableScrollLeft
+    get savedTableScrollLeft() { return savedTableScrollLeft; }
   };
 }

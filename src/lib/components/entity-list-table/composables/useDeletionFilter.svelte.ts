@@ -68,7 +68,7 @@ export function useDeletionFilter(
   });
 
   return {
-    deletionFilterMode,
+    get deletionFilterMode() { return deletionFilterMode; },
     setDeletionFilterMode: (mode: DeletionFilterMode) => { deletionFilterMode = mode; }
   };
 }

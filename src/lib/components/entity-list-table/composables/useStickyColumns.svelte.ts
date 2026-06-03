@@ -132,12 +132,11 @@ export function useStickyColumns(options: {
   });
 
   return {
-    checkboxHeadRef,
-    stickyHeadRefs,
-    stickyCellRefs,
-    get stickyLeftOffsets() {
-      return stickyLeftOffsets;
-    },
+    get checkboxHeadRef() { return checkboxHeadRef; },
+    set checkboxHeadRef(v) { checkboxHeadRef = v; },
+    get stickyHeadRefs() { return stickyHeadRefs; },
+    get stickyCellRefs() { return stickyCellRefs; },
+    get stickyLeftOffsets() { return stickyLeftOffsets; },
     stickyRef,
     updateStickyOffsets
   };

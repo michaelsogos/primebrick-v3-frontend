@@ -28,10 +28,10 @@ export function useViewMode(options: ViewModeOptions = {}): ViewModeReturn {
   const isCardsList = $derived(viewMode === 'cards_list');
 
   return {
-    viewMode,
+    get viewMode() { return viewMode; },
     setViewMode,
-    isTable,
-    isCards,
-    isCardsList
+    get isTable() { return isTable; },
+    get isCards() { return isCards; },
+    get isCardsList() { return isCardsList; }
   };
 }

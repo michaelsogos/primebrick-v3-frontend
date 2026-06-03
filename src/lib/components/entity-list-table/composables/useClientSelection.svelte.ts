@@ -74,13 +74,13 @@ export function useClientSelection<T>(
   );
 
   return {
-    showSelectedOnly,
-    clientSelectedPage,
-    orderedSelectedRows,
-    clientSelectedTotalPages,
-    viewRows,
-    hasDeletedSelected,
-    allSelectedDeleted,
+    get showSelectedOnly() { return showSelectedOnly; },
+    get clientSelectedPage() { return clientSelectedPage; },
+    get orderedSelectedRows() { return orderedSelectedRows; },
+    get clientSelectedTotalPages() { return clientSelectedTotalPages; },
+    get viewRows() { return viewRows; },
+    get hasDeletedSelected() { return hasDeletedSelected; },
+    get allSelectedDeleted() { return allSelectedDeleted; },
     toggle: () => {
       const next = !showSelectedOnly;
       showSelectedOnly = next;

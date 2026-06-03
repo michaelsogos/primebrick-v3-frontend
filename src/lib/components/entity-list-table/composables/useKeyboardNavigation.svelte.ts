@@ -117,7 +117,7 @@ export function useKeyboardNavigation<T>(
   });
 
   return {
-    focusedRowIndex,
+    get focusedRowIndex() { return focusedRowIndex; },
     handleGlobalKeyDown
   };
 }

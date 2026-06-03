@@ -55,12 +55,12 @@ export function useSelection(options: SelectionOptions): SelectionReturn {
   const someSelected = $derived(selectedKeys.length > 0);
 
   return {
-    selectedKeys,
+    get selectedKeys() { return selectedKeys; },
     toggleRowSelect,
     toggleAllRows,
     clearSelection,
     isRowSelected,
-    allSelected,
-    someSelected
+    get allSelected() { return allSelected; },
+    get someSelected() { return someSelected; }
   };
 }

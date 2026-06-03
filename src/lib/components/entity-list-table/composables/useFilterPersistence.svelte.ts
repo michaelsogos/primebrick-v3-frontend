@@ -63,8 +63,8 @@ export function useFilterPersistence(options: {
   }
 
   return {
-    filterValuesStorageKeyFull,
-    advancedFiltersStorageKeyFull,
+    get filterValuesStorageKeyFull() { return filterValuesStorageKeyFull; },
+    get advancedFiltersStorageKeyFull() { return advancedFiltersStorageKeyFull; },
     readFilterValues,
     writeFilterValues,
     readAdvancedFilters,

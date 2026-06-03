@@ -52,7 +52,7 @@ export function useSorting(options: SortingOptions): SortingReturn {
   }
 
   return {
-    currentSort,
+    get currentSort() { return currentSort; },
     handleSort,
     getSortDirection,
     isSortable

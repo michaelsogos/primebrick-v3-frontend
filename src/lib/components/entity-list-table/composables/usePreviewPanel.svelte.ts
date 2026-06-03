@@ -127,13 +127,13 @@ export function usePreviewPanel<T>(entity: string, uid: string) {
   }
 
   return {
-    previewPanelOpen,
-    previewRow,
-    previewRowIndex,
-    previewEditMode,
-    previewPanelWidth,
-    isResizing,
-    focusedRowIndex,
+    get previewPanelOpen() { return previewPanelOpen; },
+    get previewRow() { return previewRow; },
+    get previewRowIndex() { return previewRowIndex; },
+    get previewEditMode() { return previewEditMode; },
+    get previewPanelWidth() { return previewPanelWidth; },
+    get isResizing() { return isResizing; },
+    get focusedRowIndex() { return focusedRowIndex; },
     startResize,
     handleResize,
     stopResize,
