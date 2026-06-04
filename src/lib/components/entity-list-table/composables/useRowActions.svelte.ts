@@ -25,6 +25,9 @@ export interface RowActionsReturn<TRow extends Record<string, unknown>> {
   confirmDeleteRow: (row: TRow) => Promise<void>;
   confirmRestoreRow: (row: TRow) => Promise<void>;
   confirmDuplicateRow: (row: TRow) => Promise<void>;
+  isDeleting: boolean;
+  isRestoring: boolean;
+  isDuplicating: boolean;
 }
 
 export function useRowActions<TRow extends Record<string, unknown>>(
@@ -223,6 +226,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     handlePreviewRow,
     confirmDeleteRow,
     confirmRestoreRow,
-    confirmDuplicateRow
+    confirmDuplicateRow,
+    get isDeleting() { return isDeleting; },
+    get isRestoring() { return isRestoring; },
+    get isDuplicating() { return isDuplicating; }
   };
 }

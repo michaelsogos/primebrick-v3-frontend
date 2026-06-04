@@ -787,23 +787,11 @@
   /** Preview panel dropdown menu state */
   let previewDropdownOpen = $state(false);
 
-  /** Delete confirmation dialog state */
-  let deleteConfirmDialogOpen = $state(false);
-  let rowToDelete: TRow | null = null;
-  let isDeleting = $state(false);
-
-  /** Restore confirmation dialog state */
-  let restoreConfirmDialogOpen = $state(false);
-  let rowToRestore: TRow | null = null;
-  let isRestoring = $state(false);
-
-  /** Bulk delete confirmation dialog state */
-  let bulkDeleteConfirmDialogOpen = $state(false);
-  let isBulkDeleting = $state(false);
-
-  /** Bulk restore confirmation dialog state */
-  let bulkRestoreConfirmDialogOpen = $state(false);
-  let isBulkRestoring = $state(false);
+  /** Row tracking for dialog actions */
+  let rowToDelete: TRow | null = $state(null);
+  let rowToRestore: TRow | null = $state(null);
+  let singleRowToDuplicate: TRow | null = $state(null);
+  let duplicateScope = $state<'selected' | 'single'>('selected');
 
   /** Export confirmation dialog state */
   let exportConfirmDialogOpen = $state(false);
@@ -824,12 +812,6 @@
   let emailHtmlContent = $state('');
   let isEmailPreparing = $state(false);
   let emailCopied = $state(false);
-
-  /** Duplicate confirmation dialog state */
-  let duplicateConfirmDialogOpen = $state(false);
-  let isDuplicating = $state(false);
-  let duplicateScope = $state<'selected' | 'single'>('selected');
-  let singleRowToDuplicate: TRow | null = null;
 
   /** Entity preview panel state */
   const _sessionRaw = (() => {
@@ -1079,7 +1061,7 @@
   function handleDeleteRow(row: TRow) {
     // Open confirmation dialog instead of deleting directly
     rowToDelete = row;
-    deleteConfirmDialogOpen = true;
+    dialogs.openDeleteDialog();
     closeRowDropdown();
   }
 
@@ -1087,7 +1069,7 @@
   function handleRestoreRow(row: TRow) {
     // Open confirmation dialog instead of restoring directly
     rowToRestore = row;
-    restoreConfirmDialogOpen = true;
+    dialogs.openRestoreDialog();
     closeRowDropdown();
   }
 
@@ -1099,7 +1081,7 @@
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
         method: 'DELETE'
       });
-      deleteConfirmDialogOpen = false;
+      dialogs.closeDeleteDialog();
       rowToDelete = null;
       // Refresh the list after successful deletion
       if (onRefresh) {
@@ -1131,7 +1113,7 @@
         });
       }
     } finally {
-      isDeleting = false;
+      // isDeleting is now managed by rowActionsComposable
     }
   }
 
@@ -1139,12 +1121,11 @@
   async function confirmRestoreRow() {
     if (!rowToRestore) return;
     try {
-      isRestoring = true;
       const uuidValue = rowToRestore[uid] as string;
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
         method: 'POST'
       });
-      restoreConfirmDialogOpen = false;
+      dialogs.closeRestoreDialog();
       rowToRestore = null;
       // Refresh the list after successful restore
       if (onRefresh) {
@@ -1176,13 +1157,13 @@
         });
       }
     } finally {
-      isRestoring = false;
+      // isRestoring is now managed by rowActionsComposable
     }
   }
 
   /** Cancel delete action */
   function cancelDeleteRow() {
-    deleteConfirmDialogOpen = false;
+    dialogs.closeDeleteDialog();
     rowToDelete = null;
   }
 
@@ -1376,7 +1357,7 @@
       return;
     }
     duplicateScope = 'selected';
-    duplicateConfirmDialogOpen = true;
+    dialogs.openDuplicateDialog();
   }
 
   function handleDuplicateRow(row: TRow) {
@@ -1386,13 +1367,12 @@
     }
     singleRowToDuplicate = row;
     duplicateScope = 'single';
-    duplicateConfirmDialogOpen = true;
+    dialogs.openDuplicateDialog();
     closeRowDropdown();
   }
 
   async function confirmDuplicate() {
     try {
-      isDuplicating = true;
       const uuids = duplicateScope === 'single'
         ? [rowKey(singleRowToDuplicate!)]
         : selectedKeys;
@@ -1428,18 +1408,17 @@
       // Refresh the list
       onRefresh();
 
-      duplicateConfirmDialogOpen = false;
+      dialogs.closeDuplicateDialog();
     } catch (error) {
       console.error('Duplicate failed:', error);
       // Error already handled by pushRFC7807Error above
     } finally {
-      isDuplicating = false;
-      duplicateConfirmDialogOpen = false;
+      dialogs.closeDuplicateDialog();
     }
   }
 
   function cancelDuplicate() {
-    duplicateConfirmDialogOpen = false;
+    dialogs.closeDuplicateDialog();
     singleRowToDuplicate = null;
   }
 
@@ -4045,7 +4024,7 @@
 </div>
 
 <!-- Delete confirmation dialog -->
-<DialogBordered bind:open={deleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={dialogs.deleteDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
     <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
@@ -4055,8 +4034,7 @@
       variant="secondary-outline"
       class="hover:scale-105 transition-all"
       onclick={() => {
-        deleteConfirmDialogOpen = false;
-        rowToDelete = null;
+        dialogs.closeDeleteDialog();
       }}
     >
       {$t('common.cancel')}
@@ -4071,7 +4049,7 @@
 </DialogBordered>
 
 <!-- Restore confirmation dialog -->
-<DialogBordered bind:open={restoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={dialogs.restoreDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('common.restoreConfirmTitle')}</Dialog.Title>
     <Dialog.Description>{$t('common.restoreConfirm')}</Dialog.Description>
@@ -4081,8 +4059,7 @@
       variant="secondary-outline"
       class="hover:scale-105 transition-all"
       onclick={() => {
-        restoreConfirmDialogOpen = false;
-        rowToRestore = null;
+        dialogs.closeRestoreDialog();
       }}
     >
       {$t('common.cancel')}
@@ -4090,9 +4067,9 @@
     <Button
       class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
       onclick={confirmRestoreRow}
-      disabled={isRestoring}
+      disabled={rowActionsComposable.isRestoring}
     >
-      {#if isRestoring}
+      {#if rowActionsComposable.isRestoring}
         {$t('common.restoring')}
       {:else}
         {$t('common.restore')}
@@ -4277,7 +4254,7 @@
 </DialogBordered>
 
 <!-- Duplicate confirmation dialog -->
-<DialogBordered bind:open={duplicateConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={dialogs.duplicateDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -4299,9 +4276,9 @@
     <Button
       class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
       onclick={confirmDuplicate}
-      disabled={isDuplicating}
+      disabled={rowActionsComposable.isDuplicating}
     >
-      {#if isDuplicating}
+      {#if rowActionsComposable.isDuplicating}
         {$t('common.duplicating')}
       {:else}
         {$t('common.confirm')}
