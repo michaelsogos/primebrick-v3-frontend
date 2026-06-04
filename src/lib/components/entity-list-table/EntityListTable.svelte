@@ -922,24 +922,12 @@
 
   /** Handle edit action for a row */
   function handleEditRow(row: TRow) {
-    if (isRowDeleted(row)) {
-      console.log('Cannot edit deleted row:', rowKey(row));
-      return;
-    }
-    if (onEditAction) {
-      onEditAction(row);
-    }
-    closeRowDropdown();
+    rowActionsComposable.handleEditRow(row);
   }
 
   /** Handle preview action for a row */
   function handlePreviewRow(row: TRow) {
-    previewRow = row;
-    previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
-    focusedRowIndex = previewRowIndex;
-    previewEditMode = false;
-    previewPanelOpen = true;
-    closeRowDropdown();
+    rowActionsComposable.handlePreviewRow(row);
   }
 
   /** Navigate preview records */
@@ -1076,95 +1064,17 @@
   /** Confirm delete action after dialog confirmation */
   async function confirmDeleteRow() {
     if (!rowToDelete) return;
-    try {
-      const uuidValue = rowToDelete[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
-        method: 'DELETE'
-      });
-      dialogs.closeDeleteDialog();
-      rowToDelete = null;
-      // Refresh the list after successful deletion
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Delete failed:', error);
-      // Handle both RFC 7807 errors and non-RFC errors
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        // Ensure required RFC 7807 fields are present
-        const rfcError: RFC7807Error = {
-          type: err.type || 'about:blank',
-          title: err.title || 'Delete failed',
-          status: err.status || 500,
-          detail: err.detail || 'Unknown error',
-          internal_code: err.internal_code,
-          instance: err.instance,
-          severity: err.severity
-        };
-        pushRFC7807Error(rfcError, { showToast: true });
-      } else {
-        pushImpactError({
-          impact: 'MEDIUM',
-          messageKey: 'entities.list.deleteFailed',
-          scope: $t('errors.scope.deleteApi'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-    } finally {
-      // isDeleting is now managed by rowActionsComposable
-    }
+    await rowActionsComposable.confirmDeleteRow(rowToDelete);
+    dialogs.closeDeleteDialog();
+    rowToDelete = null;
   }
 
   /** Confirm restore action after dialog confirmation */
   async function confirmRestoreRow() {
     if (!rowToRestore) return;
-    try {
-      const uuidValue = rowToRestore[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
-        method: 'POST'
-      });
-      dialogs.closeRestoreDialog();
-      rowToRestore = null;
-      // Refresh the list after successful restore
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Restore failed:', error);
-      // Handle both RFC 7807 errors and non-RFC errors
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        // Ensure required RFC 7807 fields are present
-        const rfcError: RFC7807Error = {
-          type: err.type || 'about:blank',
-          title: err.title || 'Restore failed',
-          status: err.status || 500,
-          detail: err.detail || 'Unknown error',
-          internal_code: err.internal_code,
-          instance: err.instance,
-          severity: err.severity
-        };
-        pushRFC7807Error(rfcError, { showToast: true });
-      } else {
-        pushImpactError({
-          impact: 'MEDIUM',
-          messageKey: 'entities.list.restoreFailed',
-          scope: $t('errors.scope.restoreApi'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-    } finally {
-      // isRestoring is now managed by rowActionsComposable
-    }
-  }
-
-  /** Cancel delete action */
-  function cancelDeleteRow() {
-    dialogs.closeDeleteDialog();
-    rowToDelete = null;
+    await rowActionsComposable.confirmRestoreRow(rowToRestore);
+    dialogs.closeRestoreDialog();
+    rowToRestore = null;
   }
 
   /** Bulk action handlers */
@@ -1372,49 +1282,12 @@
   }
 
   async function confirmDuplicate() {
-    try {
-      const uuids = duplicateScope === 'single'
-        ? [rowKey(singleRowToDuplicate!)]
-        : selectedKeys;
-      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuids })
-      });
-      if (!response.ok) {
-        const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
-        // Include duplicateResults as extra field for the error panel
-        const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
-        pushRFC7807Error(enhancedError, { showToast: true });
-        throw enhancedError;
-      }
-      const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
-      if (result.errors.length > 0) {
-        pushImpactError({
-          impact: 'MEDIUM',
-          messageKey: 'entities.list.duplicatePartialSuccess',
-          messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: $t('errors.scope.duplicateApi')
-        });
-      } else {
-        pushImpactError({
-          impact: 'LOW',
-          messageKey: 'entities.list.duplicateSuccess',
-          messageParams: { count: result.uuids.length },
-          scope: $t('errors.scope.duplicateApi')
-        });
-      }
-
-      // Refresh the list
-      onRefresh();
-
-      dialogs.closeDuplicateDialog();
-    } catch (error) {
-      console.error('Duplicate failed:', error);
-      // Error already handled by pushRFC7807Error above
-    } finally {
-      dialogs.closeDuplicateDialog();
+    if (duplicateScope === 'single' && singleRowToDuplicate) {
+      await rowActionsComposable.confirmDuplicateRow(singleRowToDuplicate);
     }
+    // Bulk duplicate is handled separately by bulkActions composable
+    dialogs.closeDuplicateDialog();
+    singleRowToDuplicate = null;
   }
 
   function cancelDuplicate() {
@@ -4042,8 +3915,13 @@
     <Button
       class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
       onclick={confirmDeleteRow}
+      disabled={rowActionsComposable.isDeleting}
     >
-      {$t('common.delete')}
+      {#if rowActionsComposable.isDeleting}
+        {$t('common.deleting')}
+      {:else}
+        {$t('common.delete')}
+      {/if}
     </Button>
   </Dialog.Footer>
 </DialogBordered>
