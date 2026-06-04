@@ -11,6 +11,7 @@ export interface SortingReturn {
   handleSort: (key: string) => void;
   getSortDirection: (key: string) => 'asc' | 'desc' | null;
   isSortable: (key: string) => boolean;
+  syncWithExternal: (sort: { key: string; direction: 'asc' | 'desc' } | null) => void;
 }
 
 export function useSorting(options: SortingOptions): SortingReturn {
@@ -51,10 +52,17 @@ export function useSorting(options: SortingOptions): SortingReturn {
     return column?.sortable ?? false;
   }
 
+  function syncWithExternal(sort: { key: string; direction: 'asc' | 'desc' } | null) {
+    if (JSON.stringify(currentSort) !== JSON.stringify(sort)) {
+      currentSort = sort;
+    }
+  }
+
   return {
     get currentSort() { return currentSort; },
     handleSort,
     getSortDirection,
-    isSortable
+    isSortable,
+    syncWithExternal
   };
 }

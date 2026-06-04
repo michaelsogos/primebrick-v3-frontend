@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -35,6 +35,10 @@
     useFilterPersistence,
     useToolbarMode
   } from './composables';
+  import { useExport } from './composables/useExport.svelte.js';
+  import { useBulkActions } from './composables/useBulkActions.svelte.js';
+  import { useRowActions } from './composables/useRowActions.svelte.js';
+  import { useDialogs } from './composables/useDialogs.svelte.js';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -1225,7 +1229,7 @@
       // Clear selection after successful deletion
       selectedKeys = [];
       // Switch back to filters mode
-      toolbarModeState.toolbarMode = 'filters';
+      toolbarModeState.toggle();
       // Refresh the list after successful deletion
       if (onRefresh) {
         onRefresh();
@@ -1300,7 +1304,7 @@
       // Clear selection after successful restore
       selectedKeys = [];
       // Switch back to filters mode
-      toolbarModeState.toolbarMode = 'filters';
+      toolbarModeState.toggle();
       // Refresh the list after successful restore
       if (onRefresh) {
         onRefresh();
@@ -1944,6 +1948,66 @@
     filterValues: () => filterValues,
     advancedFilters: () => advancedFilters
   });
+
+  const exportComposable = useExport({
+    entity: () => entity,
+    selectedKeys: () => selectedKeys,
+    uid: () => uid,
+    columns: () => columns,
+    search: () => search,
+    searchInKeys: () => searchInKeys,
+    sortKey: () => sortKey,
+    sortDir: () => sortDir,
+    filterValues: () => filterValues,
+    advancedFilters: () => advancedFilters,
+    deletionFilterMode: () => deletionFilterMode,
+    onExportStart: () => {
+      // Optional: handle export start
+    },
+    onExportComplete: () => {
+      // Optional: handle export complete
+    },
+    onExportError: (error) => {
+      // Optional: handle export error
+    }
+  });
+
+  const bulkActions = useBulkActions({
+    entity: () => entity,
+    selectedKeys: () => selectedKeys,
+    onBulkActionStart: () => {
+      // Optional: handle bulk action start
+    },
+    onBulkActionComplete: () => {
+      // Optional: handle bulk action complete
+    },
+    onBulkActionError: (error) => {
+      // Optional: handle bulk action error
+    },
+    onSelectionChange: (keys) => {
+      selectedKeys = keys;
+    }
+  });
+
+  const rowActionsComposable = useRowActions<TRow>({
+    entity: () => entity,
+    uid: () => uid,
+    onEditAction: onEditAction,
+    onRefresh: onRefresh,
+    isRowDeleted: isRowDeleted,
+    rowKey: rowKey,
+    onPreviewRow: (row) => {
+      previewRow = row;
+      previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
+      focusedRowIndex = previewRowIndex;
+      previewEditMode = false;
+      previewPanelOpen = true;
+    },
+    closeRowDropdown: closeRowDropdown,
+    t: $t
+  });
+
+  const dialogs = useDialogs();
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
     const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));

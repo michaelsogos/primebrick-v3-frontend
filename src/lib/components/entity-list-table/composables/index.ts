@@ -24,3 +24,13 @@ export { useToolbarMode } from './useToolbarMode.svelte';
 export type { ToolbarMode } from './useToolbarMode.svelte';
 export { useStickyColumns } from './useStickyColumns.svelte';
 export { useScrollPreservation } from './useScrollPreservation.svelte';
+
+// Phase 2a: Business logic extraction composables
+export { useExport } from './useExport.svelte';
+export type { ExportOptions, ExportReturn } from './useExport.svelte';
+export { useBulkActions } from './useBulkActions.svelte';
+export type { BulkActionsOptions, BulkActionsReturn } from './useBulkActions.svelte';
+export { useRowActions } from './useRowActions.svelte';
+export type { RowActionsOptions, RowActionsReturn } from './useRowActions.svelte';
+export { useDialogs } from './useDialogs.svelte';
+export type { DialogsReturn } from './useDialogs.svelte';
