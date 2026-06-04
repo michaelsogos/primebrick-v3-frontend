@@ -2300,65 +2300,7 @@
 
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
-<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-  {#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
-    {@const value = row[col.key]}
-    {#if col.type === 'boolean'}
-      {#if value === true}
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <CircleCheck class="size-4 text-green-600 shrink-0" />
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <p>{$t(`entities.userProfile.fields.${col.key}`)}</p>
-          </Tooltip.Content>
-        </Tooltip.Root>
-      {:else if value === false}
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <CircleX class="size-4 text-muted-foreground shrink-0" />
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <p>{$t(`entities.userProfile.fields.${col.key}_false`)}</p>
-          </Tooltip.Content>
-        </Tooltip.Root>
-      {:else}
-        <span class="min-w-0 truncate">-</span>
-      {/if}
-    {:else if col.badge?.values && value}
-      {@const badgeValue = value as string}
-      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
-      <Badge
-        class="shadow-none"
-        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-      >
-        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
-      </Badge>
-    {:else if col.type === 'datetime'}
-      {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
-      {@const parts = formatDatetimeCellDisplay(
-        col,
-        row as Record<string, unknown>,
-        $uiLang,
-        mode
-      )}
-      {#if isDatetimeIanaRecordMode(col) && parts.iana}
-        <div class="flex min-w-0 flex-col gap-1">
-          <span class="min-w-0 truncate">{parts.text}</span>
-          <Badge
-            variant="outline"
-            class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-          >{parts.iana}</Badge>
-        </div>
-      {:else}
-        <span class="min-w-0 truncate">{parts.text}</span>
-      {/if}
-    {:else}
-      <span class="min-w-0 truncate">{formatListCellValue(col, value, $uiLang)}</span>
-    {/if}
-  {/snippet}
-
-  {#snippet entityPreviewPanel(row: TRow)}
+{#snippet entityPreviewPanel(row: TRow)}
     {@const rowDeleted = isRowDeleted(row)}
     <div class="flex h-full flex-col bg-background">
       {#snippet headerTitle()}
@@ -2652,7 +2594,7 @@
     </div>
   {/snippet}
 
-  {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
+{#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
       class={cn(
         'flex flex-col gap-0.5',
@@ -2696,6 +2638,64 @@
     </div>
   {/snippet}
 
+{#snippet listDefaultCellValue(row: TRow, col: MetaColumn)}
+    {@const value = row[col.key]}
+    {#if col.type === 'boolean'}
+      {#if value === true}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <CircleCheck class="size-4 text-green-600 shrink-0" />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p>{$t(`entities.userProfile.fields.${col.key}`)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else if value === false}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <CircleX class="size-4 text-muted-foreground shrink-0" />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p>{$t(`entities.userProfile.fields.${col.key}_false`)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else}
+        <span class="min-w-0 truncate">-</span>
+      {/if}
+    {:else if col.badge?.values && value}
+      {@const badgeValue = value as string}
+      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
+      <Badge
+        class="shadow-none"
+        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
+      >
+        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+      </Badge>
+    {:else if col.type === 'datetime'}
+      {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
+      {@const parts = formatDatetimeCellDisplay(
+        col,
+        row as Record<string, unknown>,
+        $uiLang,
+        mode
+      )}
+      {#if isDatetimeIanaRecordMode(col) && parts.iana}
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="min-w-0 truncate">{parts.text}</span>
+          <Badge
+            variant="outline"
+            class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+          >{parts.iana}</Badge>
+        </div>
+      {:else}
+        <span class="min-w-0 truncate">{parts.text}</span>
+      {/if}
+    {:else}
+      <span class="min-w-0 truncate">{formatListCellValue(col, value, $uiLang)}</span>
+    {/if}
+  {/snippet}
+
+<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
   <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
     <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
       <SearchBar
