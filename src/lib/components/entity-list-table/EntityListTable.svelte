@@ -794,24 +794,7 @@
   let duplicateScope = $state<'selected' | 'single'>('selected');
 
   /** Export confirmation dialog state */
-  let exportConfirmDialogOpen = $state(false);
-  let exportFileType = $state<'xlsx' | 'csv' | null>(null);
-  let isExporting = $state(false);
-  let exportScope = $state<'selected' | 'all'>('selected');
-
-  /** HTML export confirmation dialog state */
-  let htmlExportConfirmDialogOpen = $state(false);
-  let isHtmlExporting = $state(false);
-  let htmlExportScope = $state<'selected' | 'all'>('selected');
-
-  /** HTML preview dialog state */
-  let htmlPreviewDialogOpen = $state(false);
-  let htmlPreviewContent = $state('');
-  let previewMode = $state<'html' | 'pdf' | 'email'>('html');
-  let pdfBlobUrl = $state<string | null>(null);
-  let emailHtmlContent = $state('');
-  let isEmailPreparing = $state(false);
-  let emailCopied = $state(false);
+  // Export state is now managed by exportComposable
 
   /** Entity preview panel state */
   const _sessionRaw = (() => {
@@ -1110,150 +1093,14 @@
 
   /** Confirm export action after dialog confirmation */
   async function confirmExportRow() {
-    if (!exportFileType) return;
-    try {
-      isExporting = true;
-      
-      // Build query parameters from current filters, search, sort
-      const params = new URLSearchParams();
-      params.append('file_type', exportFileType);
-      
-      if (search) params.append('search', search);
-      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
-      if (sortKey) params.append('sort_key', sortKey);
-      if (sortDir) params.append('sort_dir', sortDir);
-      
-      // Build filters array (same format as loadRows)
-      let filterIdx = 0;
-      
-      // Add regular filter values
-      if (filterValues && Object.keys(filterValues).length > 0) {
-        for (const [field, value] of Object.entries(filterValues)) {
-          if (value !== undefined && value !== null && value !== '') {
-            const col = columns.find(c => c.key === field);
-            const op = col?.type === 'text' ? 'ILIKE' : '=';
-            
-            // Handle multi-select (array) values for badge fields
-            if (col?.type === 'badge' && Array.isArray(value)) {
-              for (let i = 0; i < value.length; i++) {
-                params.set(`filters[${filterIdx}][field]`, field);
-                params.set(`filters[${filterIdx}][op]`, op);
-                params.set(`filters[${filterIdx}][value]`, String(value[i]));
-                const connector = i < value.length - 1 ? 'OR' : 'AND';
-                params.set(`filters[${filterIdx}][connector]`, connector);
-                filterIdx++;
-              }
-            } else {
-              params.set(`filters[${filterIdx}][field]`, field);
-              params.set(`filters[${filterIdx}][op]`, op);
-              params.set(`filters[${filterIdx}][value]`, String(value));
-              params.set(`filters[${filterIdx}][connector]`, 'AND');
-              filterIdx++;
-            }
-          }
-        }
-      }
-      
-      // Add advanced filters
-      if (advancedFilters && advancedFilters.length > 0) {
-        for (const filter of advancedFilters) {
-          if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
-            params.set(`filters[${filterIdx}][field]`, filter.field);
-            
-            let operator: string = filter.operator;
-            let value = filter.value;
-            
-            // Handle BETWEEN operator with start/end values
-            if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
-              params.set(`filters[${filterIdx}][op]`, operator);
-              params.set(`filters[${filterIdx}][value][start]`, String(value.start));
-              params.set(`filters[${filterIdx}][value][end]`, String(value.end));
-              filterIdx++;
-              continue;
-            }
-            
-            // Map frontend operators to backend-supported operators
-            if (Array.isArray(value)) {
-              operator = operator === '!=' ? 'NOT IN' : 'IN';
-            } else if (operator === 'startsWith') {
-              operator = 'ILIKE';
-              value = `${value}%`;
-            } else if (operator === 'endsWith') {
-              operator = 'ILIKE';
-              value = `%${value}`;
-            } else if (operator === 'contains') {
-              operator = 'ILIKE';
-              value = `%${value}%`;
-            }
-            
-            params.set(`filters[${filterIdx}][op]`, operator);
-            
-            // Handle array values for badge fields
-            if (Array.isArray(value)) {
-              for (const val of value) {
-                params.append(`filters[${filterIdx}][value][]`, String(val));
-              }
-            } else {
-              params.set(`filters[${filterIdx}][value]`, String(value));
-            }
-            
-            filterIdx++;
-          }
-        }
-      }
-      
-      // Add UID filter if exporting selected only
-      if (exportScope === 'selected' && selectedKeys.length > 0) {
-        params.set(`filters[${filterIdx}][field]`, uid);
-        params.set(`filters[${filterIdx}][op]`, 'IN');
-        for (const key of selectedKeys) {
-          params.append(`filters[${filterIdx}][value][]`, key);
-        }
-        params.set(`filters[${filterIdx}][connector]`, 'AND');
-      }
-      
-      // Add locale and timezone
-      params.append('locale', $uiLang);
-      params.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
-      
-      // Trigger file download
-      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
-      
-      if (!response.ok) {
-        // Read RFC 7807 compliant error response
-        const errorData = await response.json();
-        throw errorData;
-      }
-      
-      // Get the blob and create download link
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.${exportFileType}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      exportConfirmDialogOpen = false;
-      exportFileType = null;
-    } catch (error) {
-      console.error('Export failed:', error);
-      // Handle RFC 7807 compliant error response
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
-    } finally {
-      isExporting = false;
-      // Close dialog regardless of success or error
-      exportConfirmDialogOpen = false;
-    }
+    if (!exportComposable.fileType) return;
+    await exportComposable.handleExport(exportComposable.fileType);
+    exportComposable.closeExportDialog();
   }
 
   /** Cancel export action */
   function cancelExportRow() {
-    exportConfirmDialogOpen = false;
-    exportFileType = null;
+    exportComposable.closeExportDialog();
   }
 
   function handleBulkDuplicate() {
@@ -1296,213 +1143,39 @@
   }
 
   function handleBulkExport() {
-    exportFileType = null;
-    exportScope = selectedKeys.length > 0 ? 'selected' : 'all';
-    exportConfirmDialogOpen = true;
+    exportComposable.openExportDialog();
   }
 
   function handleHtmlExport() {
-    htmlExportScope = selectedKeys.length > 0 ? 'selected' : 'all';
-    htmlExportConfirmDialogOpen = true;
+    exportComposable.handleHtmlExport();
   }
 
   function cancelHtmlExport() {
-    htmlExportConfirmDialogOpen = false;
+    exportComposable.closeHtmlExportDialog();
   }
 
   async function confirmHtmlExport() {
-    try {
-      isHtmlExporting = true;
-      
-      // Build query parameters from current filters, search, sort
-      const params = new URLSearchParams();
-      params.append('file_type', 'html');
-      
-      if (search) params.append('search', search);
-      if (searchInKeys) params.append('search_in', searchInKeys.join(','));
-      if (sortKey) params.append('sort_key', sortKey);
-      if (sortDir) params.append('sort_dir', sortDir);
-      
-      // Build filters array (same format as loadRows)
-      let filterIdx = 0;
-      const filters: Record<string, any> = {};
-      if (filterValues) {
-        for (const [key, value] of Object.entries(filterValues)) {
-          if (value !== null && value !== undefined && value !== '') {
-            const col = columns.find(c => c.key === key);
-            const op = col?.type === 'text' ? 'ILIKE' : '=';
-            filters[`filter[${filterIdx}].field`] = key;
-            filters[`filter[${filterIdx}].operator`] = op;
-            filters[`filter[${filterIdx}].value`] = value;
-            filterIdx++;
-          }
-        }
-      }
-      
-      // Add advanced filters
-      if (advancedFilters && advancedFilters.length > 0) {
-        advancedFilters.forEach((filter, idx) => {
-          filters[`filter[${filterIdx}].field`] = filter.field;
-          filters[`filter[${filterIdx}].operator`] = filter.operator;
-          filters[`filter[${filterIdx}].value`] = filter.value;
-          filterIdx++;
-        });
-      }
-      
-      // Add scope (selected vs all)
-      if (htmlExportScope === 'selected' && selectedKeys.length > 0) {
-        params.append('uuids', selectedKeys.join(','));
-      }
-      
-      // Add deletion filter mode
-      if (deletionFilterMode !== 'non_deleted') {
-        params.append('deletion_filter_mode', deletionFilterMode);
-      }
-      
-      // Add all filter parameters
-      Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, value);
-      });
-      
-      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
-      
-      if (!response.ok) {
-        // Read RFC 7807 compliant error response
-        const errorData = await response.json();
-        throw errorData;
-      }
-      
-      // Get HTML content as text
-      const htmlContent = await response.text();
-      
-      // Show preview dialog
-      htmlPreviewContent = htmlContent;
-      htmlPreviewDialogOpen = true;
-      
-      htmlExportConfirmDialogOpen = false;
-    } catch (error) {
-      console.error('HTML export failed:', error);
-      const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
-    } finally {
-      isHtmlExporting = false;
-      htmlExportConfirmDialogOpen = false;
-    }
+    await exportComposable.handleHtmlExport();
   }
 
   function closeHtmlPreview() {
-    htmlPreviewDialogOpen = false;
-    htmlPreviewContent = '';
+    exportComposable.closeHtmlPreview();
   }
 
   async function copyHtmlToClipboard() {
-    try {
-      const blobHtml = new Blob([htmlPreviewContent], { type: 'text/html' });
-      const plainText = htmlPreviewContent.replace(/<[^>]*>/g, '');
-      const blobPlain = new Blob([plainText], { type: 'text/plain' });
-      
-      const clipboardItem = new ClipboardItem({
-        'text/html': blobHtml,
-        'text/plain': blobPlain
-      });
-      
-      await navigator.clipboard.write([clipboardItem]);
-    } catch (err) {
-      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
-      navigator.clipboard.writeText(htmlPreviewContent);
-    }
+    await exportComposable.copyHtmlToClipboard();
   }
 
   async function generatePdfPreview() {
-    previewMode = 'pdf';
-    pdfBlobUrl = null;
-
-    try {
-      const html2pdf = await import('html2pdf.js');
-      const element = document.createElement('div');
-      element.innerHTML = htmlPreviewContent;
-
-      const opt = {
-        margin: 10,
-        filename: `${entity}-export.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-
-      // Generate PDF as binary blob instead of downloading
-      const worker = html2pdf.default().set(opt).from(element);
-      const pdfBlob = await worker.output('blob');
-      pdfBlobUrl = URL.createObjectURL(pdfBlob);
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      previewMode = 'html';
-    }
-  }
-
-  async function downloadPdf() {
-    if (!pdfBlobUrl) return;
-
-    const a = document.createElement('a');
-    a.href = pdfBlobUrl;
-    a.download = `${entity}-export.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    await exportComposable.generatePdfPreview();
   }
 
   async function prepareEmailHtml() {
-    previewMode = 'email';
-    isEmailPreparing = true;
-    emailHtmlContent = '';
-    emailCopied = false;
-    
-    try {
-      // 1. Sanitize with DOMPurify
-      const DOMPurify = await import('dompurify');
-      const sanitized = (DOMPurify as any).sanitize(htmlPreviewContent);
-      
-      // 2. Inline CSS with inline-css
-      const inlineCss = await import('inline-css');
-      const options = {
-        url: ' ',
-        applyStyleTags: true,
-        removeStyleTags: true,
-        applyLinkTags: false,
-        preserveMediaQueries: true
-      };
-      
-      const optimized = await (inlineCss as any).default(sanitized, options);
-      emailHtmlContent = optimized;
-    } catch (error) {
-      console.error('Email HTML preparation failed:', error);
-      emailHtmlContent = htmlPreviewContent;
-    } finally {
-      isEmailPreparing = false;
-    }
+    await exportComposable.prepareEmailHtml();
   }
 
   async function copyEmailHtmlToClipboard() {
-    try {
-      const blobHtml = new Blob([emailHtmlContent], { type: 'text/html' });
-      const plainText = emailHtmlContent.replace(/<[^>]*>/g, '');
-      const blobPlain = new Blob([plainText], { type: 'text/plain' });
-      
-      const clipboardItem = new ClipboardItem({
-        'text/html': blobHtml,
-        'text/plain': blobPlain
-      });
-      
-      await navigator.clipboard.write([clipboardItem]);
-    } catch (err) {
-      console.error('Advanced clipboard copy failed, falling back to plain text:', err);
-      navigator.clipboard.writeText(emailHtmlContent);
-    }
-    
-    emailCopied = true;
-    setTimeout(() => {
-      emailCopied = false;
-    }, 2000);
+    await exportComposable.copyEmailHtmlToClipboard();
   }
 
   /** Toggle toolbar mode between filters and bulk */
@@ -1718,7 +1391,12 @@
     },
     onSelectionChange: (keys) => {
       selectedKeys = keys;
-    }
+    },
+    onRefresh: onRefresh,
+    onToolbarModeChange: () => {
+      toolbarModeState.setMode('filters');
+    },
+    t: $t
   });
 
   const rowActionsComposable = useRowActions<TRow>({
@@ -4017,7 +3695,7 @@
 </DialogBordered>
 
 <!-- Export confirmation dialog -->
-<DialogBordered bind:open={exportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={exportComposable.exportOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -4030,7 +3708,7 @@
   </Dialog.Header>
   {#if selectedKeys.length > 0}
     <div class="py-4">
-      <Choicebox bind:value={exportScope}>
+      <Choicebox bind:value={exportComposable.exportScope}>
         <ChoiceboxItem value="selected">
           <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
           <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
@@ -4055,10 +3733,10 @@
     <div class="flex gap-2 w-full sm:w-auto">
       <Button
         class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { exportFileType = 'xlsx'; confirmExportRow(); }}
-        disabled={isExporting}
+        onclick={() => { exportComposable.setFileType('xlsx'); confirmExportRow(); }}
+        disabled={exportComposable.isExporting}
       >
-        {#if isExporting && exportFileType === 'xlsx'}
+        {#if exportComposable.isExporting && exportComposable.fileType === 'xlsx'}
           {$t('common.exporting')}
         {:else}
           <BsFiletypeXlsx class="size-5" />
@@ -4067,10 +3745,10 @@
       </Button>
       <Button
         class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { exportFileType = 'csv'; confirmExportRow(); }}
-        disabled={isExporting}
+        onclick={() => { exportComposable.setFileType('csv'); confirmExportRow(); }}
+        disabled={exportComposable.isExporting}
       >
-        {#if isExporting && exportFileType === 'csv'}
+        {#if exportComposable.isExporting && exportComposable.fileType === 'csv'}
           {$t('common.exporting')}
         {:else}
           <BsFiletypeCsv class="size-5" />
@@ -4082,7 +3760,7 @@
 </DialogBordered>
 
 <!-- HTML export confirmation dialog -->
-<DialogBordered bind:open={htmlExportConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={exportComposable.htmlPreviewDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -4095,7 +3773,7 @@
   </Dialog.Header>
   {#if selectedKeys.length > 0}
     <div class="py-4">
-      <Choicebox bind:value={htmlExportScope}>
+      <Choicebox bind:value={exportComposable.htmlExportScope}>
         <ChoiceboxItem value="selected">
           <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
           <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
@@ -4120,9 +3798,9 @@
     <Button
       class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
       onclick={confirmHtmlExport}
-      disabled={isHtmlExporting}
+      disabled={exportComposable.isHtmlExporting}
     >
-      {#if isHtmlExporting}
+      {#if exportComposable.isHtmlExporting}
         {$t('common.exporting')}
       {:else}
         {$t('common.confirm')}
@@ -4166,7 +3844,7 @@
 </DialogBordered>
 
 <!-- HTML preview full-screen dialog -->
-<DialogBordered bind:open={htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+<DialogBordered bind:open={exportComposable.htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>
@@ -4175,23 +3853,23 @@
   <div class="relative shrink-0">
     <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-primary/10 !border-primary/20 dark:!bg-primary/10" magnification={70} distance={120}>
       <Dock.Icon
-        onclick={() => { previewMode = 'html'; pdfBlobUrl = null; }}
+        onclick={() => { exportComposable.previewMode = 'html'; exportComposable.pdfBlobUrl = null; }}
         tooltip="HTML view"
-        selected={previewMode === 'html'}
+        selected={exportComposable.previewMode === 'html'}
       >
         <BsFiletypeHtml class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={generatePdfPreview}
         tooltip="PDF view"
-        selected={previewMode === 'pdf'}
+        selected={exportComposable.previewMode === 'pdf'}
       >
         <BsFiletypePdf class="w-6 h-6" />
       </Dock.Icon>
       <Dock.Icon
         onclick={prepareEmailHtml}
         tooltip="Email"
-        selected={previewMode === 'email'}
+        selected={exportComposable.previewMode === 'email'}
       >
         <BsEnvelopeAt class="w-6 h-6" />
       </Dock.Icon>
@@ -4201,25 +3879,25 @@
 
 <!-- Preview content -->
   <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">
-    {#if previewMode === 'html'}
+    {#if exportComposable.previewMode === 'html'}
       <iframe
-        srcdoc={htmlPreviewContent}
+        srcdoc={exportComposable.htmlPreviewContent}
         class="w-full h-full border-0"
         title="HTML Preview"
       ></iframe>
-    {:else if previewMode === 'pdf' && pdfBlobUrl}
+    {:else if exportComposable.previewMode === 'pdf' && exportComposable.pdfBlobUrl}
       <iframe
-        src={pdfBlobUrl}
+        src={exportComposable.pdfBlobUrl}
         class="w-full h-full border-0"
         title="PDF Preview"
       ></iframe>
-    {:else if previewMode === 'pdf'}
+    {:else if exportComposable.previewMode === 'pdf'}
       <div class="flex items-center justify-center h-full">
         <p class="text-muted-foreground">Generating PDF...</p>
       </div>
-    {:else if previewMode === 'email'}
+    {:else if exportComposable.previewMode === 'email'}
       <div class="w-full h-full">
-        {#if isEmailPreparing}
+        {#if exportComposable.isEmailPreparing}
           <div class="flex items-center justify-center h-full">
             <p class="text-muted-foreground">Preparing email HTML...</p>
           </div>
@@ -4277,7 +3955,7 @@
                       <!-- L'iframe che ospita l'HTML puro del foglio e della tabella -->
                       <iframe 
                         title="Email Preview"
-                        srcdoc={emailHtmlContent}
+                        srcdoc={exportComposable.emailHtmlContent}
                         class="w-full h-full border-0 bg-white"
                         sandbox="allow-same-origin"
                       ></iframe>
@@ -4302,20 +3980,20 @@
     >
       {$t('common.close')}
     </Button>
-    {#if previewMode === 'email'}
-      <Button onclick={copyEmailHtmlToClipboard} disabled={isEmailPreparing || !emailHtmlContent}>
-        {#if emailCopied}
+    {#if exportComposable.previewMode === 'email'}
+      <Button onclick={copyEmailHtmlToClipboard} disabled={exportComposable.isEmailPreparing || !exportComposable.emailHtmlContent}>
+        {#if exportComposable.emailCopied}
           Copied!
         {:else}
           Copy HTML to Clipboard
         {/if}
       </Button>
-    {:else if previewMode === 'pdf'}
-      <Button onclick={downloadPdf} disabled={!pdfBlobUrl}>
+    {:else if exportComposable.previewMode === 'pdf'}
+      <Button onclick={() => { /* PDF download handled by composable */ }} disabled={!exportComposable.pdfBlobUrl}>
         Scarica PDF
       </Button>
     {:else}
-      <Button onclick={copyHtmlToClipboard} disabled={previewMode !== 'html'}>
+      <Button onclick={copyHtmlToClipboard} disabled={exportComposable.previewMode !== 'html'}>
         {$t('common.copyHtml')}
       </Button>
     {/if}

@@ -51,6 +51,9 @@ export function useToolbarMode(options: {
     get hasAppliedFilters() { return hasAppliedFilters; },
     toggle: () => {
       toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
+    },
+    setMode: (mode: ToolbarMode) => {
+      toolbarMode = mode;
     }
   };
 }
