@@ -1188,153 +1188,33 @@
 
   /** Bulk action handlers */
   function handleBulkDelete() {
-    // Open confirmation dialog instead of deleting directly
-    bulkDeleteConfirmDialogOpen = true;
+    dialogs.openDeleteDialog();
   }
 
   /** Confirm bulk delete action after dialog confirmation */
   async function confirmBulkDelete() {
-    if (selectedKeys.length === 0) return;
-    try {
-      isBulkDeleting = true;
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ uuids: selectedKeys })
-      });
-      
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'danger'; // HIGH impact uses danger
-        throw {
-          type: 'about:blank',
-          title: data.title || 'Bulk delete failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
-        };
-      }
-      
-      // Clear selection after successful deletion
-      selectedKeys = [];
-      // Switch back to filters mode
-      toolbarModeState.toggle();
-      // Refresh the list after successful deletion
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Bulk delete failed:', error);
-      
-      // Show error notification using shell's error handling with RFC 7807 format
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        pushRFC7807Error(err, { showToast: true });
-      } else {
-        pushImpactError({
-          impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkDeleteFailed',
-          scope: $t('errors.scope.bulkDeleteApi'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-    } finally {
-      isBulkDeleting = false;
-      // Close dialog regardless of success or error
-      bulkDeleteConfirmDialogOpen = false;
-    }
+    await bulkActions.confirmBulkDelete();
+    dialogs.closeDeleteDialog();
   }
 
   /** Cancel bulk delete action */
   function cancelBulkDelete() {
-    bulkDeleteConfirmDialogOpen = false;
+    dialogs.closeDeleteDialog();
   }
 
   function handleBulkRestore() {
-    // Open confirmation dialog instead of restoring directly
-    bulkRestoreConfirmDialogOpen = true;
+    dialogs.openRestoreDialog();
   }
 
   /** Confirm bulk restore action after dialog confirmation */
   async function confirmBulkRestore() {
-    if (selectedKeys.length === 0) return;
-    try {
-      isBulkRestoring = true;
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ uuids: selectedKeys })
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'warning'; // HIGH impact uses warning for restore
-        throw {
-          type: 'about:blank',
-          title: data.title || 'Bulk restore failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
-        };
-      }
-
-      // Clear selection after successful restore
-      selectedKeys = [];
-      // Switch back to filters mode
-      toolbarModeState.toggle();
-      // Refresh the list after successful restore
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Bulk restore failed:', error);
-
-      // Show error notification using shell's error handling with RFC 7807 format
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        pushRFC7807Error(err, { showToast: true });
-      } else {
-        pushImpactError({
-          impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkRestoreFailed',
-          scope: $t('errors.scope.bulkRestoreApi'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-    } finally {
-      isBulkRestoring = false;
-      // Close dialog regardless of success or error
-      bulkRestoreConfirmDialogOpen = false;
-    }
+    await bulkActions.confirmBulkRestore();
+    dialogs.closeRestoreDialog();
   }
 
   /** Cancel bulk restore action */
   function cancelBulkRestore() {
-    bulkRestoreConfirmDialogOpen = false;
+    dialogs.closeRestoreDialog();
   }
 
   /** Confirm export action after dialog confirmation */
@@ -4222,7 +4102,7 @@
 </DialogBordered>
 
 <!-- Bulk delete confirmation dialog -->
-<DialogBordered bind:open={bulkDeleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={dialogs.deleteDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -4240,9 +4120,9 @@
     <Button
       class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
       onclick={confirmBulkDelete}
-      disabled={isBulkDeleting}
+      disabled={bulkActions.isDeleting}
     >
-      {#if isBulkDeleting}
+      {#if bulkActions.isDeleting}
         {$t('common.deleting')}
       {:else}
         {$t('common.delete')}
@@ -4252,7 +4132,7 @@
 </DialogBordered>
 
 <!-- Bulk restore confirmation dialog -->
-<DialogBordered bind:open={bulkRestoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={dialogs.restoreDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -4270,9 +4150,9 @@
     <Button
       class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
       onclick={confirmBulkRestore}
-      disabled={isBulkRestoring}
+      disabled={bulkActions.isRestoring}
     >
-      {#if isBulkRestoring}
+      {#if bulkActions.isRestoring}
         {$t('common.restoring')}
       {:else}
         {$t('common.restore')}
