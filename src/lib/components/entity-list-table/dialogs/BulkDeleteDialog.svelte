@@ -4,9 +4,10 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
-  interface DeleteDialogProps {
+  interface BulkDeleteDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    selectedCount: number;
     isDeleting: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -15,16 +16,19 @@
   let {
     open = $bindable(),
     onOpenChange,
+    selectedCount,
     isDeleting,
     onConfirm,
     onCancel
-  }: DeleteDialogProps = $props();
+  }: BulkDeleteDialogProps = $props();
 </script>
 
 <DialogBordered bind:open={open} color="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      Sei sicuro di voler eliminare {selectedCount} elementi?
+    </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button

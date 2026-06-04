@@ -8,10 +8,8 @@
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
   import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
-  import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
-  import BsFiletypeCsv from '~icons/bi/filetype-csv';
 
-  interface ExportDialogProps {
+  interface HtmlExportDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
@@ -19,9 +17,7 @@
     entity: string;
     exportScope: 'selected' | 'all';
     onExportScopeChange: (scope: 'selected' | 'all') => void;
-    fileType: string | null;
     isExporting: boolean;
-    onFileTypeChange: (type: string) => void;
     onConfirm: () => void;
     onCancel: () => void;
   }
@@ -34,22 +30,20 @@
     entity,
     exportScope,
     onExportScopeChange,
-    fileType,
     isExporting,
-    onFileTypeChange,
     onConfirm,
     onCancel
-  }: ExportDialogProps = $props();
+  }: HtmlExportDialogProps = $props();
 </script>
 
 <DialogBordered bind:open={open} color="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('common.exportConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+        {$t('common.exportHtmlConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
       {:else}
-        {$t('common.exportConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
+        {$t('common.exportHtmlConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>
@@ -78,31 +72,16 @@
     >
       {$t('common.cancel')}
     </Button>
-    <div class="flex gap-2 w-full sm:w-auto">
-      <Button
-        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { onFileTypeChange('xlsx'); onConfirm(); }}
-        disabled={isExporting}
-      >
-        {#if isExporting && fileType === 'xlsx'}
-          {$t('common.exporting')}
-        {:else}
-          <BsFiletypeXlsx class="size-5" />
-          {$t('common.exportExcel')}
-        {/if}
-      </Button>
-      <Button
-        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { onFileTypeChange('csv'); onConfirm(); }}
-        disabled={isExporting}
-      >
-        {#if isExporting && fileType === 'csv'}
-          {$t('common.exporting')}
-        {:else}
-          <BsFiletypeCsv class="size-5" />
-          {$t('common.exportCsv')}
-        {/if}
-      </Button>
-    </div>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      onclick={onConfirm}
+      disabled={isExporting}
+    >
+      {#if isExporting}
+        {$t('common.exporting')}
+      {:else}
+        {$t('common.confirm')}
+      {/if}
+    </Button>
   </Dialog.Footer>
 </DialogBordered>

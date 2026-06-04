@@ -1,6 +1,6 @@
 ﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount, onDestroy, untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -15,7 +15,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Dialog as DialogPrimitive } from 'bits-ui';
+
   import { scale, fade, fly, slide } from 'svelte/transition';
   import { cn } from '$lib/utils.js';
   import { apiFetch } from '$lib/api';
@@ -23,10 +23,10 @@
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel } from './panels';
-  import { SearchBar, ViewModeToggle, DeletionFilterToggle, BulkActions } from './toolbar';
+  import { EntityListToolbar } from './toolbar';
   import { TableHeader, TableCell } from './table';
   import { CardField, CardGrid, CardList } from './cards';
-  import { DeleteDialog, RestoreDialog, ExportDialog, DuplicateDialog } from './dialogs';
+  import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog } from './dialogs';
   import { Pagination } from './pagination';
   import {
     useStickyColumns,
@@ -35,6 +35,11 @@
     useFilterPersistence,
     useToolbarMode
   } from './composables';
+  import {
+    isBlankish as isBlankishUtil,
+    isRowDeleted as isRowDeletedUtil,
+    getRowKey
+  } from './utils';
   import { useExport } from './composables/useExport.svelte.js';
   import { useBulkActions } from './composables/useBulkActions.svelte.js';
   import { useRowActions } from './composables/useRowActions.svelte.js';
@@ -45,11 +50,6 @@
   import { formatListCellValue } from '$lib/i18n/date-format';
   import XIcon from '@lucide/svelte/icons/x';
   import {
-    SlidersHorizontal,
-    Columns3,
-    LayoutGrid,
-    LayoutList,
-    Table2,
     Search,
     ArrowUpDown,
     ArrowUpNarrowWide,
@@ -65,7 +65,6 @@
     ChevronsRight,
     ChevronUp,
     ChevronDown,
-    RotateCw,
     RotateCcw,
     MoreVertical,
     Ban,
@@ -74,8 +73,6 @@
     Eye,
     EyeOff,
     ListCheck,
-    ListX,
-    TextAlignJustify,
     FilterX,
     Pencil,
     PencilOff,
@@ -98,11 +95,6 @@
   import BsFiletypeHtml from '~icons/bi/filetype-html';
   import BsFiletypePdf from '~icons/bi/filetype-pdf';
   import BsEnvelopeAt from '~icons/bi/envelope-at';
-  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
-  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
-  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
-  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
-  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import * as Dock from '$lib/components/ui/dock';
   import * as Resizable from '$lib/components/ui/resizable';
@@ -111,7 +103,6 @@
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Window } from '$lib/components/ui/window';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import * as Timeline from '$lib/components/ui/timeline';
 
   type CellArgs = { row: TRow; column: MetaColumn };
 
@@ -260,6 +251,9 @@
     loadingMessage?: string;
     noRecordsMessage?: string;
   } = $props();
+
+  // Utility functions moved to utils.ts
+  const rowKey = (row: TRow): string => getRowKey(row, uid);
 
   type ColumnOrderState = {
     sticky?: string[];
@@ -595,13 +589,10 @@
     if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
   });
 
-  const compactRows = $derived(true);
-  const rowChromeH = $derived(compactRows ? 'h-6' : 'h-10');
+  const rowChromeH = $derived('h-6');
   /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
-    compactRows
-      ? '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
-      : ''
+    '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
   );
 
   // Panels are mounted via global SheetHost; keep local boolean state only for the optional `filters` slot.
@@ -613,13 +604,7 @@
     datetimeIanaRenderTick++;
   }
 
-  function isBlankish(value: unknown): boolean {
-    if (value === null || value === undefined) return true;
-    if (typeof value === 'string') return value.trim().length === 0;
-    if (typeof value === 'number') return false;
-    if (typeof value === 'boolean') return false;
-    return false;
-  }
+  const isBlankish = (value: unknown): boolean => isBlankishUtil(value);
 
   /**
    * Get audit field value with _name fallback.
@@ -779,9 +764,7 @@
     return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
   }
 
-  function isRowDeleted(row: TRow): boolean {
-    return 'deleted_at' in row && row.deleted_at !== null && row.deleted_at !== undefined;
-  }
+  const isRowDeleted = (row: TRow): boolean => isRowDeletedUtil(row);
 
   /** Row dropdown menu state: which row has the menu open */
   let dropdownMenuRow = $state<TRow | null>(null);
@@ -1053,33 +1036,33 @@
 
   /** Bulk action handlers */
   function handleBulkDelete() {
-    dialogs.openDeleteDialog();
+    dialogs.openBulkDeleteDialog();
   }
 
   /** Confirm bulk delete action after dialog confirmation */
   async function confirmBulkDelete() {
     await bulkActions.confirmBulkDelete();
-    dialogs.closeDeleteDialog();
+    dialogs.closeBulkDeleteDialog();
   }
 
   /** Cancel bulk delete action */
   function cancelBulkDelete() {
-    dialogs.closeDeleteDialog();
+    dialogs.closeBulkDeleteDialog();
   }
 
   function handleBulkRestore() {
-    dialogs.openRestoreDialog();
+    dialogs.openBulkRestoreDialog();
   }
 
   /** Confirm bulk restore action after dialog confirmation */
   async function confirmBulkRestore() {
     await bulkActions.confirmBulkRestore();
-    dialogs.closeRestoreDialog();
+    dialogs.closeBulkRestoreDialog();
   }
 
   /** Cancel bulk restore action */
   function cancelBulkRestore() {
-    dialogs.closeRestoreDialog();
+    dialogs.closeBulkRestoreDialog();
   }
 
   /** Confirm export action after dialog confirmation */
@@ -1205,7 +1188,6 @@
   const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
   const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
   const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
-  const renderColumns = $derived(shownColumns);
   const stickyColumnsGroup = $derived(
     applyKeyOrder(
       stickyColumns ??
@@ -1218,23 +1200,21 @@
   );
 
   /** Card view: sticky uuid/code-style fields — dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
-  function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
+  function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean, destructive: boolean = false): string | undefined {
     const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
     if (!stickyKeys.has(col.key)) return undefined;
-    if (rowSelected) {
-      return 'rounded-md border border-gray-300/80 bg-gray-200/85 p-2 transition-colors group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600';
-    }
-    return 'rounded-md border border-gray-200/80 bg-gray-100/90 p-2 transition-colors group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800';
-  }
 
-  /** Card view: destructive version for deleted rows — uses rose color scale. */
-  function stickyCardFieldDestructiveChromeClass(col: MetaColumn, rowSelected: boolean): string | undefined {
-    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
-    if (!stickyKeys.has(col.key)) return undefined;
-    if (rowSelected) {
-      return 'rounded-md border border-rose-300/80 bg-rose-300/85 p-2 transition-colors group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600';
+    const baseClass = 'rounded-md border p-2 transition-colors group-hover';
+    if (destructive) {
+      if (rowSelected) {
+        return `${baseClass} border-rose-300/80 bg-rose-300/85 group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600`;
+      }
+      return `${baseClass} border-rose-200/80 bg-rose-100/90 group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800`;
     }
-    return 'rounded-md border border-rose-200/80 bg-rose-100/90 p-2 transition-colors group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800';
+    if (rowSelected) {
+      return `${baseClass} border-gray-300/80 bg-gray-200/85 group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600`;
+    }
+    return `${baseClass} border-gray-200/80 bg-gray-100/90 group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800`;
   }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -1482,11 +1462,6 @@
     } catch {
       return isoString;
     }
-  }
-
-  function rowKey(row: TRow): string {
-    const v = row[uid as keyof TRow] as unknown;
-    return typeof v === 'string' ? v : String(v ?? '');
   }
 
   /** Merge current server page rows into a stable map so "selected only" can span pages without refetching. */
@@ -2014,7 +1989,7 @@
           (!isCardFieldEmpty(r, col)
             ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
             : undefined) ?? (rowDeleted
-              ? stickyCardFieldDestructiveChromeClass(col, rowSelectionEnabled && rowSelected)
+              ? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected, true)
               : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
         )}
       >
@@ -2102,210 +2077,66 @@
   {/snippet}
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-  <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
-    <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
-      <SearchBar
-        search={search}
-        onSearchInput={onSearchInput}
-        searchPlaceholderKey={searchPlaceholderKey}
-        searchInKeys={searchInKeys}
-        searchableColumns={searchableColumns}
-        onSearchInKeysChange={onSearchInKeysChange}
-        toggleSearchKey={toggleSearchKey}
-      />
-    </div>
-
-    <div class="flex items-center justify-end gap-2">
-      <div
-        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
-        role="group"
-        aria-label={$t('entities.list.viewMode.groupAria')}
-      >
-        <Button
-          variant={viewMode === 'table' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            viewMode !== 'table' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={viewMode === 'table'}
-          title={$t('entities.list.viewMode.table')}
-          onclick={() => {
-            viewMode = 'table';
-          }}
-        >
-          <Table2 class="size-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'cards' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            viewMode !== 'cards' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={viewMode === 'cards'}
-          title={$t('entities.list.viewMode.cards')}
-          onclick={() => {
-            viewMode = 'cards';
-          }}
-        >
-          <LayoutGrid class="size-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'cards_list' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            viewMode !== 'cards_list' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={viewMode === 'cards_list'}
-          title={$t('entities.list.viewMode.cardsList')}
-          onclick={() => {
-            viewMode = 'cards_list';
-          }}
-        >
-          <LayoutList class="size-4" />
-        </Button>
-      </div>
-
-      <div
-        class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
-        role="group"
-        aria-label={$t('entities.list.deletionFilter.groupAria')}
-      >
-        <Button
-          variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            deletionFilterMode !== 'non_deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={deletionFilterMode === 'non_deleted'}
-          title={$t('entities.list.deletionFilter.nonDeleted')}
-          onclick={() => {
-            deletionFilterMode = 'non_deleted';
-          }}
-        >
-          <ListCheck class="size-4" />
-        </Button>
-        <Button
-          variant={deletionFilterMode === 'deleted' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            deletionFilterMode !== 'deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={deletionFilterMode === 'deleted'}
-          title={$t('entities.list.deletionFilter.deleted')}
-          onclick={() => {
-            deletionFilterMode = 'deleted';
-          }}
-        >
-          <ListX class="size-4" />
-        </Button>
-        <Button
-          variant={deletionFilterMode === 'all' ? 'default' : 'ghost'}
-          size="icon-sm"
-          type="button"
-          class={cn(
-            'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-            deletionFilterMode !== 'all' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-          )}
-          aria-pressed={deletionFilterMode === 'all'}
-          title={$t('entities.list.deletionFilter.all')}
-          onclick={() => {
-            deletionFilterMode = 'all';
-          }}
-        >
-          <TextAlignJustify class="size-4" />
-        </Button>
-      </div>
-
-      <Button
-        variant="soft"
-        size="icon-sm"
-        disabled={rowsLoading || refreshDisabled}
-        onclick={() => onRefresh()}
-        aria-label={$t('entities.list.refresh')}
-        title={$t('entities.list.refresh')}
-      >
-        <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
-      </Button>
-
-      <Button
-        variant="soft"
-        size="sm"
-        type="button"
-        onclick={() =>
-          openSheet(
-            'entity.columns',
-            {
-              stickyColumns: stickyColumnsGroup,
-              nonAuditingColumns,
-              auditingColumns: auditingColumnsGroup,
-              visibleKeys,
-              toggleColumnKey,
-              onResetColumnVisibility: resetColumnsAndSorting,
-              sheetMenuCheckboxClass: checkboxVisualOnlyClass,
-              t: $t
-            } as any,
-            { contentClass: 'w-[360px] p-0' }
-          )}
-      >
-        <Columns3 class="size-4" />
-        {$t('entities.list.columns')}
-      </Button>
-
-      {#if filterableColumns.length > 0}
-        <Button
-          variant="soft"
-          size="sm"
-          type="button"
-          onclick={() => {
-            if (sheetState.open && sheetState.panelId === 'entity.filters') {
-              closeSheet();
-              filtersOpen = false;
-              return;
-            }
-            filtersOpen = true;
-            openSheet('entity.filters', {
-              content: FiltersPanel,
-              props: {
-                content: {},
-                filterableColumns,
-                filterValues: filterValues ?? {},
-                onFilterValuesChange,
-                onResetFilters
-              }
-            } as any, {
-              contentClass: 'w-[360px] p-0',
-              modal: false
-            });
-          }}
-        >
-          <SlidersHorizontal class="size-4" />
-          {$t('entities.list.filters')}
-        </Button>
-      {/if}
-
-      {#if onCreateAction}
-        <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-        <Button
-          variant="default"
-          size="sm"
-          type="button"
-          onclick={onCreateAction}
-        >
-          {$t('common.new')}
-        </Button>
-      {/if}
-    </div>
-  </div>
+  <EntityListToolbar
+    search={search}
+    onSearchInput={onSearchInput}
+    searchPlaceholderKey={searchPlaceholderKey}
+    searchInKeys={searchInKeys}
+    searchableColumns={searchableColumns}
+    onSearchInKeysChange={onSearchInKeysChange}
+    toggleSearchKey={toggleSearchKey}
+    viewMode={viewMode}
+    onViewModeChange={(mode) => viewMode = mode}
+    deletionFilterMode={deletionFilterMode}
+    onDeletionFilterModeChange={(mode) => deletionFilterMode = mode}
+    rowsLoading={rowsLoading}
+    refreshDisabled={refreshDisabled}
+    onRefresh={onRefresh}
+    filterableColumns={filterableColumns}
+    filtersOpen={filtersOpen}
+    onFiltersOpenChange={(open) => {
+      if (open) {
+        if (sheetState.open && sheetState.panelId === 'entity.filters') {
+          closeSheet();
+          filtersOpen = false;
+          return;
+        }
+        filtersOpen = true;
+        openSheet('entity.filters', {
+          content: FiltersPanel,
+          props: {
+            content: {},
+            filterableColumns,
+            filterValues: filterValues ?? {},
+            onFilterValuesChange,
+            onResetFilters
+          }
+        } as any, {
+          contentClass: 'w-[360px] p-0',
+          modal: false
+        });
+      } else {
+        closeSheet();
+        filtersOpen = false;
+      }
+    }}
+    onColumnSelectorClick={() =>
+      openSheet(
+        'entity.columns',
+        {
+          stickyColumns: stickyColumnsGroup,
+          nonAuditingColumns,
+          auditingColumns: auditingColumnsGroup,
+          visibleKeys,
+          toggleColumnKey,
+          onResetColumnVisibility: resetColumnsAndSorting,
+          sheetMenuCheckboxClass: checkboxVisualOnlyClass,
+          t: $t
+        } as any,
+        { contentClass: 'w-[360px] p-0' }
+      )}
+    onCreateAction={onCreateAction}
+  />
 
   <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
     <Button
@@ -2816,7 +2647,7 @@
                       </div>
 
                       <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
-                        {#each renderColumns as col (col.key)}
+                        {#each shownColumns as col (col.key)}
                           {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
@@ -2942,7 +2773,7 @@
                       </div>
 
                       <div class="flex flex-col gap-2">
-                        {#each renderColumns as col (col.key)}
+                        {#each shownColumns as col (col.key)}
                           {@render entityCardField(r, col, rowSelected, rowDeleted)}
                         {/each}
                       </div>
@@ -2983,7 +2814,7 @@
                   </div>
                 </Table.Head>
               {/if}
-              {#each renderColumns as col, colIdx (col.key)}
+              {#each shownColumns as col, colIdx (col.key)}
                 {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                   <Table.Head
                     style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
@@ -3120,7 +2951,7 @@
               {@render errorView()}
             {:else}
               <Table.Row>
-                <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
+                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
                   <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-error">
@@ -3137,7 +2968,7 @@
               {@render rowsLoadingView()}
             {:else}
               <Table.Row>
-                <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
+                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
                   <div class="w-full">
                     <LoadingBar size="xs" />
                     <div class="grid min-h-56 place-items-center p-3">
@@ -3157,7 +2988,7 @@
               {@render emptyView()}
             {:else}
               <Table.Row>
-                <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
+                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
                   <div class="grid min-h-56 place-items-center p-3">
                     <div class="relative flex flex-col items-center gap-2 text-center">
                       <div class="pb-watermark-empty">
@@ -3171,7 +3002,7 @@
             {/if}
           {:else if viewRows.length === 0}
             <Table.Row>
-              <Table.Cell colspan={renderColumns.length + extraCols} class="p-0">
+              <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
                 <div class="grid min-h-56 place-items-center p-3">
                   <div class="relative flex flex-col items-center gap-2 text-center">
                     <div class="pb-watermark-empty">
@@ -3228,7 +3059,7 @@
                     </div>
                   </Table.Cell>
                 {/if}
-                {#each renderColumns as col, colIdx (col.key)}
+                {#each shownColumns as col, colIdx (col.key)}
                   {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                     {#if i === 0}
                       <Table.Cell
@@ -3427,7 +3258,7 @@
   <div
     class={cn(
       'flex items-center justify-between gap-3 border-t bg-background px-3 py-2',
-      compactRows ? 'text-xs' : 'text-sm'
+      'text-xs'
     )}
   >
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -3572,274 +3403,78 @@
   </div>
 </div>
 
-<!-- Delete confirmation dialog -->
-<DialogBordered bind:open={dialogs.deleteDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={() => {
-        dialogs.closeDeleteDialog();
-      }}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
-      onclick={confirmDeleteRow}
-      disabled={rowActionsComposable.isDeleting}
-    >
-      {#if rowActionsComposable.isDeleting}
-        {$t('common.deleting')}
-      {:else}
-        {$t('common.delete')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<DeleteDialog
+  bind:open={dialogs.deleteDialogOpen}
+  onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
+  isDeleting={rowActionsComposable.isDeleting}
+  onConfirm={confirmDeleteRow}
+  onCancel={() => dialogs.closeDeleteDialog()}
+/>
 
-<!-- Restore confirmation dialog -->
-<DialogBordered bind:open={dialogs.restoreDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.restoreConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('common.restoreConfirm')}</Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={() => {
-        dialogs.closeRestoreDialog();
-      }}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
-      onclick={confirmRestoreRow}
-      disabled={rowActionsComposable.isRestoring}
-    >
-      {#if rowActionsComposable.isRestoring}
-        {$t('common.restoring')}
-      {:else}
-        {$t('common.restore')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<RestoreDialog
+  bind:open={dialogs.restoreDialogOpen}
+  onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
+  isRestoring={rowActionsComposable.isRestoring}
+  onConfirm={confirmRestoreRow}
+  onCancel={() => dialogs.closeRestoreDialog()}
+/>
 
-<!-- Bulk delete confirmation dialog -->
-<DialogBordered bind:open={dialogs.deleteDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      Sei sicuro di voler eliminare {selectedKeys.length} elementi?
-    </Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelBulkDelete}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
-      onclick={confirmBulkDelete}
-      disabled={bulkActions.isDeleting}
-    >
-      {#if bulkActions.isDeleting}
-        {$t('common.deleting')}
-      {:else}
-        {$t('common.delete')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<BulkDeleteDialog
+  bind:open={dialogs.bulkDeleteDialogOpen}
+  onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
+  selectedCount={selectedKeys.length}
+  isDeleting={bulkActions.isDeleting}
+  onConfirm={confirmBulkDelete}
+  onCancel={cancelBulkDelete}
+/>
 
-<!-- Bulk restore confirmation dialog -->
-<DialogBordered bind:open={dialogs.restoreDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      Sei sicuro di voler ripristinare {selectedKeys.length} elementi?
-    </Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelBulkRestore}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
-      onclick={confirmBulkRestore}
-      disabled={bulkActions.isRestoring}
-    >
-      {#if bulkActions.isRestoring}
-        {$t('common.restoring')}
-      {:else}
-        {$t('common.restore')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<BulkRestoreDialog
+  bind:open={dialogs.bulkRestoreDialogOpen}
+  onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
+  selectedCount={selectedKeys.length}
+  isRestoring={bulkActions.isRestoring}
+  onConfirm={confirmBulkRestore}
+  onCancel={cancelBulkRestore}
+/>
 
-<!-- Export confirmation dialog -->
-<DialogBordered bind:open={exportComposable.exportOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      {#if selectedKeys.length > 0}
-        {$t('common.exportConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
-      {:else}
-        {$t('common.exportConfirm')} {total} {$t(`entities.${entity}.plural`)}?
-      {/if}
-    </Dialog.Description>
-  </Dialog.Header>
-  {#if selectedKeys.length > 0}
-    <div class="py-4">
-      <Choicebox bind:value={exportComposable.exportScope}>
-        <ChoiceboxItem value="selected">
-          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-        <ChoiceboxItem value="all">
-          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-      </Choicebox>
-    </div>
-  {/if}
-  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelExportRow}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <div class="flex gap-2 w-full sm:w-auto">
-      <Button
-        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { exportComposable.setFileType('xlsx'); confirmExportRow(); }}
-        disabled={exportComposable.isExporting}
-      >
-        {#if exportComposable.isExporting && exportComposable.fileType === 'xlsx'}
-          {$t('common.exporting')}
-        {:else}
-          <BsFiletypeXlsx class="size-5" />
-          {$t('common.exportExcel')}
-        {/if}
-      </Button>
-      <Button
-        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-        onclick={() => { exportComposable.setFileType('csv'); confirmExportRow(); }}
-        disabled={exportComposable.isExporting}
-      >
-        {#if exportComposable.isExporting && exportComposable.fileType === 'csv'}
-          {$t('common.exporting')}
-        {:else}
-          <BsFiletypeCsv class="size-5" />
-          {$t('common.exportCsv')}
-        {/if}
-      </Button>
-    </div>
-  </Dialog.Footer>
-</DialogBordered>
+<ExportDialog
+  bind:open={exportComposable.exportOpen}
+  onOpenChange={(open) => { if (!open) exportComposable.closeExportDialog(); }}
+  selectedCount={selectedKeys.length}
+  totalCount={total}
+  entity={entity}
+  exportScope={exportComposable.exportScope}
+  onExportScopeChange={(scope) => exportComposable.exportScope = scope}
+  fileType={exportComposable.fileType}
+  isExporting={exportComposable.isExporting}
+  onFileTypeChange={(type) => exportComposable.setFileType(type as 'xlsx' | 'csv')}
+  onConfirm={confirmExportRow}
+  onCancel={cancelExportRow}
+/>
 
-<!-- HTML export confirmation dialog -->
-<DialogBordered bind:open={exportComposable.htmlPreviewDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      {#if selectedKeys.length > 0}
-        {$t('common.exportHtmlConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
-      {:else}
-        {$t('common.exportHtmlConfirm')} {total} {$t(`entities.${entity}.plural`)}?
-      {/if}
-    </Dialog.Description>
-  </Dialog.Header>
-  {#if selectedKeys.length > 0}
-    <div class="py-4">
-      <Choicebox bind:value={exportComposable.htmlExportScope}>
-        <ChoiceboxItem value="selected">
-          <ChoiceboxTitle>Solo i {selectedKeys.length} elementi selezionati</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-        <ChoiceboxItem value="all">
-          <ChoiceboxTitle>Tutti i {total} elementi</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-      </Choicebox>
-    </div>
-  {/if}
-  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelHtmlExport}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-      onclick={confirmHtmlExport}
-      disabled={exportComposable.isHtmlExporting}
-    >
-      {#if exportComposable.isHtmlExporting}
-        {$t('common.exporting')}
-      {:else}
-        {$t('common.confirm')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<HtmlExportDialog
+  bind:open={exportComposable.htmlPreviewDialogOpen}
+  onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
+  selectedCount={selectedKeys.length}
+  totalCount={total}
+  entity={entity}
+  exportScope={exportComposable.htmlExportScope}
+  onExportScopeChange={(scope) => exportComposable.htmlExportScope = scope}
+  isExporting={exportComposable.isHtmlExporting}
+  onConfirm={confirmHtmlExport}
+  onCancel={cancelHtmlExport}
+/>
 
-<!-- Duplicate confirmation dialog -->
-<DialogBordered bind:open={dialogs.duplicateDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      {#if duplicateScope === 'single'}
-        {$t('common.duplicateConfirmSingle')}?
-      {:else}
-        {$t('common.duplicateConfirm')} {selectedKeys.length} {$t(`entities.${entity}.plural`)}?
-      {/if}
-    </Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelDuplicate}
-    >
-      {$t('common.cancel')}
-    </Button>
-    <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
-      onclick={confirmDuplicate}
-      disabled={rowActionsComposable.isDuplicating}
-    >
-      {#if rowActionsComposable.isDuplicating}
-        {$t('common.duplicating')}
-      {:else}
-        {$t('common.confirm')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<DuplicateDialog
+  bind:open={dialogs.duplicateDialogOpen}
+  onOpenChange={(open) => { if (!open) dialogs.closeDuplicateDialog(); }}
+  duplicateScope={duplicateScope}
+  selectedCount={selectedKeys.length}
+  entity={entity}
+  isDuplicating={rowActionsComposable.isDuplicating}
+  onConfirm={confirmDuplicate}
+  onCancel={cancelDuplicate}
+/>
 
 <!-- HTML preview full-screen dialog -->
 <DialogBordered bind:open={exportComposable.htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>

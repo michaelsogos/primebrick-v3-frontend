@@ -2,59 +2,61 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Copy } from 'lucide-svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
-  let {
-    open,
-    count,
-    scope,
-    onConfirm,
-    onCancel,
-    isDuplicating
-  }: {
+  interface DuplicateDialogProps {
     open: boolean;
-    count: number;
-    scope: 'selected' | 'single';
+    onOpenChange: (open: boolean) => void;
+    duplicateScope: 'single' | 'selected';
+    selectedCount: number;
+    entity: string;
+    isDuplicating: boolean;
     onConfirm: () => void;
     onCancel: () => void;
-    isDuplicating: boolean;
-  } = $props();
+  }
+
+  let {
+    open = $bindable(),
+    onOpenChange,
+    duplicateScope,
+    selectedCount,
+    entity,
+    isDuplicating,
+    onConfirm,
+    onCancel
+  }: DuplicateDialogProps = $props();
 </script>
 
-<Dialog.Root bind:open={open}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header class="pb-4">
-      <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        {#if scope === 'single'}
-          {$t('common.duplicateConfirmSingle')}?
-        {:else}
-          {$t('common.duplicateConfirm')} {count} {$t('entities.list.bulkActions.items')}?
-        {/if}
-      </Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary-outline"
-        class="hover:scale-105 transition-all"
-        onclick={onCancel}
-        disabled={isDuplicating}
-      >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="default"
-        class="hover:scale-105 transition-all"
-        onclick={onConfirm}
-        disabled={isDuplicating}
-      >
-        {#if isDuplicating}
-          {$t('common.duplicating')}
-        {:else}
-          <Copy class="size-4 mr-2" />
-          {$t('common.duplicate')}
-        {/if}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={open} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if duplicateScope === 'single'}
+        {$t('common.duplicateConfirmSingle')}?
+      {:else}
+        {$t('common.duplicateConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={onCancel}
+      disabled={isDuplicating}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      onclick={onConfirm}
+      disabled={isDuplicating}
+    >
+      {#if isDuplicating}
+        {$t('common.duplicating')}
+      {:else}
+        {$t('common.confirm')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>
