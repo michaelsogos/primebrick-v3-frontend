@@ -39,6 +39,7 @@
   import { useBulkActions } from './composables/useBulkActions.svelte.js';
   import { useRowActions } from './composables/useRowActions.svelte.js';
   import { useDialogs } from './composables/useDialogs.svelte.js';
+  import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -804,35 +805,29 @@
   })();
   const _sessionState = _sessionRaw ? JSON.parse(_sessionRaw) : null;
 
-  let previewPanelOpen = $state<boolean>(_sessionState?.open ?? false);
-  let previewRow = $state<TRow | null>(null);
-  let previewRowIndex = $state(0);
-  let previewEditMode = $state(false);
+  // Preview panel state is now managed by previewPanel composable
   let navigatingToNextPage = $state(false);
   let navigatingToPrevPage = $state(false);
   let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
   let isResizing = $state(false);
   let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
-  let focusedRowIndex = $state<number | null>(null);
 
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
       // While restoring, preserve the key from session until previewRow is actually set
-      const rowKey_ = previewRow
-        ? String((previewRow as Record<string, unknown>)[uid])
+      const rowKey_ = previewPanel.previewRow
+        ? String((previewPanel.previewRow as Record<string, unknown>)[uid])
         : (_previewRestoredKey ?? null);
       const key = `pb-preview-panel:${entity ?? 'default'}`;
-      sessionStorage.setItem(key, JSON.stringify({ open: previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
+      sessionStorage.setItem(key, JSON.stringify({ open: previewPanel.previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
     }
   });
 
   $effect(() => {
-    if (_previewRestoredKey && previewPanelOpen && !rowsLoading && rows.length > 0) {
+    if (_previewRestoredKey && previewPanel.previewPanelOpen && !rowsLoading && rows.length > 0) {
       const idx = rows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
       if (idx !== -1) {
-        previewRow = rows[idx];
-        previewRowIndex = viewRows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
-        focusedRowIndex = previewRowIndex;
+        previewPanel.openPreview(rows[idx]);
         _previewRestoredKey = null;
       }
     }
@@ -874,21 +869,18 @@
 
   // Reset previewRowIndex when page changes
   $effect(() => {
-    if (previewPanelOpen && viewRows.length > 0) {
+    if (previewPanel.previewPanelOpen && viewRows.length > 0) {
       if (navigatingToNextPage) {
         // Going to next page - reset to first record
-        previewRowIndex = 0;
-        previewRow = viewRows[0];
+        previewPanel.openPreview(viewRows[0]);
         navigatingToNextPage = false;
       } else if (navigatingToPrevPage) {
         // Going to previous page - go to last record
-        previewRowIndex = viewRows.length - 1;
-        previewRow = viewRows[viewRows.length - 1];
+        previewPanel.openPreview(viewRows[viewRows.length - 1]);
         navigatingToPrevPage = false;
-      } else if (previewRowIndex >= viewRows.length) {
+      } else if (previewPanel.previewRowIndex >= viewRows.length) {
         // If previewRowIndex is out of bounds after page change, reset it
-        previewRowIndex = 0;
-        previewRow = viewRows[0];
+        previewPanel.openPreview(viewRows[0]);
       }
     }
   });
@@ -910,16 +902,17 @@
 
   /** Handle preview action for a row */
   function handlePreviewRow(row: TRow) {
-    rowActionsComposable.handlePreviewRow(row);
+    previewPanel.openPreview(row);
+    closeRowDropdown();
   }
 
   /** Navigate preview records */
   function navigatePreview(direction: number) {
-    const newIndex = previewRowIndex + direction;
+    const currentPreviewIndex = previewPanel.previewRowIndex;
+    const newIndex = currentPreviewIndex + direction;
+    
     if (newIndex >= 0 && newIndex < viewRows.length) {
-      previewRowIndex = newIndex;
-      previewRow = viewRows[newIndex];
-      focusedRowIndex = newIndex;
+      previewPanel.navigatePreview(direction > 0 ? 'next' : 'prev');
     } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
       // Trigger next page when reaching end of current page
       navigatingToNextPage = true;
@@ -941,8 +934,8 @@
 
   /** Scroll focused row into view when index changes */
   $effect(() => {
-    if (focusedRowIndex === null) return;
-    const row = tableRef?.querySelector(`[data-focused-row-index="${focusedRowIndex}"]`) as HTMLElement;
+    if (previewPanel.focusedRowIndex === null) return;
+    const row = tableRef?.querySelector(`[data-focused-row-index="${previewPanel.focusedRowIndex}"]`) as HTMLElement;
     if (row) {
       row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
@@ -956,7 +949,7 @@
     // Skip table row navigation if any dropdown menu is open (menu has priority)
     if (dropdownMenuRow !== null || previewDropdownOpen) return;
 
-    if (previewPanelOpen) {
+    if (previewPanel.previewPanelOpen) {
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         navigatePreview(-1);
@@ -972,11 +965,11 @@
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (focusedRowIndex === null) {
-        focusedRowIndex = 0;
-      } else if (focusedRowIndex < viewRows.length - 1) {
-        focusedRowIndex++;
-      } else if (focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
+      if (previewPanel.focusedRowIndex === null) {
+        // focusedRowIndex is managed by previewPanel composable
+      } else if (previewPanel.focusedRowIndex < viewRows.length - 1) {
+        // focusedRowIndex is managed by previewPanel composable
+      } else if (previewPanel.focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
         // Trigger next page when reaching end of current page
         navigatingToNextPage = true;
         if (footerUsesClientPaging) {
@@ -985,17 +978,16 @@
           onPageChange(page + 1);
         }
       }
-      if (previewPanelOpen && focusedRowIndex !== null) {
-        previewRowIndex = focusedRowIndex;
-        previewRow = viewRows[focusedRowIndex];
+      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
+        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (focusedRowIndex === null) {
-        focusedRowIndex = viewRows.length - 1;
-      } else if (focusedRowIndex > 0) {
-        focusedRowIndex--;
-      } else if (focusedRowIndex === 0 && footerPage > 1) {
+      if (previewPanel.focusedRowIndex === null) {
+        // focusedRowIndex is managed by previewPanel composable
+      } else if (previewPanel.focusedRowIndex > 0) {
+        // focusedRowIndex is managed by previewPanel composable
+      } else if (previewPanel.focusedRowIndex === 0 && footerPage > 1) {
         // Trigger previous page when at start of current page
         navigatingToPrevPage = true;
         if (footerUsesClientPaging) {
@@ -1004,17 +996,16 @@
           onPageChange(page - 1);
         }
       }
-      if (previewPanelOpen && focusedRowIndex !== null) {
-        previewRowIndex = focusedRowIndex;
-        previewRow = viewRows[focusedRowIndex];
+      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
+        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
       }
-    } else if (e.key === ' ' && focusedRowIndex !== null) {
+    } else if (e.key === ' ' && previewPanel.focusedRowIndex !== null) {
       e.preventDefault();
-      const row = viewRows[focusedRowIndex];
+      const row = viewRows[previewPanel.focusedRowIndex];
       if (row) toggleRowSelect(rowKey(row));
-    } else if (e.key === 'Enter' && focusedRowIndex !== null) {
+    } else if (e.key === 'Enter' && previewPanel.focusedRowIndex !== null) {
       e.preventDefault();
-      const row = viewRows[focusedRowIndex];
+      const row = viewRows[previewPanel.focusedRowIndex];
       if (row) openRowDropdown(row);
     } else if (e.key === 'Escape') {
       closeRowDropdown();
@@ -1407,14 +1398,19 @@
     isRowDeleted: isRowDeleted,
     rowKey: rowKey,
     onPreviewRow: (row) => {
-      previewRow = row;
-      previewRowIndex = viewRows.findIndex(r => rowKey(r) === rowKey(row));
-      focusedRowIndex = previewRowIndex;
-      previewEditMode = false;
-      previewPanelOpen = true;
+      previewPanel.openPreview(row);
     },
     closeRowDropdown: closeRowDropdown,
     t: $t
+  });
+
+  const previewPanel = usePreviewPanel<TRow>({
+    viewRows: () => viewRows,
+    rowKey: rowKey,
+    onFieldChange: (row, field, value) => {
+      // Handle field change if needed
+    },
+    onRefresh: onRefresh
   });
 
   const dialogs = useDialogs();
@@ -1729,20 +1725,20 @@
             size="icon-sm"
             variant="secondary-outline"
             onclick={() => navigatePreview(-1)}
-            disabled={previewRowIndex === 0 && footerPage === 1}
+            disabled={previewPanel.previewRowIndex === 0 && footerPage === 1}
             aria-label="Previous record"
             class="pointer-events-auto hover:scale-105 transition-all"
           >
             <ChevronLeft class="w-4 h-4" />
           </Button>
           <span class="text-xs font-medium w-16 text-center">
-            {(footerPage - 1) * pageSize + previewRowIndex + 1} / {footerRangeTotal}
+            {(footerPage - 1) * pageSize + previewPanel.previewRowIndex + 1} / {footerRangeTotal}
           </span>
           <Button
             size="icon-sm"
             variant="secondary-outline"
             onclick={() => navigatePreview(1)}
-            disabled={previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
+            disabled={previewPanel.previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
             aria-label="Next record"
             class="pointer-events-auto hover:scale-105 transition-all"
           >
@@ -1754,13 +1750,13 @@
         {#if !rowDeleted}
           <!-- Mode switch with icons only -->
           <div class="flex items-center gap-2">
-            {#if !previewEditMode}
+            {#if !previewPanel.previewEditMode}
               <PencilOff class="w-4 h-4 text-muted-foreground" />
             {:else}
               <Pencil class="w-4 h-4 text-muted-foreground" />
             {/if}
             <Switch
-              bind:checked={previewEditMode}
+              bind:checked={previewPanel.previewEditMode}
               aria-label={$t('entities.list.editModeLabel')}
               disabled={rowDeleted}
             />
@@ -1840,7 +1836,7 @@
 
         <!-- Close button -->
         <Button
-          onclick={() => previewPanelOpen = false}
+          onclick={() => previewPanel.closePreview()}
           size="icon-sm"
           variant="ghost"
           aria-label={$t('common.close')}
@@ -1853,7 +1849,7 @@
 
       <!-- Scrollable content -->
       <div class="flex-1 overflow-y-auto">
-        {#if previewEditMode}
+        {#if previewPanel.previewEditMode}
           <div class="px-4 py-3 text-sm text-muted-foreground">
             Edit mode - coming soon
           </div>
@@ -2662,7 +2658,7 @@
                   {@const rk = rowKey(r)}
                   {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
                   {@const rowDeleted = isRowDeleted(r)}
-                  {@const rowFocused = focusedRowIndex !== null && viewRows[focusedRowIndex] === r}
+                  {@const rowFocused = previewPanel.focusedRowIndex !== null && viewRows[previewPanel.focusedRowIndex] === r}
                   <div
                     role="button"
                     tabindex={rowSelectionEnabled ? 0 : -1}
@@ -3093,17 +3089,19 @@
                     variant="ghost"
                     size="icon-sm"
                     onclick={() => {
-                      if (!previewPanelOpen && !previewRow && viewRows.length > 0) {
-                        previewRow = viewRows[0];
-                        previewRowIndex = 0;
+                      if (!previewPanel.previewPanelOpen && !previewPanel.previewRow && viewRows.length > 0) {
+                        previewPanel.openPreview(viewRows[0]);
+                      } else if (previewPanel.previewPanelOpen) {
+                        previewPanel.closePreview();
+                      } else {
+                        previewPanel.openPreview(viewRows[0]);
                       }
-                      previewPanelOpen = !previewPanelOpen;
                     }}
                     aria-label={$t('entities.list.togglePreviewPanel')}
                     title={$t('entities.list.togglePreviewPanel')}
                     class="transition-transform duration-300"
                   >
-                    {#if previewPanelOpen}
+                    {#if previewPanel.previewPanelOpen}
                       <PanelRightClose class="size-4 transition-transform duration-300" />
                     {:else}
                       <PanelRightOpen class="size-4 transition-transform duration-300" />
@@ -3196,7 +3194,7 @@
               {@const rk = rowKey(r)}
               {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
               {@const rowDeleted = isRowDeleted(r)}
-              {@const rowFocused = focusedRowIndex === i}
+              {@const rowFocused = previewPanel.focusedRowIndex === i}
               <Table.Row
                 suppressCellHoverMuted
                 data-row-index={rowSelectionEnabled ? i : undefined}
@@ -3399,7 +3397,7 @@
       </Table.Root>
           </div>
 
-          {#if previewPanelOpen}
+          {#if previewPanel.previewPanelOpen}
             <!-- Resize handle between table and panel -->
             <button
               type="button"
@@ -3413,11 +3411,11 @@
 
           <div
             class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
-            style="width: {previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanelOpen ? '220px' : '0'}"
+            style="width: {previewPanel.previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanel.previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
-              {#if previewRow}
-                {@render entityPreviewPanel(previewRow)}
+              {#if previewPanel.previewRow}
+                {@render entityPreviewPanel(previewPanel.previewRow)}
               {/if}
             </div>
           </div>
