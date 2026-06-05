@@ -22,11 +22,11 @@
   import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel } from './panels';
-  import { EntityListToolbar } from './toolbar';
+  import { FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel, PreviewPanel } from './panels';
+  import { EntityListToolbar, FilterBar, SelectionCounter } from './toolbar';
   import { TableHeader, TableCell } from './table';
   import { CardField, CardGrid, CardList } from './cards';
-  import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog } from './dialogs';
+  import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from './dialogs';
   import { Pagination } from './pagination';
   import {
     useStickyColumns,
@@ -769,8 +769,8 @@
 
   /** Scroll focused row into view when index changes */
   $effect(() => {
-    if (previewPanel.focusedRowIndex === null) return;
-    const row = tableRef?.querySelector(`[data-focused-row-index="${previewPanel.focusedRowIndex}"]`) as HTMLElement;
+    if (previewPanel.previewRowIndex === null) return;
+    const row = tableRef?.querySelector(`[data-focused-row-index="${previewPanel.previewRowIndex}"]`) as HTMLElement;
     if (row) {
       row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
@@ -1287,36 +1287,6 @@
       orderState.data
     )
   );
-
-
-
-  function formatBadgeValue(col: MetaColumn, value: any): string {
-    if (col.type === 'badge' && col.badge?.values) {
-      const badgeValue = col.badge.values[value];
-      if (badgeValue) {
-        return badgeValue.labelText || $t(badgeValue.labelKey || `entities.customer.status.${value}`);
-      }
-    }
-    return String(value);
-  }
-
-  function formatFilterDateValue(isoString: string): string {
-    if (!isoString) return "";
-    try {
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return isoString;
-
-      const isDateTime = isoString.includes('T') || isoString.includes(':');
-      const options: Intl.DateTimeFormatOptions = isDateTime
-        ? { dateStyle: "long", timeStyle: "medium" }
-        : { dateStyle: "long" };
-
-      return new Intl.DateTimeFormat($uiLang, options).format(date);
-    } catch {
-      return isoString;
-    }
-  }
-
   /** Merge current server page rows into a stable map so "selected only" can span pages without refetching. */
   $effect(() => {
     void rows;
@@ -1465,299 +1435,6 @@
 
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
-{#snippet entityPreviewPanel(row: TRow)}
-    {@const rowDeleted = isRowDeleted(row)}
-    <div class="flex h-full flex-col bg-background">
-      {#snippet headerTitle()}
-        <div class="relative flex items-center">
-          <div>{$t('entities.list.previewPanelTitle')}</div>
-          {#if rowDeleted}
-            <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('common.deletedRecord')}</div>
-          {/if}
-        </div>
-      {/snippet}
-
-      {#snippet headerActions()}
-        <!-- Micro pagination absolutely centered in header -->
-        <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
-          <Button
-            size="icon-sm"
-            variant="secondary-outline"
-            onclick={() => navigatePreview(-1)}
-            disabled={previewPanel.previewRowIndex === 0 && footerPage === 1}
-            aria-label="Previous record"
-            class="pointer-events-auto hover:scale-105 transition-all"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </Button>
-          <span class="text-xs font-medium w-16 text-center">
-            {(footerPage - 1) * pageSize + previewPanel.previewRowIndex + 1} / {footerRangeTotal}
-          </span>
-          <Button
-            size="icon-sm"
-            variant="secondary-outline"
-            onclick={() => navigatePreview(1)}
-            disabled={previewPanel.previewRowIndex >= viewRows.length - 1 && footerPage >= footerTotalPages}
-            aria-label="Next record"
-            class="pointer-events-auto hover:scale-105 transition-all"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </Button>
-        </div>
-
-        <!-- CTAs on right -->
-        {#if !rowDeleted}
-          <!-- Mode switch with icons only -->
-          <div class="flex items-center gap-2">
-            {#if !previewPanel.previewEditMode}
-              <PencilOff class="w-4 h-4 text-muted-foreground" />
-            {:else}
-              <Pencil class="w-4 h-4 text-muted-foreground" />
-            {/if}
-            <Switch
-              bind:checked={previewPanel.previewEditMode}
-              aria-label={$t('entities.list.editModeLabel')}
-              disabled={rowDeleted}
-            />
-          </div>
-        {/if}
-
-        <!-- Kebab menu for row actions -->
-        <DropdownMenu.Root bind:open={previewDropdownOpen}>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Button 
-                {...props}
-                variant="ghost" 
-                size="icon-sm" 
-                aria-label={$t('common.more')} 
-                class="mr-1"
-              >
-                <MoreVertical class="w-4 h-4" />
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content class="w-56" align="end">
-            {#if entityRowActions?.edit !== false}
-              <DropdownMenu.Item
-                onclick={() => { if (rowDeleted) return; handleEditRow(row); }}
-                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-              >
-                <div class="flex items-center gap-2">
-                  <Pencil class="size-4 opacity-70" />
-                  <span>{$t('common.edit')}</span>
-                </div>
-              </DropdownMenu.Item>
-            {/if}
-            {#if entityRowActions?.duplicate !== false}
-              <DropdownMenu.Item
-                onclick={() => { if (rowDeleted) return; rowActionsComposable.handleDuplicateRow(row); }}
-                class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-              >
-                <div class="flex items-center gap-2">
-                  <Copy class="size-4 opacity-70" />
-                  <span>{$t('common.duplicate')}</span>
-                </div>
-              </DropdownMenu.Item>
-            {/if}
-            <DropdownMenu.Item
-              onclick={() => loadVersionHistory(row)}
-            >
-              <div class="flex items-center gap-2">
-                <FileClock class="size-4 opacity-70" />
-                <span>{$t('common.versionHistory')}</span>
-              </div>
-            </DropdownMenu.Item>
-            {#if entityRowActions?.delete !== false}
-              {#if rowDeleted}
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item onclick={() => rowActionsComposable.handleRestoreRow(row)} class="text-warning">
-                  <div class="flex items-center gap-2">
-                    <span class="relative flex items-center justify-center">
-                      <Trash2 class="size-4 text-warning/70" />
-                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                    </span>
-                    <span>{$t('common.restore')}</span>
-                  </div>
-                </DropdownMenu.Item>
-              {:else}
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item onclick={() => rowActionsComposable.handleDeleteRow(row)} class="text-destructive">
-                  <div class="flex items-center gap-2">
-                    <Trash2 class="size-4 text-destructive/70" />
-                    <span>{$t('common.delete')}</span>
-                  </div>
-                </DropdownMenu.Item>
-              {/if}
-            {/if}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        <!-- Close button -->
-        <Button
-          onclick={() => previewPanel.closePreview()}
-          size="icon-sm"
-          variant="ghost"
-          aria-label={$t('common.close')}
-        >
-          <XIcon class="w-4 h-4" />
-        </Button>
-      {/snippet}
-
-      <SheetHeader title={headerTitle} actions={headerActions} />
-
-      <!-- Scrollable content -->
-      <div class="flex-1 overflow-y-auto">
-        {#if previewPanel.previewEditMode}
-          <div class="px-4 py-3 text-sm text-muted-foreground">
-            Edit mode - coming soon
-          </div>
-        {:else}
-          {#if stickyColumns && stickyColumns.length > 0}
-          <div class="my-2 sticky top-0 z-10 bg-background">
-            <div class="flex items-center gap-2">
-              <div class="h-px flex-1 bg-muted-foreground/50"></div>
-              <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
-              <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            </div>
-          </div>
-            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-              {#each stickyColumns as col}
-                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
-                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
-                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
-                    {@const badgeValue = row[col.key] as string}
-                    {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
-                    <Badge
-                      class="shadow-none"
-                      style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-                    >
-                      {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
-                    </Badge>
-                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
-                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
-                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
-                    {#if isIanaRecordMode && parts.iana}
-                      <div class="flex min-w-0 flex-col gap-1">
-                        <span class="text-sm font-medium break-words">{parts.text}</span>
-                        <Badge
-                          variant="outline"
-                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                        >
-                          {parts.iana}
-                        </Badge>
-                      </div>
-                    {:else}
-                      <span class="text-sm font-medium break-words">{parts.text}</span>
-                    {/if}
-                  {:else}
-                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-
-          {#if dataColumns && dataColumns.length > 0}
-            <div class="my-2 sticky top-0 z-10 bg-background">
-              <div class="flex items-center gap-2">
-                <div class="h-px flex-1 bg-muted-foreground/50"></div>
-                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
-                <div class="h-px flex-1 bg-muted-foreground/50"></div>
-              </div>
-            </div>
-            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-              {#each dataColumns as col}
-                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
-                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
-                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
-                    {#if row[col.key]}
-                      {@const badgeValue = row[col.key] as string}
-                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
-                      <Badge
-                        class="shadow-none"
-                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-                      >
-                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
-                      </Badge>
-                    {/if}
-                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
-                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
-                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
-                    {#if isIanaRecordMode && parts.iana}
-                      <div class="flex min-w-0 flex-col gap-1">
-                        <span class="text-sm font-medium break-words">{parts.text}</span>
-                        <Badge
-                          variant="outline"
-                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                        >
-                          {parts.iana}
-                        </Badge>
-                      </div>
-                    {:else}
-                      <span class="text-sm font-medium break-words">{parts.text}</span>
-                    {/if}
-                  {:else}
-                    <span class="text-sm font-medium break-words">{formatListCellValue(col, row[col.key], $uiLang)}</span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-
-          {#if auditingColumns && auditingColumns.length > 0}
-            <div class="my-2 sticky top-0 z-10 bg-background">
-              <div class="flex items-center gap-2">
-                <div class="h-px flex-1 bg-muted-foreground/50"></div>
-                <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
-                <div class="h-px flex-1 bg-muted-foreground/50"></div>
-              </div>
-            </div>
-            <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-              {#each auditingColumns as col}
-                {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
-                <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-                  <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
-                  {#if col.type === 'badge' && col.badge?.values && row[col.key]}
-                    {#if row[col.key]}
-                      {@const badgeValue = row[col.key] as string}
-                      {@const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null)}
-                      <Badge
-                        class="shadow-none"
-                        style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-                      >
-                        {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
-                      </Badge>
-                    {/if}
-                  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
-                    {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
-                    {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
-                    {#if isIanaRecordMode && parts.iana}
-                      <div class="flex min-w-0 flex-col gap-1">
-                        <span class="text-sm font-medium break-words">{parts.text}</span>
-                        <Badge
-                          variant="outline"
-                          class="w-fit max-w-fit border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                        >
-                          {parts.iana}
-                        </Badge>
-                      </div>
-                    {:else}
-                      <span class="text-sm font-medium break-words">{parts.text}</span>
-                    {/if}
-                  {:else}
-                    <span class="text-sm font-medium break-words">{getAuditFieldValue(row, col, $uiLang, formatListCellValue)}</span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-        {/if}
-      </div>
-    </div>
-  {/snippet}
 
 {#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
     <div
@@ -1940,90 +1617,17 @@
     <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
 
     {#if toolbarModeState.toolbarMode === 'filters'}
-      {#if toolbarModeState.hasAppliedFilters}
-        <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
-          <Button
-            variant="soft"
-            size="xs"
-            class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-            onclick={resetFilters}
-          >
-            <FilterX class="size-3.5" />
-            {$t('common.clearAll')}
-          </Button>
-          <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-          {#if filterValues && Object.keys(filterValues).length > 0}
-            {#each Object.entries(filterValues) as [key, value]}
-              {@const col = filterableColumns.find((c) => c.key === key)}
-              {#if col}
-                {@const operator = col.type === 'text' ? 'contains' : '='}
-                {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
-                <Badge
-                  variant="secondary"
-                  class="gap-1.5 pr-1"
-                >
-                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-                  <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
-                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-                  <button
-                    type="button"
-                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                    onclick={() => {
-                      const next = { ...filterValues };
-                      delete next[key];
-                      onFilterValuesChange?.(next);
-                    }}
-                    aria-label={$t('common.remove')}
-                  >
-                    <XIcon class="size-3" />
-                  </button>
-                </Badge>
-              {/if}
-            {/each}
-          {/if}
-          {#if advancedFilters && advancedFilters.length > 0}
-            {#each advancedFilters as filter}
-              {@const col = filterableColumns.find((c) => c.key === filter.field)}
-              {#if col}
-                {@const formattedValue = (() => {
-                  if (Array.isArray(filter.value)) {
-                    return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
-                  } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
-                    const startFormatted = formatFilterDateValue(String(filter.value.start));
-                    const endFormatted = formatFilterDateValue(String(filter.value.end));
-                    return `${startFormatted} e ${endFormatted}`;
-                  } else if (col.type === 'date' || col.type === 'datetime') {
-                    return formatFilterDateValue(String(filter.value));
-                  } else {
-                    return formatBadgeValue(col, filter.value);
-                  }
-                })()}
-                <Badge
-                  variant="secondary"
-                  class="gap-1.5 pr-1"
-                >
-                  <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-                  <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
-                  <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
-                  <button
-                    type="button"
-                    class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
-                    onclick={() => {
-                      const next = advancedFilters.filter((f) => f.id !== filter.id);
-                      onAdvancedFiltersChange?.(next, 'AND');
-                    }}
-                    aria-label={$t('common.remove')}
-                  >
-                    <XIcon class="size-3" />
-                  </button>
-                </Badge>
-              {/if}
-            {/each}
-          {/if}
-        </div>
-      {:else}
-        <span in:fly={{ y: 20, duration: 200 }} class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
-      {/if}
+      <div in:fly={{ y: 20, duration: 200 }}>
+        <FilterBar
+          hasAppliedFilters={toolbarModeState.hasAppliedFilters}
+          filterValues={filterValues}
+          advancedFilters={advancedFilters}
+          filterableColumns={filterableColumns}
+          onResetFilters={resetFilters}
+          onFilterValuesChange={(values: Record<string, unknown>) => onFilterValuesChange?.(values)}
+          onAdvancedFiltersChange={(filters: AdvancedFilter[]) => onAdvancedFiltersChange?.(filters, 'AND')}
+        />
+      </div>
     {:else}
       <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
         <Button
@@ -3029,8 +2633,35 @@
             style="width: {previewPanel.previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanel.previewPanelOpen ? '220px' : '0'}"
           >
             <div class="h-full w-full overflow-auto">
-              {#if previewPanel.previewRow}
-                {@render entityPreviewPanel(previewPanel.previewRow)}
+              {#if previewPanel.previewPanelOpen}
+                <PreviewPanel
+                  row={previewPanel.previewRow!}
+                  previewEditMode={previewPanel.previewEditMode}
+                  previewRowIndex={previewPanel.previewRowIndex}
+                  previewDropdownOpen={previewDropdownOpen}
+                  totalRecords={footerRangeTotal}
+                  currentPage={footerPage}
+                  pageSize={pageSize}
+                  onPreviewEditModeChange={(mode: boolean) => previewPanel.previewEditMode = mode}
+                  onNavigatePreview={navigatePreview}
+                  onPreviewDropdownOpenChange={(open: boolean) => previewDropdownOpen = open}
+                  onEditRow={handleEditRow}
+                  onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
+                  onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
+                  onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
+                  onLoadVersionHistory={loadVersionHistory}
+                  onClosePreview={() => previewPanel.closePreview()}
+                  cell={cell}
+                  columns={columns}
+                  stickyColumns={stickyColumns}
+                  dataColumns={dataColumns}
+                  auditingColumns={auditingColumns}
+                  datetimeIanaModeByKey={datetimeIanaModeByKey}
+                  entityRowActions={entityRowActions}
+                  isRowDeleted={isRowDeleted}
+                  rowSelectionEnabled={rowSelectionEnabled}
+                  rowSelected={selectedKeys.includes(rowKey(previewPanel.previewRow!))}
+                />
               {/if}
             </div>
           </div>
@@ -3054,47 +2685,16 @@
         {/if}
       </div>
       {#if rowSelectionEnabled && selectionCount > 0}
-        <div class="flex items-center gap-1.5 text-info">
-          <span class="inline-flex flex-wrap items-baseline gap-x-1">
-            {selectionCount}
-            {#if selectionCount === 1}
-              {#if selectionLabelSingularText}
-                {' '}{selectionLabelSingularText}{' '}
-              {:else if selectionLabelSingularKey}
-                {' '}{$t(selectionLabelSingularKey)}{' '}
-              {:else if selectionLabelText}
-                {' '}{selectionLabelText}{' '}
-              {:else if selectionLabelKey}
-                {' '}{$t(selectionLabelKey)}{' '}
-              {/if}
-            {:else if selectionLabelText}
-              {' '}{selectionLabelText}{' '}
-            {:else if selectionLabelKey}
-              {' '}{$t(selectionLabelKey)}{' '}
-            {/if}
-            {$t(selectionPastParticipleKey)}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            class="shrink-0 text-info hover:bg-info/10 hover:text-info"
-            aria-pressed={showSelectedOnly}
-            title={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
-            aria-label={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
-            onclick={() => {
-              const next = !showSelectedOnly;
-              showSelectedOnly = next;
-              if (next) clientSelectedPage = 1;
-            }}
-          >
-            {#if showSelectedOnly}
-              <EyeOff class="size-4" />
-            {:else}
-              <Eye class="size-4" />
-            {/if}
-          </Button>
-        </div>
+        <SelectionCounter
+          selectionCount={selectionCount}
+          selectionLabelKey={selectionLabelKey}
+          selectionLabelSingularKey={selectionLabelSingularKey}
+          selectionLabelText={selectionLabelText}
+          selectionLabelSingularText={selectionLabelSingularText}
+          selectionPastParticipleKey={selectionPastParticipleKey}
+          showSelectedOnly={showSelectedOnly}
+          onShowSelectedOnlyChange={(show: boolean) => { showSelectedOnly = show; if (show) clientSelectedPage = 1; }}
+        />
       {/if}
     </div>
 
@@ -3238,7 +2838,7 @@
 
 <HtmlExportDialog
   bind:open={exportComposable.htmlPreviewDialogOpen}
-  onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
+  onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={entity}
@@ -3261,161 +2861,22 @@
 />
 
 <!-- HTML preview full-screen dialog -->
-<DialogBordered bind:open={exportComposable.htmlPreviewDialogOpen} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
-  <Dialog.Header class="pb-4 shrink-0">
-    <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
-  </Dialog.Header>
-
-  <!-- Navigation dock -->
-  <div class="relative shrink-0">
-    <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-primary/10 !border-primary/20 dark:!bg-primary/10" magnification={70} distance={120}>
-      <Dock.Icon
-        onclick={() => { exportComposable.previewMode = 'html'; exportComposable.pdfBlobUrl = null; }}
-        tooltip="HTML view"
-        selected={exportComposable.previewMode === 'html'}
-      >
-        <BsFiletypeHtml class="w-6 h-6" />
-      </Dock.Icon>
-      <Dock.Icon
-        onclick={generatePdfPreview}
-        tooltip="PDF view"
-        selected={exportComposable.previewMode === 'pdf'}
-      >
-        <BsFiletypePdf class="w-6 h-6" />
-      </Dock.Icon>
-      <Dock.Icon
-        onclick={prepareEmailHtml}
-        tooltip="Email"
-        selected={exportComposable.previewMode === 'email'}
-      >
-        <BsEnvelopeAt class="w-6 h-6" />
-      </Dock.Icon>
-    </Dock.Root>
-  </div>
-
-
-<!-- Preview content -->
-  <div class="flex-1 overflow-hidden bg-background min-h-0 rounded-md relative">
-    {#if exportComposable.previewMode === 'html'}
-      <iframe
-        srcdoc={exportComposable.htmlPreviewContent}
-        class="w-full h-full border-0"
-        title="HTML Preview"
-      ></iframe>
-    {:else if exportComposable.previewMode === 'pdf' && exportComposable.pdfBlobUrl}
-      <iframe
-        src={exportComposable.pdfBlobUrl}
-        class="w-full h-full border-0"
-        title="PDF Preview"
-      ></iframe>
-    {:else if exportComposable.previewMode === 'pdf'}
-      <div class="flex items-center justify-center h-full">
-        <p class="text-muted-foreground">Generating PDF...</p>
-      </div>
-    {:else if exportComposable.previewMode === 'email'}
-      <div class="w-full h-full">
-        {#if exportComposable.isEmailPreparing}
-          <div class="flex items-center justify-center h-full">
-            <p class="text-muted-foreground">Preparing email HTML...</p>
-          </div>
-        {:else}
-          <Window
-            class="!aspect-auto h-full w-full flex flex-col"
-            contentClass="flex-1 min-h-0 !p-0"
-          >
-            <div class="flex h-full w-full overflow-hidden bg-background">
-              <Resizable.PaneGroup direction="horizontal">
-                <!-- PANNELLO SINISTRO: Elenco Mail (30% larghezza) -->
-                <Resizable.Pane defaultSize={30} minSize={20}>
-                  <ScrollArea class="h-full border-r p-4 bg-muted/20">
-                    <h3 class="text-sm font-semibold mb-4 px-2 tracking-tight text-muted-foreground">Mailbox</h3>
-                    <div class="space-y-2">
-                      <!-- Item Mail Attivo (skeleton evidenziato) -->
-                      <div class="p-3 space-y-2 border rounded-lg bg-card shadow-sm border-primary/50">
-                        <Skeleton class="h-4 w-3/4" />
-                        <Skeleton class="h-3 w-1/2" />
-                      </div>
-                      
-                      <!-- Skeleton per altre mail -->
-                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
-                        <Skeleton class="h-4 w-2/3" />
-                        <Skeleton class="h-3 w-1/3" />
-                      </div>
-                      <div class="p-3 space-y-2 border rounded-lg opacity-50">
-                        <Skeleton class="h-4 w-3/4" />
-                        <Skeleton class="h-3 w-1/2" />
-                      </div>
-                    </div>
-                  </ScrollArea>
-                </Resizable.Pane>
-
-                <Resizable.Handle withHandle />
-
-                <!-- PANNELLO DESTRO: Area di Contenuto (Preview) -->
-                <Resizable.Pane defaultSize={70}>
-                  <div class="flex flex-col h-full bg-background min-h-0">
-                    
-                    <!-- Header dell'email (To, Subject) -->
-                    <div class="p-4 border-b space-y-3 bg-card shrink-0">
-                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
-                        <span class="font-medium">A:</span> 
-                        <span class="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">recipient@example.com</span>
-                      </div>
-                      <div class="text-sm text-muted-foreground flex gap-2 items-center">
-                        <span class="font-medium">Subject:</span>
-                        <Skeleton class="h-4 flex-1" />
-                      </div>
-                    </div>
-
-                    <!-- Area dell'IFrame -->
-                    <div class="flex-1 bg-muted/10 relative h-full min-h-0">
-                      <!-- L'iframe che ospita l'HTML puro del foglio e della tabella -->
-                      <iframe 
-                        title="Email Preview"
-                        srcdoc={exportComposable.emailHtmlContent}
-                        class="w-full h-full border-0 bg-white"
-                        sandbox="allow-same-origin"
-                      ></iframe>
-                    </div>
-
-                  </div>
-                </Resizable.Pane>
-                
-              </Resizable.PaneGroup>
-            </div>
-          </Window>
-        {/if}
-      </div>
-    {/if}
-  </div>
-  
-  <Dialog.Footer class="gap-2 shrink-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={closeHtmlPreview}
-    >
-      {$t('common.close')}
-    </Button>
-    {#if exportComposable.previewMode === 'email'}
-      <Button onclick={copyEmailHtmlToClipboard} disabled={exportComposable.isEmailPreparing || !exportComposable.emailHtmlContent}>
-        {#if exportComposable.emailCopied}
-          Copied!
-        {:else}
-          Copy HTML to Clipboard
-        {/if}
-      </Button>
-    {:else if exportComposable.previewMode === 'pdf'}
-      <Button onclick={() => { /* PDF download handled by composable */ }} disabled={!exportComposable.pdfBlobUrl}>
-        Scarica PDF
-      </Button>
-    {:else}
-      <Button onclick={copyHtmlToClipboard} disabled={exportComposable.previewMode !== 'html'}>
-        {$t('common.copyHtml')}
-      </Button>
-    {/if}
-  </Dialog.Footer>
-</DialogBordered>
+<ExportPreviewDialog
+  bind:open={exportComposable.htmlPreviewDialogOpen}
+  onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
+  previewMode={exportComposable.previewMode}
+  onPreviewModeChange={(mode: 'html' | 'pdf' | 'email') => exportComposable.previewMode = mode}
+  htmlPreviewContent={exportComposable.htmlPreviewContent}
+  pdfBlobUrl={exportComposable.pdfBlobUrl}
+  emailHtmlContent={exportComposable.emailHtmlContent}
+  isEmailPreparing={exportComposable.isEmailPreparing}
+  emailCopied={exportComposable.emailCopied}
+  onGeneratePdfPreview={generatePdfPreview}
+  onPrepareEmailHtml={prepareEmailHtml}
+  onCopyHtmlToClipboard={copyHtmlToClipboard}
+  onCopyEmailHtmlToClipboard={copyEmailHtmlToClipboard}
+  onClose={closeHtmlPreview}
+/>
 
 <style>
   @keyframes pb-watermark-pulse {
