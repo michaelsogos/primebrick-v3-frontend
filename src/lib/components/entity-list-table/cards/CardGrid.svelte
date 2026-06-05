@@ -3,10 +3,9 @@
   import { cn } from '$lib/utils.js';
   import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Button } from '$lib/components/ui/button';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { MoreVertical, Eye, EyeOff, Pencil, Trash2, ArrowUpFromLine, Copy, Download } from 'lucide-svelte';
+  import { MoreVertical, Eye, Pencil, Trash2, ArrowUpFromLine, Copy, FileClock } from 'lucide-svelte';
   import CardField from './CardField.svelte';
 
   let {
@@ -20,13 +19,18 @@
     rowActions,
     entityRowActions,
     datetimeIanaModeByKey,
+    datetimeIanaRenderTick,
+    viewMode,
     onRowClick,
     onPreviewRow,
     onEditRow,
     onDeleteRow,
     onRestoreRow,
     onDuplicateRow,
-    onExportRow
+    onVersionHistory,
+    rowFocusedIndex,
+    cell,
+    isRowDeleted
   }: {
     rows: Record<string, unknown>[];
     columns: MetaColumn[];
@@ -38,13 +42,18 @@
     rowActions?: any;
     entityRowActions?: { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    onRowClick?: (row: Record<string, unknown>) => void;
+    datetimeIanaRenderTick?: number;
+    viewMode: 'cards_grid' | 'cards_list';
+    onRowClick?: (row: Record<string, unknown>, key: string, e: MouseEvent) => void;
     onPreviewRow?: (row: Record<string, unknown>) => void;
     onEditRow?: (row: Record<string, unknown>) => void;
     onDeleteRow?: (row: Record<string, unknown>) => void;
     onRestoreRow?: (row: Record<string, unknown>) => void;
     onDuplicateRow?: (row: Record<string, unknown>) => void;
-    onExportRow?: (row: Record<string, unknown>) => void;
+    onVersionHistory?: (row: Record<string, unknown>) => void;
+    rowFocusedIndex?: number | null;
+    cell?: any;
+    isRowDeleted?: (row: Record<string, unknown>) => boolean;
   } = $props();
 
   const renderColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
@@ -52,10 +61,6 @@
   function rowKey(row: Record<string, unknown>): string {
     const v = row[uid as keyof typeof row] as unknown;
     return typeof v === 'string' ? v : String(v ?? '');
-  }
-
-  function isRowDeleted(row: Record<string, unknown>): boolean {
-    return !!row['deleted_at'];
   }
 
   function toggleRowSelect(key: string) {
@@ -68,16 +73,18 @@
 </script>
 
 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-  {#each rows as r (rowKey(r))}
+  {#each rows as r, i (rowKey(r))}
     {@const rk = rowKey(r)}
     {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
-    {@const rowDeleted = isRowDeleted(r)}
-    <button
-      type="button"
-      disabled={!rowSelectionEnabled}
+    {@const rowDeleted = isRowDeleted?.(r) ?? false}
+    {@const rowFocused = rowFocusedIndex !== null && rowFocusedIndex === i}
+    <div
+      role="button"
+      tabindex={rowSelectionEnabled ? 0 : -1}
+      aria-disabled={!rowSelectionEnabled}
       data-state={rowSelected ? 'selected' : undefined}
       class={cn(
-        'group rounded-md border bg-background p-3 shadow-sm transition-colors text-left w-full',
+        'group rounded-md border bg-background p-3 shadow-sm transition-colors',
         rowSelectionEnabled
           ? rowSelected
             ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800'
@@ -86,23 +93,52 @@
         rowSelected
           ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
           : undefined,
-        rowDeleted ? 'opacity-60' : ''
+        rowDeleted ? 'opacity-60' : '',
+        rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
       )}
-      onclick={() => onRowClick?.(r)}
+      onclick={(e) => onRowClick?.(r, rk, e)}
+      onkeydown={
+        (e) => {
+          if (!rowSelectionEnabled) return;
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          toggleRowSelect(rk);
+        }
+      }
     >
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-2">
           {#if rowSelectionEnabled}
-            <Checkbox
-              class={checkboxInteractiveClass}
-              checked={selectedKeys.includes(rk)}
-              onCheckedChange={() => toggleRowSelect(rk)}
-              aria-label="select row"
-            />
+            <div
+              class="shrink-0"
+              data-pb-card-cta
+              role="button"
+              tabindex="-1"
+              onclick={(e) => e.stopPropagation()}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+              }}
+            >
+              <Checkbox
+                class={checkboxInteractiveClass}
+                checked={selectedKeys.includes(rk)}
+                onCheckedChange={() => toggleRowSelect(rk)}
+                aria-label={$t('entities.list.selectRow')}
+              />
+            </div>
           {/if}
           <div class="flex flex-col gap-2 flex-1 min-w-0">
             {#each renderColumns as col (col.key)}
-              <CardField row={r} column={col} {rowSelected} {rowDeleted} {datetimeIanaModeByKey} />
+              <CardField 
+                row={r} 
+                column={col} 
+                {rowSelected} 
+                {rowDeleted} 
+                {datetimeIanaModeByKey}
+                {viewMode}
+                {cell}
+                datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0}
+              />
             {/each}
           </div>
         </div>
@@ -141,6 +177,14 @@
                   </div>
                 </DropdownMenu.Item>
               {/if}
+              {#if onVersionHistory}
+                <DropdownMenu.Item onclick={() => onVersionHistory(r)}>
+                  <div class="flex items-center gap-2">
+                    <FileClock class="size-4" />
+                    <span>{$t('common.versionHistory')}</span>
+                  </div>
+                </DropdownMenu.Item>
+              {/if}
               {#if entityRowActions?.delete}
                 <DropdownMenu.Separator />
                 {#if rowDeleted}
@@ -166,6 +210,6 @@
           </DropdownMenu.Root>
         {/if}
       </div>
-    </button>
+    </div>
   {/each}
 </div>
