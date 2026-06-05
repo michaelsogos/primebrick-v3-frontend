@@ -1,10 +1,12 @@
 import { apiFetch } from '$lib/api';
 import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
+import type { MetaColumn } from '$lib/entity-list/types';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
   uid: () => string;
+  columns: () => MetaColumn[];
   onEditAction?: (row: TRow) => void;
   onRowActionComplete?: () => void;
   onRowActionError?: (error: Error) => void;
@@ -14,6 +16,14 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
+  dialogs?: {
+    openDeleteDialog: () => void;
+    closeDeleteDialog: () => void;
+    openRestoreDialog: () => void;
+    closeRestoreDialog: () => void;
+    openDuplicateDialog: () => void;
+    closeDuplicateDialog: () => void;
+  };
 }
 
 export interface RowActionsReturn<TRow extends Record<string, unknown>> {
@@ -25,6 +35,15 @@ export interface RowActionsReturn<TRow extends Record<string, unknown>> {
   confirmDeleteRow: (row: TRow) => Promise<void>;
   confirmRestoreRow: (row: TRow) => Promise<void>;
   confirmDuplicateRow: (row: TRow) => Promise<void>;
+  confirmDeleteRowWrapper: () => Promise<void>;
+  confirmRestoreRowWrapper: () => Promise<void>;
+  confirmDuplicateWrapper: () => Promise<void>;
+  cancelDuplicate: () => void;
+  loadVersionHistory: (row: TRow) => Promise<void>;
+  rowToDelete: TRow | null;
+  rowToRestore: TRow | null;
+  singleRowToDuplicate: TRow | null;
+  duplicateScope: 'selected' | 'single';
   isDeleting: boolean;
   isRestoring: boolean;
   isDuplicating: boolean;
@@ -36,6 +55,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   const {
     entity: entityFn,
     uid: uidFn,
+    columns: columnsFn,
     onEditAction,
     onRowActionComplete,
     onRowActionError,
@@ -44,12 +64,19 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     rowKey,
     onPreviewRow,
     closeRowDropdown,
+    dialogs,
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
   let isDeleting = $state(false);
   let isRestoring = $state(false);
   let isDuplicating = $state(false);
+
+  // Dialog state
+  let rowToDelete = $state<TRow | null>(null);
+  let rowToRestore = $state<TRow | null>(null);
+  let singleRowToDuplicate = $state<TRow | null>(null);
+  let duplicateScope = $state<'selected' | 'single'>('selected');
 
   function handleEditRow(row: TRow) {
     if (isRowDeleted?.(row)) {
@@ -68,12 +95,14 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   function handleDeleteRow(row: TRow) {
-    // This just sets the row to delete - dialog state is managed by parent
+    rowToDelete = row;
+    dialogs?.openDeleteDialog();
     closeRowDropdown?.();
   }
 
   function handleRestoreRow(row: TRow) {
-    // This just sets the row to restore - dialog state is managed by parent
+    rowToRestore = row;
+    dialogs?.openRestoreDialog();
     closeRowDropdown?.();
   }
 
@@ -82,11 +111,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       console.log('Cannot duplicate deleted row:', rowKey?.(row));
       return;
     }
-    // This just sets the row to duplicate - dialog state is managed by parent
+    singleRowToDuplicate = row;
+    duplicateScope = 'single';
+    dialogs?.openDuplicateDialog();
     closeRowDropdown?.();
   }
 
-  async function confirmDeleteRow(row: TRow) {
+  async function confirmDeleteRowImpl(row: TRow) {
     const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
@@ -128,7 +159,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     }
   }
 
-  async function confirmRestoreRow(row: TRow) {
+  async function confirmRestoreRowImpl(row: TRow) {
     const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
@@ -170,7 +201,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     }
   }
 
-  async function confirmDuplicateRow(row: TRow) {
+  async function confirmDuplicateRowImpl(row: TRow) {
     const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
@@ -218,6 +249,60 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     }
   }
 
+  // Wrapper functions that manage dialog state
+  async function confirmDeleteRowWrapper() {
+    if (!rowToDelete) return;
+    await confirmDeleteRowImpl(rowToDelete);
+    dialogs?.closeDeleteDialog();
+    rowToDelete = null;
+  }
+
+  async function confirmRestoreRowWrapper() {
+    if (!rowToRestore) return;
+    await confirmRestoreRowImpl(rowToRestore);
+    dialogs?.closeRestoreDialog();
+    rowToRestore = null;
+  }
+
+  async function confirmDuplicateWrapper() {
+    if (duplicateScope === 'single' && singleRowToDuplicate) {
+      await confirmDuplicateRowImpl(singleRowToDuplicate);
+    }
+    dialogs?.closeDuplicateDialog();
+    singleRowToDuplicate = null;
+  }
+
+  function cancelDuplicate() {
+    dialogs?.closeDuplicateDialog();
+    singleRowToDuplicate = null;
+  }
+
+  async function loadVersionHistory(row: TRow) {
+    const entity = entityFn();
+    const uid = uidFn();
+    const columns = columnsFn();
+    const rowUuid = String((row as Record<string, unknown>)[uid]);
+    const { openSheet } = await import('$lib/shell/sheets/sheet-manager.svelte');
+    openSheet('entity.versionHistory', {
+      entity,
+      rowUuid,
+      columns
+    });
+  }
+
+  // Keep original function names for backward compatibility, but they now call the impl versions
+  async function confirmDeleteRow(row: TRow) {
+    await confirmDeleteRowImpl(row);
+  }
+
+  async function confirmRestoreRow(row: TRow) {
+    await confirmRestoreRowImpl(row);
+  }
+
+  async function confirmDuplicateRow(row: TRow) {
+    await confirmDuplicateRowImpl(row);
+  }
+
   return {
     handleEditRow,
     handleDeleteRow,
@@ -227,6 +312,15 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     confirmDeleteRow,
     confirmRestoreRow,
     confirmDuplicateRow,
+    confirmDeleteRowWrapper,
+    confirmRestoreRowWrapper,
+    confirmDuplicateWrapper,
+    cancelDuplicate,
+    loadVersionHistory,
+    get rowToDelete() { return rowToDelete; },
+    get rowToRestore() { return rowToRestore; },
+    get singleRowToDuplicate() { return singleRowToDuplicate; },
+    get duplicateScope() { return duplicateScope; },
     get isDeleting() { return isDeleting; },
     get isRestoring() { return isRestoring; },
     get isDuplicating() { return isDuplicating; }

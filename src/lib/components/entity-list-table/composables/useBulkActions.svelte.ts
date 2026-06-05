@@ -12,6 +12,15 @@ export interface BulkActionsOptions {
   onRefresh?: () => void;
   onToolbarModeChange?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
+  dialogs?: {
+    openBulkDeleteDialog: () => void;
+    closeBulkDeleteDialog: () => void;
+    openBulkRestoreDialog: () => void;
+    closeBulkRestoreDialog: () => void;
+    openDuplicateDialog: () => void;
+    closeDuplicateDialog: () => void;
+  };
+  setDuplicateScope?: (scope: 'selected' | 'single') => void;
 }
 
 export interface BulkActionsReturn {
@@ -27,6 +36,9 @@ export interface BulkActionsReturn {
   handleBulkDuplicate: () => void;
   confirmBulkDuplicate: () => Promise<void>;
   cancelBulkDuplicate: () => void;
+  confirmBulkDeleteWrapper: () => Promise<void>;
+  confirmBulkRestoreWrapper: () => Promise<void>;
+  confirmBulkDuplicateWrapper: () => Promise<void>;
 }
 
 export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
@@ -39,6 +51,8 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     onSelectionChange,
     onRefresh,
     onToolbarModeChange,
+    dialogs,
+    setDuplicateScope,
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
@@ -47,11 +61,10 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
   let isDuplicating = $state(false);
 
   function handleBulkDelete() {
-    // This just opens the dialog - the actual deletion is in confirmBulkDelete
-    // Dialog state is managed by the parent component
+    dialogs?.openBulkDeleteDialog();
   }
 
-  async function confirmBulkDelete() {
+  async function confirmBulkDeleteImpl() {
     const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
@@ -116,16 +129,20 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     }
   }
 
+  async function confirmBulkDeleteWrapper() {
+    await confirmBulkDeleteImpl();
+    dialogs?.closeBulkDeleteDialog();
+  }
+
   function cancelBulkDelete() {
-    // Dialog state is managed by the parent component
+    dialogs?.closeBulkDeleteDialog();
   }
 
   function handleBulkRestore() {
-    // This just opens the dialog - the actual restoration is in confirmBulkRestore
-    // Dialog state is managed by the parent component
+    dialogs?.openBulkRestoreDialog();
   }
 
-  async function confirmBulkRestore() {
+  async function confirmBulkRestoreImpl() {
     const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
@@ -190,8 +207,13 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     }
   }
 
+  async function confirmBulkRestoreWrapper() {
+    await confirmBulkRestoreImpl();
+    dialogs?.closeBulkRestoreDialog();
+  }
+
   function cancelBulkRestore() {
-    // Dialog state is managed by the parent component
+    dialogs?.closeBulkRestoreDialog();
   }
 
   function handleBulkDuplicate() {
@@ -204,11 +226,11 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
       });
       return;
     }
-    // This just opens the dialog - the actual duplication is in confirmBulkDuplicate
-    // Dialog state is managed by the parent component
+    setDuplicateScope?.('selected');
+    dialogs?.openDuplicateDialog();
   }
 
-  async function confirmBulkDuplicate() {
+  async function confirmBulkDuplicateImpl() {
     const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     try {
@@ -256,8 +278,26 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     }
   }
 
+  async function confirmBulkDuplicateWrapper() {
+    await confirmBulkDuplicateImpl();
+    dialogs?.closeDuplicateDialog();
+  }
+
   function cancelBulkDuplicate() {
-    // Dialog state is managed by the parent component
+    dialogs?.closeDuplicateDialog();
+  }
+
+  // Keep original function names for backward compatibility
+  async function confirmBulkDelete() {
+    await confirmBulkDeleteImpl();
+  }
+
+  async function confirmBulkRestore() {
+    await confirmBulkRestoreImpl();
+  }
+
+  async function confirmBulkDuplicate() {
+    await confirmBulkDuplicateImpl();
   }
 
   return {
@@ -272,6 +312,9 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     cancelBulkRestore,
     handleBulkDuplicate,
     confirmBulkDuplicate,
-    cancelBulkDuplicate
+    cancelBulkDuplicate,
+    confirmBulkDeleteWrapper,
+    confirmBulkRestoreWrapper,
+    confirmBulkDuplicateWrapper
   };
 }

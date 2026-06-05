@@ -1225,6 +1225,7 @@
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
     uid: () => uid,
+    columns: () => columns,
     onEditAction: onEditAction,
     onRefresh: onRefresh,
     isRowDeleted: isRowDeleted,
@@ -1550,7 +1551,7 @@
             {/if}
             {#if entityRowActions?.duplicate !== false}
               <DropdownMenu.Item
-                onclick={() => { if (rowDeleted) return; handleDuplicateRow(row); }}
+                onclick={() => { if (rowDeleted) return; rowActionsComposable.handleDuplicateRow(row); }}
                 class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
               >
                 <div class="flex items-center gap-2">
@@ -1570,7 +1571,7 @@
             {#if entityRowActions?.delete !== false}
               {#if rowDeleted}
                 <DropdownMenu.Separator />
-                <DropdownMenu.Item onclick={() => handleRestoreRow(row)} class="text-warning">
+                <DropdownMenu.Item onclick={() => rowActionsComposable.handleRestoreRow(row)} class="text-warning">
                   <div class="flex items-center gap-2">
                     <span class="relative flex items-center justify-center">
                       <Trash2 class="size-4 text-warning/70" />
@@ -1581,7 +1582,7 @@
                 </DropdownMenu.Item>
               {:else}
                 <DropdownMenu.Separator />
-                <DropdownMenu.Item onclick={() => handleDeleteRow(row)} class="text-destructive">
+                <DropdownMenu.Item onclick={() => rowActionsComposable.handleDeleteRow(row)} class="text-destructive">
                   <div class="flex items-center gap-2">
                     <Trash2 class="size-4 text-destructive/70" />
                     <span>{$t('common.delete')}</span>
@@ -2047,7 +2048,7 @@
           variant="soft"
           size="xs"
           class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={handleBulkDuplicate}
+          onclick={bulkActions.handleBulkDuplicate}
           disabled={selectedKeys.length < 2}
         >
           <Copy class="size-3.5" />
@@ -2057,7 +2058,7 @@
           variant="soft"
           size="xs"
           class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
-          onclick={handleBulkDelete}
+          onclick={bulkActions.handleBulkDelete}
           disabled={selectedKeys.length < 2 || hasDeletedSelected}
         >
           <Trash2 class="size-3.5" />
@@ -2068,7 +2069,7 @@
             variant="soft"
             size="xs"
             class="h-6 text-xs bg-warning/10 text-warning hover:bg-warning/20 hover:border-warning/50 border-warning/20"
-            onclick={handleBulkRestore}
+            onclick={bulkActions.handleBulkRestore}
             disabled={!allSelectedDeleted}
           >
             <span class="relative flex items-center justify-center">
@@ -2376,7 +2377,7 @@
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
                                     <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
                                       class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
                                     >
                                       <div class="flex items-center gap-2">
@@ -2404,7 +2405,7 @@
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     {#if isRowDeleted(r)}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
                                         <div class="flex items-center gap-2">
                                           <span class="relative flex items-center justify-center">
                                             <Trash2 class="size-4 text-warning/70" />
@@ -2414,7 +2415,7 @@
                                         </div>
                                       </DropdownMenu.Item>
                                     {:else}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
                                         <div class="flex items-center gap-2">
                                           <Trash2 class="size-4 text-destructive/70" />
                                           <span>{$t('common.delete')}</span>
@@ -2502,7 +2503,7 @@
                                   {/if}
                                   {#if entityRowActions?.duplicate !== false}
                                     <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
                                       class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
                                     >
                                       <div class="flex items-center gap-2">
@@ -2530,7 +2531,7 @@
                                   {#if entityRowActions?.delete !== false}
                                     <DropdownMenu.Separator />
                                     {#if isRowDeleted(r)}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
                                         <div class="flex items-center gap-2">
                                           <span class="relative flex items-center justify-center">
                                             <Trash2 class="size-4 text-warning/70" />
@@ -2540,7 +2541,7 @@
                                         </div>
                                       </DropdownMenu.Item>
                                     {:else}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
                                         <div class="flex items-center gap-2">
                                           <Trash2 class="size-4 text-destructive/70" />
                                           <span>{$t('common.delete')}</span>
@@ -2951,7 +2952,7 @@
                             {/if}
                             {#if entityRowActions?.duplicate !== false}
                               <DropdownMenu.Item
-                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleDuplicateRow(r); }}
+                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
                                 class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
                               >
                                 <div class="flex items-center gap-2">
@@ -2979,7 +2980,7 @@
                             {#if entityRowActions?.delete !== false}
                               <DropdownMenu.Separator />
                               {#if isRowDeleted(r)}
-                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleRestoreRow(r); }} class="text-warning">
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
                                   <div class="flex items-center gap-2">
                                     <span class="relative flex items-center justify-center">
                                       <Trash2 class="size-4 text-warning/70" />
@@ -2989,7 +2990,7 @@
                                   </div>
                                 </DropdownMenu.Item>
                               {:else}
-                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handleDeleteRow(r); }} class="text-destructive">
+                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
                                   <div class="flex items-center gap-2">
                                     <Trash2 class="size-4 text-destructive/70" />
                                     <span>{$t('common.delete')}</span>
