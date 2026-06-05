@@ -1,0 +1,57 @@
+@keyframes pb-watermark-pulse {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.22;
+    transform: translateY(-6px) scale(1.06);
+  }
+}
+
+@keyframes pb-watermark-hourglass {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.12;
+  }
+  45% {
+    transform: rotate(0deg) scale(1.06);
+    opacity: 0.22;
+  }
+  55% {
+    transform: rotate(180deg) scale(1.06);
+    opacity: 0.22;
+  }
+  100% {
+    transform: rotate(180deg) scale(1);
+    opacity: 0.12;
+  }
+}
+
+.pb-watermark-empty {
+  transform-origin: center;
+  animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+}
+
+.pb-watermark-loading {
+  transform-origin: center;
+  animation: pb-watermark-hourglass 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes pb-watermark-error {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.18;
+    transform: scale(1.05);
+  }
+}
+
+.pb-watermark-error {
+  transform-origin: center;
+  animation: pb-watermark-error 2.2s ease-in-out infinite;
+}

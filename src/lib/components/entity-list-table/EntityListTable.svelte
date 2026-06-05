@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -185,7 +185,7 @@
     loadingMessage,
     noRecordsMessage
   }: {
-    /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
+    /** Meta column key whose values uniquely identify a row in the list (uuid, id, â€¦). */
     uid: string;
     /** Entity type for API calls (e.g., 'customer', 'product') */
     entity?: string;
@@ -604,7 +604,7 @@
   });
 
   const rowChromeH = $derived('h-6');
-  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
+  /** Use `thead th` / `tbody td` selectors â€” attribute-based [&_[data-slot=â€¦]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
   );
@@ -1051,7 +1051,7 @@
     )
   );
 
-  /** Card view: sticky uuid/code-style fields — dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
+  /** Card view: sticky uuid/code-style fields â€” dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
   function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean, destructive: boolean = false): string | undefined {
     const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
     if (!stickyKeys.has(col.key)) return undefined;
@@ -1254,7 +1254,7 @@
     if (!isSticky) return undefined;
 
     /**
-     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+     * Sticky columns: **neutral only** (TW `gray-*` dark is slateâ€‘tinted / blue on screen).
      * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
      */
     const baseBg = isHeader
@@ -2823,63 +2823,5 @@
   onClose={closeHtmlPreview}
 />
 
-<style>
-  @keyframes pb-watermark-pulse {
-    0%,
-    100% {
-      opacity: 0.12;
-      transform: translateY(0) scale(1);
-    }
-    50% {
-      opacity: 0.22;
-      transform: translateY(-6px) scale(1.06);
-    }
-  }
-
-  @keyframes pb-watermark-hourglass {
-    0% {
-      transform: rotate(0deg) scale(1);
-      opacity: 0.12;
-    }
-    45% {
-      transform: rotate(0deg) scale(1.06);
-      opacity: 0.22;
-    }
-    55% {
-      transform: rotate(180deg) scale(1.06);
-      opacity: 0.22;
-    }
-    100% {
-      transform: rotate(180deg) scale(1);
-      opacity: 0.12;
-    }
-  }
-
-  .pb-watermark-empty {
-    transform-origin: center;
-    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
-  }
-
-  .pb-watermark-loading {
-    transform-origin: center;
-    animation: pb-watermark-hourglass 1.8s ease-in-out infinite alternate;
-  }
-
-  @keyframes pb-watermark-error {
-    0%,
-    100% {
-      opacity: 0.1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.18;
-      transform: scale(1.05);
-    }
-  }
-
-  .pb-watermark-error {
-    transform-origin: center;
-    animation: pb-watermark-error 2.2s ease-in-out infinite;
-  }
-</style>
+<style src="./EntityListTable.css"></style>
 
