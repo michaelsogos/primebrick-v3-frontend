@@ -1,4 +1,4 @@
-﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -36,7 +36,6 @@
     useToolbarMode
   } from './composables';
   import {
-    isBlankish as isBlankishUtil,
     isRowDeleted as isRowDeletedUtil,
     getRowKey
   } from './utils';
@@ -48,6 +47,21 @@
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
+  import { searchSyntaxSegments, searchSyntaxSpanClass } from './search/search-syntax';
+  import {
+    entityListDataCellValignClass,
+    isDatetimeIanaRecordMode,
+    datetimeIanaHeadHighlightClass,
+    datetimeIanaCellHighlightClass,
+    datetimeIanaCardFieldHighlightClass,
+    entityListGrayChromeCellClass,
+    entityListDestructiveChromeCellClass,
+    entityListGrayBandStickyInteractionClass,
+    entityListDestructiveBandStickyInteractionClass,
+    entityListDefaultScrollInteractionClass,
+    entityListDestructiveScrollInteractionClass
+  } from './utils/cell-styling';
+  import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from './utils/cell-formatting';
   import XIcon from '@lucide/svelte/icons/x';
   import {
     Search,
@@ -603,170 +617,8 @@
     datetimeIanaModeByKey = { ...datetimeIanaModeByKey, [col.key]: next };
     datetimeIanaRenderTick++;
   }
-
-  const isBlankish = (value: unknown): boolean => isBlankishUtil(value);
-
-  /**
-   * Get audit field value with _name fallback.
-   * For audit fields (created_by, updated_by, deleted_by), checks for the corresponding
-   * _name field (e.g., created_by_name) and uses it as fallback to show human-readable names.
-   */
-  function getAuditFieldValue(row: TRow, col: MetaColumn): string {
-    const r = row as Record<string, unknown>;
-    const raw = r[col.key];
-
-    // Check if this is an audit field that should have a _name variant
-    const auditFields = ['created_by', 'updated_by', 'deleted_by'];
-    if (auditFields.includes(col.key)) {
-      const nameField = `${col.key}_name`;
-      const nameValue = r[nameField];
-      // Use _name if present and non-empty, otherwise use original value
-      if (!isBlankish(nameValue)) {
-        return String(nameValue);
-      }
-    }
-
-    // For non-audit fields or if _name is empty, use original value
-    if (isBlankish(raw)) return '-';
-    return formatListCellValue(col, raw, $uiLang);
-  }
-
-  /**
-   * Card view empty-state detection.
-   *
-   * Note: when a route provides `{#snippet cell}`, we cannot reliably infer rendered emptiness;
-   * in that case we only apply this heuristic for scalar-ish values on the row key.
-   */
-  function isCardFieldEmpty(row: TRow, col: MetaColumn): boolean {
-    const r = row as Record<string, unknown>;
-    const raw = r[col.key];
-
-    if (col.type === 'datetime' && col.datetimeIanaToggle) {
-      const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
-      const parts = formatDatetimeCellDisplay(col, r, $uiLang, mode);
-      const textEmpty = parts.text.trim().length === 0;
-      // In record mode we may show an IANA badge even if the datetime text is empty; treat as non-empty.
-      if (isDatetimeIanaRecordMode(col) && parts.iana && parts.iana.trim().length > 0) return false;
-      return textEmpty;
-    }
-
-    if (cell) {
-      return isBlankish(raw);
-    }
-
-    if (isBlankish(raw)) return true;
-
-    const formatted = formatListCellValue(col, raw, $uiLang).trim();
-    return formatted.length === 0;
-  }
-
-  /** Top-align cells that stack datetime value + IANA badge. */
-  function entityListDataCellValignClass(col: MetaColumn): string | undefined {
-    return col.datetimeIanaToggle ? 'align-top' : undefined;
-  }
-
-  /** Amber tint only when showing the record’s stored IANA timezone; browser/local mode uses default neutral like other columns. */
-  function isDatetimeIanaRecordMode(col: MetaColumn): boolean {
-    if (col.type !== 'datetime' || !col.datetimeIanaToggle) return false;
-    return (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record';
-  }
-
-  /**
-   * Datetime columns with IANA toggle: light header band above body (`amber-100` vs cell `amber-50`).
-   * Dark: same **Tailwind amber** ramp as body (`amber-950`).
-   * `Table.Row` applies `[&>th]:[…]:hover:bg-muted`; repeat the same bg on `hover:` with `!` so the
-   * header does not grey out on row hover (hover tint stays on body cells only).
-   */
-  function datetimeIanaHeadHighlightClass(col: MetaColumn): string | undefined {
-    if (!isDatetimeIanaRecordMode(col)) return undefined;
-    return 'bg-amber-100! hover:bg-amber-100! dark:bg-amber-950! dark:hover:bg-amber-950!';
-  }
-
-  /**
-   * Datetime IANA body cells: amber palette only in record (stored timezone) mode. Browser mode: no classes here
-   * (standard neutral interaction applies). Light: 50→100 hover, 200→300 when row selected.
-   * Dark (Tailwind amber): base `950` → hover `900` → selected `800` → selected+hover `700`.
-   */
-  function datetimeIanaCellHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
-    if (!isDatetimeIanaRecordMode(col)) return undefined;
-    if (rowSelected) {
-      return 'bg-amber-200/95! dark:bg-amber-800! transition-colors group-hover/entity-row:bg-amber-300/95! dark:group-hover/entity-row:bg-amber-700!';
-    }
-    return 'bg-amber-50! dark:bg-amber-950! transition-colors group-hover/entity-row:bg-amber-100/95! dark:group-hover/entity-row:bg-amber-900!';
-  }
-
-  /** Card view: highlight datetime+IANA fields when record (IANA locale) mode is active. */
-  function datetimeIanaCardFieldHighlightClass(col: MetaColumn, rowSelected: boolean): string | undefined {
-    if (!isDatetimeIanaRecordMode(col)) return undefined;
-    if (rowSelected) {
-      return 'rounded-md border border-amber-300/70 bg-amber-200/70 p-2 transition-colors group-hover:bg-amber-300/75 dark:border-amber-700 dark:bg-amber-800 dark:group-hover:bg-amber-700';
-    }
-    return 'rounded-md border border-amber-200/70 bg-amber-50/70 p-2 transition-colors group-hover:bg-amber-100/80 dark:border-amber-900 dark:bg-amber-950 dark:group-hover:bg-amber-900';
-  }
-
-  /**
-   * Checkbox / actions (dark): base `900`, hover `800`, selected `700`, selected+hover `600` — same ramp as sticky uuid/code body.
-   */
-  function entityListGrayChromeCellClass(rowSelected: boolean): string {
-    return rowSelected
-      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
-      : 'bg-neutral-100 dark:bg-neutral-900 transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
-  }
-
-  /**
-   * Destructive background for deleted rows (light red): base `100`, hover `200`, selected `300`, selected+hover `400`.
-   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
-   */
-  function entityListDestructiveChromeCellClass(rowSelected: boolean): string {
-    return rowSelected
-      ? 'bg-rose-300! dark:bg-rose-700! transition-colors group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!'
-      : 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
-  }
-
-  /**
-   * Sticky uuid/code body overlay (dark, not IANA): base from `stickyCellClass`; hover `800`; selected `700` / `600`.
-   */
-  function entityListGrayBandStickyInteractionClass(rowSelected: boolean): string {
-    return rowSelected
-      ? 'bg-neutral-300! dark:bg-neutral-700! transition-colors group-hover/entity-row:bg-neutral-400! dark:group-hover/entity-row:bg-neutral-600!'
-      : 'transition-colors group-hover/entity-row:bg-neutral-200 dark:group-hover/entity-row:bg-neutral-800';
-  }
-
-  /**
-   * Destructive sticky uuid/code body overlay for deleted rows: base `200`, hover `300`, selected `400` / `500` (slightly darker than chrome).
-   * Dark: base `800`, hover `700`, selected `600` / `500`.
-   */
-  function entityListDestructiveBandStickyInteractionClass(rowSelected: boolean): string {
-    return rowSelected
-      ? 'bg-rose-400! dark:bg-rose-600! transition-colors group-hover/entity-row:bg-rose-500! dark:group-hover/entity-row:bg-rose-500!'
-      : 'bg-rose-200! dark:bg-rose-800! transition-colors group-hover/entity-row:bg-rose-300! dark:group-hover/entity-row:bg-rose-700!';
-  }
-
-  /**
-   * Normal (non-sticky) scroll cells — **not** IANA record (IANA uses its own ramp). Light unchanged.
-   * Dark: rest `950`, hover `900`, selected `900`, selected+hover `800` (sticky selected resta `700`/`600`).
-   */
-  function entityListDefaultScrollInteractionClass(rowSelected: boolean): string | undefined {
-    if (rowSelected) {
-      return 'transition-colors bg-neutral-100! dark:bg-neutral-900! group-hover/entity-row:bg-neutral-200! dark:group-hover/entity-row:bg-neutral-800!';
-    }
-    return 'dark:bg-neutral-950! transition-colors group-hover/entity-row:bg-neutral-50! dark:group-hover/entity-row:bg-neutral-900!';
-  }
-
-  /**
-   * Destructive scroll cells for deleted rows: base `100`, hover `200`, selected `300`, selected+hover `400`.
-   * Dark: base `900`, hover `800`, selected `700`, selected+hover `600`.
-   */
-  function entityListDestructiveScrollInteractionClass(rowSelected: boolean): string | undefined {
-    if (rowSelected) {
-      return 'transition-colors bg-rose-300! dark:bg-rose-700! group-hover/entity-row:bg-rose-400! dark:group-hover/entity-row:bg-rose-600!';
-    }
-    return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
-  }
-
   const isRowDeleted = (row: TRow): boolean => isRowDeletedUtil(row);
 
-  /** Row dropdown menu state: which row has the menu open */
   let dropdownMenuRow = $state<TRow | null>(null);
   /** Preview panel dropdown menu state */
   let previewDropdownOpen = $state(false);
@@ -1498,75 +1350,6 @@
   }
 
   /** Visual tokens for list search (aligned with backend customers wildcard rules). */
-  type SearchSyntaxSeg =
-    | { kind: 'plain'; text: string }
-    | { kind: 'wAny'; text: string }
-    | { kind: 'wOne'; text: string }
-    | { kind: 'litStar' | 'litQ'; text: string }
-    | { kind: 'sym'; text: string }
-    | { kind: 'bsLit'; text: string };
-
-  function searchSyntaxSegments(raw: string): SearchSyntaxSeg[] {
-    const out: SearchSyntaxSeg[] = [];
-    let buf = '';
-    const flush = () => {
-      if (buf) {
-        out.push({ kind: 'plain', text: buf });
-        buf = '';
-      }
-    };
-    for (let i = 0; i < raw.length; i++) {
-      const ch = raw[i]!;
-      const next = raw[i + 1];
-      if (ch === '\\' && next === '*') {
-        flush();
-        out.push({ kind: 'wAny', text: '\\*' });
-        i++;
-      } else if (ch === '\\' && next === '?') {
-        flush();
-        out.push({ kind: 'wOne', text: '\\?' });
-        i++;
-      } else if (ch === '\\' && next !== undefined) {
-        flush();
-        out.push({ kind: 'bsLit', text: ch + next });
-        i++;
-      } else if (ch === '*') {
-        flush();
-        out.push({ kind: 'litStar', text: '*' });
-      } else if (ch === '?') {
-        flush();
-        out.push({ kind: 'litQ', text: '?' });
-      } else if (ch === '%' || ch === '_') {
-        flush();
-        out.push({ kind: 'sym', text: ch });
-      } else {
-        buf += ch;
-      }
-    }
-    flush();
-    return out;
-  }
-
-  const searchSyntaxParts = $derived(searchSyntaxSegments(search));
-
-  function searchSyntaxSpanClass(seg: SearchSyntaxSeg): string {
-    switch (seg.kind) {
-      case 'plain':
-        return 'text-foreground';
-      case 'wAny':
-        return 'font-semibold text-neutral-600 dark:text-neutral-400';
-      case 'wOne':
-        return 'font-semibold text-violet-600 dark:text-violet-400';
-      case 'litStar':
-      case 'litQ':
-        return 'font-medium text-amber-700/90 dark:text-amber-400/90 bg-amber-50 dark:bg-amber-950/30 rounded px-0.5';
-      case 'sym':
-        return 'font-medium text-emerald-700/90 dark:text-emerald-400/90';
-      case 'bsLit':
-        return 'text-muted-foreground';
-    }
-  }
-
   function toggleColumnKey(key: string) {
     const col = columns.find((c) => c.key === key);
     if (col?.hideable === false) return;
@@ -1964,7 +1747,7 @@
                       <span class="text-sm font-medium break-words">{parts.text}</span>
                     {/if}
                   {:else}
-                    <span class="text-sm font-medium break-words">{getAuditFieldValue(row, col)}</span>
+                    <span class="text-sm font-medium break-words">{getAuditFieldValue(row, col, $uiLang, formatListCellValue)}</span>
                   {/if}
                 </div>
               {/each}
@@ -1986,14 +1769,14 @@
       <div
         class={cn(
           'min-w-0 text-sm',
-          (!isCardFieldEmpty(r, col)
-            ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected)
+          (!isCardFieldEmpty(r, col, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)
+            ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected, datetimeIanaModeByKey)
             : undefined) ?? (rowDeleted
               ? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected, true)
               : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
         )}
       >
-        {#if isCardFieldEmpty(r, col)}
+        {#if isCardFieldEmpty(r, col, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)}
           <Tooltip.Root>
             <Tooltip.Trigger>
               {#snippet child({ props })}
@@ -2060,7 +1843,7 @@
         $uiLang,
         mode
       )}
-      {#if isDatetimeIanaRecordMode(col) && parts.iana}
+      {#if isDatetimeIanaRecordMode(col, datetimeIanaModeByKey) && parts.iana}
         <div class="flex min-w-0 flex-col gap-1">
           <span class="min-w-0 truncate">{parts.text}</span>
           <Badge
@@ -2850,7 +2633,7 @@
                           ? 'relative z-10 select-none opacity-60'
                           : 'relative z-10 cursor-pointer select-none'
                         : 'relative z-10'),
-                    datetimeIanaHeadHighlightClass(col)
+                    datetimeIanaHeadHighlightClass(col, datetimeIanaModeByKey)
                   )}
                   onclick={(e) => {
                     const el = e.target as HTMLElement | null;
@@ -3066,8 +2849,8 @@
                         style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected),
-                          isDatetimeIanaRecordMode(col)
+                          datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
+                          isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
                             ? undefined
                             : (rowDeleted
                               ? entityListDestructiveBandStickyInteractionClass(rowSelected)
@@ -3088,8 +2871,8 @@
                         style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
                         class={cn(
                           stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected),
-                          isDatetimeIanaRecordMode(col)
+                          datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
+                          isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
                             ? undefined
                             : (rowDeleted
                               ? entityListDestructiveBandStickyInteractionClass(rowSelected)
@@ -3108,8 +2891,8 @@
                     <Table.Cell
                       class={cn(
                         stickyCellClass(col.key, colIdx, false),
-                        datetimeIanaCellHighlightClass(col, rowSelected),
-                        isDatetimeIanaRecordMode(col)
+                        datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
+                        isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
                           ? undefined
                           : (rowDeleted
                             ? entityListDestructiveScrollInteractionClass(rowSelected)
