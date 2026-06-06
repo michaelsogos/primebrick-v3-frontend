@@ -31,6 +31,7 @@
   import TableBody from './components/TableBody.svelte';
   import TableFooter from './components/TableFooter.svelte';
   import CardViewRenderer from './components/CardViewRenderer.svelte';
+  import PreviewPanelWrapper from './components/PreviewPanelWrapper.svelte';
 
   import {
     useStickyColumns,
@@ -274,6 +275,32 @@
   // Utility functions moved to utils.ts
   const rowKey = (row: TRow): string => getRowKey(row, uid);
 
+  // Toggle functions - must be defined before effects that use them
+  function toggleSearchKey(key: string) {
+    if (!searchInKeys || searchInKeys.length === 0) {
+      onSearchInKeysChange([key]);
+      return;
+    }
+    if (searchInKeys.includes(key)) {
+      const next = searchInKeys.filter((k) => k !== key);
+      onSearchInKeysChange(next.length ? next : null);
+      return;
+    }
+    onSearchInKeysChange([...searchInKeys, key]);
+  }
+
+  function toggleColumnKey(key: string) {
+    const col = columns.find((c) => c.key === key);
+    if (col?.hideable === false) return;
+
+    if (visibleKeys.includes(key)) {
+      const next = visibleKeys.filter((k) => k !== key);
+      if (next.length > 0) onVisibleKeysChange(next);
+      return;
+    }
+    onVisibleKeysChange([...visibleKeys, key]);
+  }
+
   type ColumnOrderState = {
     sticky?: string[];
     data?: string[];
@@ -281,6 +308,66 @@
   };
 
   const orderState = $state<ColumnOrderState>({});
+
+  const allColumns = $derived.by(() => {
+    let all: MetaColumn[];
+    if (stickyColumns || auditingColumns) {
+      all = [
+        ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
+        ...applyKeyOrder(dataColumns ?? [], orderState.data),
+        ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
+      ];
+    } else {
+      all = columns;
+    }
+    // Deduplicate by key, preserving order.
+    const seen = new Set<string>();
+    const dedup: MetaColumn[] = [];
+    for (const col of all) {
+      if (!seen.has(col.key)) {
+        seen.add(col.key);
+        dedup.push(col);
+      }
+    }
+    return dedup;
+  });
+  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
+  const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
+  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
+  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
+  const stickyColumnsGroup = $derived(
+    applyKeyOrder(
+      stickyColumns ??
+      (() => {
+        // Back-compat: use sticky flag from column metadata
+        return allColumns.filter((c) => c.sticky === true);
+      })(),
+      orderState.sticky
+    )
+  );
+
+  const auditingKeySet = new Set([
+    'created_at',
+    'created_by',
+    'updated_at',
+    'updated_by',
+    'version',
+    'deleted_at',
+    'deleted_by'
+  ]);
+  const auditingColumnsGroup = $derived(
+    applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+  );
+  const nonAuditingColumns = $derived(
+    applyKeyOrder(
+      dataColumns ??
+        allColumns.filter(
+          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
+        ),
+      orderState.data
+    )
+  );
 
   type ViewMode = 'table' | 'cards' | 'cards_list';
   const viewModeStorageKey = $derived(
@@ -374,29 +461,7 @@
       // ignore quota / blocked storage
     }
   }
-
-
-  function resetColumnsAndSorting() {
-    onResetColumnVisibility('table');
-    // Reset column visual order (sticky/data/auditing) to default meta order.
-    orderState.sticky = undefined;
-    orderState.data = undefined;
-    orderState.auditing = undefined;
-    writeOrderState({});
-    // Reset sorting to default
-    if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
-    else onSortChange(null, defaultSortDir);
-  }
-
-  function resetFilters() {
-    onFilterValuesChange?.({});
-    onAdvancedFiltersChange?.([], 'AND');
-    onResetFilters?.();
-    filterPersistence.writeFilterValues({});
-    filterPersistence.writeAdvancedFilters([]);
-  }
-
-  function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
+    function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
     if (!keys || keys.length === 0) return cols;
     const byKey = new Map(cols.map((c) => [c.key, c] as const));
     const out: MetaColumn[] = [];
@@ -426,20 +491,6 @@
     return next;
   }
 
-  function reorderGroup(group: 'data' | 'auditing', fromKey: string, toKey: string) {
-    const base =
-      group === 'data'
-        ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
-        : (auditingColumnsGroup ?? []).map((c) => c.key);
-    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
-    const nextKeys = moveKeyWithin(cur, fromKey, toKey);
-    const nextState: ColumnOrderState =
-      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
-    orderState.data = nextState.data;
-    orderState.auditing = nextState.auditing;
-    writeOrderState(nextState);
-  }
-
   onMount(() => {
     const loaded = readOrderState();
     orderState.sticky = loaded.sticky;
@@ -456,26 +507,6 @@
       if (storedDeletionFilter !== (deletionFilterModeProp ?? 'non_deleted')) {
         onDeletionFilterModeChange?.(storedDeletionFilter);
       }
-    }
-
-    // Initialize filters from sessionStorage. Only fire the callback when the stored
-    // values actually differ from the current prop, to avoid an unnecessary refresh
-    // when the parent already holds the same values (e.g. after a page refresh where
-    // bootstrap already loaded rows with the restored filters).
-    const storedFilterValues = filterPersistence.readFilterValues();
-    if (
-      Object.keys(storedFilterValues).length > 0 &&
-      JSON.stringify(storedFilterValues) !== JSON.stringify(filterValues ?? {})
-    ) {
-      onFilterValuesChange?.(storedFilterValues);
-    }
-
-    const storedAdvancedFilters = filterPersistence.readAdvancedFilters();
-    if (
-      storedAdvancedFilters.length > 0 &&
-      JSON.stringify(storedAdvancedFilters) !== JSON.stringify(advancedFilters ?? [])
-    ) {
-      onAdvancedFiltersChange?.(storedAdvancedFilters, 'AND');
     }
   });
 
@@ -498,12 +529,10 @@
 
   $effect(() => {
     void filterValues;
-    filterPersistence.writeFilterValues(filterValues ?? {});
   });
 
   $effect(() => {
     void advancedFilters;
-    filterPersistence.writeAdvancedFilters(advancedFilters ?? []);
   });
 
 
@@ -643,87 +672,8 @@
     const key = `pb-preview-panel:${entity ?? 'default'}`;
     return sessionStorage.getItem(key);
   })();
-  const _sessionState = _sessionRaw ? JSON.parse(_sessionRaw) : null;
-
-  // Preview panel state is now managed by previewPanel composable
-  let navigatingToNextPage = $state(false);
-  let navigatingToPrevPage = $state(false);
-  let previewPanelWidth = $state<number>(_sessionState?.width ?? 30); // percentage
-  let isResizing = $state(false);
-  let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
-
-  $effect(() => {
-    if (typeof sessionStorage !== 'undefined') {
-      // While restoring, preserve the key from session until previewRow is actually set
-      const rowKey_ = previewPanel.previewRow
-        ? String((previewPanel.previewRow as Record<string, unknown>)[uid])
-        : (_previewRestoredKey ?? null);
-      const key = `pb-preview-panel:${entity ?? 'default'}`;
-      sessionStorage.setItem(key, JSON.stringify({ open: previewPanel.previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
-    }
-  });
-
-  $effect(() => {
-    if (_previewRestoredKey && previewPanel.previewPanelOpen && !rowsLoading && rows.length > 0) {
-      const idx = rows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
-      if (idx !== -1) {
-        previewPanel.openPreview(rows[idx]);
-        _previewRestoredKey = null;
-      }
-    }
-  });
-
-  /** Preview panel resize handlers */
-  let resizeStartX = $state(0);
-  let resizeStartWidth = $state(0);
-
-  function startResize(e: MouseEvent) {
-    isResizing = true;
-    resizeStartX = e.clientX;
-    resizeStartWidth = previewPanelWidth;
-    e.preventDefault();
-  }
-
-  function handleResize(e: MouseEvent) {
-    if (!isResizing) return;
-    const container = e.currentTarget as HTMLElement;
-    const containerRect = container.getBoundingClientRect();
-    const deltaX = e.clientX - resizeStartX;
-    const deltaPercent = (deltaX / containerRect.width) * 100;
-    previewPanelWidth = Math.max(15, Math.min(70, resizeStartWidth - deltaPercent));
-  }
-
-  function stopResize() {
-    isResizing = false;
-  }
-
-  async function loadVersionHistory(row: TRow) {
-    const rowUuid = String((row as Record<string, unknown>)[uid]);
-    openSheet('entity.versionHistory', {
-      entity,
-      rowUuid,
-      columns: columns
-    });
-  }
 
 
-  // Reset previewRowIndex when page changes
-  $effect(() => {
-    if (previewPanel.previewPanelOpen && viewRows.length > 0) {
-      if (navigatingToNextPage) {
-        // Going to next page - reset to first record
-        previewPanel.openPreview(viewRows[0]);
-        navigatingToNextPage = false;
-      } else if (navigatingToPrevPage) {
-        // Going to previous page - go to last record
-        previewPanel.openPreview(viewRows[viewRows.length - 1]);
-        navigatingToPrevPage = false;
-      } else if (previewPanel.previewRowIndex >= viewRows.length) {
-        // If previewRowIndex is out of bounds after page change, reset it
-        previewPanel.openPreview(viewRows[0]);
-      }
-    }
-  });
 
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
@@ -748,30 +698,8 @@
 
   /** Navigate preview records */
   function navigatePreview(direction: number) {
-    const currentPreviewIndex = previewPanel.previewRowIndex;
-    const newIndex = currentPreviewIndex + direction;
-    
-    if (newIndex >= 0 && newIndex < viewRows.length) {
-      previewPanel.navigatePreview(direction > 0 ? 'next' : 'prev');
-    } else if (newIndex >= viewRows.length && footerPage < footerTotalPages) {
-      // Trigger next page when reaching end of current page
-      navigatingToNextPage = true;
-      if (footerUsesClientPaging) {
-        clientSelectedPage++;
-      } else {
-        onPageChange(page + 1);
-      }
-    } else if (newIndex < 0 && footerPage > 1) {
-      // Trigger previous page when at start of current page
-      navigatingToPrevPage = true;
-      if (footerUsesClientPaging) {
-        clientSelectedPage--;
-      } else {
-        onPageChange(page - 1);
-      }
-    }
+    previewPanel.navigatePreview(direction > 0 ? "next" : "prev");
   }
-
   /** Scroll focused row into view when index changes */
   $effect(() => {
     if (previewPanel.previewRowIndex === null) return;
@@ -809,14 +737,6 @@
         // focusedRowIndex is managed by previewPanel composable
       } else if (previewPanel.focusedRowIndex < viewRows.length - 1) {
         // focusedRowIndex is managed by previewPanel composable
-      } else if (previewPanel.focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
-        // Trigger next page when reaching end of current page
-        navigatingToNextPage = true;
-        if (footerUsesClientPaging) {
-          clientSelectedPage++;
-        } else {
-          onPageChange(page + 1);
-        }
       }
       if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
         previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
@@ -827,14 +747,6 @@
         // focusedRowIndex is managed by previewPanel composable
       } else if (previewPanel.focusedRowIndex > 0) {
         // focusedRowIndex is managed by previewPanel composable
-      } else if (previewPanel.focusedRowIndex === 0 && footerPage > 1) {
-        // Trigger previous page when at start of current page
-        navigatingToPrevPage = true;
-        if (footerUsesClientPaging) {
-          clientSelectedPage--;
-        } else {
-          onPageChange(page - 1);
-        }
       }
       if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
         previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
@@ -1018,43 +930,6 @@
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  const allColumns = $derived((() => {
-    let all: MetaColumn[];
-    if (stickyColumns || auditingColumns) {
-      all = [
-        ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
-        ...applyKeyOrder(dataColumns ?? [], orderState.data),
-        ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
-      ];
-    } else {
-      all = columns;
-    }
-    // Deduplicate by key, preserving order.
-    const seen = new Set<string>();
-    const dedup: MetaColumn[] = [];
-    for (const col of all) {
-      if (!seen.has(col.key)) {
-        seen.add(col.key);
-        dedup.push(col);
-      }
-    }
-    return dedup;
-  })());
-  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
-  const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
-  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
-  const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
-  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
-  const stickyColumnsGroup = $derived(
-    applyKeyOrder(
-      stickyColumns ??
-      (() => {
-        // Back-compat: use sticky flag from column metadata
-        return allColumns.filter((c) => c.sticky === true);
-      })(),
-      orderState.sticky
-    )
-  );
 
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -1235,47 +1110,6 @@
   });
 
   const dialogs = useDialogs();
-
-  function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
-    const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
-    const isSticky = visibleStickyCols.some(c => c.key === key);
-    if (!isSticky) return undefined;
-
-    /**
-     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
-     * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
-     */
-    const baseBg = isHeader
-      ? 'bg-neutral-200 dark:bg-neutral-800'
-      : 'bg-neutral-100 dark:bg-neutral-900';
-    const z = isHeader ? 'z-50' : 'z-40';
-    // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
-    // when sticky columns overlap scrolling content.
-    return `sticky ${z} ${baseBg} bg-clip-border`.trim();
-  }
-
-  const auditingKeySet = new Set([
-    'created_at',
-    'created_by',
-    'updated_at',
-    'updated_by',
-    'version',
-    'deleted_at',
-    'deleted_by'
-  ]);
-  const auditingColumnsGroup = $derived(
-    applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
-  );
-  const nonAuditingColumns = $derived(
-    applyKeyOrder(
-      dataColumns ??
-        allColumns.filter(
-          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
-        ),
-      orderState.data
-    )
-  );
-  /** Merge current server page rows into a stable map so "selected only" can span pages without refetching. */
   $effect(() => {
     void rows;
     void selectedKeys;
@@ -1294,44 +1128,6 @@
     }
     selectedRowByKey = next;
   });
-
-  function toggleSearchKey(key: string) {
-    if (!searchInKeys || searchInKeys.length === 0) {
-      onSearchInKeysChange([key]);
-      return;
-    }
-    if (searchInKeys.includes(key)) {
-      const next = searchInKeys.filter((k) => k !== key);
-      onSearchInKeysChange(next.length ? next : null);
-      return;
-    }
-    onSearchInKeysChange([...searchInKeys, key]);
-  }
-
-  /** Visual tokens for list search (aligned with backend customers wildcard rules). */
-  function toggleColumnKey(key: string) {
-    const col = columns.find((c) => c.key === key);
-    if (col?.hideable === false) return;
-
-    if (visibleKeys.includes(key)) {
-      const next = visibleKeys.filter((k) => k !== key);
-      if (next.length > 0) onVisibleKeysChange(next);
-      return;
-    }
-    onVisibleKeysChange([...visibleKeys, key]);
-  }
-
-  function handleSortClick(col: MetaColumn) {
-    if (rowsLoading) return;
-    if (col.sortable === false) return;
-    if (sortKey !== col.key) {
-      onSortChange(col.key, 'asc');
-    } else if (sortDir === 'asc') {
-      onSortChange(col.key, 'desc');
-    } else {
-      onSortChange(null, defaultSortDir);
-    }
-  }
 
   function toggleRowSelect(key: string) {
     if (selectedKeys.includes(key)) {
@@ -1387,9 +1183,67 @@
     for (const k of pageKeys) next.add(k);
     onSelectedKeysChange([...next]);
   }
+  function resetColumnsAndSorting() {
+    onResetColumnVisibility('table');
+    // Reset column visual order (sticky/data/auditing) to default meta order.
+    orderState.sticky = undefined;
+    orderState.data = undefined;
+    orderState.auditing = undefined;
+    writeOrderState({});
+    // Reset sorting to default
+    if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
+    else onSortChange(null, defaultSortDir);
+  }
 
+  function resetFilters() {
+    onFilterValuesChange?.({});
+    onAdvancedFiltersChange?.([], 'AND');
+    onResetFilters?.();
+  }
 
+  function reorderGroup(group: 'data' | 'auditing', fromKey: string, toKey: string) {
+    const base =
+      group === 'data'
+        ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
+        : (auditingColumnsGroup ?? []).map((c) => c.key);
+    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
+    const nextKeys = moveKeyWithin(cur, fromKey, toKey);
+    const nextState: ColumnOrderState =
+      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
+    orderState.data = nextState.data;
+    orderState.auditing = nextState.auditing;
+    writeOrderState(nextState);
+  }
 
+  function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
+    const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
+    const isSticky = visibleStickyCols.some(c => c.key === key);
+    if (!isSticky) return undefined;
+
+    /**
+     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+     * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
+     */
+    const baseBg = isHeader
+      ? 'bg-neutral-200 dark:bg-neutral-800'
+      : 'bg-neutral-100 dark:bg-neutral-900';
+    const z = isHeader ? 'z-50' : 'z-40';
+    // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
+    // when sticky columns overlap scrolling content.
+    return `sticky ${z} ${baseBg} bg-clip-border`.trim();
+  }
+
+  function handleSortClick(col: MetaColumn) {
+    if (rowsLoading) return;
+    if (col.sortable === false) return;
+    if (sortKey !== col.key) {
+      onSortChange(col.key, 'asc');
+    } else if (sortDir === 'asc') {
+      onSortChange(col.key, 'desc');
+    } else {
+      onSortChange(null, defaultSortDir);
+    }
+  }
   const loadingText = $derived(loadingMessage ?? $t('common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
 
@@ -1609,6 +1463,7 @@
           datetimeIanaRenderTick={datetimeIanaRenderTick}
           cell={cell}
           stickyColumnsGroup={stickyColumnsGroup}
+          onLoadVersionHistory={() => {}}
           error={error}
           errorView={errorView}
           rowsLoading={rowsLoading}
@@ -1635,7 +1490,7 @@
           onOpenRowDropdown={openRowDropdown}
           onCloseRowDropdown={closeRowDropdown}
           onEditRow={handleEditRow}
-          onLoadVersionHistory={loadVersionHistory}
+
           onDuplicateRow={(r) => rowActionsComposable.handleDuplicateRow(r)}
           onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
           onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
@@ -1643,7 +1498,7 @@
         />
       {:else}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel" onmousemove={handleResize} onmouseup={stopResize} onmouseleave={stopResize}>
+        <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
           <div class="flex-1 min-w-0 overflow-hidden">
             <Table.Root
           bind:ref={tableRef}
@@ -1825,6 +1680,7 @@
           actionsEnabled={actionsEnabled}
           rowChromeH={rowChromeH}
           stickyColumnsGroup={stickyColumnsGroup}
+          onLoadVersionHistory={() => {}}
           stickyColumnsState={stickyColumnsState}
           datetimeIanaModeByKey={datetimeIanaModeByKey}
           cell={cell}
@@ -1838,7 +1694,7 @@
           onOpenRowDropdown={openRowDropdown}
           onCloseRowDropdown={closeRowDropdown}
           onEditRow={handleEditRow}
-          onLoadVersionHistory={loadVersionHistory}
+
           onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
           onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
           onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
@@ -1847,55 +1703,39 @@
       </Table.Root>
           </div>
 
-          {#if previewPanel.previewPanelOpen}
-            <!-- Resize handle between table and panel -->
-            <button
-              type="button"
-              class="relative h-full w-2 cursor-ew-resize hover:bg-primary/30 z-20 border-l-2 border-transparent hover:border-primary transition-colors flex items-center justify-center"
-              onmousedown={startResize}
-              aria-label="Resize panel"
-            >
-              <div class="w-1 h-8 bg-border rounded-full"></div>
-            </button>
-          {/if}
-
-          <div
-            class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
-            style="width: {previewPanel.previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanel.previewPanelOpen ? '220px' : '0'}"
-          >
-            <div class="h-full w-full overflow-auto">
-              {#if previewPanel.previewPanelOpen}
-                <PreviewPanel
-                  row={previewPanel.previewRow!}
-                  previewEditMode={previewPanel.previewEditMode}
-                  previewRowIndex={previewPanel.previewRowIndex}
-                  previewDropdownOpen={previewDropdownOpen}
-                  totalRecords={footerRangeTotal}
-                  currentPage={footerPage}
-                  pageSize={pageSize}
-                  onPreviewEditModeChange={(mode: boolean) => previewPanel.previewEditMode = mode}
-                  onNavigatePreview={navigatePreview}
-                  onPreviewDropdownOpenChange={(open: boolean) => previewDropdownOpen = open}
-                  onEditRow={handleEditRow}
-                  onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
-                  onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
-                  onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
-                  onLoadVersionHistory={loadVersionHistory}
-                  onClosePreview={() => previewPanel.closePreview()}
-      
-                  columns={columns}
-                  stickyColumns={stickyColumns}
-                  dataColumns={dataColumns}
-                  auditingColumns={auditingColumns}
-                  datetimeIanaModeByKey={datetimeIanaModeByKey}
-                  entityRowActions={entityRowActions}
-                  isRowDeleted={isRowDeleted}
-                  rowSelectionEnabled={rowSelectionEnabled}
-                  rowSelected={selectedKeys.includes(rowKey(previewPanel.previewRow!))}
-                />
-              {/if}
-            </div>
-          </div>
+          <PreviewPanelWrapper
+            {previewPanel}
+            {rows}
+            {viewRows}
+            {uid}
+            {pageSize}
+            {page}
+            {onPageChange}
+            {entity}
+            {columns}
+            {stickyColumns}
+            {dataColumns}
+            {auditingColumns}
+            {rowActionsEnabled}
+            {rowActions}
+            {entityRowActions}
+            {datetimeIanaModeByKey}
+            {isRowDeleted}
+            {rowKey}
+            {rowSelectionEnabled}
+            selectedKeys={selectedKeys as Set<string> | string[]}
+            footerRangeTotal={footerRangeTotal}
+            footerPage={footerPage}
+            {previewDropdownOpen}
+            navigatePreview={navigatePreview}
+            onEditRow={handleEditRow}
+            onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
+            onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
+            onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
+            onPreviewDropdownOpenChange={(open: boolean) => previewDropdownOpen = open}
+            {rowsLoading}
+            {cell}
+          />
         </div>
     {/if}
     {/if}
