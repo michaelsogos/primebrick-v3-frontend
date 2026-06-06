@@ -32,6 +32,7 @@
   import TableFooter from './components/TableFooter.svelte';
   import CardViewRenderer from './components/CardViewRenderer.svelte';
   import PreviewPanelWrapper from './components/PreviewPanelWrapper.svelte';
+  import BulkActionsToolbar from './components/BulkActionsToolbar.svelte';
 
   import {
     useStickyColumns,
@@ -1342,93 +1343,25 @@
     onCreateAction={onCreateAction}
   />
 
-  <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-    <Button
-      variant="outline"
-      size="xs"
-      class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
-      onclick={toggleToolbarMode}
-    >
-      {#if toolbarModeState.toolbarMode === 'filters'}
-        <ListCheck class="size-3.5" />
-        {$t('entities.list.bulkActions.toggleToBulk')}
-      {:else}
-        <Funnel class="size-3.5" />
-        {$t('entities.list.bulkActions.toggleToFilters')}
-      {/if}
-    </Button>
-    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
-
-    {#if toolbarModeState.toolbarMode === 'filters'}
-      <div in:fly={{ y: 20, duration: 200 }}>
-        <FilterBar
-          hasAppliedFilters={toolbarModeState.hasAppliedFilters}
-          filterValues={filterValues}
-          advancedFilters={advancedFilters}
-          filterableColumns={filterableColumns}
-          onResetFilters={resetFilters}
-          onFilterValuesChange={(values: Record<string, unknown>) => onFilterValuesChange?.(values)}
-          onAdvancedFiltersChange={(filters: AdvancedFilter[]) => onAdvancedFiltersChange?.(filters, 'AND')}
-        />
-      </div>
-    {:else}
-      <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={handleBulkExport}
-        >
-          <Download class="size-3.5" />
-          {$t('entities.list.bulkActions.export')}
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={handleHtmlExport}
-        >
-          <Download class="size-3.5" />
-          {$t('entities.list.bulkActions.exportHtml')}
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
-          onclick={bulkActions.handleBulkDuplicate}
-          disabled={selectedKeys.length < 2}
-        >
-          <Copy class="size-3.5" />
-          {$t('entities.list.bulkActions.duplicate')}
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
-          onclick={bulkActions.handleBulkDelete}
-          disabled={selectedKeys.length < 2 || hasDeletedSelected}
-        >
-          <Trash2 class="size-3.5" />
-          {$t('entities.list.bulkActions.delete')}
-        </Button>
-        {#if hasDeletedSelected}
-          <Button
-            variant="soft"
-            size="xs"
-            class="h-6 text-xs bg-warning/10 text-warning hover:bg-warning/20 hover:border-warning/50 border-warning/20"
-            onclick={bulkActions.handleBulkRestore}
-            disabled={!allSelectedDeleted}
-          >
-            <span class="relative flex items-center justify-center">
-              <Trash2 class="size-3.5 text-warning/70" />
-              <ArrowUpFromLine class="absolute -bottom-[1px] size-2.5 text-warning/70" />
-            </span>
-            {$t('entities.list.bulkActions.restore')}
-          </Button>
-        {/if}
-      </div>
-    {/if}
-  </div>
+  <BulkActionsToolbar
+    toolbarMode={toolbarModeState.toolbarMode}
+    hasAppliedFilters={toolbarModeState.hasAppliedFilters}
+    filterValues={filterValues}
+    advancedFilters={advancedFilters}
+    selectedKeys={selectedKeys}
+    hasDeletedSelected={hasDeletedSelected}
+    allSelectedDeleted={allSelectedDeleted}
+    filterableColumns={filterableColumns}
+    onResetFilters={resetFilters}
+    onFilterValuesChange={(values: Record<string, unknown>) => onFilterValuesChange?.(values)}
+    onAdvancedFiltersChange={(filters: AdvancedFilter[]) => onAdvancedFiltersChange?.(filters, 'AND')}
+    onToggleToolbarMode={toggleToolbarMode}
+    onBulkExport={handleBulkExport}
+    onHtmlExport={handleHtmlExport}
+    onBulkDuplicate={bulkActions.handleBulkDuplicate}
+    onBulkDelete={bulkActions.handleBulkDelete}
+    onBulkRestore={bulkActions.handleBulkRestore}
+  />
 
   <div class="min-h-0 flex-1 overflow-hidden">
     {#if metaLoading}
