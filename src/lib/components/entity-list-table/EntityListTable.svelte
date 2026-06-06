@@ -30,6 +30,7 @@
   import { Pagination } from './pagination';
   import TableBody from './components/TableBody.svelte';
   import TableFooter from './components/TableFooter.svelte';
+  import CardViewRenderer from './components/CardViewRenderer.svelte';
 
   import {
     useStickyColumns,
@@ -64,6 +65,7 @@
     entityListDefaultScrollInteractionClass,
     entityListDestructiveScrollInteractionClass
   } from './utils/cell-styling';
+  import { stickyCardFieldChromeClass } from './utils/card-styling';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from './utils/cell-formatting';
   import XIcon from '@lucide/svelte/icons/x';
   import {
@@ -1054,23 +1056,6 @@
     )
   );
 
-  /** Card view: sticky uuid/code-style fields — dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
-  function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean, destructive: boolean = false): string | undefined {
-    const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
-    if (!stickyKeys.has(col.key)) return undefined;
-
-    const baseClass = 'rounded-md border p-2 transition-colors group-hover';
-    if (destructive) {
-      if (rowSelected) {
-        return `${baseClass} border-rose-300/80 bg-rose-300/85 group-hover:bg-rose-400/90 dark:border-rose-600 dark:bg-rose-700 dark:group-hover:bg-rose-600`;
-      }
-      return `${baseClass} border-rose-200/80 bg-rose-100/90 group-hover:bg-rose-200/90 dark:border-rose-900 dark:bg-rose-900 dark:group-hover:bg-rose-800`;
-    }
-    if (rowSelected) {
-      return `${baseClass} border-gray-300/80 bg-gray-200/85 group-hover:bg-gray-300/90 dark:border-neutral-600 dark:bg-neutral-700 dark:group-hover:bg-neutral-600`;
-    }
-    return `${baseClass} border-gray-200/80 bg-gray-100/90 group-hover:bg-gray-200/90 dark:border-neutral-800 dark:bg-neutral-900 dark:group-hover:bg-neutral-800`;
-  }
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
@@ -1439,54 +1424,6 @@
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
 
-{#snippet entityCardField(r: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
-    <div
-      class={cn(
-        'flex flex-col gap-0.5',
-        viewMode === 'cards_list' ? 'min-w-36 max-w-[24rem] shrink-0' : 'min-w-0'
-      )}
-    >
-      <div class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</div>
-      <div
-        class={cn(
-          'min-w-0 text-sm',
-          (!isCardFieldEmpty(r, col, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)
-            ? datetimeIanaCardFieldHighlightClass(col, rowSelectionEnabled && rowSelected, datetimeIanaModeByKey)
-            : undefined) ?? (rowDeleted
-              ? stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected, true)
-              : stickyCardFieldChromeClass(col, rowSelectionEnabled && rowSelected))
-        )}
-      >
-        {#if isCardFieldEmpty(r, col, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              {#snippet child({ props })}
-                <button
-                  type="button"
-                  {...props}
-                  data-pb-card-cta
-                  class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-                  aria-label={$t('entities.list.clear')}
-                >
-                  <Ban class="size-4" />
-                </button>
-              {/snippet}
-            </Tooltip.Trigger>
-            <Tooltip.Content>{$t('entities.list.emptyField')}</Tooltip.Content>
-          </Tooltip.Root>
-        {:else}
-          <TableCell
-            row={r}
-            column={col}
-
-            datetimeIanaModeByKey={datetimeIanaModeByKey}
-            datetimeIanaRenderTick={datetimeIanaRenderTick}
-          />
-        {/if}
-      </div>
-    </div>
-  {/snippet}
-
 
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1655,475 +1592,55 @@
       {/if}
     {:else}
       {#if viewMode !== 'table'}
-        <div class="h-full overflow-auto">
-          {#if error}
-            {#if errorView}
-              {@render errorView()}
-            {:else}
-              <div class="grid min-h-56 place-items-center">
-                <div class="relative flex flex-col items-center gap-2 text-center">
-                  <div class="pb-watermark-error">
-                    <CircleX class="size-20 text-destructive" />
-                  </div>
-                  <div class="text-sm font-medium text-muted-foreground">{error}</div>
-                </div>
-              </div>
-            {/if}
-          {:else if rowsLoading}
-            {#if rowsLoadingView}
-              {@render rowsLoadingView()}
-            {:else}
-              <div class="w-full">
-                <LoadingBar size="xs" />
-                <div class="grid min-h-56 place-items-center">
-                  <div class="relative flex flex-col items-center gap-2 text-center">
-                    <div class="pb-watermark-loading">
-                      <Hourglass class="size-20 text-info" />
-                    </div>
-                    <div class="text-sm font-medium text-muted-foreground">{loadingText}</div>
-                  </div>
-                </div>
-              </div>
-            {/if}
-          {:else if rows.length === 0}
-            {#if emptyView}
-              {@render emptyView()}
-            {:else}
-              <div class="grid min-h-56 place-items-center">
-                <div class="relative flex flex-col items-center gap-2 text-center">
-                  <div class="pb-watermark-empty">
-                    <TriangleAlert class="size-20 text-warning" />
-                  </div>
-                  <div class="text-sm font-medium text-muted-foreground">{emptyText}</div>
-                </div>
-              </div>
-            {/if}
-          {:else if viewRows.length === 0}
-            <div class="grid min-h-56 place-items-center">
-              <div class="relative flex flex-col items-center gap-2 text-center">
-                <div class="pb-watermark-empty">
-                  <TriangleAlert class="size-20 text-warning" />
-                </div>
-                <div class="text-sm font-medium text-muted-foreground">
-                  {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-                    {$t('entities.list.selectedRowsNotLoadedHint')}
-                  {:else}
-                    {$t('entities.list.noSelectedRowsInView')}
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {:else}
-            <div
-              class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur-sm supports-backdrop-filter:bg-background/70"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                {#if rowSelectionEnabled}
-                  <Checkbox
-                    class={checkboxInteractiveClass}
-                    checked={allOnPageSelected}
-                    indeterminate={headerIndeterminate}
-                    onCheckedChange={() => toggleAllOnPage()}
-                    aria-label={$t('entities.list.selectAll')}
-                  />
-                  <span class="text-xs font-medium text-muted-foreground">
-                    {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
-                  </span>
-                {/if}
-
-                <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
-
-                <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger>
-                    {#snippet child({ props })}
-                      <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
-                        {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
-                      </Button>
-                    {/snippet}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start">
-                    {#each sortableColumns as col (col.key)}
-                      <DropdownMenu.Item
-                        class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
-                        onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
-                      >
-                        {$t(col.labelKey)}
-                      </DropdownMenu.Item>
-                    {/each}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-
-                <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('entities.list.inOrder')}</span>
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger>
-                    {#snippet child({ props })}
-                      <Button variant="soft" size="xs" {...props} disabled={!effectiveSortKey}>
-                        {#if sortDir === 'asc'}
-                          <ArrowUpNarrowWide class="size-4" />
-                        {:else}
-                          <ArrowDownWideNarrow class="size-4" />
-                        {/if}
-                      </Button>
-                    {/snippet}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start">
-                    <DropdownMenu.Item
-                      class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
-                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
-                    >
-                      <span class="inline-flex items-center gap-2">
-                        <ArrowUpNarrowWide class="size-4" />
-                        {$t('entities.list.ascending')}
-                      </span>
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      class={dropdownMenuSelectedItemClass(sortDir === 'desc')}
-                      onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'desc')}
-                    >
-                      <span class="inline-flex items-center gap-2">
-                        <ArrowDownWideNarrow class="size-4" />
-                        {$t('entities.list.descending')}
-                      </span>
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-
-                {#each datetimeIanaToggleColumns as col (col.key)}
-                  <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
-                    <Switch
-                      checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
-                      disabled={rowsLoading}
-                      aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                        ? $t('entities.list.datetimeIana.hintBrowser')
-                        : $t('entities.list.datetimeIana.hintRecord')}
-                      title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                        ? $t('entities.list.datetimeIana.hintBrowser')
-                        : $t('entities.list.datetimeIana.hintRecord')}
-                      onCheckedChange={() => toggleDatetimeIana(col)}
-                    >
-                      {#snippet thumbIcons({ checked })}
-                        {#if checked}
-                          <MapPin class="size-3.5 opacity-95" />
-                        {:else}
-                          <Globe class="size-3.5 opacity-95" />
-                        {/if}
-                      {/snippet}
-                    </Switch>
-                  </div>
-                {/each}
-              </div>
-            </div>
-
-            <div class="p-3">
-              <div
-                class={cn(
-                  viewMode === 'cards_list'
-                    ? 'flex flex-col gap-3'
-                    : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                )}
-              >
-                {#each viewRows as r (rowKey(r))}
-                  {@const rk = rowKey(r)}
-                  {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
-                  {@const rowDeleted = isRowDeleted(r)}
-                  {@const rowFocused = previewPanel.focusedRowIndex !== null && viewRows[previewPanel.focusedRowIndex] === r}
-                  <div
-                    role="button"
-                    tabindex={rowSelectionEnabled ? 0 : -1}
-                    aria-disabled={!rowSelectionEnabled}
-                    data-state={rowSelected ? 'selected' : undefined}
-                    class={cn(
-                      'group rounded-md border bg-background p-3 shadow-sm transition-colors',
-                      viewMode === 'cards_list'
-                        ? 'flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4'
-                        : undefined,
-                      rowSelectionEnabled
-                        ? rowSelected
-                          ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                          : 'cursor-pointer hover:bg-accent/40'
-                        : undefined,
-                      rowSelected
-                        ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
-                        : undefined,
-                      rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
-                    )}
-                    onclick={(e) => {
-                      if (!rowSelectionEnabled) return;
-                      onEntityCardClick(rk, e);
-                    }}
-                    onkeydown={
-                      (e) => {
-                        if (!rowSelectionEnabled) return;
-                        if (e.key !== 'Enter' && e.key !== ' ') return;
-                        e.preventDefault();
-                        toggleRowSelect(rk);
-                      }
-                    }
-                  >
-                    {#if viewMode === 'cards_list'}
-                      <div
-                        class="flex w-full shrink-0 items-start justify-between gap-2 sm:w-auto sm:flex-col sm:items-stretch sm:gap-2"
-                      >
-                        {#if rowSelectionEnabled}
-                          <div
-                            class="shrink-0"
-                            data-pb-card-cta
-                            role="button"
-                            tabindex="-1"
-                            onclick={(e) => e.stopPropagation()}
-                            onkeydown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                            }}
-                          >
-                            <Checkbox
-                              class={checkboxInteractiveClass}
-                              checked={selectedKeys.includes(rk)}
-                              onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label={$t('entities.list.selectRow')}
-                            />
-                          </div>
-                        {/if}
-
-                        {#if actionsEnabled}
-                          <div
-                            class={cn('shrink-0', rowSelectionEnabled ? 'ml-auto sm:ml-0' : 'ml-auto')}
-                            data-pb-card-cta
-                            role="button"
-                            tabindex="-1"
-                            onclick={(e) => e.stopPropagation()}
-                            onkeydown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                            }}
-                          >
-                            {#if rowActions}
-                              {@render rowActions({ row: r })}
-                            {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
-                                <DropdownMenu.Trigger>
-                                  {#snippet child({ props })}
-                                    <Button 
-                                      {...props}
-                                      variant="ghost" 
-                                      size="icon-sm" 
-                                      aria-label={$t('entities.list.rowActions')} 
-                                      title={$t('entities.list.rowActions')}
-                                      onclick={(e) => {
-                                        e.stopPropagation();
-                                        openRowDropdown(r);
-                                      }}
-                                    >
-                                      <MoreVertical class="size-4" />
-                                    </Button>
-                                  {/snippet}
-                                </DropdownMenu.Trigger>
-                                <DropdownMenu.Content class="w-56" align="end">
-                                  {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
-                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                                    >
-                                      <div class="flex items-center gap-2">
-                                        <Pencil class="size-4 opacity-70" />
-                                        <span>{$t('common.edit')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
-                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                                    >
-                                      <div class="flex items-center gap-2">
-                                        <Copy class="size-4 opacity-70" />
-                                        <span>{$t('common.duplicate')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  <DropdownMenu.Item
-                                    onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
-                                  >
-                                    <div class="flex items-center gap-2">
-                                      <FileClock class="size-4 opacity-70" />
-                                      <span>{$t('common.versionHistory')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  {#if entityRowActions?.preview !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
-                                      <div class="flex items-center gap-2">
-                                        <Eye class="size-4 opacity-70" />
-                                        <span>{$t('entities.list.preview')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  {#if entityRowActions?.delete !== false}
-                                    <DropdownMenu.Separator />
-                                    {#if isRowDeleted(r)}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
-                                        <div class="flex items-center gap-2">
-                                          <span class="relative flex items-center justify-center">
-                                            <Trash2 class="size-4 text-warning/70" />
-                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                                          </span>
-                                          <span>{$t('common.restore')}</span>
-                                        </div>
-                                      </DropdownMenu.Item>
-                                    {:else}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
-                                        <div class="flex items-center gap-2">
-                                          <Trash2 class="size-4 text-destructive/70" />
-                                          <span>{$t('common.delete')}</span>
-                                        </div>
-                                      </DropdownMenu.Item>
-                                    {/if}
-                                  {/if}
-                                </DropdownMenu.Content>
-                              </DropdownMenu.Root>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-
-                      <div class="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-3">
-                        {#each shownColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
-                        {/each}
-                      </div>
-                    {:else}
-                      <div class="mb-2 flex items-start justify-between gap-2">
-                        {#if rowSelectionEnabled}
-                          <div
-                            class="shrink-0"
-                            data-pb-card-cta
-                            role="button"
-                            tabindex="-1"
-                            onclick={(e) => e.stopPropagation()}
-                            onkeydown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                            }}
-                          >
-                            <Checkbox
-                              class={checkboxInteractiveClass}
-                              checked={selectedKeys.includes(rk)}
-                              onCheckedChange={() => toggleRowSelect(rk)}
-                              aria-label={$t('entities.list.selectRow')}
-                            />
-                          </div>
-                        {/if}
-
-                        {#if actionsEnabled}
-                          <div
-                            class="ml-auto shrink-0"
-                            data-pb-card-cta
-                            role="button"
-                            tabindex="-1"
-                            onclick={(e) => e.stopPropagation()}
-                            onkeydown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                            }}
-                          >
-                            {#if rowActions}
-                              {@render rowActions({ row: r })}
-                            {:else}
-                              <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
-                                <DropdownMenu.Trigger>
-                                  {#snippet child({ props })}
-                                    <Button 
-                                      {...props}
-                                      variant="ghost" 
-                                      size="icon-sm" 
-                                      aria-label={$t('entities.list.rowActions')} 
-                                      title={$t('entities.list.rowActions')}
-                                      onclick={(e) => {
-                                        e.stopPropagation();
-                                        openRowDropdown(r);
-                                      }}
-                                    >
-                                      <MoreVertical class="size-4" />
-                                    </Button>
-                                  {/snippet}
-                                </DropdownMenu.Trigger>
-                                <DropdownMenu.Content class="w-56" align="end">
-                                  {#if entityRowActions?.edit !== false}
-                                    <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
-                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                                    >
-                                      <div class="flex items-center gap-2">
-                                        <Pencil class="size-4 opacity-70" />
-                                        <span>{$t('common.edit')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  {#if entityRowActions?.duplicate !== false}
-                                    <DropdownMenu.Item
-                                      onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
-                                      class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                                    >
-                                      <div class="flex items-center gap-2">
-                                        <Copy class="size-4 opacity-70" />
-                                        <span>{$t('common.duplicate')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  <DropdownMenu.Item
-                                    onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
-                                  >
-                                    <div class="flex items-center gap-2">
-                                      <FileClock class="size-4 opacity-70" />
-                                      <span>{$t('common.versionHistory')}</span>
-                                    </div>
-                                  </DropdownMenu.Item>
-                                  {#if entityRowActions?.preview !== false}
-                                    <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
-                                      <div class="flex items-center gap-2">
-                                        <Eye class="size-4 opacity-70" />
-                                        <span>{$t('entities.list.preview')}</span>
-                                      </div>
-                                    </DropdownMenu.Item>
-                                  {/if}
-                                  {#if entityRowActions?.delete !== false}
-                                    <DropdownMenu.Separator />
-                                    {#if isRowDeleted(r)}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
-                                        <div class="flex items-center gap-2">
-                                          <span class="relative flex items-center justify-center">
-                                            <Trash2 class="size-4 text-warning/70" />
-                                            <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                                          </span>
-                                          <span>{$t('common.restore')}</span>
-                                        </div>
-                                      </DropdownMenu.Item>
-                                    {:else}
-                                      <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
-                                        <div class="flex items-center gap-2">
-                                          <Trash2 class="size-4 text-destructive/70" />
-                                          <span>{$t('common.delete')}</span>
-                                        </div>
-                                      </DropdownMenu.Item>
-                                    {/if}
-                                  {/if}
-                                </DropdownMenu.Content>
-                              </DropdownMenu.Root>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-
-                      <div class="flex flex-col gap-2">
-                        {#each shownColumns as col (col.key)}
-                          {@render entityCardField(r, col, rowSelected, rowDeleted)}
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
+        <CardViewRenderer
+          viewMode={viewMode}
+          viewRows={viewRows}
+          shownColumns={shownColumns}
+          rowSelectionEnabled={rowSelectionEnabled}
+          selectedKeys={selectedKeys}
+          rowKey={rowKey}
+          isRowDeleted={isRowDeleted}
+          previewPanel={previewPanel}
+          actionsEnabled={actionsEnabled}
+          rowActions={rowActions}
+          entityRowActions={entityRowActions}
+          dropdownMenuRow={dropdownMenuRow}
+          datetimeIanaModeByKey={datetimeIanaModeByKey}
+          datetimeIanaRenderTick={datetimeIanaRenderTick}
+          cell={cell}
+          stickyColumnsGroup={stickyColumnsGroup}
+          error={error}
+          errorView={errorView}
+          rowsLoading={rowsLoading}
+          rowsLoadingView={rowsLoadingView}
+          loadingText={loadingText}
+          rows={rows}
+          emptyView={emptyView}
+          emptyText={emptyText}
+          showSelectedOnly={showSelectedOnly}
+          selectionCount={selectionCount}
+          orderedSelectedRows={orderedSelectedRows}
+          allOnPageSelected={allOnPageSelected}
+          headerIndeterminate={headerIndeterminate}
+          toggleAllOnPage={toggleAllOnPage}
+          allColumns={allColumns}
+          effectiveSortKey={effectiveSortKey}
+          sortDir={sortDir}
+          onSortChange={onSortChange}
+          sortableColumns={sortableColumns}
+          datetimeIanaToggleColumns={datetimeIanaToggleColumns}
+          toggleDatetimeIana={toggleDatetimeIana}
+          onEntityRowClick={onEntityCardClick}
+          onToggleRowSelect={toggleRowSelect}
+          onOpenRowDropdown={openRowDropdown}
+          onCloseRowDropdown={closeRowDropdown}
+          onEditRow={handleEditRow}
+          onLoadVersionHistory={loadVersionHistory}
+          onDuplicateRow={(r) => rowActionsComposable.handleDuplicateRow(r)}
+          onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
+          onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
+          onPreviewRow={handlePreviewRow}
+        />
       {:else}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel" onmousemove={handleResize} onmouseup={stopResize} onmouseleave={stopResize}>
