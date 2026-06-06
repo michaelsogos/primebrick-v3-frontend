@@ -1,4 +1,4 @@
-﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -28,6 +28,9 @@
   import { CardField, CardGrid, CardList } from './cards';
   import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from './dialogs';
   import { Pagination } from './pagination';
+  import TableBody from './components/TableBody.svelte';
+  import TableFooter from './components/TableFooter.svelte';
+
   import {
     useStickyColumns,
     useScrollPreservation,
@@ -185,7 +188,7 @@
     loadingMessage,
     noRecordsMessage
   }: {
-    /** Meta column key whose values uniquely identify a row in the list (uuid, id, â€¦). */
+    /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
     uid: string;
     /** Entity type for API calls (e.g., 'customer', 'product') */
     entity?: string;
@@ -604,7 +607,7 @@
   });
 
   const rowChromeH = $derived('h-6');
-  /** Use `thead th` / `tbody td` selectors â€” attribute-based [&_[data-slot=â€¦]] variants are unreliable in Tailwind. */
+  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
   );
@@ -1051,7 +1054,7 @@
     )
   );
 
-  /** Card view: sticky uuid/code-style fields â€” dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
+  /** Card view: sticky uuid/code-style fields — dark uses **neutral** (same ramp as table sticky, no slate `gray`). */
   function stickyCardFieldChromeClass(col: MetaColumn, rowSelected: boolean, destructive: boolean = false): string | undefined {
     const stickyKeys = new Set(stickyColumnsGroup.map((c) => c.key));
     if (!stickyKeys.has(col.key)) return undefined;
@@ -1254,7 +1257,7 @@
     if (!isSticky) return undefined;
 
     /**
-     * Sticky columns: **neutral only** (TW `gray-*` dark is slateâ€‘tinted / blue on screen).
+     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
      * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
      */
     const baseBg = isHeader
@@ -1471,10 +1474,14 @@
             </Tooltip.Trigger>
             <Tooltip.Content>{$t('entities.list.emptyField')}</Tooltip.Content>
           </Tooltip.Root>
-        {:else if cell}
-          {@render cell({ row: r, column: col })}
         {:else}
-          <TableCell row={r} column={col} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} />
+          <TableCell
+            row={r}
+            column={col}
+
+            datetimeIanaModeByKey={datetimeIanaModeByKey}
+            datetimeIanaRenderTick={datetimeIanaRenderTick}
+          />
         {/if}
       </div>
     </div>
@@ -2276,288 +2283,50 @@
             {/if}
           </Table.Row>
         </Table.Header>
-        <Table.Body
-          class={rowSelectionEnabled && rowRangeSelection.rowRangeMouseDown && rowRangeSelection.rangeDragActive ? 'select-none' : undefined}
-        >
-          {#if error}
-            {#if errorView}
-              {@render errorView()}
-            {:else}
-              <Table.Row>
-                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-56 place-items-center p-3">
-                    <div class="relative flex flex-col items-center gap-2 text-center">
-                      <div class="pb-watermark-error">
-                        <CircleX class="size-20 text-destructive" />
-                      </div>
-                      <div class="text-sm font-medium text-muted-foreground">{error}</div>
-                    </div>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            {/if}
-          {:else if rowsLoading}
-            {#if rowsLoadingView}
-              {@render rowsLoadingView()}
-            {:else}
-              <Table.Row>
-                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
-                  <div class="w-full">
-                    <LoadingBar size="xs" />
-                    <div class="grid min-h-56 place-items-center p-3">
-                      <div class="relative flex flex-col items-center gap-2 text-center">
-                        <div class="pb-watermark-loading">
-                          <Hourglass class="size-20 text-info" />
-                        </div>
-                        <div class="text-sm font-medium text-muted-foreground">{loadingText}</div>
-                      </div>
-                    </div>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            {/if}
-          {:else if rows.length === 0}
-            {#if emptyView}
-              {@render emptyView()}
-            {:else}
-              <Table.Row>
-                <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
-                  <div class="grid min-h-56 place-items-center p-3">
-                    <div class="relative flex flex-col items-center gap-2 text-center">
-                      <div class="pb-watermark-empty">
-                        <TriangleAlert class="size-20 text-warning" />
-                      </div>
-                      <div class="text-sm font-medium text-muted-foreground">{emptyText}</div>
-                    </div>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            {/if}
-          {:else if viewRows.length === 0}
-            <Table.Row>
-              <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
-                <div class="grid min-h-56 place-items-center p-3">
-                  <div class="relative flex flex-col items-center gap-2 text-center">
-                    <div class="pb-watermark-empty">
-                      <TriangleAlert class="size-20 text-warning" />
-                    </div>
-                    <div class="text-sm font-medium text-muted-foreground">
-                      {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-                        {$t('entities.list.selectedRowsNotLoadedHint')}
-                      {:else}
-                        {$t('entities.list.noSelectedRowsInView')}
-                      {/if}
-                    </div>
-                  </div>
-                </div>
-              </Table.Cell>
-            </Table.Row>
-          {:else}
-            {#key datetimeIanaRenderTick}
-            {#each viewRows as r, i (rowKey(r))}
-              {@const rk = rowKey(r)}
-              {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
-              {@const rowDeleted = isRowDeleted(r)}
-              {@const rowFocused = previewPanel.focusedRowIndex === i}
-              <Table.Row
-                suppressCellHoverMuted
-                data-row-index={rowSelectionEnabled ? i : undefined}
-                data-focused-row-index={rowFocused ? i : undefined}
-                data-state={rowSelected ? 'selected' : undefined}
-                class={cn(
-                  'group/entity-row',
-                  rowSelected ? 'data-[state=selected]:bg-transparent!' : undefined,
-                  rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
-                )}
-                onmousedown={rowSelectionEnabled ? (e) => rowRangeSelection.onRowRangeMouseDown(i, e) : undefined}
-                onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rk, e) : undefined}
-                ondblclick={() => handlePreviewRow(r)}
-              >
-                {#if rowSelectionEnabled}
-                  <Table.Cell
-                    class={cn(
-                      'w-10 min-w-10 max-w-10 sticky left-0 z-50 bg-clip-border p-2',
-                      rowDeleted
-                        ? entityListDestructiveChromeCellClass(rowSelected)
-                        : entityListGrayChromeCellClass(rowSelected)
-                    )}
-                  >
-                    <div class={cn('flex items-center justify-center', rowChromeH)}>
-                      <Checkbox
-                        class={checkboxInteractiveClass}
-                        checked={selectedKeys.includes(rk)}
-                        onCheckedChange={() => toggleRowSelect(rk)}
-                        aria-label="select row"
-                      />
-                    </div>
-                  </Table.Cell>
-                {/if}
-                {#each shownColumns as col, colIdx (col.key)}
-                  {#if stickyColumnsGroup.some((s) => s.key === col.key)}
-                    {#if i === 0}
-                      <Table.Cell
-                        style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
-                        class={cn(
-                          stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
-                          isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
-                            ? undefined
-                            : (rowDeleted
-                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
-                              : entityListGrayBandStickyInteractionClass(rowSelected)),
-                          entityListDataCellValignClass(col)
-                        )}
-                      >
-                        <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: false }}>
-                        {#if cell}
-                          {@render cell({ row: r, column: col })}
-                        {:else}
-                          <TableCell row={r} column={col} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} />
-                        {/if}
-                        </div>
-                      </Table.Cell>
-                    {:else}
-                      <Table.Cell
-                        style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
-                        class={cn(
-                          stickyCellClass(col.key, colIdx, false),
-                          datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
-                          isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
-                            ? undefined
-                            : (rowDeleted
-                              ? entityListDestructiveBandStickyInteractionClass(rowSelected)
-                              : entityListGrayBandStickyInteractionClass(rowSelected)),
-                          entityListDataCellValignClass(col)
-                        )}
-                      >
-                        {#if cell}
-                          {@render cell({ row: r, column: col })}
-                        {:else}
-                          <TableCell row={r} column={col} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} />
-                        {/if}
-                      </Table.Cell>
-                    {/if}
-                  {:else}
-                    <Table.Cell
-                      class={cn(
-                        stickyCellClass(col.key, colIdx, false),
-                        datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
-                        isDatetimeIanaRecordMode(col, datetimeIanaModeByKey)
-                          ? undefined
-                          : (rowDeleted
-                            ? entityListDestructiveScrollInteractionClass(rowSelected)
-                            : entityListDefaultScrollInteractionClass(rowSelected)),
-                        entityListDataCellValignClass(col)
-                      )}
-                    >
-                      {#if cell}
-                        {@render cell({ row: r, column: col })}
-                      {:else}
-                        <TableCell row={r} column={col} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} />
-                      {/if}
-                    </Table.Cell>
-                  {/if}
-                {/each}
-                {#if actionsEnabled}
-                  <Table.Cell
-                    class={cn(
-                      'w-10 min-w-10 max-w-10 sticky right-0 z-50 bg-clip-border p-2',
-                      entityListGrayChromeCellClass(rowSelected)
-                    )}
-                  >
-                    <div class={cn('flex items-center justify-center', rowChromeH)}>
-                      {#if rowActions}
-                        {@render rowActions({ row: r })}
-                      {:else}
-                        <DropdownMenu.Root open={dropdownMenuRow === r} onOpenChange={(open) => { if (!open) closeRowDropdown(); }}>
-                          <DropdownMenu.Trigger>
-                            {#snippet child({ props })}
-                              <Button 
-                                {...props}
-                                variant="ghost" 
-                                size="icon-sm" 
-                                aria-label="row actions" 
-                                title="actions"
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  openRowDropdown(r);
-                                }}
-                              >
-                                <MoreVertical class="size-4" />
-                              </Button>
-                            {/snippet}
-                          </DropdownMenu.Trigger>
-                          <DropdownMenu.Content class="w-56" align="end">
-                            {#if entityRowActions?.edit !== false}
-                              <DropdownMenu.Item
-                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; handleEditRow(r); }}
-                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                              >
-                                <div class="flex items-center gap-2">
-                                  <Pencil class="size-4 opacity-70" />
-                                  <span>{$t('common.edit')}</span>
-                                </div>
-                              </DropdownMenu.Item>
-                            {/if}
-                            {#if entityRowActions?.duplicate !== false}
-                              <DropdownMenu.Item
-                                onclick={(e) => { e.stopPropagation(); if (isRowDeleted(r)) return; rowActionsComposable.handleDuplicateRow(r); }}
-                                class={isRowDeleted(r) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-                              >
-                                <div class="flex items-center gap-2">
-                                  <Copy class="size-4 opacity-70" />
-                                  <span>{$t('common.duplicate')}</span>
-                                </div>
-                              </DropdownMenu.Item>
-                            {/if}
-                            <DropdownMenu.Item
-                              onclick={(e) => { e.stopPropagation(); loadVersionHistory(r); }}
-                            >
-                              <div class="flex items-center gap-2">
-                                <FileClock class="size-4 opacity-70" />
-                                <span>{$t('common.versionHistory')}</span>
-                              </div>
-                            </DropdownMenu.Item>
-                            {#if entityRowActions?.preview !== false}
-                              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); handlePreviewRow(r); }}>
-                                <div class="flex items-center gap-2">
-                                  <Eye class="size-4 opacity-70" />
-                                  <span>{$t('entities.list.preview')}</span>
-                                </div>
-                              </DropdownMenu.Item>
-                            {/if}
-                            {#if entityRowActions?.delete !== false}
-                              <DropdownMenu.Separator />
-                              {#if isRowDeleted(r)}
-                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleRestoreRow(r); }} class="text-warning">
-                                  <div class="flex items-center gap-2">
-                                    <span class="relative flex items-center justify-center">
-                                      <Trash2 class="size-4 text-warning/70" />
-                                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                                    </span>
-                                    <span>{$t('common.restore')}</span>
-                                  </div>
-                                </DropdownMenu.Item>
-                              {:else}
-                                <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); rowActionsComposable.handleDeleteRow(r); }} class="text-destructive">
-                                  <div class="flex items-center gap-2">
-                                    <Trash2 class="size-4 text-destructive/70" />
-                                    <span>{$t('common.delete')}</span>
-                                  </div>
-                                </DropdownMenu.Item>
-                              {/if}
-                            {/if}
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Root>
-                      {/if}
-                    </div>
-                  </Table.Cell>
-                {/if}
-              </Table.Row>
-            {/each}
-            {/key}
-          {/if}
-        </Table.Body>
+        <TableBody
+          error={error}
+          errorView={errorView}
+          rowsLoading={rowsLoading}
+          rowsLoadingView={rowsLoadingView}
+          loadingText={loadingText}
+          rows={rows}
+          viewRows={viewRows}
+          shownColumns={shownColumns}
+          extraCols={extraCols}
+          emptyView={emptyView}
+          emptyText={emptyText}
+          showSelectedOnly={showSelectedOnly}
+          selectionCount={selectionCount}
+          orderedSelectedRows={orderedSelectedRows}
+          rowSelectionEnabled={rowSelectionEnabled}
+          selectedKeys={selectedKeys}
+          rowRangeSelection={rowRangeSelection}
+          datetimeIanaRenderTick={datetimeIanaRenderTick}
+          rowKey={rowKey}
+          isRowDeleted={isRowDeleted}
+          previewPanel={previewPanel}
+          actionsEnabled={actionsEnabled}
+          rowChromeH={rowChromeH}
+          stickyColumnsGroup={stickyColumnsGroup}
+          stickyColumnsState={stickyColumnsState}
+          datetimeIanaModeByKey={datetimeIanaModeByKey}
+          cell={cell}
+          rowActions={rowActions}
+          entityRowActions={entityRowActions}
+          dropdownMenuRow={dropdownMenuRow}
+          onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
+          onEntityRowClick={onEntityRowClick}
+          onPreviewRow={handlePreviewRow}
+          onToggleRowSelect={toggleRowSelect}
+          onOpenRowDropdown={openRowDropdown}
+          onCloseRowDropdown={closeRowDropdown}
+          onEditRow={handleEditRow}
+          onLoadVersionHistory={loadVersionHistory}
+          onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
+          onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
+          onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
+          stickyCellClass={stickyCellClass}
+        />
       </Table.Root>
           </div>
 
@@ -2596,7 +2365,7 @@
                   onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
                   onLoadVersionHistory={loadVersionHistory}
                   onClosePreview={() => previewPanel.closePreview()}
-                  cell={cell}
+      
                   columns={columns}
                   stickyColumns={stickyColumns}
                   dataColumns={dataColumns}
@@ -2615,121 +2384,29 @@
     {/if}
   </div>
 
-  <div
-    class={cn(
-      'flex items-center justify-between gap-3 border-t bg-background px-3 py-2',
-      'text-xs'
-    )}
-  >
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <div class="text-muted-foreground">
-        {#if footerRangeTotal === 0}
-          0
-        {:else}
-          {footerRangeStart}-{footerRangeEnd} / {footerRangeTotal}
-        {/if}
-      </div>
-      {#if rowSelectionEnabled && selectionCount > 0}
-        <SelectionCounter
-          selectionCount={selectionCount}
-          selectionLabelKey={selectionLabelKey}
-          selectionLabelSingularKey={selectionLabelSingularKey}
-          selectionLabelText={selectionLabelText}
-          selectionLabelSingularText={selectionLabelSingularText}
-          selectionPastParticipleKey={selectionPastParticipleKey}
-          showSelectedOnly={showSelectedOnly}
-          onShowSelectedOnlyChange={(show: boolean) => { showSelectedOnly = show; if (show) clientSelectedPage = 1; }}
-        />
-      {/if}
-    </div>
-
-    <div class="flex items-center gap-2">
-      <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button variant="soft" size="xs" {...props}>
-              {pageSize}
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          {#each pageSizeOptions as opt (opt)}
-            <DropdownMenu.Item
-              class={dropdownMenuSelectedItemClass(opt === pageSize)}
-              onSelect={() => {
-                onPageSizeChange(opt);
-              }}
-            >
-              {opt}
-            </DropdownMenu.Item>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
-
-      <div class="flex items-center gap-2">
-        <Button
-          variant="soft"
-          size="xs"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = 1;
-            else onPageChange(1);
-          }}
-          aria-label={$t('entities.list.firstPage')}
-          title={$t('entities.list.firstPage')}
-        >
-          <ChevronsLeft class="size-4" />
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
-            else onPageChange(Math.max(1, page - 1));
-          }}
-          aria-label={$t('entities.list.previousPage')}
-          title={$t('entities.list.previousPage')}
-        >
-          <ChevronLeft class="size-4" />
-        </Button>
-        <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
-          {$t('entities.list.paginationStatus')
-            .replace('{page}', String(footerPage))
-            .replace('{total}', String(footerTotalPages))}
-        </div>
-        <Button
-          variant="soft"
-          size="xs"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
-            else onPageChange(Math.min(totalPages, page + 1));
-          }}
-          aria-label={$t('entities.list.nextPage')}
-          title={$t('entities.list.nextPage')}
-        >
-          <ChevronRight class="size-4" />
-        </Button>
-        <Button
-          variant="soft"
-          size="xs"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
-            else onPageChange(totalPages);
-          }}
-          aria-label={$t('entities.list.lastPage')}
-          title={$t('entities.list.lastPage')}
-        >
-          <ChevronsRight class="size-4" />
-        </Button>
-      </div>
-    </div>
-  </div>
+  <TableFooter
+    footerRangeTotal={footerRangeTotal}
+    footerRangeStart={footerRangeStart}
+    footerRangeEnd={footerRangeEnd}
+    footerPage={footerPage}
+    footerTotalPages={footerTotalPages}
+    footerUsesClientPaging={footerUsesClientPaging}
+    bind:clientSelectedPage={clientSelectedPage}
+    rowSelectionEnabled={rowSelectionEnabled}
+    selectionCount={selectionCount}
+    selectionLabelKey={selectionLabelKey}
+    selectionLabelSingularKey={selectionLabelSingularKey}
+    selectionLabelText={selectionLabelText}
+    selectionLabelSingularText={selectionLabelSingularText}
+    selectionPastParticipleKey={selectionPastParticipleKey}
+    bind:showSelectedOnly={showSelectedOnly}
+    pageSize={pageSize}
+    pageSizeOptions={pageSizeOptions}
+    page={page}
+    totalPages={totalPages}
+    onPageChange={onPageChange}
+    onPageSizeChange={onPageSizeChange}
+  />
 </div>
 
 <DeleteDialog

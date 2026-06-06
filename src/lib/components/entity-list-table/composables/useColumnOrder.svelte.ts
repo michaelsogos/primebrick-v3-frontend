@@ -107,6 +107,7 @@ export function useColumnOrder(columnOrderStorageKey?: string) {
     applyKeyOrder,
     moveKeyWithin,
     reorderGroup,
+    writeOrderState,
     reset: () => {
       orderState.sticky = undefined;
       orderState.data = undefined;

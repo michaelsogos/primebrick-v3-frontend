@@ -103,3 +103,34 @@ export function entityListDestructiveScrollInteractionClass(rowSelected: boolean
   }
   return 'bg-rose-100! dark:bg-rose-900! transition-colors group-hover/entity-row:bg-rose-200! dark:group-hover/entity-row:bg-rose-800!';
 }
+
+/**
+ * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+ * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come from `entityListGrayBandStickyInteractionClass`).
+ */
+export function stickyCellClass(key: string, visibleStickyCols: Array<{ key: string }>, isHeader: boolean): string | undefined {
+  const isSticky = visibleStickyCols.some(c => c.key === key);
+  if (!isSticky) return undefined;
+
+  const baseBg = isHeader
+    ? 'bg-neutral-200 dark:bg-neutral-800'
+    : 'bg-neutral-100 dark:bg-neutral-900';
+  const z = isHeader ? 'z-50' : 'z-40';
+  // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
+  // when sticky columns overlap scrolling content.
+  return `sticky ${z} ${baseBg} bg-clip-border`.trim();
+}
+
+/**
+ * Convenience function that computes visibleStickyCols from stickyColumnsGroup and visibleKeys.
+ * This is for backward compatibility with components that don't have access to pre-computed visibleStickyCols.
+ */
+export function stickyCellClassWithCompute(
+  key: string,
+  stickyColumnsGroup: Array<{ key: string }>,
+  visibleKeys: string[],
+  isHeader: boolean
+): string | undefined {
+  const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
+  return stickyCellClass(key, visibleStickyCols, isHeader);
+}

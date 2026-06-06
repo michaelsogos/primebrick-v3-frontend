@@ -3,6 +3,7 @@ export type ViewMode = 'table' | 'cards' | 'cards_list';
 export interface ViewModeOptions {
   initialMode?: ViewMode;
   onModeChange?: (mode: ViewMode) => void;
+  storageKey?: string;
 }
 
 export interface ViewModeReturn {
@@ -13,13 +14,38 @@ export interface ViewModeReturn {
   isCardsList: boolean;
 }
 
-export function useViewMode(options: ViewModeOptions = {}): ViewModeReturn {
-  const { initialMode = 'table', onModeChange } = options;
+function readViewMode(storageKey: string): ViewMode | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (raw === 'table' || raw === 'cards' || raw === 'cards_list') return raw;
+    return null;
+  } catch {
+    return null;
+  }
+}
 
-  let viewMode = $state<ViewMode>(initialMode);
+function writeViewMode(storageKey: string, next: ViewMode) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(storageKey, next);
+  } catch {
+    // ignore quota / blocked storage
+  }
+}
+
+export function useViewMode(options: ViewModeOptions = {}): ViewModeReturn {
+  const { initialMode = 'table', onModeChange, storageKey } = options;
+
+  // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
+  const storedMode = storageKey ? readViewMode(storageKey) : null;
+  let viewMode = $state<ViewMode>(storedMode ?? initialMode);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
+    if (storageKey) {
+      writeViewMode(storageKey, mode);
+    }
     onModeChange?.(mode);
   }
 
