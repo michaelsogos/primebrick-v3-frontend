@@ -39,7 +39,8 @@
     useScrollPreservation,
     useRowRangeSelection,
     useFilterPersistence,
-    useToolbarMode
+    useToolbarMode,
+    useSheetPanelManagement
   } from './composables';
   import {
     isRowDeleted as isRowDeletedUtil,
@@ -537,11 +538,8 @@
   });
 
 
-  // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
-  let lastPanelId = $state<string | null>(null);
-  $effect(() => {
-    if (sheetState.panelId) lastPanelId = sheetState.panelId;
-  });
+  // Sheet panel management composable
+  const sheetPanelManagement = useSheetPanelManagement();
 
   // Do not `$effect`-open from `filtersOpen`: while the sheet is closing, `filtersOpen` can
   // still be true for a tick and `openSheet` runs again (infinite reopen loop).
@@ -634,8 +632,8 @@
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
   $effect(() => {
     void sheetState.open;
-    void lastPanelId;
-    if (!sheetState.open && lastPanelId === 'entity.filters') filtersOpen = false;
+    void sheetPanelManagement.lastPanelId.value;
+    if (!sheetState.open && sheetPanelManagement.lastPanelId.value === 'entity.filters') filtersOpen = false;
   });
 
   const rowChromeH = $derived('h-6');
