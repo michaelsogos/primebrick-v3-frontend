@@ -26,13 +26,17 @@
   import { EntityListToolbar, FilterBar, SelectionCounter } from './toolbar';
   import { TableHeader, TableCell } from './table';
   import { CardField, CardGrid, CardList } from './cards';
-  import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from './dialogs';
   import { Pagination } from './pagination';
   import TableBody from './components/TableBody.svelte';
   import TableFooter from './components/TableFooter.svelte';
   import CardViewRenderer from './components/CardViewRenderer.svelte';
   import PreviewPanelWrapper from './components/PreviewPanelWrapper.svelte';
   import BulkActionsToolbar from './components/BulkActionsToolbar.svelte';
+  import EntityListTableHeader from './components/EntityListTableHeader.svelte';
+  import EntityListTableFooter from './components/EntityListTableFooter.svelte';
+  import EntityListTableDialogs from './components/EntityListTableDialogs.svelte';
+  import EntityListTableLoading from './components/EntityListTableLoading.svelte';
+  import EntityListTableCardView from './components/EntityListTableCardView.svelte';
 
   import {
     useStickyColumns,
@@ -44,6 +48,7 @@
   } from './composables';
   import { useColumnOrder } from './composables/useColumnOrder.svelte';
   import type { ColumnOrderState } from './composables/useColumnOrder.svelte';
+  import { useViewMode, type ViewMode } from './composables';
   import {
     isRowDeleted as isRowDeletedUtil,
     getRowKey
@@ -54,6 +59,9 @@
   import { useDialogs } from './composables/useDialogs.svelte.js';
   import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
   import { useDeletionFilter } from './composables/useDeletionFilter.svelte';
+  import { createSelectionHandlers } from './handlers/selection';
+  import { createSortingHandlers } from './handlers/sorting';
+  import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -69,7 +77,8 @@
     entityListGrayBandStickyInteractionClass,
     entityListDestructiveBandStickyInteractionClass,
     entityListDefaultScrollInteractionClass,
-    entityListDestructiveScrollInteractionClass
+    entityListDestructiveScrollInteractionClass,
+    stickyCellClassWithCompute
   } from './utils/cell-styling';
   import { stickyCardFieldChromeClass } from './utils/card-styling';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from './utils/cell-formatting';
@@ -290,31 +299,15 @@
     )
   );
 
-  type ViewMode = 'table' | 'cards' | 'cards_list';
+  // View mode management using composable
   const viewModeStorageKey = $derived(
     columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
   );
-  let viewMode = $state<ViewMode>('table');
-
-  function readViewMode(): ViewMode | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.sessionStorage.getItem(viewModeStorageKey);
-      if (raw === 'table' || raw === 'cards' || raw === 'cards_list') return raw;
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  function writeViewMode(next: ViewMode) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(viewModeStorageKey, next);
-    } catch {
-      // ignore quota / blocked storage
-    }
-  }
+  const viewModeComposable = useViewMode({
+    initialMode: 'table',
+    storageKey: viewModeStorageKey
+  });
+  const viewMode = $derived(viewModeComposable.viewMode);
 
   // Deletion filter management using composable
   const deletionFilterComposable = useDeletionFilter(
@@ -329,16 +322,8 @@
 
   onMount(() => {
     // Column order initialization handled by composable
-
-    const storedMode = readViewMode();
-    if (storedMode) viewMode = storedMode;
-
+    // View mode initialization handled by composable
     // Deletion filter initialization handled by composable
-  });
-
-  $effect(() => {
-    void viewMode;
-    writeViewMode(viewMode);
   });
 
   // Deletion filter persistence handled by composable
@@ -501,22 +486,6 @@
   /** Close dropdown menu */
   function closeRowDropdown() {
     dropdownMenuRow = null;
-  }
-
-
-  // ============================
-  // Preview Handlers
-  // ============================
-
-  /** Handle edit action for a row */
-  function handleEditRow(row: TRow) {
-    rowActionsComposable.handleEditRow(row);
-  }
-
-  /** Handle preview action for a row */
-  function handlePreviewRow(row: TRow) {
-    previewPanel.openPreview(row);
-    closeRowDropdown();
   }
 
   /** Navigate preview records */
@@ -977,118 +946,46 @@
     selectedRowByKey = next;
   });
 
-  function toggleRowSelect(key: string) {
-    if (selectedKeys.includes(key)) {
-      onSelectedKeysChange(selectedKeys.filter((k) => k !== key));
-    } else {
-      onSelectedKeysChange([...selectedKeys, key]);
-    }
-  }
+  // Selection handlers
+  const selectionHandlers = createSelectionHandlers(
+    selectedKeys,
+    onSelectedKeysChange,
+    pageKeys,
+    allOnPageSelected
+  );
+  const { toggleRowSelect, toggleAllOnPage } = selectionHandlers;
 
-  /** Toggle row selection on cell click when checkboxes are enabled (header excluded). */
-  function onEntityRowClick(key: string, e: MouseEvent) {
-    if (!rowSelectionEnabled || rowsLoading || error) return;
-    const t = e.target as HTMLElement | null;
-    if (!t) return;
-    if (
-      t.closest(
-        'input, button, a, textarea, select, [role="button"], [role="checkbox"], [data-slot=dropdown-menu-trigger]'
-      )
-    ) {
-      return;
-    }
-    if (rowRangeSelection.skipNextRowClickSelectToggle) {
-      rowRangeSelection.skipNextRowClickSelectToggle = false;
-      return;
-    }
-    toggleRowSelect(key);
-    // Avoid stray document-level handlers (dialogs/sheets) treating this as an extra activation.
-    e.stopPropagation();
-  }
+  // Sorting handlers
+  const sortingHandlers = createSortingHandlers(
+    columnOrder,
+    defaultSort,
+    defaultSortDir,
+    onResetColumnVisibility,
+    onSortChange,
+    rowsLoading,
+    sortKey,
+    sortDir,
+    dataColumns,
+    auditingColumnsGroup,
+    nonAuditingColumns,
+    onFilterValuesChange,
+    onAdvancedFiltersChange,
+    onResetFilters
+  );
+  const { resetColumnsAndSorting, resetFilters, reorderGroup, handleSortClick } = sortingHandlers;
 
-  function onEntityCardClick(key: string, e: MouseEvent) {
-    if (!rowSelectionEnabled || rowsLoading || error) return;
-    const t = e.target as HTMLElement | null;
-    if (!t) return;
-    if (
-      t.closest(
-        'input, button, a, textarea, select, [role="checkbox"], [data-slot=dropdown-menu-trigger], [data-pb-card-cta]'
-      )
-    ) {
-      return;
-    }
-    toggleRowSelect(key);
-    e.stopPropagation();
-  }
+  // Click handlers
+  const clickHandlers = createClickHandlers(
+    rowActionsComposable,
+    previewPanel,
+    rowSelectionEnabled,
+    rowsLoading,
+    error,
+    rowRangeSelection,
+    toggleRowSelect
+  );
+  const { handleEditRow, handlePreviewRow, onEntityRowClick, onEntityCardClick } = clickHandlers;
 
-  function toggleAllOnPage() {
-    if (allOnPageSelected) {
-      const remove = new Set(pageKeys);
-      onSelectedKeysChange(selectedKeys.filter((k) => !remove.has(k)));
-      return;
-    }
-    const next = new Set(selectedKeys);
-    for (const k of pageKeys) next.add(k);
-    onSelectedKeysChange([...next]);
-  }
-  function resetColumnsAndSorting() {
-    onResetColumnVisibility('table');
-    // Reset column visual order (sticky/data/auditing) to default meta order.
-    columnOrder.reset();
-    // Reset sorting to default
-    if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
-    else onSortChange(null, defaultSortDir);
-  }
-
-  function resetFilters() {
-    onFilterValuesChange?.({});
-    onAdvancedFiltersChange?.([], 'AND');
-    onResetFilters?.();
-  }
-
-  function reorderGroup(group: 'data' | 'auditing', fromKey: string, toKey: string) {
-    const base =
-      group === 'data'
-        ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
-        : (auditingColumnsGroup ?? []).map((c) => c.key);
-    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
-    const nextKeys = columnOrder.moveKeyWithin(cur, fromKey, toKey);
-    const nextState: ColumnOrderState =
-      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
-    orderState.data = nextState.data;
-    orderState.auditing = nextState.auditing;
-    columnOrder.writeOrderState(nextState);
-  }
-
-  function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
-    const visibleStickyCols = stickyColumnsGroup.filter((c) => visibleKeys.includes(c.key));
-    const isSticky = visibleStickyCols.some(c => c.key === key);
-    if (!isSticky) return undefined;
-
-    /**
-     * Sticky columns: **neutral only** (TW `gray-*` dark is slate-tinted / blue on screen).
-     * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
-     */
-    const baseBg = isHeader
-      ? 'bg-neutral-200 dark:bg-neutral-800'
-      : 'bg-neutral-100 dark:bg-neutral-900';
-    const z = isHeader ? 'z-50' : 'z-40';
-    // bg-clip-border is important: Table primitives use bg-clip-padding, which can leave the border area "see-through"
-    // when sticky columns overlap scrolling content.
-    return `sticky ${z} ${baseBg} bg-clip-border`.trim();
-  }
-
-  function handleSortClick(col: MetaColumn) {
-    if (rowsLoading) return;
-    if (col.sortable === false) return;
-    if (sortKey !== col.key) {
-      onSortChange(col.key, 'asc');
-    } else if (sortDir === 'asc') {
-      onSortChange(col.key, 'desc');
-    } else {
-      onSortChange(null, defaultSortDir);
-    }
-  }
   const loadingText = $derived(loadingMessage ?? $t('common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
 
@@ -1126,7 +1023,7 @@
 
 
 <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-  <EntityListToolbar
+  <EntityListTableHeader
     search={search}
     onSearchInput={onSearchInput}
     searchPlaceholderKey={searchPlaceholderKey}
@@ -1135,7 +1032,7 @@
     onSearchInKeysChange={onSearchInKeysChange}
     toggleSearchKey={toggleSearchKey}
     viewMode={viewMode}
-    onViewModeChange={(mode) => viewMode = mode}
+    onViewModeChange={viewModeComposable.setViewMode}
     deletionFilterMode={deletionFilterMode}
     onDeletionFilterModeChange={deletionFilterComposable.setDeletionFilterMode}
     rowsLoading={rowsLoading}
@@ -1169,25 +1066,14 @@
         filtersOpen = false;
       }
     }}
-    onColumnSelectorClick={() =>
-      openSheet(
-        'entity.columns',
-        {
-          stickyColumns: stickyColumnsGroup,
-          nonAuditingColumns,
-          auditingColumns: auditingColumnsGroup,
-          visibleKeys,
-          toggleColumnKey,
-          onResetColumnVisibility: resetColumnsAndSorting,
-          sheetMenuCheckboxClass: checkboxVisualOnlyClass,
-          t: $t
-        } as any,
-        { contentClass: 'w-[360px] p-0' }
-      )}
+    stickyColumnsGroup={stickyColumnsGroup}
+    nonAuditingColumns={nonAuditingColumns}
+    auditingColumnsGroup={auditingColumnsGroup}
+    visibleKeys={visibleKeys}
+    toggleColumnKey={toggleColumnKey}
+    resetColumnsAndSorting={resetColumnsAndSorting}
+    checkboxVisualOnlyClass={checkboxVisualOnlyClass}
     onCreateAction={onCreateAction}
-  />
-
-  <BulkActionsToolbar
     toolbarMode={toolbarModeState.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}
@@ -1195,85 +1081,71 @@
     selectedKeys={selectedKeys}
     hasDeletedSelected={hasDeletedSelected}
     allSelectedDeleted={allSelectedDeleted}
-    filterableColumns={filterableColumns}
     onResetFilters={resetFilters}
-    onFilterValuesChange={(values: Record<string, unknown>) => onFilterValuesChange?.(values)}
-    onAdvancedFiltersChange={(filters: AdvancedFilter[]) => onAdvancedFiltersChange?.(filters, 'AND')}
+    onFilterValuesChange={onFilterValuesChange}
+    onAdvancedFiltersChange={onAdvancedFiltersChange}
     onToggleToolbarMode={toggleToolbarMode}
     onBulkExport={handleBulkExport}
     onHtmlExport={handleHtmlExport}
-    onBulkDuplicate={bulkActions.handleBulkDuplicate}
-    onBulkDelete={bulkActions.handleBulkDelete}
-    onBulkRestore={bulkActions.handleBulkRestore}
+    onBulkDuplicate={() => bulkActions.handleBulkDuplicate()}
+    onBulkDelete={() => bulkActions.handleBulkDelete()}
+    onBulkRestore={() => bulkActions.handleBulkRestore()}
   />
 
   <div class="min-h-0 flex-1 overflow-hidden">
-    {#if metaLoading}
-      {#if metaLoadingView}
-        {@render metaLoadingView()}
-      {:else}
-        <div class="grid h-full place-items-center p-3">
-          <div class="relative flex flex-col items-center gap-2 text-center">
-            <div class="pb-watermark-loading">
-              <Hourglass class="size-20 text-info" />
-            </div>
-            <div class="text-sm font-medium text-muted-foreground">{loadingText}</div>
-          </div>
-        </div>
-      {/if}
-    {:else}
-      {#if viewMode !== 'table'}
-        <CardViewRenderer
-          viewMode={viewMode}
-          viewRows={viewRows}
-          shownColumns={shownColumns}
-          rowSelectionEnabled={rowSelectionEnabled}
-          selectedKeys={selectedKeys}
-          rowKey={rowKey}
-          isRowDeleted={isRowDeleted}
-          previewPanel={previewPanel}
-          actionsEnabled={actionsEnabled}
-          rowActions={rowActions}
-          entityRowActions={entityRowActions}
-          dropdownMenuRow={dropdownMenuRow}
-          datetimeIanaModeByKey={datetimeIanaModeByKey}
-          datetimeIanaRenderTick={datetimeIanaRenderTick}
-          cell={cell}
-          stickyColumnsGroup={stickyColumnsGroup}
-          onLoadVersionHistory={() => {}}
-          error={error}
-          errorView={errorView}
-          rowsLoading={rowsLoading}
-          rowsLoadingView={rowsLoadingView}
-          loadingText={loadingText}
-          rows={rows}
-          emptyView={emptyView}
-          emptyText={emptyText}
-          showSelectedOnly={showSelectedOnly}
-          selectionCount={selectionCount}
-          orderedSelectedRows={orderedSelectedRows}
-          allOnPageSelected={allOnPageSelected}
-          headerIndeterminate={headerIndeterminate}
-          toggleAllOnPage={toggleAllOnPage}
-          allColumns={allColumns}
-          effectiveSortKey={effectiveSortKey}
-          sortDir={sortDir}
-          onSortChange={onSortChange}
-          sortableColumns={sortableColumns}
-          datetimeIanaToggleColumns={datetimeIanaToggleColumns}
-          toggleDatetimeIana={toggleDatetimeIana}
-          onEntityRowClick={onEntityCardClick}
-          onToggleRowSelect={toggleRowSelect}
-          onOpenRowDropdown={openRowDropdown}
-          onCloseRowDropdown={closeRowDropdown}
-          onEditRow={handleEditRow}
-
-          onDuplicateRow={(r) => rowActionsComposable.handleDuplicateRow(r)}
-          onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
-          onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
-          onPreviewRow={handlePreviewRow}
-        />
-      {:else}
+    <EntityListTableLoading
+      metaLoading={metaLoading}
+      metaLoadingView={metaLoadingView}
+      loadingText={loadingText}
+    />
+    {#if !metaLoading}
+      <EntityListTableCardView
+        viewMode={viewMode}
+        viewRows={viewRows}
+        shownColumns={shownColumns}
+        rowSelectionEnabled={rowSelectionEnabled}
+        selectedKeys={selectedKeys}
+        rowKey={rowKey}
+        isRowDeleted={isRowDeleted}
+        previewPanel={previewPanel}
+        actionsEnabled={actionsEnabled}
+        rowActions={rowActions}
+        entityRowActions={entityRowActions}
+        dropdownMenuRow={dropdownMenuRow}
+        datetimeIanaModeByKey={datetimeIanaModeByKey}
+        datetimeIanaRenderTick={datetimeIanaRenderTick}
+        cell={cell}
+        stickyColumnsGroup={stickyColumnsGroup}
+        error={error}
+        errorView={errorView}
+        rowsLoading={rowsLoading}
+        rowsLoadingView={rowsLoadingView}
+        loadingText={loadingText}
+        rows={rows}
+        emptyView={emptyView}
+        emptyText={emptyText}
+        showSelectedOnly={showSelectedOnly}
+        selectionCount={selectionCount}
+        orderedSelectedRows={orderedSelectedRows}
+        allOnPageSelected={allOnPageSelected}
+        headerIndeterminate={headerIndeterminate}
+        toggleAllOnPage={toggleAllOnPage}
+        allColumns={allColumns}
+        effectiveSortKey={effectiveSortKey}
+        sortDir={sortDir}
+        onSortChange={onSortChange}
+        sortableColumns={sortableColumns}
+        datetimeIanaToggleColumns={datetimeIanaToggleColumns}
+        toggleDatetimeIana={toggleDatetimeIana}
+        onEntityRowClick={onEntityCardClick}
+        onToggleRowSelect={toggleRowSelect}
+        onOpenRowDropdown={openRowDropdown}
+        onCloseRowDropdown={closeRowDropdown}
+        onEditRow={handleEditRow}
+        rowActionsComposable={rowActionsComposable}
+        onPreviewRow={handlePreviewRow}
+      />
+      {#if viewMode === 'table'}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
           <div class="flex-1 min-w-0 overflow-hidden">
@@ -1307,7 +1179,7 @@
                 {#if stickyColumnsGroup.some((s) => s.key === col.key)}
                   <Table.Head
                     style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
-                    class={stickyCellClass(col.key, colIdx, true) ??
+                    class={stickyCellClassWithCompute(col.key, stickyColumnsGroup, visibleKeys, true) ??
                       (col.sortable !== false
                         ? rowsLoading
                           ? 'relative z-10 select-none opacity-60'
@@ -1333,7 +1205,7 @@
                 {:else}
                 <Table.Head
                   class={cn(
-                    stickyCellClass(col.key, colIdx, true) ??
+                    stickyCellClassWithCompute(col.key, stickyColumnsGroup, visibleKeys, true) ??
                       (col.sortable !== false
                         ? rowsLoading
                           ? 'relative z-10 select-none opacity-60'
@@ -1475,7 +1347,7 @@
           onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
           onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
           onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
-          stickyCellClass={stickyCellClass}
+          stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
         />
       </Table.Root>
           </div>
@@ -1518,7 +1390,7 @@
     {/if}
   </div>
 
-  <TableFooter
+  <EntityListTableFooter
     footerRangeTotal={footerRangeTotal}
     footerRangeStart={footerRangeStart}
     footerRangeEnd={footerRangeEnd}
@@ -1541,98 +1413,34 @@
     onPageChange={onPageChange}
     onPageSizeChange={onPageSizeChange}
   />
-</div>
+  </div>
 
-<DeleteDialog
-  bind:open={dialogs.deleteDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
-  isDeleting={rowActionsComposable.isDeleting}
-  onConfirm={confirmDeleteRow}
-  onCancel={() => dialogs.closeDeleteDialog()}
-/>
-
-<RestoreDialog
-  bind:open={dialogs.restoreDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
-  isRestoring={rowActionsComposable.isRestoring}
-  onConfirm={confirmRestoreRow}
-  onCancel={() => dialogs.closeRestoreDialog()}
-/>
-
-<BulkDeleteDialog
-  bind:open={dialogs.bulkDeleteDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
-  selectedCount={selectedKeys.length}
-  isDeleting={bulkActions.isDeleting}
-  onConfirm={confirmBulkDelete}
-  onCancel={cancelBulkDelete}
-/>
-
-<BulkRestoreDialog
-  bind:open={dialogs.bulkRestoreDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
-  selectedCount={selectedKeys.length}
-  isRestoring={bulkActions.isRestoring}
-  onConfirm={confirmBulkRestore}
-  onCancel={cancelBulkRestore}
-/>
-
-<ExportDialog
-  bind:open={exportComposable.exportOpen}
-  onOpenChange={(open) => { if (!open) exportComposable.closeExportDialog(); }}
-  selectedCount={selectedKeys.length}
-  totalCount={total}
-  entity={entity}
-  exportScope={exportComposable.exportScope}
-  onExportScopeChange={(scope) => exportComposable.exportScope = scope}
-  fileType={exportComposable.fileType}
-  isExporting={exportComposable.isExporting}
-  onFileTypeChange={(type) => exportComposable.setFileType(type as 'xlsx' | 'csv')}
-  onConfirm={confirmExportRow}
-  onCancel={cancelExportRow}
-/>
-
-<HtmlExportDialog
-  bind:open={exportComposable.htmlPreviewDialogOpen}
-  onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
-  selectedCount={selectedKeys.length}
-  totalCount={total}
-  entity={entity}
-  exportScope={exportComposable.htmlExportScope}
-  onExportScopeChange={(scope) => exportComposable.htmlExportScope = scope}
-  isExporting={exportComposable.isHtmlExporting}
-  onConfirm={confirmHtmlExport}
-  onCancel={cancelHtmlExport}
-/>
-
-<DuplicateDialog
-  bind:open={dialogs.duplicateDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeDuplicateDialog(); }}
-  duplicateScope={dialogs.duplicateScope}
-  selectedCount={selectedKeys.length}
-  entity={entity}
-  isDuplicating={rowActionsComposable.isDuplicating}
-  onConfirm={confirmDuplicate}
-  onCancel={cancelDuplicate}
-/>
-
-<!-- HTML preview full-screen dialog -->
-<ExportPreviewDialog
-  bind:open={exportComposable.htmlPreviewDialogOpen}
-  onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
-  previewMode={exportComposable.previewMode}
-  onPreviewModeChange={(mode: 'html' | 'pdf' | 'email') => exportComposable.previewMode = mode}
-  htmlPreviewContent={exportComposable.htmlPreviewContent}
-  pdfBlobUrl={exportComposable.pdfBlobUrl}
-  emailHtmlContent={exportComposable.emailHtmlContent}
-  isEmailPreparing={exportComposable.isEmailPreparing}
-  emailCopied={exportComposable.emailCopied}
-  onGeneratePdfPreview={generatePdfPreview}
-  onPrepareEmailHtml={prepareEmailHtml}
-  onCopyHtmlToClipboard={copyHtmlToClipboard}
-  onCopyEmailHtmlToClipboard={copyEmailHtmlToClipboard}
-  onClose={closeHtmlPreview}
-/>
+  <EntityListTableDialogs
+    {dialogs}
+    {rowActionsComposable}
+    {bulkActions}
+    {exportComposable}
+    selectedKeys={selectedKeys}
+    total={total}
+    entity={entity}
+    confirmDeleteRow={confirmDeleteRow}
+    confirmRestoreRow={confirmRestoreRow}
+    confirmBulkDelete={confirmBulkDelete}
+    cancelBulkDelete={cancelBulkDelete}
+    confirmBulkRestore={confirmBulkRestore}
+    cancelBulkRestore={cancelBulkRestore}
+    confirmExportRow={confirmExportRow}
+    cancelExportRow={cancelExportRow}
+    confirmHtmlExport={confirmHtmlExport}
+    cancelHtmlExport={cancelHtmlExport}
+    confirmDuplicate={confirmDuplicate}
+    cancelDuplicate={cancelDuplicate}
+    generatePdfPreview={generatePdfPreview}
+    prepareEmailHtml={prepareEmailHtml}
+    copyHtmlToClipboard={copyHtmlToClipboard}
+    copyEmailHtmlToClipboard={copyEmailHtmlToClipboard}
+    closeHtmlPreview={closeHtmlPreview}
+  />
 
 <style src="./EntityListTable.css"></style>
 

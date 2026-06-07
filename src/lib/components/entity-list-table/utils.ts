@@ -100,4 +100,42 @@ export function getCellClass(column: MetaColumn): string {
   }
 }
 
+/**
+ * Toggle a search key in the searchInKeys array
+ */
+export function toggleSearchKey(
+  key: string,
+  searchInKeys: string[] | null,
+  onSearchInKeysChange: (keys: string[] | null) => void
+) {
+  if (!searchInKeys || searchInKeys.length === 0) {
+    onSearchInKeysChange([key]);
+    return;
+  }
+  if (searchInKeys.includes(key)) {
+    const next = searchInKeys.filter((k) => k !== key);
+    onSearchInKeysChange(next.length ? next : null);
+    return;
+  }
+  onSearchInKeysChange([...searchInKeys, key]);
+}
 
+/**
+ * Toggle a column key in the visibleKeys array
+ */
+export function toggleColumnKey(
+  key: string,
+  columns: MetaColumn[],
+  visibleKeys: string[],
+  onVisibleKeysChange: (keys: string[]) => void
+) {
+  const col = columns.find((c) => c.key === key);
+  if (col?.hideable === false) return;
+
+  if (visibleKeys.includes(key)) {
+    const next = visibleKeys.filter((k) => k !== key);
+    if (next.length > 0) onVisibleKeysChange(next);
+    return;
+  }
+  onVisibleKeysChange([...visibleKeys, key]);
+}
