@@ -38,6 +38,7 @@
   import EntityListTableLoading from './components/EntityListTableLoading.svelte';
   import EntityListTableCardView from './components/EntityListTableCardView.svelte';
   import EntityListTableHeaderRow from './components/EntityListTableHeaderRow.svelte';
+  import EntityListTableTableView from './components/EntityListTableTableView.svelte';
 
   import {
     useStickyColumns,
@@ -1147,120 +1148,70 @@
         onPreviewRow={handlePreviewRow}
       />
       {#if viewMode === 'table'}
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
-          <div class="flex-1 min-w-0 overflow-hidden">
-            <Table.Root
-          bind:ref={tableRef}
-          class={cn(
-            'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
-            tableDensityClass
-          )}
-          containerClass="h-full overflow-auto"
-        >
-          <EntityListTableHeaderRow
-            rowSelectionEnabled={rowSelectionEnabled}
-            stickyColumnsState={stickyColumnsState}
-            rowChromeH={rowChromeH}
-            checkboxInteractiveClass={checkboxInteractiveClass}
-            allOnPageSelected={allOnPageSelected}
-            headerIndeterminate={headerIndeterminate}
-            toggleAllOnPage={toggleAllOnPage}
-            shownColumns={shownColumns}
-            stickyColumnsGroup={stickyColumnsGroup}
-            visibleKeys={visibleKeys}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            rowsLoading={rowsLoading}
-            handleSortClick={handleSortClick}
-            datetimeIanaModeByKey={datetimeIanaModeByKey}
-            toggleDatetimeIana={toggleDatetimeIana}
-            actionsEnabled={actionsEnabled}
-            previewPanel={previewPanel}
-            viewRows={viewRows}
-          />
-        <TableBody
+        <EntityListTableTableView
+          tableRef={tableRef}
+          tableDensityClass={tableDensityClass}
+          rowSelectionEnabled={rowSelectionEnabled}
+          stickyColumnsState={stickyColumnsState}
+          rowChromeH={rowChromeH}
+          checkboxInteractiveClass={checkboxInteractiveClass}
+          allOnPageSelected={allOnPageSelected}
+          headerIndeterminate={headerIndeterminate}
+          toggleAllOnPage={toggleAllOnPage}
+          shownColumns={shownColumns}
+          stickyColumnsGroup={stickyColumnsGroup}
+          visibleKeys={visibleKeys}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          rowsLoading={rowsLoading}
+          handleSortClick={handleSortClick}
+          datetimeIanaModeByKey={datetimeIanaModeByKey}
+          toggleDatetimeIana={toggleDatetimeIana}
+          actionsEnabled={actionsEnabled}
+          previewPanel={previewPanel}
+          viewRows={viewRows}
           error={error}
           errorView={errorView}
-          rowsLoading={rowsLoading}
           rowsLoadingView={rowsLoadingView}
           loadingText={loadingText}
           rows={rows}
-          viewRows={viewRows}
-          shownColumns={shownColumns}
           extraCols={extraCols}
           emptyView={emptyView}
           emptyText={emptyText}
           showSelectedOnly={showSelectedOnly}
           selectionCount={selectionCount}
           orderedSelectedRows={orderedSelectedRows}
-          rowSelectionEnabled={rowSelectionEnabled}
-          selectedKeys={selectedKeys}
           rowRangeSelection={rowRangeSelection}
           datetimeIanaRenderTick={datetimeIanaRenderTick}
           rowKey={rowKey}
           isRowDeleted={isRowDeleted}
-          previewPanel={previewPanel}
-          actionsEnabled={actionsEnabled}
-          rowChromeH={rowChromeH}
-          stickyColumnsGroup={stickyColumnsGroup}
-          onLoadVersionHistory={() => {}}
-          stickyColumnsState={stickyColumnsState}
-          datetimeIanaModeByKey={datetimeIanaModeByKey}
           cell={cell}
           rowActions={rowActions}
           entityRowActions={entityRowActions}
           dropdownMenuRow={dropdownMenuRow}
-          onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
           onEntityRowClick={onEntityRowClick}
-          onPreviewRow={handlePreviewRow}
-          onToggleRowSelect={toggleRowSelect}
-          onOpenRowDropdown={openRowDropdown}
-          onCloseRowDropdown={closeRowDropdown}
-          onEditRow={handleEditRow}
-
-          onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
-          onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
-          onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
-          stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
+          handlePreviewRow={handlePreviewRow}
+          toggleRowSelect={toggleRowSelect}
+          openRowDropdown={openRowDropdown}
+          closeRowDropdown={closeRowDropdown}
+          handleEditRow={handleEditRow}
+          rowActionsComposable={rowActionsComposable}
+          uid={uid}
+          pageSize={pageSize}
+          page={page}
+          onPageChange={onPageChange}
+          entity={entity}
+          columns={columns}
+          stickyColumns={stickyColumns}
+          dataColumns={dataColumns}
+          auditingColumns={auditingColumns}
+          rowActionsEnabled={rowActionsEnabled}
+          selectedKeys={selectedKeys}
+          footerRangeTotal={footerRangeTotal}
+          footerPage={footerPage}
+          previewDropdownOpen={previewDropdownOpen}
+          navigatePreview={navigatePreview}
         />
-      </Table.Root>
-          </div>
-
-          <PreviewPanelWrapper
-            {previewPanel}
-            {rows}
-            {viewRows}
-            {uid}
-            {pageSize}
-            {page}
-            {onPageChange}
-            {entity}
-            {columns}
-            {stickyColumns}
-            {dataColumns}
-            {auditingColumns}
-            {rowActionsEnabled}
-            {rowActions}
-            {entityRowActions}
-            {datetimeIanaModeByKey}
-            {isRowDeleted}
-            {rowKey}
-            {rowSelectionEnabled}
-            selectedKeys={selectedKeys as Set<string> | string[]}
-            footerRangeTotal={footerRangeTotal}
-            footerPage={footerPage}
-            {previewDropdownOpen}
-            navigatePreview={navigatePreview}
-            onEditRow={handleEditRow}
-            onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
-            onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
-            onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
-            onPreviewDropdownOpenChange={(open: boolean) => previewDropdownOpen = open}
-            {rowsLoading}
-            {cell}
-          />
-        </div>
     {/if}
     {/if}
   </div>
