@@ -28,8 +28,9 @@
     Trash2,
     ArrowUpFromLine
   } from 'lucide-svelte';
+  import type { CellArgs } from '../types';
 
-  type CellArgs = { row: TRow; column: import('$lib/entity-list/types').MetaColumn };
+  type TableRowCellArgs = CellArgs<TRow>;
 
   let {
     row,
@@ -84,7 +85,7 @@
     };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
-    cell?: Snippet<[CellArgs]>;
+    cell?: Snippet<[TableRowCellArgs]>;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
       edit?: boolean;

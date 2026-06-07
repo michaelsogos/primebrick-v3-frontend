@@ -28,8 +28,9 @@
     isDatetimeIanaRecordMode,
     datetimeIanaCardFieldHighlightClass
   } from '../utils/cell-styling';
+  import type { CellArgs } from '../types';
 
-  type CellArgs = { row: TRow; column: MetaColumn };
+  type PreviewPanelCellArgs = CellArgs<TRow>;
 
   interface PreviewPanelProps {
     row: TRow;
@@ -48,7 +49,7 @@
     onRestoreRow: (row: TRow) => void;
     onLoadVersionHistory: (row: TRow) => void;
     onClosePreview: () => void;
-    cell?: Snippet<[CellArgs]>;
+    cell?: Snippet<[PreviewPanelCellArgs]>;
     columns: MetaColumn[];
     stickyColumns?: MetaColumn[];
     dataColumns?: MetaColumn[];

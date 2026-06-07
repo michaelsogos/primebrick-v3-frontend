@@ -2,8 +2,9 @@
   import type { Snippet } from 'svelte';
   import { TableCell } from '../table';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { CellArgs } from '../types';
 
-  type CellArgs = { row: TRow; column: MetaColumn };
+  type CellRendererArgs = CellArgs<TRow>;
 
   let {
     row,
@@ -14,7 +15,7 @@
   }: {
     row: TRow;
     column: MetaColumn;
-    cell?: Snippet<[CellArgs]>;
+    cell?: Snippet<[CellRendererArgs]>;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
   } = $props();

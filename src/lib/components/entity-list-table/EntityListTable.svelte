@@ -1,4 +1,4 @@
-﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -126,7 +126,7 @@
   import { Window } from '$lib/components/ui/window';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
 
-  type CellArgs = { row: TRow; column: MetaColumn };
+  import type { EntityListTableProps, CellArgs } from './types';
 
   let {
     uid,
@@ -192,87 +192,7 @@
     errorView,
     loadingMessage,
     noRecordsMessage
-  }: {
-    /** Meta column key whose values uniquely identify a row in the list (uuid, id, …). */
-    uid: string;
-    /** Entity type for API calls (e.g., 'customer', 'product') */
-    entity?: string;
-    /**
-     * Columns to render/select in the UI.
-     * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
-     * - Back-compat: provide `columns` only
-     */
-    columns: MetaColumn[];
-    stickyColumns?: MetaColumn[];
-    dataColumns?: MetaColumn[];
-    auditingColumns?: MetaColumn[];
-    viewVisibility?: ListMetaViewVisibility;
-    /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
-    columnOrderStorageKey?: string;
-    /** Session-scoped (sessionStorage) storage key for filter values. */
-    filterValuesStorageKey?: string;
-    /** Session-scoped (sessionStorage) storage key for advanced filters. */
-    advancedFiltersStorageKey?: string;
-    defaultSort?: { key: string; dir: SortDir };
-    pageSizeOptions?: number[];
-    searchPlaceholderKey?: string;
-    selectionLabelKey?: string;
-    selectionLabelSingularKey?: string;
-    selectionLabelText?: string;
-    selectionLabelSingularText?: string;
-    rows: TRow[];
-    total: number;
-    metaLoading: boolean;
-    rowsLoading: boolean;
-    error: string | null;
-    page: number;
-    pageSize: number;
-    onPageChange: (page: number) => void;
-    onPageSizeChange: (size: number) => void;
-    search: string;
-    onSearchInput: (value: string) => void;
-    searchInKeys: string[] | null;
-    onSearchInKeysChange: (keys: string[] | null) => void;
-    sortKey: string | null;
-    sortDir: SortDir;
-    onSortChange: (key: string | null, dir: SortDir) => void;
-    visibleKeys: string[];
-    onVisibleKeysChange: (keys: string[]) => void;
-    onResetColumnVisibility: (view: ViewName) => void;
-    selectedKeys: string[];
-    onSelectedKeysChange: (keys: string[]) => void;
-    rowSelectionEnabled?: boolean;
-    onRefresh: () => void;
-    refreshDisabled?: boolean;
-    rowActionsEnabled?: boolean;
-    rowActions?: Snippet<[ { row: TRow } ]>;
-    entityRowActions?: {
-      duplicate?: boolean;
-      delete?: boolean;
-      edit?: boolean;
-      preview?: boolean;
-    };
-    onCreateAction?: () => void;
-    onEditAction?: (row: TRow) => void;
-    filtersOpen?: boolean;
-    filterValues?: Record<string, any>;
-    onFilterValuesChange?: (values: Record<string, any>) => void;
-    onResetFilters?: () => void;
-    advancedFilters?: AdvancedFilter[];
-    onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
-    deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
-    onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
-    /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
-    datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick?: number;
-    cell?: Snippet<[CellArgs]>;
-    metaLoadingView?: Snippet;
-    rowsLoadingView?: Snippet;
-    emptyView?: Snippet;
-    errorView?: Snippet;
-    loadingMessage?: string;
-    noRecordsMessage?: string;
-  } = $props();
+  }: EntityListTableProps<TRow> = $props();
 
   // Utility functions moved to utils.ts
   const rowKey = (row: TRow): string => getRowKey(row, uid);
@@ -637,7 +557,7 @@
   });
 
   const rowChromeH = $derived('h-6');
-  /** Use `thead th` / `tbody td` selectors — attribute-based [&_[data-slot=…]] variants are unreliable in Tailwind. */
+  /** Use `thead th` / `tbody td` selectors � attribute-based [&_[data-slot=�]] variants are unreliable in Tailwind. */
   const tableDensityClass = $derived(
     '[&_th]:h-6! [&_th]:py-1 [&_th]:text-xs [&_tbody_td]:py-1.5! [&_tbody_td]:text-sm'
   );
@@ -1255,7 +1175,7 @@
     if (!isSticky) return undefined;
 
     /**
-     * Sticky columns: **neutral only** (TW `gray-*` dark is slate‑tinted / blue on screen).
+     * Sticky columns: **neutral only** (TW `gray-*` dark is slate-tinted / blue on screen).
      * Light unchanged. Dark: header `800`, body base `900` (hover `800` / selected `700` / `600` come da `entityListGrayBandStickyInteractionClass`).
      */
     const baseBg = isHeader

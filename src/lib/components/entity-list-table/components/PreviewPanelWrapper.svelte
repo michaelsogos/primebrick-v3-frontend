@@ -3,8 +3,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { PreviewPanel } from '../panels';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { CellArgs } from '../types';
 
-  type CellArgs = { row: TRow; column: MetaColumn };
+  type PreviewPanelWrapperCellArgs = CellArgs<TRow>;
 
   interface PreviewPanelWrapperProps {
     previewPanel: {
@@ -45,7 +46,7 @@
     onRestoreRow: (row: TRow) => void;
     onPreviewDropdownOpenChange: (open: boolean) => void;
     rowsLoading: boolean;
-    cell?: Snippet<[CellArgs]>;
+    cell?: Snippet<[PreviewPanelWrapperCellArgs]>;
   }
 
   let {
