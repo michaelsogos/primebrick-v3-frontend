@@ -42,6 +42,8 @@
     useToolbarMode,
     useSheetPanelManagement
   } from './composables';
+  import { useColumnOrder } from './composables/useColumnOrder.svelte';
+  import type { ColumnOrderState } from './composables/useColumnOrder.svelte';
   import {
     isRowDeleted as isRowDeletedUtil,
     getRowKey
@@ -51,6 +53,7 @@
   import { useRowActions } from './composables/useRowActions.svelte.js';
   import { useDialogs } from './composables/useDialogs.svelte.js';
   import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
+  import { useDeletionFilter } from './composables/useDeletionFilter.svelte';
   import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
   import { defaultVisibleColumnKeys, formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
@@ -223,21 +226,17 @@
     onVisibleKeysChange([...visibleKeys, key]);
   }
 
-  type ColumnOrderState = {
-    sticky?: string[];
-    data?: string[];
-    auditing?: string[];
-  };
-
-  const orderState = $state<ColumnOrderState>({});
+  // Column order management using composable
+  const columnOrder = useColumnOrder(columnOrderStorageKey);
+  const orderState = columnOrder.orderState;
 
   const allColumns = $derived.by(() => {
     let all: MetaColumn[];
     if (stickyColumns || auditingColumns) {
       all = [
-        ...applyKeyOrder(stickyColumns ?? [], orderState.sticky),
-        ...applyKeyOrder(dataColumns ?? [], orderState.data),
-        ...applyKeyOrder(auditingColumns ?? [], orderState.auditing)
+        ...columnOrder.applyKeyOrder(stickyColumns ?? [], orderState.sticky),
+        ...columnOrder.applyKeyOrder(dataColumns ?? [], orderState.data),
+        ...columnOrder.applyKeyOrder(auditingColumns ?? [], orderState.auditing)
       ];
     } else {
       all = columns;
@@ -259,7 +258,7 @@
   const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
   const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const stickyColumnsGroup = $derived(
-    applyKeyOrder(
+    columnOrder.applyKeyOrder(
       stickyColumns ??
       (() => {
         // Back-compat: use sticky flag from column metadata
@@ -279,10 +278,10 @@
     'deleted_by'
   ]);
   const auditingColumnsGroup = $derived(
-    applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+    columnOrder.applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
   );
   const nonAuditingColumns = $derived(
-    applyKeyOrder(
+    columnOrder.applyKeyOrder(
       dataColumns ??
         allColumns.filter(
           (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
@@ -317,119 +316,24 @@
     }
   }
 
-  type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
-  const deletionFilterStorageKey = $derived(
-    columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
+  // Deletion filter management using composable
+  const deletionFilterComposable = useDeletionFilter(
+    uid,
+    columnOrderStorageKey,
+    deletionFilterModeProp ?? 'non_deleted',
+    onDeletionFilterModeChange
   );
-  // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
-  const _rawDeletion = (() => {
-    if (typeof window === 'undefined') return null;
-    const key = columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`;
-    return window.sessionStorage.getItem(key);
-  })();
-  const _initialDeletionMode: DeletionFilterMode | null =
-    _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
-  let deletionFilterMode = $state<DeletionFilterMode>(_initialDeletionMode ?? deletionFilterModeProp ?? 'non_deleted');
+  const deletionFilterMode = $derived(deletionFilterComposable.deletionFilterMode);
 
-  function readDeletionFilter(): DeletionFilterMode | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.sessionStorage.getItem(deletionFilterStorageKey);
-      if (raw === 'non_deleted' || raw === 'deleted' || raw === 'all') return raw;
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  function writeDeletionFilter(next: DeletionFilterMode) {
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(deletionFilterStorageKey, next);
-    } catch {
-      // ignore quota / blocked storage
-    }
-  }
-
-  function readOrderState(): ColumnOrderState {
-    if (!columnOrderStorageKey) return {};
-    if (typeof window === 'undefined') return {};
-    try {
-      const raw = window.sessionStorage.getItem(columnOrderStorageKey);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object') return {};
-      const obj = parsed as any;
-      return {
-        sticky: Array.isArray(obj.sticky)
-          ? obj.sticky.filter((k: unknown) => typeof k === 'string')
-          : undefined,
-        data: Array.isArray(obj.data) ? obj.data.filter((k: unknown) => typeof k === 'string') : undefined,
-        auditing: Array.isArray(obj.auditing)
-          ? obj.auditing.filter((k: unknown) => typeof k === 'string')
-          : undefined
-      };
-    } catch {
-      return {};
-    }
-  }
-
-  function writeOrderState(next: ColumnOrderState) {
-    if (!columnOrderStorageKey) return;
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(columnOrderStorageKey, JSON.stringify(next));
-    } catch {
-      // ignore quota / blocked storage
-    }
-  }
-    function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
-    if (!keys || keys.length === 0) return cols;
-    const byKey = new Map(cols.map((c) => [c.key, c] as const));
-    const out: MetaColumn[] = [];
-    const used = new Set<string>();
-    for (const k of keys) {
-      const c = byKey.get(k);
-      if (!c) continue;
-      out.push(c);
-      used.add(k);
-    }
-    for (const c of cols) {
-      if (used.has(c.key)) continue;
-      out.push(c);
-    }
-    return out;
-  }
-
-  function moveKeyWithin(keys: string[], fromKey: string, toKey: string): string[] {
-    if (fromKey === toKey) return keys;
-    const fromIdx = keys.indexOf(fromKey);
-    const toIdx = keys.indexOf(toKey);
-    if (fromIdx < 0 || toIdx < 0) return keys;
-    const next = keys.slice();
-    next.splice(fromIdx, 1);
-    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
-    next.splice(insertAt, 0, fromKey);
-    return next;
-  }
+  // Column order functions provided by composable
 
   onMount(() => {
-    const loaded = readOrderState();
-    orderState.sticky = loaded.sticky;
-    orderState.data = loaded.data;
-    orderState.auditing = loaded.auditing;
+    // Column order initialization handled by composable
 
     const storedMode = readViewMode();
     if (storedMode) viewMode = storedMode;
 
-    const storedDeletionFilter = readDeletionFilter();
-    if (storedDeletionFilter) {
-      deletionFilterMode = storedDeletionFilter;
-      // If the restored value differs from what the parent passed, notify the parent so it re-fetches
-      if (storedDeletionFilter !== (deletionFilterModeProp ?? 'non_deleted')) {
-        onDeletionFilterModeChange?.(storedDeletionFilter);
-      }
-    }
+    // Deletion filter initialization handled by composable
   });
 
   $effect(() => {
@@ -437,17 +341,7 @@
     writeViewMode(viewMode);
   });
 
-  let lastDeletionFilterMode: typeof deletionFilterMode | null = null;
-  $effect(() => {
-    void deletionFilterMode;
-    writeDeletionFilter(deletionFilterMode);
-    // Skip the initial firing so we don't trigger an extra refresh on mount when the
-    // value didn't actually change (the parent already holds the same value).
-    if (lastDeletionFilterMode !== null && lastDeletionFilterMode !== deletionFilterMode) {
-      onDeletionFilterModeChange?.(deletionFilterMode);
-    }
-    lastDeletionFilterMode = deletionFilterMode;
-  });
+  // Deletion filter persistence handled by composable
 
   $effect(() => {
     void filterValues;
@@ -520,7 +414,7 @@
           orderState.data = nextState.data;
           orderState.auditing = nextState.auditing;
           orderState.sticky = nextState.sticky;
-          writeOrderState(nextState);
+          columnOrder.writeOrderState(nextState);
         },
         onResetColumnVisibility: () => onResetColumnVisibility('table'),
         sheetMenuCheckboxClass: checkboxVisualOnlyClass,
@@ -1140,10 +1034,7 @@
   function resetColumnsAndSorting() {
     onResetColumnVisibility('table');
     // Reset column visual order (sticky/data/auditing) to default meta order.
-    orderState.sticky = undefined;
-    orderState.data = undefined;
-    orderState.auditing = undefined;
-    writeOrderState({});
+    columnOrder.reset();
     // Reset sorting to default
     if (defaultSort?.key) onSortChange(defaultSort.key, defaultSort.dir ?? defaultSortDir);
     else onSortChange(null, defaultSortDir);
@@ -1161,12 +1052,12 @@
         ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
         : (auditingColumnsGroup ?? []).map((c) => c.key);
     const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
-    const nextKeys = moveKeyWithin(cur, fromKey, toKey);
+    const nextKeys = columnOrder.moveKeyWithin(cur, fromKey, toKey);
     const nextState: ColumnOrderState =
       group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
     orderState.data = nextState.data;
     orderState.auditing = nextState.auditing;
-    writeOrderState(nextState);
+    columnOrder.writeOrderState(nextState);
   }
 
   function stickyCellClass(key: string, idx: number, isHeader: boolean): string | undefined {
@@ -1246,7 +1137,7 @@
     viewMode={viewMode}
     onViewModeChange={(mode) => viewMode = mode}
     deletionFilterMode={deletionFilterMode}
-    onDeletionFilterModeChange={(mode) => deletionFilterMode = mode}
+    onDeletionFilterModeChange={deletionFilterComposable.setDeletionFilterMode}
     rowsLoading={rowsLoading}
     refreshDisabled={refreshDisabled}
     onRefresh={onRefresh}
