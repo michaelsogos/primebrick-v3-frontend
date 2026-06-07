@@ -1,9 +1,13 @@
-export interface DialogsReturn {
+export interface DialogsReturn<TRow extends Record<string, unknown>> {
   deleteDialogOpen: boolean;
   restoreDialogOpen: boolean;
   duplicateDialogOpen: boolean;
   bulkDeleteDialogOpen: boolean;
   bulkRestoreDialogOpen: boolean;
+  rowToDelete: TRow | null;
+  rowToRestore: TRow | null;
+  singleRowToDuplicate: TRow | null;
+  duplicateScope: 'selected' | 'single';
   openDeleteDialog: () => void;
   closeDeleteDialog: () => void;
   openRestoreDialog: () => void;
@@ -14,14 +18,22 @@ export interface DialogsReturn {
   closeBulkDeleteDialog: () => void;
   openBulkRestoreDialog: () => void;
   closeBulkRestoreDialog: () => void;
+  setRowToDelete: (row: TRow | null) => void;
+  setRowToRestore: (row: TRow | null) => void;
+  setSingleRowToDuplicate: (row: TRow | null) => void;
+  setDuplicateScope: (scope: 'selected' | 'single') => void;
 }
 
-export function useDialogs(): DialogsReturn {
+export function useDialogs<TRow extends Record<string, unknown>>(): DialogsReturn<TRow> {
   let deleteDialogOpen = $state(false);
   let restoreDialogOpen = $state(false);
   let duplicateDialogOpen = $state(false);
   let bulkDeleteDialogOpen = $state(false);
   let bulkRestoreDialogOpen = $state(false);
+  let rowToDelete: TRow | null = $state(null);
+  let rowToRestore: TRow | null = $state(null);
+  let singleRowToDuplicate: TRow | null = $state(null);
+  let duplicateScope = $state<'selected' | 'single'>('selected');
 
   function openDeleteDialog() {
     deleteDialogOpen = true;
@@ -63,12 +75,32 @@ export function useDialogs(): DialogsReturn {
     bulkRestoreDialogOpen = false;
   }
 
+  function setRowToDelete(row: TRow | null) {
+    rowToDelete = row;
+  }
+
+  function setRowToRestore(row: TRow | null) {
+    rowToRestore = row;
+  }
+
+  function setSingleRowToDuplicate(row: TRow | null) {
+    singleRowToDuplicate = row;
+  }
+
+  function setDuplicateScope(scope: 'selected' | 'single') {
+    duplicateScope = scope;
+  }
+
   return {
     get deleteDialogOpen() { return deleteDialogOpen; },
     get restoreDialogOpen() { return restoreDialogOpen; },
     get duplicateDialogOpen() { return duplicateDialogOpen; },
     get bulkDeleteDialogOpen() { return bulkDeleteDialogOpen; },
     get bulkRestoreDialogOpen() { return bulkRestoreDialogOpen; },
+    get rowToDelete() { return rowToDelete; },
+    get rowToRestore() { return rowToRestore; },
+    get singleRowToDuplicate() { return singleRowToDuplicate; },
+    get duplicateScope() { return duplicateScope; },
     openDeleteDialog,
     closeDeleteDialog,
     openRestoreDialog,
@@ -78,6 +110,10 @@ export function useDialogs(): DialogsReturn {
     openBulkDeleteDialog,
     closeBulkDeleteDialog,
     openBulkRestoreDialog,
-    closeBulkRestoreDialog
+    closeBulkRestoreDialog,
+    setRowToDelete,
+    setRowToRestore,
+    setSingleRowToDuplicate,
+    setDuplicateScope
   };
 }

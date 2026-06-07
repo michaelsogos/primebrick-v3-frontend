@@ -657,10 +657,10 @@
   let previewDropdownOpen = $state(false);
 
   /** Row tracking for dialog actions */
-  let rowToDelete: TRow | null = $state(null);
-  let rowToRestore: TRow | null = $state(null);
-  let singleRowToDuplicate: TRow | null = $state(null);
-  let duplicateScope = $state<'selected' | 'single'>('selected');
+
+
+
+
 
   /** Export confirmation dialog state */
   // Export state is now managed by exportComposable
@@ -773,7 +773,7 @@
   /** Handle delete action for a row */
   function handleDeleteRow(row: TRow) {
     // Open confirmation dialog instead of deleting directly
-    rowToDelete = row;
+    dialogs.setRowToDelete(row);
     dialogs.openDeleteDialog();
     closeRowDropdown();
   }
@@ -781,25 +781,25 @@
   /** Handle restore action for a row */
   function handleRestoreRow(row: TRow) {
     // Open confirmation dialog instead of restoring directly
-    rowToRestore = row;
+    dialogs.setRowToRestore(row);
     dialogs.openRestoreDialog();
     closeRowDropdown();
   }
 
   /** Confirm delete action after dialog confirmation */
   async function confirmDeleteRow() {
-    if (!rowToDelete) return;
-    await rowActionsComposable.confirmDeleteRow(rowToDelete);
+    if (!dialogs.rowToDelete) return;
+    await rowActionsComposable.confirmDeleteRow(dialogs.rowToDelete);
     dialogs.closeDeleteDialog();
-    rowToDelete = null;
+    dialogs.setRowToDelete(null);
   }
 
   /** Confirm restore action after dialog confirmation */
   async function confirmRestoreRow() {
-    if (!rowToRestore) return;
-    await rowActionsComposable.confirmRestoreRow(rowToRestore);
+    if (!dialogs.rowToRestore) return;
+    await rowActionsComposable.confirmRestoreRow(dialogs.rowToRestore);
     dialogs.closeRestoreDialog();
-    rowToRestore = null;
+    dialogs.setRowToRestore(null);
   }
 
   /** Bulk action handlers */
@@ -855,7 +855,7 @@
       });
       return;
     }
-    duplicateScope = 'selected';
+    dialogs.setDuplicateScope('selected');
     dialogs.openDuplicateDialog();
   }
 
@@ -864,24 +864,24 @@
       console.log('Cannot duplicate deleted row:', rowKey(row));
       return;
     }
-    singleRowToDuplicate = row;
-    duplicateScope = 'single';
+    dialogs.setSingleRowToDuplicate(row);
+    dialogs.setDuplicateScope('single');
     dialogs.openDuplicateDialog();
     closeRowDropdown();
   }
 
   async function confirmDuplicate() {
-    if (duplicateScope === 'single' && singleRowToDuplicate) {
-      await rowActionsComposable.confirmDuplicateRow(singleRowToDuplicate);
+    if (dialogs.duplicateScope === 'single' && dialogs.singleRowToDuplicate) {
+      await rowActionsComposable.confirmDuplicateRow(dialogs.singleRowToDuplicate);
     }
     // Bulk duplicate is handled separately by bulkActions composable
     dialogs.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    dialogs.setSingleRowToDuplicate(null);
   }
 
   function cancelDuplicate() {
     dialogs.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    dialogs.setSingleRowToDuplicate(null);
   }
 
   function handleBulkExport() {
@@ -1108,7 +1108,7 @@
     onRefresh: onRefresh
   });
 
-  const dialogs = useDialogs();
+  const dialogs = useDialogs<TRow>();
   $effect(() => {
     void rows;
     void selectedKeys;
@@ -1762,7 +1762,7 @@
 <DuplicateDialog
   bind:open={dialogs.duplicateDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDuplicateDialog(); }}
-  duplicateScope={duplicateScope}
+  duplicateScope={dialogs.duplicateScope}
   selectedCount={selectedKeys.length}
   entity={entity}
   isDuplicating={rowActionsComposable.isDuplicating}
