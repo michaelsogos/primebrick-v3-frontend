@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+﻿<script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
@@ -674,6 +674,11 @@
 
 
 
+
+  // ============================
+  // Dropdown Handlers
+  // ============================
+
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -683,6 +688,11 @@
   function closeRowDropdown() {
     dropdownMenuRow = null;
   }
+
+
+  // ============================
+  // Preview Handlers
+  // ============================
 
   /** Handle edit action for a row */
   function handleEditRow(row: TRow) {
@@ -699,6 +709,11 @@
   function navigatePreview(direction: number) {
     previewPanel.navigatePreview(direction > 0 ? "next" : "prev");
   }
+
+  // ============================
+  // Keyboard Navigation Handlers
+  // ============================
+
   /** Scroll focused row into view when index changes */
   $effect(() => {
     if (previewPanel.previewRowIndex === null) return;
@@ -770,6 +785,11 @@
     }
   }
 
+
+  // ============================
+  // Row Action Handlers
+  // ============================
+
   /** Handle delete action for a row */
   function handleDeleteRow(row: TRow) {
     // Open confirmation dialog instead of deleting directly
@@ -802,6 +822,11 @@
     dialogs.setRowToRestore(null);
   }
 
+
+  // ============================
+  // Bulk Action Handlers
+  // ============================
+
   /** Bulk action handlers */
   function handleBulkDelete() {
     dialogs.openBulkDeleteDialog();
@@ -832,6 +857,11 @@
   function cancelBulkRestore() {
     dialogs.closeBulkRestoreDialog();
   }
+
+
+  // ============================
+  // Export Handlers
+  // ============================
 
   /** Confirm export action after dialog confirmation */
   async function confirmExportRow() {
@@ -919,6 +949,11 @@
   async function copyEmailHtmlToClipboard() {
     await exportComposable.copyEmailHtmlToClipboard();
   }
+
+
+  // ============================
+  // Toolbar Handlers
+  // ============================
 
   /** Toggle toolbar mode between filters and bulk */
   function toggleToolbarMode() {
