@@ -7,7 +7,7 @@
   import MapPin from '@lucide/svelte/icons/map-pin'
   import PanelRightClose from '@lucide/svelte/icons/panel-right-close'
   import PanelRightOpen from '@lucide/svelte/icons/panel-right-open';
-  import { Table } from '$lib/components/ui/table';
+  import * as Table from '$lib/components/ui/table';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { cn } from '$lib/utils';

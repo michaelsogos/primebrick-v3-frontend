@@ -1,4 +1,4 @@
-import { onMount } from 'svelte';
+import { onMount, untrack } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 
 export function useStickyColumns(options: {
@@ -49,35 +49,45 @@ export function useStickyColumns(options: {
     };
   }
 
+  let updatingStickyOffsets = false;
+
   function updateStickyOffsets() {
-    // Use DOM geometry instead of ref binding
-    // First th in thead is always the checkbox column in tables with selection
-    const checkboxCol = document.querySelector('thead th:first-child');
-    const checkboxW = checkboxCol ? Math.ceil(checkboxCol.getBoundingClientRect().width) : 0;
+    if (updatingStickyOffsets) return;
+    updatingStickyOffsets = true;
+    try {
+      // Use DOM geometry instead of ref binding
+      // First th in thead is always the checkbox column in tables with selection
+      const checkboxCol = document.querySelector('thead th:first-child');
+      const checkboxW = checkboxCol ? Math.ceil(checkboxCol.getBoundingClientRect().width) : 0;
 
-    const visibleStickyCols = safeStickyColumnsGroup
-      .filter((c) => options.visibleKeys().includes(c.key));
+      const visibleStickyCols = safeStickyColumnsGroup
+        .filter((c) => options.visibleKeys().includes(c.key));
 
-    let currentLeft = checkboxW;
-    const newOffsets: Record<string, number> = {};
+      let currentLeft = checkboxW;
+      const newOffsets: Record<string, number> = {};
 
-    for (const col of visibleStickyCols) {
-      const headRef = stickyHeadRefs.get(col.key);
-      const cellRef = stickyCellRefs.get(col.key);
+      for (const col of visibleStickyCols) {
+        const headRef = stickyHeadRefs.get(col.key);
+        const cellRef = stickyCellRefs.get(col.key);
 
-      const headCellW = Math.ceil(headRef?.parentElement?.getBoundingClientRect().width ?? 0);
-      const cellCellW = Math.ceil(cellRef?.parentElement?.getBoundingClientRect().width ?? 0);
-      const colW = Math.max(headCellW, cellCellW);
+        const headCellW = Math.ceil(headRef?.parentElement?.getBoundingClientRect().width ?? 0);
+        const cellCellW = Math.ceil(cellRef?.parentElement?.getBoundingClientRect().width ?? 0);
+        const colW = Math.max(headCellW, cellCellW);
 
-      if (colW === 0 && col.key in stickyLeftOffsets) {
-        newOffsets[col.key] = stickyLeftOffsets[col.key];
-      } else {
-        newOffsets[col.key] = currentLeft;
-        currentLeft += colW;
+        if (colW === 0 && col.key in stickyLeftOffsets) {
+          newOffsets[col.key] = stickyLeftOffsets[col.key];
+        } else {
+          newOffsets[col.key] = currentLeft;
+          currentLeft += colW;
+        }
       }
-    }
 
-    stickyLeftOffsets = newOffsets;
+      untrack(() => {
+        stickyLeftOffsets = newOffsets;
+      });
+    } finally {
+      updatingStickyOffsets = false;
+    }
   }
 
   onMount(() => {
@@ -89,19 +99,7 @@ export function useStickyColumns(options: {
     return () => window.removeEventListener('resize', onResize);
   });
 
-  // Effect 1: Track Svelte state changes (structure/visibility)
-  $effect(() => {
-    // Register reactive dependencies
-    void checkboxHeadRef; // Track ref changes
-    options.rowSelectionEnabled();
-    options.visibleKeys();
-    const group = safeStickyColumnsGroup;
-
-    // Recalculate offsets when structure changes
-    updateStickyOffsets();
-  });
-
-  // Effect 2: Manage ResizeObserver for DOM dimension changes
+  // ResizeObserver effect: watches DOM dimension changes only
   $effect(() => {
     // Track checkboxHeadRef so effect re-runs when ref populates after mount
     void checkboxHeadRef;

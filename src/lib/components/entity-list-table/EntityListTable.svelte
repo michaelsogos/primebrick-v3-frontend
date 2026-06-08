@@ -788,7 +788,7 @@
           (clientSelectedPage - 1) * pageSize,
           (clientSelectedPage - 1) * pageSize + pageSize
         )
-      : rows
+      : (rows ?? [])
   );
   const pageKeys = $derived(viewRows.map((r) => rowKey(r)));
   const selectedOnPageCount = $derived(pageKeys.filter((k) => selectedKeys.includes(k)).length);

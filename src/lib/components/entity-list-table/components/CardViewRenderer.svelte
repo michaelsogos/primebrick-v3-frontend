@@ -140,7 +140,7 @@
         </div>
       </div>
     {/if}
-  {:else if rowsLoading}
+  {:else if rowsLoading && (!rows || rows.length === 0)}
     {#if rowsLoadingView}
       {@render rowsLoadingView()}
     {:else}
@@ -156,7 +156,7 @@
         </div>
       </div>
     {/if}
-  {:else if rows.length === 0}
+  {:else if !rows || rows.length === 0}
     {#if emptyView}
       {@render emptyView()}
     {:else}
@@ -169,7 +169,7 @@
         </div>
       </div>
     {/if}
-  {:else if viewRows.length === 0}
+  {:else if !viewRows || viewRows.length === 0}
     <div class="grid min-h-56 place-items-center">
       <div class="relative flex flex-col items-center gap-2 text-center">
         <div class="pb-watermark-empty">
@@ -296,6 +296,7 @@
             : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
         )}
       >
+        {#if viewRows && viewRows.length > 0}
         {#each viewRows as r, i (rowKey(r))}
           {@const rk = rowKey(r)}
           {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
@@ -332,6 +333,7 @@
             selectedKeys={selectedKeys}
           />
         {/each}
+        {/if}
       </div>
     </div>
   {/if}

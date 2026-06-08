@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import { t } from '$lib/i18n';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
-  import { Table } from '$lib/components/ui/table';
+  import * as Table from '$lib/components/ui/table';
   import CircleX from '@lucide/svelte/icons/circle-x'
   import Hourglass from '@lucide/svelte/icons/hourglass'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -128,7 +128,7 @@
         </Table.Cell>
       </Table.Row>
     {/if}
-  {:else if rowsLoading}
+  {:else if rowsLoading && (!rows || rows.length === 0)}
     {#if rowsLoadingView}
       {@render rowsLoadingView()}
     {:else}
@@ -148,7 +148,7 @@
         </Table.Cell>
       </Table.Row>
     {/if}
-  {:else if rows.length === 0}
+  {:else if !rows || rows.length === 0}
     {#if emptyView}
       {@render emptyView()}
     {:else}
@@ -165,7 +165,7 @@
         </Table.Cell>
       </Table.Row>
     {/if}
-  {:else if viewRows.length === 0}
+  {:else if !viewRows || viewRows.length === 0}
     <Table.Row>
       <Table.Cell colspan={shownColumns.length + extraCols} class="p-0">
         <div class="grid min-h-56 place-items-center p-3">
@@ -184,35 +184,31 @@
         </div>
       </Table.Cell>
     </Table.Row>
-  {:else}
-    {#key datetimeIanaRenderTick}
-    {#each viewRows as r, i (rowKey(r))}
-      {@const rk = rowKey(r)}
-      {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
-      {@const rowDeleted = isRowDeleted(r)}
-      {@const rowFocused = previewPanel.focusedRowIndex === i}
+  {:else if viewRows && viewRows.length > 0}
+    <!-- DEBUG: viewRowsLen={viewRows.length} -->
+    {#each viewRows as r, i}
       <TableRow
+        {i}
         row={r}
-        index={i}
-        rowKey={rk}
-        rowSelected={rowSelected}
-        rowDeleted={rowDeleted}
-        rowFocused={rowFocused}
-        rowSelectionEnabled={rowSelectionEnabled}
-        actionsEnabled={actionsEnabled}
-        rowChromeH={rowChromeH}
-        selectedKeys={selectedKeys}
-        shownColumns={shownColumns}
-        stickyColumnsGroup={stickyColumnsGroup}
-        stickyColumnsState={stickyColumnsState}
-        datetimeIanaModeByKey={datetimeIanaModeByKey}
-        datetimeIanaRenderTick={datetimeIanaRenderTick}
-        cell={cell}
-        rowActions={rowActions}
-        entityRowActions={entityRowActions}
-        dropdownMenuRow={dropdownMenuRow}
-        previewPanel={previewPanel}
-        onRowRangeMouseDown={onRowRangeMouseDown}
+        {rowKey}
+        {isRowDeleted}
+        {shownColumns}
+        {extraCols}
+        {rowSelectionEnabled}
+        {selectedKeys}
+        {rowRangeSelection}
+        {datetimeIanaRenderTick}
+        {previewPanel}
+        {actionsEnabled}
+        {rowChromeH}
+        {stickyColumnsGroup}
+        {stickyColumnsState}
+        {datetimeIanaModeByKey}
+        {cell}
+        {rowActions}
+        {entityRowActions}
+        {dropdownMenuRow}
+        onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
         onEntityRowClick={onEntityRowClick}
         onPreviewRow={onPreviewRow}
         onToggleRowSelect={onToggleRowSelect}
@@ -223,10 +219,8 @@
         onDuplicateRow={onDuplicateRow}
         onDeleteRow={onDeleteRow}
         onRestoreRow={onRestoreRow}
-        stickyCellClass={stickyCellClass}
-        isRowDeleted={isRowDeleted}
+        {stickyCellClass}
       />
     {/each}
-    {/key}
   {/if}
 </Table.Body>

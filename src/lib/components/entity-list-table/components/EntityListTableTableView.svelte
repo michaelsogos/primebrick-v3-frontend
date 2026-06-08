@@ -1,5 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { Table } from '$lib/components/ui/table';
+  import { Table, Root as TableRoot } from '$lib/components/ui/table';
   import { cn } from '$lib/utils';
   import TableBody from './TableBody.svelte';
   import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';
@@ -137,17 +137,9 @@
   };
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
   <div class="flex-1 min-w-0 overflow-hidden">
-    <Table.Root
-      bind:ref={tableRef}
-      class={cn(
-        'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
-        tableDensityClass
-      )}
-      containerClass="h-full overflow-auto"
-    >
+    {#snippet tableChildren()}
       <EntityListTableHeaderRow
         rowSelectionEnabled={rowSelectionEnabled}
         stickyColumnsState={stickyColumnsState}
@@ -213,7 +205,16 @@
         onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
         stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
       />
-    </Table.Root>
+    {/snippet}
+    <TableRoot
+      class={cn(
+        'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
+        tableDensityClass
+      )}
+      containerClass="h-full overflow-auto"
+      children={tableChildren}
+      bind:ref={tableRef}
+    />
   </div>
 
   <PreviewPanelWrapper
