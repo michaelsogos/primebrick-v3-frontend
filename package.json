@@ -14,8 +14,9 @@
   },
   "devDependencies": {
     "@iconify-json/bi": "^1.2.7",
+    "@iconify-json/lucide": "^1.2.111",
     "@internationalized/date": "^3.12.1",
-    "@lucide/svelte": "^0.544.0",
+    "@lucide/svelte": "^1.17.0",
     "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/kit": "^2.61.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
@@ -50,7 +51,6 @@
     "formsnap": "^2.0.1",
     "html2pdf.js": "^0.14.0",
     "inline-css": "^4.0.3",
-    "lucide-svelte": "^1.0.1",
     "shiki": "^4.0.2",
     "svelte-motion": "^0.12.2",
     "svelte-sonner": "^1.1.1",

@@ -8,18 +8,16 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import {
-    ChevronLeft,
-    ChevronRight,
-    Pencil,
-    PencilOff,
-    MoreVertical,
-    Copy,
-    FileClock,
-    Trash2,
-    ArrowUpFromLine,
-    X
-  } from 'lucide-svelte';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import PencilOff from '@lucide/svelte/icons/pencil-off'
+  import MoreVertical from '@lucide/svelte/icons/more-vertical'
+  import Copy from '@lucide/svelte/icons/copy'
+  import FileClock from '@lucide/svelte/icons/file-clock'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line'
+  import X from '@lucide/svelte/icons/x';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';

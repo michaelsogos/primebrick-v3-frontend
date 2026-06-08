@@ -2,8 +2,10 @@
   import type { Snippet } from 'svelte';
   import { t } from '$lib/i18n';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
-  import * as Table from '$lib/components/ui/table';
-  import { CircleX, Hourglass, TriangleAlert } from 'lucide-svelte';
+  import { Table } from '$lib/components/ui/table';
+  import CircleX from '@lucide/svelte/icons/circle-x'
+  import Hourglass from '@lucide/svelte/icons/hourglass'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import TableRow from './TableRow.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
 

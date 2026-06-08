@@ -1,6 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { User, ShieldCheck, Package, FileText, Building2, Users } from 'lucide-svelte';
+  import User from '@lucide/svelte/icons/user'
+  import ShieldCheck from '@lucide/svelte/icons/shield-check'
+  import Package from '@lucide/svelte/icons/package'
+  import FileText from '@lucide/svelte/icons/file-text'
+  import Building2 from '@lucide/svelte/icons/building-2'
+  import Users from '@lucide/svelte/icons/users';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';

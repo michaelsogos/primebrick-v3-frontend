@@ -86,47 +86,45 @@
   import { stickyCardFieldChromeClass } from './utils/card-styling';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from './utils/cell-formatting';
   import XIcon from '@lucide/svelte/icons/x';
-  import {
-    Search,
-    ArrowUpDown,
-    ArrowUpNarrowWide,
-    ArrowDownWideNarrow,
-    ArrowUp,
-    ArrowDown,
-    TriangleAlert,
-    Hourglass,
-    CircleX,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
-    ChevronUp,
-    ChevronDown,
-    RotateCcw,
-    MoreVertical,
-    Ban,
-    Globe,
-    MapPin,
-    Eye,
-    EyeOff,
-    ListCheck,
-    FilterX,
-    Pencil,
-    PencilOff,
-    Trash,
-    Trash2,
-    ArrowUpFromLine,
-    AlertCircle,
-    PanelRightClose,
-    PanelRightOpen,
-    Copy,
-    Download,
-    Funnel,
-    CircleCheck,
-    Info,
-    RefreshCw,
-    FileClock
-  } from 'lucide-svelte';
+  import Search from '@lucide/svelte/icons/search'
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import ArrowUpNarrowWide from '@lucide/svelte/icons/arrow-up-narrow-wide'
+  import ArrowDownWideNarrow from '@lucide/svelte/icons/arrow-down-wide-narrow'
+  import ArrowUp from '@lucide/svelte/icons/arrow-up'
+  import ArrowDown from '@lucide/svelte/icons/arrow-down'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
+  import Hourglass from '@lucide/svelte/icons/hourglass'
+  import CircleX from '@lucide/svelte/icons/circle-x'
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
+  import ChevronsRight from '@lucide/svelte/icons/chevrons-right'
+  import ChevronUp from '@lucide/svelte/icons/chevron-up'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import MoreVertical from '@lucide/svelte/icons/more-vertical'
+  import Ban from '@lucide/svelte/icons/ban'
+  import Globe from '@lucide/svelte/icons/globe'
+  import MapPin from '@lucide/svelte/icons/map-pin'
+  import Eye from '@lucide/svelte/icons/eye'
+  import EyeOff from '@lucide/svelte/icons/eye-off'
+  import ListCheck from '@lucide/svelte/icons/list-check'
+  import FilterX from '@lucide/svelte/icons/filter-x'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import PencilOff from '@lucide/svelte/icons/pencil-off'
+  import Trash from '@lucide/svelte/icons/trash'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line'
+  import AlertCircle from '@lucide/svelte/icons/alert-circle'
+  import PanelRightClose from '@lucide/svelte/icons/panel-right-close'
+  import PanelRightOpen from '@lucide/svelte/icons/panel-right-open'
+  import Copy from '@lucide/svelte/icons/copy'
+  import Download from '@lucide/svelte/icons/download'
+  import Funnel from '@lucide/svelte/icons/funnel'
+  import CircleCheck from '@lucide/svelte/icons/circle-check'
+  import Info from '@lucide/svelte/icons/info'
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import FileClock from '@lucide/svelte/icons/file-clock';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
   import BsFiletypeHtml from '~icons/bi/filetype-html';

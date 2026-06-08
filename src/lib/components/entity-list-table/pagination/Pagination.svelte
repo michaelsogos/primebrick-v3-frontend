@@ -1,7 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-svelte';
+  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
 
   let {
     currentPage,

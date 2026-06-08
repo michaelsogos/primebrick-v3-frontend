@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
-	import { Clock } from "@lucide/svelte";
+	import Clock from '@lucide/svelte/icons/clock';
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	let {

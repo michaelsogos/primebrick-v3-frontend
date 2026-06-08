@@ -1,5 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { Table } from '$lib/components/ui';
+  import { Table } from '$lib/components/ui/table';
   import { cn } from '$lib/utils';
   import TableBody from './TableBody.svelte';
   import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';

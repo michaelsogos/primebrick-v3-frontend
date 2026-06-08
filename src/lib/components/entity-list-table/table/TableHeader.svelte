@@ -4,7 +4,9 @@
   import { cn } from '$lib/utils.js';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-svelte';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import ArrowUp from '@lucide/svelte/icons/arrow-up'
+  import ArrowDown from '@lucide/svelte/icons/arrow-down';
 
   let {
     columns,

@@ -5,7 +5,8 @@
   import { cn } from '$lib/utils.js';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { Search, X } from 'lucide-svelte';
+  import Search from '@lucide/svelte/icons/search'
+  import X from '@lucide/svelte/icons/x';
 
   let {
     search,

@@ -6,7 +6,8 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import XIcon from '@lucide/svelte/icons/x';
-  import { GripVertical, RotateCcw } from 'lucide-svelte';
+  import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
   type ColumnLike = { key: string; labelKey: string; hideable?: boolean };
 

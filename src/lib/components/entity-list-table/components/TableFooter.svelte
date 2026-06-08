@@ -5,12 +5,10 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';
   import { cn } from '$lib/utils.js';
-  import {
-    ChevronsLeft,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsRight
-  } from 'lucide-svelte';
+  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
 
   let {
     footerRangeTotal,

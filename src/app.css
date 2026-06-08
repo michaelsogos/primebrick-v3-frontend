@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
 

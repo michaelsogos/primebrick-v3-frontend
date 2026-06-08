@@ -5,8 +5,14 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
   import * as Sheet from "$lib/components/ui/sheet";
-  import XIcon from "@lucide/svelte/icons/x";
-  import { Hourglass, CircleX, Info, ChevronDown, CircleCheckBig, AlertCircle, AlertTriangle } from "lucide-svelte";
+  import XIcon from '@lucide/svelte/icons/x';
+  import Hourglass from '@lucide/svelte/icons/hourglass'
+  import CircleX from '@lucide/svelte/icons/circle-x'
+  import Info from '@lucide/svelte/icons/info'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
+  import AlertCircle from '@lucide/svelte/icons/alert-circle'
+  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
   import { badgeClassesFromToken } from "$lib/colors/badge";

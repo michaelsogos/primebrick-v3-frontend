@@ -2,7 +2,9 @@
   import type { Snippet } from 'svelte';
   import { t } from '$lib/i18n';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
-  import { CircleX, Hourglass, TriangleAlert } from 'lucide-svelte';
+  import CircleX from '@lucide/svelte/icons/circle-x'
+  import Hourglass from '@lucide/svelte/icons/hourglass'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -11,13 +13,11 @@
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
-  import {
-    ArrowUpDown,
-    ArrowUpNarrowWide,
-    ArrowDownWideNarrow,
-    Globe,
-    MapPin
-  } from 'lucide-svelte';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import ArrowUpNarrowWide from '@lucide/svelte/icons/arrow-up-narrow-wide'
+  import ArrowDownWideNarrow from '@lucide/svelte/icons/arrow-down-wide-narrow'
+  import Globe from '@lucide/svelte/icons/globe'
+  import MapPin from '@lucide/svelte/icons/map-pin';
 
   let {
     viewMode,

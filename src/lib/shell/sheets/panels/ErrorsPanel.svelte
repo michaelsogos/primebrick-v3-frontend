@@ -10,7 +10,9 @@
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { ThumbsUp, Trash2, Eye } from 'lucide-svelte';
+  import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Eye from '@lucide/svelte/icons/eye';
   import XIcon from '@lucide/svelte/icons/x';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';

@@ -17,7 +17,12 @@
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
-  import { RotateCcw, ChevronDown, Play, Pencil, FunnelX, X } from "lucide-svelte";
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import Play from '@lucide/svelte/icons/play'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import FunnelX from '@lucide/svelte/icons/funnel-x'
+  import X from '@lucide/svelte/icons/x';
 import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";

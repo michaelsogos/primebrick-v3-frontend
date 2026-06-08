@@ -21,7 +21,10 @@
   import { APP_VERSION } from '$lib/version';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
-  import { Cloud, CloudOff, Database, ShieldAlert } from 'lucide-svelte';
+  import Cloud from '@lucide/svelte/icons/cloud'
+  import CloudOff from '@lucide/svelte/icons/cloud-off'
+  import Database from '@lucide/svelte/icons/database'
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import { onMount } from 'svelte';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushRFC7807Error } from '$lib/errors/app-errors';

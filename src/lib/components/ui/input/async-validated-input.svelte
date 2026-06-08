@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
 	import Input from "$lib/components/ui/input/input.svelte";
-	import { CircleCheckBig, TicketX, LoaderCircle, AlertTriangle } from "lucide-svelte";
+	import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
+  import TicketX from '@lucide/svelte/icons/ticket-x'
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle'
+  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import type { ValidationResult, ValidationStatus } from "$lib/types/validation.js";
 	import type { HTMLInputTypeAttribute } from "svelte/elements";
 

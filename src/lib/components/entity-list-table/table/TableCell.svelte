@@ -6,7 +6,8 @@
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { CircleCheck, CircleX } from 'lucide-svelte';
+  import CircleCheck from '@lucide/svelte/icons/circle-check'
+  import CircleX from '@lucide/svelte/icons/circle-x';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {

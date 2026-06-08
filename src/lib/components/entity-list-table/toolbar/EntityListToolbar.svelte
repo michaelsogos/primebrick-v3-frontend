@@ -1,11 +1,9 @@
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import { SearchBar, ViewModeToggle, DeletionFilterToggle } from '.';
-  import {
-    RotateCw,
-    Columns3,
-    SlidersHorizontal
-  } from 'lucide-svelte';
+  import RotateCw from '@lucide/svelte/icons/rotate-cw'
+  import Columns3 from '@lucide/svelte/icons/columns-3'
+  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import { Button } from '$lib/components/ui/button';
   import type { ViewName } from '$lib/entity-list/types';
 

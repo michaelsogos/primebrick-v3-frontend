@@ -5,7 +5,13 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Button } from '$lib/components/ui/button';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { MoreVertical, Eye, Pencil, Trash2, ArrowUpFromLine, Copy, FileClock } from 'lucide-svelte';
+  import MoreVertical from '@lucide/svelte/icons/more-vertical'
+  import Eye from '@lucide/svelte/icons/eye'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line'
+  import Copy from '@lucide/svelte/icons/copy'
+  import FileClock from '@lucide/svelte/icons/file-clock';
   import CardField from './CardField.svelte';
 
   let {

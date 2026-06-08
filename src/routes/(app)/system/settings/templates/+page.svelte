@@ -3,7 +3,14 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
-  import { FileText, Mail, FileSpreadsheet, Code2, Upload, Download, Trash2, Plus } from 'lucide-svelte';
+  import FileText from '@lucide/svelte/icons/file-text'
+  import Mail from '@lucide/svelte/icons/mail'
+  import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet'
+  import Code2 from '@lucide/svelte/icons/code-2'
+  import Upload from '@lucide/svelte/icons/upload'
+  import Download from '@lucide/svelte/icons/download'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Plus from '@lucide/svelte/icons/plus';
 
   let uploadedFile = $state<File | null>(null);
   let selectedType = $state<'pdf' | 'email' | 'excel' | 'html'>('pdf');

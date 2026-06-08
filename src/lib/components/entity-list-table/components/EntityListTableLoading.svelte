@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Hourglass } from 'lucide-svelte';
+  import Hourglass from '@lucide/svelte/icons/hourglass';
 
   let {
     metaLoading,

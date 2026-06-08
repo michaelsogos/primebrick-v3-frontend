@@ -7,7 +7,7 @@
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import { cn } from '$lib/utils';
-  import { Plus } from 'lucide-svelte';
+  import Plus from '@lucide/svelte/icons/plus';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';

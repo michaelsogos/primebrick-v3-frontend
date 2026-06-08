@@ -3,7 +3,9 @@
   import { Button } from '$lib/components/ui/button';
   import { cn } from '$lib/utils.js';
   import type { ViewName } from '$lib/entity-list/types';
-  import { Table2, LayoutGrid, LayoutList } from 'lucide-svelte';
+  import Table2 from '@lucide/svelte/icons/table-2'
+  import LayoutGrid from '@lucide/svelte/icons/layout-grid'
+  import LayoutList from '@lucide/svelte/icons/layout-list';
 
   let {
     viewMode,

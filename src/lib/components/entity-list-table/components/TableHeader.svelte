@@ -6,15 +6,13 @@
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
   import { datetimeIanaHeadHighlightClass } from '../utils/cell-styling';
-  import {
-    ArrowUpDown,
-    ArrowUp,
-    ArrowDown,
-    Globe,
-    MapPin,
-    PanelRightClose,
-    PanelRightOpen
-  } from 'lucide-svelte';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import ArrowUp from '@lucide/svelte/icons/arrow-up'
+  import ArrowDown from '@lucide/svelte/icons/arrow-down'
+  import Globe from '@lucide/svelte/icons/globe'
+  import MapPin from '@lucide/svelte/icons/map-pin'
+  import PanelRightClose from '@lucide/svelte/icons/panel-right-close'
+  import PanelRightOpen from '@lucide/svelte/icons/panel-right-open';
 
   let {
     rowSelectionEnabled,

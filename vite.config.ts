@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
 			})
 		],
 		ssr: {
-			noExternal: ['bits-ui']
+			noExternal: ['bits-ui', '@lucide/svelte']
 		},
 		server: {
 			proxy: {

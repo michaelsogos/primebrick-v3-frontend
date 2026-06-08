@@ -4,7 +4,12 @@
   import { FilterBar } from '../toolbar';
   import { fly } from 'svelte/transition';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
-  import { ListCheck, Funnel, Download, Copy, Trash2, ArrowUpFromLine } from 'lucide-svelte';
+  import ListCheck from '@lucide/svelte/icons/list-check'
+  import Funnel from '@lucide/svelte/icons/funnel'
+  import Download from '@lucide/svelte/icons/download'
+  import Copy from '@lucide/svelte/icons/copy'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
 
   let {
     toolbarMode,

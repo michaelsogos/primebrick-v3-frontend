@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TableFooter from '../pagination';
+  import Pagination from '../pagination/Pagination.svelte';
 
   let {
     footerRangeTotal,
@@ -50,7 +50,7 @@
   };
 </script>
 
-<TableFooter
+<Pagination
   footerRangeTotal={footerRangeTotal}
   footerRangeStart={footerRangeStart}
   footerRangeEnd={footerRangeEnd}
