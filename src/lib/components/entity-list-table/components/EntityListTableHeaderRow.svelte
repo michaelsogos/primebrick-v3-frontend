@@ -58,7 +58,7 @@
   };
 </script>
 
-<Table.Header class="sticky top-0 z-80 bg-background">
+<Table.Header class="sticky top-0 z-80 bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
   <Table.Row>
     {#if rowSelectionEnabled}
       <Table.Head

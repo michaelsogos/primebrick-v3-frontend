@@ -35,7 +35,7 @@
       <Button
         {...props}
         type="button"
-        variant="ghost"
+        variant="soft"
         class="h-9 max-w-[min(100%,14rem)] gap-2 px-2"
         title={$uiLang}
         aria-label={`Language: ${current.label}`}
