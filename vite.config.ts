@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
 		ssr: {
 			noExternal: ['bits-ui', '@lucide/svelte']
 		},
+		optimizeDeps: {
+			include: ['html2pdf.js']
+		},
 		server: {
 			proxy: {
 				'/api': {
