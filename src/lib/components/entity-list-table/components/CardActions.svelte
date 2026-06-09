@@ -75,8 +75,10 @@
     }}
   >
     <Checkbox
+      id={`card-select-${rowKey}`}
+      value={rowKey}
       class={checkboxInteractiveClass}
-      checked={selectedKeys.includes(rowKey)}
+      checked={rowSelected}
       onCheckedChange={() => onToggleRowSelect(rowKey)}
       aria-label={$t('entities.list.selectRow')}
     />

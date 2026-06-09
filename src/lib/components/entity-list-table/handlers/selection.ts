@@ -1,10 +1,11 @@
 export function createSelectionHandlers(
-  selectedKeys: string[],
+  getSelectedKeys: () => string[],
   onSelectedKeysChange: (keys: string[]) => void,
-  pageKeys: string[],
-  allOnPageSelected: boolean
+  getPageKeys: () => string[],
+  getAllOnPageSelected: () => boolean
 ) {
   function toggleRowSelect(key: string) {
+    const selectedKeys = getSelectedKeys();
     if (selectedKeys.includes(key)) {
       onSelectedKeysChange(selectedKeys.filter((k) => k !== key));
     } else {
@@ -13,6 +14,10 @@ export function createSelectionHandlers(
   }
 
   function toggleAllOnPage() {
+    const selectedKeys = getSelectedKeys();
+    const pageKeys = getPageKeys();
+    const allOnPageSelected = getAllOnPageSelected();
+
     if (allOnPageSelected) {
       const remove = new Set(pageKeys);
       onSelectedKeysChange(selectedKeys.filter((k) => !remove.has(k)));

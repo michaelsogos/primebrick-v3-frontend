@@ -56,6 +56,7 @@
       >
         <div class={cn('flex items-center justify-center', rowChromeH)}>
           <Checkbox
+            id="select-all-table-legacy"
             class={checkboxInteractiveClass}
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}

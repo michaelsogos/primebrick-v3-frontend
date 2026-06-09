@@ -191,6 +191,7 @@
       <div class="flex flex-wrap items-center gap-2">
         {#if rowSelectionEnabled}
           <Checkbox
+            id="select-all-card-header"
             class={checkboxInteractiveClass}
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}

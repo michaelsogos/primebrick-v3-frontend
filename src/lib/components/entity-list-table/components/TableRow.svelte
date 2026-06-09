@@ -136,8 +136,10 @@
     >
       <div class={cn('flex items-center justify-center', rowChromeH)}>
         <Checkbox
+          id={`row-select-${rowKey}`}
+          value={rowKey}
           class={checkboxInteractiveClass}
-          checked={selectedKeys.includes(rowKey)}
+          checked={rowSelected}
           onCheckedChange={() => onToggleRowSelect(rowKey)}
           aria-label="select row"
         />

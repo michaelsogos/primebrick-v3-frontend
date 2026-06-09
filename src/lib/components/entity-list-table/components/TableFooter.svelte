@@ -63,6 +63,7 @@
     'text-xs'
   )}
 >
+  <!-- Left side: Row range + Selection Counter -->
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
     <div class="text-muted-foreground">
       {#if footerRangeTotal === 0}
@@ -85,6 +86,7 @@
     {/if}
   </div>
 
+  <!-- Right side: Page size + Pagination controls -->
   <div class="flex items-center gap-2">
     <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
     <DropdownMenu.Root>

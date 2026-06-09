@@ -176,7 +176,7 @@
     visibleKeys,
     onVisibleKeysChange,
     onResetColumnVisibility,
-    selectedKeys,
+    selectedKeys = $bindable<string[]>([]),
     onSelectedKeysChange,
     rowSelectionEnabled = true,
     onRefresh,
@@ -949,10 +949,10 @@
 
   // Selection handlers
   const selectionHandlers = createSelectionHandlers(
-    selectedKeys,
+    () => selectedKeys,
     onSelectedKeysChange,
-    pageKeys,
-    allOnPageSelected
+    () => pageKeys,
+    () => allOnPageSelected
   );
   const { toggleRowSelect, toggleAllOnPage } = selectionHandlers;
 
