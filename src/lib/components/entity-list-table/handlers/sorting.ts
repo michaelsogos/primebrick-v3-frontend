@@ -7,8 +7,8 @@ export function createSortingHandlers(
   onResetColumnVisibility: (view: 'table' | 'cards' | 'cards_list') => void,
   onSortChange: (key: string | null, dir: 'asc' | 'desc') => void,
   rowsLoading: boolean,
-  sortKey: string | null,
-  sortDir: 'asc' | 'desc',
+  sortKey: () => string | null,
+  sortDir: () => 'asc' | 'desc',
   dataColumns: any,
   auditingColumnsGroup: any,
   nonAuditingColumns: any,
@@ -43,9 +43,9 @@ export function createSortingHandlers(
   function handleSortClick(col: MetaColumn) {
     if (rowsLoading) return;
     if (col.sortable === false) return;
-    if (sortKey !== col.key) {
+    if (sortKey() !== col.key) {
       onSortChange(col.key, 'asc');
-    } else if (sortDir === 'asc') {
+    } else if (sortDir() === 'asc') {
       onSortChange(col.key, 'desc');
     } else {
       onSortChange(null, defaultSortDir);
