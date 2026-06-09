@@ -15,8 +15,6 @@
     selectedCount: number;
     totalCount: number;
     entity: string;
-    exportScope: 'selected' | 'all';
-    onExportScopeChange: (scope: 'selected' | 'all') => void;
     isExporting: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -28,8 +26,6 @@
     selectedCount,
     totalCount,
     entity,
-    exportScope,
-    onExportScopeChange,
     isExporting,
     onConfirm,
     onCancel
@@ -47,22 +43,6 @@
       {/if}
     </Dialog.Description>
   </Dialog.Header>
-  {#if selectedCount > 0}
-    <div class="py-4">
-      <Choicebox bind:value={exportScope}>
-        <ChoiceboxItem value="selected">
-          <ChoiceboxTitle>Solo i {selectedCount} elementi selezionati</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-        <ChoiceboxItem value="all">
-          <ChoiceboxTitle>Tutti i {totalCount} elementi</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-      </Choicebox>
-    </div>
-  {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
     <Button
       variant="secondary-outline"

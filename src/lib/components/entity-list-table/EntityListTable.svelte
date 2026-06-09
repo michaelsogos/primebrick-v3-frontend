@@ -703,7 +703,7 @@
   }
 
   function handleHtmlExport() {
-    exportComposable.handleHtmlExport();
+    exportComposable.openHtmlExportDialog();
   }
 
   function cancelHtmlExport() {

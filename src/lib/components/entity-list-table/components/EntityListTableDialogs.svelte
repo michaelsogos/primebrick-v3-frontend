@@ -111,8 +111,6 @@
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={entity}
-  exportScope={exportComposable.htmlExportScope}
-  onExportScopeChange={(scope) => exportComposable.htmlExportScope = scope}
   isExporting={exportComposable.isHtmlExporting}
   onConfirm={confirmHtmlExport}
   onCancel={cancelHtmlExport}

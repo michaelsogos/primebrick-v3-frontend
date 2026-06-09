@@ -23,7 +23,6 @@ export interface ExportOptions {
 export interface ExportReturn {
   exportOpen: boolean;
   exportScope: 'selected' | 'all';
-  htmlExportScope: 'selected' | 'all';
   fileType: 'xlsx' | 'csv' | null;
   isExporting: boolean;
   isHtmlExporting: boolean;
@@ -41,7 +40,6 @@ export interface ExportReturn {
   handleExport: (fileType: 'xlsx' | 'csv') => Promise<void>;
   handleHtmlExport: () => Promise<void>;
   setExportScope: (scope: 'selected' | 'all') => void;
-  setHtmlExportScope: (scope: 'selected' | 'all') => void;
   setFileType: (type: 'xlsx' | 'csv' | null) => void;
   closeHtmlPreview: () => void;
   copyHtmlToClipboard: () => Promise<void>;
@@ -73,7 +71,6 @@ export function useExport(options: ExportOptions): ExportReturn {
   let fileType = $state<'xlsx' | 'csv' | null>(null);
   let isExporting = $state(false);
 
-  let htmlExportScope = $state<'selected' | 'all'>('selected');
   let isHtmlExporting = $state(false);
   let htmlPreviewContent = $state('');
   let htmlPreviewDialogOpen = $state(false);
@@ -95,7 +92,6 @@ export function useExport(options: ExportOptions): ExportReturn {
   }
 
   function openHtmlExportDialog() {
-    htmlExportScope = selectedKeysFn().length > 0 ? 'selected' : 'all';
     htmlPreviewDialogOpen = true;
   }
 
@@ -107,9 +103,6 @@ export function useExport(options: ExportOptions): ExportReturn {
     exportScope = scope;
   }
 
-  function setHtmlExportScope(scope: 'selected' | 'all') {
-    htmlExportScope = scope;
-  }
 
   function setFileType(type: 'xlsx' | 'csv' | null) {
     fileType = type;
@@ -306,8 +299,12 @@ export function useExport(options: ExportOptions): ExportReturn {
         });
       }
 
-      if (htmlExportScope === 'selected' && selectedKeys.length > 0) {
+      // If exporting selected items
+      if (selectedKeys.length > 0) {
         params.append('uuids', selectedKeys.join(','));
+      } else {
+        // Export all items without pagination
+        params.append('pagination', 'false');
       }
 
       if (deletionFilterMode && deletionFilterMode !== 'non_deleted') {
@@ -434,7 +431,6 @@ export function useExport(options: ExportOptions): ExportReturn {
   return {
     get exportOpen() { return exportOpen; },
     get exportScope() { return exportScope; },
-    get htmlExportScope() { return htmlExportScope; },
     get fileType() { return fileType; },
     get isExporting() { return isExporting; },
     get isHtmlExporting() { return isHtmlExporting; },
@@ -452,7 +448,6 @@ export function useExport(options: ExportOptions): ExportReturn {
     handleExport,
     handleHtmlExport,
     setExportScope,
-    setHtmlExportScope,
     setFileType,
     closeHtmlPreview,
     copyHtmlToClipboard,
