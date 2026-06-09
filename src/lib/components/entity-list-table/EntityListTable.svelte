@@ -687,8 +687,9 @@
   async function confirmDuplicate() {
     if (dialogs.duplicateScope === 'single' && dialogs.singleRowToDuplicate) {
       await rowActionsComposable.confirmDuplicateRow(dialogs.singleRowToDuplicate);
+    } else if (dialogs.duplicateScope === 'selected') {
+      await bulkActions.confirmBulkDuplicate();
     }
-    // Bulk duplicate is handled separately by bulkActions composable
     dialogs.closeDuplicateDialog();
     dialogs.setSingleRowToDuplicate(null);
   }
@@ -881,6 +882,17 @@
     }
   });
 
+  const previewPanel = usePreviewPanel<TRow>({
+    viewRows: () => viewRows,
+    rowKey: rowKey,
+    onFieldChange: (row, field, value) => {
+      // Handle field change if needed
+    },
+    onRefresh: onRefresh
+  });
+
+  const dialogs = useDialogs<TRow>();
+
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
@@ -900,7 +912,16 @@
     onToolbarModeChange: () => {
       toolbarModeState.setMode('filters');
     },
-    t: $t
+    t: $t,
+    dialogs: {
+      openBulkDeleteDialog: dialogs.openBulkDeleteDialog,
+      closeBulkDeleteDialog: dialogs.closeBulkDeleteDialog,
+      openBulkRestoreDialog: dialogs.openBulkRestoreDialog,
+      closeBulkRestoreDialog: dialogs.closeBulkRestoreDialog,
+      openDuplicateDialog: dialogs.openDuplicateDialog,
+      closeDuplicateDialog: dialogs.closeDuplicateDialog
+    },
+    setDuplicateScope: dialogs.setDuplicateScope
   });
 
   const rowActionsComposable = useRowActions<TRow>({
@@ -915,19 +936,20 @@
       previewPanel.openPreview(row);
     },
     closeRowDropdown: closeRowDropdown,
-    t: $t
+    t: $t,
+    dialogs: {
+      openDeleteDialog: dialogs.openDeleteDialog,
+      closeDeleteDialog: dialogs.closeDeleteDialog,
+      openRestoreDialog: dialogs.openRestoreDialog,
+      closeRestoreDialog: dialogs.closeRestoreDialog,
+      openDuplicateDialog: dialogs.openDuplicateDialog,
+      closeDuplicateDialog: dialogs.closeDuplicateDialog,
+      setDuplicateScope: dialogs.setDuplicateScope,
+      setRowToDelete: dialogs.setRowToDelete,
+      setRowToRestore: dialogs.setRowToRestore,
+      setSingleRowToDuplicate: dialogs.setSingleRowToDuplicate
+    }
   });
-
-  const previewPanel = usePreviewPanel<TRow>({
-    viewRows: () => viewRows,
-    rowKey: rowKey,
-    onFieldChange: (row, field, value) => {
-      // Handle field change if needed
-    },
-    onRefresh: onRefresh
-  });
-
-  const dialogs = useDialogs<TRow>();
   $effect(() => {
     void rows;
     void selectedKeys;

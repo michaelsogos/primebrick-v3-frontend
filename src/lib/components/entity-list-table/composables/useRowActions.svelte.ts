@@ -23,6 +23,10 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
     closeRestoreDialog: () => void;
     openDuplicateDialog: () => void;
     closeDuplicateDialog: () => void;
+    setDuplicateScope: (scope: 'selected' | 'single') => void;
+    setRowToDelete: (row: TRow | null) => void;
+    setRowToRestore: (row: TRow | null) => void;
+    setSingleRowToDuplicate: (row: TRow | null) => void;
   };
 }
 
@@ -95,13 +99,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   function handleDeleteRow(row: TRow) {
-    rowToDelete = row;
+    dialogs?.setRowToDelete?.(row);
     dialogs?.openDeleteDialog();
     closeRowDropdown?.();
   }
 
   function handleRestoreRow(row: TRow) {
-    rowToRestore = row;
+    dialogs?.setRowToRestore?.(row);
     dialogs?.openRestoreDialog();
     closeRowDropdown?.();
   }
@@ -111,8 +115,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       console.log('Cannot duplicate deleted row:', rowKey?.(row));
       return;
     }
-    singleRowToDuplicate = row;
-    duplicateScope = 'single';
+    dialogs?.setSingleRowToDuplicate?.(row);
+    dialogs?.setDuplicateScope?.('single');
     dialogs?.openDuplicateDialog();
     closeRowDropdown?.();
   }
