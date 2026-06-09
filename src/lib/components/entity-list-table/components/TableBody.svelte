@@ -186,12 +186,16 @@
     </Table.Row>
   {:else if viewRows && viewRows.length > 0}
     <!-- DEBUG: viewRowsLen={viewRows.length} -->
-    {#each viewRows as r, i}
+    {#each viewRows as r, i (rowKey(r))}
+      {@const rk = rowKey(r)}
+      {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
+      {@const rowDeleted = isRowDeleted(r)}
       <TableRow
         {i}
         row={r}
-        {rowKey}
-        {isRowDeleted}
+        rowKey={rk}
+        rowSelected={rowSelected}
+        rowDeleted={rowDeleted}
         {shownColumns}
         {extraCols}
         {rowSelectionEnabled}
