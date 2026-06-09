@@ -231,9 +231,12 @@ export function useExport(options: ExportOptions): ExportReturn {
         params.set(`filters[${filterIdx}][connector]`, 'AND');
       }
 
-      if (deletionFilterMode && deletionFilterMode !== 'non_deleted') {
-        params.append('deletion_filter_mode', deletionFilterMode);
+      if (deletionFilterMode === 'deleted') {
+        params.append('deleted_records', 'ONLY');
+      } else if (deletionFilterMode === 'all') {
+        params.append('deleted_records', 'INCLUDED');
       }
+      // 'non_deleted' is default (EXCLUDED), so no param needed
 
       const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
 
@@ -318,15 +321,23 @@ export function useExport(options: ExportOptions): ExportReturn {
 
       // If exporting selected items
       if (selectedKeys.length > 0) {
-        params.append('uuids', selectedKeys.join(','));
+        params.set(`filters[${filterIdx}][field]`, uid);
+        params.set(`filters[${filterIdx}][op]`, 'IN');
+        for (const key of selectedKeys) {
+          params.append(`filters[${filterIdx}][value][]`, key);
+        }
+        params.set(`filters[${filterIdx}][connector]`, 'AND');
       } else {
         // Export all items without pagination
         params.append('pagination', 'false');
       }
 
-      if (deletionFilterMode && deletionFilterMode !== 'non_deleted') {
-        params.append('deletion_filter_mode', deletionFilterMode);
+      if (deletionFilterMode === 'deleted') {
+        params.append('deleted_records', 'ONLY');
+      } else if (deletionFilterMode === 'all') {
+        params.append('deleted_records', 'INCLUDED');
       }
+      // 'non_deleted' is default (EXCLUDED), so no param needed
 
       Object.entries(filters).forEach(([key, value]) => {
         params.append(key, value);
