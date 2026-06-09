@@ -106,8 +106,8 @@
 />
 
 <HtmlExportDialog
-  bind:open={exportComposable.htmlPreviewDialogOpen}
-  onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
+  bind:open={exportComposable.htmlExportConfirmDialogOpen}
+  onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportConfirmDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={entity}
@@ -132,7 +132,7 @@
   bind:open={exportComposable.htmlPreviewDialogOpen}
   onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
   previewMode={exportComposable.previewMode}
-  onPreviewModeChange={(mode: 'html' | 'pdf' | 'email') => exportComposable.previewMode = mode}
+  onPreviewModeChange={(mode: 'html' | 'pdf' | 'email') => exportComposable.setPreviewMode(mode)}
   htmlPreviewContent={exportComposable.htmlPreviewContent}
   pdfBlobUrl={exportComposable.pdfBlobUrl}
   emailHtmlContent={exportComposable.emailHtmlContent}

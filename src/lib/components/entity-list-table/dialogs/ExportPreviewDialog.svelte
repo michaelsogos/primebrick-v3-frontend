@@ -87,6 +87,7 @@
         srcdoc={htmlPreviewContent}
         class="w-full h-full border-0"
         title="HTML Preview"
+        sandbox="allow-scripts"
       ></iframe>
     {:else if previewMode === 'pdf' && pdfBlobUrl}
       <iframe

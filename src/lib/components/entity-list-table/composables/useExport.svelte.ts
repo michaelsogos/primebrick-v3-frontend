@@ -28,6 +28,7 @@ export interface ExportReturn {
   isHtmlExporting: boolean;
   htmlPreviewContent: string;
   htmlPreviewDialogOpen: boolean;
+  htmlExportConfirmDialogOpen: boolean;
   previewMode: 'html' | 'pdf' | 'email';
   pdfBlobUrl: string | null;
   emailHtmlContent: string;
@@ -37,10 +38,13 @@ export interface ExportReturn {
   closeExportDialog: () => void;
   openHtmlExportDialog: () => void;
   closeHtmlExportDialog: () => void;
+  openHtmlExportConfirmDialog: () => void;
+  closeHtmlExportConfirmDialog: () => void;
   handleExport: (fileType: 'xlsx' | 'csv') => Promise<void>;
   handleHtmlExport: () => Promise<void>;
   setExportScope: (scope: 'selected' | 'all') => void;
   setFileType: (type: 'xlsx' | 'csv' | null) => void;
+  setPreviewMode: (mode: 'html' | 'pdf' | 'email') => void;
   closeHtmlPreview: () => void;
   copyHtmlToClipboard: () => Promise<void>;
   generatePdfPreview: () => Promise<void>;
@@ -74,6 +78,7 @@ export function useExport(options: ExportOptions): ExportReturn {
   let isHtmlExporting = $state(false);
   let htmlPreviewContent = $state('');
   let htmlPreviewDialogOpen = $state(false);
+  let htmlExportConfirmDialogOpen = $state(false);
   let previewMode = $state<'html' | 'pdf' | 'email'>('html');
   let pdfBlobUrl = $state<string | null>(null);
   let emailHtmlContent = $state('');
@@ -99,6 +104,14 @@ export function useExport(options: ExportOptions): ExportReturn {
     htmlPreviewDialogOpen = false;
   }
 
+  function openHtmlExportConfirmDialog() {
+    htmlExportConfirmDialogOpen = true;
+  }
+
+  function closeHtmlExportConfirmDialog() {
+    htmlExportConfirmDialogOpen = false;
+  }
+
   function setExportScope(scope: 'selected' | 'all') {
     exportScope = scope;
   }
@@ -106,6 +119,10 @@ export function useExport(options: ExportOptions): ExportReturn {
 
   function setFileType(type: 'xlsx' | 'csv' | null) {
     fileType = type;
+  }
+
+  function setPreviewMode(mode: 'html' | 'pdf' | 'email') {
+    previewMode = mode;
   }
 
   async function handleExport(fileTypeParam: 'xlsx' | 'csv') {
@@ -333,7 +350,6 @@ export function useExport(options: ExportOptions): ExportReturn {
       onExportError?.(error as Error);
     } finally {
       isHtmlExporting = false;
-      htmlPreviewDialogOpen = false;
     }
   }
 
@@ -436,6 +452,7 @@ export function useExport(options: ExportOptions): ExportReturn {
     get isHtmlExporting() { return isHtmlExporting; },
     get htmlPreviewContent() { return htmlPreviewContent; },
     get htmlPreviewDialogOpen() { return htmlPreviewDialogOpen; },
+    get htmlExportConfirmDialogOpen() { return htmlExportConfirmDialogOpen; },
     get previewMode() { return previewMode; },
     get pdfBlobUrl() { return pdfBlobUrl; },
     get emailHtmlContent() { return emailHtmlContent; },
@@ -445,10 +462,13 @@ export function useExport(options: ExportOptions): ExportReturn {
     closeExportDialog,
     openHtmlExportDialog,
     closeHtmlExportDialog,
+    openHtmlExportConfirmDialog,
+    closeHtmlExportConfirmDialog,
     handleExport,
     handleHtmlExport,
     setExportScope,
     setFileType,
+    setPreviewMode,
     closeHtmlPreview,
     copyHtmlToClipboard,
     generatePdfPreview,
