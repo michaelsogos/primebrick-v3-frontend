@@ -13,7 +13,6 @@ export function createClickHandlers<TRow extends Record<string, unknown>>(
 
   function handlePreviewRow(row: TRow) {
     previewPanel.openPreview(row);
-    previewPanel.closeRowDropdown();
   }
 
   function onEntityRowClick(key: string, e: MouseEvent) {
