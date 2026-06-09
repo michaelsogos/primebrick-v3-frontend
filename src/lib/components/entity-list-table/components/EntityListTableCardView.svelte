@@ -114,7 +114,7 @@
     datetimeIanaRenderTick={datetimeIanaRenderTick}
     cell={cell}
     stickyColumnsGroup={stickyColumnsGroup}
-    onLoadVersionHistory={() => {}}
+    onLoadVersionHistory={(r) => rowActionsComposable.loadVersionHistory(r)}
     error={error}
     errorView={errorView}
     rowsLoading={rowsLoading}

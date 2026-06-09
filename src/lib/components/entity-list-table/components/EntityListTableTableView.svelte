@@ -186,7 +186,7 @@
         actionsEnabled={actionsEnabled}
         rowChromeH={rowChromeH}
         stickyColumnsGroup={stickyColumnsGroup}
-        onLoadVersionHistory={() => {}}
+        onLoadVersionHistory={(row: TRow) => rowActionsComposable.loadVersionHistory(row)}
         stickyColumnsState={stickyColumnsState}
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         cell={cell}
