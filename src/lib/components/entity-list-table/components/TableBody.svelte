@@ -212,6 +212,7 @@
         {rowActions}
         {entityRowActions}
         {dropdownMenuRow}
+        {isRowDeleted}
         onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
         onEntityRowClick={onEntityRowClick}
         onPreviewRow={onPreviewRow}
