@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t, formatListCellValue } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
@@ -775,8 +775,5 @@
     onDeletionFilterModeChange={onDeletionFilterModeChange}
     viewVisibility={viewVisibility}
   >
-    {#snippet cell({ row, column }: { row: OrganizationListRow; column: MetaColumn })}
-      {formatListCellValue(column, row[column.key as keyof OrganizationListRow], $uiLang)}
-    {/snippet}
   </EntityListTable>
 </div>
