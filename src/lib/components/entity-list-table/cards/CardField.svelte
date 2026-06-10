@@ -12,6 +12,8 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { cn } from '$lib/utils.js';
   import TableCell from '../table/TableCell.svelte';
+  import { isCardFieldEmpty } from '../utils/cell-formatting';
+  import { getAuditColumnsContext } from '../context';
 
   let {
     row,
@@ -37,16 +39,10 @@
   const isIanaRecordMode = $derived(
     column.type === 'datetime' && !!column.datetimeIanaToggle && (datetimeIanaModeByKey[column.key] ?? 'browser') === 'record'
   );
+  const auditingColumns = getAuditColumnsContext();
 
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
     return col.type === 'datetime' && !!col.datetimeIanaToggle && (modeByKey[col.key] ?? 'browser') === 'record';
-  }
-
-  function isCardFieldEmpty(): boolean {
-    if (cell) return false;
-    if (value === null || value === undefined || value === '') return true;
-    if (Array.isArray(value) && value.length === 0) return true;
-    return false;
   }
 </script>
 
@@ -58,7 +54,7 @@
 >
   <span class="text-xs font-medium text-muted-foreground">{$t(column.labelKey)}</span>
   <div class="min-w-0 text-sm">
-    {#if isCardFieldEmpty()}
+    {#if isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode, auditingColumns)}
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}

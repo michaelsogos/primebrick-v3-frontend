@@ -9,6 +9,8 @@
   import CircleCheck from '@lucide/svelte/icons/circle-check'
   import CircleX from '@lucide/svelte/icons/circle-x';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { getAuditFieldValue } from '../utils/cell-formatting';
+  import { getAuditColumnsContext } from '../context';
 
   let {
     row,
@@ -84,5 +86,5 @@
     <span class="min-w-0 truncate">{parts.text}</span>
   {/if}
 {:else}
-  <span class="min-w-0 truncate">{formatListCellValue(column, value, $uiLang)}</span>
+  <span class="min-w-0 truncate">{getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())}</span>
 {/if}

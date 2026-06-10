@@ -85,6 +85,7 @@
   } from './utils/cell-styling';
   import { stickyCardFieldChromeClass } from './utils/card-styling';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from './utils/cell-formatting';
+  import { setAuditColumnsContext } from './context';
   import XIcon from '@lucide/svelte/icons/x';
   import Search from '@lucide/svelte/icons/search'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
@@ -206,6 +207,12 @@
     loadingMessage,
     noRecordsMessage
   }: EntityListTableProps<TRow> = $props();
+
+  // Set context for child components — must be reactive because auditingColumns
+  // arrives after meta is loaded (initial value is [] before meta fetch completes)
+  $effect(() => {
+    setAuditColumnsContext(auditingColumns);
+  });
 
   // Utility functions moved to utils.ts
   const rowKey = (row: TRow): string => getRowKey(row, uid);

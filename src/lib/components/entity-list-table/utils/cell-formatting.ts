@@ -3,35 +3,26 @@ import type { UiLang } from '$lib/i18n/languages';
 import { isBlankish as isBlankishUtil } from '../utils';
 import { formatListCellValue } from '$lib/i18n/date-format';
 import { formatDatetimeCellDisplay } from '$lib/entity-list';
+import { getAuditableDisplayValue, isAuditableColumn, isAuditableFieldEmpty } from './auditable-fields';
 
 export const isBlankish = (value: unknown): boolean => isBlankishUtil(value);
 
-export function getAuditFieldValue<TRow>(
+export function getAuditFieldValue<TRow extends Record<string, unknown>>(
   row: TRow,
   col: MetaColumn,
   uiLang: UiLang,
-  formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string
+  formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string,
+  auditingColumns?: MetaColumn[]
 ): string {
-  const r = row as Record<string, unknown>;
-  const raw = r[col.key];
-
-  // Check if this is an audit field that should have a _name variant
-  const auditFields = ['created_by', 'updated_by', 'deleted_by'];
-  if (auditFields.includes(col.key)) {
-    const nameField = `${col.key}_name`;
-    const nameValue = r[nameField];
-    // Use _name if present and non-empty, otherwise use original value
-    if (!isBlankish(nameValue)) {
-      return String(nameValue);
-    }
-  }
-
-  // For non-audit fields or if _name is empty, use original value
-  if (isBlankish(raw)) return '-';
-  return formatListCellValueFn(col, raw, uiLang);
+  return getAuditableDisplayValue(
+    row,
+    col,
+    auditingColumns,
+    (value) => formatListCellValueFn(col, value, uiLang)
+  );
 }
 
-export function isCardFieldEmpty<TRow>(
+export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
   row: TRow,
   col: MetaColumn,
   uiLang: UiLang,
@@ -39,8 +30,15 @@ export function isCardFieldEmpty<TRow>(
   cell: any,
   formatDatetimeCellDisplayFn: (col: MetaColumn, row: Record<string, unknown>, lang: UiLang, mode: 'browser' | 'record') => { text: string; iana: string | null },
   formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string,
-  isDatetimeIanaRecordModeFn: (col: MetaColumn, datetimeIanaModeByKey: Record<string, 'browser' | 'record'>) => boolean
+  isDatetimeIanaRecordModeFn: (col: MetaColumn, datetimeIanaModeByKey: Record<string, 'browser' | 'record'>) => boolean,
+  auditingColumns?: MetaColumn[]
 ): boolean {
+  // Use the centralized utility for auditable fields
+  if (isAuditableColumn(col, auditingColumns)) {
+    return isAuditableFieldEmpty(row, col, auditingColumns);
+  }
+
+  // Existing logic for non-auditable fields
   const r = row as Record<string, unknown>;
   const raw = r[col.key];
 

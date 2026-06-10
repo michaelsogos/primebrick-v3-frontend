@@ -1,4 +1,5 @@
 import type { MetaColumn } from '$lib/entity-list/types';
+import { getAuditableDisplayValue, isAuditableFieldEmpty } from './utils/auditable-fields';
 
 /**
  * Check if a value is blank (null, undefined, empty string, or whitespace-only)
@@ -33,53 +34,31 @@ export function getRowKey<T extends Record<string, unknown>>(
  * Get audit field value with _name fallback.
  * For audit fields (created_by, updated_by, deleted_by), checks for the corresponding
  * _name field (e.g., created_by_name) and uses it as fallback to show human-readable names.
+ * 
+ * @deprecated Use getAuditableDisplayValue from ./utils/auditable-fields.ts instead.
+ * This function is kept for backward compatibility.
  */
 export function getAuditFieldValue<T extends Record<string, unknown>>(
   row: T,
-  col: MetaColumn
+  col: MetaColumn,
+  auditingColumns?: MetaColumn[]
 ): string {
-  const r = row as Record<string, unknown>;
-  const raw = r[col.key];
-
-  // Check if this is an audit field that should have a _name variant
-  const auditFields = ['created_by', 'updated_by', 'deleted_by'];
-  if (auditFields.includes(col.key)) {
-    const nameField = `${col.key}_name`;
-    const nameValue = r[nameField];
-    // Use _name if present and non-empty, otherwise use original value
-    if (!isBlankish(nameValue)) {
-      return String(nameValue);
-    }
-  }
-
-  // For non-audit fields or if _name is empty, use original value
-  if (isBlankish(raw)) return '-';
-
-  return String(raw);
+  return getAuditableDisplayValue(row, col, auditingColumns);
 }
 
 /**
  * Check if a card field is empty
  * Used in card view to determine if a field should be displayed
+ * 
+ * @deprecated Use isAuditableFieldEmpty from ./utils/auditable-fields.ts instead.
+ * This function is kept for backward compatibility.
  */
 export function isCardFieldEmpty<T extends Record<string, unknown>>(
   row: T,
-  col: MetaColumn
+  col: MetaColumn,
+  auditingColumns?: MetaColumn[]
 ): boolean {
-  const r = row as Record<string, unknown>;
-  const raw = r[col.key];
-
-  // For audit fields, check if both the value and _name are blank
-  const auditFields = ['created_by', 'updated_by', 'deleted_by'];
-  if (auditFields.includes(col.key)) {
-    const nameField = `${col.key}_name`;
-    const nameValue = r[nameField];
-    // Consider empty if both raw and _name are blank
-    return isBlankish(raw) && isBlankish(nameValue);
-  }
-
-  // For non-audit fields, just check the raw value
-  return isBlankish(raw);
+  return isAuditableFieldEmpty(row, col, auditingColumns);
 }
 
 /**

@@ -22,6 +22,7 @@
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from '../utils/cell-formatting';
+  import { getAuditColumnsContext } from '../context';
   import {
     isDatetimeIanaRecordMode,
     datetimeIanaCardFieldHighlightClass

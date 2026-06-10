@@ -8,6 +8,7 @@
   import Ban from '@lucide/svelte/icons/ban';
   import { datetimeIanaCardFieldHighlightClass, isDatetimeIanaRecordMode } from '../utils/cell-styling';
   import { isCardFieldEmpty } from '../utils/cell-formatting';
+  import { getAuditColumnsContext } from '../context';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';
   import { stickyCardFieldChromeClass } from '../utils/card-styling';
@@ -36,6 +37,8 @@
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     viewMode: 'cards_list' | 'cards_grid';
   } = $props();
+
+  const auditingColumns = getAuditColumnsContext();
 </script>
 
 <div
@@ -48,14 +51,14 @@
   <div
     class={cn(
       'min-w-0 text-sm',
-      (!isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)
+      (!isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode, auditingColumns)
         ? datetimeIanaCardFieldHighlightClass(column, rowSelectionEnabled && rowSelected, datetimeIanaModeByKey)
         : undefined) ?? (rowDeleted
           ? stickyCardFieldChromeClass(column, rowSelectionEnabled && rowSelected, true, stickyColumnsGroup)
           : stickyCardFieldChromeClass(column, rowSelectionEnabled && rowSelected, false, stickyColumnsGroup))
     )}
   >
-    {#if isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode)}
+    {#if isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode, auditingColumns)}
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}
