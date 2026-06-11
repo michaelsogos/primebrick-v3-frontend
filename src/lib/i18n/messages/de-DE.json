@@ -237,6 +237,16 @@
           "roles": "Rollen",
           "avatarInitials": "Avatar-Initialen",
           "avatarInitialsPlaceholder": "Initialen eingeben (z.B. JD)",
+          "avatarColor": "Avatar-Farbe",
+          "idpOrg": "IDP Organisation",
+          "idpUsername": "IDP Benutzername",
+          "copyIdpUsername": "IDP Benutzername kopieren",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "IDP Code kopieren",
+          "idpActive": "IDP Aktiv",
+          "idpAdmin": "IDP Administrator",
+          "idpVerified": "IDP Verifiziert",
+          "idpEmailVerified": "IDP E-Mail Verifiziert",
           "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie verlassen möchten?"
         },
         "update": {
