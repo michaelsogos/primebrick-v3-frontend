@@ -547,8 +547,8 @@
         "noFiltersApplied": "No filters applied"
       },
       "bulkActions": {
-        "toggleToBulk": "Bulk actions",
-        "toggleToFilters": "Filters",
+        "toggleToBulk": "Show Bulk Actions",
+        "toggleToFilters": "Show Filters",
         "delete": "Delete",
         "duplicate": "Duplicate",
         "export": "Export",

@@ -535,8 +535,8 @@
         "noFiltersApplied": "Keine Filter angewendet"
       },
       "bulkActions": {
-        "toggleToBulk": "Massenaktionen",
-        "toggleToFilters": "Filter",
+        "toggleToBulk": "Massenaktionen anzeigen",
+        "toggleToFilters": "Filter anzeigen",
         "delete": "Löschen",
         "duplicate": "Duplizieren",
         "export": "Exportieren",
