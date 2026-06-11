@@ -240,6 +240,7 @@
           "avatarColor": "Colore Avatar",
           "idpOrg": "IDP Organizzazione",
           "idpUsername": "IDP Nome Utente",
+          "idpPassword": "IDP Password",
           "copyIdpUsername": "Copia IDP Nome Utente",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copia IDP Code",

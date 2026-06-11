@@ -30,6 +30,8 @@
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
+  import Select from '$lib/components/ui/select/select.svelte';
+  import MultiSelect from '$lib/components/ui/multi-select/multi-select.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -103,7 +105,7 @@
 
   // Zod schema for user create form
   const createSchema = z.object({
-    username: z.string()
+    idpUsername: z.string()
       .min(3, { message: 'validation.tooShort' })
       .max(255, { message: 'validation.tooLong' })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
@@ -120,11 +122,7 @@
       .max(320, { message: 'validation.tooLong' })
       .optional()
       .or(z.literal('')),
-    roles: z.string().default(''),
-    avatar_initials: z.string()
-      .max(4, { message: 'validation.tooLong' })
-      .optional()
-      .or(z.literal('')),
+    roles: z.array(z.string()).default([]),
     avatar_color: z.string()
       .regex(/^#[0-9A-Fa-f]{6}$/)
       .optional()
@@ -153,12 +151,11 @@
 
       try {
         const body = {
-          username: updateForm.data.username,
+          username: updateForm.data.idpUsername,
           password: updateForm.data.password,
           display_name: updateForm.data.display_name || undefined,
           email: updateForm.data.email || undefined,
-          roles: updateForm.data.roles ? updateForm.data.roles.split(',').map(r => r.trim()) : [],
-          avatar_initials: updateForm.data.avatar_initials || undefined,
+          roles: updateForm.data.roles || [],
           avatar_color: updateForm.data.avatar_color || undefined,
           idp_org: updateForm.data.idp_org || undefined,
           is_active: updateForm.data.is_active,
@@ -238,12 +235,7 @@
   );
 
   // Derived values for IDP fields
-  const idpUsername = $derived($form.username || '');
-  const idpCode = $derived.by(() => {
-    const org = $form.idp_org || 'acme';
-    const name = $form.username || '';
-    return name ? `${org}/${name}` : '';
-  });
+  const idpCode = $derived(''); // Not used anymore - removed from form
 
   // Audit info state
   let auditInfo = $state({
@@ -386,39 +378,6 @@
             </FormControl>
           </FormField>
 
-          <FormField form={superFormObj} name="username">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.username')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.username}
-                    placeholder={$t('shell.settings.users.create.usernamePlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="password">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.password')}</FormLabel>
-                  <Input
-                    {...props}
-                    type="password"
-                    bind:value={$form.password}
-                    placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
           <FormField form={superFormObj} name="email">
             <FormControl>
               {#snippet children({ props })}
@@ -436,36 +395,16 @@
             </FormControl>
           </FormField>
 
-          <FormField form={superFormObj} name="avatar_initials">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.avatarInitials')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.avatar_initials}
-                    placeholder={$t('shell.settings.users.create.avatarInitialsPlaceholder')}
-                    maxlength={4}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
           <FormField form={superFormObj} name="roles">
             <FormControl>
               {#snippet children({ props })}
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.users.create.roles')}</FormLabel>
-                  <Input
-                    {...props}
+                  <MultiSelect
                     bind:value={$form.roles}
-                    placeholder="admin, collaborator, guest"
+                    options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
+                    placeholder="Select roles..."
                   />
-                  <p class="text-sm text-muted-foreground mt-1">
-                    Comma-separated list of roles
-                  </p>
                   <FormFieldErrors />
                 </div>
               {/snippet}
@@ -480,10 +419,10 @@
               {#snippet children({ props })}
                 <div class="space-y-2">
                   <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
-                  <Input
-                    {...props}
+                  <Select
                     bind:value={$form.idp_org}
-                    placeholder="acme"
+                    options={[{ value: 'acme', label: 'Acme', idp_name: 'acme' }]}
+                    placeholder="Select organization..."
                   />
                   <FormFieldErrors />
                 </div>
@@ -491,71 +430,38 @@
             </FormControl>
           </FormField>
 
-          <div class="space-y-2">
-            <label for="idp-username" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {$t('shell.settings.users.create.idpUsername')}
-            </label>
-            <div class="relative">
-              <Input
-                id="idp-username"
-                value={idpUsername}
-                readonly
-                class="bg-muted pr-10"
-              />
-              {#if idpUsername}
-                <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      {#snippet child({ props: tooltipProps })}
-                        <CopyButton
-                          text={idpUsername}
-                          variant="ghost"
-                          size="icon"
-                          class="h-8 w-8 hover:bg-transparent"
-                          animationDuration={2000}
-                          {...tooltipProps}
-                        />
-                      {/snippet}
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>{$t('shell.settings.users.create.copyIdpUsername')}</Tooltip.Content>
-                  </Tooltip.Root>
+          <FormField form={superFormObj} name="idpUsername">
+            <FormControl>
+              {#snippet children({ props })}
+                <div class="space-y-2">
+                  <FormLabel for={props.id}>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
+                  <Input
+                    {...props}
+                    bind:value={$form.idpUsername}
+                    placeholder={$t('shell.settings.users.create.usernamePlaceholder')}
+                  />
+                  <FormFieldErrors />
                 </div>
-              {/if}
-            </div>
-          </div>
+              {/snippet}
+            </FormControl>
+          </FormField>
 
-          <div class="space-y-2">
-            <label for="idp-code" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {$t('shell.settings.users.create.idpCode')}
-            </label>
-            <div class="relative">
-              <Input
-                id="idp-code"
-                value={idpCode}
-                readonly
-                class="bg-muted pr-10"
-              />
-              {#if idpCode}
-                <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      {#snippet child({ props: tooltipProps })}
-                        <CopyButton
-                          text={idpCode}
-                          variant="ghost"
-                          size="icon"
-                          class="h-8 w-8 hover:bg-transparent"
-                          animationDuration={2000}
-                          {...tooltipProps}
-                        />
-                      {/snippet}
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>{$t('shell.settings.users.create.copyIdpCode')}</Tooltip.Content>
-                  </Tooltip.Root>
+          <FormField form={superFormObj} name="password">
+            <FormControl>
+              {#snippet children({ props })}
+                <div class="space-y-2">
+                  <FormLabel for={props.id}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
+                  <Input
+                    {...props}
+                    type="password"
+                    bind:value={$form.password}
+                    placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
+                  />
+                  <FormFieldErrors />
                 </div>
-              {/if}
-            </div>
-          </div>
+              {/snippet}
+            </FormControl>
+          </FormField>
 
           <FormField form={superFormObj} name="is_active">
             <FormControl>
