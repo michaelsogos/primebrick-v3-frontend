@@ -195,6 +195,8 @@
         "createdBy": "Erstellt von",
         "updatedAt": "Aktualisiert am",
         "updatedBy": "Aktualisiert von",
+        "deletedAt": "Gelöscht am",
+        "deletedBy": "Gelöscht von",
         "lastSyncedAt": "Letzte Synchronisation"
       },
       "organizations": {

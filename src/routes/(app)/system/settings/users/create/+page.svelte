@@ -7,7 +7,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
@@ -22,8 +22,6 @@
   import { beforeNavigate, goto } from '$app/navigation';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import * as Tooltip from '$lib/components/ui/tooltip';
-  import { CopyButton } from '$lib/components/ui/copy-button';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { cn } from '$lib/utils';
@@ -32,6 +30,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import Select from '$lib/components/ui/select/select.svelte';
   import MultiSelect from '$lib/components/ui/multi-select/multi-select.svelte';
+  import type { AuditField } from '$lib/composables/useAuditBox';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -76,17 +75,6 @@
 
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-
-    // Initialize audit info with current user
-    const now = new Date();
-    const user = userProfileStore.current;
-    auditInfo.createdAt = formatUiDateTime(now.toISOString(), $uiLang);
-    auditInfo.createdBy = user?.idp_code || '-';
-    auditInfo.createdByName = user?.display_name || '-';
-    auditInfo.updatedAt = auditInfo.createdAt;
-    auditInfo.updatedBy = auditInfo.createdBy;
-    auditInfo.updatedByName = auditInfo.createdByName;
-    auditInfo.lastSyncedAt = '-';
 
     return () => {
       syncChannel?.close();
@@ -185,20 +173,6 @@
         // Clear persisted avatar color after successful creation
         clearPersistedAvatarColor();
 
-        // Update audit info from response
-        if (data.profile) {
-          auditInfo.uuid = data.profile.uuid || '';
-          auditInfo.version = data.profile.version || 0;
-          auditInfo.createdAt = data.profile.created_at ? formatUiDateTime(data.profile.created_at, $uiLang) : auditInfo.createdAt;
-          auditInfo.createdBy = data.profile.created_by || '-';
-          auditInfo.createdByName = data.profile.created_by_name || '-';
-          auditInfo.updatedAt = data.profile.updated_at ? formatUiDateTime(data.profile.updated_at, $uiLang) : auditInfo.updatedAt;
-          auditInfo.updatedBy = data.profile.updated_by || '-';
-          auditInfo.updatedByName = data.profile.updated_by_name || '-';
-          auditInfo.lastSyncedAt = data.profile.last_synced_at ? formatUiDateTime(data.profile.last_synced_at, $uiLang) : '-';
-          auditInfo.hasAudit = true;
-        }
-        
         notifyParentRefresh();
         reset({ data: $form });
         await goto(`/system/settings/users/${data.profile?.uuid}`);
@@ -237,18 +211,23 @@
   // Derived values for IDP fields
   const idpCode = $derived(''); // Not used anymore - removed from form
 
-  // Audit info state
-  let auditInfo = $state({
+  // Audit data state
+  let meta = $state<{ auditingColumns?: AuditField[] } | null>(null);
+  let isCreatePage = $state(true);
+
+  const auditData = $derived({
     uuid: '',
     version: 0,
-    createdAt: '',
-    createdBy: '',
-    createdByName: '',
-    updatedAt: '',
-    updatedBy: '',
-    updatedByName: '',
-    lastSyncedAt: '',
-    hasAudit: false
+    created_at: '',
+    created_by: '',
+    created_by_name: '',
+    updated_at: '',
+    updated_by: '',
+    updated_by_name: '',
+    deleted_at: '',
+    deleted_by: '',
+    deleted_by_name: '',
+    last_synced_at: ''
   });
 
   function handleCancel() {
@@ -280,7 +259,14 @@
   }
 }} />
 
-<AppPageScaffold>
+<FormPageLayout
+  entity="user_profiles"
+  rowUuid=""
+  meta={meta || undefined}
+  auditData={auditData}
+  auditingColumns={meta?.auditingColumns || []}
+  isCreatePage={isCreatePage}
+>
   {#snippet header()}
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
@@ -294,286 +280,241 @@
     </div>
   {/snippet}
 
-  <div class="flex min-h-0 flex-1 flex-col overflow-auto">
-    <form id="user-create-form" use:enhance>
-      <!-- Avatar Section -->
-      <div class="p-4 border-b">
-        <div class="space-y-4">
-          <!-- Avatar with displayname and email -->
-          <div class="flex items-center gap-4">
-            <Avatar class="size-14 rounded-none avatar-hex">
-              <AvatarFallback
-                class={cn(
-                  "rounded-none text-2xl font-semibold",
-                  $form.avatar_color ? "" : avatarChromeFallbackClass,
-                )}
-                style={$form.avatar_color
-                  ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
-                  : ""}
-              >
-                {userAvatarSeed}
-              </AvatarFallback>
-            </Avatar>
-            <div class="flex-1">
-              <p class="font-medium">
-                {$form.display_name || $t('shell.settings.users.create.displayNamePlaceholder')}
-              </p>
-              <p class="text-sm text-muted-foreground">
-                {$form.email || $t('shell.settings.users.create.emailPlaceholder')}
-              </p>
-            </div>
-          </div>
-
-          <!-- Color Picker -->
-          <div>
-            <label
-              for="avatar-color-trigger"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {$t('shell.settings.users.create.avatarColor')}
-            </label>
-            <div class="mt-2">
-              <Popover.Root>
-                <Popover.Trigger>
-                  {#snippet child({ props })}
-                    <Button {...props} variant="outline" id="avatar-color-trigger">
-                      <div class="flex items-center gap-4">
-                        <div
-                          class="w-5 h-5 rounded-full border shadow-sm"
-                          style="background-color: {$form.avatar_color};"
-                        ></div>
-                        {$form.avatar_color}
-                      </div>
-                    </Button>
-                  {/snippet}
-                </Popover.Trigger>
-                <Popover.Content class="w-auto p-0">
-                  <div class="p-3">
-                    <ColorPicker.Root bind:value={$form.avatar_color} />
-                  </div>
-                </Popover.Content>
-              </Popover.Root>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Two-column form -->
-      <div class="grid grid-cols-2 gap-6 p-4">
-        <!-- Column 1: Primebrick fields -->
-        <div class="space-y-4">
-          <FormField form={superFormObj} name="display_name">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.displayName')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.display_name}
-                    placeholder={$t('shell.settings.users.create.displayNamePlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="email">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.email')}</FormLabel>
-                  <Input
-                    {...props}
-                    type="email"
-                    bind:value={$form.email}
-                    placeholder={$t('shell.settings.users.create.emailPlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="roles">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.roles')}</FormLabel>
-                  <MultiSelect
-                    bind:value={$form.roles}
-                    options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
-                    placeholder="Select roles..."
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-        </div>
-
-        <!-- Column 2: IDP / Casdoor fields -->
-        <div class="space-y-4">
-          <FormField form={superFormObj} name="idp_org">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
-                  <Select
-                    bind:value={$form.idp_org}
-                    options={[{ value: 'acme', label: 'Acme', idp_name: 'acme' }]}
-                    placeholder="Select organization..."
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="idpUsername">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.idpUsername}
-                    placeholder={$t('shell.settings.users.create.usernamePlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="password">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
-                  <Input
-                    {...props}
-                    type="password"
-                    bind:value={$form.password}
-                    placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
-                  />
-                  <FormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="is_active">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="flex items-center space-x-2">
-                  <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
-                  <label for="is_active" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {$t('shell.settings.users.create.idpActive')}
-                  </label>
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="is_admin">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="flex items-center space-x-2">
-                  <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
-                  <label for="is_admin" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {$t('shell.settings.users.create.idpAdmin')}
-                  </label>
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="is_verified">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="flex items-center space-x-2">
-                  <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
-                  <label for="is_verified" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {$t('shell.settings.users.create.idpVerified')}
-                  </label>
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="email_verified">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="flex items-center space-x-2">
-                  <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
-                  <label for="email_verified" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {$t('shell.settings.users.create.idpEmailVerified')}
-                  </label>
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-        </div>
-      </div>
-    </form>
-  </div>
-
-  <!-- FOOTER: Audit Box (60%) + CTA (40%) -->
-  <div class="bg-muted/50 shrink-0 border-t p-4">
-    <div class="flex items-center justify-between gap-4">
-      <!-- Left: Audit info (60%) -->
-      <div class="flex-1">
-        <div class="text-xs">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {#if auditInfo.version && auditInfo.hasAudit}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
-            {:else if auditInfo.version}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
-            {/if}
-            {#if auditInfo.uuid}
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
-                <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
+  {#snippet children()}
+    <div class="flex-1 overflow-auto">
+      <form id="user-create-form" use:enhance>
+        <!-- Avatar Section -->
+        <div class="p-4 border-b">
+          <div class="space-y-4">
+            <!-- Avatar with displayname and email -->
+            <div class="flex items-center gap-4">
+              <Avatar class="size-14 rounded-none avatar-hex">
+                <AvatarFallback
+                  class={cn(
+                    "rounded-none text-2xl font-semibold",
+                    $form.avatar_color ? "" : avatarChromeFallbackClass,
+                  )}
+                  style={$form.avatar_color
+                    ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
+                    : ""}
+                >
+                  {userAvatarSeed}
+                </AvatarFallback>
+              </Avatar>
+              <div class="flex-1">
+                <p class="font-medium">
+                  {$form.display_name || $t('shell.settings.users.create.displayNamePlaceholder')}
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  {$form.email || $t('shell.settings.users.create.emailPlaceholder')}
+                </p>
               </div>
-            {/if}
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.createdAt || '-'}</span>
             </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.createdBy')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.createdByName || auditInfo.createdBy || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.updatedAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.updatedAt || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.updatedBy')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.updatedByName || auditInfo.updatedBy || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.lastSyncedAt || '-'}</span>
+
+            <!-- Color Picker -->
+            <div>
+              <label
+                for="avatar-color-trigger"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {$t('shell.settings.users.create.avatarColor')}
+              </label>
+              <div class="mt-2">
+                <Popover.Root>
+                  <Popover.Trigger>
+                    {#snippet child({ props })}
+                      <Button {...props} variant="outline" id="avatar-color-trigger">
+                        <div class="flex items-center gap-4">
+                          <div
+                            class="w-5 h-5 rounded-full border shadow-sm"
+                            style="background-color: {$form.avatar_color};"
+                          ></div>
+                          {$form.avatar_color}
+                        </div>
+                      </Button>
+                    {/snippet}
+                  </Popover.Trigger>
+                  <Popover.Content class="w-auto p-0">
+                    <div class="p-3">
+                      <ColorPicker.Root bind:value={$form.avatar_color} />
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Right: CTA (40%) -->
-      <div class="shrink-0 flex gap-2">
-        <Button variant="outline" onclick={handleCancel}>
-          {$t('common.cancel')}
-        </Button>
-        <Button type="submit" form="user-create-form" disabled={!hasChanges}>
-          {$t('common.create')}
-        </Button>
-      </div>
+        <!-- Two-column form -->
+        <div class="grid grid-cols-2 gap-6 p-4">
+          <!-- Column 1: Primebrick fields -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="display_name">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.displayName')}</FormLabel>
+                    <Input
+                      {...props}
+                      bind:value={$form.display_name}
+                      placeholder={$t('shell.settings.users.create.displayNamePlaceholder')}
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="email">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.email')}</FormLabel>
+                    <Input
+                      {...props}
+                      type="email"
+                      bind:value={$form.email}
+                      placeholder={$t('shell.settings.users.create.emailPlaceholder')}
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="roles">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.roles')}</FormLabel>
+                    <MultiSelect
+                      bind:value={$form.roles}
+                      options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
+                      placeholder="Select roles..."
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+          </div>
+
+          <!-- Column 2: IDP / Casdoor fields -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="idp_org">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
+                    <Select
+                      bind:value={$form.idp_org}
+                      options={[{ value: 'acme', label: 'Acme', idp_name: 'acme' }]}
+                      placeholder="Select organization..."
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="idpUsername">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
+                    <Input
+                      {...props}
+                      bind:value={$form.idpUsername}
+                      placeholder={$t('shell.settings.users.create.usernamePlaceholder')}
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="password">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
+                    <Input
+                      {...props}
+                      type="password"
+                      bind:value={$form.password}
+                      placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
+                    />
+                    <FormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="is_active">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="flex items-center space-x-2">
+                    <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
+                    <label for="is_active" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {$t('shell.settings.users.create.idpActive')}
+                    </label>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="is_admin">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="flex items-center space-x-2">
+                    <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
+                    <label for="is_admin" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {$t('shell.settings.users.create.idpAdmin')}
+                    </label>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="is_verified">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="flex items-center space-x-2">
+                    <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
+                    <label for="is_verified" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {$t('shell.settings.users.create.idpVerified')}
+                    </label>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="email_verified">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="flex items-center space-x-2">
+                    <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
+                    <label for="email_verified" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {$t('shell.settings.users.create.idpEmailVerified')}
+                    </label>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+          </div>
+        </div>
+      </form>
     </div>
-  </div>
-</AppPageScaffold>
+  {/snippet}
+
+  {#snippet footerActions()}
+    <div class="flex gap-2">
+      <Button variant="outline" onclick={handleCancel}>
+        {$t('common.cancel')}
+      </Button>
+      <Button type="submit" form="user-create-form" disabled={!hasChanges}>
+        {$t('common.create')}
+      </Button>
+    </div>
+  {/snippet}
+</FormPageLayout>

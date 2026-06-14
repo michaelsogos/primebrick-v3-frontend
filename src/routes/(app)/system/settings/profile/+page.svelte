@@ -4,7 +4,6 @@
   import { zod4 } from "sveltekit-superforms/adapters";
   import { t } from "$lib/i18n";
   import { Avatar, AvatarFallback } from "$lib/components/ui/avatar";
-  import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Checkbox } from "$lib/components/ui/checkbox";
@@ -29,9 +28,13 @@
   import { onMount, untrack } from "svelte";
   import { beforeNavigate } from "$app/navigation";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-  import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { formatUiDateTime } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
+  import FormPageLayout from "$lib/components/FormPageLayout.svelte";
+  import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
+  import type { AuditField } from "$lib/composables/useAuditBox";
+  import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
+  import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -176,23 +179,15 @@
   const updatedByName = $derived(profile?.updated_by_name || '');
   const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
   const userUuid = $derived(profile?.uuid || '');
-  let hasAudit = $state(false);
+  const deletedAt = $derived('');
+  const deletedBy = $derived('');
+  const deletedByName = $derived('');
 
-  async function loadEntityMetadata() {
-    try {
-      const res = await apiFetch('/api/v1/entities/user_profiles/meta');
-      if (res.ok) {
-        const data = await res.json();
-        hasAudit = !!data.list?.auditingColumns?.length;
-      }
-    } catch (error) {
-      console.error('Failed to load entity metadata:', error);
-    }
-  }
-
-  function openVersionHistory() {
-    openSheet('entity.versionHistory', { entity: 'user_profiles', rowUuid: userUuid });
-  }
+  let isCreatePage = $state(false);
+  const metadata = useEntityMetadata({
+    endpoint: '/api/v1/auth/me/meta',
+    entityName: 'user_profiles'
+  });
 
   // Block internal navigation when there are changes
   beforeNavigate((navigation) => {
@@ -255,7 +250,7 @@
 
   // Refresh profile from server on mount
   onMount(async () => {
-    loadEntityMetadata();
+    void metadata.loadMetadata();
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -295,404 +290,391 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-<!-- FORM CONTENT -->
-<div class="flex-1 overflow-auto p-4">
-  <div class="space-y-6">
-  <!-- Top Section: 2 columns 50/50 -->
-  <div class="grid grid-cols-2 gap-6">
-    <!-- Column 1: Avatar + Color Picker -->
-    <div class="space-y-4">
-      <!-- Avatar with displayname and email -->
-      <div class="flex items-center gap-4">
-        <Avatar class="size-14 rounded-none avatar-hex">
-          <AvatarFallback
-            class={cn(
-              "rounded-none text-2xl font-semibold",
-              $form.avatar_color ? "" : avatarChromeFallbackClass,
-            )}
-            style={$form.avatar_color
-              ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
-              : ""}
-          >
-            {userAvatarSeed}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <p class="font-medium">
-            {$form.display_name ||
-              $t("shell.settings.profile.displayNamePlaceholder")}
-          </p>
-          <p class="text-sm text-muted-foreground">
-            {$form.email || $t("shell.settings.profile.emailPlaceholder")}
-          </p>
-        </div>
-      </div>
-
-      <!-- Color Picker -->
-      <div>
-        <label
-          for="avatar-color-trigger"
-          class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          {$t("shell.settings.profile.avatarColor")}
-        </label>
-        <div class="mt-2">
-          <Popover.Root>
-            <Popover.Trigger>
-              {#snippet child({ props })}
-                <Button {...props} variant="outline" id="avatar-color-trigger">
-                  <div class="flex items-center gap-4">
-                    <div
-                      class="w-5 h-5 rounded-full border shadow-sm"
-                      style="background-color: {$form.avatar_color};"
-                    ></div>
-                    {$form.avatar_color}
-                  </div>
-                </Button>
-              {/snippet}
-            </Popover.Trigger>
-            <Popover.Content class="w-auto p-0">
-              <div class="p-3">
-                <ColorPicker.Root bind:value={$form.avatar_color} />
-              </div>
-            </Popover.Content>
-          </Popover.Root>
-        </div>
-      </div>
+{#if !metadata.loading}
+  <FormPageLayout
+    entity="user_profiles"
+    rowUuid={userUuid}
+    meta={metadata.meta || undefined}
+    auditData={{
+      uuid: userUuid,
+      version,
+      created_at: createdAt,
+      created_by: createdBy,
+      created_by_name: createdByName,
+      updated_at: updatedAt,
+      updated_by: updatedBy,
+      updated_by_name: updatedByName,
+      deleted_at: deletedAt,
+      deleted_by: deletedBy,
+      deleted_by_name: deletedByName,
+      last_synced_at: lastSyncedAt
+    }}
+    auditingColumns={metadata.meta?.auditingColumns || []}
+    isCreatePage={isCreatePage}
+  >
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.profile.title') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.profile.title')}</h1>
     </div>
+  {/snippet}
 
-    <!-- Column 2: Empty -->
-    <div></div>
-  </div>
-
-  <!-- Form Fields Section: 2 columns 50/50 -->
-  <form use:enhance id="profile-form">
-    <div class="grid grid-cols-2 gap-6">
-      <!-- Column 1: Display Name + Email -->
-      <div class="space-y-4">
-        <FormField form={superFormObj} name="display_name">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.displayName")}</FormLabel
-                >
-                <Input
-                  type="text"
-                  placeholder={$t(
-                    "shell.settings.profile.displayNamePlaceholder",
+  {#snippet children()}
+    <div class="flex-1 overflow-auto p-4">
+      <div class="space-y-6">
+        <!-- Top Section: 2 columns 50/50 -->
+        <div class="grid grid-cols-2 gap-6">
+          <!-- Column 1: Avatar + Color Picker -->
+          <div class="space-y-4">
+            <!-- Avatar with displayname and email -->
+            <div class="flex items-center gap-4">
+              <Avatar class="size-14 rounded-none avatar-hex">
+                <AvatarFallback
+                  class={cn(
+                    "rounded-none text-2xl font-semibold",
+                    $form.avatar_color ? "" : avatarChromeFallbackClass,
                   )}
-                  bind:value={$form.display_name}
-                  {...props}
-                  class="mt-2"
-                />
-                <FormFieldErrors />
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="email">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.email")}</FormLabel
+                  style={$form.avatar_color
+                    ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
+                    : ""}
                 >
-                <Input
-                  type="email"
-                  placeholder={$t("shell.settings.profile.emailPlaceholder")}
-                  bind:value={$form.email}
-                  {...props}
-                  class="mt-2"
-                />
-                <FormFieldErrors />
+                  {userAvatarSeed}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p class="font-medium">
+                  {$form.display_name ||
+                    $t("shell.settings.profile.displayNamePlaceholder")}
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  {$form.email || $t("shell.settings.profile.emailPlaceholder")}
+                </p>
               </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-      </div>
-
-      <!-- Column 2: idp_code, idp_org, idp_username (readonly) -->
-      <div class="space-y-4">
-        <FormField form={superFormObj} name="idp_code">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpCode")}</FormLabel
-                >
-                <div class="relative">
-                  <Input
-                    type="text"
-                    bind:value={$form.idp_code}
-                    readonly
-                    class="mt-2 bg-muted pr-10"
-                    {...props}
-                  />
-                  {#if $form.idp_code}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {#snippet child({ props: tooltipProps })}
-                            <CopyButton
-                              text={$form.idp_code || ""}
-                              variant="ghost"
-                              size="icon"
-                              class="h-8 w-8 hover:bg-transparent"
-                              animationDuration={2000}
-                              {...tooltipProps}
-                            />
-                          {/snippet}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content
-                          >{$t(
-                            "shell.settings.profile.copyIdpCode",
-                          )}</Tooltip.Content
-                        >
-                      </Tooltip.Root>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="idp_org">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpOwner")}</FormLabel
-                >
-                <div class="relative">
-                  <Input
-                    type="text"
-                    bind:value={$form.idp_org}
-                    readonly
-                    class="mt-2 bg-muted pr-10"
-                    {...props}
-                  />
-                  {#if $form.idp_org}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {#snippet child({ props: tooltipProps })}
-                            <CopyButton
-                              text={$form.idp_org || ""}
-                              variant="ghost"
-                              size="icon"
-                              class="h-8 w-8 hover:bg-transparent"
-                              animationDuration={2000}
-                              {...tooltipProps}
-                            />
-                          {/snippet}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content
-                          >{$t(
-                            "shell.settings.profile.copyIdpOwner",
-                          )}</Tooltip.Content
-                        >
-                      </Tooltip.Root>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="idp_username">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}
-                  >{$t("shell.settings.profile.idpName")}</FormLabel
-                >
-                <div class="relative">
-                  <Input
-                    type="text"
-                    bind:value={$form.idp_username}
-                    readonly
-                    class="mt-2 bg-muted pr-10"
-                    {...props}
-                  />
-                  {#if $form.idp_username}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {#snippet child({ props: tooltipProps })}
-                            <CopyButton
-                              text={$form.idp_username || ""}
-                              variant="ghost"
-                              size="icon"
-                              class="h-8 w-8 hover:bg-transparent"
-                              animationDuration={2000}
-                              {...tooltipProps}
-                            />
-                          {/snippet}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content
-                          >{$t(
-                            "shell.settings.profile.copyIdpName",
-                          )}</Tooltip.Content
-                        >
-                      </Tooltip.Root>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="issuer">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.idpIssuer")}</FormLabel>
-                <div class="relative">
-                  <Input
-                    type="text"
-                    bind:value={$form.issuer}
-                    readonly
-                    class="mt-2 bg-muted pr-10"
-                    {...props}
-                  />
-                  {#if $form.issuer}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {#snippet child({ props: tooltipProps })}
-                            <CopyButton
-                              text={$form.issuer || ""}
-                              variant="ghost"
-                              size="icon"
-                              class="h-8 w-8 hover:bg-transparent"
-                              animationDuration={2000}
-                              {...tooltipProps}
-                            />
-                          {/snippet}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>{$t("shell.settings.profile.copyIdpIssuer")}</Tooltip.Content>
-                      </Tooltip.Root>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="is_verified">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.idpVerified")}</FormLabel>
-                <div class="mt-2 flex items-center gap-2">
-                  <Checkbox
-                    checked={$form.is_verified === true}
-                    disabled
-                  />
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="email_verified">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.idpEmailVerified")}</FormLabel>
-                <div class="mt-2 flex items-center gap-2">
-                  <Checkbox
-                    checked={$form.email_verified === true}
-                    disabled
-                  />
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-
-        <FormField form={superFormObj} name="is_admin">
-          <FormControl>
-            {#snippet children({ props })}
-              <div class="space-y-2">
-                <FormLabel for={props.id}>{$t("shell.settings.profile.idpAdmin")}</FormLabel>
-                <div class="mt-2 flex items-center gap-2">
-                  <Checkbox
-                    checked={$form.is_admin === true}
-                    disabled
-                  />
-                </div>
-              </div>
-            {/snippet}
-          </FormControl>
-        </FormField>
-      </div>
-    </div>
-  </form>
-  </div>
-</div>
-
-<!-- COMBINED FOOTER BAR -->
-<div class="bg-muted/50 shrink-0 border-t p-4">
-  <div class="flex items-center justify-between gap-4">
-    <!-- Left: Audit info (60%) -->
-    <div class="flex-1">
-      <div class="text-xs">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {#if version && hasAudit}
-            <Badge
-              class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20"
-              variant="outline"
-              onclick={openVersionHistory}
-            >
-              v{version}
-            </Badge>
-          {:else if version}
-            <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-              v{version}
-            </Badge>
-          {/if}
-          {#if userUuid}
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
-              <span class="italic text-muted-foreground">{userUuid}</span>
             </div>
-          {/if}
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.profile.createdAt')}:</span>
-            <span class="italic text-muted-foreground">{createdAt || '-'}</span>
+
+            <!-- Color Picker -->
+            <div>
+              <label
+                for="avatar-color-trigger"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {$t("shell.settings.profile.avatarColor")}
+              </label>
+              <div class="mt-2">
+                <Popover.Root>
+                  <Popover.Trigger>
+                    {#snippet child({ props })}
+                      <Button {...props} variant="outline" id="avatar-color-trigger">
+                        <div class="flex items-center gap-4">
+                          <div
+                            class="w-5 h-5 rounded-full border shadow-sm"
+                            style="background-color: {$form.avatar_color};"
+                          ></div>
+                          {$form.avatar_color}
+                        </div>
+                      </Button>
+                    {/snippet}
+                  </Popover.Trigger>
+                  <Popover.Content class="w-auto p-0">
+                    <div class="p-3">
+                      <ColorPicker.Root bind:value={$form.avatar_color} />
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.profile.createdBy')}:</span>
-            <span class="italic text-muted-foreground">{createdByName || createdBy || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.profile.updatedAt')}:</span>
-            <span class="italic text-muted-foreground">{updatedAt || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.profile.updatedBy')}:</span>
-            <span class="italic text-muted-foreground">{updatedByName || updatedBy || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
-            <span class="italic text-muted-foreground">{lastSyncedAt || '-'}</span>
-          </div>
+
+          <!-- Column 2: Empty -->
+          <div></div>
         </div>
+
+        <!-- Form Fields Section: 2 columns 50/50 -->
+        <form use:enhance id="profile-form">
+          <div class="grid grid-cols-2 gap-6">
+            <!-- Column 1: Display Name + Email -->
+            <div class="space-y-4">
+              <FormField form={superFormObj} name="display_name">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}
+                        >{$t("shell.settings.profile.displayName")}</FormLabel
+                      >
+                      <Input
+                        type="text"
+                        placeholder={$t(
+                          "shell.settings.profile.displayNamePlaceholder",
+                        )}
+                        bind:value={$form.display_name}
+                        {...props}
+                        class="mt-2"
+                      />
+                      <FormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="email">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}
+                        >{$t("shell.settings.profile.email")}</FormLabel
+                      >
+                      <Input
+                        type="email"
+                        placeholder={$t("shell.settings.profile.emailPlaceholder")}
+                        bind:value={$form.email}
+                        {...props}
+                        class="mt-2"
+                      />
+                      <FormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+            </div>
+
+            <!-- Column 2: idp_code, idp_org, idp_username (readonly) -->
+            <div class="space-y-4">
+              <FormField form={superFormObj} name="idp_code">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}
+                        >{$t("shell.settings.profile.idpCode")}</FormLabel
+                      >
+                      <div class="relative">
+                        <Input
+                          type="text"
+                          bind:value={$form.idp_code}
+                          readonly
+                          class="mt-2 bg-muted pr-10"
+                          {...props}
+                        />
+                        {#if $form.idp_code}
+                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Tooltip.Root>
+                              <Tooltip.Trigger>
+                                {#snippet child({ props: tooltipProps })}
+                                  <CopyButton
+                                    text={$form.idp_code || ""}
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 hover:bg-transparent"
+                                    animationDuration={2000}
+                                    {...tooltipProps}
+                                  />
+                                {/snippet}
+                              </Tooltip.Trigger>
+                              <Tooltip.Content
+                                >{$t(
+                                  "shell.settings.profile.copyIdpCode",
+                                )}</Tooltip.Content
+                              >
+                            </Tooltip.Root>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="idp_org">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}
+                        >{$t("shell.settings.profile.idpOwner")}</FormLabel
+                      >
+                      <div class="relative">
+                        <Input
+                          type="text"
+                          bind:value={$form.idp_org}
+                          readonly
+                          class="mt-2 bg-muted pr-10"
+                          {...props}
+                        />
+                        {#if $form.idp_org}
+                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Tooltip.Root>
+                              <Tooltip.Trigger>
+                                {#snippet child({ props: tooltipProps })}
+                                  <CopyButton
+                                    text={$form.idp_org || ""}
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 hover:bg-transparent"
+                                    animationDuration={2000}
+                                    {...tooltipProps}
+                                  />
+                                {/snippet}
+                              </Tooltip.Trigger>
+                              <Tooltip.Content
+                                >{$t(
+                                  "shell.settings.profile.copyIdpOwner",
+                                )}</Tooltip.Content
+                              >
+                            </Tooltip.Root>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="idp_username">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}
+                        >{$t("shell.settings.profile.idpName")}</FormLabel
+                      >
+                      <div class="relative">
+                        <Input
+                          type="text"
+                          bind:value={$form.idp_username}
+                          readonly
+                          class="mt-2 bg-muted pr-10"
+                          {...props}
+                        />
+                        {#if $form.idp_username}
+                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Tooltip.Root>
+                              <Tooltip.Trigger>
+                                {#snippet child({ props: tooltipProps })}
+                                  <CopyButton
+                                    text={$form.idp_username || ""}
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 hover:bg-transparent"
+                                    animationDuration={2000}
+                                    {...tooltipProps}
+                                  />
+                                {/snippet}
+                              </Tooltip.Trigger>
+                              <Tooltip.Content
+                                >{$t(
+                                  "shell.settings.profile.copyIdpName",
+                                )}</Tooltip.Content
+                              >
+                            </Tooltip.Root>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="issuer">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpIssuer")}</FormLabel>
+                      <div class="relative">
+                        <Input
+                          type="text"
+                          bind:value={$form.issuer}
+                          readonly
+                          class="mt-2 bg-muted pr-10"
+                          {...props}
+                        />
+                        {#if $form.issuer}
+                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                            <Tooltip.Root>
+                              <Tooltip.Trigger>
+                                {#snippet child({ props: tooltipProps })}
+                                  <CopyButton
+                                    text={$form.issuer || ""}
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 hover:bg-transparent"
+                                    animationDuration={2000}
+                                    {...tooltipProps}
+                                  />
+                                {/snippet}
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>{$t("shell.settings.profile.copyIdpIssuer")}</Tooltip.Content>
+                            </Tooltip.Root>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="is_verified">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpVerified")}</FormLabel>
+                      <div class="mt-2 flex items-center gap-2">
+                        <Checkbox
+                          checked={$form.is_verified === true}
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="email_verified">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpEmailVerified")}</FormLabel>
+                      <div class="mt-2 flex items-center gap-2">
+                        <Checkbox
+                          checked={$form.email_verified === true}
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <FormField form={superFormObj} name="is_admin">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpAdmin")}</FormLabel>
+                      <div class="mt-2 flex items-center gap-2">
+                        <Checkbox
+                          checked={$form.is_admin === true}
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
+  {/snippet}
 
-    <!-- Right: CTA (40%) -->
-    <div class="shrink-0">
-      <Button type="submit" form="profile-form" disabled={!hasChanges}>
-        {$t('common.save')}
-      </Button>
-    </div>
-  </div>
-</div>
+  {#snippet footerActions()}
+    <Button type="submit" form="profile-form" disabled={!hasChanges}>
+      {$t('common.save')}
+    </Button>
+  {/snippet}
+</FormPageLayout>
+{:else}
+  <MetadataLoading entityName="user_profiles" loadingText="Caricamento dei metadati del profilo..." />
+{/if}

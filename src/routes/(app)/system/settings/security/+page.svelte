@@ -8,6 +8,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
+  import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   let currentPassword = $state('');
   let newPassword = $state('');
@@ -19,6 +20,11 @@
 
   let showDeleteWarning = $state(false);
 
+  const metadata = useEntityMetadata({
+    endpoint: '/api/v1/entities/security_settings/meta',
+    entityName: 'security_settings'
+  });
+
   // Audit state
   let auditInfo = $state({
     uuid: 'current', // Security settings use 'current' as UUID
@@ -29,23 +35,12 @@
     updatedAt: '',
     updatedBy: '',
     updatedByName: '',
-    lastSyncedAt: '',
-    hasAudit: false
+    lastSyncedAt: ''
   });
 
-  let hasChanges = $state(false);
+  const hasAudit = $derived(!!metadata.meta?.list?.auditingColumns?.length);
 
-  async function loadEntityMetadata() {
-    try {
-      const res = await apiFetch('/api/v1/entities/security_settings/meta');
-      if (res.ok) {
-        const data = await res.json();
-        auditInfo.hasAudit = !!data.list?.auditingColumns?.length;
-      }
-    } catch (error) {
-      console.error('Failed to load entity metadata:', error);
-    }
-  }
+  let hasChanges = $state(false);
 
   function openVersionHistory() {
     openSheet('entity.versionHistory', { entity: 'security_settings', rowUuid: 'current' });
@@ -62,7 +57,7 @@
   }
 
   onMount(() => {
-    loadEntityMetadata();
+    void metadata.loadMetadata();
   });
 </script>
 
@@ -158,7 +153,7 @@
     <div class="flex-1">
       <div class="text-xs">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {#if auditInfo.version && auditInfo.hasAudit}
+          {#if auditInfo.version && hasAudit}
             <Badge
               class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20"
               variant="outline"
