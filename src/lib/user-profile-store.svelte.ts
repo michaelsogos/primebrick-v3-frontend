@@ -22,6 +22,9 @@ interface UserProfile {
   updated_at?: string;
   updated_by?: string;
   updated_by_name?: string;
+  deleted_at?: string;
+  deleted_by?: string;
+  deleted_by_name?: string;
   version?: number;
   last_synced_at?: string;
 }

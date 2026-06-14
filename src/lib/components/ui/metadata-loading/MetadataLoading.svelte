@@ -25,7 +25,7 @@
       <!-- Cloud icon (static) -->
       <Cloud class="size-20 text-info" />
       <!-- Refresh arrows (rotating) -->
-      <RefreshCw class="absolute inset-0 m-auto size-12 text-info animate-spin opacity-70" />
+      <RefreshCw class="absolute inset-0 m-auto size-8 text-info animate-spin opacity-70" />
     </div>
     <div class="text-sm font-medium text-muted-foreground">{displayText}</div>
   </div>

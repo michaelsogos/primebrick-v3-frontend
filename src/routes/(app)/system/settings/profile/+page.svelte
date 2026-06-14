@@ -298,16 +298,16 @@
     auditData={{
       uuid: userUuid,
       version,
-      created_at: createdAt,
-      created_by: createdBy,
-      created_by_name: createdByName,
-      updated_at: updatedAt,
-      updated_by: updatedBy,
-      updated_by_name: updatedByName,
-      deleted_at: deletedAt,
-      deleted_by: deletedBy,
-      deleted_by_name: deletedByName,
-      last_synced_at: lastSyncedAt
+      created_at: profile?.created_at,
+      created_by: profile?.created_by,
+      created_by_name: profile?.created_by_name,
+      updated_at: profile?.updated_at,
+      updated_by: profile?.updated_by,
+      updated_by_name: profile?.updated_by_name,
+      deleted_at: profile?.deleted_at,
+      deleted_by: profile?.deleted_by,
+      deleted_by_name: profile?.deleted_by_name,
+      last_synced_at: profile?.last_synced_at
     }}
     auditingColumns={metadata.meta?.auditingColumns || []}
     isCreatePage={isCreatePage}
