@@ -88,71 +88,71 @@
                   {/if}
 
                   <!-- Column 1: Primary fields (Deleted if present, otherwise Updated) -->
-                  <!-- Row 1 -->
-                  {#if hasDeletedFields && deletedFields.length > 0}
-                    <div class="flex items-center gap-x-2">
-                      <span class="text-primary">{$t(deletedFields[0].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[0].key])}</span>
-                    </div>
-                  {:else if updatedFields.length > 0}
-                    <div class="flex items-center gap-x-2">
-                      <span class="text-primary">{$t(updatedFields[0].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[0].key])}</span>
-                    </div>
-                  {:else}
-                    <div class="flex items-center gap-x-2">
-                      <span class="text-muted-foreground">&nbsp;</span>
-                    </div>
-                  {/if}
-                  <!-- Row 2 -->
+                  <!-- Row 1: _by field -->
                   {#if hasDeletedFields && deletedFields.length > 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(deletedFields[1].labelKey)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[1].key])}</span>
                     </div>
                   {:else if hasDeletedFields && deletedFields.length === 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {:else if updatedFields.length > 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(updatedFields[1].labelKey)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[1].key])}</span>
                     </div>
                   {:else if updatedFields.length === 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {:else}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-muted-foreground">&nbsp;</span>
+                    </div>
+                  {/if}
+                  <!-- Row 2: _at field -->
+                  {#if hasDeletedFields && deletedFields.length > 0}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-primary">{$t(deletedFields[0].labelKey)}:</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[0].key])}</span>
+                    </div>
+                  {:else if updatedFields.length > 0}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-primary">{$t(updatedFields[0].labelKey)}:</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[0].key])}</span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {/if}
 
                   <!-- Column 2: Created fields -->
-                  <!-- Row 1 -->
-                  {#if createdFields.length > 0}
-                    <div class="flex items-center gap-x-2">
-                      <span class="text-primary">{$t(createdFields[0].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[0].key])}</span>
-                    </div>
-                  {:else}
-                    <div class="flex items-center gap-x-2">
-                      <span class="text-muted-foreground">&nbsp;</span>
-                    </div>
-                  {/if}
-                  <!-- Row 2 -->
+                  <!-- Row 1: created_by -->
                   {#if createdFields.length > 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(createdFields[1].labelKey)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[1].key])}</span>
                     </div>
                   {:else if createdFields.length === 1}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {:else}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-muted-foreground">&nbsp;</span>
+                    </div>
+                  {/if}
+                  <!-- Row 2: created_at -->
+                  {#if createdFields.length > 0}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-primary">{$t(createdFields[0].labelKey)}:</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[0].key])}</span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {/if}
@@ -160,23 +160,23 @@
                   <!-- Column 3: Entity ID (row 1) + Sync field (row 2) -->
                   <!-- Row 1: Entity ID -->
                   {#if meta?.uid && auditData[meta.uid]}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">ID:</span>
                       <span class="italic text-muted-foreground">{auditData[meta.uid]}</span>
                     </div>
                   {:else}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {/if}
                   <!-- Row 2: Sync field -->
                   {#if syncFields.length > 0 && auditData.last_synced_at}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(syncFields[0].labelKey)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[syncFields[0].key])}</span>
                     </div>
                   {:else}
-                    <div class="flex items-center gap-x-2">
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {/if}
