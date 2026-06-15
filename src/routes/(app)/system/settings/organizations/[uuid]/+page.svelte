@@ -188,18 +188,18 @@
   const auditData = $derived.by(() => {
     if (!organization) return {};
     return {
-      uuid: organization.uuid || '',
-      version: organization.version || 1,
-      created_at: organization.created_at ? formatUiDateTime(organization.created_at, $uiLang) : '',
-      created_by: organization.created_by || '',
-      created_by_name: organization.created_by_name || '',
-      updated_at: organization.updated_at ? formatUiDateTime(organization.updated_at, $uiLang) : '',
-      updated_by: organization.updated_by || '',
-      updated_by_name: organization.updated_by_name || '',
-      deleted_at: '',
-      deleted_by: '',
-      deleted_by_name: '',
-      last_synced_at: organization.last_synced_at ? formatUiDateTime(organization.last_synced_at, $uiLang) : ''
+      uuid: organization.uuid,
+      version: organization.version,
+      created_at: organization.created_at,
+      created_by: organization.created_by,
+      created_by_name: organization.created_by_name,
+      updated_at: organization.updated_at,
+      updated_by: organization.updated_by,
+      updated_by_name: organization.updated_by_name,
+      deleted_at: (organization as any).deleted_at,
+      deleted_by: (organization as any).deleted_by,
+      deleted_by_name: (organization as any).deleted_by_name,
+      last_synced_at: organization.last_synced_at
     };
   });
 

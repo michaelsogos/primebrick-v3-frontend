@@ -188,16 +188,16 @@
     return {
       uuid: user.uuid,
       version: user.version,
-      created_at: user.created_at ? formatUiDateTime(user.created_at, $uiLang) : '',
-      created_by: user.created_by || '',
-      created_by_name: user.created_by_name || '',
-      updated_at: user.updated_at ? formatUiDateTime(user.updated_at, $uiLang) : '',
-      updated_by: user.updated_by || '',
-      updated_by_name: user.updated_by_name || '',
-      deleted_at: '',
-      deleted_by: '',
-      deleted_by_name: '',
-      last_synced_at: ''
+      created_at: user.created_at,
+      created_by: user.created_by,
+      created_by_name: user.created_by_name,
+      updated_at: user.updated_at,
+      updated_by: user.updated_by,
+      updated_by_name: user.updated_by_name,
+      deleted_at: (user as any).deleted_at,
+      deleted_by: (user as any).deleted_by,
+      deleted_by_name: (user as any).deleted_by_name,
+      last_synced_at: (user as any).last_synced_at
     };
   });
 

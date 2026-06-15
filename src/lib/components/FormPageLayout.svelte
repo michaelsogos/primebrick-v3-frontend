@@ -71,7 +71,7 @@
             <div class="flex items-center">
               {#if showAuditBox}
                 <div class="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-4 gap-y-2 text-xs w-full">
-                  <!-- Column 0: Version Badge (spans 2 rows) -->
+                  <!-- Version Badge (spans 2 rows) -->
                   {#if versionField && auditData.version}
                     <div class="row-span-2 flex items-center">
                       <button
@@ -87,8 +87,8 @@
                     </div>
                   {/if}
 
-                  <!-- Column 1: Primary fields (Deleted if present, otherwise Updated) -->
-                  <!-- Row 1: _at field -->
+                  <!-- ROW 1 -->
+                  <!-- Column 1: _at field (deleted_at or updated_at) -->
                   {#if hasDeletedFields && deletedFields.length > 0}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(deletedFields[0].labelKey)}:</span>
@@ -104,7 +104,33 @@
                       <span class="text-muted-foreground">&nbsp;</span>
                     </div>
                   {/if}
-                  <!-- Row 2: _by field -->
+
+                  <!-- Column 2: created_at -->
+                  {#if createdFields.length > 0}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-primary">{$t(createdFields[0].labelKey)}:</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[0].key])}</span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-muted-foreground">&nbsp;</span>
+                    </div>
+                  {/if}
+
+                  <!-- Column 3: Entity ID -->
+                  {#if meta?.uid && auditData[meta.uid]}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-primary">ID:</span>
+                      <span class="italic text-muted-foreground">{auditData[meta.uid]}</span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-x-2 whitespace-nowrap">
+                      <span class="text-muted-foreground">&nbsp;</span>
+                    </div>
+                  {/if}
+
+                  <!-- ROW 2 -->
+                  <!-- Column 1: _by field (deleted_by or updated_by) -->
                   {#if hasDeletedFields && deletedFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(deletedFields[1].labelKey)}:</span>
@@ -129,19 +155,7 @@
                     </div>
                   {/if}
 
-                  <!-- Column 2: Created fields -->
-                  <!-- Row 1: created_at -->
-                  {#if createdFields.length > 0}
-                    <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(createdFields[0].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[0].key])}</span>
-                    </div>
-                  {:else}
-                    <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-muted-foreground">&nbsp;</span>
-                    </div>
-                  {/if}
-                  <!-- Row 2: created_by -->
+                  <!-- Column 2: created_by -->
                   {#if createdFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(createdFields[1].labelKey)}:</span>
@@ -157,19 +171,7 @@
                     </div>
                   {/if}
 
-                  <!-- Column 3: Entity ID (row 1) + Sync field (row 2) -->
-                  <!-- Row 1: Entity ID -->
-                  {#if meta?.uid && auditData[meta.uid]}
-                    <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">ID:</span>
-                      <span class="italic text-muted-foreground">{auditData[meta.uid]}</span>
-                    </div>
-                  {:else}
-                    <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-muted-foreground">&nbsp;</span>
-                    </div>
-                  {/if}
-                  <!-- Row 2: Sync field -->
+                  <!-- Column 3: last_synced_at -->
                   {#if syncFields.length > 0 && auditData.last_synced_at}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(syncFields[0].labelKey)}:</span>

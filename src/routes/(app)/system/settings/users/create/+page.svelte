@@ -218,16 +218,16 @@
   const auditData = $derived({
     uuid: '',
     version: 0,
-    created_at: '',
-    created_by: '',
-    created_by_name: '',
-    updated_at: '',
-    updated_by: '',
-    updated_by_name: '',
-    deleted_at: '',
-    deleted_by: '',
-    deleted_by_name: '',
-    last_synced_at: ''
+    created_at: undefined,
+    created_by: undefined,
+    created_by_name: undefined,
+    updated_at: undefined,
+    updated_by: undefined,
+    updated_by_name: undefined,
+    deleted_at: undefined,
+    deleted_by: undefined,
+    deleted_by_name: undefined,
+    last_synced_at: undefined
   });
 
   function handleCancel() {
