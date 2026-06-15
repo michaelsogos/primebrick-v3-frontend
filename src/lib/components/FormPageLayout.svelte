@@ -134,7 +134,7 @@
                   {#if hasDeletedFields && deletedFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(deletedFields[1].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[1].key])}</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[`${deletedFields[1].key}_name`], auditData[deletedFields[1].key])}</span>
                     </div>
                   {:else if hasDeletedFields && deletedFields.length === 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
@@ -143,7 +143,7 @@
                   {:else if updatedFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(updatedFields[1].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[1].key])}</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[`${updatedFields[1].key}_name`], auditData[updatedFields[1].key])}</span>
                     </div>
                   {:else if updatedFields.length === 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
@@ -159,7 +159,7 @@
                   {#if createdFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
                       <span class="text-primary">{$t(createdFields[1].labelKey)}:</span>
-                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[1].key])}</span>
+                      <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[`${createdFields[1].key}_name`], auditData[createdFields[1].key])}</span>
                     </div>
                   {:else if createdFields.length === 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">

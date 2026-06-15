@@ -44,12 +44,17 @@ export function useAuditBox(state: AuditBoxState) {
     return cols.find(f => f.key === 'version');
   }
 
-  function formatValue(value: any): string {
-    if (!value) return '-';
-    if (value instanceof Date || typeof value === 'string') {
-      return formatUiDateTime(value, get(uiLang));
+  function formatValue(value: any, fallbackValue?: any): string {
+    // Return '-' only if both value and fallback are missing
+    if (!value && !fallbackValue) return '-';
+    
+    // Use fallback if value is missing
+    const displayValue = value || fallbackValue;
+    
+    if (displayValue instanceof Date || typeof displayValue === 'string') {
+      return formatUiDateTime(displayValue, get(uiLang));
     }
-    return String(value);
+    return String(displayValue);
   }
 
   function openVersionHistory() {
