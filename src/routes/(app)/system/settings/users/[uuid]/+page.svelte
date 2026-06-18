@@ -32,6 +32,8 @@
 
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+    void loadMeta();
+    void loadUser();
 
     return () => {
       syncChannel?.close();
@@ -50,6 +52,7 @@
 
   // Zod schema for user update form
   const updateSchema = z.object({
+    username: z.string().optional(),
     display_name: z.string().min(2, { message: 'validation.tooShort' }),
     email: z.string()
       .email({ message: 'validation.invalidUrl' })
@@ -151,6 +154,7 @@
       user = data;
       reset({
         data: {
+          username: data.username || '',
           display_name: data.display_name || '',
           email: data.email || '',
           roles: data.roles?.join(', ') || '',
@@ -221,9 +225,6 @@
       }
     }
   });
-
-  loadMeta();
-  loadUser();
 </script>
 
 <svelte:window onbeforeunload={(e) => {
@@ -270,16 +271,21 @@
             <!-- Column 1 -->
             <div class="space-y-4">
               <!-- Username (read-only) -->
-              <div class="space-y-2">
-                <FormLabel>{$t('shell.settings.users.update.username')}</FormLabel>
+              <FormField form={superFormObj} name="username">
                 <FormControl>
-                  <Input
-                    type="text"
-                    value={user.username}
-                    disabled
-                  />
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.username')}</FormLabel>
+                      <Input
+                        type="text"
+                        value={user.username}
+                        disabled
+                        {...props}
+                      />
+                    </div>
+                  {/snippet}
                 </FormControl>
-              </div>
+              </FormField>
 
               <!-- Display Name -->
               <FormField form={superFormObj} name="display_name">
