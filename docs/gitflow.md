@@ -43,25 +43,27 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 
 5. **For Release/Hotfix**: Also merge `main` back to `develop` to stay aligned
 
-## CRITICAL: Package.json Update Before Closing Release/Hotfix
+## CRITICAL: Automated Package.json Version Sync
 
-**BEFORE** merging a release or hotfix branch to main, you MUST:
+**The version in `package.json` is automatically managed by the `version-sync.mjs` script.**
 
-1. Update the version in `package.json` to match the release/hotfix version
-2. Commit the package.json change on the release/hotfix branch
-3. THEN merge to main (the package.json change will be included in the merge)
-4. This ensures the version file is committed before the merge/rebase with main and develop
+The script runs automatically as a `prebuild` hook and:
+- Detects the branch type (`release/` or `hotfix/`)
+- Calculates the expected version from the latest git tag
+- Validates that the branch name matches the expected version
+- Automatically updates `package.json` to the correct version if needed
 
 **Correct flow for release:**
-1. Create release branch from develop
-2. Update package.json version on release branch
-3. Commit package.json change
-4. Merge release to main (includes package.json change)
-5. Tag main
-6. Push main with tags
-7. Merge main back to develop
-8. Push develop
-9. Delete release branch
+1. Create release branch from develop with correct version (e.g., `release/0.32.0`)
+2. The script will automatically update `package.json` during build
+3. Merge release to main
+4. Tag main
+5. Push main with tags
+6. Merge main back to develop
+7. Push develop
+8. Delete release branch
+
+**Note:** The script enforces correct branch naming. If you create `release/0.33.0` when the latest tag is `0.31.0`, it will fail because the expected version is `0.32.0`.
 
 ## Version Tagging Rules
 
@@ -90,6 +92,15 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 - DO NOT ask user to approve commit messages
 - Write appropriate commit messages directly when instructed
 - DO NOT open editor for commit approval
+
+## Commit and Push Guidelines
+
+When instructed to "commit and push everything" or similar commands:
+- Run `git add -A` in ALL repositories in the workspace
+- Commit ALL staged files in each repository
+- Push ALL branches to origin
+- Do NOT filter files by task relevance - commit everything that has changed
+- This applies to multi-repository workspaces: commit changes in frontend, backend, and microservices repositories
 
 ## New task workflow
 

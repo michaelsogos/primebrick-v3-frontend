@@ -3,7 +3,10 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
-  import { Package, Upload, Download, Trash2 } from 'lucide-svelte';
+  import Package from '@lucide/svelte/icons/package'
+  import Upload from '@lucide/svelte/icons/upload'
+  import Download from '@lucide/svelte/icons/download'
+  import Trash2 from '@lucide/svelte/icons/trash-2';
 
   let uploadedFile = $state<File | null>(null);
 

@@ -8,6 +8,8 @@ import {
   type HealthPayload,
   type ModuleInfo
 } from '$lib/api-types';
+import { PUBLIC_API_ORIGIN } from '$env/static/public';
+import { building } from '$app/environment';
 
 export type { HealthModule, HealthPayload, ModuleInfo } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
@@ -135,7 +137,17 @@ async function handleRFC7807Error(res: Response): Promise<Response> {
 }
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  await ensureBackendOnlineOrThrow();
+  let url = requestUrlString(input);
+
+  // 1. Rewrite URL IMMEDIATELY if in SSR
+  if (typeof window === 'undefined' && !building && url.startsWith('/api/')) {
+    url = `${PUBLIC_API_ORIGIN}${url}`;
+  }
+
+  // 2. Skip health check in SSR (URL is now absolute)
+  if (typeof window !== 'undefined') {
+    await ensureBackendOnlineOrThrow();
+  }
 
   const nextInit: RequestInit = init ? { ...init } : {};
   nextInit.credentials = 'include';
@@ -145,7 +157,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
   let res: Response;
   try {
-    res = await fetch(input, nextInit);
+    res = await fetch(url, nextInit);
   } catch (e) {
     const aborted =
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
@@ -212,7 +224,6 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   }
 
   // Auto-handle RFC7807 errors for non-auth endpoints
-  const url = requestUrlString(input);
   if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh')) {
     await handleRFC7807Error(res);
   }

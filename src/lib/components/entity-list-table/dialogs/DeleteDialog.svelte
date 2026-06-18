@@ -2,53 +2,49 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Trash2 } from 'lucide-svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
-  let {
-    open,
-    count,
-    onConfirm,
-    onCancel,
-    isDeleting
-  }: {
+  interface DeleteDialogProps {
     open: boolean;
-    count: number;
+    onOpenChange: (open: boolean) => void;
+    isDeleting: boolean;
     onConfirm: () => void;
     onCancel: () => void;
-    isDeleting: boolean;
-  } = $props();
+  }
+
+  let {
+    open = $bindable(),
+    onOpenChange,
+    isDeleting,
+    onConfirm,
+    onCancel
+  }: DeleteDialogProps = $props();
 </script>
 
-<Dialog.Root bind:open={open}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header class="pb-4">
-      <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        {$t('entities.list.bulkActions.deleteConfirm')} {count} {$t('entities.list.bulkActions.items')}?
-      </Dialog.Description>
-    </Dialog.Header>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary-outline"
-        class="hover:scale-105 transition-all"
-        onclick={onCancel}
-        disabled={isDeleting}
-      >
-        {$t('common.cancel')}
-      </Button>
-      <Button
-        variant="destructive"
-        class="hover:scale-105 transition-all"
-        onclick={onConfirm}
-        disabled={isDeleting}
-      >
-        {#if isDeleting}
-          {$t('common.deleting')}
-        {:else}
-          <Trash2 class="size-4 mr-2" />
-          {$t('common.delete')}
-        {/if}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DialogBordered bind:open={open} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={onCancel}
+      disabled={isDeleting}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <Button
+      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      onclick={onConfirm}
+      disabled={isDeleting}
+    >
+      {#if isDeleting}
+        {$t('common.deleting')}
+      {:else}
+        {$t('common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>

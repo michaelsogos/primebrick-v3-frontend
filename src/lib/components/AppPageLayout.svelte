@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import AppPageScaffold from './AppPageScaffold.svelte';
   import AppPageBreadcrumb from './AppPageBreadcrumb.svelte';
-  import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
+  import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
 
   let {
     segments,

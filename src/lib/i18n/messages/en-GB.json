@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Profile",
         "organizations": "Organizations",
+        "users": "Users",
         "security": "Security",
         "modules": "Modules",
         "templates": "Templates"
@@ -177,9 +178,11 @@
         "copyIdpOwner": "Copy IDP Owner",
         "idpName": "IDP Name",
         "copyIdpName": "Copy IDP Name",
-        "admin": "Admin",
-        "verified": "Verified",
-        "emailVerified": "Email Verified",
+        "idpAdmin": "IDP Admin",
+        "idpVerified": "IDP Verified",
+        "idpEmailVerified": "IDP Email Verified",
+        "idpIssuer": "IDP Issuer",
+        "copyIdpIssuer": "Copy IDP Issuer",
         "createdAt": "Created at",
         "createdBy": "Created by",
         "updatedAt": "Updated at",
@@ -192,6 +195,8 @@
         "createdBy": "Created by",
         "updatedAt": "Updated at",
         "updatedBy": "Updated by",
+        "deletedAt": "Deleted at",
+        "deletedBy": "Deleted by",
         "lastSyncedAt": "Last synced"
       },
       "organizations": {
@@ -218,6 +223,55 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "There are unsaved changes. Are you sure you want to leave?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Create User",
+          "username": "Username",
+          "usernamePlaceholder": "Enter username",
+          "password": "Password",
+          "passwordPlaceholder": "Enter password",
+          "displayName": "Display Name",
+          "displayNamePlaceholder": "Enter display name",
+          "email": "Email",
+          "emailPlaceholder": "Enter email",
+          "roles": "Roles",
+          "avatarInitials": "Avatar Initials",
+          "avatarInitialsPlaceholder": "Enter initials (e.g., JD)",
+          "avatarColor": "Avatar Color",
+          "idpOrg": "IDP Organization",
+          "idpUsername": "IDP Username",
+          "idpPassword": "IDP Password",
+          "copyIdpUsername": "Copy IDP Username",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copy IDP Code",
+          "idpActive": "IDP Active",
+          "idpAdmin": "IDP Admin",
+          "idpVerified": "IDP Verified",
+          "idpEmailVerified": "IDP Email Verified",
+          "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+        },
+        "update": {
+          "title": "Edit User",
+          "username": "Username",
+          "displayName": "Display Name",
+          "displayNamePlaceholder": "Enter display name",
+          "email": "Email",
+          "emailPlaceholder": "Enter email",
+          "avatarInitials": "Avatar Initials",
+          "avatarInitialsPlaceholder": "Enter initials (e.g., JD)",
+          "avatarColor": "Avatar Color",
+          "isActive": "Active",
+          "isAdmin": "Admin",
+          "roles": "Roles",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copy IDP Code",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "Copy IDP Owner",
+          "idpName": "IDP Username",
+          "copyIdpName": "Copy IDP Username",
+          "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
         }
       },
       "security": {
@@ -377,7 +431,40 @@
       "recordRestored": "Record restored"
     },
     "userProfile": {
-      "title": "User Profile"
+      "title": "Users",
+      "singular": "User",
+      "plural": "Users",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Display Name",
+        "email": "Email",
+        "avatar_color": "Avatar Color",
+        "avatar_initials": "Avatar Initials",
+        "idp_org": "IDP Owner",
+        "idp_username": "IDP Username",
+        "is_active": "Active",
+        "is_active_false": "Inactive",
+        "is_admin": "Admin",
+        "is_admin_false": "Non-admin",
+        "is_verified": "Verified",
+        "email_verified": "Email Verified",
+        "issuer": "IDP Issuer",
+        "roles": "Roles",
+        "last_synced_at": "Last Synced At",
+        "created_at": "Created At",
+        "created_by": "Created By",
+        "updated_at": "Updated At",
+        "updated_by": "Updated By",
+        "version": "Version",
+        "deleted_at": "Deleted At",
+        "deleted_by": "Deleted By"
+      }
+    },
+    "user_profiles": {
+      "fields": {
+        "avatar_color": "Avatar Color"
+      }
     },
     "list": {
       "datetimeIana": {
@@ -473,8 +560,8 @@
         "noFiltersApplied": "No filters applied"
       },
       "bulkActions": {
-        "toggleToBulk": "Bulk actions",
-        "toggleToFilters": "Filters",
+        "toggleToBulk": "Show Bulk Actions",
+        "toggleToFilters": "Show Filters",
         "delete": "Delete",
         "duplicate": "Duplicate",
         "export": "Export",

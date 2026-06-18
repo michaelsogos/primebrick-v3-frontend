@@ -2,72 +2,107 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Download } from 'lucide-svelte';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
+  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
+  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
+  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
+  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
+  import BsFiletypeCsv from '~icons/bi/filetype-csv';
+
+  interface ExportDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    selectedCount: number;
+    totalCount: number;
+    entity: string;
+    exportScope: 'selected' | 'all';
+    onExportScopeChange: (scope: 'selected' | 'all') => void;
+    fileType: string | null;
+    isExporting: boolean;
+    onFileTypeChange: (type: string) => void;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }
 
   let {
-    open,
-    count,
-    total,
-    scope,
-    onConfirm,
-    onCancel,
+    open = $bindable(),
+    onOpenChange,
+    selectedCount,
+    totalCount,
+    entity,
+    exportScope,
+    onExportScopeChange,
+    fileType,
     isExporting,
-    fileType
-  }: {
-    open: boolean;
-    count: number;
-    total: number;
-    scope: 'selected' | 'all';
-    onConfirm: (fileType: 'xlsx' | 'csv') => void;
-    onCancel: () => void;
-    isExporting: boolean;
-    fileType: 'xlsx' | 'csv' | null;
-  } = $props();
-
-  function handleConfirm(type: 'xlsx' | 'csv') {
-    onConfirm(type);
-  }
+    onFileTypeChange,
+    onConfirm,
+    onCancel
+  }: ExportDialogProps = $props();
 </script>
 
-<Dialog.Root bind:open={open}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header class="pb-4">
-      <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
-      <Dialog.Description>
-        {#if scope === 'selected' && count > 0}
-          {$t('common.exportConfirm')} {count} {$t('entities.list.bulkActions.items')}?
-        {:else}
-          {$t('common.exportConfirm')} {total} {$t('entities.list.bulkActions.items')}?
-        {/if}
-      </Dialog.Description>
-    </Dialog.Header>
-    <div class="flex gap-3 py-4">
+<DialogBordered bind:open={open} color="warning" class="sm:max-w-md" showCloseButton={false}>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>
+      {#if selectedCount > 0}
+        {$t('common.exportConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+      {:else}
+        {$t('common.exportConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  {#if selectedCount > 0}
+    <div class="py-4">
+      <Choicebox bind:value={exportScope}>
+        <ChoiceboxItem value="selected">
+          <ChoiceboxTitle>Solo i {selectedCount} elementi selezionati</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+        <ChoiceboxItem value="all">
+          <ChoiceboxTitle>Tutti i {totalCount} elementi</ChoiceboxTitle>
+          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
+          <ChoiceboxIndicator />
+        </ChoiceboxItem>
+      </Choicebox>
+    </div>
+  {/if}
+  <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={onCancel}
+      disabled={isExporting}
+    >
+      {$t('common.cancel')}
+    </Button>
+    <div class="flex gap-2 w-full sm:w-auto">
       <Button
-        variant={fileType === 'xlsx' ? 'default' : 'outline'}
-        class="flex-1"
-        onclick={() => handleConfirm('xlsx')}
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { onFileTypeChange('xlsx'); onConfirm(); }}
         disabled={isExporting}
       >
-        XLSX
+        {#if isExporting && fileType === 'xlsx'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeXlsx class="size-5" />
+          {$t('common.exportExcel')}
+        {/if}
       </Button>
       <Button
-        variant={fileType === 'csv' ? 'default' : 'outline'}
-        class="flex-1"
-        onclick={() => handleConfirm('csv')}
+        class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+        onclick={() => { onFileTypeChange('csv'); onConfirm(); }}
         disabled={isExporting}
       >
-        CSV
+        {#if isExporting && fileType === 'csv'}
+          {$t('common.exporting')}
+        {:else}
+          <BsFiletypeCsv class="size-5" />
+          {$t('common.exportCsv')}
+        {/if}
       </Button>
     </div>
-    <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary-outline"
-        class="hover:scale-105 transition-all"
-        onclick={onCancel}
-        disabled={isExporting}
-      >
-        {$t('common.cancel')}
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+  </Dialog.Footer>
+</DialogBordered>

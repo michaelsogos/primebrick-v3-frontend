@@ -1,10 +1,15 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { User, ShieldCheck, Package, FileText, Building2 } from 'lucide-svelte';
+  import User from '@lucide/svelte/icons/user'
+  import ShieldCheck from '@lucide/svelte/icons/shield-check'
+  import Package from '@lucide/svelte/icons/package'
+  import FileText from '@lucide/svelte/icons/file-text'
+  import Building2 from '@lucide/svelte/icons/building-2'
+  import Users from '@lucide/svelte/icons/users';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import type { AppBreadcrumbSegment } from '$lib/shell/crm-breadcrumb';
-  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { page } from '$app/state';
 
   let { children } = $props();
@@ -16,6 +21,7 @@
   const tabs = [
     { id: 'profile', label: $t('shell.settings.tabs.profile'), icon: User, href: '/system/settings/profile' },
     { id: 'organizations', label: $t('shell.settings.tabs.organizations'), icon: Building2, href: '/system/settings/organizations' },
+    { id: 'users', label: $t('shell.settings.tabs.users'), icon: Users, href: '/system/settings/users' },
     { id: 'security', label: $t('shell.settings.tabs.security'), icon: ShieldCheck, href: '/system/settings/security' },
     { id: 'modules', label: $t('shell.settings.tabs.modules'), icon: Package, href: '/system/settings/modules' },
     { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText, href: '/system/settings/templates' }
@@ -45,7 +51,7 @@
     <div class="flex-1 overflow-hidden">
       <div class="flex w-full h-full gap-0">
         <!-- Tab Navigation -->
-        <div class="flex flex-col w-1/5 h-full bg-muted/30">
+        <div class="flex flex-col w-1/5 h-full bg-muted/30 border-r">
           <nav class="flex flex-col p-2 gap-1 w-full h-full rounded-none">
             {#each tabs as tab (tab.id)}
               {@const Icon = tab.icon}

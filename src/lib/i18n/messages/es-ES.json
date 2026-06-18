@@ -159,6 +159,7 @@
       "tabs": {
         "profile": "Perfil",
         "organizations": "Organizaciones",
+        "users": "Usuarios",
         "security": "Seguridad",
         "modules": "Módulos",
         "templates": "Plantillas"
@@ -177,9 +178,11 @@
         "copyIdpOwner": "Copiar IDP Owner",
         "idpName": "IDP Name",
         "copyIdpName": "Copiar IDP Name",
-        "admin": "Administrador",
-        "verified": "Verificado",
-        "emailVerified": "Email Verificado",
+        "idpAdmin": "IDP Administrador",
+        "idpVerified": "IDP Verificado",
+        "idpEmailVerified": "IDP Email Verificado",
+        "idpIssuer": "IDP Issuer",
+        "copyIdpIssuer": "Copiar IDP Issuer",
         "createdAt": "Creado el",
         "createdBy": "Creado por",
         "updatedAt": "Actualizado el",
@@ -192,6 +195,8 @@
         "createdBy": "Creado por",
         "updatedAt": "Actualizado el",
         "updatedBy": "Actualizado por",
+        "deletedAt": "Eliminado el",
+        "deletedBy": "Eliminado por",
         "lastSyncedAt": "Última sincronización"
       },
       "organizations": {
@@ -218,6 +223,55 @@
           "idpOwner": "IDP Owner",
           "idpName": "IDP Name",
           "unsavedChanges": "Hay cambios sin guardar. ¿Estás seguro de que quieres salir?"
+        }
+      },
+      "users": {
+        "create": {
+          "title": "Crear Usuario",
+          "username": "Nombre de usuario",
+          "usernamePlaceholder": "Ingrese nombre de usuario",
+          "password": "Contraseña",
+          "passwordPlaceholder": "Ingrese contraseña",
+          "displayName": "Nombre para mostrar",
+          "displayNamePlaceholder": "Ingrese nombre para mostrar",
+          "email": "Correo electrónico",
+          "emailPlaceholder": "Ingrese correo electrónico",
+          "roles": "Roles",
+          "avatarInitials": "Iniciales de Avatar",
+          "avatarInitialsPlaceholder": "Ingrese iniciales (ej. JD)",
+          "avatarColor": "Color de avatar",
+          "idpOrg": "IDP Organización",
+          "idpUsername": "IDP Nombre de usuario",
+          "idpPassword": "IDP Contraseña",
+          "copyIdpUsername": "Copiar IDP Nombre de usuario",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
+          "idpActive": "IDP Activo",
+          "idpAdmin": "IDP Administrador",
+          "idpVerified": "IDP Verificado",
+          "idpEmailVerified": "IDP Email Verificado",
+          "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea salir?"
+        },
+        "update": {
+          "title": "Editar Usuario",
+          "displayName": "Nombre para mostrar",
+          "displayNamePlaceholder": "Ingrese nombre para mostrar",
+          "email": "Correo electrónico",
+          "emailPlaceholder": "Ingrese correo electrónico",
+          "username": "Nombre de usuario",
+          "avatarInitials": "Iniciales de avatar",
+          "avatarInitialsPlaceholder": "Ingrese iniciales (ej. JD)",
+          "avatarColor": "Color de avatar",
+          "isActive": "Activo",
+          "isAdmin": "Administrador",
+          "roles": "Roles",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
+          "idpOwner": "IDP Owner",
+          "copyIdpOwner": "Copiar IDP Owner",
+          "idpName": "IDP Nombre de usuario",
+          "copyIdpName": "Copiar IDP Nombre de usuario",
+          "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea salir?"
         }
       },
       "security": {
@@ -357,7 +411,40 @@
       "recordRestored": "Registro restaurado"
     },
     "userProfile": {
-      "title": "Perfil de Usuario"
+      "title": "Usuarios",
+      "singular": "Usuario",
+      "plural": "Usuarios",
+      "fields": {
+        "uuid": "UUID",
+        "idp_code": "IDP Code",
+        "display_name": "Nombre para mostrar",
+        "email": "Correo electrónico",
+        "avatar_color": "Color de avatar",
+        "avatar_initials": "Iniciales de avatar",
+        "idp_org": "Propietario IDP",
+        "idp_username": "Nombre de usuario IDP",
+        "is_active": "Activo",
+        "is_active_false": "Inactivo",
+        "is_admin": "Administrador",
+        "is_admin_false": "No administrador",
+        "is_verified": "Verificado",
+        "email_verified": "Email Verificado",
+        "issuer": "Emisor IDP",
+        "roles": "Roles",
+        "last_synced_at": "Última sincronización",
+        "created_at": "Creado el",
+        "created_by": "Creado por",
+        "updated_at": "Actualizado el",
+        "updated_by": "Actualizado por",
+        "version": "Versión",
+        "deleted_at": "Eliminado el",
+        "deleted_by": "Eliminado por"
+      }
+    },
+    "user_profiles": {
+      "fields": {
+        "avatar_color": "Color de avatar"
+      }
     },
     "list": {
       "datetimeIana": {
@@ -453,8 +540,8 @@
         "noFiltersApplied": "Sin filtros aplicados"
       },
       "bulkActions": {
-        "toggleToBulk": "Acciones masivas",
-        "toggleToFilters": "Filtros",
+        "toggleToBulk": "Ver acciones masivas",
+        "toggleToFilters": "Ver filtros",
         "delete": "Eliminar",
         "duplicate": "Duplicar",
         "export": "Exportar",

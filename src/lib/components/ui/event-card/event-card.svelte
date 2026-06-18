@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import { CircleAlert, Info, TriangleAlert } from "lucide-svelte";
+	import CircleAlert from '@lucide/svelte/icons/circle-alert'
+  import Info from '@lucide/svelte/icons/info'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
 	type EventColor = "critical" | "error" | "warning" | "info";
 

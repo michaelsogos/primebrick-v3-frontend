@@ -10,6 +10,6 @@
 	>
 		<div
 			class="h-2 w-2 rounded-full bg-primary opacity-0 scale-0 transition-all duration-200 group-data-[state=checked]:opacity-100 group-data-[state=checked]:scale-100"
-		/>
+		></div>
 	</div>
 </div>

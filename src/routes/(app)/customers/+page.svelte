@@ -4,15 +4,15 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import EntityListTable from '$lib/components/EntityListTable.svelte';
+  import { EntityListTable } from '$lib/components/entity-list-table';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import { cn } from '$lib/utils';
-  import { Plus } from 'lucide-svelte';
+  import Plus from '@lucide/svelte/icons/plus';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import { browser } from '$app/environment';
-  import { crmModuleMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { crmModuleMenuSegment } from '$lib/breadcrumb/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
@@ -785,7 +785,6 @@
       {auditingColumns}
       columnOrderStorageKey={skColumnOrder}
       columns={columns}
-      rowDensity="compact"
       rowActionsEnabled
       entityRowActions={meta?.list.rowActions}
       defaultSort={meta?.list.defaultSort}
@@ -825,40 +824,6 @@
       onDeletionFilterModeChange={onDeletionFilterModeChange}
       viewVisibility={viewVisibility}
     >
-      {#snippet cell({ row, column })}
-        {#if column.key === 'status'}
-          {@const cfg = column.badge?.values?.[row.status]}
-          {@const badgeColors = badgeClassesFromToken(cfg?.color ?? null)}
-          <Badge
-            class="shadow-none"
-            style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-          >
-            {cfg?.labelText ?? $t(cfg?.labelKey ?? `entities.customer.status.${row.status}`)}
-          </Badge>
-        {:else if column.type === 'datetime' && column.datetimeIanaToggle}
-          {@const _ = datetimeIanaRenderTick}
-          {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}
-          {@const parts = formatDatetimeCellDisplay(
-            column,
-            row as Record<string, unknown>,
-            $uiLang,
-            mode
-          )}
-          {#if mode === 'record' && parts.iana}
-            <div class="flex min-w-0 flex-col gap-1">
-              <span class="min-w-0 truncate">{parts.text}</span>
-              <Badge
-                variant="outline"
-                class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-600/60 dark:bg-amber-950/50 dark:text-amber-100"
-              >{parts.iana}</Badge>
-            </div>
-          {:else}
-            <span class="min-w-0 truncate">{parts.text}</span>
-          {/if}
-        {:else}
-          {formatListCellValue(column, row[column.key as keyof CustomerListRow], $uiLang)}
-        {/if}
-      {/snippet}
 
         </EntityListTable>
 </AppPageScaffold>

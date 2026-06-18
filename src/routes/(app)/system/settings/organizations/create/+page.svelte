@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
@@ -19,7 +19,7 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { beforeNavigate, goto } from '$app/navigation';
-  import { settingsTabMenuSegment } from '$lib/shell/crm-breadcrumb';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
@@ -27,6 +27,7 @@
   import type { ValidationStatus } from '$lib/types/validation.js';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CopyButton } from '$lib/components/ui/copy-button';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -121,17 +122,6 @@
         const data = await response.json();
         if (data.success && data.organization) {
           console.log('Organization created successfully');
-          // Update audit state from response
-          auditInfo.uuid = data.organization.uuid || '';
-          auditInfo.version = data.organization.version || 1;
-          auditInfo.createdAt = data.organization.created_at ? formatUiDateTime(data.organization.created_at, $uiLang) : '';
-          auditInfo.createdBy = data.organization.created_by || '';
-          auditInfo.createdByName = data.organization.created_by_name || '';
-          auditInfo.updatedAt = data.organization.updated_at ? formatUiDateTime(data.organization.updated_at, $uiLang) : '';
-          auditInfo.updatedBy = data.organization.updated_by || '';
-          auditInfo.updatedByName = data.organization.updated_by_name || '';
-          auditInfo.lastSyncedAt = data.organization.last_synced_at ? formatUiDateTime(data.organization.last_synced_at, $uiLang) : '';
-          auditInfo.hasAudit = true;
 
           // Notify parent BEFORE navigating away; after goto the component may unmount and close the channel
           notifyParentRefresh();
@@ -185,31 +175,23 @@
     return name ? `${owner}/${name}` : '';
   });
 
-  // Audit state (local for create page)
-  let auditInfo = $state({
-    uuid: '', // Will be populated after creation
-    version: 0,
-    createdAt: '',
-    createdBy: '',
-    createdByName: '',
-    updatedAt: '',
-    updatedBy: '',
-    updatedByName: '',
-    lastSyncedAt: '',
-    hasAudit: false
-  });
+  // Audit data state
+  let meta = $state<EntityMetadata | null>(null);
+  let isCreatePage = $state(true);
 
-  // Initialize audit info with default values
-  onMount(() => {
-    const now = new Date();
-    const user = userProfileStore.current;
-    auditInfo.createdAt = formatUiDateTime(now.toISOString(), $uiLang);
-    auditInfo.createdBy = user?.idp_code || '-';
-    auditInfo.createdByName = user?.display_name || '-';
-    auditInfo.updatedAt = auditInfo.createdAt;
-    auditInfo.updatedBy = auditInfo.createdBy;
-    auditInfo.updatedByName = auditInfo.createdByName;
-    auditInfo.lastSyncedAt = '-'; // Not synced yet on creation
+  const auditData = $derived({
+    uuid: '',
+    version: 0,
+    created_at: undefined,
+    created_by: undefined,
+    created_by_name: undefined,
+    updated_at: undefined,
+    updated_by: undefined,
+    updated_by_name: undefined,
+    deleted_at: undefined,
+    deleted_by: undefined,
+    deleted_by_name: undefined,
+    last_synced_at: undefined
   });
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -279,7 +261,13 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-<AppPageScaffold>
+<FormPageLayout
+  entity="organization"
+  rowUuid=""
+  auditData={auditData}
+  auditingColumns={meta?.list?.auditingColumns || []}
+  isCreatePage={isCreatePage}
+>
   {#snippet header()}
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
@@ -297,181 +285,136 @@
     </div>
   {/snippet}
 
-  <div class="flex min-h-0 flex-1 flex-col overflow-auto">
-    <form id="org-create-form" use:enhance>
-      <div class="grid grid-cols-2 gap-6 p-4">
-        <!-- Column 1 -->
-        <div class="space-y-4">
-          <FormField form={superFormObj} name="display_name">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.display_name}
-                    placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
-                  />
-                  <TranslatedFormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
+  {#snippet children()}
+    <div class="flex-1 overflow-auto">
+      <form id="org-create-form" use:enhance>
+        <div class="grid grid-cols-2 gap-6 p-4">
+          <!-- Column 1 -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="display_name">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
+                    <Input
+                      {...props}
+                      bind:value={$form.display_name}
+                      placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
 
-          <FormField form={superFormObj} name="website_url">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.website_url}
-                    placeholder="https://example.com"
-                  />
-                  <TranslatedFormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-        </div>
-
-        <!-- Column 2 -->
-        <div class="space-y-4">
-          <div class="space-y-2">
-            <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {$t('shell.settings.organizations.create.idpCode')}
-            </label>
-            <div class="relative">
-              <Input
-                id="idp-code-display"
-                value={idpCode}
-                readonly
-                class="bg-muted pr-10"
-              />
-              {#if idpCode}
-                <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      {#snippet child({ props: tooltipProps })}
-                        <CopyButton
-                          text={idpCode}
-                          variant="ghost"
-                          size="icon"
-                          class="h-8 w-8 hover:bg-transparent"
-                          animationDuration={2000}
-                          {...tooltipProps}
-                        />
-                      {/snippet}
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>{$t('shell.settings.organizations.create.copyIdpCode')}</Tooltip.Content>
-                  </Tooltip.Root>
-                </div>
-              {/if}
-            </div>
+            <FormField form={superFormObj} name="website_url">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
+                    <Input
+                      {...props}
+                      bind:value={$form.website_url}
+                      placeholder="https://example.com"
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
           </div>
 
-          <FormField form={superFormObj} name="idp_owner">
-            <FormControl>
-              {#snippet children({ props })}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
-                  <Input
-                    {...props}
-                    bind:value={$form.idp_owner}
-                    placeholder="admin"
-                  />
-                  <TranslatedFormFieldErrors />
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-
-          <FormField form={superFormObj} name="idp_name">
-            <FormControl>
-              {#snippet children({ props })}
-                {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
-                <div class="space-y-2">
-                  <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
-                  <AsyncValidatedInput
-                    {...props}
-                    bind:value={$form.idp_name}
-                    validateFn={checkIdpNameAvailability}
-                    placeholder="acme-corp"
-                    onStatusChange={handleIdpNameStatusChange}
-                    externalInvalid={hasZodError}
-                    aria-invalid={hasAsyncError ? true : props['aria-invalid']}
-                    data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
-                  />
-                  <TranslatedFormFieldErrors />
-                  {#if hasAsyncError && !hasZodError}
-                    <div class="text-destructive text-xs font-medium">
-                      {$t('validation.nameTaken')}
-                    </div>
-                  {/if}
-                </div>
-              {/snippet}
-            </FormControl>
-          </FormField>
-        </div>
-      </div>
-    </form>
-  </div>
-
-  <!-- FOOTER: Audit Box (60%) + CTA (40%) -->
-  <div class="bg-muted/50 shrink-0 border-t p-4">
-    <div class="flex items-center justify-between gap-4">
-      <!-- Left: Audit info (60%) -->
-      <div class="flex-1">
-        <div class="text-xs">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {#if auditInfo.version && auditInfo.hasAudit}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
-            {:else if auditInfo.version}
-              <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
-                v{auditInfo.version}
-              </Badge>
-            {/if}
-            {#if auditInfo.uuid}
-              <div class="flex items-center gap-x-2">
-                <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
-                <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
+          <!-- Column 2 -->
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                {$t('shell.settings.organizations.create.idpCode')}
+              </label>
+              <div class="relative">
+                <Input
+                  id="idp-code-display"
+                  value={idpCode}
+                  readonly
+                  class="bg-muted pr-10"
+                />
+                {#if idpCode}
+                  <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        {#snippet child({ props: tooltipProps })}
+                          <CopyButton
+                            text={idpCode}
+                            variant="ghost"
+                            size="icon"
+                            class="h-8 w-8 hover:bg-transparent"
+                            animationDuration={2000}
+                            {...tooltipProps}
+                          />
+                        {/snippet}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{$t('shell.settings.organizations.create.copyIdpCode')}</Tooltip.Content>
+                    </Tooltip.Root>
+                  </div>
+                {/if}
               </div>
-            {/if}
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.createdAt || '-'}</span>
             </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.createdBy')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.createdByName || auditInfo.createdBy || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.updatedAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.updatedAt || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.updatedBy')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.updatedByName || auditInfo.updatedBy || '-'}</span>
-            </div>
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.lastSyncedAt || '-'}</span>
-            </div>
+
+            <FormField form={superFormObj} name="idp_owner">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
+                    <Input
+                      {...props}
+                      bind:value={$form.idp_owner}
+                      placeholder="admin"
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="idp_name">
+              <FormControl>
+                {#snippet children({ props })}
+                  {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
+                    <AsyncValidatedInput
+                      {...props}
+                      bind:value={$form.idp_name}
+                      validateFn={checkIdpNameAvailability}
+                      placeholder="acme-corp"
+                      onStatusChange={handleIdpNameStatusChange}
+                      externalInvalid={hasZodError}
+                      aria-invalid={hasAsyncError ? true : props['aria-invalid']}
+                      data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
+                    />
+                    <TranslatedFormFieldErrors />
+                    {#if hasAsyncError && !hasZodError}
+                      <div class="text-destructive text-xs font-medium">
+                        {$t('validation.nameTaken')}
+                      </div>
+                    {/if}
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
           </div>
         </div>
-      </div>
-
-      <!-- Right: CTA (40%) -->
-      <div class="shrink-0 flex gap-2">
-        <Button variant="outline" onclick={handleCancel}>
-          {$t('common.cancel')}
-        </Button>
-        <Button type="submit" form="org-create-form" disabled={!hasChanges}>
-          {$t('common.save')}
-        </Button>
-      </div>
+      </form>
     </div>
-  </div>
-</AppPageScaffold>
+  {/snippet}
+
+  {#snippet footerActions()}
+    <div class="flex gap-2">
+      <Button variant="outline" onclick={handleCancel}>
+        {$t('common.cancel')}
+      </Button>
+      <Button type="submit" form="org-create-form" disabled={!hasChanges}>
+        {$t('common.save')}
+      </Button>
+    </div>
+  {/snippet}
+</FormPageLayout>

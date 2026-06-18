@@ -23,13 +23,15 @@ export type MetaColumn = {
   labelKey: string;
   /**
    * `date`: locale date only. `datetime`: locale date + time (`Intl` default hour cycle for that locale).
+   * `color`: displays as a color circle with tooltip showing HEX value.
    */
-  type: 'text' | 'badge' | 'date' | 'datetime' | string;
+  type: 'text' | 'badge' | 'date' | 'datetime' | 'color' | string;
   sortable?: boolean;
   searchable?: boolean;
   hideable?: boolean;
   defaultVisible?: boolean;
   filterable?: boolean;
+  sticky?: boolean;
   badge?: {
     values?: Record<string, { labelKey?: string; labelText?: string; color?: string }>;
   };

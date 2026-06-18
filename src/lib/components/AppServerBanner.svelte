@@ -2,7 +2,8 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { shellNav, loadShellNav } from '$lib/shell/modules-shell.svelte';
-  import { TriangleAlert, AlertCircle } from 'lucide-svelte';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
 </script>
 
 {#if shellNav.unreachable}
