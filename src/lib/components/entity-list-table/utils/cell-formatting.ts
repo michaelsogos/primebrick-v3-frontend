@@ -14,12 +14,10 @@ export function getAuditFieldValue<TRow extends Record<string, unknown>>(
   formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string,
   auditingColumns?: MetaColumn[]
 ): string {
-  return getAuditableDisplayValue(
-    row,
-    col,
-    auditingColumns,
-    (value) => formatListCellValueFn(col, value, uiLang)
-  );
+  // Note: datetime/date formatting is handled in TableCell.svelte template
+  // before calling this function (sequential logic: snippet, boolean, badge, datetime)
+  // This function is only called in the {:else} case for non-formatted fields
+  return getAuditableDisplayValue(row, col, auditingColumns);
 }
 
 export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
@@ -34,7 +32,7 @@ export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
   auditingColumns?: MetaColumn[]
 ): boolean {
   // Use the centralized utility for auditable fields
-  if (isAuditableColumn(col, auditingColumns)) {
+  if (isAuditableColumn(col.key, auditingColumns)) {
     return isAuditableFieldEmpty(row, col, auditingColumns);
   }
 

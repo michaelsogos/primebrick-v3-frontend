@@ -1,18 +1,14 @@
 import { apiFetch } from '$lib/api';
-import { toast } from '$lib/errors/toast';
-import type { AuditField } from './useAuditBox';
+import { pushImpactError } from '$lib/errors/app-errors';
+import type { EntityListListMeta } from '$lib/entity-list/types';
 
 export interface EntityMetadata {
-  auditingColumns?: AuditField[];
   entity?: string;
   titleKey?: string;
   updatePageTitle?: string;
   uid?: string;
-  list?: any;
-  stickyColumns?: any[];
-  defaultSort?: any;
-  pageSizeOptions?: number[];
-  searchPlaceholderKey?: string;
+  defaultView?: 'table' | 'cards' | 'cards_list';
+  list?: EntityListListMeta;
 }
 
 export interface UseEntityMetadataOptions {
@@ -45,8 +41,8 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
         const data = await res.json();
         
         // Code Guardrail: Check if metadata becomes null after loading
-        if (!data || !data.auditingColumns || data.auditingColumns.length === 0) {
-          console.error('[METADATA PARSING ERROR] Metadata loaded but auditingColumns is null or empty:', {
+        if (!data || !data.list || !data.list.auditingColumns || data.list.auditingColumns.length === 0) {
+          console.error('[METADATA PARSING ERROR] Metadata loaded but list.auditingColumns is null or empty:', {
             endpoint,
             entity: entityName,
             response: data,
@@ -54,8 +50,13 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
           });
           
           // RFC ERROR TOAST - Metadata parsing error
-          toast.error('Metadata parsing error: auditingColumns is null or empty', {
-            description: `Endpoint: ${endpoint}, Entity: ${entityName}`
+          pushImpactError({
+            impact: 'HIGH',
+            message: 'Metadata parsing error: list.auditingColumns is null or empty',
+            scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
+            detail: JSON.stringify(data, null, 2),
+            tags: [{ label: 'METADATA', tone: 'danger' }],
+            toast: true
           });
           
           meta = data; // Still set meta even if empty
@@ -73,8 +74,12 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
         });
         
         // RFC ERROR TOAST - Metadata endpoint error
-        toast.error(`Failed to load metadata: ${res.status} ${res.statusText}`, {
-          description: `Endpoint: ${endpoint}, Entity: ${entityName}`
+        pushImpactError({
+          impact: 'HIGH',
+          message: `Failed to load metadata: ${res.status} ${res.statusText}`,
+          scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
+          tags: [{ label: 'METADATA', tone: 'danger' }],
+          toast: true
         });
         
         error = `Failed to load metadata: ${res.status} ${res.statusText}`;
@@ -89,8 +94,12 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
       });
       
       // RFC ERROR TOAST - Network error
-      toast.error(`Network error: ${err instanceof Error ? err.message : String(err)}`, {
-        description: `Endpoint: ${endpoint}, Entity: ${entityName}`
+      pushImpactError({
+        impact: 'HIGH',
+        message: `Network error: ${err instanceof Error ? err.message : String(err)}`,
+        scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
+        tags: [{ label: 'METADATA', tone: 'danger' }],
+        toast: true
       });
       
       error = err instanceof Error ? err.message : String(err);

@@ -27,7 +27,7 @@
   import type { ValidationStatus } from '$lib/types/validation.js';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CopyButton } from '$lib/components/ui/copy-button';
-  import type { AuditField } from '$lib/composables/useAuditBox';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -176,7 +176,7 @@
   });
 
   // Audit data state
-  let meta = $state<{ auditingColumns?: AuditField[] } | null>(null);
+  let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
 
   const auditData = $derived({
@@ -265,7 +265,7 @@
   entity="organization"
   rowUuid=""
   auditData={auditData}
-  auditingColumns={meta?.auditingColumns || []}
+  auditingColumns={meta?.list?.auditingColumns || []}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}

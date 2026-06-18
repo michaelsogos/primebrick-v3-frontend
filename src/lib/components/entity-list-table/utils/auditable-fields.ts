@@ -5,18 +5,18 @@ import { isBlankish } from '../utils';
  * Check if a column is an auditable field based on metadata.
  * A column is considered auditable if it appears in the auditingColumns array.
  * 
- * @param col - The column to check
+ * @param fieldKey - The field key to check
  * @param auditingColumns - The auditing columns from entity metadata
  * @returns true if the column is an auditable field
  */
 export function isAuditableColumn(
-  col: MetaColumn,
+  fieldKey: string,
   auditingColumns?: MetaColumn[]
 ): boolean {
   if (!auditingColumns || auditingColumns.length === 0) {
     return false;
   }
-  return auditingColumns.some((auditCol) => auditCol.key === col.key);
+  return auditingColumns.some((auditCol) => auditCol.key === fieldKey);
 }
 
 /**
@@ -34,27 +34,25 @@ export function getDisplayNameFieldKey(fieldKey: string): string {
  * Get the display value for an auditable field with fallback.
  * If the field is auditable and has a corresponding _name field with a non-empty value,
  * use the display name. Otherwise, fall back to the original value.
- * 
+ *
  * @param row - The row data
  * @param col - The column definition
  * @param auditingColumns - The auditing columns from entity metadata
- * @param formatValueFn - Optional function to format the raw value
  * @returns The display value (display name or original value)
  */
 export function getAuditableDisplayValue<T extends Record<string, unknown>>(
   row: T,
   col: MetaColumn,
-  auditingColumns?: MetaColumn[],
-  formatValueFn?: (value: unknown) => string
+  auditingColumns?: MetaColumn[]
 ): string {
   const r = row as Record<string, unknown>;
   const raw = r[col.key];
 
-  // Check if this is an auditable field based on metadata
-  if (isAuditableColumn(col, auditingColumns)) {
-    const nameField = getDisplayNameFieldKey(col.key);
-    const nameValue = r[nameField];
-    
+  // Check if this field is auditable and ends with _by
+  if (isAuditableColumn(col.key, auditingColumns) && col.key.endsWith('_by')) {
+    const nameFieldKey = getDisplayNameFieldKey(col.key);
+    const nameValue = r[nameFieldKey];
+
     // Use display name if present and non-empty
     if (!isBlankish(nameValue)) {
       return String(nameValue);
@@ -63,14 +61,13 @@ export function getAuditableDisplayValue<T extends Record<string, unknown>>(
 
   // Fall back to original value
   if (isBlankish(raw)) return '-';
-  
-  return formatValueFn ? formatValueFn(raw) : String(raw);
+  return String(raw);
 }
 
 /**
  * Check if an auditable field should be considered empty.
  * A field is empty if both the raw value and the display name value are blank.
- * 
+ *
  * @param row - The row data
  * @param col - The column definition
  * @param auditingColumns - The auditing columns from entity metadata
@@ -85,7 +82,7 @@ export function isAuditableFieldEmpty<T extends Record<string, unknown>>(
   const raw = r[col.key];
 
   // For auditable fields, check both raw and display name
-  if (isAuditableColumn(col, auditingColumns)) {
+  if (isAuditableColumn(col.key, auditingColumns)) {
     const nameField = getDisplayNameFieldKey(col.key);
     const nameValue = r[nameField];
     return isBlankish(raw) && isBlankish(nameValue);

@@ -23,7 +23,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { interpolateTemplate } from '$lib/template-interpolate';
-  import type { AuditField } from '$lib/composables/useAuditBox';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const uuid = $derived(page.params.uuid);
 
@@ -84,7 +84,7 @@
     updated_by_name?: string;
   } | null>(null);
 
-  let meta = $state<{ updatePageTitle?: string; auditingColumns?: AuditField[] } | null>(null);
+  let meta = $state<EntityMetadata | null>(null);
   let pageTitle = $state('');
   let loading = $state(true);
   let isCreatePage = $state(false);
@@ -238,7 +238,7 @@
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.auditingColumns || []}
+  auditingColumns={meta?.list?.auditingColumns || []}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}

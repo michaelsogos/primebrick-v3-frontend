@@ -32,7 +32,7 @@
   import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
   import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
-  import type { AuditField } from "$lib/composables/useAuditBox";
+  import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
 
@@ -309,7 +309,7 @@
       deleted_by_name: profile?.deleted_by_name,
       last_synced_at: profile?.last_synced_at
     }}
-    auditingColumns={metadata.meta?.auditingColumns || []}
+    auditingColumns={metadata.meta?.list?.auditingColumns || []}
     isCreatePage={isCreatePage}
   >
   {#snippet header()}

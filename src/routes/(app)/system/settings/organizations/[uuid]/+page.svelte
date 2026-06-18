@@ -25,7 +25,7 @@
   import { interpolateTemplate } from '$lib/template-interpolate';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CopyButton } from '$lib/components/ui/copy-button';
-  import type { AuditField } from '$lib/composables/useAuditBox';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const uuid = $derived(page.params.uuid);
 
@@ -82,7 +82,7 @@
     last_synced_at?: string;
   } | null>(null);
 
-  let meta = $state<{ updatePageTitle?: string; auditingColumns?: AuditField[] } | null>(null);
+  let meta = $state<EntityMetadata | null>(null);
   let pageTitle = $state(''); // Frozen title, computed once after load
   let loading = $state(true);
   let isCreatePage = $state(false);
@@ -246,7 +246,7 @@
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.auditingColumns || []}
+  auditingColumns={meta?.list?.auditingColumns || []}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}

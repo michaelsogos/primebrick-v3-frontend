@@ -30,7 +30,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import Select from '$lib/components/ui/select/select.svelte';
   import MultiSelect from '$lib/components/ui/multi-select/multi-select.svelte';
-  import type { AuditField } from '$lib/composables/useAuditBox';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -212,7 +212,7 @@
   const idpCode = $derived(''); // Not used anymore - removed from form
 
   // Audit data state
-  let meta = $state<{ auditingColumns?: AuditField[] } | null>(null);
+  let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
 
   const auditData = $derived({
@@ -264,7 +264,7 @@
   rowUuid=""
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.auditingColumns || []}
+  auditingColumns={meta?.list?.auditingColumns || []}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}
