@@ -22,6 +22,9 @@ interface UserProfile {
   updated_at?: string;
   updated_by?: string;
   updated_by_name?: string;
+  deleted_at?: string;
+  deleted_by?: string;
+  deleted_by_name?: string;
   version?: number;
   last_synced_at?: string;
 }
@@ -43,13 +46,11 @@ export const userProfileStore = {
   get current() { return userProfileState.current; },
   
   set(profile: Partial<UserProfile>) {
-    console.log('[userProfileStore] set called with:', $state.snapshot(profile));
     const current = userProfileState.current;
     // Always assign a NEW object reference to `.current` to force updates
     // while preserving any fields not present in the PATCH response.
     const next = current ? { ...current, ...profile } : ({ ...profile } as UserProfile);
     userProfileState.current = next;
-    console.log('[userProfileStore] updated currentProfile:', $state.snapshot(next));
     sessionStorage.setItem('user', JSON.stringify(next));
   }
 };

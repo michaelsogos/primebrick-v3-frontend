@@ -1,7 +1,8 @@
 <script lang="ts">
 	import * as Popover from "$lib/components/ui/popover";
 	import { Button } from "$lib/components/ui/button";
-	import { Calendar, ChevronsUpDown } from "lucide-svelte";
+	import Calendar from '@lucide/svelte/icons/calendar'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import { DateFormatter, getLocalTimeZone, today, now, CalendarDate, CalendarDateTime } from "@internationalized/date";
 	import { cn } from "$lib/utils";
 	import { inputControlHoverClasses } from "$lib/components/ui/input/input-chrome";

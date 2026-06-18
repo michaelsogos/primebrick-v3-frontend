@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import EntityListTable from '$lib/components/EntityListTable.svelte';
+  import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
@@ -573,7 +573,6 @@
     {auditingColumns}
     columnOrderStorageKey={skColumnOrder}
     columns={columns}
-    rowDensity="compact"
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
     onCreateAction={openNewUser}

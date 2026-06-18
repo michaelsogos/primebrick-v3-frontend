@@ -5,7 +5,7 @@
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { isMenuSegment, type AppBreadcrumbSegment } from '$lib/breadcrumb/types';
   import { cn } from '$lib/utils';
-  import { ChevronDown } from 'lucide-svelte';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
   /** Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. */
   let {

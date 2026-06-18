@@ -17,29 +17,27 @@
   import { afterNavigate } from '$app/navigation';
   import { apiFetch } from '$lib/api';
   import { userProfileState } from '$lib/user-profile-store.svelte';
-  import {
-    BadgeCheck,
-    Bell,
-    Building2,
-    Check,
-    ChevronRight,
-    ChevronsUpDown,
-    Cloud,
-    CloudOff,
-    CreditCard,
-    Database,
-    LayoutGrid,
-    LifeBuoy,
-    LogOut,
-    Siren,
-    Package,
-    Receipt,
-    Settings,
-    ShieldAlert,
-    Sparkles,
-    User,
-    Users
-  } from 'lucide-svelte';
+  import BadgeCheck from '@lucide/svelte/icons/badge-check'
+  import Bell from '@lucide/svelte/icons/bell'
+  import Building2 from '@lucide/svelte/icons/building-2'
+  import Check from '@lucide/svelte/icons/check'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
+  import Cloud from '@lucide/svelte/icons/cloud'
+  import CloudOff from '@lucide/svelte/icons/cloud-off'
+  import CreditCard from '@lucide/svelte/icons/credit-card'
+  import Database from '@lucide/svelte/icons/database'
+  import LayoutGrid from '@lucide/svelte/icons/layout-grid'
+  import LifeBuoy from '@lucide/svelte/icons/life-buoy'
+  import LogOut from '@lucide/svelte/icons/log-out'
+  import Siren from '@lucide/svelte/icons/siren'
+  import Package from '@lucide/svelte/icons/package'
+  import Receipt from '@lucide/svelte/icons/receipt'
+  import Settings from '@lucide/svelte/icons/settings'
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
+  import Sparkles from '@lucide/svelte/icons/sparkles'
+  import User from '@lucide/svelte/icons/user'
+  import Users from '@lucide/svelte/icons/users';
 
   let selectedId = $state<string | null>(null);
   let crmOpen = $state(false);

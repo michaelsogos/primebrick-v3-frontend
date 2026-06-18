@@ -38,11 +38,11 @@ export function useFilters(options: FilterOptions = {}): FilterReturn {
   const hasActiveFilters = $derived(Object.keys(filterValues).length > 0);
 
   return {
-    filterValues,
+    get filterValues() { return filterValues; },
     updateFilterValue,
     clearFilter,
     clearAllFilters,
-    hasActiveFilters
+    get hasActiveFilters() { return hasActiveFilters; }
   };
 }
 
@@ -92,12 +92,12 @@ export function useAdvancedFilters(
   const hasAdvancedFilters = $derived(advancedFilters.length > 0);
 
   return {
-    advancedFilters,
-    globalConnector,
+    get advancedFilters() { return advancedFilters; },
+    get globalConnector() { return globalConnector; },
     addFilter,
     removeFilter,
     updateFilter,
     clearAdvancedFilters,
-    hasAdvancedFilters
+    get hasAdvancedFilters() { return hasAdvancedFilters; }
   };
 }

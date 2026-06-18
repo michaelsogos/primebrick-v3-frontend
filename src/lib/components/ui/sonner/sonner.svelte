@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Toaster as Sonner, type ToasterProps } from 'svelte-sonner';
-  import { CircleAlert } from 'lucide-svelte';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import { cn } from '$lib/utils.js';
 
   let { class: className, ...restProps }: ToasterProps = $props();

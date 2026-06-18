@@ -6,7 +6,11 @@
   import { formatUiDateTime, t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
-  import { Code, FileJson, AlertTriangle, Info, AlertCircle } from 'lucide-svelte';
+  import Code from '@lucide/svelte/icons/code'
+  import FileJson from '@lucide/svelte/icons/file-json'
+  import AlertTriangle from '@lucide/svelte/icons/alert-triangle'
+  import Info from '@lucide/svelte/icons/info'
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import JsonTableViewer from './JsonTableViewer.svelte';
   import { onMount } from 'svelte';
   import { createHighlighter } from 'shiki';

@@ -1,6 +1,7 @@
 export interface SelectionOptions {
   enabled: boolean;
   uid: string;
+  initialKeys?: string[];
   onSelectedKeysChange?: (keys: string[]) => void;
 }
 
@@ -12,12 +13,13 @@ export interface SelectionReturn {
   isRowSelected: (key: string) => boolean;
   allSelected: boolean;
   someSelected: boolean;
+  syncWithExternal: (keys: string[]) => void;
 }
 
 export function useSelection(options: SelectionOptions): SelectionReturn {
-  const { enabled, uid, onSelectedKeysChange } = options;
+  const { enabled, uid, initialKeys, onSelectedKeysChange } = options;
 
-  let selectedKeys = $state<string[]>([]);
+  let selectedKeys = $state<string[]>(initialKeys ?? []);
 
   function rowKey(row: Record<string, unknown>): string {
     const v = row[uid as keyof typeof row] as unknown;
@@ -51,16 +53,23 @@ export function useSelection(options: SelectionOptions): SelectionReturn {
     return selectedKeys.includes(key);
   }
 
+  function syncWithExternal(keys: string[]) {
+    if (JSON.stringify(selectedKeys) !== JSON.stringify(keys)) {
+      selectedKeys = [...keys];
+    }
+  }
+
   const allSelected = $derived(selectedKeys.length > 0);
   const someSelected = $derived(selectedKeys.length > 0);
 
   return {
-    selectedKeys,
+    get selectedKeys() { return selectedKeys; },
     toggleRowSelect,
     toggleAllRows,
     clearSelection,
     isRowSelected,
-    allSelected,
-    someSelected
+    get allSelected() { return allSelected; },
+    get someSelected() { return someSelected; },
+    syncWithExternal
   };
 }

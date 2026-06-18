@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
@@ -23,10 +23,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { interpolateTemplate } from '$lib/template-interpolate';
-  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
-  import * as Tooltip from '$lib/components/ui/tooltip';
-  import { CopyButton } from '$lib/components/ui/copy-button';
+  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const uuid = $derived(page.params.uuid);
 
@@ -87,9 +84,10 @@
     updated_by_name?: string;
   } | null>(null);
 
-  let meta = $state<{ updatePageTitle?: string } | null>(null);
+  let meta = $state<EntityMetadata | null>(null);
   let pageTitle = $state('');
   let loading = $state(true);
+  let isCreatePage = $state(false);
 
   // Superforms in SPA mode
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
@@ -185,30 +183,22 @@
   }
 
   // Audit state
-  let auditInfo = $state({
-    uuid: '',
-    version: 0,
-    createdAt: '',
-    createdBy: '',
-    createdByName: '',
-    updatedAt: '',
-    updatedBy: '',
-    updatedByName: '',
-    hasAudit: false
-  });
-
-  $effect(() => {
-    if (user) {
-      auditInfo.uuid = user.uuid;
-      auditInfo.version = user.version;
-      auditInfo.createdAt = user.created_at ? formatUiDateTime(user.created_at, $uiLang) : '';
-      auditInfo.createdBy = user.created_by || '-';
-      auditInfo.createdByName = user.created_by_name || '-';
-      auditInfo.updatedAt = user.updated_at ? formatUiDateTime(user.updated_at, $uiLang) : '';
-      auditInfo.updatedBy = user.updated_by || '-';
-      auditInfo.updatedByName = user.updated_by_name || '-';
-      auditInfo.hasAudit = !!(user.created_at || user.updated_at);
-    }
+  const auditData = $derived.by(() => {
+    if (!user) return {};
+    return {
+      uuid: user.uuid,
+      version: user.version,
+      created_at: user.created_at,
+      created_by: user.created_by,
+      created_by_name: user.created_by_name,
+      updated_at: user.updated_at,
+      updated_by: user.updated_by,
+      updated_by_name: user.updated_by_name,
+      deleted_at: (user as any).deleted_at,
+      deleted_by: (user as any).deleted_by,
+      deleted_by_name: (user as any).deleted_by_name,
+      last_synced_at: (user as any).last_synced_at
+    };
   });
 
   function handleCancel() {
@@ -243,7 +233,14 @@
   }
 }} />
 
-<AppPageScaffold>
+<FormPageLayout
+  entity="user_profiles"
+  rowUuid={uuid || ''}
+  meta={meta || undefined}
+  auditData={auditData}
+  auditingColumns={meta?.list?.auditingColumns || []}
+  isCreatePage={isCreatePage}
+>
   {#snippet header()}
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
@@ -261,140 +258,117 @@
     </div>
   {/snippet}
 
-  {#if loading}
-    <div class="flex items-center justify-center py-12">
-      <div class="text-muted-foreground">Loading...</div>
-    </div>
-  {:else if user}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left: Form (60%) -->
-      <div class="lg:col-span-2 space-y-6">
-        <form id="user-update-form" method="POST" use:enhance>
-          <div class="space-y-6">
-            <!-- Username (read-only) -->
-            <div class="space-y-2">
-              <FormLabel>{$t('shell.settings.users.update.username')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  value={user.username}
-                  disabled
-                />
-              </FormControl>
+  {#snippet children()}
+    {#if loading}
+      <div class="flex items-center justify-center py-12">
+        <div class="text-muted-foreground">Loading...</div>
+      </div>
+    {:else if user}
+      <div class="flex-1 overflow-auto p-4">
+        <form id="user-update-form" use:enhance>
+          <div class="grid grid-cols-2 gap-6">
+            <!-- Column 1 -->
+            <div class="space-y-4">
+              <!-- Username (read-only) -->
+              <div class="space-y-2">
+                <FormLabel>{$t('shell.settings.users.update.username')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    value={user.username}
+                    disabled
+                  />
+                </FormControl>
+              </div>
+
+              <!-- Display Name -->
+              <FormField form={superFormObj} name="display_name">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.displayName')}</FormLabel>
+                      <Input
+                        {...props}
+                        bind:value={$form.display_name}
+                        placeholder={$t('shell.settings.users.update.displayNamePlaceholder')}
+                      />
+                      <TranslatedFormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <!-- Email -->
+              <FormField form={superFormObj} name="email">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.email')}</FormLabel>
+                      <Input
+                        {...props}
+                        bind:value={$form.email}
+                        type="email"
+                        placeholder={$t('shell.settings.users.update.emailPlaceholder')}
+                      />
+                      <TranslatedFormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
             </div>
 
-            <!-- Display Name -->
-            <FormField form={superFormObj} name="display_name">
-              <FormLabel>{$t('shell.settings.users.update.displayName')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  placeholder={$t('shell.settings.users.update.displayNamePlaceholder')}
-                />
-              </FormControl>
-              <FormFieldErrors />
-            </FormField>
+            <!-- Column 2 -->
+            <div class="space-y-4">
+              <!-- Roles -->
+              <FormField form={superFormObj} name="roles">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.roles')}</FormLabel>
+                      <Input
+                        {...props}
+                        bind:value={$form.roles}
+                        type="text"
+                        placeholder={$t('shell.settings.users.update.rolesPlaceholder')}
+                      />
+                      <TranslatedFormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
 
-            <!-- Email -->
-            <FormField form={superFormObj} name="email">
-              <FormLabel>{$t('shell.settings.users.update.email')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder={$t('shell.settings.users.update.emailPlaceholder')}
-                />
-              </FormControl>
-              <FormFieldErrors />
-            </FormField>
-
-            <!-- Avatar Initials -->
-            <FormField form={superFormObj} name="avatar_initials">
-              <FormLabel>{$t('shell.settings.users.update.avatarInitials')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  placeholder={$t('shell.settings.users.update.avatarInitialsPlaceholder')}
-                  maxlength={4}
-                />
-              </FormControl>
-              <FormFieldErrors />
-            </FormField>
-
-            <!-- Roles -->
-            <FormField form={superFormObj} name="roles">
-              <FormLabel>{$t('shell.settings.users.update.roles')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  placeholder="admin, collaborator, guest"
-                />
-              </FormControl>
-              <p class="text-sm text-muted-foreground mt-1">
-                Comma-separated list of roles
-              </p>
-              <FormFieldErrors />
-            </FormField>
-
-            <!-- Status badges -->
-            <div class="flex gap-2">
-              {#if user.is_active}
-                <Badge variant="default">Active</Badge>
-              {/if}
-              {#if user.is_admin}
-                <Badge variant="secondary">Admin</Badge>
-              {/if}
-              {#if user.is_verified}
-                <Badge variant="outline">Verified</Badge>
-              {/if}
+              <!-- Avatar Initials -->
+              <FormField form={superFormObj} name="avatar_initials">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.avatarInitials')}</FormLabel>
+                      <Input
+                        {...props}
+                        bind:value={$form.avatar_initials}
+                        type="text"
+                        placeholder={$t('shell.settings.users.update.avatarInitialsPlaceholder')}
+                      />
+                      <TranslatedFormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
             </div>
           </div>
         </form>
       </div>
+    {/if}
+  {/snippet}
 
-      <!-- Right: Audit info (40%) -->
-      <div class="space-y-6">
-        {#if auditInfo.hasAudit}
-          <div class="space-y-4">
-            <h3 class="text-sm font-medium">{$t('common.auditInfo')}</h3>
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.uuid')}</span>
-                <span class="font-mono text-xs">{auditInfo.uuid}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.version')}</span>
-                <span>{auditInfo.version}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.createdAt')}</span>
-                <span>{auditInfo.createdAt}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.createdBy')}</span>
-                <span>{auditInfo.createdByName || auditInfo.createdBy}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.updatedAt')}</span>
-                <span>{auditInfo.updatedAt}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">{$t('common.updatedBy')}</span>
-                <span>{auditInfo.updatedByName || auditInfo.updatedBy}</span>
-              </div>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Actions -->
-        <div class="flex gap-2">
-          <Button variant="outline" onclick={handleCancel}>
-            {$t('common.cancel')}
-          </Button>
-          <Button type="submit" form="user-update-form" disabled={!hasChanges}>
-            {$t('common.save')}
-          </Button>
-        </div>
-      </div>
+  {#snippet footerActions()}
+    <div class="flex gap-2">
+      <Button variant="outline" onclick={handleCancel}>
+        {$t('common.cancel')}
+      </Button>
+      <Button type="submit" form="user-update-form" disabled={!hasChanges}>
+        {$t('common.save')}
+      </Button>
     </div>
-  {/if}
-</AppPageScaffold>
+  {/snippet}
+</FormPageLayout>

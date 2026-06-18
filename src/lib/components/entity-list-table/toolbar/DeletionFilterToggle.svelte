@@ -2,7 +2,9 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { cn } from '$lib/utils.js';
-  import { ListCheck, ListX, TextAlignJustify } from 'lucide-svelte';
+  import ListCheck from '@lucide/svelte/icons/list-check'
+  import ListX from '@lucide/svelte/icons/list-x'
+  import TextAlignJustify from '@lucide/svelte/icons/text-align-justify';
 
   let {
     deletionFilterMode,

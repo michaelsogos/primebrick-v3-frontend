@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(npx)",
+      "Exec(npm list)",
+      "Exec(powershell)",
+      "Exec(cd)",
+      "Exec(pnpm)",
+      "Exec(git)"
+    ]
+  }
+}

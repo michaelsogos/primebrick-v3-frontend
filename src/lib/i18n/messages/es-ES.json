@@ -195,6 +195,8 @@
         "createdBy": "Creado por",
         "updatedAt": "Actualizado el",
         "updatedBy": "Actualizado por",
+        "deletedAt": "Eliminado el",
+        "deletedBy": "Eliminado por",
         "lastSyncedAt": "Última sincronización"
       },
       "organizations": {
@@ -237,6 +239,17 @@
           "roles": "Roles",
           "avatarInitials": "Iniciales de Avatar",
           "avatarInitialsPlaceholder": "Ingrese iniciales (ej. JD)",
+          "avatarColor": "Color de avatar",
+          "idpOrg": "IDP Organización",
+          "idpUsername": "IDP Nombre de usuario",
+          "idpPassword": "IDP Contraseña",
+          "copyIdpUsername": "Copiar IDP Nombre de usuario",
+          "idpCode": "IDP Code",
+          "copyIdpCode": "Copiar IDP Code",
+          "idpActive": "IDP Activo",
+          "idpAdmin": "IDP Administrador",
+          "idpVerified": "IDP Verificado",
+          "idpEmailVerified": "IDP Email Verificado",
           "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea salir?"
         },
         "update": {
@@ -527,8 +540,8 @@
         "noFiltersApplied": "Sin filtros aplicados"
       },
       "bulkActions": {
-        "toggleToBulk": "Acciones masivas",
-        "toggleToFilters": "Filtros",
+        "toggleToBulk": "Ver acciones masivas",
+        "toggleToFilters": "Ver filtros",
         "delete": "Eliminar",
         "duplicate": "Duplicar",
         "export": "Exportar",

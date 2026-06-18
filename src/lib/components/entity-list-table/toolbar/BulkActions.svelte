@@ -1,7 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import { Trash2, RotateCcw, Download, Copy } from 'lucide-svelte';
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import Download from '@lucide/svelte/icons/download'
+  import Copy from '@lucide/svelte/icons/copy';
 
   let {
     selectedCount,

@@ -5,7 +5,8 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { X, RotateCcw } from 'lucide-svelte';
+  import X from '@lucide/svelte/icons/x'
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
   type ColumnLike = { key: string; labelKey: string };
 
