@@ -1,6 +1,6 @@
 import { getContrastTextColor } from './avatar-chrome-palette';
 
-interface UserProfile {
+export interface UserProfile {
   uuid?: string;
   username?: string;
   idp_code?: string;

@@ -7,6 +7,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Checkbox } from '$lib/components/ui/checkbox';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { cn } from '$lib/utils';
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
@@ -38,10 +39,24 @@
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
+  let availableRoles: string[] = $state([]);
+
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
     void loadMeta();
     void loadUser();
+
+    void (async () => {
+      try {
+        const res = await apiFetch('/api/v1/system/roles/active');
+        if (res.ok) {
+          const data = await res.json();
+          availableRoles = (data.roles ?? []).map((r: any) => r.idp_role);
+        }
+      } catch (e) {
+        console.error('Failed to load roles', e);
+      }
+    })();
 
     return () => {
       syncChannel?.close();
@@ -62,11 +77,11 @@
   const updateSchema = z.object({
     display_name: z.string().min(2, { message: 'validation.tooShort' }),
     email: z.string()
-      .email({ message: 'validation.invalidUrl' })
+      .email({ message: 'validation.invalidEmail' })
       .max(320, { message: 'validation.tooLong' })
       .optional()
       .or(z.literal('')),
-    roles: z.array(z.string()).default([]),
+    roles: z.array(z.string()).min(1, { message: 'validation.rolesRequired' }).default([]),
     avatar_color: z.string()
       .regex(/^#[0-9A-Fa-f]{6}$/)
       .optional()
@@ -104,6 +119,10 @@
   let pageTitle = $state('');
   let loading = $state(true);
   let isCreatePage = $state(false);
+
+  function getColMeta(key: string) {
+    return meta?.list?.columns?.find((c) => c.key === key);
+  }
 
   // Superforms in SPA mode
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
@@ -311,7 +330,7 @@
   {#snippet children()}
     {#if loading}
       <div class="flex items-center justify-center py-12">
-        <div class="text-muted-foreground">Loading...</div>
+        <div class="text-muted-foreground">{$t('common.loading')}</div>
       </div>
     {:else if user}
       <div class="flex-1 overflow-auto">
@@ -350,7 +369,7 @@
                   for="avatar-color-trigger"
                   class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Avatar Color
+                  {$t('shell.settings.users.update.avatarColor')}
                 </label>
                 <div class="mt-2">
                   <Popover.Root>
@@ -362,7 +381,7 @@
                               class="w-5 h-5 rounded-full border shadow-sm"
                               style="background-color: {$form.avatar_color || '#000000'};"
                             ></div>
-                            {$form.avatar_color || 'Select color'}
+                            {$form.avatar_color || $t('shell.settings.users.update.selectColorPlaceholder')}
                           </div>
                         </Button>
                       {/snippet}
@@ -386,13 +405,13 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>Display Name</FormLabel>
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.displayName')}</FormLabel>
                       <Input
                         {...props}
                         bind:value={$form.display_name}
-                        placeholder="Display name"
+                        placeholder={$t('shell.settings.users.update.displayNamePlaceholder')}
                       />
-                      <FormFieldErrors />
+                      <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -402,14 +421,14 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>Email</FormLabel>
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.email')}</FormLabel>
                       <Input
                         {...props}
                         type="email"
                         bind:value={$form.email}
-                        placeholder="email@example.com"
+                        placeholder={$t('shell.settings.users.update.emailPlaceholder')}
                       />
-                      <FormFieldErrors />
+                      <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -419,13 +438,14 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>Roles</FormLabel>
+                      <FormLabel for={props.id}>{$t('shell.settings.users.update.roles')}</FormLabel>
                       <MultiSelect
+                        {...props}
                         bind:value={$form.roles}
-                        options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
-                        placeholder="Select roles..."
+                        options={availableRoles.length > 0 ? availableRoles : ['administrators', 'sales', 'customer_service', 'hr', 'ops']}
+                        placeholder={$t('shell.settings.users.update.rolesPlaceholder')}
                       />
-                      <FormFieldErrors />
+                      <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -435,7 +455,7 @@
             <!-- Column 2: IDP fields (readonly) -->
             <div class="space-y-4">
               <div class="space-y-2">
-                <label for="idp-code" class="text-sm font-medium">IDP Code</label>
+                <label for="idp-code" class="text-sm font-medium">{$t('shell.settings.users.update.idpCode')}</label>
                 <div class="relative">
                   <Input id="idp-code" value={user?.idp_code} readonly class="bg-muted pr-10" />
                   {#if user?.idp_code}
@@ -447,7 +467,7 @@
               </div>
 
               <div class="space-y-2">
-                <label for="idp-org" class="text-sm font-medium">IDP Organization</label>
+                <label for="idp-org" class="text-sm font-medium">{$t('shell.settings.users.update.idpOrg')}</label>
                 <div class="relative">
                   <Input id="idp-org" value={user?.idp_org} readonly class="bg-muted pr-10" />
                   {#if user?.idp_org}
@@ -459,7 +479,7 @@
               </div>
 
               <div class="space-y-2">
-                <label for="idp-username" class="text-sm font-medium">IDP Username</label>
+                <label for="idp-username" class="text-sm font-medium">{$t('shell.settings.users.update.idpUsername')}</label>
                 <div class="relative">
                   <Input id="idp-username" value={user?.idp_username} readonly class="bg-muted pr-10" />
                   {#if user?.idp_username}
@@ -471,7 +491,7 @@
               </div>
 
               <div class="space-y-2">
-                <label for="issuer" class="text-sm font-medium">Issuer</label>
+                <label for="issuer" class="text-sm font-medium">{$t('shell.settings.users.update.issuer')}</label>
                 <div class="relative">
                   <Input id="issuer" value={user?.issuer} readonly class="bg-muted pr-10" />
                   {#if user?.issuer}
@@ -484,23 +504,47 @@
 
               <!-- Readonly checkboxes -->
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_active === true} disabled id="is-active" />
-                <label for="is-active" class="text-sm font-medium">Is Active</label>
+                <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
+                <label for="is-admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('shell.settings.users.update.isAdmin')}
+                  {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
+                    <FormLabelWithPriorityHelp
+                      text={$t(getColMeta('is_admin')!.tooltip!)}
+                      priority={getColMeta('is_admin')?.tooltipPriority}
+                      title={getColMeta('is_admin')?.tooltipTitle ? $t(getColMeta('is_admin')!.tooltipTitle!) : undefined}
+                    />
+                  {/if}
+                </label>
               </div>
 
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
-                <label for="is-admin" class="text-sm font-medium">Is Admin</label>
+                <Checkbox checked={user?.is_active === true} disabled id="is-active" />
+                <label for="is-active" class="text-sm font-medium">{$t('shell.settings.users.update.isActive')}</label>
               </div>
 
               <div class="flex items-center space-x-2">
                 <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
-                <label for="is-verified" class="text-sm font-medium">Is Verified</label>
+                <label for="is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('shell.settings.users.update.isVerified')}
+                  {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
+                    <FormLabelWithPriorityHelp
+                      text={$t(getColMeta('is_verified')!.tooltip!)}
+                      priority={getColMeta('is_verified')?.tooltipPriority}
+                      title={getColMeta('is_verified')?.tooltipTitle ? $t(getColMeta('is_verified')!.tooltipTitle!) : undefined}
+                    />
+                  {/if}
+                </label>
               </div>
 
               <div class="flex items-center space-x-2">
                 <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
-                <label for="email-verified" class="text-sm font-medium">Email Verified</label>
+                <label for="email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('shell.settings.users.update.emailVerified')}
+                  {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
+                    <FormLabelWithPriorityHelp
+                      text={$t(getColMeta('email_verified')!.tooltip!)}
+                      priority={getColMeta('email_verified')?.tooltipPriority}
+                      title={getColMeta('email_verified')?.tooltipTitle ? $t(getColMeta('email_verified')!.tooltipTitle!) : undefined}
+                    />
+                  {/if}
+                </label>
               </div>
             </div>
           </div>

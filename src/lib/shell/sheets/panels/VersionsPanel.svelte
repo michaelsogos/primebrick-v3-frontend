@@ -7,10 +7,17 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import { useHealthChip } from '$lib/composables/useHealthChip';
+  import { cn } from '$lib/utils';
   import XIcon from '@lucide/svelte/icons/x';
+  import Cloud from '@lucide/svelte/icons/cloud';
+  import CloudOff from '@lucide/svelte/icons/cloud-off';
+  import Database from '@lucide/svelte/icons/database';
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
+  const { healthChip, healthChipLabel, healthChipClass } = useHealthChip();
 </script>
 
 {#snippet headerTitle()}
@@ -18,13 +25,33 @@
 {/snippet}
 
 {#snippet headerActions()}
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('common.done')}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
+  <div class="flex items-center gap-2">
+    <Badge
+      variant="outline"
+      class={cn(
+        'gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+        healthChipClass
+      )}
+    >
+      {#if healthChip === 'backend_offline'}
+        <CloudOff class="size-3.5 opacity-90" />
+      {:else if healthChip === 'db_offline'}
+        <Database class="size-3.5 opacity-90" />
+      {:else if healthChip === 'idp_offline'}
+        <ShieldAlert class="size-3.5 opacity-90" />
+      {:else}
+        <Cloud class="size-3.5 opacity-90" />
+      {/if}
+      <span>{healthChipLabel}</span>
+    </Badge>
+    <Sheet.Close
+      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      title={$t('common.done')}
+      onclick={() => closeSheet()}
+    >
+      <XIcon class="size-4" />
+    </Sheet.Close>
+  </div>
 {/snippet}
 
 <div class="flex h-full flex-col">

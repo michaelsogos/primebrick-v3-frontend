@@ -14,6 +14,7 @@
   import TableCell from '../table/TableCell.svelte';
   import { isCardFieldEmpty } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
 
   let {
     row,
@@ -52,7 +53,16 @@
     viewMode === 'cards_list' ? 'min-w-36 max-w-[24rem] shrink-0' : 'min-w-0'
   )}
 >
-  <span class="text-xs font-medium text-muted-foreground">{$t(column.labelKey)}</span>
+  <span class="text-xs font-medium text-muted-foreground inline-flex items-center gap-1">
+    {$t(column.labelKey)}
+    {#if column.tooltip && column.showListTooltip !== false}
+      <FormLabelWithPriorityHelp
+        text={$t(column.tooltip)}
+        priority={column.tooltipPriority}
+        title={column.tooltipTitle ? $t(column.tooltipTitle) : undefined}
+      />
+    {/if}
+  </span>
   <div class="min-w-0 text-sm">
     {#if isCardFieldEmpty(row, column, $uiLang, datetimeIanaModeByKey, cell, formatDatetimeCellDisplay, formatListCellValue, isDatetimeIanaRecordMode, auditingColumns)}
       <Tooltip.Root>

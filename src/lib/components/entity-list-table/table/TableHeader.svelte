@@ -7,6 +7,7 @@
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import ArrowUp from '@lucide/svelte/icons/arrow-up'
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
 
   let {
     columns,
@@ -78,6 +79,13 @@
       >
         <span class="inline-flex items-center gap-1">
           {$t(col.labelKey)}
+          {#if col.tooltip && col.showListTooltip !== false}
+            <FormLabelWithPriorityHelp
+              text={$t(col.tooltip)}
+              priority={col.tooltipPriority}
+              title={col.tooltipTitle ? $t(col.tooltipTitle) : undefined}
+            />
+          {/if}
           {#if col.sortable !== false}
             {#if sortKey !== col.key}
               <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />

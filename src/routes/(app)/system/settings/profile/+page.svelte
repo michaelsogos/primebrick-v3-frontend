@@ -7,11 +7,13 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
   import { Checkbox } from "$lib/components/ui/checkbox";
+  import FormLabelWithPriorityHelp from "$lib/components/forms/FormLabelWithPriorityHelp.svelte";
   import {
     FormField,
     FormLabel,
     FormControl,
     FormFieldErrors,
+    TranslatedFormFieldErrors,
   } from "$lib/components/ui/form";
   import { cn } from "$lib/utils";
   import {
@@ -42,7 +44,7 @@
     idp_org: z.string().optional(),
     idp_username: z.string().optional(),
     display_name: z.string().min(1, "Display name is required"),
-    email: z.string().email("Invalid email address"),
+    email: z.string().email({ message: 'validation.invalidEmail' }),
     avatar_color: z.string().min(1, "Color is required"),
     avatar_initials: z.string().min(1, "Initials are required"),
     is_admin: z.boolean().optional(),
@@ -188,6 +190,10 @@
     endpoint: '/api/v1/auth/me/meta',
     entityName: 'user_profiles'
   });
+
+  function getColMeta(key: string) {
+    return metadata.meta?.list?.columns?.find((c) => c.key === key);
+  }
 
   // Block internal navigation when there are changes
   beforeNavigate((navigation) => {
@@ -416,7 +422,7 @@
                         {...props}
                         class="mt-2"
                       />
-                      <FormFieldErrors />
+                      <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -436,7 +442,7 @@
                         {...props}
                         class="mt-2"
                       />
-                      <FormFieldErrors />
+                      <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -615,17 +621,41 @@
                 </FormControl>
               </FormField>
 
+              <FormField form={superFormObj} name="is_admin">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} checked={$form.is_admin === true} disabled id={props.id} />
+                      <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {$t("shell.settings.profile.idpAdmin")}
+                        {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('is_admin')!.tooltip!)}
+                            priority={getColMeta('is_admin')?.tooltipPriority}
+                            title={getColMeta('is_admin')?.tooltipTitle ? $t(getColMeta('is_admin')!.tooltipTitle!) : undefined}
+                          />
+                        {/if}
+                      </label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
               <FormField form={superFormObj} name="is_verified">
                 <FormControl>
                   {#snippet children({ props })}
-                    <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpVerified")}</FormLabel>
-                      <div class="mt-2 flex items-center gap-2">
-                        <Checkbox
-                          checked={$form.is_verified === true}
-                          disabled
-                        />
-                      </div>
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} checked={$form.is_verified === true} disabled id={props.id} />
+                      <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {$t("shell.settings.profile.idpVerified")}
+                        {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('is_verified')!.tooltip!)}
+                            priority={getColMeta('is_verified')?.tooltipPriority}
+                            title={getColMeta('is_verified')?.tooltipTitle ? $t(getColMeta('is_verified')!.tooltipTitle!) : undefined}
+                          />
+                        {/if}
+                      </label>
                     </div>
                   {/snippet}
                 </FormControl>
@@ -634,30 +664,18 @@
               <FormField form={superFormObj} name="email_verified">
                 <FormControl>
                   {#snippet children({ props })}
-                    <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpEmailVerified")}</FormLabel>
-                      <div class="mt-2 flex items-center gap-2">
-                        <Checkbox
-                          checked={$form.email_verified === true}
-                          disabled
-                        />
-                      </div>
-                    </div>
-                  {/snippet}
-                </FormControl>
-              </FormField>
-
-              <FormField form={superFormObj} name="is_admin">
-                <FormControl>
-                  {#snippet children({ props })}
-                    <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpAdmin")}</FormLabel>
-                      <div class="mt-2 flex items-center gap-2">
-                        <Checkbox
-                          checked={$form.is_admin === true}
-                          disabled
-                        />
-                      </div>
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} checked={$form.email_verified === true} disabled id={props.id} />
+                      <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {$t("shell.settings.profile.idpEmailVerified")}
+                        {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('email_verified')!.tooltip!)}
+                            priority={getColMeta('email_verified')?.tooltipPriority}
+                            title={getColMeta('email_verified')?.tooltipTitle ? $t(getColMeta('email_verified')!.tooltipTitle!) : undefined}
+                          />
+                        {/if}
+                      </label>
                     </div>
                   {/snippet}
                 </FormControl>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
+	import { t } from "$lib/i18n";
 	import * as Popover from "$lib/components/ui/popover";
 	import * as Command from "$lib/components/ui/command";
 	import Badge from "$lib/components/ui/badge/badge.svelte";
@@ -15,6 +16,11 @@
 		loading?: boolean;
 		id?: string;
 		name?: string;
+		'aria-invalid'?: boolean | "true" | "false";
+		'aria-describedby'?: string;
+		'aria-required'?: boolean | "true" | "false";
+		'data-fs-error'?: string;
+		[key: string]: unknown;
 	};
 
 	let {
@@ -26,6 +32,11 @@
 		loading = false,
 		id,
 		name,
+		'aria-invalid': ariaInvalid,
+		'aria-describedby': ariaDescribedby,
+		'aria-required': ariaRequired,
+		'data-fs-error': dataFsError,
+		...restProps
 	}: Props = $props();
 
 	// Internal state with default
@@ -79,8 +90,13 @@
 						"min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
 						"focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
 						"disabled:cursor-not-allowed disabled:opacity-50",
-						"cursor-pointer flex flex-wrap gap-2 items-center"
+						"cursor-pointer flex flex-wrap gap-2 items-center",
+						"aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
 					)}
+					aria-invalid={ariaInvalid}
+					aria-describedby={ariaDescribedby}
+					aria-required={ariaRequired}
+					data-fs-error={dataFsError}
 				>
 					{#if internalValue.length === 0}
 						<span class="text-muted-foreground">{placeholder}</span>
@@ -101,7 +117,18 @@
 							</Badge>
 						{/each}
 					{/if}
-					<div class="ml-auto">
+					<div class="ml-auto flex items-center gap-1 shrink-0">
+						{#if internalValue.length > 0 && !disabled}
+							<button
+								type="button"
+								onclick={(e) => { e.stopPropagation(); handleChange([]); }}
+								class="inline-flex items-center justify-center rounded-sm p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+								aria-label={$t('common.clearSelection')}
+								title={$t('common.clearSelection')}
+							>
+								<X class="h-3.5 w-3.5" />
+							</button>
+						{/if}
 						{#if loading}
 							<div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
 						{:else}
