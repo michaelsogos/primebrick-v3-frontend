@@ -15,6 +15,7 @@ export interface UserProfile {
   is_verified?: boolean;
   email_verified?: boolean;
   issuer?: string;
+  roles?: string[];
   // Audit fields
   created_at?: string;
   created_by?: string;

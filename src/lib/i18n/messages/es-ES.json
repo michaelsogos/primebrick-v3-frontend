@@ -92,7 +92,8 @@
     "invalid": "Valor inválido",
     "nameTaken": "Este nombre ya está en uso",
     "invalidFormat": "Debe comenzar y terminar con una letra o un número",
-    "rolesRequired": "Al menos un rol es obligatorio"
+    "rolesRequired": "Al menos un rol es obligatorio",
+    "orgRequired": "La organización es obligatoria"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -190,7 +191,9 @@
         "createdBy": "Creado por",
         "updatedAt": "Actualizado el",
         "updatedBy": "Actualizado por",
-        "version": "Versión"
+        "version": "Versión",
+        "roles": "Roles de aplicación",
+        "rolesPlaceholder": "Sin roles asignados"
       },
       "audit": {
         "id": "ID",
@@ -246,6 +249,7 @@
           "avatarColor": "Color de avatar",
           "idpOrg": "Organización",
           "idpOrgPlaceholder": "Seleccionar organización...",
+          "idpOrgSearch": "Buscar organizaciones...",
           "idpUsername": "Nombre de usuario",
           "idpPassword": "Contraseña",
           "copyIdpUsername": "Copiar IDP Nombre de usuario",

@@ -5,46 +5,54 @@ import { APP_VERSION } from '$lib/version';
 
 export type HealthChip = HealthChipState;
 
-export function useHealthChip() {
-  const health = $derived(backendState.health);
-  const healthChip = $derived(backendState.healthChip as HealthChip);
+/** Pure function: maps chip state → i18n label string */
+export function chipLabel(chip: HealthChipState): string {
+  const tt = get(t);
+  return chip === 'backend_offline'
+    ? tt('shell.health.beOffline')
+    : chip === 'db_offline'
+      ? tt('shell.health.dbOffline')
+      : chip === 'idp_offline'
+        ? tt('shell.health.idpOffline')
+        : chip === 'ok'
+          ? tt('shell.health.beOnline')
+          : tt('common.loading');
+}
 
-  const healthChipLabel = $derived.by(() => {
-    const tt = get(t);
-    return healthChip === 'backend_offline'
-      ? tt('shell.health.beOffline')
-      : healthChip === 'db_offline'
-        ? tt('shell.health.dbOffline')
-        : healthChip === 'idp_offline'
-          ? tt('shell.health.idpOffline')
-          : healthChip === 'ok'
-            ? tt('shell.health.beOnline')
-            : tt('common.loading');
-  });
-
-  const healthChipClass = $derived(
-    healthChip === 'backend_offline'
+/** Pure function: maps chip state → CSS class string for the chip badge */
+export function chipClass(chip: HealthChipState): string {
+  return chip === 'backend_offline'
+    ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
+    : chip === 'db_offline'
       ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-      : healthChip === 'db_offline'
-        ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthChip === 'idp_offline'
-          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-          : healthChip === 'ok'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-            : 'border-border/60 bg-muted/30 text-muted-foreground'
-  );
+      : chip === 'idp_offline'
+        ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+        : chip === 'ok'
+          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+          : 'border-border/60 bg-muted/30 text-muted-foreground';
+}
 
-  const healthChipTextClass = $derived(
-    healthChip === 'backend_offline'
+/** Pure function: maps chip state → text CSS class string */
+export function chipTextClass(chip: HealthChipState): string {
+  return chip === 'backend_offline'
+    ? 'text-destructive'
+    : chip === 'db_offline'
       ? 'text-destructive'
-      : healthChip === 'db_offline'
-        ? 'text-destructive'
-        : healthChip === 'idp_offline'
-          ? 'text-warning'
-          : healthChip === 'ok'
-            ? 'text-success'
-            : 'text-muted-foreground'
-  );
+      : chip === 'idp_offline'
+        ? 'text-warning'
+        : chip === 'ok'
+          ? 'text-success'
+          : 'text-muted-foreground';
+}
 
-  return { health, healthChip, healthChipLabel, healthChipClass, healthChipTextClass, APP_VERSION };
+/**
+ * Composable: returns backendState reference + pure helper functions.
+ * Consumers create their own $derived in the component script block.
+ *
+ * IMPORTANT: Do NOT return $derived values from this function.
+ * The Svelte 5 compiler unwraps $derived with $.get() at the return point,
+ * producing frozen snapshots — not reactive references.
+ */
+export function useHealthChip() {
+  return { backendState, chipLabel, chipClass, chipTextClass, APP_VERSION };
 }

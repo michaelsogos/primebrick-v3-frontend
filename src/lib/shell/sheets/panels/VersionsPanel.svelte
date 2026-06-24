@@ -7,7 +7,7 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { useHealthChip } from '$lib/composables/useHealthChip';
+  import { useHealthChip, chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import XIcon from '@lucide/svelte/icons/x';
   import Cloud from '@lucide/svelte/icons/cloud';
@@ -15,9 +15,10 @@
   import Database from '@lucide/svelte/icons/database';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
-  const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
-  const { healthChip, healthChipLabel, healthChipClass } = useHealthChip();
+  const healthChip = $derived(backendState.healthChip as HealthChip);
+  const healthChipLabel = $derived(chipLabel(healthChip));
+  const healthChipClass = $derived(chipClass(healthChip));
 </script>
 
 {#snippet headerTitle()}
@@ -70,19 +71,19 @@
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
         <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-          {health?.version ? `v${health.version}` : '—'}
+          {backendState.health?.version ? `v${backendState.health.version}` : '—'}
         </Badge>
       </div>
 
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.identityProvider')}</div>
         <div class="flex items-center gap-2">
-          {#if health?.idp?.ok}
+          {#if backendState.health?.idp?.ok}
             <Badge variant="outline" class="font-mono text-[11px] font-medium">
-              {health.idp.type || 'Casdoor'}
+              {backendState.health.idp.type || 'Casdoor'}
             </Badge>
             <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-              {health.idp.version || 'unknown'}
+              {backendState.health.idp.version || 'unknown'}
             </Badge>
           {:else}
             <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
@@ -94,9 +95,9 @@
 
       <div>
         <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.modulesTitle')}</div>
-        {#if health?.modules?.length}
+        {#if backendState.health?.modules?.length}
           <div>
-            {#each health.modules as m (m.id)}
+            {#each backendState.health.modules as m (m.id)}
               <div class="flex items-center justify-between gap-3 text-sm">
                 <div class="truncate text-muted-foreground">{m.id}</div>
                 <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">

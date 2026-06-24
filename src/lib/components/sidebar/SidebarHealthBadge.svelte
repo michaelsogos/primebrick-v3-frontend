@@ -3,7 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { cn } from '$lib/utils';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { useHealthChip } from '$lib/composables/useHealthChip';
+  import { useHealthChip, chipLabel, chipClass, chipTextClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { t } from '$lib/i18n';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
@@ -12,8 +12,13 @@
 
   let { collapsed }: { collapsed: boolean } = $props();
 
-  const { health, healthChip, healthChipLabel, healthChipClass, healthChipTextClass, APP_VERSION } =
-    useHealthChip();
+  const { backendState, APP_VERSION } = useHealthChip();
+
+  // Component-level $derived — reactive because declared in component, not in composable
+  const healthChip = $derived(backendState.healthChip as HealthChip);
+  const healthChipLabel = $derived(chipLabel(healthChip));
+  const healthChipClass = $derived(chipClass(healthChip));
+  const healthChipTextClass = $derived(chipTextClass(healthChip));
 </script>
 
 <Tooltip.Root>
@@ -58,14 +63,14 @@
       </div>
       <div class="flex items-center justify-between gap-3">
         <span class="text-muted-foreground">{$t('shell.health.shellVersion')}</span>
-        <Badge variant="outline" class="font-mono text-[10px] font-medium tabular-nums">
+        <Badge variant="outline" class="bg-background text-foreground font-mono text-[10px] font-medium tabular-nums">
           v{APP_VERSION}
         </Badge>
       </div>
       <div class="flex items-center justify-between gap-3">
         <span class="text-muted-foreground">{$t('shell.health.backendVersion')}</span>
-        <Badge variant="outline" class="font-mono text-[10px] font-medium tabular-nums">
-          {health?.version ? `v${health.version}` : '—'}
+        <Badge variant="outline" class="bg-background text-foreground font-mono text-[10px] font-medium tabular-nums">
+          {backendState.health?.version ? `v${backendState.health.version}` : '—'}
         </Badge>
       </div>
     </div>

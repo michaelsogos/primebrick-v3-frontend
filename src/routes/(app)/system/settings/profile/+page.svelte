@@ -26,6 +26,7 @@
   import * as Popover from "$lib/components/ui/popover";
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { CopyButton } from "$lib/components/ui/copy-button";
+  import { ComboSelect } from "$lib/components/ui/combo-select";
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
   import { beforeNavigate } from "$app/navigation";
@@ -51,6 +52,7 @@
     is_verified: z.boolean().optional(),
     email_verified: z.boolean().optional(),
     issuer: z.string().optional(),
+    roles: z.array(z.string()).optional().default([]),
   });
 
   type ProfileForm = z.infer<typeof profileSchema>;
@@ -124,6 +126,7 @@
             is_verified: data.profile.is_verified,
             email_verified: data.profile.email_verified,
             issuer: data.profile.issuer,
+            roles: data.profile.roles ?? [],
             // Audit fields
             created_at: data.profile.created_at,
             created_by: data.profile.created_by,
@@ -186,6 +189,7 @@
   const deletedByName = $derived('');
 
   let isCreatePage = $state(false);
+  let availableRoles: string[] = $state([]);
   const metadata = useEntityMetadata({
     endpoint: '/api/v1/auth/me/meta',
     entityName: 'user_profiles'
@@ -249,7 +253,8 @@
         is_admin: profile.is_admin !== undefined ? profile.is_admin : false,
         is_verified: profile.is_verified,
         email_verified: profile.email_verified,
-        issuer: profile.issuer || ""
+        issuer: profile.issuer || "",
+        roles: profile.roles ?? []
       }
     });
   }
@@ -257,6 +262,16 @@
   // Refresh profile from server on mount
   onMount(async () => {
     void metadata.loadMetadata();
+    // Fetch available roles for readonly display
+    try {
+      const rolesRes = await apiFetch("/api/v1/system/roles/active");
+      if (rolesRes.ok) {
+        const rolesData = await rolesRes.json();
+        availableRoles = (rolesData.roles ?? []).map((r: any) => r.idp_role);
+      }
+    } catch (e) {
+      console.error("Failed to load roles", e);
+    }
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -276,6 +291,7 @@
             is_verified: data.profile.is_verified,
             email_verified: data.profile.email_verified,
             issuer: data.profile.issuer,
+            roles: data.profile.roles ?? [],
             // Audit fields
             created_at: data.profile.created_at,
             created_by: data.profile.created_by,
@@ -447,6 +463,17 @@
                   {/snippet}
                 </FormControl>
               </FormField>
+
+              <div class="space-y-2">
+                <FormLabel>{$t("shell.settings.profile.roles")}</FormLabel>
+                <ComboSelect
+                  mode="multi"
+                  bind:value={$form.roles}
+                  options={availableRoles}
+                  disabled
+                  placeholder={$t("shell.settings.profile.rolesPlaceholder")}
+                />
+              </div>
             </div>
 
             <!-- Column 2: idp_code, idp_org, idp_username (readonly) -->

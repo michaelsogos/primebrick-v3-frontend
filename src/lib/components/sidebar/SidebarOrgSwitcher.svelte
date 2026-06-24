@@ -7,13 +7,13 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
-  import Building2 from '@lucide/svelte/icons/building-2';
+  import ImageOff from '@lucide/svelte/icons/image-off';
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
   /** API-backed org switcher. */
-  type ActiveOrg = { uuid: string; idp_code: string; display_name: string; avatar: string | null };
+  type ActiveOrg = { uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null };
   let activeOrgs: ActiveOrg[] = $state([]);
   let selectedOrgId = $state<string>('');
   const selectedOrg = $derived(activeOrgs.find((o) => o.idp_code === selectedOrgId));
@@ -55,7 +55,7 @@
                   <img src={selectedOrg.avatar} alt={selectedOrg.display_name} class="size-8 rounded-md object-cover" />
                 </Avatar>
               {:else}
-                <Building2 class="size-4 opacity-90" aria-hidden="true" />
+                <ImageOff class="size-4 opacity-90 text-muted-foreground" aria-hidden="true" />
               {/if}
             </div>
             {#if !collapsed}
@@ -89,7 +89,9 @@
               {#if org.avatar}
                 <img src={org.avatar} alt={org.display_name} class="size-6 rounded-none object-cover" />
               {:else}
-                <AvatarFallback class="rounded-none text-xs">{org.display_name?.slice(0, 2).toUpperCase() ?? '?'}</AvatarFallback>
+                <AvatarFallback class="rounded-none flex items-center justify-center">
+                  <ImageOff class="size-3.5 text-muted-foreground" />
+                </AvatarFallback>
               {/if}
             </Avatar>
             <span class="min-w-0 flex-1 truncate">{org.display_name}</span>

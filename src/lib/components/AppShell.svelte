@@ -90,7 +90,7 @@
         <AppServerBanner />
       </div>
 
-      <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="relative min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
       </div>
     </Sidebar.Inset>

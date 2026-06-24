@@ -12,7 +12,7 @@
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
-  import MultiSelect from '$lib/components/ui/multi-select/multi-select.svelte';
+  import { ComboSelect } from '$lib/components/ui/combo-select';
   import { CopyButton } from '$lib/components/ui/copy-button';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -193,6 +193,16 @@
   const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
 
   const hasChanges = $derived(isTainted($tainted));
+
+  // canSave: form must have changes AND no validation errors
+  const canSave = $derived.by(() => {
+    if (!hasChanges) return false;
+    for (const key in $errors) {
+      const err = ($errors as Record<string, string | string[] | undefined>)[key];
+      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
+    }
+    return true;
+  });
 
   // Derive initials from display_name for preview (same as CREATE/PROFILE)
   const userAvatarSeed = $derived.by(() => {
@@ -439,8 +449,9 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}>{$t('shell.settings.users.update.roles')}</FormLabel>
-                      <MultiSelect
+                      <ComboSelect
                         {...props}
+                        mode="multi"
                         bind:value={$form.roles}
                         options={availableRoles.length > 0 ? availableRoles : ['administrators', 'sales', 'customer_service', 'hr', 'ops']}
                         placeholder={$t('shell.settings.users.update.rolesPlaceholder')}
@@ -558,7 +569,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('common.cancel')}
       </Button>
-      <Button type="submit" form="user-update-form" disabled={!hasChanges}>
+      <Button type="submit" form="user-update-form" disabled={!canSave}>
         {$t('common.save')}
       </Button>
     </div>

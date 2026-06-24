@@ -48,7 +48,7 @@
 		WARNING: "text-warning",
 		ERROR: "text-destructive",
 		QUESTION: "text-info",
-		HINT: "text-warning",
+		HINT: "text-info",
 		SUCCESS: "text-success",
 	};
 
@@ -74,7 +74,7 @@
 		{:else}
 			<Icon class="size-3.5 shrink-0 {colorClass}" />
 		{/if}
-		<div class="text-background/80 leading-relaxed">
+		<div class="text-background leading-relaxed">
 			{@render children()}
 		</div>
 	</div>

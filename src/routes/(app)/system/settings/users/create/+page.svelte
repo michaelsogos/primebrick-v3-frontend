@@ -29,8 +29,7 @@
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
-  import Select from '$lib/components/ui/select/select.svelte';
-  import MultiSelect from '$lib/components/ui/multi-select/multi-select.svelte';
+  import { ComboSelect } from '$lib/components/ui/combo-select';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
@@ -42,12 +41,8 @@
   let availableRoles: string[] = $state([]);
 
   // Organization dropdown — fetched from API (Section 10)
-  let availableOrgs = $state<Array<{ uuid: string; idp_code: string; display_name: string; avatar: string | null }>>([]);
+  let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
   let orgsLoading = $state(true);
-
-  const orgOptions = $derived(
-    availableOrgs.map(o => ({ value: o.idp_code, label: o.display_name, idp_name: o.idp_code }))
-  );
 
   // Generate random hex color
   function generateRandomColor(): string {
@@ -143,9 +138,7 @@
       .max(255, { message: 'validation.tooLong' }),
     display_name: z.string()
       .min(2, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' })
-      .optional()
-      .or(z.literal('')),
+      .max(255, { message: 'validation.tooLong' }),
     email: z.string()
       .email({ message: 'validation.invalidEmail' })
       .max(320, { message: 'validation.tooLong' })
@@ -158,8 +151,7 @@
       .or(z.literal(''))
       .default(getInitialAvatarColor()),
     idp_org: z.string()
-      .optional()
-      .or(z.literal('')),
+      .min(1, { message: 'validation.orgRequired' }),
     is_active: z.boolean().default(false),
     is_admin: z.boolean().default(false),
     is_verified: z.boolean().default(false),
@@ -228,6 +220,17 @@
 
   const hasChanges = $derived(isTainted($tainted));
 
+  // canSave: form must have changes AND no validation errors
+  const canSave = $derived.by(() => {
+    if (!hasChanges) return false;
+    // Check all errors are empty
+    for (const key in $errors) {
+      const err = ($errors as Record<string, string | string[] | undefined>)[key];
+      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
+    }
+    return true;
+  });
+
   // Username async validation (Section 11)
   // The username field is disabled until an org is selected — the availability check is org-scoped.
   const isUsernameEnabled = $derived(!!$form.idp_org);
@@ -240,8 +243,8 @@
   }
 
   // Reset username when org changes — the old username may be available/taken in a different org scope
-  function onOrgChange(newOrg: string) {
-    $form.idp_org = newOrg;
+  function onOrgChange(newOrg: string | string[]) {
+    $form.idp_org = Array.isArray(newOrg) ? newOrg[0] ?? '' : newOrg;
     $form.idpUsername = '';
     usernameValidationStatus = 'idle';
   }
@@ -444,7 +447,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.displayName')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.displayName')} <span class="text-destructive">*</span></FormLabel>
                     <Input
                       {...props}
                       bind:value={$form.display_name}
@@ -478,8 +481,9 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.users.create.roles')}</FormLabel>
-                    <MultiSelect
+                    <ComboSelect
                       {...props}
+                      mode="multi"
                       bind:value={$form.roles}
                       options={availableRoles.length > 0 ? availableRoles : ['administrators', 'sales', 'customer_service', 'hr', 'ops']}
                       placeholder={$t('shell.settings.users.create.rolesPlaceholder')}
@@ -497,14 +501,25 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
-                    <Select
+                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')} <span class="text-destructive">*</span></FormLabel>
+                    <ComboSelect
+                      mode="single"
                       bind:value={$form.idp_org}
-                      options={orgOptions}
+                      options={availableOrgs}
+                      valueField="idp_name"
+                      labelField="display_name"
                       loading={orgsLoading}
                       placeholder={$t('shell.settings.users.create.idpOrgPlaceholder')}
                       onChange={onOrgChange}
-                    />
+                      searchPlaceholder={$t('shell.settings.users.create.idpOrgSearch')}
+                    >
+                      {#snippet item({ option, resolvedLabel }: { option: Record<string, any>; resolvedLabel: string })}
+                        <div class="flex flex-col">
+                          <span class="font-medium">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground">{option.idp_name}</span>
+                        </div>
+                      {/snippet}
+                    </ComboSelect>
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -531,7 +546,7 @@
                       data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
                     />
                     {#if !isUsernameEnabled}
-                      <p class="text-muted-foreground text-xs">{$t('shell.settings.users.create.usernameSelectOrgFirst')}</p>
+                      <p class="text-info text-xs">{$t('shell.settings.users.create.usernameSelectOrgFirst')}</p>
                     {/if}
                     <TranslatedFormFieldErrors />
                     {#if hasAsyncError && !hasZodError}
@@ -644,7 +659,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('common.cancel')}
       </Button>
-      <Button type="submit" form="user-create-form" disabled={!hasChanges}>
+      <Button type="submit" form="user-create-form" disabled={!canSave}>
         {$t('common.save')}
       </Button>
     </div>
