@@ -78,7 +78,7 @@
     shownColumns: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsGroup: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsState: {
-      stickyLeftOffsets: Record<string, number>;
+      state: { stickyLeftOffsets: Record<string, number> };
       stickyRef: any;
     };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
@@ -150,7 +150,7 @@
     {#if stickyColumnsGroup.some((s) => s.key === col.key)}
       {#if index === 0}
         <Table.Cell
-          style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
+          style="left: {stickyColumnsState.state.stickyLeftOffsets[col.key] ?? 0}px;"
           class={cn(
             stickyCellClass(col.key, colIdx, false),
             datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),
@@ -174,7 +174,7 @@
         </Table.Cell>
       {:else}
         <Table.Cell
-          style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
+          style="left: {stickyColumnsState.state.stickyLeftOffsets[col.key] ?? 0}px;"
           class={cn(
             stickyCellClass(col.key, colIdx, false),
             datetimeIanaCellHighlightClass(col, rowSelected, datetimeIanaModeByKey),

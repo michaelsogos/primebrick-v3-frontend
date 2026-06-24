@@ -2,8 +2,9 @@ import { apiFetch } from '$lib/api';
 import { pushRFC7807Error } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-export interface ExportOptions {
+interface ExportOptions {
   entity: () => string;
   uid: () => string;
   columns: () => MetaColumn[];
@@ -20,39 +21,7 @@ export interface ExportOptions {
   onExportError?: (error: Error) => void;
 }
 
-export interface ExportReturn {
-  exportOpen: boolean;
-  exportScope: 'selected' | 'all';
-  fileType: 'xlsx' | 'csv' | null;
-  isExporting: boolean;
-  isHtmlExporting: boolean;
-  htmlPreviewContent: string;
-  htmlPreviewDialogOpen: boolean;
-  htmlExportConfirmDialogOpen: boolean;
-  previewMode: 'html' | 'pdf' | 'email';
-  pdfBlobUrl: string | null;
-  emailHtmlContent: string;
-  isEmailPreparing: boolean;
-  emailCopied: boolean;
-  openExportDialog: () => void;
-  closeExportDialog: () => void;
-  openHtmlExportDialog: () => void;
-  closeHtmlExportDialog: () => void;
-  openHtmlExportConfirmDialog: () => void;
-  closeHtmlExportConfirmDialog: () => void;
-  handleExport: (fileType: 'xlsx' | 'csv') => Promise<void>;
-  handleHtmlExport: () => Promise<void>;
-  setExportScope: (scope: 'selected' | 'all') => void;
-  setFileType: (type: 'xlsx' | 'csv' | null) => void;
-  setPreviewMode: (mode: 'html' | 'pdf' | 'email') => void;
-  closeHtmlPreview: () => void;
-  copyHtmlToClipboard: () => Promise<void>;
-  generatePdfPreview: () => Promise<void>;
-  prepareEmailHtml: () => Promise<void>;
-  copyEmailHtmlToClipboard: () => Promise<void>;
-}
-
-export function useExport(options: ExportOptions): ExportReturn {
+export function useExport(options: ExportOptions) {
   const {
     entity: entityFn,
     uid: uidFn,
@@ -70,64 +39,65 @@ export function useExport(options: ExportOptions): ExportReturn {
     onExportError
   } = options;
 
-  let exportOpen = $state(false);
-  let exportScope = $state<'selected' | 'all'>('selected');
-  let fileType = $state<'xlsx' | 'csv' | null>(null);
-  let isExporting = $state(false);
-
-  let isHtmlExporting = $state(false);
-  let htmlPreviewContent = $state('');
-  let htmlPreviewDialogOpen = $state(false);
-  let htmlExportConfirmDialogOpen = $state(false);
-  let previewMode = $state<'html' | 'pdf' | 'email'>('html');
-  let pdfBlobUrl = $state<string | null>(null);
-  let emailHtmlContent = $state('');
-  let isEmailPreparing = $state(false);
-  let emailCopied = $state(false);
+  const _state = $state({
+    exportOpen: false,
+    exportScope: 'selected' as 'selected' | 'all',
+    fileType: null as 'xlsx' | 'csv' | null,
+    isExporting: false,
+    isHtmlExporting: false,
+    htmlPreviewContent: '',
+    htmlPreviewDialogOpen: false,
+    htmlExportConfirmDialogOpen: false,
+    previewMode: 'html' as 'html' | 'pdf' | 'email',
+    pdfBlobUrl: null as string | null,
+    emailHtmlContent: '',
+    isEmailPreparing: false,
+    emailCopied: false
+  });
 
   function openExportDialog() {
-    fileType = null;
-    exportScope = selectedKeysFn().length > 0 ? 'selected' : 'all';
-    exportOpen = true;
+    _state.fileType = null;
+    _state.exportScope = selectedKeysFn().length > 0 ? 'selected' : 'all';
+    _state.exportOpen = true;
   }
 
   function closeExportDialog() {
-    exportOpen = false;
-    fileType = null;
+    _state.exportOpen = false;
+    _state.fileType = null;
   }
 
   function openHtmlExportDialog() {
-    htmlPreviewDialogOpen = true;
+    _state.htmlPreviewDialogOpen = true;
   }
 
   function closeHtmlExportDialog() {
-    htmlPreviewDialogOpen = false;
+    _state.htmlPreviewDialogOpen = false;
   }
 
   function openHtmlExportConfirmDialog() {
-    htmlExportConfirmDialogOpen = true;
+    _state.htmlExportConfirmDialogOpen = true;
   }
 
   function closeHtmlExportConfirmDialog() {
-    htmlExportConfirmDialogOpen = false;
+    _state.htmlExportConfirmDialogOpen = false;
   }
 
   function setExportScope(scope: 'selected' | 'all') {
-    exportScope = scope;
+    _state.exportScope = scope;
   }
 
 
   function setFileType(type: 'xlsx' | 'csv' | null) {
-    fileType = type;
+    _state.fileType = type;
   }
 
   function setPreviewMode(mode: 'html' | 'pdf' | 'email') {
-    previewMode = mode;
+    _state.previewMode = mode;
   }
 
   async function handleExport(fileTypeParam: 'xlsx' | 'csv') {
     try {
-      isExporting = true;
+      _state.isExporting = true;
       onExportStart?.();
 
       const entity = entityFn();
@@ -222,7 +192,7 @@ export function useExport(options: ExportOptions): ExportReturn {
         }
       }
 
-      if (exportScope === 'selected' && selectedKeys.length > 0) {
+      if (_state.exportScope === 'selected' && selectedKeys.length > 0) {
         params.set(`filters[${filterIdx}][field]`, uid);
         params.set(`filters[${filterIdx}][op]`, 'IN');
         for (const key of selectedKeys) {
@@ -255,8 +225,8 @@ export function useExport(options: ExportOptions): ExportReturn {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      exportOpen = false;
-      fileType = null;
+      _state.exportOpen = false;
+      _state.fileType = null;
       onExportComplete?.();
     } catch (error) {
       console.error('Export failed:', error);
@@ -264,14 +234,14 @@ export function useExport(options: ExportOptions): ExportReturn {
       pushRFC7807Error(errorData, { showToast: true });
       onExportError?.(error as Error);
     } finally {
-      isExporting = false;
-      exportOpen = false;
+      _state.isExporting = false;
+      _state.exportOpen = false;
     }
   }
 
   async function handleHtmlExport() {
     try {
-      isHtmlExporting = true;
+      _state.isHtmlExporting = true;
       onExportStart?.();
 
       const entity = entityFn();
@@ -351,8 +321,8 @@ export function useExport(options: ExportOptions): ExportReturn {
       }
 
       const htmlContent = await response.text();
-      htmlPreviewContent = htmlContent;
-      htmlPreviewDialogOpen = true;
+      _state.htmlPreviewContent = htmlContent;
+      _state.htmlPreviewDialogOpen = true;
       onExportComplete?.();
     } catch (error) {
       console.error('HTML export failed:', error);
@@ -360,19 +330,19 @@ export function useExport(options: ExportOptions): ExportReturn {
       pushRFC7807Error(errorData, { showToast: true });
       onExportError?.(error as Error);
     } finally {
-      isHtmlExporting = false;
+      _state.isHtmlExporting = false;
     }
   }
 
   function closeHtmlPreview() {
-    htmlPreviewDialogOpen = false;
-    htmlPreviewContent = '';
+    _state.htmlPreviewDialogOpen = false;
+    _state.htmlPreviewContent = '';
   }
 
   async function copyHtmlToClipboard() {
     try {
-      const blobHtml = new Blob([htmlPreviewContent], { type: 'text/html' });
-      const plainText = htmlPreviewContent.replace(/<[^>]*>/g, '');
+      const blobHtml = new Blob([_state.htmlPreviewContent], { type: 'text/html' });
+      const plainText = _state.htmlPreviewContent.replace(/<[^>]*>/g, '');
       const blobPlain = new Blob([plainText], { type: 'text/plain' });
 
       const clipboardItem = new ClipboardItem({
@@ -383,18 +353,18 @@ export function useExport(options: ExportOptions): ExportReturn {
       await navigator.clipboard.write([clipboardItem]);
     } catch (err) {
       console.error('Advanced clipboard copy failed, falling back to plain text:', err);
-      navigator.clipboard.writeText(htmlPreviewContent);
+      navigator.clipboard.writeText(_state.htmlPreviewContent);
     }
   }
 
   async function generatePdfPreview() {
-    previewMode = 'pdf';
-    pdfBlobUrl = null;
+    _state.previewMode = 'pdf';
+    _state.pdfBlobUrl = null;
 
     try {
       const html2pdf = await import('html2pdf.js');
       const element = document.createElement('div');
-      element.innerHTML = htmlPreviewContent;
+      element.innerHTML = _state.htmlPreviewContent;
 
       const opt = {
         margin: 10,
@@ -406,7 +376,7 @@ export function useExport(options: ExportOptions): ExportReturn {
 
       const worker = html2pdf.default().set(opt).from(element);
       const pdfBlob = await worker.output('blob');
-      pdfBlobUrl = URL.createObjectURL(pdfBlob);
+      _state.pdfBlobUrl = URL.createObjectURL(pdfBlob);
     } catch (error) {
       console.error('PDF generation failed:', error);
       onExportError?.(error as Error);
@@ -414,9 +384,9 @@ export function useExport(options: ExportOptions): ExportReturn {
   }
 
   async function prepareEmailHtml() {
-    previewMode = 'email';
-    isEmailPreparing = true;
-    emailCopied = false;
+    _state.previewMode = 'email';
+    _state.isEmailPreparing = true;
+    _state.emailCopied = false;
 
     try {
       const emailWrapper = `
@@ -432,23 +402,23 @@ export function useExport(options: ExportOptions): ExportReturn {
           </style>
         </head>
         <body>
-          ${htmlPreviewContent}
+          ${_state.htmlPreviewContent}
         </body>
         </html>
       `;
-      emailHtmlContent = emailWrapper;
+      _state.emailHtmlContent = emailWrapper;
     } catch (error) {
       console.error('Email HTML preparation failed:', error);
       onExportError?.(error as Error);
     } finally {
-      isEmailPreparing = false;
+      _state.isEmailPreparing = false;
     }
   }
 
   async function copyEmailHtmlToClipboard() {
     try {
-      await navigator.clipboard.writeText(emailHtmlContent);
-      emailCopied = true;
+      await navigator.clipboard.writeText(_state.emailHtmlContent);
+      _state.emailCopied = true;
     } catch (error) {
       console.error('Failed to copy email HTML:', error);
       onExportError?.(error as Error);
@@ -456,19 +426,7 @@ export function useExport(options: ExportOptions): ExportReturn {
   }
 
   return {
-    get exportOpen() { return exportOpen; },
-    get exportScope() { return exportScope; },
-    get fileType() { return fileType; },
-    get isExporting() { return isExporting; },
-    get isHtmlExporting() { return isHtmlExporting; },
-    get htmlPreviewContent() { return htmlPreviewContent; },
-    get htmlPreviewDialogOpen() { return htmlPreviewDialogOpen; },
-    get htmlExportConfirmDialogOpen() { return htmlExportConfirmDialogOpen; },
-    get previewMode() { return previewMode; },
-    get pdfBlobUrl() { return pdfBlobUrl; },
-    get emailHtmlContent() { return emailHtmlContent; },
-    get isEmailPreparing() { return isEmailPreparing; },
-    get emailCopied() { return emailCopied; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     openExportDialog,
     closeExportDialog,
     openHtmlExportDialog,

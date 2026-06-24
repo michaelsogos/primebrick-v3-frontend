@@ -2,6 +2,7 @@ import { apiFetch } from '$lib/api';
 import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
@@ -30,32 +31,9 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   };
 }
 
-export interface RowActionsReturn<TRow extends Record<string, unknown>> {
-  handleEditRow: (row: TRow) => void;
-  handleDeleteRow: (row: TRow) => void;
-  handleRestoreRow: (row: TRow) => void;
-  handleDuplicateRow: (row: TRow) => void;
-  handlePreviewRow: (row: TRow) => void;
-  confirmDeleteRow: (row: TRow) => Promise<void>;
-  confirmRestoreRow: (row: TRow) => Promise<void>;
-  confirmDuplicateRow: (row: TRow) => Promise<void>;
-  confirmDeleteRowWrapper: () => Promise<void>;
-  confirmRestoreRowWrapper: () => Promise<void>;
-  confirmDuplicateWrapper: () => Promise<void>;
-  cancelDuplicate: () => void;
-  loadVersionHistory: (row: TRow) => Promise<void>;
-  rowToDelete: TRow | null;
-  rowToRestore: TRow | null;
-  singleRowToDuplicate: TRow | null;
-  duplicateScope: 'selected' | 'single';
-  isDeleting: boolean;
-  isRestoring: boolean;
-  isDuplicating: boolean;
-}
-
 export function useRowActions<TRow extends Record<string, unknown>>(
   options: RowActionsOptions<TRow>
-): RowActionsReturn<TRow> {
+) {
   const {
     entity: entityFn,
     uid: uidFn,
@@ -72,15 +50,15 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
-  let isDeleting = $state(false);
-  let isRestoring = $state(false);
-  let isDuplicating = $state(false);
-
-  // Dialog state
-  let rowToDelete = $state<TRow | null>(null);
-  let rowToRestore = $state<TRow | null>(null);
-  let singleRowToDuplicate = $state<TRow | null>(null);
-  let duplicateScope = $state<'selected' | 'single'>('selected');
+  const _state = $state({
+    isDeleting: false,
+    isRestoring: false,
+    isDuplicating: false,
+    rowToDelete: null as TRow | null,
+    rowToRestore: null as TRow | null,
+    singleRowToDuplicate: null as TRow | null,
+    duplicateScope: 'selected' as 'selected' | 'single'
+  });
 
   function handleEditRow(row: TRow) {
     if (isRowDeleted?.(row)) {
@@ -126,7 +104,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isDeleting = true;
+      _state.isDeleting = true;
       const uuidValue = row[uid] as string;
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
         method: 'DELETE'
@@ -159,7 +137,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
       onRowActionError?.(error as Error);
     } finally {
-      isDeleting = false;
+      _state.isDeleting = false;
     }
   }
 
@@ -168,7 +146,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isRestoring = true;
+      _state.isRestoring = true;
       const uuidValue = row[uid] as string;
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
         method: 'POST'
@@ -201,7 +179,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
       onRowActionError?.(error as Error);
     } finally {
-      isRestoring = false;
+      _state.isRestoring = false;
     }
   }
 
@@ -210,7 +188,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isDuplicating = true;
+      _state.isDuplicating = true;
       const uuidValue = row[uid] as string;
       const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
         method: 'POST',
@@ -249,36 +227,36 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       console.error('Duplicate failed:', error);
       onRowActionError?.(error as Error);
     } finally {
-      isDuplicating = false;
+      _state.isDuplicating = false;
     }
   }
 
   // Wrapper functions that manage dialog state
   async function confirmDeleteRowWrapper() {
-    if (!rowToDelete) return;
-    await confirmDeleteRowImpl(rowToDelete);
+    if (!_state.rowToDelete) return;
+    await confirmDeleteRowImpl(_state.rowToDelete);
     dialogs?.closeDeleteDialog();
-    rowToDelete = null;
+    _state.rowToDelete = null;
   }
 
   async function confirmRestoreRowWrapper() {
-    if (!rowToRestore) return;
-    await confirmRestoreRowImpl(rowToRestore);
+    if (!_state.rowToRestore) return;
+    await confirmRestoreRowImpl(_state.rowToRestore);
     dialogs?.closeRestoreDialog();
-    rowToRestore = null;
+    _state.rowToRestore = null;
   }
 
   async function confirmDuplicateWrapper() {
-    if (duplicateScope === 'single' && singleRowToDuplicate) {
-      await confirmDuplicateRowImpl(singleRowToDuplicate);
+    if (_state.duplicateScope === 'single' && _state.singleRowToDuplicate) {
+      await confirmDuplicateRowImpl(_state.singleRowToDuplicate);
     }
     dialogs?.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    _state.singleRowToDuplicate = null;
   }
 
   function cancelDuplicate() {
     dialogs?.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    _state.singleRowToDuplicate = null;
   }
 
   async function loadVersionHistory(row: TRow) {
@@ -308,6 +286,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   return {
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     handleEditRow,
     handleDeleteRow,
     handleRestoreRow,
@@ -320,13 +299,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     confirmRestoreRowWrapper,
     confirmDuplicateWrapper,
     cancelDuplicate,
-    loadVersionHistory,
-    get rowToDelete() { return rowToDelete; },
-    get rowToRestore() { return rowToRestore; },
-    get singleRowToDuplicate() { return singleRowToDuplicate; },
-    get duplicateScope() { return duplicateScope; },
-    get isDeleting() { return isDeleting; },
-    get isRestoring() { return isRestoring; },
-    get isDuplicating() { return isDuplicating; }
+    loadVersionHistory
   };
 }

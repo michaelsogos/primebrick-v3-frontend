@@ -38,7 +38,7 @@
     lastSyncedAt: ''
   });
 
-  const hasAudit = $derived(!!metadata.meta?.list?.auditingColumns?.length);
+  const hasAudit = $derived(!!metadata.state.meta?.list?.auditingColumns?.length);
 
   let hasChanges = $state(false);
 

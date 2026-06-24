@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import type { Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Input } from '$lib/components/ui/input';
@@ -47,10 +47,11 @@
     useRowRangeSelection,
     useFilterPersistence,
     useToolbarMode,
-    useSheetPanelManagement
+    useSheetPanelManagement,
+    useClientSelection,
+    useKeyboardNavigation
   } from './composables';
   import { useColumnOrder } from './composables/useColumnOrder.svelte';
-  import type { ColumnOrderState } from './composables/useColumnOrder.svelte';
   import { useViewMode, type ViewMode } from './composables';
   import {
     isRowDeleted as isRowDeletedUtil,
@@ -245,7 +246,7 @@
 
   // Column order management using composable
   const columnOrder = useColumnOrder(columnOrderStorageKey);
-  const orderState = columnOrder.orderState;
+  const orderState = columnOrder.state;
 
   const allColumns = $derived.by(() => {
     let all: MetaColumn[];
@@ -315,7 +316,7 @@
     initialMode: 'table',
     storageKey: viewModeStorageKey
   });
-  const viewMode = $derived(viewModeComposable.viewMode);
+  const viewMode = $derived(viewModeComposable.state.viewMode);
 
   // Deletion filter management using composable
   const deletionFilterComposable = useDeletionFilter(
@@ -324,7 +325,7 @@
     deletionFilterModeProp ?? 'non_deleted',
     onDeletionFilterModeChange
   );
-  const deletionFilterMode = $derived(deletionFilterComposable.deletionFilterMode);
+  const deletionFilterMode = $derived(deletionFilterComposable.state.deletionFilterMode);
 
   // Column order functions provided by composable
 
@@ -398,16 +399,7 @@
             seen.add(k);
             dedup.push(k);
           }
-          const nextState: ColumnOrderState =
-            group === 'sticky'
-              ? { ...orderState, sticky: dedup }
-              : group === 'data'
-                ? { ...orderState, data: dedup }
-                : { ...orderState, auditing: dedup };
-          orderState.data = nextState.data;
-          orderState.auditing = nextState.auditing;
-          orderState.sticky = nextState.sticky;
-          columnOrder.writeOrderState(nextState);
+          columnOrder.applyColumnVisibility(group, dedup);
         },
         onResetColumnVisibility: () => onResetColumnVisibility('table'),
         sheetMenuCheckboxClass: checkboxVisualOnlyClass,
@@ -439,8 +431,8 @@
   /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
   $effect(() => {
     void sheetState.open;
-    void sheetPanelManagement.lastPanelId.value;
-    if (!sheetState.open && sheetPanelManagement.lastPanelId.value === 'entity.filters') filtersOpen = false;
+    void sheetPanelManagement.state.lastPanelId;
+    if (!sheetState.open && sheetPanelManagement.state.lastPanelId === 'entity.filters') filtersOpen = false;
   });
 
   const rowChromeH = $derived('h-6');
@@ -504,77 +496,7 @@
   // ============================
   // Keyboard Navigation Handlers
   // ============================
-
-  /** Scroll focused row into view when index changes */
-  $effect(() => {
-    if (previewPanel.previewRowIndex === null) return;
-    const row = tableRef?.querySelector(`[data-focused-row-index="${previewPanel.previewRowIndex}"]`) as HTMLElement;
-    if (row) {
-      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  });
-  /** Unified keyboard handler for preview panel and table row navigation */
-  function handleGlobalKeyDown(e: KeyboardEvent) {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-    if (target.closest('[role="menu"]') || target.closest('[role="menuitem"]')) return;
-
-    // Skip table row navigation if any dropdown menu is open (menu has priority)
-    if (dropdownMenuRow !== null || previewDropdownOpen) return;
-
-    if (previewPanel.previewPanelOpen) {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        navigatePreview(-1);
-        return;
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        navigatePreview(1);
-        return;
-      }
-    }
-
-    if (viewRows.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (previewPanel.focusedRowIndex === null) {
-        // focusedRowIndex is managed by previewPanel composable
-      } else if (previewPanel.focusedRowIndex < viewRows.length - 1) {
-        // focusedRowIndex is managed by previewPanel composable
-      }
-      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
-        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
-      }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (previewPanel.focusedRowIndex === null) {
-        // focusedRowIndex is managed by previewPanel composable
-      } else if (previewPanel.focusedRowIndex > 0) {
-        // focusedRowIndex is managed by previewPanel composable
-      }
-      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
-        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
-      }
-    } else if (e.key === ' ' && previewPanel.focusedRowIndex !== null) {
-      e.preventDefault();
-      const row = viewRows[previewPanel.focusedRowIndex];
-      if (row) toggleRowSelect(rowKey(row));
-    } else if (e.key === 'Enter' && previewPanel.focusedRowIndex !== null) {
-      e.preventDefault();
-      const row = viewRows[previewPanel.focusedRowIndex];
-      if (row) openRowDropdown(row);
-    } else if (e.key === 'Escape') {
-      closeRowDropdown();
-      // Remove focus from kebab button to prevent reopening on arrow key
-      // Use setTimeout to ensure it happens after dropdown's internal focus management
-      setTimeout(() => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-      }, 0);
-    }
-  }
+  // (Wired via useKeyboardNavigation composable — instantiated after previewPanel)
 
 
   // ============================
@@ -599,16 +521,16 @@
 
   /** Confirm delete action after dialog confirmation */
   async function confirmDeleteRow() {
-    if (!dialogs.rowToDelete) return;
-    await rowActionsComposable.confirmDeleteRow(dialogs.rowToDelete);
+    if (!dialogs.state.rowToDelete) return;
+    await rowActionsComposable.confirmDeleteRow(dialogs.state.rowToDelete as TRow);
     dialogs.closeDeleteDialog();
     dialogs.setRowToDelete(null);
   }
 
   /** Confirm restore action after dialog confirmation */
   async function confirmRestoreRow() {
-    if (!dialogs.rowToRestore) return;
-    await rowActionsComposable.confirmRestoreRow(dialogs.rowToRestore);
+    if (!dialogs.state.rowToRestore) return;
+    await rowActionsComposable.confirmRestoreRow(dialogs.state.rowToRestore as TRow);
     dialogs.closeRestoreDialog();
     dialogs.setRowToRestore(null);
   }
@@ -656,8 +578,8 @@
 
   /** Confirm export action after dialog confirmation */
   async function confirmExportRow() {
-    if (!exportComposable.fileType) return;
-    await exportComposable.handleExport(exportComposable.fileType);
+    if (!exportComposable.state.fileType) return;
+    await exportComposable.handleExport(exportComposable.state.fileType);
     exportComposable.closeExportDialog();
   }
 
@@ -692,9 +614,9 @@
   }
 
   async function confirmDuplicate() {
-    if (dialogs.duplicateScope === 'single' && dialogs.singleRowToDuplicate) {
-      await rowActionsComposable.confirmDuplicateRow(dialogs.singleRowToDuplicate);
-    } else if (dialogs.duplicateScope === 'selected') {
+    if (dialogs.state.duplicateScope === 'single' && dialogs.state.singleRowToDuplicate) {
+      await rowActionsComposable.confirmDuplicateRow(dialogs.state.singleRowToDuplicate as TRow);
+    } else if (dialogs.state.duplicateScope === 'selected') {
       await bulkActions.confirmBulkDuplicate();
     }
     dialogs.closeDuplicateDialog();
@@ -761,24 +683,24 @@
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
   let showSelectedOnly = $state(false);
   let clientSelectedPage = $state(1);
-  let selectedRowByKey = $state(new Map<string, TRow>());
 
-  const orderedSelectedRows = $derived(
-    selectedKeys.map((k) => selectedRowByKey.get(k)).filter((r): r is TRow => r !== undefined)
-  );
+  const clientSelection = useClientSelection<TRow>({
+    selectedKeys: () => selectedKeys,
+    rows: () => rows ?? [],
+    rowKey,
+    pageSize: () => pageSize,
+    rowsLoading: () => rowsLoading,
+    rowSelectionEnabled: () => rowSelectionEnabled,
+    showSelectedOnly: () => showSelectedOnly,
+    clientSelectedPage: () => clientSelectedPage,
+    setShowSelectedOnly: (v: boolean) => { showSelectedOnly = v; },
+    setClientSelectedPage: (p: number) => { clientSelectedPage = p; },
+  });
 
-  // Check if any selected records are deleted
-  const hasDeletedSelected = $derived(
-    orderedSelectedRows.some(r => isRowDeleted(r))
-  );
-
-  // Check if all selected records are deleted
-  const allSelectedDeleted = $derived(
-    orderedSelectedRows.length > 0 && orderedSelectedRows.every(r => isRowDeleted(r))
-  );
-  const clientSelectedTotalPages = $derived(
-    Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)))
-  );
+  const orderedSelectedRows = $derived(clientSelection.orderedSelectedRows);
+  const hasDeletedSelected = $derived(clientSelection.hasDeletedSelected);
+  const allSelectedDeleted = $derived(clientSelection.allSelectedDeleted);
+  const clientSelectedTotalPages = $derived(clientSelection.clientSelectedTotalPages);
   const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
   const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : page);
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
@@ -790,14 +712,7 @@
     footerRangeTotal === 0 ? 0 : Math.min(footerPage * pageSize, footerRangeTotal)
   );
 
-  const viewRows = $derived(
-    rowSelectionEnabled && showSelectedOnly
-      ? orderedSelectedRows.slice(
-          (clientSelectedPage - 1) * pageSize,
-          (clientSelectedPage - 1) * pageSize + pageSize
-        )
-      : (rows ?? [])
-  );
+  const viewRows = $derived(clientSelection.viewRows);
   const pageKeys = $derived(viewRows.map((r) => rowKey(r)));
   const selectedOnPageCount = $derived(pageKeys.filter((k) => selectedKeys.includes(k)).length);
   const allOnPageSelected = $derived(pageKeys.length > 0 && selectedOnPageCount === pageKeys.length);
@@ -808,17 +723,6 @@
 
   /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
   let tableRef = $state<HTMLTableElement | null>(null);
-
-  /** Any server list reload (sort, search, filters, page) exits client-only selection view. */
-  let prevRowsLoadingForServerList = $state(false);
-  $effect(() => {
-    const loading = rowsLoading;
-    if (loading && !prevRowsLoadingForServerList) {
-      if (showSelectedOnly) showSelectedOnly = false;
-      clientSelectedPage = 1;
-    }
-    prevRowsLoadingForServerList = loading;
-  });
 
   // Sticky offsets (measured widths so we can keep columns auto-sized).
   const stickyColumnsState = useStickyColumns({
@@ -957,24 +861,6 @@
       setSingleRowToDuplicate: dialogs.setSingleRowToDuplicate
     }
   });
-  $effect(() => {
-    void rows;
-    void selectedKeys;
-    const sel = new Set(selectedKeys);
-    const next = new Map<string, TRow>();
-    for (const r of rows) {
-      const k = rowKey(r);
-      if (sel.has(k)) next.set(k, r);
-    }
-    const old = untrack(() => selectedRowByKey);
-    for (const k of selectedKeys) {
-      if (!next.has(k)) {
-        const prev = old.get(k);
-        if (prev) next.set(k, prev);
-      }
-    }
-    selectedRowByKey = next;
-  });
 
   // Selection handlers
   const selectionHandlers = createSelectionHandlers(
@@ -984,6 +870,33 @@
     () => allOnPageSelected
   );
   const { toggleRowSelect, toggleAllOnPage } = selectionHandlers;
+
+  const keyboardNav = useKeyboardNavigation<TRow>({
+    viewRows: () => viewRows,
+    rowSelectionEnabled: () => rowSelectionEnabled,
+    selectedKeys: () => selectedKeys,
+    onSelectedKeysChange,
+    rowKey,
+    previewPanelOpen: () => previewPanel.state.previewPanelOpen,
+    previewRowIndex: () => previewPanel.state.previewRowIndex,
+    focusedRowIndex: () => previewPanel.state.focusedRowIndex,
+    setFocusedRowIndex: (i: number) => previewPanel.setFocusedRowIndex(i),
+    openPreview: (row: TRow) => previewPanel.openPreview(row),
+    navigatePreview: (direction: 'next' | 'prev') => previewPanel.navigatePreview(direction),
+    dropdownMenuRow: () => dropdownMenuRow,
+    previewDropdownOpen: () => previewDropdownOpen,
+    closeRowDropdown,
+    page: () => page,
+    pageSize: () => pageSize,
+    totalPages: () => totalPages,
+    onPageChange,
+    openRowDropdown,
+    footerUsesClientPaging: () => footerUsesClientPaging,
+    clientSelectedPage: () => clientSelectedPage,
+    setClientSelectedPage: (p: number) => { clientSelectedPage = p; },
+    toggleRowSelect,
+    tableRef: () => tableRef
+  });
 
   // Sorting handlers
   const sortingHandlers = createSortingHandlers(
@@ -1023,31 +936,9 @@
   const selectionPastParticipleKey = $derived(
     selectionCount === 1 ? 'entities.list.selectedSingular' : 'entities.list.selectedPlural'
   );
-
-  $effect(() => {
-    void selectedKeys;
-    void rowSelectionEnabled;
-    if (selectedKeys.length === 0 && showSelectedOnly) {
-      showSelectedOnly = false;
-      clientSelectedPage = 1;
-    }
-    if (!rowSelectionEnabled && showSelectedOnly) {
-      showSelectedOnly = false;
-      clientSelectedPage = 1;
-    }
-  });
-
-  $effect(() => {
-    void orderedSelectedRows.length;
-    void pageSize;
-    void showSelectedOnly;
-    if (!showSelectedOnly) return;
-    const maxP = Math.max(1, Math.ceil(orderedSelectedRows.length / Math.max(1, pageSize)));
-    if (clientSelectedPage > maxP) clientSelectedPage = maxP;
-  });
 </script>
 
-<svelte:window onkeydown={handleGlobalKeyDown} />
+<svelte:window onkeydown={keyboardNav.handleGlobalKeyDown} />
 
 
 
@@ -1104,7 +995,7 @@
     resetColumnsAndSorting={resetColumnsAndSorting}
     checkboxVisualOnlyClass={checkboxVisualOnlyClass}
     onCreateAction={onCreateAction}
-    toolbarMode={toolbarModeState.toolbarMode}
+    toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}
     advancedFilters={advancedFilters}

@@ -70,8 +70,7 @@
     rowSelectionEnabled: boolean;
     selectedKeys: string[];
     rowRangeSelection: {
-      rowRangeMouseDown: boolean;
-      rangeDragActive: boolean;
+      state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };
     };
     datetimeIanaRenderTick: number;
     rowKey: (row: TRow) => string;
@@ -109,7 +108,7 @@
 </script>
 
 <Table.Body
-  class={rowSelectionEnabled && rowRangeSelection.rowRangeMouseDown && rowRangeSelection.rangeDragActive ? 'select-none' : undefined}
+  class={rowSelectionEnabled && rowRangeSelection.state.rowRangeMouseDown && rowRangeSelection.state.rangeDragActive ? 'select-none' : undefined}
 >
   {#if error}
     {#if errorView}

@@ -1,4 +1,5 @@
 import { onMount } from 'svelte';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
 
@@ -20,7 +21,9 @@ export function useDeletionFilter(
   const _initialDeletionMode: DeletionFilterMode | null =
     _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
 
-  let deletionFilterMode = $state<DeletionFilterMode>(_initialDeletionMode ?? deletionFilterModeProp);
+  const _state = $state({
+    deletionFilterMode: (_initialDeletionMode ?? deletionFilterModeProp) as DeletionFilterMode,
+  });
 
   function readDeletionFilter(): DeletionFilterMode | null {
     if (typeof window === 'undefined') return null;
@@ -46,7 +49,7 @@ export function useDeletionFilter(
   onMount(() => {
     const stored = readDeletionFilter();
     if (stored) {
-      deletionFilterMode = stored;
+      _state.deletionFilterMode = stored;
       // If the restored value differs from what the parent passed, notify the parent so it re-fetches
       if (stored !== deletionFilterModeProp) {
         onDeletionFilterModeChange?.(stored);
@@ -57,18 +60,19 @@ export function useDeletionFilter(
   // Persist changes
   let lastDeletionFilterMode: DeletionFilterMode | null = null;
   $effect(() => {
-    void deletionFilterMode;
-    writeDeletionFilter(deletionFilterMode);
+    void _state.deletionFilterMode;
+    writeDeletionFilter(_state.deletionFilterMode);
     // Skip the initial firing so we don't trigger an extra refresh on mount when the
     // value didn't actually change (the parent already holds the same value).
-    if (lastDeletionFilterMode !== null && lastDeletionFilterMode !== deletionFilterMode) {
-      onDeletionFilterModeChange?.(deletionFilterMode);
+    if (lastDeletionFilterMode !== null && lastDeletionFilterMode !== _state.deletionFilterMode) {
+      onDeletionFilterModeChange?.(_state.deletionFilterMode);
     }
-    lastDeletionFilterMode = deletionFilterMode;
+    lastDeletionFilterMode = _state.deletionFilterMode;
   });
 
   return {
-    get deletionFilterMode() { return deletionFilterMode; },
-    setDeletionFilterMode: (mode: DeletionFilterMode) => { deletionFilterMode = mode; }
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
+    get deletionFilterStorageKey() { return deletionFilterStorageKey; },
+    setDeletionFilterMode: (mode: DeletionFilterMode) => { _state.deletionFilterMode = mode; }
   };
 }

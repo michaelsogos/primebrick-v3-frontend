@@ -36,6 +36,7 @@
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
   import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
+  import type { MetaColumn } from "$lib/entity-list/types";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
 
@@ -196,7 +197,7 @@
   });
 
   function getColMeta(key: string) {
-    return metadata.meta?.list?.columns?.find((c) => c.key === key);
+    return metadata.state.meta?.list?.columns?.find((c) => c.key === key);
   }
 
   // Block internal navigation when there are changes
@@ -312,11 +313,11 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-{#if !metadata.loading}
+{#if !metadata.state.loading}
   <FormPageLayout
     entity="user_profiles"
     rowUuid={userUuid}
-    meta={metadata.meta || undefined}
+    meta={(metadata.state.meta as EntityMetadata | null) || undefined}
     auditData={{
       uuid: userUuid,
       version,
@@ -331,7 +332,7 @@
       deleted_by_name: profile?.deleted_by_name,
       last_synced_at: profile?.last_synced_at
     }}
-    auditingColumns={metadata.meta?.list?.auditingColumns || []}
+    auditingColumns={(metadata.state.meta?.list?.auditingColumns as MetaColumn[] | undefined) || []}
     isCreatePage={isCreatePage}
   >
   {#snippet header()}
@@ -464,16 +465,24 @@
                 </FormControl>
               </FormField>
 
-              <div class="space-y-2">
-                <FormLabel>{$t("shell.settings.profile.roles")}</FormLabel>
-                <ComboSelect
-                  mode="multi"
-                  bind:value={$form.roles}
-                  options={availableRoles}
-                  disabled
-                  placeholder={$t("shell.settings.profile.rolesPlaceholder")}
-                />
-              </div>
+              <FormField form={superFormObj} name="roles">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="space-y-2">
+                      <FormLabel for={props.id}>{$t("shell.settings.profile.roles")}</FormLabel>
+                      <ComboSelect
+                        {...props}
+                        mode="multi"
+                        bind:value={$form.roles}
+                        options={availableRoles}
+                        disabled
+                        placeholder={$t("shell.settings.profile.rolesPlaceholder")}
+                      />
+                      <TranslatedFormFieldErrors />
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
             </div>
 
             <!-- Column 2: idp_code, idp_org, idp_username (readonly) -->

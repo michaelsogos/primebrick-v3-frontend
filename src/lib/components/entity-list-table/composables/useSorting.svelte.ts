@@ -1,48 +1,39 @@
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-export interface SortingOptions {
+export function useSorting(options: {
   columns: MetaColumn[];
   initialSort?: { key: string; direction: 'asc' | 'desc' };
   onSortChange?: (sort: { key: string; direction: 'asc' | 'desc' } | null) => void;
-}
-
-export interface SortingReturn {
-  currentSort: { key: string; direction: 'asc' | 'desc' } | null;
-  handleSort: (key: string) => void;
-  getSortDirection: (key: string) => 'asc' | 'desc' | null;
-  isSortable: (key: string) => boolean;
-  syncWithExternal: (sort: { key: string; direction: 'asc' | 'desc' } | null) => void;
-}
-
-export function useSorting(options: SortingOptions): SortingReturn {
+}) {
   const { columns, initialSort, onSortChange } = options;
 
-  let currentSort = $state<{ key: string; direction: 'asc' | 'desc' } | null>(
-    initialSort ?? null
-  );
+  const _state = $state({
+    currentSort: (initialSort ?? null) as { key: string; direction: 'asc' | 'desc' } | null,
+  });
 
   function handleSort(key: string) {
     const column = columns.find((c) => c.key === key);
     if (!column || !column.sortable) return;
 
-    if (currentSort?.key === key) {
+    if (_state.currentSort?.key === key) {
       // Toggle direction
-      if (currentSort.direction === 'asc') {
-        currentSort = { key, direction: 'desc' };
+      if (_state.currentSort.direction === 'asc') {
+        _state.currentSort = { key, direction: 'desc' };
       } else {
-        currentSort = null; // Remove sort
+        _state.currentSort = null; // Remove sort
       }
     } else {
       // New sort, default to asc
-      currentSort = { key, direction: 'asc' };
+      _state.currentSort = { key, direction: 'asc' };
     }
 
-    onSortChange?.(currentSort);
+    onSortChange?.(_state.currentSort);
   }
 
   function getSortDirection(key: string): 'asc' | 'desc' | null {
-    if (currentSort?.key === key) {
-      return currentSort.direction;
+    if (_state.currentSort?.key === key) {
+      return _state.currentSort.direction;
     }
     return null;
   }
@@ -53,13 +44,13 @@ export function useSorting(options: SortingOptions): SortingReturn {
   }
 
   function syncWithExternal(sort: { key: string; direction: 'asc' | 'desc' } | null) {
-    if (JSON.stringify(currentSort) !== JSON.stringify(sort)) {
-      currentSort = sort;
+    if (JSON.stringify(_state.currentSort) !== JSON.stringify(sort)) {
+      _state.currentSort = sort;
     }
   }
 
   return {
-    get currentSort() { return currentSort; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     handleSort,
     getSortDirection,
     isSortable,

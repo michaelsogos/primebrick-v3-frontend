@@ -1,6 +1,7 @@
 import { apiFetch } from '$lib/api';
 import { pushImpactError } from '$lib/errors/app-errors';
 import type { EntityListListMeta } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface EntityMetadata {
   entity?: string;
@@ -17,29 +18,24 @@ export interface UseEntityMetadataOptions {
   onError?: (error: any) => void;
 }
 
-export interface UseEntityMetadataResult {
-  meta: EntityMetadata | null;
-  loading: boolean;
-  error: string | null;
-  loadMetadata: () => Promise<void>;
-}
-
-export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityMetadataResult {
+export function useEntityMetadata(options: UseEntityMetadataOptions) {
   const { endpoint, entityName } = options;
-  
-  let meta = $state<EntityMetadata | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
+
+  const _state = $state({
+    meta: null as EntityMetadata | null,
+    loading: true,
+    error: null as string | null,
+  });
 
   async function loadMetadata() {
-    loading = true;
-    error = null;
-    
+    _state.loading = true;
+    _state.error = null;
+
     try {
       const res = await apiFetch(endpoint);
       if (res.ok) {
         const data = await res.json();
-        
+
         // Code Guardrail: Check if metadata becomes null after loading
         if (!data || !data.list || !data.list.auditingColumns || data.list.auditingColumns.length === 0) {
           console.error('[METADATA PARSING ERROR] Metadata loaded but list.auditingColumns is null or empty:', {
@@ -48,7 +44,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
             response: data,
             timestamp: new Date().toISOString()
           });
-          
+
           // RFC ERROR TOAST - Metadata parsing error
           pushImpactError({
             impact: 'HIGH',
@@ -58,10 +54,10 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
             tags: [{ label: 'METADATA', tone: 'danger' }],
             toast: true
           });
-          
-          meta = data; // Still set meta even if empty
+
+          _state.meta = data; // Still set meta even if empty
         } else {
-          meta = data;
+          _state.meta = data;
         }
       } else {
         // Code Guardrail: Metadata endpoint error
@@ -72,7 +68,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
           statusText: res.statusText,
           timestamp: new Date().toISOString()
         });
-        
+
         // RFC ERROR TOAST - Metadata endpoint error
         pushImpactError({
           impact: 'HIGH',
@@ -81,8 +77,8 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
           tags: [{ label: 'METADATA', tone: 'danger' }],
           toast: true
         });
-        
-        error = `Failed to load metadata: ${res.status} ${res.statusText}`;
+
+        _state.error = `Failed to load metadata: ${res.status} ${res.statusText}`;
       }
     } catch (err) {
       // Code Guardrail: Network/other error
@@ -92,7 +88,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
         error: err instanceof Error ? err.message : String(err),
         timestamp: new Date().toISOString()
       });
-      
+
       // RFC ERROR TOAST - Network error
       pushImpactError({
         impact: 'HIGH',
@@ -101,17 +97,15 @@ export function useEntityMetadata(options: UseEntityMetadataOptions): UseEntityM
         tags: [{ label: 'METADATA', tone: 'danger' }],
         toast: true
       });
-      
-      error = err instanceof Error ? err.message : String(err);
+
+      _state.error = err instanceof Error ? err.message : String(err);
     } finally {
-      loading = false;
+      _state.loading = false;
     }
   }
 
   return {
-    get meta() { return meta; },
-    get loading() { return loading; },
-    get error() { return error; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     loadMetadata
   };
 }

@@ -300,8 +300,8 @@
 
   // Sync composable meta into local meta state for FormPageLayout
   $effect(() => {
-    if (entityMetadata.meta) {
-      meta = entityMetadata.meta;
+    if (entityMetadata.state.meta) {
+      meta = entityMetadata.state.meta as EntityMetadata;
     }
   });
 

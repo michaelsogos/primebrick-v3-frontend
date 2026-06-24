@@ -1,25 +1,16 @@
-export interface SelectionOptions {
+import type { DeepReadonly } from '$lib/types/deep-readonly';
+
+export function useSelection(options: {
   enabled: boolean;
   uid: string;
   initialKeys?: string[];
   onSelectedKeysChange?: (keys: string[]) => void;
-}
+}) {
+  const { uid, initialKeys, onSelectedKeysChange } = options;
 
-export interface SelectionReturn {
-  selectedKeys: string[];
-  toggleRowSelect: (key: string) => void;
-  toggleAllRows: (allKeys: string[]) => void;
-  clearSelection: () => void;
-  isRowSelected: (key: string) => boolean;
-  allSelected: boolean;
-  someSelected: boolean;
-  syncWithExternal: (keys: string[]) => void;
-}
-
-export function useSelection(options: SelectionOptions): SelectionReturn {
-  const { enabled, uid, initialKeys, onSelectedKeysChange } = options;
-
-  let selectedKeys = $state<string[]>(initialKeys ?? []);
+  const _state = $state({
+    selectedKeys: (initialKeys ?? []) as string[],
+  });
 
   function rowKey(row: Record<string, unknown>): string {
     const v = row[uid as keyof typeof row] as unknown;
@@ -27,43 +18,43 @@ export function useSelection(options: SelectionOptions): SelectionReturn {
   }
 
   function toggleRowSelect(key: string) {
-    if (selectedKeys.includes(key)) {
-      selectedKeys = selectedKeys.filter((k) => k !== key);
+    if (_state.selectedKeys.includes(key)) {
+      _state.selectedKeys = _state.selectedKeys.filter((k) => k !== key);
     } else {
-      selectedKeys = [...selectedKeys, key];
+      _state.selectedKeys = [..._state.selectedKeys, key];
     }
-    onSelectedKeysChange?.(selectedKeys);
+    onSelectedKeysChange?.(_state.selectedKeys);
   }
 
   function toggleAllRows(allKeys: string[]) {
-    if (selectedKeys.length === allKeys.length) {
-      selectedKeys = [];
+    if (_state.selectedKeys.length === allKeys.length) {
+      _state.selectedKeys = [];
     } else {
-      selectedKeys = [...allKeys];
+      _state.selectedKeys = [...allKeys];
     }
-    onSelectedKeysChange?.(selectedKeys);
+    onSelectedKeysChange?.(_state.selectedKeys);
   }
 
   function clearSelection() {
-    selectedKeys = [];
-    onSelectedKeysChange?.(selectedKeys);
+    _state.selectedKeys = [];
+    onSelectedKeysChange?.(_state.selectedKeys);
   }
 
   function isRowSelected(key: string): boolean {
-    return selectedKeys.includes(key);
+    return _state.selectedKeys.includes(key);
   }
 
   function syncWithExternal(keys: string[]) {
-    if (JSON.stringify(selectedKeys) !== JSON.stringify(keys)) {
-      selectedKeys = [...keys];
+    if (JSON.stringify(_state.selectedKeys) !== JSON.stringify(keys)) {
+      _state.selectedKeys = [...keys];
     }
   }
 
-  const allSelected = $derived(selectedKeys.length > 0);
-  const someSelected = $derived(selectedKeys.length > 0);
+  const allSelected = $derived(_state.selectedKeys.length > 0);
+  const someSelected = $derived(_state.selectedKeys.length > 0);
 
   return {
-    get selectedKeys() { return selectedKeys; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     toggleRowSelect,
     toggleAllRows,
     clearSelection,

@@ -37,7 +37,7 @@
     rowSelectionEnabled: boolean;
     stickyColumnsState: {
       checkboxHeadRef: HTMLTableCellElement | null;
-      stickyLeftOffsets: Record<string, number>;
+      state: { stickyLeftOffsets: Record<string, number> };
       stickyRef: any;
     };
     rowChromeH: string;
@@ -55,8 +55,10 @@
     toggleDatetimeIana: (col: MetaColumn) => void;
     actionsEnabled: boolean;
     previewPanel: {
-      previewPanelOpen: boolean;
-      previewRow: TRow | null;
+      state: {
+        previewPanelOpen: boolean;
+        previewRow: TRow | null;
+      };
       openPreview: (row: TRow) => void;
       closePreview: () => void;
     };
@@ -85,7 +87,7 @@
     {#each shownColumns as col, colIdx (col.key)}
       {#if stickyColumnsGroup.some((s) => s.key === col.key)}
         <Table.Head
-          style="left: {stickyColumnsState.stickyLeftOffsets[col.key] ?? 0}px;"
+          style="left: {stickyColumnsState.state.stickyLeftOffsets[col.key] ?? 0}px;"
           class={stickyCellClass(col.key, colIdx, true) ??
             (col.sortable !== false
               ? rowsLoading
@@ -188,9 +190,9 @@
             variant="ghost"
             size="icon-sm"
             onclick={() => {
-              if (!previewPanel.previewPanelOpen && !previewPanel.previewRow && viewRows.length > 0) {
+              if (!previewPanel.state.previewPanelOpen && !previewPanel.state.previewRow && viewRows.length > 0) {
                 previewPanel.openPreview(viewRows[0]);
-              } else if (previewPanel.previewPanelOpen) {
+              } else if (previewPanel.state.previewPanelOpen) {
                 previewPanel.closePreview();
               } else {
                 previewPanel.openPreview(viewRows[0]);
@@ -200,7 +202,7 @@
             title={$t('entities.list.togglePreviewPanel')}
             class="transition-transform duration-300"
           >
-            {#if previewPanel.previewPanelOpen}
+            {#if previewPanel.state.previewPanelOpen}
               <PanelRightClose class="size-4 transition-transform duration-300" />
             {:else}
               <PanelRightOpen class="size-4 transition-transform duration-300" />

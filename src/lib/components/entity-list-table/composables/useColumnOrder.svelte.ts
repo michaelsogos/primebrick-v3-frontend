@@ -1,5 +1,6 @@
 import { onMount } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export type ColumnOrderState = {
   sticky?: string[];
@@ -8,7 +9,7 @@ export type ColumnOrderState = {
 };
 
 export function useColumnOrder(columnOrderStorageKey?: string) {
-  const orderState = $state<ColumnOrderState>({});
+  const _state = $state<ColumnOrderState>({});
 
   function readOrderState(): ColumnOrderState {
     if (!columnOrderStorageKey) return {};
@@ -43,7 +44,7 @@ export function useColumnOrder(columnOrderStorageKey?: string) {
     }
   }
 
-  function applyKeyOrder(cols: MetaColumn[], keys: string[] | undefined): MetaColumn[] {
+  function applyKeyOrder(cols: MetaColumn[], keys: readonly string[] | undefined): MetaColumn[] {
     if (!keys || keys.length === 0) return cols;
     const byKey = new Map(cols.map((c) => [c.key, c] as const));
     const out: MetaColumn[] = [];
@@ -85,33 +86,42 @@ export function useColumnOrder(columnOrderStorageKey?: string) {
       group === 'data'
         ? (dataColumns ?? nonAuditingColumns).map((c) => c.key)
         : (auditingColumns ?? []).map((c) => c.key);
-    const cur = group === 'data' ? (orderState.data ?? base) : (orderState.auditing ?? base);
+    const cur = group === 'data' ? (_state.data ?? base) : (_state.auditing ?? base);
     const nextKeys = moveKeyWithin(cur, fromKey, toKey);
     const nextState: ColumnOrderState =
-      group === 'data' ? { ...orderState, data: nextKeys } : { ...orderState, auditing: nextKeys };
-    orderState.data = nextState.data;
-    orderState.auditing = nextState.auditing;
+      group === 'data' ? { ..._state, data: nextKeys } : { ..._state, auditing: nextKeys };
+    _state.data = nextState.data;
+    _state.auditing = nextState.auditing;
+    writeOrderState(nextState);
+  }
+
+  function applyColumnVisibility(group: 'sticky' | 'data' | 'auditing', keys: string[]) {
+    const nextState: ColumnOrderState = { ..._state, [group]: keys };
+    _state.sticky = nextState.sticky;
+    _state.data = nextState.data;
+    _state.auditing = nextState.auditing;
     writeOrderState(nextState);
   }
 
   // Initialize on mount
   onMount(() => {
     const loaded = readOrderState();
-    orderState.sticky = loaded.sticky;
-    orderState.data = loaded.data;
-    orderState.auditing = loaded.auditing;
+    _state.sticky = loaded.sticky;
+    _state.data = loaded.data;
+    _state.auditing = loaded.auditing;
   });
 
   return {
-    orderState,
+    get state(): DeepReadonly<typeof _state> { return _state; },
     applyKeyOrder,
     moveKeyWithin,
     reorderGroup,
+    applyColumnVisibility,
     writeOrderState,
     reset: () => {
-      orderState.sticky = undefined;
-      orderState.data = undefined;
-      orderState.auditing = undefined;
+      _state.sticky = undefined;
+      _state.data = undefined;
+      _state.auditing = undefined;
       writeOrderState({});
     }
   };

@@ -1,6 +1,7 @@
 import { apiFetch } from '$lib/api';
 import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface BulkActionsOptions {
   entity: () => string;
@@ -23,25 +24,7 @@ export interface BulkActionsOptions {
   setDuplicateScope?: (scope: 'selected' | 'single') => void;
 }
 
-export interface BulkActionsReturn {
-  isDeleting: boolean;
-  isRestoring: boolean;
-  isDuplicating: boolean;
-  handleBulkDelete: () => void;
-  confirmBulkDelete: () => Promise<void>;
-  cancelBulkDelete: () => void;
-  handleBulkRestore: () => void;
-  confirmBulkRestore: () => Promise<void>;
-  cancelBulkRestore: () => void;
-  handleBulkDuplicate: () => void;
-  confirmBulkDuplicate: () => Promise<void>;
-  cancelBulkDuplicate: () => void;
-  confirmBulkDeleteWrapper: () => Promise<void>;
-  confirmBulkRestoreWrapper: () => Promise<void>;
-  confirmBulkDuplicateWrapper: () => Promise<void>;
-}
-
-export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
+export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
     selectedKeys: selectedKeysFn,
@@ -56,9 +39,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
-  let isDeleting = $state(false);
-  let isRestoring = $state(false);
-  let isDuplicating = $state(false);
+  const _state = $state({ isDeleting: false, isRestoring: false, isDuplicating: false });
 
   function handleBulkDelete() {
     dialogs?.openBulkDeleteDialog();
@@ -69,7 +50,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
     try {
-      isDeleting = true;
+      _state.isDeleting = true;
       onBulkActionStart?.();
 
       const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
@@ -125,7 +106,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
       }
       onBulkActionError?.(error as Error);
     } finally {
-      isDeleting = false;
+      _state.isDeleting = false;
     }
   }
 
@@ -147,7 +128,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
     try {
-      isRestoring = true;
+      _state.isRestoring = true;
       onBulkActionStart?.();
 
       const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
@@ -203,7 +184,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
       }
       onBulkActionError?.(error as Error);
     } finally {
-      isRestoring = false;
+      _state.isRestoring = false;
     }
   }
 
@@ -234,7 +215,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
     const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     try {
-      isDuplicating = true;
+      _state.isDuplicating = true;
       onBulkActionStart?.();
 
       const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
@@ -274,7 +255,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
       console.error('Duplicate failed:', error);
       onBulkActionError?.(error as Error);
     } finally {
-      isDuplicating = false;
+      _state.isDuplicating = false;
     }
   }
 
@@ -301,9 +282,7 @@ export function useBulkActions(options: BulkActionsOptions): BulkActionsReturn {
   }
 
   return {
-    get isDeleting() { return isDeleting; },
-    get isRestoring() { return isRestoring; },
-    get isDuplicating() { return isDuplicating; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     handleBulkDelete,
     confirmBulkDelete,
     cancelBulkDelete,

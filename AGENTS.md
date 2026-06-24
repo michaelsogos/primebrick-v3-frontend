@@ -54,3 +54,56 @@ This repository follows GitFlow. AI agents MUST follow these rules.
 ## Further documentation
 
 See `docs/ai/` for UI patterns, skills selection, and suggested workflows.
+
+## Composable state exposure pattern (MANDATORY)
+
+All `use{Something}` composables MUST follow this pattern for exposing `$state`:
+
+1. **Consolidate** all `$state` into a single `_state` object (underscore = internal).
+2. **Expose** via `get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; }`.
+3. **Mutations** only through exposed mutator functions — never direct property writes.
+4. **`$derived`** values owned by the composable are exposed via individual `get x()` getters, NOT inside the `$state` object.
+5. **Never** return `$derived` via object shorthand (`{ derived }`) — it freezes the value.
+6. **Never** return raw `$state` without a getter — it allows uncontrolled mutation.
+7. **Never** create wrapper objects inside getters (`{ value: x }`) — it breaks destructuring and creates garbage.
+
+Import `DeepReadonly` from `$lib/types/deep-readonly`.
+
+### Example
+
+```ts
+import type { DeepReadonly } from '$lib/types/deep-readonly';
+
+export function useSomething() {
+  const _state = $state({
+    open: false,
+    items: [] as string[],
+  });
+
+  function open() { _state.open = true; }
+  function setItems(items: string[]) { _state.items = [...items]; }
+
+  const itemCount = $derived(_state.items.length);
+
+  return {
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
+    get itemCount() { return itemCount; },
+    open,
+    setItems,
+  };
+}
+```
+
+### Consumer usage
+
+```ts
+const something = useSomething();
+// Reactive reads:
+$derived(something.state.open)        // tracked
+$derived(something.state.items.length) // tracked (deep)
+// Mutations blocked at compile time:
+// something.state.open = true        // TS2540
+// something.state.items.push('x')    // TS2339
+// Must use mutators:
+something.open();                      // only path to mutation
+```

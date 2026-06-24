@@ -75,7 +75,7 @@
     selectedKeys: string[];
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: { focusedRowIndex: number | null };
+    previewPanel: { state: { focusedRowIndex: number | null } };
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
@@ -302,7 +302,7 @@
           {@const rk = rowKey(r)}
           {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
           {@const rowDeleted = isRowDeleted(r)}
-          {@const rowFocused = previewPanel.focusedRowIndex !== null && viewRows[previewPanel.focusedRowIndex] === r}
+          {@const rowFocused = previewPanel.state.focusedRowIndex !== null && viewRows[previewPanel.state.focusedRowIndex] === r}
           <CardItem
             row={r}
             index={i}

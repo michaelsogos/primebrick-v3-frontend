@@ -7,7 +7,7 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { useHealthChip, chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
+  import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import XIcon from '@lucide/svelte/icons/x';
   import Cloud from '@lucide/svelte/icons/cloud';
