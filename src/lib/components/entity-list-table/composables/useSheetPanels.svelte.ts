@@ -1,5 +1,4 @@
 import { sheetState, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-import { t } from '$lib/i18n';
 import { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
 import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
@@ -115,8 +114,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
           options.columnOrder.applyColumnVisibility(group, dedup);
         },
         onResetColumnVisibility: () => options.onResetColumnVisibility('table'),
-        sheetMenuCheckboxClass: options.checkboxVisualOnlyClass,
-        t: t
+        sheetMenuCheckboxClass: options.checkboxVisualOnlyClass
       } as any;
       return;
     }

@@ -1,5 +1,4 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { t } from '$lib/i18n';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
   import { FiltersPanel, ColumnSelectorPanel } from '../panels';
@@ -148,8 +147,7 @@
         visibleKeys,
         toggleColumnKey,
         onResetColumnVisibility: resetColumnsAndSorting,
-        sheetMenuCheckboxClass: checkboxVisualOnlyClass,
-        t: $t
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass
       } as any,
       { contentClass: 'w-[360px] p-0' }
     )}
