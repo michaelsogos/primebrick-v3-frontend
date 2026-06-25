@@ -22,6 +22,8 @@ export type { ToolbarMode } from './useToolbarMode.svelte';
 export { useStickyColumns } from './useStickyColumns.svelte';
 export { useScrollPreservation } from './useScrollPreservation.svelte';
 export { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
+export { useSheetPanels } from './useSheetPanels.svelte';
+export type { UseSheetPanelsOptions } from './useSheetPanels.svelte';
 
 // Phase 2a: Business logic extraction composables
 export { useExport } from './useExport.svelte';

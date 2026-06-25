@@ -8,7 +8,7 @@ export function useKeyboardNavigation<T>(options: {
   rowKey: (row: T) => string;
   previewPanelOpen: () => boolean;
   previewRowIndex: () => number;
-  focusedRowIndex: () => number;
+  focusedRowIndex: () => number | null;
   setFocusedRowIndex: (index: number) => void;
   openPreview: (row: T) => void;
   navigatePreview: (direction: 'next' | 'prev') => void;

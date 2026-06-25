@@ -8,24 +8,7 @@
     exportComposable,
     selectedKeys,
     total,
-    entity,
-    confirmDeleteRow,
-    confirmRestoreRow,
-    confirmBulkDelete,
-    cancelBulkDelete,
-    confirmBulkRestore,
-    cancelBulkRestore,
-    confirmExportRow,
-    cancelExportRow,
-    confirmHtmlExport,
-    cancelHtmlExport,
-    confirmDuplicate,
-    cancelDuplicate,
-    generatePdfPreview,
-    prepareEmailHtml,
-    copyHtmlToClipboard,
-    copyEmailHtmlToClipboard,
-    closeHtmlPreview
+    entity
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -36,24 +19,92 @@
     selectedKeys: string[];
     total: number;
     entity: string;
-    confirmDeleteRow: () => void;
-    confirmRestoreRow: () => void;
-    confirmBulkDelete: () => void;
-    cancelBulkDelete: () => void;
-    confirmBulkRestore: () => void;
-    cancelBulkRestore: () => void;
-    confirmExportRow: () => void;
-    cancelExportRow: () => void;
-    confirmHtmlExport: () => void;
-    cancelHtmlExport: () => void;
-    confirmDuplicate: () => void;
-    cancelDuplicate: () => void;
-    generatePdfPreview: () => void;
-    prepareEmailHtml: () => void;
-    copyHtmlToClipboard: () => void;
-    copyEmailHtmlToClipboard: () => void;
-    closeHtmlPreview: () => void;
   };
+
+  async function confirmDeleteRow() {
+    if (!dialogs.state.rowToDelete) return;
+    await rowActionsComposable.confirmDeleteRow(dialogs.state.rowToDelete);
+    dialogs.closeDeleteDialog();
+    dialogs.setRowToDelete(null);
+  }
+
+  async function confirmRestoreRow() {
+    if (!dialogs.state.rowToRestore) return;
+    await rowActionsComposable.confirmRestoreRow(dialogs.state.rowToRestore);
+    dialogs.closeRestoreDialog();
+    dialogs.setRowToRestore(null);
+  }
+
+  async function confirmBulkDelete() {
+    await bulkActions.confirmBulkDelete();
+    dialogs.closeBulkDeleteDialog();
+  }
+
+  function cancelBulkDelete() {
+    dialogs.closeBulkDeleteDialog();
+  }
+
+  async function confirmBulkRestore() {
+    await bulkActions.confirmBulkRestore();
+    dialogs.closeBulkRestoreDialog();
+  }
+
+  function cancelBulkRestore() {
+    dialogs.closeBulkRestoreDialog();
+  }
+
+  async function confirmExportRow() {
+    if (!exportComposable.state.fileType) return;
+    await exportComposable.handleExport(exportComposable.state.fileType);
+    exportComposable.closeExportDialog();
+  }
+
+  function cancelExportRow() {
+    exportComposable.closeExportDialog();
+  }
+
+  async function confirmDuplicate() {
+    if (dialogs.state.duplicateScope === 'single' && dialogs.state.singleRowToDuplicate) {
+      await rowActionsComposable.confirmDuplicateRow(dialogs.state.singleRowToDuplicate);
+    } else if (dialogs.state.duplicateScope === 'selected') {
+      await bulkActions.confirmBulkDuplicate();
+    }
+    dialogs.closeDuplicateDialog();
+    dialogs.setSingleRowToDuplicate(null);
+  }
+
+  function cancelDuplicate() {
+    dialogs.closeDuplicateDialog();
+    dialogs.setSingleRowToDuplicate(null);
+  }
+
+  function cancelHtmlExport() {
+    exportComposable.closeHtmlExportConfirmDialog();
+  }
+
+  async function confirmHtmlExport() {
+    await exportComposable.handleHtmlExport();
+  }
+
+  function closeHtmlPreview() {
+    exportComposable.closeHtmlPreview();
+  }
+
+  async function copyHtmlToClipboard() {
+    await exportComposable.copyHtmlToClipboard();
+  }
+
+  async function generatePdfPreview() {
+    await exportComposable.generatePdfPreview();
+  }
+
+  async function prepareEmailHtml() {
+    await exportComposable.prepareEmailHtml();
+  }
+
+  async function copyEmailHtmlToClipboard() {
+    await exportComposable.copyEmailHtmlToClipboard();
+  }
 </script>
 
 <DeleteDialog

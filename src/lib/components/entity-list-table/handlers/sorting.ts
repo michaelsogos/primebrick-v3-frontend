@@ -6,12 +6,12 @@ export function createSortingHandlers(
   defaultSortDir: 'asc' | 'desc',
   onResetColumnVisibility: (view: 'table' | 'cards' | 'cards_list') => void,
   onSortChange: (key: string | null, dir: 'asc' | 'desc') => void,
-  rowsLoading: boolean,
+  rowsLoading: () => boolean,
   sortKey: () => string | null,
   sortDir: () => 'asc' | 'desc',
-  dataColumns: any,
-  auditingColumnsGroup: any,
-  nonAuditingColumns: any,
+  dataColumns: () => any,
+  auditingColumnsGroup: () => any,
+  nonAuditingColumns: () => any,
   onFilterValuesChange?: (values: Record<string, any>) => void,
   onAdvancedFiltersChange?: (filters: any[], connector: 'AND' | 'OR') => void,
   onResetFilters?: () => void
@@ -34,14 +34,14 @@ export function createSortingHandlers(
       group,
       fromKey,
       toKey,
-      dataColumns,
-      auditingColumnsGroup,
-      nonAuditingColumns
+      dataColumns(),
+      auditingColumnsGroup(),
+      nonAuditingColumns()
     );
   }
 
   function handleSortClick(col: MetaColumn) {
-    if (rowsLoading) return;
+    if (rowsLoading()) return;
     if (col.sortable === false) return;
     if (sortKey() !== col.key) {
       onSortChange(col.key, 'asc');

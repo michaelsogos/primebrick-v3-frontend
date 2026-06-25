@@ -1,4 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import type { Snippet } from 'svelte';
+  import type { MetaColumn } from '$lib/entity-list/types';
   import EntityListTableLoading from './EntityListTableLoading.svelte';
   import EntityListTableCardView from './EntityListTableCardView.svelte';
   import EntityListTableTableView from './EntityListTableTableView.svelte';
@@ -78,7 +80,7 @@
   type EntityListTableContentProps = {
     metaLoading: boolean;
     viewMode: 'table' | 'cards' | 'cards_list';
-    metaLoadingView?: (() => void) | null;
+    metaLoadingView?: Snippet;
     loadingText: string;
     viewRows: any;
     shownColumns: any[];
@@ -96,11 +98,11 @@
     cell: any;
     stickyColumnsGroup: any[];
     error: string | null;
-    errorView?: (() => void) | null;
+    errorView?: Snippet;
     rowsLoading: boolean;
-    rowsLoadingView?: (() => void) | null;
+    rowsLoadingView?: Snippet;
     rows: any;
-    emptyView?: (() => void) | null;
+    emptyView?: Snippet;
     emptyText: string;
     showSelectedOnly: boolean;
     selectionCount: number;
@@ -135,7 +137,7 @@
     page: number;
     onPageChange: (page: number) => void;
     entity: string;
-    columns: any[] | undefined;
+    columns: MetaColumn[];
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
     auditingColumns: any[] | undefined;

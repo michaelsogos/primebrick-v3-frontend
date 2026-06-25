@@ -78,7 +78,7 @@
     onCreateAction?: () => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
-    filterValues?: Record<string, any>;
+    filterValues: Record<string, any>;
     advancedFilters: AdvancedFilter[];
     selectedKeys: string[];
     hasDeletedSelected: boolean;

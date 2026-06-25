@@ -273,16 +273,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   // Keep original function names for backward compatibility, but they now call the impl versions
-  async function confirmDeleteRow(row: TRow) {
-    await confirmDeleteRowImpl(row);
+  async function confirmDeleteRow(row: DeepReadonly<TRow>) {
+    await confirmDeleteRowImpl(row as TRow);
   }
 
-  async function confirmRestoreRow(row: TRow) {
-    await confirmRestoreRowImpl(row);
+  async function confirmRestoreRow(row: DeepReadonly<TRow>) {
+    await confirmRestoreRowImpl(row as TRow);
   }
 
-  async function confirmDuplicateRow(row: TRow) {
-    await confirmDuplicateRowImpl(row);
+  async function confirmDuplicateRow(row: DeepReadonly<TRow>) {
+    await confirmDuplicateRowImpl(row as TRow);
   }
 
   return {

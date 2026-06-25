@@ -1,5 +1,6 @@
 <script lang="ts">
   import Hourglass from '@lucide/svelte/icons/hourglass';
+  import type { Snippet } from 'svelte';
 
   let {
     metaLoading,
@@ -9,7 +10,7 @@
 
   type EntityListTableLoadingProps = {
     metaLoading: boolean;
-    metaLoadingView?: (() => void) | null;
+    metaLoadingView?: Snippet;
     loadingText: string;
   };
 </script>

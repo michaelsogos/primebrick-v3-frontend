@@ -1,7 +1,8 @@
 import { untrack } from 'svelte';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
+import { isRowDeleted as isRowDeletedUtil } from '../utils';
 
-export function useClientSelection<T>(options: {
+export function useClientSelection<T extends Record<string, unknown>>(options: {
   selectedKeys: () => string[];
   rows: () => T[];
   rowKey: (row: T) => string;
@@ -55,17 +56,12 @@ export function useClientSelection<T>(options: {
       : options.rows()
   );
 
-  function isRowDeleted(row: T): boolean {
-    const r = row as Record<string, unknown>;
-    return 'deleted_at' in r && r.deleted_at !== null && r.deleted_at !== undefined;
-  }
-
   const hasDeletedSelected = $derived(
-    orderedSelectedRows.some(r => isRowDeleted(r))
+    orderedSelectedRows.some(r => isRowDeletedUtil(r))
   );
 
   const allSelectedDeleted = $derived(
-    orderedSelectedRows.length > 0 && orderedSelectedRows.every(r => isRowDeleted(r))
+    orderedSelectedRows.length > 0 && orderedSelectedRows.every(r => isRowDeletedUtil(r))
   );
 
   // Exit on server reload

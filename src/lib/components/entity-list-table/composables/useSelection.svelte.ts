@@ -50,8 +50,12 @@ export function useSelection(options: {
     }
   }
 
-  const allSelected = $derived(_state.selectedKeys.length > 0);
   const someSelected = $derived(_state.selectedKeys.length > 0);
+
+  function allSelected(allKeys: string[]): boolean {
+    return allKeys.length > 0 && _state.selectedKeys.length === allKeys.length
+      && allKeys.every(k => _state.selectedKeys.includes(k));
+  }
 
   return {
     get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
@@ -59,7 +63,7 @@ export function useSelection(options: {
     toggleAllRows,
     clearSelection,
     isRowSelected,
-    get allSelected() { return allSelected; },
+    allSelected,
     get someSelected() { return someSelected; },
     syncWithExternal
   };
