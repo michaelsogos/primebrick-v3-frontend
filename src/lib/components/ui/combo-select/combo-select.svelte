@@ -31,6 +31,7 @@
       resolvedLabel: string;
       resolvedValue: string;
     }]>;
+    isOptionDisabled?: (option: string | Record<string, any>) => boolean;
     selectedSnippet?: Snippet<[{
       option: string | Record<string, any>;
       resolvedLabel: string;
@@ -58,6 +59,7 @@
     searchable = true,
     searchPlaceholder = "Search...",
     itemSnippet,
+    isOptionDisabled,
     selectedSnippet,
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
@@ -300,7 +302,9 @@
           {#each filteredOptions as opt (opt.value)}
             <Command.Item
               value={opt.value}
+              disabled={isOptionDisabled ? isOptionDisabled(opt.raw) : false}
               onSelect={() => {
+                if (isOptionDisabled && isOptionDisabled(opt.raw)) return;
                 if (mode === "single") {
                   handleSelectSingle(opt);
                 } else {

@@ -115,7 +115,9 @@
     "sales": "Ventas",
     "customer_service": "Servicio al Cliente",
     "hr": "Recursos Humanos",
-    "ops": "Operaciones"
+    "ops": "Operaciones",
+    "systemAdministrator": "Administrador del sistema",
+    "notValidRole": "Rol no válido"
   },
   "shell": {
     "subtitle": "Backoffice",

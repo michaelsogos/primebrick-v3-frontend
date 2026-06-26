@@ -34,13 +34,15 @@
   import { interpolateTemplate } from '$lib/template-interpolate';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import ShieldUser from '@lucide/svelte/icons/shield-user';
+  import ShieldOff from '@lucide/svelte/icons/shield-off';
 
   const uuid = $derived(page.params.uuid);
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
-  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[] }[] = $state([]);
+  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[] = $state([]);
 
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
@@ -52,7 +54,7 @@
         const res = await apiFetch('/api/v1/system/roles/active');
         if (res.ok) {
           const data = await res.json();
-          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[] }[];
+          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[];
         }
       } catch (e) {
         console.error('Failed to load roles', e);
@@ -471,13 +473,27 @@
                         labelField="label_key"
                         isLabelTranslated={true}
                         placeholder={$t('shell.settings.users.update.rolesPlaceholder')}
+                        isOptionDisabled={(opt) => {
+                          const role = opt as Record<string, any>;
+                          return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
+                        }}
                       >
                         {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                           {@const role = option as Record<string, any>}
-                          <div class="flex flex-col min-w-0 flex-1">
+                          <div class="flex flex-col min-w-0 flex-1 gap-0.5">
                             <span class="font-medium truncate">{resolvedLabel}</span>
-                            {#if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
+                            {#if role.is_admin}
+                              <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-success border-success/30">
+                                <ShieldUser class="size-3" />
+                                {$t('roles.systemAdministrator')}
+                              </Badge>
+                            {:else if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
                               <span class="italic text-muted-foreground text-xs truncate">{role.permissions.join(', ')}</span>
+                            {:else}
+                              <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-muted-foreground border-muted-foreground/30">
+                                <ShieldOff class="size-3" />
+                                {$t('roles.notValidRole')}
+                              </Badge>
                             {/if}
                           </div>
                         {/snippet}
