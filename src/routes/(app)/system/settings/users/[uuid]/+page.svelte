@@ -33,13 +33,14 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { interpolateTemplate } from '$lib/template-interpolate';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
 
   const uuid = $derived(page.params.uuid);
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
-  let availableRoles: { idp_role: string; label_key?: string }[] = $state([]);
+  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[] }[] = $state([]);
 
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
@@ -51,7 +52,7 @@
         const res = await apiFetch('/api/v1/system/roles/active');
         if (res.ok) {
           const data = await res.json();
-          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string }[];
+          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[] }[];
         }
       } catch (e) {
         console.error('Failed to load roles', e);
@@ -75,15 +76,15 @@
 
   // Zod schema for user update form
   const updateSchema = z.object({
-    display_name: z.string().min(2, { message: 'validation.tooShort' }),
+    display_name: z.string().min(3, { message: minMsg(3) }),
     email: z.string()
       .email({ message: 'validation.invalidEmail' })
-      .max(320, { message: 'validation.tooLong' })
+      .max(320, { message: maxMsg(320) })
       .optional()
       .or(z.literal('')),
     roles: z.array(z.string()).min(1, { message: 'validation.rolesRequired' }).default([]),
     avatar_color: z.string()
-      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'validation.invalidFormat' })
       .optional()
       .or(z.literal('')),
   });
@@ -128,7 +129,7 @@
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
     SPA: true,
     validators: zod4(updateSchema),
-    validationMethod: 'oninput',
+    validationMethod: 'onblur',
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
@@ -243,6 +244,11 @@
           roles: data.roles || [],
         },
       });
+      // Clear tainting and errors after reset.
+      // reset({ data }) preserves tainting for fields in opts.data, so we must explicitly clear it.
+      // Without this, roles is pre-tainted and shows errors when other fields are blurred with validationMethod: 'onblur'.
+      tainted.set(undefined);
+      errors.set({});
       if (meta?.updatePageTitle && user) {
         pageTitle = interpolateTemplate(meta.updatePageTitle, user);
       } else {
@@ -329,8 +335,8 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
-          { label: $t('shell.settings.tabs.users'), href: '/system/settings/users' },
           { label: $t('shell.settings.users.update.title') }
         ]}
       />
@@ -468,9 +474,11 @@
                       >
                         {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                           {@const role = option as Record<string, any>}
-                          <div class="flex flex-col">
-                            <span class="font-medium">{resolvedLabel}</span>
-                            <span class="italic text-muted-foreground">{role.idp_role}</span>
+                          <div class="flex flex-col min-w-0 flex-1">
+                            <span class="font-medium truncate">{resolvedLabel}</span>
+                            {#if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
+                              <span class="italic text-muted-foreground text-xs truncate">{role.permissions.join(', ')}</span>
+                            {/if}
                           </div>
                         {/snippet}
                       </ComboSelect>

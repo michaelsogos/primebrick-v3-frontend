@@ -26,6 +26,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CopyButton } from '$lib/components/ui/copy-button';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
 
   const uuid = $derived(page.params.uuid);
 
@@ -53,14 +54,14 @@
   // Zod schema for organization update form
   const updateSchema = z.object({
     idp_code: z.string().optional(),
-    display_name: z.string().min(5, { message: 'validation.tooShort' }),
+    display_name: z.string().min(5, { message: minMsg(5) }),
     website_url: z.string()
       .url({ message: 'validation.invalidUrl' })
-      .max(2048, { message: 'validation.tooLong' })
+      .max(2048, { message: maxMsg(2048) })
       .optional()
       .or(z.literal('')),
-    idp_owner: z.string().min(1).max(255),
-    idp_name: z.string().min(1).max(255),
+    idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
+    idp_name: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
   });
 
   type UpdateForm = z.infer<typeof updateSchema>;

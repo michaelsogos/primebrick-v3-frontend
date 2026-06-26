@@ -28,6 +28,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CopyButton } from '$lib/components/ui/copy-button';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
 
   const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -62,22 +63,22 @@
   // Zod schema for organization create form
   const createSchema = z.object({
     display_name: z.string()
-      .min(5, { message: 'validation.tooShort' })
+      .min(5, { message: minMsg(5) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
     website_url: z.string()
       .url({ message: 'validation.invalidUrl' })
-      .max(2048, { message: 'validation.tooLong' })
+      .max(2048, { message: maxMsg(2048) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
       .optional()
       .or(z.literal('')),
     idp_owner: z.string()
       .min(1, { message: 'validation.required' })
-      .max(255, { message: 'validation.tooLong' })
+      .max(255, { message: maxMsg(255) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
       .default('admin'),
     idp_name: z.string()
-      .min(5, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' })
+      .min(5, { message: minMsg(5) })
+      .max(255, { message: maxMsg(255) })
       .superRefine((value, ctx) => {
         if (!startsAndEndsWithAlphanumeric(value)) {
           ctx.addIssue({ code: 'custom', message: 'validation.invalidFormat' });

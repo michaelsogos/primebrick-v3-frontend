@@ -1,5 +1,6 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
+import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
 import { pushRFC7807Error } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
@@ -175,6 +176,10 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
   // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
+    // If this is a retry after session-expired login and it's STILL 401, don't re-enqueue
+    if ((nextInit as any)._sessionRetry) {
+      throw new Error('Session retry failed - still 401 after successful login');
+    }
     // Skip refresh for auth endpoints - user doesn't have tokens yet
     const url = requestUrlString(input);
     if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
@@ -184,11 +189,11 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
     // Check if we have a local session before attempting refresh
     if (!hasLocalSession()) {
-      // No local session - redirect to login without attempting refresh
-      console.error('[api] No local session, redirecting to login');
+      // No local session - open session-expired dialog instead of force-redirecting
+      console.error('[api] No local session, opening session-expired dialog');
       if (typeof window !== 'undefined') {
         saveRedirectUrl(window.location.pathname + window.location.search);
-        window.location.href = '/login';
+        return sessionExpiredStore.enqueue(input, nextInit);
       }
       throw new Error('No local session');
     }
@@ -201,13 +206,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
         // Retry the original request after successful refresh
         return await apiFetch(input, nextInit);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        console.error('[api] Token refresh failed, redirecting to login:', refreshError);
+        // Refresh failed, open session-expired dialog instead of force-redirecting
+        console.error('[api] Token refresh failed, opening session-expired dialog:', refreshError);
         if (typeof window !== 'undefined') {
-          // Clear corrupted session data before redirect
+          // Clear corrupted session data before showing dialog
           sessionStorage.removeItem('user');
           saveRedirectUrl(window.location.pathname + window.location.search);
-          window.location.href = '/login';
+          return sessionExpiredStore.enqueue(input, nextInit);
         }
         throw new Error('Token refresh failed');
       }

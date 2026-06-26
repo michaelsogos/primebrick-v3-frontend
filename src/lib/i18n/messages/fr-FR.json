@@ -26,6 +26,14 @@
       "author4": "Data Driven"
     }
   },
+  "auth": {
+    "sessionExpired": {
+      "title": "Session expirée",
+      "description": "Votre session a expiré. Veuillez vous connecter pour continuer.",
+      "failedAttempt": "Échec de la connexion. Veuillez réessayer ou aller à la page de connexion.",
+      "goToLogin": "Aller à la page de connexion"
+    }
+  },
   "common": {
     "loading": "Chargement…",
     "loadFailed": "Échec du chargement",
@@ -88,14 +96,19 @@
     "required": "Ce champ est obligatoire",
     "invalidUrl": "Format d'URL invalide",
     "invalidEmail": "Format d'e-mail non valide",
-    "tooShort": "Doit contenir au moins 5 caractères",
+    "tooShort": "Doit contenir au moins {min} caractères",
     "tooLong": "Ne doit pas dépasser {max} caractères",
     "invalid": "Valeur invalide",
     "nameTaken": "Ce nom est déjà utilisé",
     "invalidFormat": "Doit commencer et finir par une lettre ou un chiffre",
     "rolesRequired": "Au moins un rôle est requis",
     "orgRequired": "L'organisation est requise",
-    "passwordWeak": "Le mot de passe doit comporter 8 à 64 caractères avec majuscule, minuscule, chiffre et caractère spécial"
+    "passwordWeak": "Le mot de passe doit contenir: majuscule, minuscule, chiffre et caractère spécial (8-64 caractères)",
+    "passwordMinLength": "Au moins 8 caractères",
+    "passwordUppercase": "Au moins une lettre majuscule",
+    "passwordLowercase": "Au moins une lettre minuscule",
+    "passwordNumber": "Au moins un chiffre",
+    "passwordSpecial": "Au moins un caractère spécial"
   },
   "roles": {
     "administrators": "Administrateur",

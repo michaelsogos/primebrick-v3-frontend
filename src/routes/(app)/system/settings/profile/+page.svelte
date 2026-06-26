@@ -69,7 +69,7 @@
 
       try {
         // Exclude immutable IDP fields from PATCH request
-        const { idp_code, idp_org, idp_username, is_admin, is_verified, email_verified, issuer, ...requestData } =
+        const { idp_code, idp_org, idp_username, is_admin, is_verified, email_verified, issuer, roles, ...requestData } =
           updateForm.data;
         const response = await apiFetch("/api/v1/auth/me", {
           method: "PATCH",

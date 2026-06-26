@@ -26,6 +26,14 @@
       "author4": "Data Driven"
     }
   },
+  "auth": {
+    "sessionExpired": {
+      "title": "Sesión expirada",
+      "description": "Su sesión ha expirado. Inicie sesión para continuar.",
+      "failedAttempt": "Error de inicio de sesión. Inténtelo de nuevo o vaya a la página de inicio de sesión.",
+      "goToLogin": "Ir a la página de inicio de sesión"
+    }
+  },
   "common": {
     "loading": "Cargando…",
     "loadFailed": "Error al cargar",
@@ -88,14 +96,19 @@
     "required": "Este campo es obligatorio",
     "invalidUrl": "Formato de URL inválido",
     "invalidEmail": "Formato de email no válido",
-    "tooShort": "Debe tener al menos 5 caracteres",
+    "tooShort": "Debe tener al menos {min} caracteres",
     "tooLong": "Debe tener como máximo {max} caracteres",
     "invalid": "Valor inválido",
     "nameTaken": "Este nombre ya está en uso",
     "invalidFormat": "Debe comenzar y terminar con una letra o un número",
     "rolesRequired": "Al menos un rol es obligatorio",
     "orgRequired": "La organización es obligatoria",
-    "passwordWeak": "La contraseña debe tener 8-64 caracteres con mayúscula, minúscula, dígito y carácter especial"
+    "passwordWeak": "La contraseña debe contener: mayúscula, minúscula, número y carácter especial (8-64 caracteres)",
+    "passwordMinLength": "Al menos 8 caracteres",
+    "passwordUppercase": "Al menos una letra mayúscula",
+    "passwordLowercase": "Al menos una letra minúscula",
+    "passwordNumber": "Al menos un número",
+    "passwordSpecial": "Al menos un carácter especial"
   },
   "roles": {
     "administrators": "Administrador",

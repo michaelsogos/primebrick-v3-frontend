@@ -23,6 +23,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+  import ImageOff from '@lucide/svelte/icons/image-off';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
@@ -33,13 +34,16 @@
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import * as Password from '$lib/components/ui/password';
+  import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
-  let availableRoles: { idp_role: string; label_key?: string }[] = $state([]);
+  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[] }[] = $state([]);
 
   // Organization dropdown — fetched from API (Section 10)
   let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
@@ -92,7 +96,7 @@
         const res = await apiFetch('/api/v1/system/roles/active');
         if (res.ok) {
           const data = await res.json();
-          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string }[];
+          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[] }[];
         }
       } catch (e) {
         console.error('Failed to load roles', e);
@@ -113,6 +117,11 @@
       }
     })();
 
+    // Clear tainting and errors caused by component initialization (ComboSelect setting initial value).
+    // Without this, roles is pre-tainted and shows errors when other fields are blurred with validationMethod: 'onblur'.
+    tainted.set(undefined);
+    errors.set({});
+
     return () => {
       syncChannel?.close();
       syncChannel = null;
@@ -131,23 +140,23 @@
   // Zod schema for user create form
   const createSchema = z.object({
     idpUsername: z.string()
-      .min(3, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' })
+      .min(3, { message: minMsg(3) })
+      .max(255, { message: maxMsg(255) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
     password: z.string()
-      .min(8, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' }),
+      .min(8, { message: minMsg(8) })
+      .max(255, { message: maxMsg(255) }),
     display_name: z.string()
-      .min(2, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' }),
+      .min(3, { message: minMsg(3) })
+      .max(255, { message: maxMsg(255) }),
     email: z.string()
       .email({ message: 'validation.invalidEmail' })
-      .max(320, { message: 'validation.tooLong' })
+      .max(320, { message: maxMsg(320) })
       .optional()
       .or(z.literal('')),
     roles: z.array(z.string()).min(1, { message: 'validation.rolesRequired' }).default([]),
     avatar_color: z.string()
-      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'validation.invalidFormat' })
       .optional()
       .or(z.literal(''))
       .default(getInitialAvatarColor()),
@@ -165,7 +174,7 @@
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
     validators: zod4(createSchema),
-    validationMethod: 'oninput',
+    validationMethod: 'onblur',
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
@@ -367,8 +376,8 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
-          { label: $t('shell.settings.tabs.users'), href: '/system/settings/users' },
           { label: $t('shell.settings.users.create.title') }
         ]}
       />
@@ -501,9 +510,11 @@
                     >
                       {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                         {@const role = option as Record<string, any>}
-                        <div class="flex flex-col">
-                          <span class="font-medium">{resolvedLabel}</span>
-                          <span class="italic text-muted-foreground">{role.idp_role}</span>
+                        <div class="flex flex-col min-w-0 flex-1">
+                          <span class="font-medium truncate">{resolvedLabel}</span>
+                          {#if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
+                            <span class="italic text-muted-foreground text-xs truncate">{role.permissions.join(', ')}</span>
+                          {/if}
                         </div>
                       {/snippet}
                     </ComboSelect>
@@ -533,9 +544,19 @@
                       searchPlaceholder={$t('shell.settings.users.create.idpOrgSearch')}
                     >
                       {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                        <div class="flex flex-col">
-                          <span class="font-medium">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground">{(option as Record<string, any>).idp_name}</span>
+                        {@const org = option as Record<string, any>}
+                        <Avatar class="size-10 rounded-none shrink-0">
+                          {#if org.avatar}
+                            <img src={org.avatar} alt={org.display_name} class="size-10 rounded-none object-cover" />
+                          {:else}
+                            <AvatarFallback class="rounded-none flex items-center justify-center">
+                              <ImageOff class="size-4 text-muted-foreground" />
+                            </AvatarFallback>
+                          {/if}
+                        </Avatar>
+                        <div class="flex flex-col min-w-0 flex-1">
+                          <span class="font-medium truncate">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate">{org.idp_name}</span>
                         </div>
                       {/snippet}
                     </ComboSelect>
@@ -583,13 +604,18 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
-                    <Input
-                      {...props}
-                      type="password"
-                      bind:value={$form.password}
-                      placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
-                    />
+                    <Password.Root>
+                      <Password.Input
+                        {...props}
+                        bind:value={$form.password}
+                        placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
+                        autocomplete="new-password"
+                      >
+                        <Password.ToggleVisibility />
+                      </Password.Input>
+                    </Password.Root>
                     <TranslatedFormFieldErrors />
+                    <PasswordChecklist password={$form.password} />
                   </div>
                 {/snippet}
               </FormControl>

@@ -26,6 +26,14 @@
       "author4": "Data Driven"
     }
   },
+  "auth": {
+    "sessionExpired": {
+      "title": "Sessione scaduta",
+      "description": "La sessione è scaduta. Accedi di nuovo per continuare.",
+      "failedAttempt": "Login fallito. Riprova o vai alla pagina di login.",
+      "goToLogin": "Vai alla pagina di login"
+    }
+  },
   "common": {
     "loading": "Caricamento…",
     "loadFailed": "Caricamento fallito",
@@ -88,14 +96,19 @@
     "required": "Questo campo è obbligatorio",
     "invalidUrl": "Formato URL non valido",
     "invalidEmail": "Formato email non valido",
-    "tooShort": "Deve essere di almeno 5 caratteri",
+    "tooShort": "Deve essere di almeno {min} caratteri",
     "tooLong": "Deve essere di al massimo {max} caratteri",
     "invalid": "Valore non valido",
     "nameTaken": "Questo nome è già in uso",
     "invalidFormat": "Deve iniziare e finire con una lettera o un numero",
     "rolesRequired": "Almeno un ruolo applicativo è obbligatorio",
     "orgRequired": "L'organizzazione è obbligatoria",
-    "passwordWeak": "La password deve essere 8-64 caratteri con maiuscola, minuscola, cifra e carattere speciale"
+    "passwordWeak": "La password deve contenere: maiuscola, minuscola, numero e carattere speciale (8-64 caratteri)",
+    "passwordMinLength": "Almeno 8 caratteri",
+    "passwordUppercase": "Almeno una lettera maiuscola",
+    "passwordLowercase": "Almeno una lettera minuscola",
+    "passwordNumber": "Almeno un numero",
+    "passwordSpecial": "Almeno un carattere speciale"
   },
   "roles": {
     "administrators": "Amministratore",

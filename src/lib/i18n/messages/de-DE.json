@@ -26,6 +26,14 @@
       "author4": "Data Driven"
     }
   },
+  "auth": {
+    "sessionExpired": {
+      "title": "Sitzung abgelaufen",
+      "description": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich an, um fortzufahren.",
+      "failedAttempt": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut oder gehen Sie zur Anmeldeseite.",
+      "goToLogin": "Zur Anmeldeseite gehen"
+    }
+  },
   "common": {
     "loading": "Laden…",
     "loadFailed": "Laden fehlgeschlagen",
@@ -88,14 +96,19 @@
     "required": "Dieses Feld ist erforderlich",
     "invalidUrl": "Ungültiges URL-Format",
     "invalidEmail": "Ungültiges E-Mail-Format",
-    "tooShort": "Muss mindestens 5 Zeichen lang sein",
+    "tooShort": "Muss mindestens {min} Zeichen lang sein",
     "tooLong": "Darf maximal {max} Zeichen lang sein",
     "invalid": "Ungültiger Wert",
     "nameTaken": "Dieser Name ist bereits vergeben",
     "invalidFormat": "Muss mit einem Buchstaben oder einer Zahl beginnen und enden",
     "rolesRequired": "Mindestens eine Rolle ist erforderlich",
     "orgRequired": "Organisation ist erforderlich",
-    "passwordWeak": "Passwort muss 8-64 Zeichen mit Großbuchstabe, Kleinbuchstabe, Ziffer und Sonderzeichen enthalten"
+    "passwordWeak": "Passwort muss enthalten: Großbuchstabe, Kleinbuchstabe, Ziffer und Sonderzeichen (8-64 Zeichen)",
+    "passwordMinLength": "Mindestens 8 Zeichen",
+    "passwordUppercase": "Mindestens ein Großbuchstabe",
+    "passwordLowercase": "Mindestens ein Kleinbuchstabe",
+    "passwordNumber": "Mindestens eine Ziffer",
+    "passwordSpecial": "Mindestens ein Sonderzeichen"
   },
   "roles": {
     "administrators": "Administrator",

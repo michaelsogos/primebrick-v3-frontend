@@ -26,6 +26,14 @@
       "author4": "Data Driven"
     }
   },
+  "auth": {
+    "sessionExpired": {
+      "title": "Session Expired",
+      "description": "Your session has expired. Please log in to continue.",
+      "failedAttempt": "Login failed. Please try again or go to the login page.",
+      "goToLogin": "Go to login page"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "loadFailed": "Load failed",
@@ -88,14 +96,19 @@
     "required": "This field is required",
     "invalidUrl": "Invalid URL format",
     "invalidEmail": "Invalid email format",
-    "tooShort": "Must be at least 5 characters",
+    "tooShort": "Must be at least {min} characters",
     "tooLong": "Must be at most {max} characters",
     "invalid": "Invalid value",
     "nameTaken": "This name is already taken",
     "invalidFormat": "Must start and end with a letter or number",
     "rolesRequired": "At least one role is required",
     "orgRequired": "Organization is required",
-    "passwordWeak": "Password must be 8-64 chars with uppercase, lowercase, digit and special char"
+    "passwordWeak": "Password must contain: uppercase, lowercase, number, and special character (8-64 chars)",
+    "passwordMinLength": "At least 8 characters",
+    "passwordUppercase": "At least one uppercase letter",
+    "passwordLowercase": "At least one lowercase letter",
+    "passwordNumber": "At least one number",
+    "passwordSpecial": "At least one special character"
   },
   "roles": {
     "administrators": "Administrator",

@@ -285,7 +285,7 @@
       </div>
     {/snippet}
   </Popover.Trigger>
-  <Popover.Content class="w-full p-0">
+  <Popover.Content align="start" class="w-(--bits-popover-anchor-width) min-w-56 p-0">
     <Command.Root shouldFilter={searchable}>
       {#if searchable}
         <Command.Input
