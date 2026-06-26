@@ -79,6 +79,7 @@
     rowActionsEnabled = false,
     rowActions,
     entityRowActions,
+    customActionHandlers,
     onCreateAction,
     onEditAction,
     filtersOpen = $bindable(false),
@@ -429,6 +430,7 @@
     },
     closeRowDropdown: closeRowDropdown,
     t: $t,
+    customActionHandlers,
     dialogs: {
       openDeleteDialog: dialogs.openDeleteDialog,
       closeDeleteDialog: dialogs.closeDeleteDialog,

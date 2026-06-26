@@ -26,6 +26,7 @@
   import Eye from '@lucide/svelte/icons/eye'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import type { CellArgs } from '../types';
 
   type TableRowCellArgs = CellArgs<TRow>;
@@ -62,6 +63,7 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
+    handleCustomAction,
     stickyCellClass,
     isRowDeleted
   }: {
@@ -90,6 +92,13 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
+      customActions?: Array<{
+        actionName: string;
+        translationKey: string;
+        icon: string;
+        textColor?: string;
+        disabledWhenDeleted?: boolean;
+      }>;
     };
     dropdownMenuRow: TRow | null;
     previewPanel: {
@@ -106,6 +115,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
+    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
     isRowDeleted: (row: TRow) => boolean;
   } = $props();
@@ -285,6 +295,20 @@
                     <span>{$t('entities.list.preview')}</span>
                   </div>
                 </DropdownMenu.Item>
+              {/if}
+              {#if entityRowActions?.customActions && handleCustomAction}
+                {#each entityRowActions.customActions as action}
+                  {@const isDisabled = action.disabledWhenDeleted && isRowDeleted(row)}
+                  <DropdownMenu.Item
+                    onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}
+                    class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.textColor ?? '')}
+                  >
+                    <div class="flex items-center gap-2">
+                      <DynamicIcon name={action.icon} size={16} class="opacity-70" />
+                      <span>{$t(action.translationKey)}</span>
+                    </div>
+                  </DropdownMenu.Item>
+                {/each}
               {/if}
               {#if entityRowActions?.delete !== false}
                 <DropdownMenu.Separator />

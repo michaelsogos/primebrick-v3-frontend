@@ -428,7 +428,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        >{$t("shell.settings.profile.displayName")}</FormLabel
+                        required>{$t("shell.settings.profile.displayName")}</FormLabel
                       >
                       <Input
                         type="text"
@@ -450,7 +450,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        >{$t("shell.settings.profile.email")}</FormLabel
+                        required>{$t("shell.settings.profile.email")}</FormLabel
                       >
                       <Input
                         type="email"

@@ -25,6 +25,7 @@
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { cn } from '$lib/utils';
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import * as ColorPicker from '$lib/components/ui/color-picker';
@@ -38,7 +39,7 @@
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
-  let availableRoles: string[] = $state([]);
+  let availableRoles: { idp_role: string; label_key?: string }[] = $state([]);
 
   // Organization dropdown — fetched from API (Section 10)
   let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
@@ -91,7 +92,7 @@
         const res = await apiFetch('/api/v1/system/roles/active');
         if (res.ok) {
           const data = await res.json();
-          availableRoles = (data.roles ?? []).map((r: any) => r.idp_role);
+          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string }[];
         }
       } catch (e) {
         console.error('Failed to load roles', e);
@@ -366,7 +367,8 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
+          { label: $t('shell.settings.tabs.users'), href: '/system/settings/users' },
           { label: $t('shell.settings.users.create.title') }
         ]}
       />
@@ -447,7 +449,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.displayName')} <span class="text-destructive">*</span></FormLabel>
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.displayName')}</FormLabel>
                     <Input
                       {...props}
                       bind:value={$form.display_name}
@@ -480,14 +482,31 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.roles')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.roles')}</FormLabel>
                     <ComboSelect
                       {...props}
                       mode="multi"
                       bind:value={$form.roles}
-                      options={availableRoles.length > 0 ? availableRoles : ['administrators', 'sales', 'customer_service', 'hr', 'ops']}
+                      options={availableRoles.length > 0 ? availableRoles : [
+                        { idp_role: 'administrators' },
+                        { idp_role: 'sales' },
+                        { idp_role: 'customer_service' },
+                        { idp_role: 'hr' },
+                        { idp_role: 'ops' },
+                      ]}
+                      valueField="idp_role"
+                      labelField="label_key"
+                      isLabelTranslated={true}
                       placeholder={$t('shell.settings.users.create.rolesPlaceholder')}
-                    />
+                    >
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                        {@const role = option as Record<string, any>}
+                        <div class="flex flex-col">
+                          <span class="font-medium">{resolvedLabel}</span>
+                          <span class="italic text-muted-foreground">{role.idp_role}</span>
+                        </div>
+                      {/snippet}
+                    </ComboSelect>
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -501,7 +520,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpOrg')} <span class="text-destructive">*</span></FormLabel>
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
                     <ComboSelect
                       mode="single"
                       bind:value={$form.idp_org}
@@ -513,10 +532,10 @@
                       onChange={onOrgChange}
                       searchPlaceholder={$t('shell.settings.users.create.idpOrgSearch')}
                     >
-                      {#snippet item({ option, resolvedLabel }: { option: Record<string, any>; resolvedLabel: string })}
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                         <div class="flex flex-col">
                           <span class="font-medium">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground">{option.idp_name}</span>
+                          <span class="text-xs text-muted-foreground">{(option as Record<string, any>).idp_name}</span>
                         </div>
                       {/snippet}
                     </ComboSelect>
@@ -531,7 +550,7 @@
                 {#snippet children({ props })}
                   {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
                     <AsyncValidatedInput
                       {...props}
                       bind:value={$form.idpUsername}
@@ -563,7 +582,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
                     <Input
                       {...props}
                       type="password"

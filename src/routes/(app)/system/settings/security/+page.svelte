@@ -155,14 +155,14 @@
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           {#if auditInfo.version && hasAudit}
             <Badge
-              class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20"
+              class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
               variant="outline"
               onclick={openVersionHistory}
             >
               v{auditInfo.version}
             </Badge>
           {:else if auditInfo.version}
-            <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400" variant="outline">
+            <Badge class="text-xs font-semibold border border-primary" variant="outline">
               v{auditInfo.version}
             </Badge>
           {/if}

@@ -97,7 +97,7 @@
           </Button>
         {/snippet}
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
+      <DropdownMenu.Content align="start">
         {#each pageSizeOptions as opt (opt)}
           <DropdownMenu.Item
             class={dropdownMenuSelectedItemClass(opt === pageSize)}

@@ -58,9 +58,9 @@
 <div class="flex h-full flex-col">
   <SheetHeader title={headerTitle} actions={headerActions} />
 
-  <div class="min-h-0 flex-1 overflow-auto">
+  <div class="min-h-0 flex-1 overflow-auto pb-4">
     <!-- Primo blocco: Shell, Backend, moduli -->
-    <div class="px-2 space-y-3">
+    <div class="px-4 py-3 space-y-3">
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
         <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -120,7 +120,7 @@
     </div>
 
     <!-- Terzo blocco: Browser info -->
-    <div class="px-2">
+    <div class="px-4 py-3">
       <BrowserClientInfo />
     </div>
   </div>

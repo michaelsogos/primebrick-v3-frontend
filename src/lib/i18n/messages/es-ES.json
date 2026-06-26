@@ -59,6 +59,7 @@
     "clearSelection": "Borrar selección",
     "delete": "Eliminar",
     "deleting": "Eliminando…",
+    "saving": "Guardando…",
     "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar este registro?",
     "deleteConfirm": "Esta acción no se puede deshacer.",
     "restore": "Restaurar",
@@ -93,7 +94,15 @@
     "nameTaken": "Este nombre ya está en uso",
     "invalidFormat": "Debe comenzar y terminar con una letra o un número",
     "rolesRequired": "Al menos un rol es obligatorio",
-    "orgRequired": "La organización es obligatoria"
+    "orgRequired": "La organización es obligatoria",
+    "passwordWeak": "La contraseña debe tener 8-64 caracteres con mayúscula, minúscula, dígito y carácter especial"
+  },
+  "roles": {
+    "administrators": "Administrador",
+    "sales": "Ventas",
+    "customer_service": "Servicio al Cliente",
+    "hr": "Recursos Humanos",
+    "ops": "Operaciones"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -232,6 +241,16 @@
         }
       },
       "users": {
+        "changePassword": "Cambiar contraseña",
+        "changePasswordTitle": "Cambiar contraseña",
+        "changePasswordDescription": "Establezca una nueva contraseña para este usuario. Tendrá que usar la nueva contraseña en el próximo inicio de sesión.",
+        "changePasswordNew": "Nueva contraseña",
+        "changePasswordNewPlaceholder": "Introduzca la nueva contraseña",
+        "changePasswordConfirm": "Confirmar contraseña",
+        "changePasswordConfirmPlaceholder": "Vuelva a introducir la contraseña",
+        "changePasswordMismatch": "Las contraseñas no coinciden",
+        "changePasswordSuccess": "Contraseña cambiada con éxito",
+        "changePasswordFailed": "Error al cambiar la contraseña",
         "create": {
           "title": "Crear Usuario",
           "username": "Nombre de usuario",
@@ -385,6 +404,20 @@
     }
   }
   ,
+  "errors": {
+    "scope": {
+      "customersPageInit": "Inicialización página clientes",
+      "customersList": "Lista clientes",
+      "bulkDeleteApi": "API eliminación masiva",
+      "duplicateAction": "Acción duplicar",
+      "duplicateApi": "API duplicar",
+      "customerListApi": "API lista clientes"
+    },
+    "notImplemented": {
+      "title": "No implementado",
+      "detail": "La acción '{action}' aún no está disponible."
+    }
+  },
   "entities": {
     "versionHistory": {
       "title": "Historial de Versiones",

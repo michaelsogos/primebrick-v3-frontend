@@ -58,7 +58,7 @@
               {@const isActive = currentTab === tab.id}
               <a
                 href={tab.href}
-                class="flex items-center gap-2 justify-start w-full px-4 py-2 rounded-md hover:bg-background/50 text-sm {isActive ? 'bg-background font-medium border border-sky-200/80 dark:border-sky-900/55 text-primary' : 'border border-transparent'}"
+                class="flex items-center gap-2 justify-start w-full px-4 py-2 rounded-md hover:bg-background/50 text-sm {isActive ? 'bg-background font-medium border border-input text-primary' : 'border border-transparent'}"
               >
                 <Icon class="size-4" />
                 <span>{tab.label}</span>

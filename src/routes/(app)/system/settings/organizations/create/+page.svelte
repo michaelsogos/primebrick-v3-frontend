@@ -273,12 +273,13 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
-          })
+          }),
+          { label: $t('shell.settings.tabs.organizations'), href: '/system/settings/organizations' },
+          { label: $t('shell.settings.organizations.create.title') }
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.organizations.create.title')}</h1>

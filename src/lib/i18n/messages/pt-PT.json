@@ -59,6 +59,7 @@
     "clearSelection": "Limpar seleção",
     "delete": "Eliminar",
     "deleting": "A eliminar…",
+    "saving": "A guardar…",
     "deleteConfirmTitle": "Tem certeza de que deseja eliminar este registo?",
     "deleteConfirm": "Esta ação não pode ser desfeita.",
     "restore": "Restaurar",
@@ -93,7 +94,15 @@
     "nameTaken": "Este nome já está em uso",
     "invalidFormat": "Deve começar e terminar com uma letra ou um número",
     "rolesRequired": "Pelo menos um papel é obrigatório",
-    "orgRequired": "A organização é obrigatória"
+    "orgRequired": "A organização é obrigatória",
+    "passwordWeak": "A palavra-passe deve ter 8-64 caracteres com maiúscula, minúscula, dígito e carácter especial"
+  },
+  "roles": {
+    "administrators": "Administrador",
+    "sales": "Vendas",
+    "customer_service": "Atendimento ao Cliente",
+    "hr": "Recursos Humanos",
+    "ops": "Operações"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -232,6 +241,16 @@
         }
       },
       "users": {
+        "changePassword": "Alterar palavra-passe",
+        "changePasswordTitle": "Alterar palavra-passe",
+        "changePasswordDescription": "Defina uma nova palavra-passe para este utilizador. Terá de usar a nova palavra-passe no próximo início de sessão.",
+        "changePasswordNew": "Nova palavra-passe",
+        "changePasswordNewPlaceholder": "Introduza a nova palavra-passe",
+        "changePasswordConfirm": "Confirmar palavra-passe",
+        "changePasswordConfirmPlaceholder": "Introduza novamente a palavra-passe",
+        "changePasswordMismatch": "As palavras-passe não coincidem",
+        "changePasswordSuccess": "Palavra-passe alterada com sucesso",
+        "changePasswordFailed": "Falha ao alterar a palavra-passe",
         "create": {
           "title": "Criar Utilizador",
           "username": "Nome de utilizador",
@@ -393,6 +412,10 @@
       "duplicateAction": "Ação duplicar",
       "duplicateApi": "API duplicar",
       "customerListApi": "API lista clientes"
+    },
+    "notImplemented": {
+      "title": "Não implementado",
+      "detail": "A ação '{action}' ainda não está disponível."
     }
   },
   "entities": {

@@ -80,7 +80,15 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
     delete?: boolean;
     edit?: boolean;
     preview?: boolean;
+    customActions?: Array<{
+      actionName: string;
+      translationKey: string;
+      icon: string;
+      textColor?: string;
+      disabledWhenDeleted?: boolean;
+    }>;
   };
+  customActionHandlers?: Record<string, (row: TRow) => void>;
   onCreateAction?: () => void;
   onEditAction?: (row: TRow) => void;
   filtersOpen?: boolean;

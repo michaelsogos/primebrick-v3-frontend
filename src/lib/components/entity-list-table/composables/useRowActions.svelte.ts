@@ -17,6 +17,7 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
+  customActionHandlers?: Record<string, (row: TRow) => void>;
   dialogs?: {
     openDeleteDialog: () => void;
     closeDeleteDialog: () => void;
@@ -47,6 +48,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     onPreviewRow,
     closeRowDropdown,
     dialogs,
+    customActionHandlers,
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
@@ -272,6 +274,26 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     });
   }
 
+  function handleCustomAction(action: { actionName: string; translationKey: string }, row: TRow) {
+    const handler = customActionHandlers?.[action.actionName];
+    if (handler) {
+      handler(row);
+    } else {
+      // No handler registered for this action — show a "not implemented"
+      // toast so the user sees the action exists but isn't wired yet.
+      pushRFC7807Error({
+        type: '/errors/not-implemented',
+        title: tFn('errors.notImplemented.title'),
+        status: 501,
+        detail: tFn('errors.notImplemented.detail', { action: action.actionName }),
+        instance: `customAction:${action.actionName}`,
+        internal_code: 'CUSTOM_ACTION_NO_HANDLER',
+        severity: 'LOW',
+      });
+    }
+    closeRowDropdown?.();
+  }
+
   // Keep original function names for backward compatibility, but they now call the impl versions
   async function confirmDeleteRow(row: DeepReadonly<TRow>) {
     await confirmDeleteRowImpl(row as TRow);
@@ -299,6 +321,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     confirmRestoreRowWrapper,
     confirmDuplicateWrapper,
     cancelDuplicate,
-    loadVersionHistory
+    loadVersionHistory,
+    handleCustomAction
   };
 }

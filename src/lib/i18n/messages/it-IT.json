@@ -59,6 +59,7 @@
     "clearSelection": "Cancella selezione",
     "delete": "Elimina",
     "deleting": "Eliminazione in corso…",
+    "saving": "Salvataggio…",
     "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
     "deleteConfirm": "Questa azione non può essere annullata.",
     "restore": "Ripristina",
@@ -93,7 +94,15 @@
     "nameTaken": "Questo nome è già in uso",
     "invalidFormat": "Deve iniziare e finire con una lettera o un numero",
     "rolesRequired": "Almeno un ruolo applicativo è obbligatorio",
-    "orgRequired": "L'organizzazione è obbligatoria"
+    "orgRequired": "L'organizzazione è obbligatoria",
+    "passwordWeak": "La password deve essere 8-64 caratteri con maiuscola, minuscola, cifra e carattere speciale"
+  },
+  "roles": {
+    "administrators": "Amministratore",
+    "sales": "Vendite",
+    "customer_service": "Servizio Clienti",
+    "hr": "Risorse Umane",
+    "ops": "Operazioni"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -232,6 +241,16 @@
         }
       },
       "users": {
+        "changePassword": "Cambia Password",
+        "changePasswordTitle": "Cambia Password",
+        "changePasswordDescription": "Imposta una nuova password per questo utente. Dovrà utilizzare la nuova password al prossimo accesso.",
+        "changePasswordNew": "Nuova Password",
+        "changePasswordNewPlaceholder": "Inserisci nuova password",
+        "changePasswordConfirm": "Conferma Password",
+        "changePasswordConfirmPlaceholder": "Reinserisci nuova password",
+        "changePasswordMismatch": "Le password non coincidono",
+        "changePasswordSuccess": "Password cambiata con successo",
+        "changePasswordFailed": "Impossibile cambiare la password",
         "create": {
           "title": "Crea Utente",
           "username": "Nome utente",
@@ -397,6 +416,10 @@
       "duplicateAction": "Azione duplicazione",
       "duplicateApi": "API duplicazione",
       "customerListApi": "API lista clienti"
+    },
+    "notImplemented": {
+      "title": "Non implementato",
+      "detail": "L'azione '{action}' non è ancora disponibile."
     }
   },
   "impact": {

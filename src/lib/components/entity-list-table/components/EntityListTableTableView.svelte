@@ -205,6 +205,7 @@
         onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
         onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
         onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
+        handleCustomAction={rowActionsComposable.handleCustomAction}
         stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
       />
     {/snippet}

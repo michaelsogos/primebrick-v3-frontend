@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { EntityListTable } from '$lib/components/entity-list-table';
+  import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
   import { pushImpactError } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
@@ -53,6 +54,10 @@
   let rows = $state<UserProfileListRow[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  // Change password dialog state
+  let changePasswordOpen = $state(false);
+  let changePasswordRow = $state<UserProfileListRow | null>(null);
 
   let search = $state('');
   let appliedSearch = $state('');
@@ -575,6 +580,12 @@
     columns={columns}
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
+    customActionHandlers={{
+      changePassword: (row: UserProfileListRow) => {
+        changePasswordRow = row;
+        changePasswordOpen = true;
+      },
+    }}
     onCreateAction={openNewUser}
     onEditAction={openEditUser}
     defaultSort={meta?.list.defaultSort}
@@ -608,5 +619,11 @@
     {onResetFilters}
     {onDeletionFilterModeChange}
     onRefresh={() => void refreshRows()}
+  />
+
+  <ChangePasswordDialog
+    bind:open={changePasswordOpen}
+    row={changePasswordRow}
+    uid={meta?.uid ?? 'uuid'}
   />
 </div>

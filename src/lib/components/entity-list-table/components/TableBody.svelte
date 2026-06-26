@@ -51,6 +51,7 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
+    handleCustomAction,
     stickyCellClass
   }: {
     error: string | null;
@@ -104,6 +105,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
+    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
   } = $props();
 </script>
@@ -225,6 +227,7 @@
           onDuplicateRow,
           onDeleteRow,
           onRestoreRow,
+          handleCustomAction,
           stickyCellClass
         } as any)}
       />

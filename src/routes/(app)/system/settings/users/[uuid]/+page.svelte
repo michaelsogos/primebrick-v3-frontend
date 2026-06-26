@@ -39,7 +39,7 @@
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
 
-  let availableRoles: string[] = $state([]);
+  let availableRoles: { idp_role: string; label_key?: string }[] = $state([]);
 
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
@@ -51,7 +51,7 @@
         const res = await apiFetch('/api/v1/system/roles/active');
         if (res.ok) {
           const data = await res.json();
-          availableRoles = (data.roles ?? []).map((r: any) => r.idp_role);
+          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string }[];
         }
       } catch (e) {
         console.error('Failed to load roles', e);
@@ -329,7 +329,8 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
+          { label: $t('shell.settings.tabs.users'), href: '/system/settings/users' },
           { label: $t('shell.settings.users.update.title') }
         ]}
       />
@@ -415,7 +416,7 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.users.update.displayName')}</FormLabel>
+                      <FormLabel for={props.id} required>{$t('shell.settings.users.update.displayName')}</FormLabel>
                       <Input
                         {...props}
                         bind:value={$form.display_name}
@@ -448,14 +449,31 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.users.update.roles')}</FormLabel>
+                      <FormLabel for={props.id} required>{$t('shell.settings.users.update.roles')}</FormLabel>
                       <ComboSelect
                         {...props}
                         mode="multi"
                         bind:value={$form.roles}
-                        options={availableRoles.length > 0 ? availableRoles : ['administrators', 'sales', 'customer_service', 'hr', 'ops']}
+                        options={availableRoles.length > 0 ? availableRoles : [
+                          { idp_role: 'administrators' },
+                          { idp_role: 'sales' },
+                          { idp_role: 'customer_service' },
+                          { idp_role: 'hr' },
+                          { idp_role: 'ops' },
+                        ]}
+                        valueField="idp_role"
+                        labelField="label_key"
+                        isLabelTranslated={true}
                         placeholder={$t('shell.settings.users.update.rolesPlaceholder')}
-                      />
+                      >
+                        {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                          {@const role = option as Record<string, any>}
+                          <div class="flex flex-col">
+                            <span class="font-medium">{resolvedLabel}</span>
+                            <span class="italic text-muted-foreground">{role.idp_role}</span>
+                          </div>
+                        {/snippet}
+                      </ComboSelect>
                       <TranslatedFormFieldErrors />
                     </div>
                   {/snippet}

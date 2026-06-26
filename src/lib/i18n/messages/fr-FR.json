@@ -59,6 +59,7 @@
     "clearSelection": "Effacer la sélection",
     "delete": "Supprimer",
     "deleting": "Suppression…",
+    "saving": "Enregistrement…",
     "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
     "deleteConfirm": "Cette action ne peut pas être annulée.",
     "restore": "Restaurer",
@@ -93,7 +94,15 @@
     "nameTaken": "Ce nom est déjà utilisé",
     "invalidFormat": "Doit commencer et finir par une lettre ou un chiffre",
     "rolesRequired": "Au moins un rôle est requis",
-    "orgRequired": "L'organisation est requise"
+    "orgRequired": "L'organisation est requise",
+    "passwordWeak": "Le mot de passe doit comporter 8 à 64 caractères avec majuscule, minuscule, chiffre et caractère spécial"
+  },
+  "roles": {
+    "administrators": "Administrateur",
+    "sales": "Ventes",
+    "customer_service": "Service Client",
+    "hr": "Ressources Humaines",
+    "ops": "Opérations"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -232,6 +241,16 @@
         }
       },
       "users": {
+        "changePassword": "Changer le mot de passe",
+        "changePasswordTitle": "Changer le mot de passe",
+        "changePasswordDescription": "Définissez un nouveau mot de passe pour cet utilisateur. Il devra utiliser le nouveau mot de passe lors de la prochaine connexion.",
+        "changePasswordNew": "Nouveau mot de passe",
+        "changePasswordNewPlaceholder": "Entrez le nouveau mot de passe",
+        "changePasswordConfirm": "Confirmer le mot de passe",
+        "changePasswordConfirmPlaceholder": "Entrez à nouveau le mot de passe",
+        "changePasswordMismatch": "Les mots de passe ne correspondent pas",
+        "changePasswordSuccess": "Mot de passe modifié avec succès",
+        "changePasswordFailed": "Échec de la modification du mot de passe",
         "create": {
           "title": "Créer Utilisateur",
           "username": "Nom d'utilisateur",
@@ -382,6 +401,20 @@
       "osArch": "Architecture",
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"
+    }
+  },
+  "errors": {
+    "scope": {
+      "customersPageInit": "Initialisation page clients",
+      "customersList": "Liste clients",
+      "bulkDeleteApi": "API suppression en masse",
+      "duplicateAction": "Action dupliquer",
+      "duplicateApi": "API duplication",
+      "customerListApi": "API liste clients"
+    },
+    "notImplemented": {
+      "title": "Non implémenté",
+      "detail": "L'action '{action}' n'est pas encore disponible."
     }
   },
   "entities": {
