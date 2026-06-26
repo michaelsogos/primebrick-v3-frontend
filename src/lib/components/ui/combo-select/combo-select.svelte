@@ -32,6 +32,12 @@
       resolvedValue: string;
     }]>;
     isOptionDisabled?: (option: string | Record<string, any>) => boolean;
+    /**
+     * Extra search terms for an option, used both by ComboSelect's own filter
+     * and passed to bits-ui's `Command.Item` `keywords` prop to boost scoring.
+     * Lets users search by fields not present in `value`/`label` (e.g. permissions, badges).
+     */
+    getSearchKeywords?: (option: string | Record<string, any>) => string[];
     selectedSnippet?: Snippet<[{
       option: string | Record<string, any>;
       resolvedLabel: string;
@@ -60,6 +66,7 @@
     searchPlaceholder = "Search...",
     itemSnippet,
     isOptionDisabled,
+    getSearchKeywords,
     selectedSnippet,
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
@@ -184,10 +191,12 @@
   let filteredOptions = $derived.by<NormalizedOption[]>(() => {
     if (!search) return normalizedOptions;
     const lowerSearch = search.toLowerCase();
-    return normalizedOptions.filter((opt) =>
-      opt.label.toLowerCase().includes(lowerSearch) ||
-      opt.value.toLowerCase().includes(lowerSearch)
-    );
+    return normalizedOptions.filter((opt) => {
+      if (opt.label.toLowerCase().includes(lowerSearch)) return true;
+      if (opt.value.toLowerCase().includes(lowerSearch)) return true;
+      const kws = getSearchKeywords?.(opt.raw) ?? [];
+      return kws.some((k) => k.toLowerCase().includes(lowerSearch));
+    });
   });
 </script>
 
@@ -300,11 +309,19 @@
           <Command.Empty>No results found.</Command.Empty>
         {:else}
           {#each filteredOptions as opt (opt.value)}
+            {@const isDisabled = isOptionDisabled ? isOptionDisabled(opt.raw) : false}
             <Command.Item
               value={opt.value}
-              disabled={isOptionDisabled ? isOptionDisabled(opt.raw) : false}
+              keywords={getSearchKeywords ? getSearchKeywords(opt.raw) : undefined}
+              disabled={isDisabled}
+              class={cn(
+                "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
+                "data-highlighted:bg-muted data-highlighted:text-foreground",
+                "data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-60 data-disabled:text-muted-foreground data-disabled:data-highlighted:bg-transparent",
+                "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              )}
               onSelect={() => {
-                if (isOptionDisabled && isOptionDisabled(opt.raw)) return;
+                if (isDisabled) return;
                 if (mode === "single") {
                   handleSelectSingle(opt);
                 } else {
@@ -315,8 +332,8 @@
               <div class="flex items-center gap-2 w-full">
                 {#if mode === "multi"}
                   <div class={cn(
-                    "h-4 w-4 rounded border shrink-0 flex items-center justify-center",
-                    selectedValues.includes(opt.value) ? "bg-primary border-primary" : "border-input"
+                    "combo-select-checkbox h-4 w-4 rounded border shrink-0 flex items-center justify-center",
+                    selectedValues.includes(opt.value) ? "bg-primary border-primary" : "border-input",
                   )}>
                     {#if selectedValues.includes(opt.value)}
                       <Check class="h-3 w-3 text-primary-foreground" />

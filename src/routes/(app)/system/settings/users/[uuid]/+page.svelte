@@ -477,6 +477,16 @@
                           const role = opt as Record<string, any>;
                           return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
                         }}
+                        getSearchKeywords={(opt) => {
+                          const role = opt as Record<string, any>;
+                          const kws: string[] = [];
+                          if (role.is_admin) kws.push($t('roles.systemAdministrator'));
+                          if (Array.isArray(role.permissions)) kws.push(...role.permissions);
+                          if (!role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0)) {
+                            kws.push($t('roles.notValidRole'));
+                          }
+                          return kws;
+                        }}
                       >
                         {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                           {@const role = option as Record<string, any>}
