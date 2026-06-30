@@ -8,6 +8,7 @@
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Check from "@lucide/svelte/icons/check";
   import type { Snippet } from "svelte";
+  import { inputTrailingIconColorClasses } from "$lib/components/ui/input/input-chrome.js";
 
   type ComboSelectMode = "single" | "multi";
 
@@ -131,15 +132,12 @@
   });
 
   // --- Selection state ---
-
-  let internalValue = $state<string | string[]>(value);
-
-  $effect(() => {
-    internalValue = value;
-  });
+  // `value` (bindable) is the single source of truth. No duplicate state, no sync
+  // effect — a previous internalValue + sync $effect caused effect_update_depth_exceeded
+  // for array (multi) values, because two distinct proxies are never ===, so the
+  // effect wrote internalValue = value on every run and never converged.
 
   function syncChange(v: string | string[]) {
-    internalValue = v;
     value = v;
     onChange?.(v);
   }
@@ -148,7 +146,7 @@
 
   let selectedNormalized = $derived.by<NormalizedOption | null>(() => {
     if (mode !== "single") return null;
-    const v = internalValue as string;
+    const v = value as string;
     return normalizedOptions.find((o) => o.value === v) ?? null;
   });
 
@@ -166,7 +164,7 @@
 
   let selectedValues = $derived.by<string[]>(() => {
     if (mode !== "multi") return [];
-    return Array.isArray(internalValue) ? internalValue : [];
+    return Array.isArray(value) ? value : [];
   });
 
   function handleToggleMulti(opt: NormalizedOption) {
@@ -265,11 +263,11 @@
           {/if}
         {/if}
         <div class="ml-auto flex items-center gap-1 shrink-0">
-          {#if mode === "single" && internalValue && !disabled}
+          {#if mode === "single" && value && !disabled}
             <button
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearSingle(); }}
-              class="inline-flex items-center justify-center rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+              class={inputTrailingIconColorClasses}
               aria-label={$t("common.clearSelection")}
               title={$t("common.clearSelection")}
             >
@@ -280,7 +278,7 @@
             <button
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearMulti(); }}
-              class="inline-flex items-center justify-center rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+              class={inputTrailingIconColorClasses}
               aria-label={$t("common.clearSelection")}
               title={$t("common.clearSelection")}
             >
@@ -343,7 +341,7 @@
                 {#if itemSnippet}
                   {@render itemSnippet({
                     option: opt.raw,
-                    selected: mode === "multi" ? selectedValues.includes(opt.value) : (internalValue as string) === opt.value,
+                    selected: mode === "multi" ? selectedValues.includes(opt.value) : (value as string) === opt.value,
                     resolvedLabel: opt.label,
                     resolvedValue: opt.value,
                   })}

@@ -137,13 +137,18 @@ class PasswordInputState {
 		});
 	}
 
-	props = $derived.by(() => ({
-		'aria-invalid':
+	props = $derived.by((): Record<string, unknown> => {
+		const strengthInvalid =
 			!this.root.strengthLoading &&
 			(this.root.strength?.score ?? 0) < this.root.opts.minScore.current &&
 			this.root.passwordState.tainted &&
-			this.root.passwordState.strengthMounted
-	}));
+			this.root.passwordState.strengthMounted;
+
+		// Only emit aria-invalid when the strength check fails.
+		// When it doesn't (e.g. no Password.Strength mounted), omit the key
+		// so mergeProps preserves the caller's aria-invalid (from superforms/zod).
+		return strengthInvalid ? { 'aria-invalid': true } : {};
+	});
 }
 
 class PasswordToggleVisibilityState {

@@ -2,16 +2,57 @@
   import { t } from '$lib/i18n';
   import CircleCheckBig from '@lucide/svelte/icons/circle-check-big';
   import Circle from '@lucide/svelte/icons/circle';
+  import { PasswordChecklistRule } from '$lib/types/password-policy';
 
-  let { password }: { password: string } = $props();
+  let {
+    password,
+    rules,
+    specialChars = '*-_.#@!|?^:',
+  }: {
+    password: string;
+    rules: PasswordChecklistRule[];
+    specialChars?: string;
+  } = $props();
 
-  const checks = $derived([
-    { key: 'length', label: $t('validation.passwordMinLength'), valid: password.length >= 8 },
-    { key: 'uppercase', label: $t('validation.passwordUppercase'), valid: /[A-Z]/.test(password) },
-    { key: 'lowercase', label: $t('validation.passwordLowercase'), valid: /[a-z]/.test(password) },
-    { key: 'number', label: $t('validation.passwordNumber'), valid: /\d/.test(password) },
-    { key: 'special', label: $t('validation.passwordSpecial'), valid: /[^A-Za-z0-9]/.test(password) },
-  ]);
+  // Per-rule check functions and i18n label keys
+  const ruleChecks: Record<PasswordChecklistRule, { labelKey: string; test: (pw: string) => boolean }> = {
+    [PasswordChecklistRule.LENGTH]: {
+      labelKey: 'validation.passwordMinLength',
+      test: (pw) => pw.length >= 8,
+    },
+    [PasswordChecklistRule.LETTER]: {
+      labelKey: 'validation.passwordLetter',
+      test: (pw) => /[A-Za-z]/.test(pw),
+    },
+    [PasswordChecklistRule.LOWERCASE]: {
+      labelKey: 'validation.passwordLowercase',
+      test: (pw) => /[a-z]/.test(pw),
+    },
+    [PasswordChecklistRule.UPPERCASE]: {
+      labelKey: 'validation.passwordUppercase',
+      test: (pw) => /[A-Z]/.test(pw),
+    },
+    [PasswordChecklistRule.NUMBER]: {
+      labelKey: 'validation.passwordNumber',
+      test: (pw) => /\d/.test(pw),
+    },
+    [PasswordChecklistRule.SPECIAL]: {
+      labelKey: 'validation.passwordSpecial',
+      test: (pw) => {
+        // Escape regex special chars from the set for safe use in a character class
+        const escaped = specialChars.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        return new RegExp(`[${escaped}]`).test(pw);
+      },
+    },
+  };
+
+  const checks = $derived(
+    rules.map((rule) => ({
+      key: rule,
+      label: $t(ruleChecks[rule].labelKey),
+      valid: ruleChecks[rule].test(password),
+    })),
+  );
 </script>
 
 <ul class="space-y-1 mt-2">

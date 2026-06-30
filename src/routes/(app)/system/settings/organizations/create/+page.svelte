@@ -3,7 +3,7 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -25,8 +25,6 @@
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult } from '$lib/types/validation.js';
   import type { ValidationStatus } from '$lib/types/validation.js';
-  import * as Tooltip from '$lib/components/ui/tooltip';
-  import { CopyButton } from '$lib/components/ui/copy-button';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
 
@@ -298,7 +296,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.display_name}
                       placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
@@ -314,7 +312,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.website_url}
                       placeholder="https://example.com"
@@ -332,33 +330,12 @@
               <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 {$t('shell.settings.organizations.create.idpCode')}
               </label>
-              <div class="relative">
-                <Input
-                  id="idp-code-display"
-                  value={idpCode}
-                  readonly
-                  class="bg-muted pr-10"
-                />
-                {#if idpCode}
-                  <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Tooltip.Root>
-                      <Tooltip.Trigger>
-                        {#snippet child({ props: tooltipProps })}
-                          <CopyButton
-                            text={idpCode}
-                            variant="ghost"
-                            size="icon"
-                            class="h-8 w-8 hover:bg-transparent"
-                            animationDuration={2000}
-                            {...tooltipProps}
-                          />
-                        {/snippet}
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>{$t('shell.settings.organizations.create.copyIdpCode')}</Tooltip.Content>
-                    </Tooltip.Root>
-                  </div>
-                {/if}
-              </div>
+              <TextInput
+                id="idp-code-display"
+                value={idpCode}
+                readonly
+                copyTooltipLabel={$t('shell.settings.organizations.create.copyIdpCode')}
+              />
             </div>
 
             <FormField form={superFormObj} name="idp_owner">
@@ -366,7 +343,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.idp_owner}
                       placeholder="admin"

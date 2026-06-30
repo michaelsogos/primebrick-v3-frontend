@@ -1,4 +1,4 @@
-import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
+import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
 import { pushRFC7807Error } from '$lib/errors/app-errors';
@@ -164,13 +164,16 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
       (e instanceof Error && e.name === 'AbortError');
     if (aborted) throw e;
-    // Network error / no response = backend unreachable
-    noteGatewayFailure(503);
+    // Network error / no response = backend unreachable (fetch threw, not a 503 response)
+    noteGatewayFailure(502);
     throw new ApiUnreachableError(null);
   }
 
-  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop)
+  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop).
+  // Force a /health probe so the chip reflects db_offline / idp_offline immediately
+  // instead of waiting for the next periodic poll.
   if (res.status === 503) {
+    void probeHealth({ force: true });
     throw new ApiDatabaseUnavailableError(503);
   }
 

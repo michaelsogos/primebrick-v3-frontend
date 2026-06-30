@@ -120,15 +120,11 @@
         {#snippet children({ props })}
           <div class="space-y-2">
             <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
-            <Password.Root>
-              <Password.Input
-                placeholder={$t('login.passwordPlaceholder')}
-                bind:value={$form.password}
-                {...props}
-              >
-                <Password.ToggleVisibility />
-              </Password.Input>
-            </Password.Root>
+            <Password.PasswordInput
+              placeholder={$t('login.passwordPlaceholder')}
+              bind:value={$form.password}
+              {...props}
+            />
             <FormFieldErrors />
           </div>
         {/snippet}

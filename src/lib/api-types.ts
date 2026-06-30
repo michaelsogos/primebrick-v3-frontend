@@ -30,9 +30,12 @@ export function isValidHealthPayload(x: unknown): x is HealthPayload {
   return typeof (idp as { ok?: unknown }).ok === 'boolean';
 }
 
-/** Proxy/gateway/timeouts: backend likely down or unreachable. */
+/** Proxy/gateway/timeouts: backend likely down or unreachable.
+ *  503 is intentionally EXCLUDED — it means the BE answered but a downstream
+ *  dependency (DB/IDP) is down, which the health probe classifies as
+ *  db_offline / idp_offline, not backend_offline. */
 export function isUnreachableHttpStatus(status: number): boolean {
-  if (status === 502 || status === 503 || status === 504) return true;
+  if (status === 502 || status === 504) return true;
   if (status >= 520 && status <= 524) return true;
   return false;
 }

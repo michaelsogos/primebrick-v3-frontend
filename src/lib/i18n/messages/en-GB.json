@@ -96,6 +96,7 @@
     "required": "This field is required",
     "invalidUrl": "Invalid URL format",
     "invalidEmail": "Invalid email format",
+    "emailRequired": "Email is required",
     "tooShort": "Must be at least {min} characters",
     "tooLong": "Must be at most {max} characters",
     "invalid": "Invalid value",
@@ -108,7 +109,13 @@
     "passwordUppercase": "At least one uppercase letter",
     "passwordLowercase": "At least one lowercase letter",
     "passwordNumber": "At least one number",
-    "passwordSpecial": "At least one special character"
+    "passwordSpecial": "At least one special character",
+    "passwordRequired": "Password is required",
+    "passwordLetter": "At least one letter",
+    "passwordPolicyAlphaNumeric": "Password must be 8-64 alphanumeric characters (letters and/or numbers, no special characters)",
+    "passwordPolicyLetterAndNumber": "Password must be 8-64 characters with at least one letter and one number (no special characters)",
+    "passwordPolicyLetterNumberSpecial": "Password must be 8-64 characters with at least one letter, one number, and one special character (* - _ . # @ ! | ? ^ :)",
+    "passwordPolicyMixedCaseSpecial": "Password must be 8-64 characters with at least one lowercase, one uppercase, one number, and one special character (* - _ . # @ ! | ? ^ :)"
   },
   "roles": {
     "administrators": "Administrator",

@@ -3,6 +3,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import * as Password from '$lib/components/ui/password';
   import { Badge } from '$lib/components/ui/badge';
   import { cn } from '$lib/utils';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -73,9 +74,8 @@
         
         <div>
           <label for="currentPassword" class="text-sm font-medium leading-none">{$t('shell.settings.security.currentPassword')}</label>
-          <Input
+          <Password.PasswordInput
             id="currentPassword"
-            type="password"
             bind:value={currentPassword}
             placeholder={$t('shell.settings.security.currentPasswordPlaceholder')}
             class="mt-2"
@@ -84,9 +84,8 @@
 
         <div>
           <label for="newPassword" class="text-sm font-medium leading-none">{$t('shell.settings.security.newPassword')}</label>
-          <Input
+          <Password.PasswordInput
             id="newPassword"
-            type="password"
             bind:value={newPassword}
             placeholder={$t('shell.settings.security.newPasswordPlaceholder')}
             class="mt-2"
@@ -95,9 +94,8 @@
 
         <div>
           <label for="confirmPassword" class="text-sm font-medium leading-none">{$t('shell.settings.security.confirmPassword')}</label>
-          <Input
+          <Password.PasswordInput
             id="confirmPassword"
-            type="password"
             bind:value={confirmPassword}
             placeholder={$t('shell.settings.security.confirmPasswordPlaceholder')}
             class="mt-2"
@@ -133,9 +131,8 @@
 
         <div>
           <label for="oidcClientSecret" class="text-sm font-medium leading-none">{$t('shell.settings.security.oidcClientSecret')}</label>
-          <Input
+          <Password.PasswordInput
             id="oidcClientSecret"
-            type="password"
             bind:value={oidcClientSecret}
             placeholder="your-client-secret"
             class="mt-2"

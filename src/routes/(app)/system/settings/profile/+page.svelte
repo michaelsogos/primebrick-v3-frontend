@@ -5,7 +5,7 @@
   import { t } from "$lib/i18n";
   import { Avatar, AvatarFallback } from "$lib/components/ui/avatar";
   import { Button } from "$lib/components/ui/button";
-  import { Input } from "$lib/components/ui/input";
+  import { TextInput } from "$lib/components/ui/input";
   import { Checkbox } from "$lib/components/ui/checkbox";
   import FormLabelWithPriorityHelp from "$lib/components/forms/FormLabelWithPriorityHelp.svelte";
   import {
@@ -24,8 +24,6 @@
   } from "$lib/avatar-chrome-palette";
   import * as ColorPicker from "$lib/components/ui/color-picker";
   import * as Popover from "$lib/components/ui/popover";
-  import * as Tooltip from "$lib/components/ui/tooltip";
-  import { CopyButton } from "$lib/components/ui/copy-button";
   import { ComboSelect } from "$lib/components/ui/combo-select";
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
@@ -430,7 +428,7 @@
                       <FormLabel for={props.id}
                         required>{$t("shell.settings.profile.displayName")}</FormLabel
                       >
-                      <Input
+                      <TextInput
                         type="text"
                         placeholder={$t(
                           "shell.settings.profile.displayNamePlaceholder",
@@ -452,7 +450,7 @@
                       <FormLabel for={props.id}
                         required>{$t("shell.settings.profile.email")}</FormLabel
                       >
-                      <Input
+                      <TextInput
                         type="email"
                         placeholder={$t("shell.settings.profile.emailPlaceholder")}
                         bind:value={$form.email}
@@ -494,38 +492,14 @@
                       <FormLabel for={props.id}
                         >{$t("shell.settings.profile.idpCode")}</FormLabel
                       >
-                      <div class="relative">
-                        <Input
-                          type="text"
-                          bind:value={$form.idp_code}
-                          readonly
-                          class="mt-2 bg-muted pr-10"
-                          {...props}
-                        />
-                        {#if $form.idp_code}
-                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Tooltip.Root>
-                              <Tooltip.Trigger>
-                                {#snippet child({ props: tooltipProps })}
-                                  <CopyButton
-                                    text={$form.idp_code || ""}
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 hover:bg-transparent"
-                                    animationDuration={2000}
-                                    {...tooltipProps}
-                                  />
-                                {/snippet}
-                              </Tooltip.Trigger>
-                              <Tooltip.Content
-                                >{$t(
-                                  "shell.settings.profile.copyIdpCode",
-                                )}</Tooltip.Content
-                              >
-                            </Tooltip.Root>
-                          </div>
-                        {/if}
-                      </div>
+                      <TextInput
+                        type="text"
+                        bind:value={$form.idp_code}
+                        readonly
+                        class="mt-2"
+                        {...props}
+                        copyTooltipLabel={$t("shell.settings.profile.copyIdpCode")}
+                      />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -538,38 +512,14 @@
                       <FormLabel for={props.id}
                         >{$t("shell.settings.profile.idpOwner")}</FormLabel
                       >
-                      <div class="relative">
-                        <Input
-                          type="text"
-                          bind:value={$form.idp_org}
-                          readonly
-                          class="mt-2 bg-muted pr-10"
-                          {...props}
-                        />
-                        {#if $form.idp_org}
-                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Tooltip.Root>
-                              <Tooltip.Trigger>
-                                {#snippet child({ props: tooltipProps })}
-                                  <CopyButton
-                                    text={$form.idp_org || ""}
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 hover:bg-transparent"
-                                    animationDuration={2000}
-                                    {...tooltipProps}
-                                  />
-                                {/snippet}
-                              </Tooltip.Trigger>
-                              <Tooltip.Content
-                                >{$t(
-                                  "shell.settings.profile.copyIdpOwner",
-                                )}</Tooltip.Content
-                              >
-                            </Tooltip.Root>
-                          </div>
-                        {/if}
-                      </div>
+                      <TextInput
+                        type="text"
+                        bind:value={$form.idp_org}
+                        readonly
+                        class="mt-2"
+                        {...props}
+                        copyTooltipLabel={$t("shell.settings.profile.copyIdpOwner")}
+                      />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -582,38 +532,14 @@
                       <FormLabel for={props.id}
                         >{$t("shell.settings.profile.idpName")}</FormLabel
                       >
-                      <div class="relative">
-                        <Input
-                          type="text"
-                          bind:value={$form.idp_username}
-                          readonly
-                          class="mt-2 bg-muted pr-10"
-                          {...props}
-                        />
-                        {#if $form.idp_username}
-                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Tooltip.Root>
-                              <Tooltip.Trigger>
-                                {#snippet child({ props: tooltipProps })}
-                                  <CopyButton
-                                    text={$form.idp_username || ""}
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 hover:bg-transparent"
-                                    animationDuration={2000}
-                                    {...tooltipProps}
-                                  />
-                                {/snippet}
-                              </Tooltip.Trigger>
-                              <Tooltip.Content
-                                >{$t(
-                                  "shell.settings.profile.copyIdpName",
-                                )}</Tooltip.Content
-                              >
-                            </Tooltip.Root>
-                          </div>
-                        {/if}
-                      </div>
+                      <TextInput
+                        type="text"
+                        bind:value={$form.idp_username}
+                        readonly
+                        class="mt-2"
+                        {...props}
+                        copyTooltipLabel={$t("shell.settings.profile.copyIdpName")}
+                      />
                     </div>
                   {/snippet}
                 </FormControl>
@@ -624,34 +550,14 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}>{$t("shell.settings.profile.idpIssuer")}</FormLabel>
-                      <div class="relative">
-                        <Input
-                          type="text"
-                          bind:value={$form.issuer}
-                          readonly
-                          class="mt-2 bg-muted pr-10"
-                          {...props}
-                        />
-                        {#if $form.issuer}
-                          <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Tooltip.Root>
-                              <Tooltip.Trigger>
-                                {#snippet child({ props: tooltipProps })}
-                                  <CopyButton
-                                    text={$form.issuer || ""}
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 hover:bg-transparent"
-                                    animationDuration={2000}
-                                    {...tooltipProps}
-                                  />
-                                {/snippet}
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>{$t("shell.settings.profile.copyIdpIssuer")}</Tooltip.Content>
-                            </Tooltip.Root>
-                          </div>
-                        {/if}
-                      </div>
+                      <TextInput
+                        type="text"
+                        bind:value={$form.issuer}
+                        readonly
+                        class="mt-2"
+                        {...props}
+                        copyTooltipLabel={$t("shell.settings.profile.copyIdpIssuer")}
+                      />
                     </div>
                   {/snippet}
                 </FormControl>

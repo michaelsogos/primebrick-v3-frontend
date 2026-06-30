@@ -4,7 +4,7 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -41,6 +41,7 @@
   import ShieldOff from '@lucide/svelte/icons/shield-off';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
 
   const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
   let syncChannel: BroadcastChannel | null = null;
@@ -92,6 +93,7 @@
   onMount(() => {
     syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
     void entityMetadata.loadMetadata();
+    void passwordPolicy.load();
 
     void (async () => {
       try {
@@ -119,11 +121,6 @@
       }
     })();
 
-    // Clear tainting and errors caused by component initialization (ComboSelect setting initial value).
-    // Without this, roles is pre-tainted and shows errors when other fields are blurred with validationMethod: 'onblur'.
-    tainted.set(undefined);
-    errors.set({});
-
     return () => {
       syncChannel?.close();
       syncChannel = null;
@@ -146,16 +143,26 @@
       .max(255, { message: maxMsg(255) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
     password: z.string()
+      .min(1, { message: 'validation.passwordRequired' })
       .min(8, { message: minMsg(8) })
-      .max(255, { message: maxMsg(255) }),
+      .max(64, { message: maxMsg(64) })
+      .superRefine((val, ctx) => {
+        // Validate against the active password policy regex.
+        // This runs at validation time (onblur/submit), after onMount has loaded the policy.
+        if (val && !passwordPolicy.regex.test(val)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: passwordPolicy.state.errorLabelKey,
+          });
+        }
+      }),
     display_name: z.string()
       .min(3, { message: minMsg(3) })
       .max(255, { message: maxMsg(255) }),
     email: z.string()
+      .min(1, { message: 'validation.emailRequired' })
       .email({ message: 'validation.invalidEmail' })
-      .max(320, { message: maxMsg(320) })
-      .optional()
-      .or(z.literal('')),
+      .max(320, { message: maxMsg(320) }),
     roles: z.array(z.string()).min(1, { message: 'validation.rolesRequired' }).default([]),
     avatar_color: z.string()
       .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'validation.invalidFormat' })
@@ -176,9 +183,16 @@
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
     validators: zod4(createSchema),
-    validationMethod: 'onblur',
+    validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
+    async onChange() {
+      // Force ALL errors to display on every change, regardless of taint.
+      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
+      // bypassing all taint/event/previous-error checks.
+      // This fulfils: "if a field is invalid, it must be coloured as it should."
+      await superFormObj.validateForm({ update: true });
+    },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
@@ -309,6 +323,8 @@
     endpoint: '/api/v1/entities/user_profiles/meta',
     entityName: 'user_profiles'
   });
+
+  const passwordPolicy = usePasswordPolicy();
 
   // Sync composable meta into local meta state for FormPageLayout
   $effect(() => {
@@ -461,7 +477,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.displayName')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.display_name}
                       placeholder={$t('shell.settings.users.create.displayNamePlaceholder')}
@@ -476,8 +492,8 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.users.create.email')}</FormLabel>
-                    <Input
+                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.email')}</FormLabel>
+                    <TextInput
                       {...props}
                       type="email"
                       bind:value={$form.email}
@@ -559,6 +575,7 @@
                   <div class="space-y-2">
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
                     <ComboSelect
+                      {...props}
                       mode="single"
                       bind:value={$form.idp_org}
                       options={availableOrgs}
@@ -630,18 +647,18 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
-                    <Password.Root>
-                      <Password.Input
-                        {...props}
-                        bind:value={$form.password}
-                        placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
-                        autocomplete="new-password"
-                      >
-                        <Password.ToggleVisibility />
-                      </Password.Input>
-                    </Password.Root>
+                    <Password.PasswordInput
+                      {...props}
+                      bind:value={$form.password}
+                      placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
+                      autocomplete="new-password"
+                    />
                     <TranslatedFormFieldErrors />
-                    <PasswordChecklist password={$form.password} />
+                    <PasswordChecklist
+                      password={$form.password}
+                      rules={[...passwordPolicy.state.checklistRules]}
+                      specialChars={passwordPolicy.state.specialChars}
+                    />
                   </div>
                 {/snippet}
               </FormControl>
@@ -672,8 +689,15 @@
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
-                    <label for="is_active" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <label for="is_active" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('shell.settings.users.create.idpActive')}
+                      {#if getColMeta('is_active')?.tooltip && getColMeta('is_active')?.showFormTooltip !== false}
+                        <FormLabelWithPriorityHelp
+                          text={$t(getColMeta('is_active')!.tooltip!)}
+                          priority={getColMeta('is_active')?.tooltipPriority}
+                          title={getColMeta('is_active')?.tooltipTitle ? $t(getColMeta('is_active')!.tooltipTitle!) : undefined}
+                        />
+                      {/if}
                     </label>
                   </div>
                 {/snippet}

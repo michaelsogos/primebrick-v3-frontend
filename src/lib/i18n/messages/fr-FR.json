@@ -96,6 +96,7 @@
     "required": "Ce champ est obligatoire",
     "invalidUrl": "Format d'URL invalide",
     "invalidEmail": "Format d'e-mail non valide",
+    "emailRequired": "L'email est obligatoire",
     "tooShort": "Doit contenir au moins {min} caractères",
     "tooLong": "Ne doit pas dépasser {max} caractères",
     "invalid": "Valeur invalide",
@@ -108,7 +109,13 @@
     "passwordUppercase": "Au moins une lettre majuscule",
     "passwordLowercase": "Au moins une lettre minuscule",
     "passwordNumber": "Au moins un chiffre",
-    "passwordSpecial": "Au moins un caractère spécial"
+    "passwordSpecial": "Au moins un caractère spécial",
+    "passwordRequired": "Le mot de passe est obligatoire",
+    "passwordLetter": "Au moins une lettre",
+    "passwordPolicyAlphaNumeric": "Le mot de passe doit contenir 8-64 caractères alphanumériques (lettres et/ou chiffres, sans caractères spéciaux)",
+    "passwordPolicyLetterAndNumber": "Le mot de passe doit contenir 8-64 caractères avec au moins une lettre et un chiffre (sans caractères spéciaux)",
+    "passwordPolicyLetterNumberSpecial": "Le mot de passe doit contenir 8-64 caractères avec au moins une lettre, un chiffre et un caractère spécial (* - _ . # @ ! | ? ^ :)",
+    "passwordPolicyMixedCaseSpecial": "Le mot de passe doit contenir 8-64 caractères avec au moins une minuscule, une majuscule, un chiffre et un caractère spécial (* - _ . # @ ! | ? ^ :)"
   },
   "roles": {
     "administrators": "Administrateur",

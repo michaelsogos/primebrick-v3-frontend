@@ -1,13 +1,14 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import * as Password from '$lib/components/ui/password';
   import { FormLabel } from '$lib/components/ui/form';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { pushRFC7807Error, pushImpactError } from '$lib/errors/app-errors';
   import { apiFetch } from '$lib/api';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
+  import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
 
   interface ChangePasswordDialogProps<TRow extends Record<string, unknown>> {
     open: boolean;
@@ -28,7 +29,7 @@
   let isSubmitting = $state(false);
   let localError = $state<string | null>(null);
 
-  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/;
+  const passwordPolicy = usePasswordPolicy();
 
   $effect(() => {
     // Reset state when dialog opens
@@ -36,13 +37,14 @@
       newPassword = '';
       confirmPassword = '';
       localError = null;
+      void passwordPolicy.load();
     }
   });
 
   let validationError = $derived.by<string | null>(() => {
     if (!newPassword) return null;
-    if (!PASSWORD_REGEX.test(newPassword)) {
-      return $t('validation.passwordWeak');
+    if (!passwordPolicy.regex.test(newPassword)) {
+      return $t(passwordPolicy.state.errorLabelKey);
     }
     if (confirmPassword && newPassword !== confirmPassword) {
       return $t('shell.settings.users.changePasswordMismatch');
@@ -54,7 +56,7 @@
     !!newPassword &&
     !!confirmPassword &&
     newPassword === confirmPassword &&
-    PASSWORD_REGEX.test(newPassword) &&
+    passwordPolicy.regex.test(newPassword) &&
     !isSubmitting
   );
 
@@ -111,9 +113,8 @@
   <div class="space-y-4 py-2">
     <div class="space-y-2">
       <FormLabel for="change-password-new" required>{$t('shell.settings.users.changePasswordNew')}</FormLabel>
-      <Input
+      <Password.PasswordInput
         id="change-password-new"
-        type="password"
         bind:value={newPassword}
         placeholder={$t('shell.settings.users.changePasswordNewPlaceholder')}
         disabled={isSubmitting}
@@ -122,9 +123,8 @@
     </div>
     <div class="space-y-2">
       <FormLabel for="change-password-confirm" required>{$t('shell.settings.users.changePasswordConfirm')}</FormLabel>
-      <Input
+      <Password.PasswordInput
         id="change-password-confirm"
-        type="password"
         bind:value={confirmPassword}
         placeholder={$t('shell.settings.users.changePasswordConfirmPlaceholder')}
         disabled={isSubmitting}

@@ -3,7 +3,7 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Checkbox } from '$lib/components/ui/checkbox';
@@ -13,7 +13,6 @@
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import * as Popover from '$lib/components/ui/popover';
   import { ComboSelect } from '$lib/components/ui/combo-select';
-  import { CopyButton } from '$lib/components/ui/copy-button';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
@@ -425,7 +424,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id} required>{$t('shell.settings.users.update.displayName')}</FormLabel>
-                      <Input
+                      <TextInput
                         {...props}
                         bind:value={$form.display_name}
                         placeholder={$t('shell.settings.users.update.displayNamePlaceholder')}
@@ -441,7 +440,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}>{$t('shell.settings.users.update.email')}</FormLabel>
-                      <Input
+                      <TextInput
                         {...props}
                         type="email"
                         bind:value={$form.email}
@@ -519,50 +518,22 @@
             <div class="space-y-4">
               <div class="space-y-2">
                 <label for="idp-code" class="text-sm font-medium">{$t('shell.settings.users.update.idpCode')}</label>
-                <div class="relative">
-                  <Input id="idp-code" value={user?.idp_code} readonly class="bg-muted pr-10" />
-                  {#if user?.idp_code}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <CopyButton text={user.idp_code} variant="ghost" size="icon" class="h-8 w-8" />
-                    </div>
-                  {/if}
-                </div>
+                <TextInput id="idp-code" value={user?.idp_code} readonly />
               </div>
 
               <div class="space-y-2">
                 <label for="idp-org" class="text-sm font-medium">{$t('shell.settings.users.update.idpOrg')}</label>
-                <div class="relative">
-                  <Input id="idp-org" value={user?.idp_org} readonly class="bg-muted pr-10" />
-                  {#if user?.idp_org}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <CopyButton text={user.idp_org} variant="ghost" size="icon" class="h-8 w-8" />
-                    </div>
-                  {/if}
-                </div>
+                <TextInput id="idp-org" value={user?.idp_org} readonly />
               </div>
 
               <div class="space-y-2">
                 <label for="idp-username" class="text-sm font-medium">{$t('shell.settings.users.update.idpUsername')}</label>
-                <div class="relative">
-                  <Input id="idp-username" value={user?.idp_username} readonly class="bg-muted pr-10" />
-                  {#if user?.idp_username}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <CopyButton text={user.idp_username} variant="ghost" size="icon" class="h-8 w-8" />
-                    </div>
-                  {/if}
-                </div>
+                <TextInput id="idp-username" value={user?.idp_username} readonly />
               </div>
 
               <div class="space-y-2">
                 <label for="issuer" class="text-sm font-medium">{$t('shell.settings.users.update.issuer')}</label>
-                <div class="relative">
-                  <Input id="issuer" value={user?.issuer} readonly class="bg-muted pr-10" />
-                  {#if user?.issuer}
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                      <CopyButton text={user.issuer} variant="ghost" size="icon" class="h-8 w-8" />
-                    </div>
-                  {/if}
-                </div>
+                <TextInput id="issuer" value={user?.issuer} readonly />
               </div>
 
               <!-- Readonly checkboxes -->

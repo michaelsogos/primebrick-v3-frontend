@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import Input from "$lib/components/ui/input/input.svelte";
+	import TextInput from "$lib/components/ui/input/text-input.svelte";
 	import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
   import TicketX from '@lucide/svelte/icons/ticket-x'
   import LoaderCircle from '@lucide/svelte/icons/loader-circle'
@@ -75,6 +75,12 @@
 
 	let isLoading = $derived(status === "loading");
 
+	// When the clear X is visible (value present, not disabled), the status icon
+	// shifts left to avoid overlapping it. Padding adjusts accordingly.
+	let hasValue = $derived((value ?? "").length > 0 && !disabled);
+	let inputPadding = $derived(hasValue ? "pr-14" : "pr-10");
+	let statusIconPos = $derived(hasValue ? "right-9" : "right-3");
+
 	// Notify parent when status changes
 	$effect(() => {
 		if (onStatusChange) {
@@ -118,7 +124,9 @@
 			debounceTimer = null;
 		}
 
-		// Reset to idle if value is too short
+		// Only the ASYNC check is gated by MIN_CHARS.
+		// The zod min(3) error is owned by superforms and will show via aria-invalid
+		// when the parent form validates on input (validationMethod: 'oninput').
 		if (val.length < MIN_CHARS) {
 			status = "idle";
 			return;
@@ -138,6 +146,12 @@
 		onchange?.(e);
 	}
 
+	function handleClear() {
+		value = "";
+		onChange?.("");
+		status = "idle";
+	}
+
 	// Cleanup timer on unmount
 	$effect(() => {
 		return () => {
@@ -148,39 +162,40 @@
 	});
 </script>
 
-<div class="relative">
-	<Input
-		{id}
-		{name}
-		{value}
-		{placeholder}
-		{disabled}
-		{type}
-		{required}
-		{minlength}
-		{maxlength}
-		{pattern}
-		aria-invalid={ariaInvalid === "true" || ariaInvalid === true}
-		aria-describedby={ariaDescribedby}
-		aria-required={ariaRequired === "true" || ariaRequired === true}
-		data-fs-error={dataFsError}
-		class={cn("pr-10", className)}
-		oninput={handleInputChange}
-		onblur={handleBlur}
-		onchange={handleChange}
-	/>
-
-	<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-		{#if uiStatus === "idle"}
-			<CircleCheckBig class="h-4 w-4 text-muted-foreground/50" />
-		{:else if uiStatus === "loading"}
-			<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
-		{:else if uiStatus === "valid"}
-			<CircleCheckBig class="h-4 w-4 text-green-500" />
-		{:else if uiStatus === "not-valid"}
-			<TicketX class="h-4 w-4 text-destructive" />
-		{:else if uiStatus === "api-error"}
-			<AlertTriangle class="h-4 w-4 text-yellow-500" />
-		{/if}
-	</div>
-</div>
+<TextInput
+	{id}
+	{name}
+	bind:value
+	{placeholder}
+	{disabled}
+	{type}
+	{required}
+	{minlength}
+	{maxlength}
+	{pattern}
+	aria-invalid={ariaInvalid === "true" || ariaInvalid === true}
+	aria-describedby={ariaDescribedby}
+	aria-required={ariaRequired === "true" || ariaRequired === true}
+	data-fs-error={dataFsError}
+	class={cn(inputPadding, className)}
+	onClear={handleClear}
+	oninput={handleInputChange}
+	onblur={handleBlur}
+	onchange={handleChange}
+>
+	{#snippet trailing()}
+		<div class={cn("absolute top-1/2 -translate-y-1/2 pointer-events-none", statusIconPos)}>
+			{#if uiStatus === "idle"}
+				<CircleCheckBig class="h-4 w-4 text-muted-foreground/50" />
+			{:else if uiStatus === "loading"}
+				<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
+			{:else if uiStatus === "valid"}
+				<CircleCheckBig class="h-4 w-4 text-green-500" />
+			{:else if uiStatus === "not-valid"}
+				<TicketX class="h-4 w-4 text-destructive" />
+			{:else if uiStatus === "api-error"}
+				<AlertTriangle class="h-4 w-4 text-yellow-500" />
+			{/if}
+		</div>
+	{/snippet}
+</TextInput>
