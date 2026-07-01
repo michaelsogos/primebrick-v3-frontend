@@ -5,7 +5,7 @@
   import { FormLabel } from '$lib/components/ui/form';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
-  import { pushRFC7807Error, pushImpactError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch } from '$lib/api';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
@@ -76,11 +76,11 @@
 
       if (!res.ok) {
         const errData = await res.json() as RFC7807Error & Record<string, any>;
-        pushRFC7807Error(errData, { showToast: true });
+        pushNotification(errData);
         return;
       }
 
-      pushImpactError({
+      pushNotification({
         impact: 'LOW',
         messageKey: 'shell.settings.users.changePasswordSuccess',
         scope: $t('shell.settings.users.changePassword'),
@@ -88,7 +88,7 @@
       });
       onOpenChange?.(false);
     } catch (e) {
-      pushImpactError({
+      pushNotification({
         impact: 'HIGH',
         messageKey: 'shell.settings.users.changePasswordFailed',
         scope: $t('shell.settings.users.changePassword'),

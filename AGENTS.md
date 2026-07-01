@@ -51,6 +51,20 @@ This repository follows GitFlow. AI agents MUST follow these rules.
 
 **See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
 
+## Error notifications — NEVER use toast directly (MANDATORY)
+
+**NEVER call `toast.*()` or import `svelte-sonner` in components, routes, or composables.**
+
+The shell has a dedicated notification infrastructure. All notifications MUST go through:
+- `pushNotification(errorData)` — for BE API errors (RFC7807 object auto-detected by `type` + `status`)
+- `pushNotification({ impact, message, scope, tags, detail })` — for full control with plain params
+- `pushNotification({ impact: 'NONE', message, scope })` — for success (toast only, no event card)
+
+All from `$lib/errors/app-errors`. This ensures errors appear in the shell
+error panel (topbar badge + ErrorsPanel sheet) AND as a toast with correct
+impact styling. Direct `toast.*()` calls bypass the error panel and lose
+debuggability. See `.devin/rules/error-notification.md` for full details.
+
 ## Further documentation
 
 See `docs/ai/` for UI patterns, skills selection, and suggested workflows.

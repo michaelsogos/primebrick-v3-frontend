@@ -3,7 +3,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
@@ -466,7 +466,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.organizationsList',
@@ -489,7 +489,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.organizationsList',
@@ -527,7 +527,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.organizationsPageInit',
@@ -550,7 +550,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.organizationsPageInit',

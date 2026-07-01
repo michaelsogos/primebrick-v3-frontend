@@ -4,7 +4,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
-  import { pushRFC7807Error } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -47,7 +47,7 @@
 
           if (!response.ok) {
             const errorData = await response.json();
-            pushRFC7807Error(errorData, { showToast: false });
+            pushNotification({ ...errorData, toast: false });
 
             if (response.status === 401) {
               const mappedError = mapRFC7807ToMessageKey({

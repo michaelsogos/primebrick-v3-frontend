@@ -5,7 +5,7 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { afterNavigate } from '$app/navigation';
   import { apiFetch } from '$lib/api';
   import { userProfileState } from '$lib/user-profile-store.svelte';
@@ -38,7 +38,7 @@
       if (!res.ok) {
         const data = await res.json() as { title?: string; internal_code?: string; instance?: string; status?: number; detail?: string };
         const toneForImpact = 'danger'; // HIGH impact uses danger
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           message: data.title || data.detail,
           messageKey: !data.title && !data.detail ? 'shell.listFailed' : undefined,
@@ -52,7 +52,7 @@
         });
       }
     } catch (e) {
-      pushImpactError({
+      pushNotification({
         impact: 'HIGH',
         messageKey: 'shell.listFailed',
         scope: $t('errors.scope.customerListApi'),
@@ -62,7 +62,7 @@
   }
 
   function demoToastPreferences() {
-    pushImpactError({
+    pushNotification({
       impact: 'MEDIUM',
       messageKey: 'shell.demoToast.preferencesMessage',
       scopeKey: 'shell.nav.demoItemPreferences'
@@ -70,7 +70,7 @@
   }
 
   function demoToastHelp() {
-    pushImpactError({
+    pushNotification({
       impact: 'HIGH',
       messageKey: 'shell.demoToast.helpMessage',
       scopeKey: 'shell.nav.demoItemHelp'
@@ -78,7 +78,7 @@
   }
 
   function demoToastCritical() {
-    pushImpactError({
+    pushNotification({
       impact: 'CRITICAL',
       messageKey: 'shell.demoToast.criticalMessage',
       scopeKey: 'shell.nav.demoItemCriticalToast'

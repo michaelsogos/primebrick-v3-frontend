@@ -1,7 +1,7 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
-import { pushRFC7807Error } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
   ApiUnreachableError,
@@ -127,7 +127,7 @@ async function handleRFC7807Error(res: Response): Promise<Response> {
       const errorData = await res.json();
       // Check if it looks like RFC7807 format (has type, title, status)
       if (errorData.type && errorData.title && errorData.status) {
-        pushRFC7807Error(errorData);
+        pushNotification(errorData);
       }
     }
   } catch (e) {

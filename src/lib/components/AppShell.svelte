@@ -12,7 +12,7 @@
   import { loadShellNav } from '$lib/shell/modules-shell.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { backendState, probeHealth } from '$lib/backend-availability';
-  import { pushAppError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
 
   let { children }: { children: Snippet } = $props();
 
@@ -27,12 +27,13 @@
       const reason = e.reason;
       const fallback = $t('shell.errors.unhandledRejectionFallback');
       const msg = reason instanceof Error ? reason.message : String(reason ?? fallback);
-      pushAppError({ message: msg, scope: $t('shell.errors.unhandledRejection') });
+      pushNotification({ impact: 'HIGH', message: msg, scope: $t('shell.errors.unhandledRejection') });
     };
     const onWindowError = (e: ErrorEvent) => {
       const fallback = $t('shell.errors.unhandledErrorFallback');
       const msg = e.error instanceof Error ? e.error.message : e.message;
-      pushAppError({
+      pushNotification({
+        impact: 'HIGH',
         message: msg || fallback,
         scope: $t('shell.errors.unhandledError')
       });

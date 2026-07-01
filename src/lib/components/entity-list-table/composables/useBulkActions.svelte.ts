@@ -1,5 +1,5 @@
 import { apiFetch } from '$lib/api';
-import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
@@ -94,9 +94,9 @@ export function useBulkActions(options: BulkActionsOptions) {
 
       if (error && typeof error === 'object' && 'title' in error) {
         const err = error as RFC7807Error;
-        pushRFC7807Error(err, { showToast: true });
+        pushNotification(err);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.bulkDeleteFailed',
           scope: tFn('errors.scope.bulkDeleteApi'),
@@ -172,9 +172,9 @@ export function useBulkActions(options: BulkActionsOptions) {
 
       if (error && typeof error === 'object' && 'title' in error) {
         const err = error as RFC7807Error;
-        pushRFC7807Error(err, { showToast: true });
+        pushNotification(err);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.bulkRestoreFailed',
           scope: tFn('errors.scope.bulkRestoreApi'),
@@ -199,7 +199,7 @@ export function useBulkActions(options: BulkActionsOptions) {
 
   function handleBulkDuplicate() {
     if (selectedKeysFn().length > 50) {
-      pushImpactError({
+      pushNotification({
         impact: 'MEDIUM',
         messageKey: 'entities.list.duplicateMaxLimit',
         scope: tFn('errors.scope.duplicateAction'),
@@ -227,20 +227,20 @@ export function useBulkActions(options: BulkActionsOptions) {
       if (!response.ok) {
         const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
-        pushRFC7807Error(enhancedError, { showToast: true });
+        pushNotification(enhancedError);
         throw enhancedError;
       }
 
       const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
           scope: tFn('errors.scope.duplicateApi')
         });
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'LOW',
           messageKey: 'entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },

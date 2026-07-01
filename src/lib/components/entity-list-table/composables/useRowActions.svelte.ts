@@ -1,5 +1,5 @@
 import { apiFetch } from '$lib/api';
-import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
@@ -127,9 +127,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
           instance: err.instance,
           severity: err.severity
         };
-        pushRFC7807Error(rfcError, { showToast: true });
+        pushNotification(rfcError);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.deleteFailed',
           scope: tFn('errors.scope.deleteApi'),
@@ -169,9 +169,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
           instance: err.instance,
           severity: err.severity
         };
-        pushRFC7807Error(rfcError, { showToast: true });
+        pushNotification(rfcError);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.restoreFailed',
           scope: tFn('errors.scope.restoreApi'),
@@ -201,20 +201,20 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (!response.ok) {
         const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
-        pushRFC7807Error(enhancedError, { showToast: true });
+        pushNotification(enhancedError);
         throw enhancedError;
       }
 
       const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
           scope: tFn('errors.scope.duplicateApi')
         });
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'LOW',
           messageKey: 'entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
@@ -281,7 +281,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     } else {
       // No handler registered for this action — show a "not implemented"
       // toast so the user sees the action exists but isn't wired yet.
-      pushRFC7807Error({
+      pushNotification({
         type: '/errors/not-implemented',
         title: tFn('errors.notImplemented.title'),
         status: 501,

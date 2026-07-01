@@ -3,7 +3,7 @@
   import { EntityListTable } from '$lib/components/entity-list-table';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
@@ -329,7 +329,7 @@
       const isDbDown = apiError?.code === 'DATABASE_UNAVAILABLE';
       if (apiError && isBackendGatewayUnreachable(apiError.code, apiError.status)) {
         error = $t('shell.apiError.unreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.usersList',
@@ -344,7 +344,7 @@
           { label: apiError.code, tone: toneForImpact },
           ...(apiError.status !== null ? [{ label: `HTTP ${apiError.status}`, tone: toneForImpact } as const] : []),
         ] : [];
-        pushImpactError({
+        pushNotification({
           impact,
           messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
           scopeKey: 'errors.scope.usersList',
@@ -513,7 +513,7 @@
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           messageKey: 'common.deleteFailed',
           scopeKey: 'errors.scope.usersList',
@@ -541,7 +541,7 @@
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           messageKey: 'common.restoreFailed',
           scopeKey: 'errors.scope.usersList',

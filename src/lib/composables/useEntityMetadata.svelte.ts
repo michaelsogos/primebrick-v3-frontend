@@ -1,5 +1,5 @@
 import { apiFetch } from '$lib/api';
-import { pushImpactError } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityListListMeta } from '$lib/entity-list/types';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
@@ -46,7 +46,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
           });
 
           // RFC ERROR TOAST - Metadata parsing error
-          pushImpactError({
+          pushNotification({
             impact: 'HIGH',
             message: 'Metadata parsing error: list.auditingColumns is null or empty',
             scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
@@ -70,7 +70,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
         });
 
         // RFC ERROR TOAST - Metadata endpoint error
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           message: `Failed to load metadata: ${res.status} ${res.statusText}`,
           scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
@@ -90,7 +90,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
       });
 
       // RFC ERROR TOAST - Network error
-      pushImpactError({
+      pushNotification({
         impact: 'HIGH',
         message: `Network error: ${err instanceof Error ? err.message : String(err)}`,
         scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,

@@ -448,7 +448,8 @@
     "information": "Informazione",
     "warning": "Avviso",
     "error": "Errore",
-    "criticalError": "Errore critico"
+    "criticalError": "Errore critico",
+    "success": "Operazione completata"
   },
   "entities": {
     "versionHistory": {

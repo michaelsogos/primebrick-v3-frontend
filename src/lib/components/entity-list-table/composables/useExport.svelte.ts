@@ -1,5 +1,5 @@
 import { apiFetch } from '$lib/api';
-import { pushRFC7807Error } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
@@ -231,7 +231,7 @@ export function useExport(options: ExportOptions) {
     } catch (error) {
       console.error('Export failed:', error);
       const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      pushNotification(errorData);
       onExportError?.(error as Error);
     } finally {
       _state.isExporting = false;
@@ -327,7 +327,7 @@ export function useExport(options: ExportOptions) {
     } catch (error) {
       console.error('HTML export failed:', error);
       const errorData = error as RFC7807Error;
-      pushRFC7807Error(errorData, { showToast: true });
+      pushNotification(errorData);
       onExportError?.(error as Error);
     } finally {
       _state.isHtmlExporting = false;
