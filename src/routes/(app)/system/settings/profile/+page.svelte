@@ -37,16 +37,17 @@
   import type { MetaColumn } from "$lib/entity-list/types";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
+  import { displayNameSchema } from "$lib/validation/display-name";
 
   // Zod schema for profile form
   const profileSchema = z.object({
     idp_code: z.string().optional(),
     idp_org: z.string().optional(),
     idp_username: z.string().optional(),
-    display_name: z.string().min(1, "Display name is required"),
+    display_name: displayNameSchema(z.string()),
     email: z.string().email({ message: 'validation.invalidEmail' }),
-    avatar_color: z.string().min(1, "Color is required"),
-    avatar_initials: z.string().min(1, "Initials are required"),
+    avatar_color: z.string().min(1, { message: 'validation.required' }),
+    avatar_initials: z.string().min(1, { message: 'validation.required' }),
     is_admin: z.boolean().optional(),
     is_verified: z.boolean().optional(),
     email_verified: z.boolean().optional(),
@@ -60,6 +61,7 @@
   const superFormObj = superForm(defaults(zod4(profileSchema)), {
     SPA: true,
     validators: zod4(profileSchema),
+    validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
@@ -172,6 +174,16 @@
 
   const hasChanges = $derived(isTainted($tainted));
 
+  // canSave: form must have changes AND no validation errors
+  const canSave = $derived.by(() => {
+    if (!hasChanges) return false;
+    for (const key in $errors) {
+      const err = ($errors as Record<string, string | string[] | undefined>)[key];
+      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
+    }
+    return true;
+  });
+
   // Audit derived values from store
   const profile = $derived(userProfileStore.current);
   const version = $derived(profile?.version || 0);
@@ -201,7 +213,7 @@
   // Block internal navigation when there are changes
   beforeNavigate((navigation) => {
     if (hasChanges) {
-      const confirmLeave = confirm('Hai delle modifiche non salvate. Vuoi davvero uscire?');
+      const confirmLeave = confirm($t('shell.settings.profile.unsavedChanges'));
       if (!confirmLeave) {
         navigation.cancel();
       }
@@ -630,7 +642,7 @@
   {/snippet}
 
   {#snippet footerActions()}
-    <Button type="submit" form="profile-form" disabled={!hasChanges}>
+    <Button type="submit" form="profile-form" disabled={!canSave}>
       {$t('common.save')}
     </Button>
   {/snippet}

@@ -224,7 +224,8 @@
         "updatedBy": "Aktualisiert von",
         "version": "Version",
         "roles": "Anwendungsrollen",
-        "rolesPlaceholder": "Keine Rollen zugewiesen"
+        "rolesPlaceholder": "Keine Rollen zugewiesen",
+        "unsavedChanges": "Sie haben ungespeicherte Änderungen. Möchten Sie wirklich verlassen?"
       },
       "audit": {
         "id": "ID",
@@ -241,6 +242,7 @@
         "create": {
           "idpCode": "Identitäts-ID",
           "copyIdpCode": "IDP Code kopieren",
+          "copyIdpOwner": "IDP Owner kopieren",
           "displayName": "Anzeigename",
           "displayNamePlaceholder": "Organisationsname",
           "websiteUrl": "Website-URL",
@@ -250,6 +252,7 @@
           "unsavedChanges": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?"
         },
         "update": {
+          "title": "Organisation bearbeiten",
           "idpCode": "Identitäts-ID",
           "copyIdpCode": "IDP Code kopieren",
           "copyIdpOwner": "IDP Owner kopieren",

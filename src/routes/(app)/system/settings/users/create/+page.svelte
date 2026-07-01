@@ -35,6 +35,7 @@
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import ShieldUser from '@lucide/svelte/icons/shield-user';
@@ -79,15 +80,6 @@
   function clearPersistedAvatarColor() {
     if (!browser) return;
     sessionStorage.removeItem('pb:user-create:avatar-color');
-  }
-
-  // Custom refinement to ensure strings start and end with alphanumeric characters
-  function startsAndEndsWithAlphanumeric(value: string): boolean {
-    if (!value || value.length === 0) return true;
-    const firstChar = value[0];
-    const lastChar = value[value.length - 1];
-    const alphanumericRegex = /^[a-z0-9]$/i;
-    return alphanumericRegex.test(firstChar) && alphanumericRegex.test(lastChar);
   }
 
   onMount(() => {
@@ -138,10 +130,7 @@
 
   // Zod schema for user create form
   const createSchema = z.object({
-    idpUsername: z.string()
-      .min(3, { message: minMsg(3) })
-      .max(255, { message: maxMsg(255) })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
+    idpUsername: idpNameSchema(z.string()),
     password: z.string()
       .min(1, { message: 'validation.passwordRequired' })
       .min(8, { message: minMsg(8) })
@@ -156,9 +145,7 @@
           });
         }
       }),
-    display_name: z.string()
-      .min(3, { message: minMsg(3) })
-      .max(255, { message: maxMsg(255) }),
+    display_name: displayNameSchema(z.string()),
     email: z.string()
       .min(1, { message: 'validation.emailRequired' })
       .email({ message: 'validation.invalidEmail' })

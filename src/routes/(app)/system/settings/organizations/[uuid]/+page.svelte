@@ -25,6 +25,7 @@
   import { interpolateTemplate } from '$lib/template-interpolate';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
 
   const uuid = $derived(page.params.uuid);
 
@@ -52,14 +53,14 @@
   // Zod schema for organization update form
   const updateSchema = z.object({
     idp_code: z.string().optional(),
-    display_name: z.string().min(5, { message: minMsg(5) }),
+    display_name: displayNameSchema(z.string()),
     website_url: z.string()
       .url({ message: 'validation.invalidUrl' })
       .max(2048, { message: maxMsg(2048) })
       .optional()
       .or(z.literal('')),
     idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
-    idp_name: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
+    idp_name: idpNameSchema(z.string()),
   });
 
   type UpdateForm = z.infer<typeof updateSchema>;
@@ -136,6 +137,16 @@
   const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
 
   const hasChanges = $derived(isTainted($tainted));
+
+  // canSave: form must have changes AND no validation errors
+  const canSave = $derived.by(() => {
+    if (!hasChanges) return false;
+    for (const key in $errors) {
+      const err = ($errors as Record<string, string | string[] | undefined>)[key];
+      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
+    }
+    return true;
+  });
 
   async function loadOrganization() {
     loading = true;
@@ -371,7 +382,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {hasChanges ? $t('common.cancel') : $t('common.exit')}
       </Button>
-      <Button type="submit" form="org-update-form" disabled={!hasChanges}>
+      <Button type="submit" form="org-update-form" disabled={!canSave}>
         {$t('common.save')}
       </Button>
     </div>

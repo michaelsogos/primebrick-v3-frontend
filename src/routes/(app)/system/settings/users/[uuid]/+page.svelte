@@ -33,6 +33,7 @@
   import { interpolateTemplate } from '$lib/template-interpolate';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { displayNameSchema } from '$lib/validation/display-name';
   import ShieldUser from '@lucide/svelte/icons/shield-user';
   import ShieldOff from '@lucide/svelte/icons/shield-off';
 
@@ -77,7 +78,7 @@
 
   // Zod schema for user update form
   const updateSchema = z.object({
-    display_name: z.string().min(3, { message: minMsg(3) }),
+    display_name: displayNameSchema(z.string()),
     email: z.string()
       .email({ message: 'validation.invalidEmail' })
       .max(320, { message: maxMsg(320) })
@@ -130,9 +131,16 @@
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
     SPA: true,
     validators: zod4(updateSchema),
-    validationMethod: 'onblur',
+    validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
+    async onChange() {
+      // Force ALL errors to display on every change, regardless of taint.
+      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
+      // bypassing all taint/event/previous-error checks.
+      // focusOnError: false prevents focus from jumping to the first invalid field.
+      await superFormObj.validateForm({ update: true, focusOnError: false });
+    },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
@@ -245,11 +253,6 @@
           roles: data.roles || [],
         },
       });
-      // Clear tainting and errors after reset.
-      // reset({ data }) preserves tainting for fields in opts.data, so we must explicitly clear it.
-      // Without this, roles is pre-tainted and shows errors when other fields are blurred with validationMethod: 'onblur'.
-      tainted.set(undefined);
-      errors.set({});
       if (meta?.updatePageTitle && user) {
         pageTitle = interpolateTemplate(meta.updatePageTitle, user);
       } else {

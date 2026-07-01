@@ -224,7 +224,8 @@
         "updatedBy": "Aggiornato da",
         "version": "Versione",
         "roles": "Ruoli applicativi",
-        "rolesPlaceholder": "Nessun ruolo assegnato"
+        "rolesPlaceholder": "Nessun ruolo assegnato",
+        "unsavedChanges": "Hai delle modifiche non salvate. Vuoi davvero uscire?"
       },
       "audit": {
         "id": "ID",
@@ -241,6 +242,7 @@
         "create": {
           "idpCode": "ID Identità",
           "copyIdpCode": "Copia IDP Code",
+          "copyIdpOwner": "Copia IDP Owner",
           "displayName": "Nome visualizzato",
           "displayNamePlaceholder": "Nome organizzazione",
           "websiteUrl": "URL sito web",
@@ -250,6 +252,7 @@
           "unsavedChanges": "Hai modifiche non salvate. Uscire comunque?"
         },
         "update": {
+          "title": "Modifica Organizzazione",
           "idpCode": "ID Identità",
           "copyIdpCode": "Copia IDP Code",
           "copyIdpOwner": "Copia IDP Owner",

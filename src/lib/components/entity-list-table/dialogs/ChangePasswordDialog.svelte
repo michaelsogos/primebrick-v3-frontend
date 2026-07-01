@@ -2,13 +2,14 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
-  import { FormLabel } from '$lib/components/ui/form';
+  import { Label } from '$lib/components/ui/label';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch } from '$lib/api';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
+  import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
 
   interface ChangePasswordDialogProps<TRow extends Record<string, unknown>> {
     open: boolean;
@@ -87,6 +88,7 @@
         toast: true,
       });
       onOpenChange?.(false);
+      open = false;
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
@@ -101,6 +103,7 @@
   }
 
   function handleCancel() {
+    open = false;
     onOpenChange?.(false);
   }
 </script>
@@ -112,7 +115,10 @@
   </Dialog.Header>
   <div class="space-y-4 py-2">
     <div class="space-y-2">
-      <FormLabel for="change-password-new" required>{$t('shell.settings.users.changePasswordNew')}</FormLabel>
+      <Label for="change-password-new" class="text-sm font-medium leading-none">
+        {$t('shell.settings.users.changePasswordNew')}
+        <span class="text-destructive">*</span>
+      </Label>
       <Password.PasswordInput
         id="change-password-new"
         bind:value={newPassword}
@@ -120,9 +126,17 @@
         disabled={isSubmitting}
         autocomplete="new-password"
       />
+      <PasswordChecklist
+        password={newPassword}
+        rules={[...passwordPolicy.state.checklistRules]}
+        specialChars={passwordPolicy.state.specialChars}
+      />
     </div>
     <div class="space-y-2">
-      <FormLabel for="change-password-confirm" required>{$t('shell.settings.users.changePasswordConfirm')}</FormLabel>
+      <Label for="change-password-confirm" class="text-sm font-medium leading-none">
+        {$t('shell.settings.users.changePasswordConfirm')}
+        <span class="text-destructive">*</span>
+      </Label>
       <Password.PasswordInput
         id="change-password-confirm"
         bind:value={confirmPassword}

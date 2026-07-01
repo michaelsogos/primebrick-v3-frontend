@@ -224,7 +224,8 @@
         "updatedBy": "Atualizado por",
         "version": "Versão",
         "roles": "Funções da aplicação",
-        "rolesPlaceholder": "Sem funções atribuídas"
+        "rolesPlaceholder": "Sem funções atribuídas",
+        "unsavedChanges": "Tem alterações não guardadas. Tem a certeza que pretende sair?"
       },
       "audit": {
         "id": "ID",
@@ -241,6 +242,7 @@
         "create": {
           "idpCode": "ID de identidade",
           "copyIdpCode": "Copiar IDP Code",
+          "copyIdpOwner": "Copiar IDP Owner",
           "displayName": "Nome de exibição",
           "displayNamePlaceholder": "Nome da organização",
           "websiteUrl": "URL do site",
@@ -250,6 +252,7 @@
           "unsavedChanges": "Você tem alterações não salvas. Sair mesmo assim?"
         },
         "update": {
+          "title": "Editar Organização",
           "idpCode": "ID de identidade",
           "copyIdpCode": "Copiar IDP Code",
           "copyIdpOwner": "Copiar IDP Owner",

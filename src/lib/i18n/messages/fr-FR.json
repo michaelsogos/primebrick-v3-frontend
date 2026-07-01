@@ -224,7 +224,8 @@
         "updatedBy": "Mis à jour par",
         "version": "Version",
         "roles": "Rôles applicatifs",
-        "rolesPlaceholder": "Aucun rôle attribué"
+        "rolesPlaceholder": "Aucun rôle attribué",
+        "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter ?"
       },
       "audit": {
         "id": "ID",
@@ -241,6 +242,7 @@
         "create": {
           "idpCode": "ID d'identité",
           "copyIdpCode": "Copier IDP Code",
+          "copyIdpOwner": "Copier IDP Owner",
           "displayName": "Nom d'affichage",
           "displayNamePlaceholder": "Nom de l'organisation",
           "websiteUrl": "URL du site web",
@@ -250,6 +252,7 @@
           "unsavedChanges": "Vous avez des modifications non enregistrées. Quitter quand même?"
         },
         "update": {
+          "title": "Modifier l'Organisation",
           "idpCode": "ID d'identité",
           "copyIdpCode": "Copier IDP Code",
           "copyIdpOwner": "Copier IDP Owner",

@@ -224,7 +224,8 @@
         "updatedBy": "Updated by",
         "version": "Version",
         "roles": "Application roles",
-        "rolesPlaceholder": "No roles assigned"
+        "rolesPlaceholder": "No roles assigned",
+        "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
       },
       "audit": {
         "id": "ID",
@@ -241,6 +242,7 @@
         "create": {
           "idpCode": "Identity ID",
           "copyIdpCode": "Copy IDP Code",
+          "copyIdpOwner": "Copy IDP Owner",
           "displayName": "Display name",
           "displayNamePlaceholder": "Organization name",
           "websiteUrl": "Website URL",
@@ -250,6 +252,7 @@
           "unsavedChanges": "You have unsaved changes. Leave anyway?"
         },
         "update": {
+          "title": "Edit Organization",
           "idpCode": "Identity ID",
           "copyIdpCode": "Copy IDP Code",
           "copyIdpOwner": "Copy IDP Owner",
