@@ -204,12 +204,14 @@
       <div
         {...triggerProps}
         {id}
+        role="combobox"
+        tabindex={disabled ? -1 : 0}
         class={cn(
-          "min-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background",
-          "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+          "min-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background outline-hidden transition-colors",
+          "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "cursor-pointer flex items-center text-left",
-          "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
+          "aria-invalid:border-destructive aria-invalid:hover:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
         )}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}

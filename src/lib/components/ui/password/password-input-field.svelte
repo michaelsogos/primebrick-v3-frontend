@@ -18,6 +18,7 @@
 </script>
 
 <Password.Root {minScore} class={className}>
-	<Password.Input bind:ref bind:value {...restProps} />
-	<Password.ToggleVisibility />
+	<Password.Input bind:ref bind:value {...restProps}>
+		<Password.ToggleVisibility />
+	</Password.Input>
 </Password.Root>

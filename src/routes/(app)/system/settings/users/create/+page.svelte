@@ -191,7 +191,7 @@
       // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
       // bypassing all taint/event/previous-error checks.
       // This fulfils: "if a field is invalid, it must be coloured as it should."
-      await superFormObj.validateForm({ update: true });
+      await superFormObj.validateForm({ update: true, focusOnError: false });
     },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;

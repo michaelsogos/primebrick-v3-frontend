@@ -107,6 +107,7 @@
 				onclick={handleClear}
 				aria-label={clearLabel}
 				title={clearLabel}
+				tabindex={-1}
 				class={inputTrailingIconButtonClasses}
 			>
 				<X class="size-4" />

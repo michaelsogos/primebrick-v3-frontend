@@ -13,7 +13,7 @@
 <Tooltip.Root>
   <Tooltip.Trigger>
     {#snippet child({ props })}
-      <button type="button" class="inline-flex" {...props} aria-label="Help">
+      <button type="button" class="inline-flex" {...props} aria-label="Help" tabindex={-1}>
         <HelpCircle class="size-3.5 text-muted-foreground" />
       </button>
     {/snippet}
