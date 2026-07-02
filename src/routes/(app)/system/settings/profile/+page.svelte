@@ -3,7 +3,7 @@
   import { superForm, defaults } from "sveltekit-superforms";
   import { zod4 } from "sveltekit-superforms/adapters";
   import { t } from "$lib/i18n";
-  import { Avatar, AvatarFallback } from "$lib/components/ui/avatar";
+  import { AvatarPreview } from "$lib/components/ui/avatar-preview";
   import { Button } from "$lib/components/ui/button";
   import { TextInput } from "$lib/components/ui/input";
   import { Checkbox } from "$lib/components/ui/checkbox";
@@ -15,19 +15,14 @@
     FormFieldErrors,
     TranslatedFormFieldErrors,
   } from "$lib/components/ui/form";
-  import { cn } from "$lib/utils";
   import {
-    avatarFallbackChromeClasses,
     hashSeedToIndex,
     avatarChromePaletteToHex,
-    getContrastTextColor,
   } from "$lib/avatar-chrome-palette";
-  import * as ColorPicker from "$lib/components/ui/color-picker";
-  import * as Popover from "$lib/components/ui/popover";
+  import { ColorSelector } from "$lib/components/ui/color-selector";
   import { ComboSelect } from "$lib/components/ui/combo-select";
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
-  import { beforeNavigate } from "$app/navigation";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
   import { formatUiDateTime } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
@@ -36,6 +31,10 @@
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import type { MetaColumn } from "$lib/entity-list/types";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
+  import { useFormGuard } from "$lib/composables/useFormGuard.svelte";
+  import { useActiveRoles } from "$lib/composables/useActiveRoles.svelte";
+  import { useUnsavedChangesGuard } from "$lib/composables/useUnsavedChangesGuard.svelte";
+  import { buildAuditData } from "$lib/utils/audit-data";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
   import { displayNameSchema } from "$lib/validation/display-name";
 
@@ -149,44 +148,16 @@
     },
   });
 
-  const { form, errors, enhance, tainted, isTainted, reset } = superFormObj;
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  // Derive initials from display_name for preview
-  const userAvatarSeed = $derived.by(() => {
-    if (!$form.display_name) return "PB";
-    const words = $form.display_name
-      .trim()
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-    if (words.length === 0) return "PB";
-    const firstLetter = words[0][0].toUpperCase();
-    if (words.length > 1) {
-      const lastLetter = words[words.length - 1][0].toUpperCase();
-      return firstLetter + lastLetter;
-    } else {
-      return words[0].slice(0, 2).toUpperCase() || firstLetter;
-    }
-  });
-
-  const avatarChromeFallbackClass = $derived(
-    avatarFallbackChromeClasses(userAvatarSeed),
+  const { hasChanges, canSave } = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
   );
-
-  const hasChanges = $derived(isTainted($tainted));
-
-  // canSave: form must have changes AND no validation errors
-  const canSave = $derived.by(() => {
-    if (!hasChanges) return false;
-    for (const key in $errors) {
-      const err = ($errors as Record<string, string | string[] | undefined>)[key];
-      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
-    }
-    return true;
-  });
 
   // Audit derived values from store
   const profile = $derived(userProfileStore.current);
-  const version = $derived(profile?.version || 0);
   const createdAt = $derived.by(() => profile?.created_at ? formatUiDateTime(profile.created_at, $uiLang) : '');
   const createdBy = $derived(profile?.created_by || '');
   const createdByName = $derived(profile?.created_by_name || '');
@@ -195,12 +166,13 @@
   const updatedByName = $derived(profile?.updated_by_name || '');
   const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
   const userUuid = $derived(profile?.uuid || '');
+  const auditData = $derived(profile ? buildAuditData(profile) : buildAuditData());
   const deletedAt = $derived('');
   const deletedBy = $derived('');
   const deletedByName = $derived('');
 
   let isCreatePage = $state(false);
-  let availableRoles: string[] = $state([]);
+  const { roleNames: availableRoles } = useActiveRoles();
   const metadata = useEntityMetadata({
     endpoint: '/api/v1/auth/me/meta',
     entityName: 'user_profiles'
@@ -211,22 +183,10 @@
   }
 
   // Block internal navigation when there are changes
-  beforeNavigate((navigation) => {
-    if (hasChanges) {
-      const confirmLeave = confirm($t('shell.settings.profile.unsavedChanges'));
-      if (!confirmLeave) {
-        navigation.cancel();
-      }
-    }
-  });
-
-  // Block external navigation (tab close, browser back/forward)
-  function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (hasChanges) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  }
+  const { handleBeforeUnload } = useUnsavedChangesGuard(
+    () => hasChanges,
+    'shell.settings.profile.unsavedChanges',
+  );
 
   // Reactively load profile when store changes
   $effect(() => {
@@ -273,16 +233,6 @@
   // Refresh profile from server on mount
   onMount(async () => {
     void metadata.loadMetadata();
-    // Fetch available roles for readonly display
-    try {
-      const rolesRes = await apiFetch("/api/v1/system/roles/active");
-      if (rolesRes.ok) {
-        const rolesData = await rolesRes.json();
-        availableRoles = (rolesData.roles ?? []).map((r: any) => r.idp_role);
-      }
-    } catch (e) {
-      console.error("Failed to load roles", e);
-    }
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
@@ -328,20 +278,7 @@
     entity="user_profiles"
     rowUuid={userUuid}
     meta={(metadata.state.meta as EntityMetadata | null) || undefined}
-    auditData={{
-      uuid: userUuid,
-      version,
-      created_at: profile?.created_at,
-      created_by: profile?.created_by,
-      created_by_name: profile?.created_by_name,
-      updated_at: profile?.updated_at,
-      updated_by: profile?.updated_by,
-      updated_by_name: profile?.updated_by_name,
-      deleted_at: profile?.deleted_at,
-      deleted_by: profile?.deleted_by,
-      deleted_by_name: profile?.deleted_by_name,
-      last_synced_at: profile?.last_synced_at
-    }}
+    auditData={auditData}
     auditingColumns={(metadata.state.meta?.list?.auditingColumns as MetaColumn[] | undefined) || []}
     isCreatePage={isCreatePage}
   >
@@ -367,19 +304,11 @@
           <div class="space-y-4">
             <!-- Avatar with displayname and email -->
             <div class="flex items-center gap-4">
-              <Avatar class="size-14 rounded-none avatar-hex">
-                <AvatarFallback
-                  class={cn(
-                    "rounded-none text-2xl font-semibold",
-                    $form.avatar_color ? "" : avatarChromeFallbackClass,
-                  )}
-                  style={$form.avatar_color
-                    ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
-                    : ""}
-                >
-                  {userAvatarSeed}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarPreview
+                displayName={$form.display_name}
+                avatarColor={$form.avatar_color}
+                defaultSeed="PB"
+              />
               <div>
                 <p class="font-medium">
                   {$form.display_name ||
@@ -392,36 +321,11 @@
             </div>
 
             <!-- Color Picker -->
-            <div>
-              <label
-                for="avatar-color-trigger"
-                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {$t("shell.settings.profile.avatarColor")}
-              </label>
-              <div class="mt-2">
-                <Popover.Root>
-                  <Popover.Trigger>
-                    {#snippet child({ props })}
-                      <Button {...props} variant="outline" id="avatar-color-trigger">
-                        <div class="flex items-center gap-4">
-                          <div
-                            class="w-5 h-5 rounded-full border shadow-sm"
-                            style="background-color: {$form.avatar_color};"
-                          ></div>
-                          {$form.avatar_color}
-                        </div>
-                      </Button>
-                    {/snippet}
-                  </Popover.Trigger>
-                  <Popover.Content class="w-auto p-0">
-                    <div class="p-3">
-                      <ColorPicker.Root bind:value={$form.avatar_color} />
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
-              </div>
-            </div>
+            <ColorSelector
+              bind:value={$form.avatar_color}
+              labelKey="shell.settings.profile.avatarColor"
+              triggerId="avatar-color-trigger"
+            />
           </div>
 
           <!-- Column 2: Empty -->

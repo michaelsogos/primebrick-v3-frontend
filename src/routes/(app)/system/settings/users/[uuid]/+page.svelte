@@ -5,13 +5,10 @@
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+  import { AvatarPreview } from '$lib/components/ui/avatar-preview';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import { cn } from '$lib/utils';
-  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
-  import * as ColorPicker from '$lib/components/ui/color-picker';
-  import * as Popover from '$lib/components/ui/popover';
+  import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -26,12 +23,17 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { beforeNavigate } from '$app/navigation';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { interpolateTemplate } from '$lib/template-interpolate';
-  import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
+  import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { buildAuditData } from '$lib/utils/audit-data';
+  import { computeInitials } from '$lib/utils/avatar-initials';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema } from '$lib/validation/display-name';
   import ShieldUser from '@lucide/svelte/icons/shield-user';
@@ -39,42 +41,15 @@
 
   const uuid = $derived(page.params.uuid);
 
-  const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
-  let syncChannel: BroadcastChannel | null = null;
+  const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
-  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[] = $state([]);
+  const { state: rolesState } = useActiveRoles();
+  const availableRoles = $derived([...rolesState.roles] as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]);
 
   onMount(() => {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    void loadMeta();
+    void entityMetadata.loadMetadata();
     void loadUser();
-
-    void (async () => {
-      try {
-        const res = await apiFetch('/api/v1/system/roles/active');
-        if (res.ok) {
-          const data = await res.json();
-          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[];
-        }
-      } catch (e) {
-        console.error('Failed to load roles', e);
-      }
-    })();
-
-    return () => {
-      syncChannel?.close();
-      syncChannel = null;
-    };
   });
-
-  function notifyParentRefresh() {
-    if (!syncChannel) return;
-    try {
-      syncChannel.postMessage('refresh');
-    } catch (e) {
-      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
-    }
-  }
 
   // Zod schema for user update form
   const updateSchema = z.object({
@@ -123,8 +98,19 @@
   let loading = $state(true);
   let isCreatePage = $state(false);
 
+  const entityMetadata = useEntityMetadata({
+    endpoint: '/api/v1/entities/user_profiles/meta',
+    entityName: 'user_profiles',
+  });
+
+  $effect(() => {
+    if (entityMetadata.state.meta) {
+      meta = entityMetadata.state.meta as EntityMetadata;
+    }
+  });
+
   function getColMeta(key: string) {
-    return meta?.list?.columns?.find((c) => c.key === key);
+    return getColMetaUtil(meta, key);
   }
 
   // Superforms in SPA mode
@@ -145,24 +131,8 @@
       if (!updateForm.valid) return;
 
       try {
-        // Calculate avatar initials from display_name (like CREATE/PROFILE)
-        const initials = updateForm.data.display_name 
-          ? updateForm.data.display_name
-              .trim()
-              .split(/\s+/)
-              .filter((w) => w.length > 0)
-              .map((w, i, arr) => {
-                if (arr.length > 1 && i === arr.length - 1) {
-                  return w[0].toUpperCase();
-                }
-                if (i === 0) {
-                  return w[0].toUpperCase();
-                }
-                return '';
-              })
-              .join('')
-              .slice(0, 2)
-          : '??';
+        // Calculate avatar initials from display_name (unified with CREATE/PROFILE)
+        const initials = computeInitials(updateForm.data.display_name, '??');
 
         const body = {
           display_name: updateForm.data.display_name,
@@ -200,39 +170,12 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const hasChanges = $derived(isTainted($tainted));
-
-  // canSave: form must have changes AND no validation errors
-  const canSave = $derived.by(() => {
-    if (!hasChanges) return false;
-    for (const key in $errors) {
-      const err = ($errors as Record<string, string | string[] | undefined>)[key];
-      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
-    }
-    return true;
-  });
-
-  // Derive initials from display_name for preview (same as CREATE/PROFILE)
-  const userAvatarSeed = $derived.by(() => {
-    if (!$form.display_name) return "??";
-    const words = $form.display_name
-      .trim()
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-    if (words.length === 0) return "??";
-    const firstLetter = words[0][0].toUpperCase();
-    if (words.length > 1) {
-      const lastLetter = words[words.length - 1][0].toUpperCase();
-      return firstLetter + lastLetter;
-    } else {
-      return words[0].slice(0, 2).toUpperCase() || firstLetter;
-    }
-  });
-
-  const avatarChromeFallbackClass = $derived(
-    avatarFallbackChromeClasses(userAvatarSeed),
+  const { hasChanges, canSave } = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
   );
 
   async function loadUser() {
@@ -253,11 +196,11 @@
           roles: data.roles || [],
         },
       });
-      if (meta?.updatePageTitle && user) {
-        pageTitle = interpolateTemplate(meta.updatePageTitle, user);
-      } else {
-        pageTitle = user?.display_name || user?.idp_username || '';
-      }
+      pageTitle = resolvePageTitle(
+        meta,
+        user as Record<string, unknown> | null,
+        user?.display_name || user?.idp_username || '',
+      );
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {
@@ -265,66 +208,16 @@
     }
   }
 
-  async function loadMeta() {
-    try {
-      const response = await apiFetch('/api/v1/entities/user_profiles/meta');
-      if (!response.ok) {
-        console.error('Failed to load user meta');
-        return;
-      }
-      meta = await response.json();
-    } catch (error) {
-      console.error('Failed to load meta:', error);
-    }
-  }
-
   // Audit state
-  const auditData = $derived.by(() => {
-    if (!user) return {};
-    return {
-      uuid: user.uuid,
-      version: user.version,
-      created_at: user.created_at,
-      created_by: user.created_by,
-      created_by_name: user.created_by_name,
-      updated_at: user.updated_at,
-      updated_by: user.updated_by,
-      updated_by_name: user.updated_by_name,
-      deleted_at: (user as any).deleted_at,
-      deleted_by: (user as any).deleted_by,
-      deleted_by_name: (user as any).deleted_by_name,
-      last_synced_at: user.last_synced_at
-    };
-  });
+  const auditData = $derived(buildAuditData(user));
 
-  function handleCancel() {
-    if (hasChanges) {
-      const ok = confirm($t('shell.settings.users.update.unsavedChanges'));
-      if (!ok) return;
-    }
-    if (window.opener) {
-      window.close();
-    } else {
-      history.back();
-    }
-  }
-
-  beforeNavigate((navigation) => {
-    if (hasChanges) {
-      const confirmLeave = confirm($t('shell.settings.users.update.unsavedChanges'));
-      if (!confirmLeave) {
-        navigation.cancel();
-      }
-    }
-  });
+  const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
+    () => hasChanges,
+    'shell.settings.users.update.unsavedChanges',
+  );
 </script>
 
-<svelte:window onbeforeunload={(e) => {
-  if (hasChanges) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-}} />
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <FormPageLayout
   entity="user_profiles"
@@ -361,19 +254,10 @@
             <div class="space-y-4">
               <!-- Avatar with displayname and email -->
               <div class="flex items-center gap-4">
-                <Avatar class="size-14 rounded-none avatar-hex">
-                  <AvatarFallback
-                    class={cn(
-                      "rounded-none text-2xl font-semibold",
-                      $form.avatar_color ? "" : avatarChromeFallbackClass,
-                    )}
-                    style={$form.avatar_color
-                      ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
-                      : ""}
-                  >
-                    {userAvatarSeed}
-                  </AvatarFallback>
-                </Avatar>
+                <AvatarPreview
+                  displayName={$form.display_name}
+                  avatarColor={$form.avatar_color}
+                />
                 <div class="flex-1">
                   <p class="font-medium">
                     {$form.display_name || user?.display_name || ''}
@@ -385,36 +269,12 @@
               </div>
 
               <!-- Color Picker -->
-              <div>
-                <label
-                  for="avatar-color-trigger"
-                  class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {$t('shell.settings.users.update.avatarColor')}
-                </label>
-                <div class="mt-2">
-                  <Popover.Root>
-                    <Popover.Trigger>
-                      {#snippet child({ props })}
-                        <Button {...props} variant="outline" id="avatar-color-trigger">
-                          <div class="flex items-center gap-4">
-                            <div
-                              class="w-5 h-5 rounded-full border shadow-sm"
-                              style="background-color: {$form.avatar_color || '#000000'};"
-                            ></div>
-                            {$form.avatar_color || $t('shell.settings.users.update.selectColorPlaceholder')}
-                          </div>
-                        </Button>
-                      {/snippet}
-                    </Popover.Trigger>
-                    <Popover.Content class="w-auto p-0">
-                      <div class="p-3">
-                        <ColorPicker.Root bind:value={$form.avatar_color} />
-                      </div>
-                    </Popover.Content>
-                  </Popover.Root>
-                </div>
-              </div>
+              <ColorSelector
+                bind:value={$form.avatar_color}
+                labelKey="shell.settings.users.update.avatarColor"
+                placeholderKey="shell.settings.users.update.selectColorPlaceholder"
+                triggerId="avatar-color-trigger"
+              />
             </div>
           </div>
 

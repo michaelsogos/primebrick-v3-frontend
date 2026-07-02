@@ -19,7 +19,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { beforeNavigate, goto } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
@@ -27,10 +27,8 @@
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
-  import { cn } from '$lib/utils';
-  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
-  import * as ColorPicker from '$lib/components/ui/color-picker';
-  import * as Popover from '$lib/components/ui/popover';
+  import { AvatarPreview } from '$lib/components/ui/avatar-preview';
+  import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
@@ -42,12 +40,18 @@
   import ShieldOff from '@lucide/svelte/icons/shield-off';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
+  import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { buildAuditData } from '$lib/utils/audit-data';
+  import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
 
-  const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
-  let syncChannel: BroadcastChannel | null = null;
+  const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
-  let availableRoles: { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[] = $state([]);
+  const { state: rolesState } = useActiveRoles();
+  const availableRoles = $derived([...rolesState.roles] as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]);
 
   // Organization dropdown — fetched from API (Section 10)
   let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
@@ -83,21 +87,8 @@
   }
 
   onMount(() => {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
     void entityMetadata.loadMetadata();
     void passwordPolicy.load();
-
-    void (async () => {
-      try {
-        const res = await apiFetch('/api/v1/system/roles/active');
-        if (res.ok) {
-          const data = await res.json();
-          availableRoles = (data.roles ?? []) as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[];
-        }
-      } catch (e) {
-        console.error('Failed to load roles', e);
-      }
-    })();
 
     void (async () => {
       try {
@@ -112,21 +103,7 @@
         orgsLoading = false;
       }
     })();
-
-    return () => {
-      syncChannel?.close();
-      syncChannel = null;
-    };
   });
-
-  function notifyParentRefresh() {
-    if (!syncChannel) return;
-    try {
-      syncChannel.postMessage('refresh');
-    } catch (e) {
-      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
-    }
-  }
 
   // Zod schema for user create form
   const createSchema = z.object({
@@ -229,20 +206,13 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const hasChanges = $derived(isTainted($tainted));
-
-  // canSave: form must have changes AND no validation errors
-  const canSave = $derived.by(() => {
-    if (!hasChanges) return false;
-    // Check all errors are empty
-    for (const key in $errors) {
-      const err = ($errors as Record<string, string | string[] | undefined>)[key];
-      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
-    }
-    return true;
-  });
+  const { hasChanges, canSave } = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
+  );
 
   // Username async validation (Section 11)
   // The username field is disabled until an org is selected — the availability check is org-scoped.
@@ -278,27 +248,6 @@
     }
   }
 
-  // Derived values for avatar preview
-  const userAvatarSeed = $derived.by(() => {
-    if (!$form.display_name) return "??";
-    const words = $form.display_name
-      .trim()
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-    if (words.length === 0) return "??";
-    const firstLetter = words[0][0].toUpperCase();
-    if (words.length > 1) {
-      const lastLetter = words[words.length - 1][0].toUpperCase();
-      return firstLetter + lastLetter;
-    } else {
-      return words[0].slice(0, 2).toUpperCase() || firstLetter;
-    }
-  });
-
-  const avatarChromeFallbackClass = $derived(
-    avatarFallbackChromeClasses(userAvatarSeed),
-  );
-
   // Derived values for IDP fields
   const idpCode = $derived(''); // Not used anymore - removed from form
 
@@ -321,52 +270,18 @@
   });
 
   function getColMeta(key: string) {
-    return meta?.list?.columns?.find((c) => c.key === key);
+    return getColMetaUtil(meta, key);
   }
 
-  const auditData = $derived({
-    uuid: '',
-    version: 0,
-    created_at: undefined,
-    created_by: undefined,
-    created_by_name: undefined,
-    updated_at: undefined,
-    updated_by: undefined,
-    updated_by_name: undefined,
-    deleted_at: undefined,
-    deleted_by: undefined,
-    deleted_by_name: undefined,
-    last_synced_at: undefined
-  });
+  const auditData = $derived(buildAuditData());
 
-  function handleCancel() {
-    if (hasChanges) {
-      const ok = confirm($t('shell.settings.users.create.unsavedChanges'));
-      if (!ok) return;
-    }
-    if (window.opener) {
-      window.close();
-    } else {
-      history.back();
-    }
-  }
-
-  beforeNavigate((navigation) => {
-    if (hasChanges) {
-      const confirmLeave = confirm($t('shell.settings.users.create.unsavedChanges'));
-      if (!confirmLeave) {
-        navigation.cancel();
-      }
-    }
-  });
+  const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
+    () => hasChanges,
+    'shell.settings.users.create.unsavedChanges',
+  );
 </script>
 
-<svelte:window onbeforeunload={(e) => {
-  if (hasChanges) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-}} />
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <FormPageLayout
   entity="user_profiles"
@@ -398,19 +313,10 @@
           <div class="space-y-4">
             <!-- Avatar with displayname and email -->
             <div class="flex items-center gap-4">
-              <Avatar class="size-14 rounded-none avatar-hex">
-                <AvatarFallback
-                  class={cn(
-                    "rounded-none text-2xl font-semibold",
-                    $form.avatar_color ? "" : avatarChromeFallbackClass,
-                  )}
-                  style={$form.avatar_color
-                    ? `background-color: ${$form.avatar_color}; color: ${getContrastTextColor($form.avatar_color)};`
-                    : ""}
-                >
-                  {userAvatarSeed}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarPreview
+                displayName={$form.display_name}
+                avatarColor={$form.avatar_color}
+              />
               <div class="flex-1">
                 <p class="font-medium">
                   {$form.display_name || $t('shell.settings.users.create.displayNamePlaceholder')}
@@ -422,36 +328,11 @@
             </div>
 
             <!-- Color Picker -->
-            <div>
-              <label
-                for="avatar-color-trigger"
-                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {$t('shell.settings.users.create.avatarColor')}
-              </label>
-              <div class="mt-2">
-                <Popover.Root>
-                  <Popover.Trigger>
-                    {#snippet child({ props })}
-                      <Button {...props} variant="outline" id="avatar-color-trigger">
-                        <div class="flex items-center gap-4">
-                          <div
-                            class="w-5 h-5 rounded-full border shadow-sm"
-                            style="background-color: {$form.avatar_color};"
-                          ></div>
-                          {$form.avatar_color}
-                        </div>
-                      </Button>
-                    {/snippet}
-                  </Popover.Trigger>
-                  <Popover.Content class="w-auto p-0">
-                    <div class="p-3">
-                      <ColorPicker.Root bind:value={$form.avatar_color} />
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
-              </div>
-            </div>
+            <ColorSelector
+              bind:value={$form.avatar_color}
+              labelKey="shell.settings.users.create.avatarColor"
+              triggerId="avatar-color-trigger"
+            />
           </div>
         </div>
 

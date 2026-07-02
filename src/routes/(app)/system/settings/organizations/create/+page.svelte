@@ -17,8 +17,8 @@
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
-  import { onMount, tick } from 'svelte';
-  import { beforeNavigate, goto } from '$app/navigation';
+  import { tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
@@ -26,29 +26,14 @@
   import { ValidationResult } from '$lib/types/validation.js';
   import type { ValidationStatus } from '$lib/types/validation.js';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
 
-  const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
-  let syncChannel: BroadcastChannel | null = null;
-
-  onMount(() => {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-
-    return () => {
-      syncChannel?.close();
-      syncChannel = null;
-    };
-  });
-
-  function notifyParentRefresh() {
-    if (!syncChannel) return;
-    try {
-      syncChannel.postMessage('refresh');
-    } catch (e) {
-      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
-    }
-  }
+  const { notifyParentRefresh } = useSyncChannel('primebrick_organizations_sync', { mode: 'sender' });
 
   // Zod schema for organization create form
   const createSchema = z.object({
@@ -119,19 +104,13 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const hasChanges = $derived(isTainted($tainted));
-
-  // canSave: form must have changes AND no validation errors
-  const canSave = $derived.by(() => {
-    if (!hasChanges) return false;
-    for (const key in $errors) {
-      const err = ($errors as Record<string, string | string[] | undefined>)[key];
-      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
-    }
-    return true;
-  });
+  const { hasChanges, canSave } = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
+  );
 
   // Auto-slug idp_name from display_name on blur (not on every keystroke).
   // On blur of display_name: compute slug once, write to idp_name, then
@@ -176,50 +155,12 @@
   let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
 
-  const auditData = $derived({
-    uuid: '',
-    version: 0,
-    created_at: undefined,
-    created_by: undefined,
-    created_by_name: undefined,
-    updated_at: undefined,
-    updated_by: undefined,
-    updated_by_name: undefined,
-    deleted_at: undefined,
-    deleted_by: undefined,
-    deleted_by_name: undefined,
-    last_synced_at: undefined
-  });
+  const auditData = $derived(buildAuditData());
 
-  function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (hasChanges) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  }
-
-  function handleCancel() {
-    if (hasChanges) {
-      const ok = confirm($t('shell.settings.organizations.create.unsavedChanges'));
-      if (!ok) return;
-    }
-    if (window.opener) {
-      // Opened as child window from organizations list
-      window.close();
-    } else {
-      // Direct navigation — go back
-      history.back();
-    }
-  }
-
-  beforeNavigate((navigation) => {
-    if (hasChanges) {
-      const confirmLeave = confirm($t('shell.settings.organizations.create.unsavedChanges'));
-      if (!confirmLeave) {
-        navigation.cancel();
-      }
-    }
-  });
+  const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
+    () => hasChanges,
+    'shell.settings.organizations.create.unsavedChanges',
+  );
 
   // Validation function for idp_name availability
   async function checkIdpNameAvailability(idpName: string): Promise<ValidationResult> {

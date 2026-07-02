@@ -14,9 +14,7 @@
   } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
-  import { onDestroy } from 'svelte';
-
-  const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -103,21 +101,9 @@
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
 
   // BroadcastChannel for sync with child windows
-  let syncChannel: BroadcastChannel | null = null;
-
-  if (browser) {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    syncChannel.onmessage = (event) => {
-      if (event.data === 'refresh') {
-        void refreshRows();
-      }
-    };
-  }
-
-  onDestroy(() => {
-    if (syncChannel) {
-      syncChannel.close();
-    }
+  useSyncChannel('primebrick_organizations_sync', {
+    mode: 'receiver',
+    onRefresh: () => void refreshRows(),
   });
 
   function ensureVisibleKeys() {

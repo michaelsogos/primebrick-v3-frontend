@@ -12,12 +12,9 @@
     orderedColumnsFromListMeta,
     sanitizeVisibleKeys
   } from '$lib/entity-list';
-  import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
-  import { onDestroy } from 'svelte';
   import { onMount } from 'svelte';
-
-  const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 
   type UserProfileMeta = {
     entity: 'user_profiles';
@@ -110,21 +107,9 @@
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
 
   // BroadcastChannel for sync with child windows
-  let syncChannel: BroadcastChannel | null = null;
-
-  if (browser) {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    syncChannel.onmessage = (event) => {
-      if (event.data === 'refresh') {
-        void refreshRows();
-      }
-    };
-  }
-
-  onDestroy(() => {
-    if (syncChannel) {
-      syncChannel.close();
-    }
+  const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', {
+    mode: 'receiver',
+    onRefresh: () => void refreshRows(),
   });
 
   function ensureVisibleKeys() {
@@ -507,9 +492,7 @@
         const code = apiDetails.code ?? 'DELETE_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      if (syncChannel) {
-        syncChannel.postMessage('refresh');
-      }
+      notifyParentRefresh();
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
@@ -535,9 +518,7 @@
         const code = apiDetails.code ?? 'RESTORE_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      if (syncChannel) {
-        syncChannel.postMessage('refresh');
-      }
+      notifyParentRefresh();
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
