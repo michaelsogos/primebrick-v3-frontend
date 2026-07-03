@@ -7,6 +7,7 @@
    *
    * Consolidates the duplicated Avatar + AvatarFallback block (D-11).
    */
+  import { untrack } from "svelte";
   import { Avatar, AvatarFallback } from "$lib/components/ui/avatar";
   import { cn } from "$lib/utils";
   import { getContrastTextColor } from "$lib/avatar-chrome-palette";
@@ -24,7 +25,7 @@
 
   const { seed, chromeFallbackClass } = useAvatarPreview(
     () => displayName,
-    defaultSeed,
+    untrack(() => defaultSeed),
   );
 </script>
 
