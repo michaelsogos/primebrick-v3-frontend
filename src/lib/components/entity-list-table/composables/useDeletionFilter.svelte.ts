@@ -4,13 +4,13 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
 
 export function useDeletionFilter(
-  uid: string,
-  columnOrderStorageKey?: string,
-  deletionFilterModeProp: DeletionFilterMode = 'non_deleted',
-  onDeletionFilterModeChange?: (mode: DeletionFilterMode) => void
+  getUid: () => string,
+  getColumnOrderStorageKey: () => string | undefined,
+  getDeletionFilterModeProp: () => DeletionFilterMode,
+  getOnDeletionFilterModeChange: () => ((mode: DeletionFilterMode) => void) | undefined
 ) {
   const deletionFilterStorageKey = $derived(
-    columnOrderStorageKey ? `${columnOrderStorageKey}:deletionFilter` : `pb.entityList:${uid}:deletionFilter`
+    getColumnOrderStorageKey() ? `${getColumnOrderStorageKey()}:deletionFilter` : `pb.entityList:${getUid()}:deletionFilter`
   );
 
   const _rawDeletion = (() => {
@@ -22,7 +22,7 @@ export function useDeletionFilter(
     _rawDeletion === 'non_deleted' || _rawDeletion === 'deleted' || _rawDeletion === 'all' ? _rawDeletion : null;
 
   const _state = $state({
-    deletionFilterMode: (_initialDeletionMode ?? deletionFilterModeProp) as DeletionFilterMode,
+    deletionFilterMode: (_initialDeletionMode ?? getDeletionFilterModeProp()) as DeletionFilterMode,
   });
 
   function readDeletionFilter(): DeletionFilterMode | null {
@@ -51,8 +51,8 @@ export function useDeletionFilter(
     if (stored) {
       _state.deletionFilterMode = stored;
       // If the restored value differs from what the parent passed, notify the parent so it re-fetches
-      if (stored !== deletionFilterModeProp) {
-        onDeletionFilterModeChange?.(stored);
+      if (stored !== getDeletionFilterModeProp()) {
+        getOnDeletionFilterModeChange()?.(stored);
       }
     }
   });
@@ -65,7 +65,7 @@ export function useDeletionFilter(
     // Skip the initial firing so we don't trigger an extra refresh on mount when the
     // value didn't actually change (the parent already holds the same value).
     if (lastDeletionFilterMode !== null && lastDeletionFilterMode !== _state.deletionFilterMode) {
-      onDeletionFilterModeChange?.(_state.deletionFilterMode);
+      getOnDeletionFilterModeChange()?.(_state.deletionFilterMode);
     }
     lastDeletionFilterMode = _state.deletionFilterMode;
   });

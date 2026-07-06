@@ -10,7 +10,7 @@ export interface BulkActionsOptions {
   onBulkActionComplete?: () => void;
   onBulkActionError?: (error: Error) => void;
   onSelectionChange?: (keys: string[]) => void;
-  onRefresh?: () => void;
+  onRefresh?: () => () => void;
   onToolbarModeChange?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
   dialogs?: {
@@ -32,7 +32,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     onBulkActionComplete,
     onBulkActionError,
     onSelectionChange,
-    onRefresh,
+    onRefresh: getOnRefresh,
     onToolbarModeChange,
     dialogs,
     setDuplicateScope,
@@ -87,7 +87,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       // Switch back to filters mode
       onToolbarModeChange?.();
       // Refresh the list after successful deletion
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onBulkActionComplete?.();
     } catch (error) {
       console.error('Bulk delete failed:', error);
@@ -165,7 +165,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       // Switch back to filters mode
       onToolbarModeChange?.();
       // Refresh the list after successful restore
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onBulkActionComplete?.();
     } catch (error) {
       console.error('Bulk restore failed:', error);
@@ -249,7 +249,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       }
 
       // Refresh the list
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onBulkActionComplete?.();
     } catch (error) {
       console.error('Duplicate failed:', error);

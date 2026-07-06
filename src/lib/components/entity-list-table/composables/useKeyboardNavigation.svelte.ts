@@ -4,7 +4,7 @@ export function useKeyboardNavigation<T>(options: {
   viewRows: () => T[];
   rowSelectionEnabled: () => boolean;
   selectedKeys: () => string[];
-  onSelectedKeysChange: (keys: string[]) => void;
+  onSelectedKeysChange: () => (keys: string[]) => void;
   rowKey: (row: T) => string;
   previewPanelOpen: () => boolean;
   previewRowIndex: () => number;
@@ -18,7 +18,7 @@ export function useKeyboardNavigation<T>(options: {
   page: () => number;
   pageSize: () => number;
   totalPages: () => number;
-  onPageChange: (p: number) => void;
+  onPageChange: () => (p: number) => void;
   openRowDropdown: (row: T) => void;
   footerUsesClientPaging: () => boolean;
   clientSelectedPage: () => number;
@@ -62,7 +62,7 @@ export function useKeyboardNavigation<T>(options: {
         if (options.footerUsesClientPaging()) {
           options.setClientSelectedPage(options.clientSelectedPage() + 1);
         } else {
-          options.onPageChange(options.page() + 1);
+          options.onPageChange()(options.page() + 1);
         }
       }
       if (options.previewPanelOpen()) {
@@ -82,7 +82,7 @@ export function useKeyboardNavigation<T>(options: {
         if (options.footerUsesClientPaging()) {
           options.setClientSelectedPage(options.clientSelectedPage() - 1);
         } else {
-          options.onPageChange(options.page() - 1);
+          options.onPageChange()(options.page() - 1);
         }
       }
       if (options.previewPanelOpen()) {

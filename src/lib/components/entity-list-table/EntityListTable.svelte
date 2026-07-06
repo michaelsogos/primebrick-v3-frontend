@@ -113,7 +113,7 @@
   const rowKey = (row: TRow): string => getRowKey(row, uid);
 
   // Column order management using composable
-  const columnOrder = useColumnOrder(columnOrderStorageKey);
+  const columnOrder = useColumnOrder(() => columnOrderStorageKey);
   const orderState = columnOrder.state;
 
   const allColumns = $derived.by(() => {
@@ -182,16 +182,16 @@
   );
   const viewModeComposable = useViewMode({
     initialMode: 'table',
-    storageKey: viewModeStorageKey
+    storageKey: () => viewModeStorageKey
   });
   const viewMode = $derived(viewModeComposable.state.viewMode);
 
   // Deletion filter management using composable
   const deletionFilterComposable = useDeletionFilter(
-    uid,
-    columnOrderStorageKey,
-    deletionFilterModeProp ?? 'non_deleted',
-    onDeletionFilterModeChange
+    () => uid,
+    () => columnOrderStorageKey,
+    () => deletionFilterModeProp ?? 'non_deleted',
+    () => onDeletionFilterModeChange
   );
   const deletionFilterMode = $derived(deletionFilterComposable.state.deletionFilterMode);
 
@@ -201,19 +201,19 @@
     columns: () => columns,
     visibleKeys: () => visibleKeys,
     searchInKeys: () => searchInKeys,
-    onSearchInKeysChange,
-    onVisibleKeysChange,
-    onResetColumnVisibility,
+    onSearchInKeysChange: () => onSearchInKeysChange,
+    onVisibleKeysChange: () => onVisibleKeysChange,
+    onResetColumnVisibility: () => onResetColumnVisibility,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,
     auditingColumnsGroup: () => auditingColumnsGroup,
     stickyColumnsGroup: () => stickyColumnsGroup,
     filterValues: () => filterValues ?? null,
-    onFilterValuesChange,
-    onResetFilters,
+    onFilterValuesChange: () => onFilterValuesChange,
+    onResetFilters: () => onResetFilters,
     advancedFilters: () => advancedFilters ?? null,
-    onAdvancedFiltersChange,
+    onAdvancedFiltersChange: () => onAdvancedFiltersChange,
     filtersOpen: () => filtersOpen,
     setFiltersOpen: (open) => { filtersOpen = open; },
     checkboxVisualOnlyClass,
@@ -381,7 +381,7 @@
     onFieldChange: (row, field, value) => {
       // Handle field change if needed
     },
-    onRefresh: onRefresh
+    onRefresh: () => onRefresh
   });
 
   const dialogs = useDialogs<TRow>();
@@ -401,7 +401,7 @@
     onSelectionChange: (keys) => {
       selectedKeys = keys;
     },
-    onRefresh: onRefresh,
+    onRefresh: () => onRefresh,
     onToolbarModeChange: () => {
       toolbarModeState.setMode('filters');
     },
@@ -421,8 +421,8 @@
     entity: () => entity,
     uid: () => uid,
     columns: () => columns,
-    onEditAction: onEditAction,
-    onRefresh: onRefresh,
+    onEditAction: () => onEditAction,
+    onRefresh: () => onRefresh,
     isRowDeleted: isRowDeleted,
     rowKey: rowKey,
     onPreviewRow: (row) => {
@@ -430,7 +430,7 @@
     },
     closeRowDropdown: closeRowDropdown,
     t: $t,
-    customActionHandlers,
+    customActionHandlers: () => customActionHandlers,
     dialogs: {
       openDeleteDialog: dialogs.openDeleteDialog,
       closeDeleteDialog: dialogs.closeDeleteDialog,
@@ -448,7 +448,7 @@
   // Selection handlers
   const selectionHandlers = createSelectionHandlers(
     () => selectedKeys,
-    onSelectedKeysChange,
+    () => onSelectedKeysChange,
     () => pageKeys,
     () => allOnPageSelected
   );
@@ -458,7 +458,7 @@
     viewRows: () => viewRows,
     rowSelectionEnabled: () => rowSelectionEnabled,
     selectedKeys: () => selectedKeys,
-    onSelectedKeysChange,
+    onSelectedKeysChange: () => onSelectedKeysChange,
     rowKey,
     previewPanelOpen: () => previewPanel.state.previewPanelOpen,
     previewRowIndex: () => previewPanel.state.previewRowIndex,
@@ -472,7 +472,7 @@
     page: () => page,
     pageSize: () => pageSize,
     totalPages: () => totalPages,
-    onPageChange,
+    onPageChange: () => onPageChange,
     openRowDropdown,
     footerUsesClientPaging: () => footerUsesClientPaging,
     clientSelectedPage: () => clientSelectedPage,
@@ -484,19 +484,19 @@
   // Sorting handlers
   const sortingHandlers = createSortingHandlers(
     columnOrder,
-    defaultSort,
-    defaultSortDir,
-    onResetColumnVisibility,
-    onSortChange,
+    () => defaultSort,
+    () => defaultSortDir,
+    () => onResetColumnVisibility,
+    () => onSortChange,
     () => rowsLoading,
     () => sortKey,
     () => sortDir,
     () => dataColumns,
     () => auditingColumnsGroup,
     () => nonAuditingColumns,
-    onFilterValuesChange,
-    onAdvancedFiltersChange,
-    onResetFilters
+    () => onFilterValuesChange,
+    () => onAdvancedFiltersChange,
+    () => onResetFilters
   );
   const { resetColumnsAndSorting, resetFilters, reorderGroup, handleSortClick } = sortingHandlers;
 

@@ -8,16 +8,16 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
   uid: () => string;
   columns: () => MetaColumn[];
-  onEditAction?: (row: TRow) => void;
+  onEditAction?: () => ((row: TRow) => void) | undefined;
   onRowActionComplete?: () => void;
   onRowActionError?: (error: Error) => void;
-  onRefresh?: () => void;
+  onRefresh?: () => (() => void) | undefined;
   isRowDeleted?: (row: TRow) => boolean;
   rowKey?: (row: TRow) => string;
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
-  customActionHandlers?: Record<string, (row: TRow) => void>;
+  customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
   dialogs?: {
     openDeleteDialog: () => void;
     closeDeleteDialog: () => void;
@@ -39,16 +39,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     entity: entityFn,
     uid: uidFn,
     columns: columnsFn,
-    onEditAction,
+    onEditAction: getOnEditAction,
     onRowActionComplete,
     onRowActionError,
-    onRefresh,
+    onRefresh: getOnRefresh,
     isRowDeleted,
     rowKey,
     onPreviewRow,
     closeRowDropdown,
     dialogs,
-    customActionHandlers,
+    customActionHandlers: getCustomActionHandlers,
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
@@ -67,9 +67,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       console.log('Cannot edit deleted row:', rowKey?.(row));
       return;
     }
-    if (onEditAction) {
-      onEditAction(row);
-    }
+    getOnEditAction?.()?.(row);
     closeRowDropdown?.();
   }
 
@@ -112,7 +110,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Delete failed:', error);
@@ -154,7 +152,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         method: 'POST'
       });
       // Refresh the list after successful restore
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Restore failed:', error);
@@ -223,7 +221,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
 
       // Refresh the list
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Duplicate failed:', error);
@@ -275,7 +273,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   function handleCustomAction(action: { actionName: string; translationKey: string }, row: TRow) {
-    const handler = customActionHandlers?.[action.actionName];
+    const handler = getCustomActionHandlers?.()?.[action.actionName];
     if (handler) {
       handler(row);
     } else {

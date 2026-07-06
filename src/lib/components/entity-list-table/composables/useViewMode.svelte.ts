@@ -5,7 +5,7 @@ export type ViewMode = 'table' | 'cards' | 'cards_list';
 export interface ViewModeOptions {
   initialMode?: ViewMode;
   onModeChange?: (mode: ViewMode) => void;
-  storageKey?: string;
+  storageKey?: () => string | undefined;
 }
 
 function readViewMode(storageKey: string): ViewMode | null {
@@ -29,10 +29,11 @@ function writeViewMode(storageKey: string, next: ViewMode) {
 }
 
 export function useViewMode(options: ViewModeOptions = {}) {
-  const { initialMode = 'table', onModeChange, storageKey } = options;
+  const { initialMode = 'table', onModeChange } = options;
+  const getStorageKey = options.storageKey;
 
   // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
-  const storedMode = storageKey ? readViewMode(storageKey) : null;
+  const storedMode = getStorageKey ? readViewMode(getStorageKey() ?? '') : null;
 
   const _state = $state({
     viewMode: (storedMode ?? initialMode) as ViewMode,
@@ -40,8 +41,9 @@ export function useViewMode(options: ViewModeOptions = {}) {
 
   function setViewMode(mode: ViewMode) {
     _state.viewMode = mode;
-    if (storageKey) {
-      writeViewMode(storageKey, mode);
+    const sk = getStorageKey?.();
+    if (sk) {
+      writeViewMode(sk, mode);
     }
     onModeChange?.(mode);
   }

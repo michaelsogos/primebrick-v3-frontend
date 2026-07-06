@@ -10,19 +10,19 @@ export interface UseSheetPanelsOptions {
   columns: () => MetaColumn[];
   visibleKeys: () => string[];
   searchInKeys: () => string[] | null;
-  onSearchInKeysChange: (keys: string[] | null) => void;
-  onVisibleKeysChange: (keys: string[]) => void;
-  onResetColumnVisibility: (view: ViewName) => void;
+  onSearchInKeysChange: () => (keys: string[] | null) => void;
+  onVisibleKeysChange: () => (keys: string[]) => void;
+  onResetColumnVisibility: () => (view: ViewName) => void;
   filterableColumns: () => MetaColumn[];
   searchableColumns: () => MetaColumn[];
   nonAuditingColumns: () => MetaColumn[];
   auditingColumnsGroup: () => MetaColumn[];
   stickyColumnsGroup: () => MetaColumn[];
   filterValues: () => Record<string, any> | null;
-  onFilterValuesChange?: (values: Record<string, any>) => void;
-  onResetFilters?: () => void;
+  onFilterValuesChange?: () => ((values: Record<string, any>) => void) | undefined;
+  onResetFilters?: () => (() => void) | undefined;
   advancedFilters: () => AdvancedFilter[] | null;
-  onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
+  onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined;
   filtersOpen: () => boolean;
   setFiltersOpen: (open: boolean) => void;
   checkboxVisualOnlyClass: string;
@@ -33,16 +33,17 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
 
   function toggleSearchKey(key: string) {
     const current = options.searchInKeys();
+    const cb = options.onSearchInKeysChange();
     if (!current || current.length === 0) {
-      options.onSearchInKeysChange([key]);
+      cb([key]);
       return;
     }
     if (current.includes(key)) {
       const next = current.filter((k) => k !== key);
-      options.onSearchInKeysChange(next.length ? next : null);
+      cb(next.length ? next : null);
       return;
     }
-    options.onSearchInKeysChange([...current, key]);
+    cb([...current, key]);
   }
 
   function toggleColumnKey(key: string) {
@@ -50,12 +51,13 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
     if (col?.hideable === false) return;
 
     const visible = options.visibleKeys();
+    const cb = options.onVisibleKeysChange();
     if (visible.includes(key)) {
       const next = visible.filter((k) => k !== key);
-      if (next.length > 0) options.onVisibleKeysChange(next);
+      if (next.length > 0) cb(next);
       return;
     }
-    options.onVisibleKeysChange([...visible, key]);
+    cb([...visible, key]);
   }
 
   // Do not `$effect`-open from `filtersOpen`: while the sheet is closing, `filtersOpen` can
@@ -113,7 +115,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
           }
           options.columnOrder.applyColumnVisibility(group, dedup);
         },
-        onResetColumnVisibility: () => options.onResetColumnVisibility('table'),
+        onResetColumnVisibility: () => options.onResetColumnVisibility()('table'),
         sheetMenuCheckboxClass: options.checkboxVisualOnlyClass
       } as any;
       return;
@@ -122,7 +124,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
       sheetState.props = {
         searchInKeys: options.searchInKeys(),
         searchableColumns: options.searchableColumns(),
-        onSearchInKeysChange: options.onSearchInKeysChange,
+        onSearchInKeysChange: options.onSearchInKeysChange(),
         toggleSearchKey,
         sheetMenuCheckboxClass: options.checkboxVisualOnlyClass
       } as any;
@@ -131,10 +133,10 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
       sheetState.props = {
         filterableColumns: options.filterableColumns(),
         filterValues: options.filterValues() ?? {},
-        onFilterValuesChange: options.onFilterValuesChange,
-        onResetFilters: options.onResetFilters,
+        onFilterValuesChange: options.onFilterValuesChange?.(),
+        onResetFilters: options.onResetFilters?.(),
         advancedFilters: options.advancedFilters() ?? [],
-        onAdvancedFiltersChange: options.onAdvancedFiltersChange
+        onAdvancedFiltersChange: options.onAdvancedFiltersChange?.()
       } as any;
     }
   });

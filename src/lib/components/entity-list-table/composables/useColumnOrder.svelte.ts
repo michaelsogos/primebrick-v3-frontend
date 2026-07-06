@@ -8,10 +8,11 @@ export type ColumnOrderState = {
   auditing?: string[];
 };
 
-export function useColumnOrder(columnOrderStorageKey?: string) {
+export function useColumnOrder(getColumnOrderStorageKey: () => string | undefined) {
   const _state = $state<ColumnOrderState>({});
 
   function readOrderState(): ColumnOrderState {
+    const columnOrderStorageKey = getColumnOrderStorageKey();
     if (!columnOrderStorageKey) return {};
     if (typeof window === 'undefined') return {};
     try {
@@ -35,6 +36,7 @@ export function useColumnOrder(columnOrderStorageKey?: string) {
   }
 
   function writeOrderState(next: ColumnOrderState) {
+    const columnOrderStorageKey = getColumnOrderStorageKey();
     if (!columnOrderStorageKey) return;
     if (typeof window === 'undefined') return;
     try {

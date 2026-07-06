@@ -5,13 +5,13 @@ export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
   viewRows: () => TRow[];
   rowKey: (row: TRow) => string;
   onFieldChange?: (row: TRow, field: string, value: any) => void;
-  onRefresh?: () => void;
+  onRefresh?: () => () => void;
 }
 
 export function usePreviewPanel<TRow extends Record<string, unknown>>(
   options: PreviewPanelOptions<TRow>
 ) {
-  const { viewRows: viewRowsFn, rowKey, onFieldChange, onRefresh } = options;
+  const { viewRows: viewRowsFn, rowKey, onFieldChange, onRefresh: getOnRefresh } = options;
 
   const _state = $state({
     previewRow: null as TRow | null,
@@ -51,6 +51,10 @@ export function usePreviewPanel<TRow extends Record<string, unknown>>(
       // Update local preview row state
       _state.previewRow = { ..._state.previewRow, [field]: value };
     }
+  }
+
+  function refresh() {
+    getOnRefresh?.()();
   }
 
   function setFocusedRowIndex(index: number) {
