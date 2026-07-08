@@ -15,7 +15,7 @@
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
-    totalCount: number;
+    totalCount: bigint;
     entity: string;
     exportScope: 'selected' | 'all';
     onExportScopeChange: (scope: 'selected' | 'all') => void;

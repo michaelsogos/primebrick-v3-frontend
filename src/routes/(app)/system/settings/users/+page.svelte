@@ -3,6 +3,7 @@
   import { EntityListTable } from '$lib/components/entity-list-table';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
+  import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
@@ -44,7 +45,7 @@
     rows: UserProfileListRow[];
     page: number;
     page_size: number;
-    total: number;
+    total: bigint;
   };
 
   let meta = $state<UserProfileMeta | null>(null);
@@ -65,7 +66,7 @@
 
   let page = $state(1);
   let pageSize = $state(25);
-  let total = $state(0);
+  let total = $state<bigint>(0n);
 
   let filtersOpen = $state(false);
 
@@ -301,7 +302,7 @@
         const code = apiDetails.code ?? 'LIST_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      const data = (await res.json()) as ListResponse;
+      const data = extJsonParse<ListResponse>(await res.text());
       rows = data.rows;
       page = data.page;
       pageSize = data.page_size;

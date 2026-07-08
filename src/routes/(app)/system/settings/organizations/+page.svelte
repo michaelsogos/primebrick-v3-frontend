@@ -3,6 +3,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
+  import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
@@ -42,7 +43,7 @@
     rows: OrganizationListRow[];
     page: number;
     page_size: number;
-    total: number;
+    total: bigint;
   };
 
   let meta = $state<OrganizationMeta | null>(null);
@@ -59,7 +60,7 @@
 
   let page = $state(1);
   let pageSize = $state(25);
-  let total = $state(0);
+  let total = $state<bigint>(0n);
 
   let filtersOpen = $state(false);
 
@@ -423,7 +424,7 @@
       const code = apiDetails.code ?? 'GET_ENTITY_LIST_FAILED';
       throw new ApiListError(code, listRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
     }
-    const list = (await listRes.json()) as ListResponse;
+    const list = extJsonParse<ListResponse>(await listRes.text());
     rows = list.rows;
     total = list.total;
   }
@@ -435,7 +436,7 @@
     try {
       await loadRows();
       if (opts?.clampPage) {
-        const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+        const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
         if (page > nextTotalPages) {
           page = 1;
           await loadRows();
@@ -496,7 +497,7 @@
     try {
       await loadMeta();
       await loadRows();
-      const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
       if (page > nextTotalPages) {
         page = 1;
         await loadRows();

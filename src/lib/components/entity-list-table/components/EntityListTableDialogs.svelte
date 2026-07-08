@@ -17,7 +17,7 @@
     bulkActions: any;
     exportComposable: any;
     selectedKeys: string[];
-    total: number;
+    total: bigint;
     entity: string;
   };
 

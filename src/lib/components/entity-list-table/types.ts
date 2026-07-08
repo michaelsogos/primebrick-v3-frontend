@@ -50,7 +50,7 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   selectionLabelText?: string;
   selectionLabelSingularText?: string;
   rows: TRow[];
-  total: number;
+  total: bigint;
   metaLoading: boolean;
   rowsLoading: boolean;
   error: string | null;
