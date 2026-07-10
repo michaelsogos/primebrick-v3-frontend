@@ -6,6 +6,7 @@
   import FileText from '@lucide/svelte/icons/file-text'
   import Building2 from '@lucide/svelte/icons/building-2'
   import Users from '@lucide/svelte/icons/users';
+  import Mail from '@lucide/svelte/icons/mail';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
@@ -24,7 +25,8 @@
     { id: 'users', label: $t('shell.settings.tabs.users'), icon: Users, href: '/system/settings/users' },
     { id: 'security', label: $t('shell.settings.tabs.security'), icon: ShieldCheck, href: '/system/settings/security' },
     { id: 'modules', label: $t('shell.settings.tabs.modules'), icon: Package, href: '/system/settings/modules' },
-    { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText, href: '/system/settings/templates' }
+    { id: 'templates', label: $t('shell.settings.tabs.templates'), icon: FileText, href: '/system/settings/templates' },
+    { id: 'email-providers', label: $t('shell.settings.tabs.emailProviders'), icon: Mail, href: '/system/settings/email-providers' }
   ];
 
   const breadcrumbSegments: AppBreadcrumbSegment[] = $derived([

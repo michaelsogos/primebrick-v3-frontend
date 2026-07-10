@@ -197,7 +197,8 @@
         "users": "Utilizadores",
         "security": "Segurança",
         "modules": "Módulos",
-        "templates": "Modelos"
+        "templates": "Modelos",
+        "emailProviders": "Fornecedores de email"
       },
       "profile": {
         "title": "Perfil",
@@ -376,6 +377,34 @@
         "uploadButton": "Carregar",
         "templatesList": "Lista de modelos",
         "createTemplate": "Criar modelo"
+      },
+      "emailProviders": {
+        "title": "Fornecedores de email",
+        "addProvider": "Adicionar fornecedor",
+        "createProvider": "Criar fornecedor de email",
+        "editProvider": "Editar fornecedor de email",
+        "providerName": "Nome do fornecedor",
+        "apiKey": "Chave API",
+        "apiKeyLeaveBlank": "Deixar em branco para manter a chave atual",
+        "apiEndpoint": "Endpoint da API",
+        "fromEmail": "Email de origem",
+        "fromName": "Nome de origem",
+        "replyTo": "Responder a",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "confirmDelete": "Tem a certeza de que pretende eliminar este fornecedor?",
+        "noProviders": "Nenhum fornecedor de email configurado.",
+        "errors": {
+          "providerRequired": "O nome do fornecedor é obrigatório",
+          "apiKeyRequired": "A chave API é obrigatória",
+          "invalidEmail": "Endereço de email inválido"
+        },
+        "notifications": {
+          "created": "Fornecedor de email criado com sucesso",
+          "updated": "Fornecedor de email atualizado com sucesso",
+          "deleted": "Fornecedor de email eliminado com sucesso"
+        }
       }
     },
     "errors": {

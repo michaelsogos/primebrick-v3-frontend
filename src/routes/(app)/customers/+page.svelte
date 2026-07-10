@@ -174,7 +174,7 @@
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
       ensureVisibleKeys();
       return;
     }
@@ -187,7 +187,7 @@
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
       ensureVisibleKeys();
       return;
     }
@@ -221,7 +221,7 @@
       sortKey = null;
       sortDir = defSort?.dir ?? 'asc';
     }
-    pageSize = m.list.defaultPageSize ?? pageSize;
+    pageSize = Number(m.list.defaultPageSize ?? pageSize);
     ensureVisibleKeys();
   }
 

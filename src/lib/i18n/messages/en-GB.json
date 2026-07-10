@@ -197,7 +197,8 @@
         "users": "Users",
         "security": "Security",
         "modules": "Modules",
-        "templates": "Templates"
+        "templates": "Templates",
+        "emailProviders": "Email Providers"
       },
       "profile": {
         "title": "Profile",
@@ -376,6 +377,34 @@
         "uploadButton": "Upload",
         "templatesList": "Templates List",
         "createTemplate": "Create Template"
+      },
+      "emailProviders": {
+        "title": "Email Providers",
+        "addProvider": "Add Provider",
+        "createProvider": "Create Email Provider",
+        "editProvider": "Edit Email Provider",
+        "providerName": "Provider Name",
+        "apiKey": "API Key",
+        "apiKeyLeaveBlank": "Leave blank to keep current key",
+        "apiEndpoint": "API Endpoint",
+        "fromEmail": "From Email",
+        "fromName": "From Name",
+        "replyTo": "Reply To",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "confirmDelete": "Are you sure you want to delete this provider?",
+        "noProviders": "No email providers configured yet.",
+        "errors": {
+          "providerRequired": "Provider name is required",
+          "apiKeyRequired": "API key is required",
+          "invalidEmail": "Invalid email address"
+        },
+        "notifications": {
+          "created": "Email provider created successfully",
+          "updated": "Email provider updated successfully",
+          "deleted": "Email provider deleted successfully"
+        }
       }
     },
     "errors": {

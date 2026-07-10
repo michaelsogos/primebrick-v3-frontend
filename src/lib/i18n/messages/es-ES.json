@@ -197,7 +197,8 @@
         "users": "Usuarios",
         "security": "Seguridad",
         "modules": "Módulos",
-        "templates": "Plantillas"
+        "templates": "Plantillas",
+        "emailProviders": "Proveedores de correo"
       },
       "profile": {
         "title": "Perfil",
@@ -376,6 +377,34 @@
         "uploadButton": "Subir",
         "templatesList": "Lista de plantillas",
         "createTemplate": "Crear plantilla"
+      },
+      "emailProviders": {
+        "title": "Proveedores de correo",
+        "addProvider": "Añadir proveedor",
+        "createProvider": "Crear proveedor de correo",
+        "editProvider": "Editar proveedor de correo",
+        "providerName": "Nombre del proveedor",
+        "apiKey": "Clave API",
+        "apiKeyLeaveBlank": "Dejar en blanco para mantener la clave actual",
+        "apiEndpoint": "Endpoint de API",
+        "fromEmail": "Correo de origen",
+        "fromName": "Nombre de origen",
+        "replyTo": "Responder a",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "confirmDelete": "¿Está seguro de que desea eliminar este proveedor?",
+        "noProviders": "No hay proveedores de correo configurados.",
+        "errors": {
+          "providerRequired": "El nombre del proveedor es obligatorio",
+          "apiKeyRequired": "La clave API es obligatoria",
+          "invalidEmail": "Dirección de correo no válida"
+        },
+        "notifications": {
+          "created": "Proveedor de correo creado correctamente",
+          "updated": "Proveedor de correo actualizado correctamente",
+          "deleted": "Proveedor de correo eliminado correctamente"
+        }
       }
     },
     "errors": {

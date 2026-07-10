@@ -197,7 +197,8 @@
         "users": "Utilisateurs",
         "security": "Sécurité",
         "modules": "Modules",
-        "templates": "Modèles"
+        "templates": "Modèles",
+        "emailProviders": "Fournisseurs d'email"
       },
       "profile": {
         "title": "Profil",
@@ -376,6 +377,34 @@
         "uploadButton": "Télécharger",
         "templatesList": "Liste des modèles",
         "createTemplate": "Créer un modèle"
+      },
+      "emailProviders": {
+        "title": "Fournisseurs d'email",
+        "addProvider": "Ajouter un fournisseur",
+        "createProvider": "Créer un fournisseur d'email",
+        "editProvider": "Modifier le fournisseur d'email",
+        "providerName": "Nom du fournisseur",
+        "apiKey": "Clé API",
+        "apiKeyLeaveBlank": "Laisser vide pour conserver la clé actuelle",
+        "apiEndpoint": "Point de terminaison API",
+        "fromEmail": "Email d'expédition",
+        "fromName": "Nom d'expédition",
+        "replyTo": "Répondre à",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce fournisseur ?",
+        "noProviders": "Aucun fournisseur d'email configuré.",
+        "errors": {
+          "providerRequired": "Le nom du fournisseur est requis",
+          "apiKeyRequired": "La clé API est requise",
+          "invalidEmail": "Adresse email invalide"
+        },
+        "notifications": {
+          "created": "Fournisseur d'email créé avec succès",
+          "updated": "Fournisseur d'email mis à jour avec succès",
+          "deleted": "Fournisseur d'email supprimé avec succès"
+        }
       }
     },
     "errors": {

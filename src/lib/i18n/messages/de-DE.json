@@ -197,7 +197,8 @@
         "users": "Benutzer",
         "security": "Sicherheit",
         "modules": "Module",
-        "templates": "Vorlagen"
+        "templates": "Vorlagen",
+        "emailProviders": "E-Mail-Anbieter"
       },
       "profile": {
         "title": "Profil",
@@ -376,6 +377,34 @@
         "uploadButton": "Hochladen",
         "templatesList": "Vorlagenliste",
         "createTemplate": "Vorlage erstellen"
+      },
+      "emailProviders": {
+        "title": "E-Mail-Anbieter",
+        "addProvider": "Anbieter hinzufügen",
+        "createProvider": "E-Mail-Anbieter erstellen",
+        "editProvider": "E-Mail-Anbieter bearbeiten",
+        "providerName": "Anbietername",
+        "apiKey": "API-Schlüssel",
+        "apiKeyLeaveBlank": "Leer lassen, um aktuellen Schlüssel zu behalten",
+        "apiEndpoint": "API-Endpunkt",
+        "fromEmail": "Absender-E-Mail",
+        "fromName": "Absendername",
+        "replyTo": "Antwort an",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "confirmDelete": "Möchten Sie diesen Anbieter wirklich löschen?",
+        "noProviders": "Es sind noch keine E-Mail-Anbieter konfiguriert.",
+        "errors": {
+          "providerRequired": "Anbietername ist erforderlich",
+          "apiKeyRequired": "API-Schlüssel ist erforderlich",
+          "invalidEmail": "Ungültige E-Mail-Adresse"
+        },
+        "notifications": {
+          "created": "E-Mail-Anbieter erfolgreich erstellt",
+          "updated": "E-Mail-Anbieter erfolgreich aktualisiert",
+          "deleted": "E-Mail-Anbieter erfolgreich gelöscht"
+        }
       }
     },
     "errors": {

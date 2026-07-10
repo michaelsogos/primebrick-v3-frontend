@@ -197,7 +197,8 @@
         "users": "Utenti",
         "security": "Sicurezza",
         "modules": "Moduli",
-        "templates": "Template"
+        "templates": "Template",
+        "emailProviders": "Provider email"
       },
       "profile": {
         "title": "Profilo",
@@ -376,6 +377,34 @@
         "uploadButton": "Carica",
         "templatesList": "Lista Template",
         "createTemplate": "Crea Template"
+      },
+      "emailProviders": {
+        "title": "Provider email",
+        "addProvider": "Aggiungi provider",
+        "createProvider": "Crea provider email",
+        "editProvider": "Modifica provider email",
+        "providerName": "Nome provider",
+        "apiKey": "Chiave API",
+        "apiKeyLeaveBlank": "Lascia vuoto per mantenere la chiave attuale",
+        "apiEndpoint": "Endpoint API",
+        "fromEmail": "Email mittente",
+        "fromName": "Nome mittente",
+        "replyTo": "Rispondi a",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "confirm": "Conferma",
+        "confirmDelete": "Sei sicuro di voler eliminare questo provider?",
+        "noProviders": "Nessun provider email configurato.",
+        "errors": {
+          "providerRequired": "Il nome del provider è obbligatorio",
+          "apiKeyRequired": "La chiave API è obbligatoria",
+          "invalidEmail": "Indirizzo email non valido"
+        },
+        "notifications": {
+          "created": "Provider email creato con successo",
+          "updated": "Provider email aggiornato con successo",
+          "deleted": "Provider email eliminato con successo"
+        }
       }
     },
     "errors": {

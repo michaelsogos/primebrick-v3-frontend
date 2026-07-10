@@ -259,7 +259,7 @@
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
   const effectiveSortKey = $derived(sortKey ?? defaultSort?.key ?? null);
   const pageSizeOptions = $derived(pageSizeOptionsProp ?? [10, 25, 50, 100]);
-  const totalPages = $derived(Math.max(1, Math.ceil(Number(total) / pageSize)));
+  const totalPages = $derived(Math.max(1, Math.ceil(Number(total) / Number(pageSize))));
 
 
   /** Client-only: show all selected rows with client-side paging (no server calls until exit or reload). */
@@ -288,10 +288,10 @@
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
   const footerRangeTotal = $derived(footerUsesClientPaging ? orderedSelectedRows.length : Number(total));
   const footerRangeStart = $derived(
-    footerRangeTotal === 0 ? 0 : (footerPage - 1) * pageSize + 1
+    footerRangeTotal === 0 ? 0 : (Number(footerPage) - 1) * Number(pageSize) + 1
   );
   const footerRangeEnd = $derived(
-    footerRangeTotal === 0 ? 0 : Math.min(footerPage * pageSize, footerRangeTotal)
+    footerRangeTotal === 0 ? 0 : Math.min(Number(footerPage) * Number(pageSize), footerRangeTotal)
   );
 
   const viewRows = $derived(clientSelection.viewRows);

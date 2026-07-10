@@ -225,10 +225,33 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     }
   }
 
-  // 502/504 = gateway/network failure
+  // 502/504/520-524 = gateway/network failure — but the BE itself may have
+  // returned an RFC 7807 error (BE is reachable, downstream US is unreachable).
+  // If the body is RFC 7807 JSON, push the notification with the real error
+  // details (title, detail, internal_code, severity, tags) and throw
+  // ApiUnreachableError with alreadyNotified=true so callers skip their
+  // generic catch-block notification.
+  // If the body is NOT RFC 7807 (raw gateway HTML/non-JSON), the BE is truly
+  // unreachable — call noteGatewayFailure and throw ApiUnreachableError.
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
-    noteGatewayFailure(res.status);
-    throw new ApiUnreachableError(res.status);
+    let alreadyNotified = false;
+    try {
+      const contentType = res.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const errorData = await res.json();
+        if (errorData?.type && errorData?.title && typeof errorData?.status === 'number') {
+          pushNotification(errorData);
+          alreadyNotified = true;
+        }
+      }
+    } catch {
+      // Body is not parseable JSON — raw gateway error, fall through
+    }
+
+    if (!alreadyNotified) {
+      noteGatewayFailure(res.status);
+    }
+    throw new ApiUnreachableError(res.status, alreadyNotified);
   }
 
   // Auto-handle RFC7807 errors for non-auth endpoints

@@ -40,14 +40,18 @@ export function isUnreachableHttpStatus(status: number): boolean {
   return false;
 }
 
-/** Thrown when the API cannot be reached (network failure or typical proxy errors). */
+/** Thrown when the API cannot be reached (network failure or typical proxy errors).
+ *  When `alreadyNotified` is true, apiFetch already pushed an RFC 7807 notification
+ *  with the real error details — callers should NOT push a generic notification. */
 export class ApiUnreachableError extends Error {
   override readonly name = 'ApiUnreachableError';
   readonly status: number | null;
+  readonly alreadyNotified: boolean;
 
-  constructor(status: number | null = null) {
+  constructor(status: number | null = null, alreadyNotified = false) {
     super('ApiUnreachableError');
     this.status = status;
+    this.alreadyNotified = alreadyNotified;
   }
 }
 
