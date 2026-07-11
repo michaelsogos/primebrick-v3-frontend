@@ -4,6 +4,9 @@
   import AppShell from '$lib/components/AppShell.svelte';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
 
   let { children }: { children: Snippet } = $props();
 
@@ -38,6 +41,13 @@
       }
     } catch (error) {
       console.error('Failed to bootstrap user profile:', error);
+    }
+
+    // Restore last-visited route from localStorage (if not already on it)
+    const currentPath = page.url.pathname;
+    const lastRoute = shellNav.getLastRoute();
+    if (lastRoute && lastRoute !== '/login' && lastRoute !== currentPath) {
+      await goto(lastRoute);
     }
   });
 </script>

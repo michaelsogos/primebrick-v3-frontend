@@ -8,6 +8,8 @@
   import { apiFetchExt } from '$lib/api-ext';
   import { ApiUnreachableError } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import Mail from '@lucide/svelte/icons/mail';
   import Plus from '@lucide/svelte/icons/plus';
   import Pencil from '@lucide/svelte/icons/pencil';
@@ -212,19 +214,30 @@
   });
 </script>
 
-<div class="space-y-6 p-6">
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <Mail class="size-6" />
-      <h2 class="text-2xl font-semibold">{$t('shell.settings.emailProviders.title')}</h2>
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.tabs.emailProviders') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.emailProviders.title')}</h1>
     </div>
-    {#if !isCreating && !editingUuid}
-      <Button onclick={startCreate}>
-        <Plus class="size-4" />
-        {$t('shell.settings.emailProviders.addProvider')}
-      </Button>
-    {/if}
-  </div>
+  {/snippet}
+
+  <div class="flex-1 overflow-auto p-4">
+    <div class="space-y-6">
+      <div class="flex items-center justify-end">
+        {#if !isCreating && !editingUuid}
+          <Button onclick={startCreate}>
+            <Plus class="size-4" />
+            {$t('shell.settings.emailProviders.addProvider')}
+          </Button>
+        {/if}
+      </div>
 
   {#if loading}
     <div class="flex items-center justify-center py-12">
@@ -359,4 +372,6 @@
       {/each}
     </div>
   {/if}
-</div>
+    </div>
+  </div>
+</AppPageScaffold>

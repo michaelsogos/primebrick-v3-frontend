@@ -7,6 +7,7 @@
   import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
   import { goto } from '$app/navigation';
   import type { UserProfile } from '$lib/user-profile-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
   import LogOut from '@lucide/svelte/icons/log-out';
   import Settings from '@lucide/svelte/icons/settings';
@@ -104,7 +105,7 @@
           <DropdownMenu.Group>
             <DropdownMenu.Item
               closeOnSelect={true}
-              onSelect={() => { void goto('/system/settings/profile'); }}
+              onSelect={() => { void shellNav.selectModule('settings'); void goto('/system/settings/profile'); }}
             >
               <Settings class="size-4 shrink-0" />
               <span>{$t('shell.userMenu.itemSettings')}</span>

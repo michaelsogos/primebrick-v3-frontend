@@ -11,6 +11,8 @@
   import Download from '@lucide/svelte/icons/download'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import Plus from '@lucide/svelte/icons/plus';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
 
   let uploadedFile = $state<File | null>(null);
   let selectedType = $state<'pdf' | 'email' | 'excel' | 'html'>('pdf');
@@ -57,10 +59,23 @@
   const filteredTemplates = $derived(templates.filter(t => t.type === selectedType));
 </script>
 
-<div class="space-y-6">
-  <h2 class="text-2xl font-semibold">{$t('shell.settings.templates.title')}</h2>
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.tabs.templates') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.templates.title')}</h1>
+    </div>
+  {/snippet}
 
-  <!-- Template Type Selector -->
+  <div class="flex-1 overflow-auto p-4">
+    <div class="space-y-6">
+      <!-- Template Type Selector -->
   <div class="flex gap-2">
     {#each templateTypes as type (type.id)}
       {@const Icon = type.icon}
@@ -132,4 +147,6 @@
       {/each}
     </div>
   </div>
-</div>
+    </div>
+  </div>
+</AppPageScaffold>

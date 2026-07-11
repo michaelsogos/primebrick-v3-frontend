@@ -8,12 +8,14 @@ import {
   isUnreachableHttpStatus,
   type HealthPayload,
   type ModuleInfo,
+  type ModuleNav,
+  type ModuleConfigEntry,
   type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
 
-export type { HealthModule, HealthPayload, ModuleInfo, ServiceInfo } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
@@ -290,6 +292,12 @@ export async function fetchModules(): Promise<ModuleInfo[]> {
   return data.modules;
 }
 
+export async function fetchModuleMeta(code: string): Promise<ModuleNav> {
+  const res = await apiFetch(`/api/v1/modules/${encodeURIComponent(code)}/meta`);
+  if (!res.ok) throw new Error(`Module meta request failed (${res.status})`);
+  return (await res.json()) as ModuleNav;
+}
+
 export async function fetchHealth(): Promise<HealthPayload> {
   const res = await apiFetch('/api/v1/health');
   if (!res.ok) throw new Error(`Health request failed (${res.status})`);
@@ -301,4 +309,53 @@ export async function fetchServices(): Promise<ServiceInfo[]> {
   if (!res.ok) throw new Error(`Services request failed (${res.status})`);
   const data = (await res.json()) as { services: ServiceInfo[] };
   return data.services;
+}
+
+export async function fetchService(code: string): Promise<ServiceInfo> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`);
+  if (!res.ok) throw new Error(`Service request failed (${res.status})`);
+  const data = (await res.json()) as { service: ServiceInfo };
+  return data.service;
+}
+
+export async function toggleModule(code: string): Promise<{ is_enabled: boolean }> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}/toggle`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) throw new Error(`Toggle failed (${res.status})`);
+  return await res.json();
+}
+
+export async function deleteModule(code: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+}
+
+export async function updateService(code: string, data: Partial<ServiceInfo>): Promise<ServiceInfo> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Update failed (${res.status})`);
+  const result = (await res.json()) as { service: ServiceInfo };
+  return result.service;
+}
+
+export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/config`);
+  if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
+  const data = (await res.json()) as { config: ModuleConfigEntry[] };
+  return data.config;
+}
+
+export async function updateModuleConfigKey(code: string, key: string, value: string): Promise<void> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/config/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }

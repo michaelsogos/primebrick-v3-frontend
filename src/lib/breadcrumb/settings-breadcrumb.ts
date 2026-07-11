@@ -38,6 +38,11 @@ export function settingsTabMenuSegment(args: {
       label: args.t('shell.settings.tabs.templates'),
       href: '/system/settings/templates',
       current: pathname === '/system/settings/templates'
+    },
+    {
+      label: args.t('shell.settings.tabs.emailProviders'),
+      href: '/system/settings/email-providers',
+      current: pathname === '/system/settings/email-providers'
     }
   ];
   

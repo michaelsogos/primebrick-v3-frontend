@@ -2,6 +2,23 @@ export type ModuleInfo = {
   id: string;
   name: string;
   enabled: boolean;
+  icon?: string;
+  route_prefixes?: string[];
+  is_reserved?: boolean;
+};
+
+export type ModuleNavLink = {
+  id: string;
+  label_key: string;
+  href: string;
+  icon?: string;
+  children?: ModuleNavLink[];
+};
+
+export type ModuleNav = {
+  module: string;
+  icon?: string;
+  nav: ModuleNavLink[];
 };
 
 export type HealthModule = { id: string; version: string };
@@ -12,6 +29,8 @@ export type HealthPayload = {
   db: { ok: boolean };
   idp: { ok: boolean; type?: string; version?: string };
 };
+
+export type IconType = 'url' | 'svg' | 'base64' | 'icon';
 
 export type ServiceInfo = {
   code: string;
@@ -25,6 +44,17 @@ export type ServiceInfo = {
   is_behind_scaler: boolean;
   status: string;
   last_health_check_at?: string;
+  is_enabled: boolean;
+  icon?: string;
+  icon_type: IconType;
+};
+
+export type ModuleConfigEntry = {
+  uuid: string;
+  key: string;
+  value: string | null;
+  label_key?: string;
+  description_key?: string;
 };
 
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */

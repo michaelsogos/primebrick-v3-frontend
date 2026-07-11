@@ -68,6 +68,8 @@
     "delete": "Delete",
     "deleting": "Deleting…",
     "saving": "Saving…",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Failed to save",
     "deleteConfirmTitle": "Are you sure you want to delete this record?",
     "deleteConfirm": "This action cannot be undone.",
     "restore": "Restore",
@@ -134,12 +136,7 @@
     "nav": {
       "aria": "Navigation",
       "open": "Open navigation",
-      "modulesGroup": "Modules",
-      "demoSettingsGroup": "Settings",
-      "demoItemProfile": "Profile",
-      "demoItemPreferences": "Preferences",
-      "demoItemHelp": "Help & support",
-      "demoItemCriticalToast": "Critical toast (demo)",
+      "module": "Module",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM sections"
     },
@@ -362,13 +359,42 @@
       },
       "modules": {
         "title": "Modules",
-        "uploadModule": "Upload Module",
-        "selectModuleFile": "Select module file (.zip, .tar.gz)",
-        "installButton": "Install",
+        "importModule": "Import Module",
+        "openMarketplace": "Open Marketplace",
+        "notImplemented": "NOT IMPLEMENTED YET!",
         "installedModules": "Installed Modules",
         "version": "Version",
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "configure": "Configure",
+        "noModules": "No modules installed",
+        "noModulesHint": "Start a microservice to see it appear here automatically.",
+        "loadFailed": "Could not load modules",
+        "moduleEnabled": "Module enabled",
+        "moduleDisabled": "Module disabled",
+        "moduleDeleted": "Module deleted",
+        "toggleFailed": "Failed to toggle module",
+        "deleteFailed": "Failed to delete module",
+        "config": {
+          "serviceInfo": "Service Info",
+          "moduleConfig": "Module Config",
+          "name": "Name",
+          "baseUrl": "Base URL",
+          "description": "Description",
+          "icon": "Icon",
+          "iconPlaceholder": "Lucide icon name, URL, SVG, or base64",
+          "iconType": "Icon Type",
+          "iconTypeIcon": "Lucide Icon",
+          "iconTypeUrl": "Image URL",
+          "iconTypeSvg": "SVG XML",
+          "iconTypeBase64": "Base64",
+          "author": "Author",
+          "githubRepoUrl": "GitHub Repo URL",
+          "serviceVersion": "Service Version",
+          "serviceVersionHint": "Set by microservice on registration",
+          "configNotAvailable": "Configuration API not available for this module.",
+          "noConfigEntries": "No configuration entries for this module."
+        }
       },
       "templates": {
         "title": "Templates",
@@ -423,16 +449,6 @@
     "rfcError": {
       "preview": "Preview",
       "source": "Source"
-    },
-    "demoToast": {
-      "profileMessage": "Demo informational notice (low impact).",
-      "preferencesMessage": "Demo warning notice (medium impact).",
-      "helpMessage": "Demo error notice (high impact).",
-      "profileAria": "Profile — show demo info toast",
-      "preferencesAria": "Preferences — show demo warning toast",
-      "helpAria": "Help and support — show demo error toast",
-      "criticalMessage": "Demo urgent / critical impact (distinct from standard error).",
-      "criticalAria": "Critical toast — show demo urgent toast"
     },
     "listFailed": "List Failed",
     "health": {

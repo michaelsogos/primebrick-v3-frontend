@@ -16,6 +16,8 @@
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -710,7 +712,20 @@
   }
 </script>
 
-<div class="h-full flex flex-col">
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.tabs.organizations') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.organizations')}</h1>
+    </div>
+  {/snippet}
+
   <EntityListTable
     entity="organization"
     bind:datetimeIanaModeByKey
@@ -763,4 +778,4 @@
     viewVisibility={viewVisibility}
   >
   </EntityListTable>
-</div>
+</AppPageScaffold>

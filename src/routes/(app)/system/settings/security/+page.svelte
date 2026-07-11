@@ -10,6 +10,8 @@
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
 
   let currentPassword = $state('');
   let newPassword = $state('');
@@ -62,12 +64,24 @@
   });
 </script>
 
-<!-- FORM CONTENT -->
-<div class="flex-1 overflow-auto">
-  <form id="security-form" onsubmit={handleSubmit}>
-    <div class="space-y-6">
-      <h2 class="text-2xl font-semibold">{$t('shell.settings.security.title')}</h2>
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.tabs.security') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.security.title')}</h1>
+    </div>
+  {/snippet}
 
+  <!-- FORM CONTENT -->
+  <div class="flex-1 overflow-auto">
+    <form id="security-form" onsubmit={handleSubmit}>
+      <div class="space-y-6">
       <!-- Change Password -->
       <div class="space-y-4 rounded-lg border p-4">
         <h3 class="text-lg font-medium">{$t('shell.settings.security.changePassword')}</h3>
@@ -213,3 +227,4 @@
     </div>
   </div>
 </div>
+</AppPageScaffold>

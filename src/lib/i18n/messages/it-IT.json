@@ -68,6 +68,8 @@
     "delete": "Elimina",
     "deleting": "Eliminazione in corso…",
     "saving": "Salvataggio…",
+    "saveSuccess": "Salvato con successo",
+    "saveFailed": "Salvataggio fallito",
     "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
     "deleteConfirm": "Questa azione non può essere annullata.",
     "restore": "Ripristina",
@@ -134,12 +136,7 @@
     "nav": {
       "aria": "Navigazione",
       "open": "Apri navigazione",
-      "modulesGroup": "Moduli",
-      "demoSettingsGroup": "Impostazioni",
-      "demoItemProfile": "Profilo",
-      "demoItemPreferences": "Preferenze",
-      "demoItemHelp": "Guida e supporto",
-      "demoItemCriticalToast": "Toast critico (demo)",
+      "module": "Modulo",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Sezioni CRM"
     },
@@ -362,13 +359,42 @@
       },
       "modules": {
         "title": "Moduli",
-        "uploadModule": "Carica Modulo",
-        "selectModuleFile": "Seleziona file modulo (.zip, .tar.gz)",
-        "installButton": "Installa",
+        "importModule": "Importa Modulo",
+        "openMarketplace": "Apri Marketplace",
+        "notImplemented": "NON ANCORA IMPLEMENTATO!",
         "installedModules": "Moduli Installati",
         "version": "Versione",
         "active": "Attivo",
-        "inactive": "Inattivo"
+        "inactive": "Inattivo",
+        "configure": "Configura",
+        "noModules": "Nessun modulo installato",
+        "noModulesHint": "Avvia un microservizio per vederlo apparire qui automaticamente.",
+        "loadFailed": "Impossibile caricare i moduli",
+        "moduleEnabled": "Modulo abilitato",
+        "moduleDisabled": "Modulo disabilitato",
+        "moduleDeleted": "Modulo eliminato",
+        "toggleFailed": "Impossibile cambiare lo stato del modulo",
+        "deleteFailed": "Impossibile eliminare il modulo",
+        "config": {
+          "serviceInfo": "Info Servizio",
+          "moduleConfig": "Configurazione Modulo",
+          "name": "Nome",
+          "baseUrl": "URL Base",
+          "description": "Descrizione",
+          "icon": "Icona",
+          "iconPlaceholder": "Nome icona Lucide, URL, SVG, o base64",
+          "iconType": "Tipo Icona",
+          "iconTypeIcon": "Icona Lucide",
+          "iconTypeUrl": "URL Immagine",
+          "iconTypeSvg": "SVG XML",
+          "iconTypeBase64": "Base64",
+          "author": "Autore",
+          "githubRepoUrl": "URL Repo GitHub",
+          "serviceVersion": "Versione Servizio",
+          "serviceVersionHint": "Impostata dal microservizio alla registrazione",
+          "configNotAvailable": "API di configurazione non disponibile per questo modulo.",
+          "noConfigEntries": "Nessuna voce di configurazione per questo modulo."
+        }
       },
       "templates": {
         "title": "Template",
@@ -423,16 +449,6 @@
     "rfcError": {
       "preview": "Anteprima",
       "source": "Sorgente"
-    },
-    "demoToast": {
-      "profileMessage": "Messaggio dimostrativo informativo (impatto basso).",
-      "preferencesMessage": "Messaggio dimostrativo di avviso (impatto medio).",
-      "helpMessage": "Messaggio dimostrativo di errore (impatto alto).",
-      "profileAria": "Profilo — mostra toast informativo di demo",
-      "preferencesAria": "Preferenze — mostra toast di avviso di demo",
-      "helpAria": "Guida e supporto — mostra toast di errore di demo",
-      "criticalMessage": "Messaggio dimostrativo critico / urgente (distinto dall'errore standard).",
-      "criticalAria": "Toast critico — mostra toast urgente di demo"
     },
     "listFailed": "Elenco fallito",
     "health": {

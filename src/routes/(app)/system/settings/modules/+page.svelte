@@ -1,94 +1,264 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
-  import Package from '@lucide/svelte/icons/package'
-  import Upload from '@lucide/svelte/icons/upload'
-  import Download from '@lucide/svelte/icons/download'
+  import { Switch } from '$lib/components/ui/switch';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import Package from '@lucide/svelte/icons/package';
   import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Settings from '@lucide/svelte/icons/settings';
+  import Download from '@lucide/svelte/icons/download';
+  import Store from '@lucide/svelte/icons/store';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import Hourglass from '@lucide/svelte/icons/hourglass';
+  import { pushNotification } from '$lib/errors/app-errors';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { fetchServices, toggleModule, deleteModule } from '$lib/api';
+  import type { ServiceInfo } from '$lib/api-types';
+  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
 
-  let uploadedFile = $state<File | null>(null);
+  let services = $state<ServiceInfo[]>([]);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
 
-  const installedModules = $state([
-    { id: 1, name: 'CRM Module', version: '1.0.0', status: 'active' },
-    { id: 2, name: 'Inventory Module', version: '2.1.0', status: 'active' },
-    { id: 3, name: 'Billing Module', version: '0.5.0', status: 'inactive' }
-  ]);
+  let deleteDialogOpen = $state(false);
+  let deleteTarget = $state<ServiceInfo | null>(null);
+  let isDeleting = $state(false);
 
-  function handleFileUpload(event: Event) {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files[0]) {
-      uploadedFile = target.files[0];
+  onMount(async () => {
+    await loadServices();
+  });
+
+  async function loadServices() {
+    loading = true;
+    error = null;
+    try {
+      services = await fetchServices();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to load modules';
+      pushNotification({
+        impact: 'HIGH',
+        messageKey: 'shell.settings.modules.loadFailed',
+        scope: $t('shell.settings.modules.title'),
+        detail: error,
+      });
+    } finally {
+      loading = false;
     }
   }
 
-  function handleInstall() {
-    if (uploadedFile) {
-      // TODO: Implement module installation logic
-      console.log('Installing module:', uploadedFile.name);
-      uploadedFile = null;
+  function handleImportModule() {
+    pushNotification({
+      impact: 'MEDIUM',
+      messageKey: 'shell.settings.modules.notImplemented',
+      scope: $t('shell.settings.modules.importModule'),
+    });
+  }
+
+  function handleOpenMarketplace() {
+    pushNotification({
+      impact: 'MEDIUM',
+      messageKey: 'shell.settings.modules.notImplemented',
+      scope: $t('shell.settings.modules.openMarketplace'),
+    });
+  }
+
+  async function handleToggle(module: ServiceInfo) {
+    try {
+      const result = await toggleModule(module.code);
+      services = services.map((s) =>
+        s.code === module.code ? { ...s, is_enabled: result.is_enabled } : s,
+      );
+      pushNotification({
+        impact: 'NONE',
+        messageKey: result.is_enabled
+          ? 'shell.settings.modules.moduleEnabled'
+          : 'shell.settings.modules.moduleDisabled',
+        scope: $t('shell.settings.modules.title'),
+      });
+    } catch (e) {
+      pushNotification({
+        impact: 'HIGH',
+        messageKey: 'shell.settings.modules.toggleFailed',
+        scope: $t('shell.settings.modules.title'),
+        detail: e instanceof Error ? e.message : undefined,
+      });
     }
   }
 
-  function handleDeleteModule(moduleId: number) {
-    // TODO: Implement module deletion logic
-    console.log('Deleting module:', moduleId);
+  function openDeleteDialog(module: ServiceInfo) {
+    deleteTarget = module;
+    deleteDialogOpen = true;
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    isDeleting = true;
+    try {
+      await deleteModule(deleteTarget.code);
+      services = services.filter((s) => s.code !== deleteTarget!.code);
+      deleteDialogOpen = false;
+      deleteTarget = null;
+      pushNotification({
+        impact: 'NONE',
+        messageKey: 'shell.settings.modules.moduleDeleted',
+        scope: $t('shell.settings.modules.title'),
+      });
+    } catch (e) {
+      pushNotification({
+        impact: 'HIGH',
+        messageKey: 'shell.settings.modules.deleteFailed',
+        scope: $t('shell.settings.modules.title'),
+        detail: e instanceof Error ? e.message : undefined,
+      });
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  function openConfigPage(module: ServiceInfo) {
+    const url = `/system/settings/modules/${encodeURIComponent(module.code)}`;
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    }
   }
 </script>
 
-<div class="space-y-6">
-  <h2 class="text-2xl font-semibold">{$t('shell.settings.modules.title')}</h2>
-
-  <!-- Upload Module -->
-  <div class="space-y-4 rounded-lg border p-4">
-    <h3 class="text-lg font-medium">{$t('shell.settings.modules.uploadModule')}</h3>
-    
-    <div>
-      <label for="moduleFile" class="text-sm font-medium leading-none">{$t('shell.settings.modules.selectModuleFile')}</label>
-      <Input
-        id="moduleFile"
-        type="file"
-        accept=".zip,.tar.gz"
-        onchange={handleFileUpload}
-        class="mt-2"
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('shell.settings.tabs.modules') }
+        ]}
       />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.modules.title')}</h1>
     </div>
+  {/snippet}
 
-    {#if uploadedFile}
-      <div class="flex items-center gap-2 text-sm">
-        <Package class="size-4" />
-        <span>{uploadedFile.name}</span>
-        <Badge variant="outline">{(uploadedFile.size / 1024).toFixed(2)} KB</Badge>
-      </div>
-      <Button onclick={handleInstall}>{$t('shell.settings.modules.installButton')}</Button>
-    {/if}
-  </div>
-
-  <!-- Installed Modules List -->
-  <div class="space-y-4 rounded-lg border p-4">
-    <h3 class="text-lg font-medium">{$t('shell.settings.modules.installedModules')}</h3>
-    
-    <div class="space-y-2">
-      {#each installedModules as module (module.id)}
-        <div class="flex items-center justify-between rounded-lg border p-3">
-          <div class="flex items-center gap-3">
-            <Package class="size-5" />
-            <div>
-              <p class="font-medium">{module.name}</p>
-              <p class="text-sm text-muted-foreground">{$t('shell.settings.modules.version')}: {module.version}</p>
+  <div class="flex-1 overflow-auto p-4">
+    <div class="space-y-6">
+          {#if loading}
+            <div class="grid min-h-56 place-items-center p-3">
+              <div class="relative flex flex-col items-center gap-2 text-center">
+                <div class="pb-watermark-empty">
+                  <Hourglass class="size-20 text-info" />
+                </div>
+                <div class="text-sm font-medium text-muted-foreground">
+                  {$t('common.loading')}
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <Badge variant={module.status === 'active' ? 'default' : 'secondary'}>
-              {module.status === 'active' ? $t('shell.settings.modules.active') : $t('shell.settings.modules.inactive')}
-            </Badge>
-            <Button variant="ghost" size="icon" onclick={() => handleDeleteModule(module.id)}>
-              <Trash2 class="size-4 text-destructive" />
-            </Button>
-          </div>
+          {:else if error}
+            <div class="grid min-h-56 place-items-center p-3">
+              <div class="relative flex flex-col items-center gap-2 text-center">
+                <div class="pb-watermark-empty">
+                  <TriangleAlert class="size-20 text-warning" />
+                </div>
+                <div class="text-sm font-medium text-muted-foreground">
+                  {$t('shell.settings.modules.loadFailed')}
+                </div>
+              </div>
+            </div>
+          {:else if services.length === 0}
+            <div class="grid min-h-56 place-items-center p-3">
+              <div class="relative flex flex-col items-center gap-2 text-center">
+                <div class="pb-watermark-empty">
+                  <TriangleAlert class="size-20 text-warning" />
+                </div>
+                <div class="text-sm font-medium text-muted-foreground">
+                  {$t('shell.settings.modules.noModules')}
+                </div>
+                <div class="text-xs text-muted-foreground">
+                  {$t('shell.settings.modules.noModulesHint')}
+                </div>
+              </div>
+            </div>
+          {:else}
+            <div class="space-y-2">
+              {#each services as module (module.code)}
+                <div class="flex items-center justify-between rounded-lg border p-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    {#if module.icon && module.icon_type === 'icon'}
+                      <DynamicIcon name={module.icon} size={20} class="text-primary shrink-0" />
+                    {:else if module.icon && module.icon_type === 'url'}
+                      <img src={module.icon} alt={module.name || module.code} class="size-5 rounded shrink-0" />
+                    {:else if module.icon && module.icon_type === 'base64'}
+                      <img src="data:image/png;base64,{module.icon}" alt={module.name || module.code} class="size-5 rounded shrink-0" />
+                    {:else if module.icon && module.icon_type === 'svg'}
+                      <div class="size-5 shrink-0">{@html module.icon}</div>
+                    {:else}
+                      <Package class="size-5 text-muted-foreground shrink-0" />
+                    {/if}
+
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <p class="font-medium truncate">{module.name || module.code}</p>
+                        {#if module.service_version}
+                          <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                            v{module.service_version}
+                          </Badge>
+                        {/if}
+                      </div>
+                      {#if module.description}
+                        <p class="text-sm text-muted-foreground truncate">{module.description}</p>
+                      {/if}
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 shrink-0">
+                    <Switch
+                      checked={module.is_enabled}
+                      onCheckedChange={() => handleToggle(module)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onclick={() => openConfigPage(module)}
+                      title={$t('shell.settings.modules.configure')}
+                    >
+                      <Settings class="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onclick={() => openDeleteDialog(module)}
+                      title={$t('common.delete')}
+                    >
+                      <Trash2 class="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
         </div>
-      {/each}
-    </div>
-  </div>
-</div>
+      </div>
+
+      <!-- Footer: action buttons (right-aligned, matching FormPageLayout pattern) -->
+      <div class="bg-muted/50 shrink-0 border-t p-4">
+        <div class="flex items-center justify-end gap-2">
+          <Button variant="default" onclick={handleImportModule}>
+            <Download class="size-4" />
+            {$t('shell.settings.modules.importModule')}
+          </Button>
+          <Button variant="outline" onclick={handleOpenMarketplace}>
+            <Store class="size-4" />
+            {$t('shell.settings.modules.openMarketplace')}
+          </Button>
+        </div>
+      </div>
+</AppPageScaffold>
+
+<DeleteDialog
+  open={deleteDialogOpen}
+  onOpenChange={(open) => { if (!open) { deleteDialogOpen = false; deleteTarget = null; } }}
+  isDeleting={isDeleting}
+  onConfirm={confirmDelete}
+  onCancel={() => { deleteDialogOpen = false; deleteTarget = null; }}
+/>
