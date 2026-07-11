@@ -9,9 +9,11 @@
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
+  import { servicesState, aggregateStatus, groupByCode } from '$lib/services-store.svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import Database from '@lucide/svelte/icons/database';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
@@ -19,6 +21,34 @@
   const healthChip = $derived(backendState.healthChip as HealthChip);
   const healthChipLabel = $derived(chipLabel(healthChip));
   const healthChipClass = $derived(chipClass(healthChip));
+
+  const groupedServices = $derived(groupByCode(servicesState.services));
+
+  function statusBadgeClass(status: string): string {
+    switch (status) {
+      case 'online':
+        return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+      case 'going_live':
+        return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300';
+      case 'offline':
+        return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
+      default:
+        return 'border-border/60 bg-muted/30 text-muted-foreground';
+    }
+  }
+
+  function statusDotClass(status: string): string {
+    switch (status) {
+      case 'online':
+        return 'bg-emerald-500';
+      case 'going_live':
+        return 'bg-yellow-500';
+      case 'offline':
+        return 'bg-red-500';
+      default:
+        return 'bg-muted-foreground';
+    }
+  }
 </script>
 
 {#snippet headerTitle()}
@@ -59,7 +89,7 @@
   <SheetHeader title={headerTitle} actions={headerActions} />
 
   <div class="min-h-0 flex-1 overflow-auto pb-4">
-    <!-- Primo blocco: Shell, Backend, moduli -->
+    <!-- Primo blocco: Shell, Backend, IDP -->
     <div class="px-4 py-3 space-y-3">
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.shellVersion')}</div>
@@ -92,37 +122,77 @@
           {/if}
         </div>
       </div>
-
-      <div>
-        <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.modulesTitle')}</div>
-        {#if backendState.health?.modules?.length}
-          <div>
-            {#each backendState.health.modules as m (m.id)}
-              <div class="flex items-center justify-between gap-3 text-sm">
-                <div class="truncate text-muted-foreground">{m.id}</div>
-                <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-                  v{m.version}
-                </Badge>
-              </div>
-            {/each}
-          </div>
-        {:else if healthOffline}
-          <div class="text-xs text-muted-foreground">{$t('shell.serverUnreachable')}</div>
-        {:else}
-          <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
-        {/if}
-      </div>
     </div>
 
-    <!-- Secondo blocco: separatore -->
+    <!-- Microservices section -->
+    <div class="px-4 py-3">
+      <div class="mb-2 text-xs font-medium text-primary">{$t('shell.health.microservicesTitle')}</div>
+      {#if servicesState.loading}
+        <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
+      {:else if groupedServices.size === 0}
+        <div class="text-xs text-muted-foreground">{$t('shell.health.noMicroservices')}</div>
+      {:else}
+        <div class="space-y-3">
+          {#each groupedServices as [code, instances] (code)}
+            {@const aggStatus = aggregateStatus(instances)}
+            {@const behindScaler = instances[0].is_behind_scaler}
+            {@const healthyCount = instances.filter((i) => i.status === 'online').length}
+            {@const displayName = instances[0].name || code}
+
+            <!-- Group header -->
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <div class="truncate text-muted-foreground">{displayName}</div>
+              <div class="flex items-center gap-2">
+                {#if instances[0].service_version}
+                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                    v{instances[0].service_version}
+                  </Badge>
+                {/if}
+                <Badge
+                  variant="outline"
+                  class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass(aggStatus))}
+                >
+                  {#if aggStatus === 'online'}
+                    <Cloud class="size-3.5 opacity-90" />
+                  {:else if aggStatus === 'going_live'}
+                    <AlertCircle class="size-3.5 opacity-90" />
+                  {:else}
+                    <CloudOff class="size-3.5 opacity-90" />
+                  {/if}
+                  <span>{$t(`shell.health.${aggStatus}`)}</span>
+                </Badge>
+                {#if !behindScaler}
+                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                    {healthyCount}/{instances.length}
+                  </Badge>
+                {/if}
+              </div>
+            </div>
+
+            <!-- Instance rows (only for direct mode) -->
+            {#if !behindScaler}
+              <div class="ml-4 space-y-1">
+                {#each instances as inst (inst.base_url)}
+                  <div class="flex items-center justify-between gap-3 text-xs">
+                    <div class="truncate text-muted-foreground">{inst.base_url}</div>
+                    <div class={cn('size-2 rounded-full', statusDotClass(inst.status))}></div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Separatore -->
     <div class="py-2">
       <div class="h-px bg-border"></div>
     </div>
 
-    <!-- Terzo blocco: Browser info -->
+    <!-- Browser info -->
     <div class="px-4 py-3">
       <BrowserClientInfo />
     </div>
   </div>
 </div>
-

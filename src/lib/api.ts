@@ -7,12 +7,13 @@ import {
   ApiUnreachableError,
   isUnreachableHttpStatus,
   type HealthPayload,
-  type ModuleInfo
+  type ModuleInfo,
+  type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
 
-export type { HealthModule, HealthPayload, ModuleInfo } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ServiceInfo } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
@@ -293,4 +294,11 @@ export async function fetchHealth(): Promise<HealthPayload> {
   const res = await apiFetch('/api/v1/health');
   if (!res.ok) throw new Error(`Health request failed (${res.status})`);
   return (await res.json()) as HealthPayload;
+}
+
+export async function fetchServices(): Promise<ServiceInfo[]> {
+  const res = await apiFetch('/api/v1/system/services');
+  if (!res.ok) throw new Error(`Services request failed (${res.status})`);
+  const data = (await res.json()) as { services: ServiceInfo[] };
+  return data.services;
 }

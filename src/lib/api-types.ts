@@ -9,9 +9,22 @@ export type HealthPayload = {
   ok: true;
   service: string;
   version: string;
-  modules: HealthModule[];
   db: { ok: boolean };
   idp: { ok: boolean; type?: string; version?: string };
+};
+
+export type ServiceInfo = {
+  code: string;
+  base_url: string;
+  endpoints: Record<string, unknown>;
+  name?: string;
+  description?: string;
+  author?: string;
+  github_repo_url?: string;
+  service_version?: string;
+  is_behind_scaler: boolean;
+  status: string;
+  last_health_check_at?: string;
 };
 
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */
@@ -21,7 +34,6 @@ export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (o.ok !== true) return false;
   if (typeof o.service !== 'string') return false;
   if (typeof o.version !== 'string') return false;
-  if (!Array.isArray(o.modules)) return false;
   const db = o.db;
   if (!db || typeof db !== 'object') return false;
   if (typeof (db as { ok?: unknown }).ok !== 'boolean') return false;
