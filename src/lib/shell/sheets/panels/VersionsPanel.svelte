@@ -14,6 +14,7 @@
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
   import Database from '@lucide/svelte/icons/database';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
@@ -32,6 +33,8 @@
         return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300';
       case 'offline':
         return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
+      case 'unknown':
+        return 'border-border/60 bg-muted/30 text-muted-foreground';
       default:
         return 'border-border/60 bg-muted/30 text-muted-foreground';
     }
@@ -45,8 +48,10 @@
         return 'bg-yellow-500';
       case 'offline':
         return 'bg-red-500';
+      case 'unknown':
+        return 'bg-neutral-400 dark:bg-neutral-500';
       default:
-        return 'bg-muted-foreground';
+        return 'bg-neutral-400 dark:bg-neutral-500';
     }
   }
 </script>
@@ -57,24 +62,6 @@
 
 {#snippet headerActions()}
   <div class="flex items-center gap-2">
-    <Badge
-      variant="outline"
-      class={cn(
-        'gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
-        healthChipClass
-      )}
-    >
-      {#if healthChip === 'backend_offline'}
-        <CloudOff class="size-3.5 opacity-90" />
-      {:else if healthChip === 'db_offline'}
-        <Database class="size-3.5 opacity-90" />
-      {:else if healthChip === 'idp_offline'}
-        <ShieldAlert class="size-3.5 opacity-90" />
-      {:else}
-        <Cloud class="size-3.5 opacity-90" />
-      {/if}
-      <span>{healthChipLabel}</span>
-    </Badge>
     <Sheet.Close
       class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
       title={$t('common.done')}
@@ -100,16 +87,33 @@
 
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.backendVersion')}</div>
-        <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-          {backendState.health?.version ? `v${backendState.health.version}` : '—'}
-        </Badge>
+        <div class="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            class={cn('gap-1 font-mono text-[11px] font-medium', healthChipClass)}
+          >
+            {#if healthChip === 'backend_offline'}
+              <CloudOff class="size-3.5 opacity-90" />
+            {:else if healthChip === 'db_offline'}
+              <Database class="size-3.5 opacity-90" />
+            {:else if healthChip === 'idp_offline'}
+              <ShieldAlert class="size-3.5 opacity-90" />
+            {:else}
+              <Cloud class="size-3.5 opacity-90" />
+            {/if}
+            <span>{healthChipLabel}</span>
+          </Badge>
+          <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+            {backendState.health?.version ? `v${backendState.health.version}` : '—'}
+          </Badge>
+        </div>
       </div>
 
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="text-muted-foreground">{$t('shell.health.identityProvider')}</div>
         <div class="flex items-center gap-2">
           {#if backendState.health?.idp?.ok}
-            <Badge variant="outline" class="font-mono text-[11px] font-medium">
+            <Badge variant="outline" class="border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-medium">
               {backendState.health.idp.type || 'Casdoor'}
             </Badge>
             <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -137,17 +141,25 @@
             {@const aggStatus = aggregateStatus(instances)}
             {@const behindScaler = instances[0].is_behind_scaler}
             {@const healthyCount = instances.filter((i) => i.status === 'online').length}
-            {@const displayName = instances[0].name || code}
+            {@const serviceName = instances[0].name}
+            {@const displayName = serviceName || code}
+            {@const serviceDescription = instances[0].description}
+            {@const showCodeNote = serviceName && serviceName !== code}
 
             <!-- Group header -->
             <div class="flex items-center justify-between gap-3 text-sm">
-              <div class="truncate text-muted-foreground">{displayName}</div>
-              <div class="flex items-center gap-2">
-                {#if instances[0].service_version}
-                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-                    v{instances[0].service_version}
-                  </Badge>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-baseline gap-2">
+                  <span class="truncate text-muted-foreground">{displayName}</span>
+                  {#if showCodeNote}
+                    <span class="shrink-0 font-mono text-[10px] text-muted-foreground/70">{code}</span>
+                  {/if}
+                </div>
+                {#if serviceDescription}
+                  <div class="truncate text-xs text-muted-foreground/60">{serviceDescription.length > 255 ? serviceDescription.slice(0, 255) + '…' : serviceDescription}</div>
                 {/if}
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
                 <Badge
                   variant="outline"
                   class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass(aggStatus))}
@@ -156,11 +168,18 @@
                     <Cloud class="size-3.5 opacity-90" />
                   {:else if aggStatus === 'going_live'}
                     <AlertCircle class="size-3.5 opacity-90" />
+                  {:else if aggStatus === 'unknown'}
+                    <CircleQuestionMark class="size-3.5 opacity-90" />
                   {:else}
                     <CloudOff class="size-3.5 opacity-90" />
                   {/if}
                   <span>{$t(`shell.health.${aggStatus}`)}</span>
                 </Badge>
+                {#if instances[0].service_version}
+                  <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                    v{instances[0].service_version}
+                  </Badge>
+                {/if}
                 {#if !behindScaler}
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {healthyCount}/{instances.length}
