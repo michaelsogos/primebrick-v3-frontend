@@ -27,7 +27,6 @@
   import { formatUiDateTime } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
-  import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import type { MetaColumn } from "$lib/entity-list/types";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
@@ -282,19 +281,6 @@
     auditingColumns={(metadata.state.meta?.list?.auditingColumns as MetaColumn[] | undefined) || []}
     isCreatePage={isCreatePage}
   >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.profile.title') }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.profile.title')}</h1>
-    </div>
-  {/snippet}
-
   {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <div class="space-y-6">

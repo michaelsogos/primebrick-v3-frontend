@@ -9,6 +9,8 @@ function makeService(overrides: Partial<ServiceInfo> = {}): ServiceInfo {
     endpoints: {},
     is_behind_scaler: false,
     status: "online",
+    is_enabled: true,
+    icon_type: "icon",
     ...overrides,
   };
 }
