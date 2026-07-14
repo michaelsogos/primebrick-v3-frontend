@@ -345,14 +345,14 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/config`);
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
-  const data = (await res.json()) as { config: ModuleConfigEntry[] };
-  return data.config;
+  const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
+  return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, key: string, value: string): Promise<void> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/config/${encodeURIComponent(key)}`, {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string): Promise<void> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ value }),

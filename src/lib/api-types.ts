@@ -47,6 +47,7 @@ export type ServiceInfo = {
   is_enabled: boolean;
   icon?: string;
   icon_type: IconType;
+  is_reserved?: boolean;
 };
 
 export type ModuleConfigEntry = {

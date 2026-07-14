@@ -375,6 +375,8 @@
         "moduleDeleted": "Modulo eliminato",
         "toggleFailed": "Impossibile cambiare lo stato del modulo",
         "deleteFailed": "Impossibile eliminare il modulo",
+        "reserved": "Riservato",
+        "behindScaler": "Scaler",
         "config": {
           "serviceInfo": "Info Servizio",
           "moduleConfig": "Configurazione Modulo",
@@ -833,6 +835,25 @@
         "deleted_at": "Eliminato il",
         "deleted_by": "Eliminato da"
       }
+    }
+  },
+  "mcp": {
+    "consent": {
+      "title": "Autorizza client MCP",
+      "description": "Un client AI sta richiedendo l'accesso al tuo account Primebrick",
+      "clientName": "Client",
+      "requestedScopes": "Permessi richiesti",
+      "approve": "Autorizza",
+      "deny": "Nega",
+      "approveButton": "Autorizza {client}",
+      "denyButton": "Nega accesso",
+      "loginRequired": "Devi aver effettuato l'accesso per autorizzare questo client",
+      "loginFirst": "Accedi per continuare",
+      "invalidParams": "Parametri OAuth non validi — campi obbligatori mancanti",
+      "redirecting": "Reindirizzamento...",
+      "approved": "Consenso approvato. Reindirizzamento all'autenticazione...",
+      "denied": "Accesso negato. Reindirizzamento al client...",
+      "securityNote": "Autorizzando, permetti a questo client di accedere ai tuoi dati Primebrick utilizzando gli strumenti MCP. Puoi revocare questo accesso in qualsiasi momento."
     }
   }
 }

@@ -83,7 +83,7 @@
 
   async function handleSaveConfigKey(entry: ModuleConfigEntry, newValue: string) {
     try {
-      await updateModuleConfigKey(service.code, entry.key, newValue);
+      await updateModuleConfigKey(service.code, entry.uuid, newValue);
       configEntries = configEntries.map((e) =>
         e.key === entry.key ? { ...e, value: newValue } : e,
       );

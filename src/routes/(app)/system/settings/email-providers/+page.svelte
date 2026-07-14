@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -10,6 +11,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import Mail from '@lucide/svelte/icons/mail';
   import Plus from '@lucide/svelte/icons/plus';
   import Pencil from '@lucide/svelte/icons/pencil';
@@ -47,12 +49,12 @@
 
   let errors = $state<Record<string, string>>({});
 
-  const PROXY_BASE = '/ws/EMAILSENDER/v1/providers';
+  const PROXY_BASE = '/ws/EMAILSENDER/api/v1/entities/providers';
 
   async function loadProviders() {
     loading = true;
     try {
-      const data = await apiFetchExt<{ providers: EmailProvider[] }>(PROXY_BASE, { method: 'GET' });
+      const data = await apiFetchExt<{ providers: EmailProvider[] }>(`${PROXY_BASE}/list`, { method: 'GET' });
       providers = data.providers || [];
     } catch (err) {
       if (err instanceof ApiUnreachableError && err.alreadyNotified) {
@@ -221,7 +223,11 @@
         segments={[
           { label: $t('shell.system') },
           { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.tabs.emailProviders') }
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.emailProviders.title')}</h1>
