@@ -4,11 +4,9 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Spinner } from '$lib/components/ui/spinner';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
@@ -18,9 +16,6 @@
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import { onMount } from 'svelte';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
-
-  const userAvatarSeed = 'PB';
-  const avatarChromeFallbackClass = avatarFallbackChromeClasses(userAvatarSeed);
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -103,13 +98,8 @@
     <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/75 to-zinc-950/40 z-10"></div>
     
     <!-- Logo PrimeBrick -->
-    <div class="relative z-20 flex items-center text-lg font-medium tracking-tight">
-      <Avatar class="size-8 rounded-none avatar-hex mr-3">
-        <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-          {userAvatarSeed}
-        </AvatarFallback>
-      </Avatar>
-      <span class="text-xl font-semibold">PrimeBrick</span>
+    <div class="relative z-20 flex items-center">
+      <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-8 w-auto" />
     </div>
     
     <!-- Dynamic quote - vertically centered -->
@@ -160,12 +150,7 @@
       <!-- Mobile header: Logo + theme/language selectors -->
       <div class="flex items-center justify-between lg:hidden">
         <div class="flex items-center gap-3">
-          <Avatar class="size-8 rounded-none avatar-hex">
-            <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-              {userAvatarSeed}
-            </AvatarFallback>
-          </Avatar>
-          <span class="text-xl font-semibold">PrimeBrick</span>
+          <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-7 w-auto" />
         </div>
         <div class="flex items-center gap-2">
           <ThemeToggle />
