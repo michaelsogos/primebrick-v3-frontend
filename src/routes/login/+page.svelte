@@ -96,12 +96,7 @@
     
     <!-- Dark overlay for text contrast -->
     <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/75 to-zinc-950/40 z-10"></div>
-    
-    <!-- Logo PrimeBrick -->
-    <div class="relative z-20 flex items-center">
-      <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-8 w-auto" />
-    </div>
-    
+
     <!-- Dynamic quote - vertically centered -->
     <div class="relative z-20 flex-1 flex items-center justify-center">
       <blockquote class="space-y-2">
@@ -116,7 +111,16 @@
   </div>
 
   <!-- Left Column: Login Form (Always visible) -->
-  <div class="lg:p-8 flex min-h-screen items-center justify-center bg-background relative">
+  <div class="lg:p-8 flex min-h-screen flex-col bg-background relative">
+    <!-- Top bar: Logo + theme/language selectors (desktop) -->
+    <div class="hidden lg:flex items-center justify-between px-8 pt-8">
+      <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-8 w-auto" />
+      <div class="flex items-center gap-2">
+        <ThemeToggle />
+        <LangSelect />
+      </div>
+    </div>
+
     <!-- Health badge in bottom left (desktop) -->
     <div class="absolute bottom-8 left-8 hidden lg:block">
       <Badge
@@ -139,13 +143,8 @@
       </Badge>
     </div>
 
-    <!-- Theme and language selectors in top right (desktop) -->
-    <div class="absolute top-8 right-8 hidden lg:flex items-center gap-2">
-      <ThemeToggle />
-      <LangSelect />
-    </div>
-
-    <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
+    <div class="flex flex-1 items-center justify-center">
+      <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
       
       <!-- Mobile header: Logo + theme/language selectors -->
       <div class="flex items-center justify-between lg:hidden">
@@ -197,6 +196,7 @@
         </Badge>
       </div>
 
+    </div>
     </div>
 
     <!-- Version badge in bottom right (desktop) -->
