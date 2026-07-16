@@ -15,7 +15,8 @@
     "prepare": "svelte-kit sync || echo .",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "extract-docs": "node scripts/extract-component-docs.mjs"
   },
   "devDependencies": {
     "@iconify-json/bi": "1.2.7",
@@ -38,6 +39,7 @@
     "paneforge": "1.0.2",
     "postcss": "8.5.16",
     "runed": "0.37.1",
+    "sveld": "0.36.0",
     "svelte": "5.56.4",
     "svelte-check": "4.7.2",
     "svelte-toolbelt": "0.10.6",
