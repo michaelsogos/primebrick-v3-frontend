@@ -15,6 +15,12 @@
     "invalidCredentials": "Nome de utilizador ou palavra-passe inválidos",
     "accountLocked": "Conta bloqueada temporariamente. Por favor tente novamente em {minutes} minutos.",
     "userNoPermission": "O usuário não tem permissão!",
+    "or": "ou",
+    "passkey": {
+      "button": "Entrar com passkey",
+      "error": "Falha no login com passkey",
+      "unsupported": "Passkeys não são suportados neste dispositivo"
+    },
     "hero": {
       "quote1": "A plataforma de gestão sólida, modular e eficiente para controlo completo dos seus projetos.",
       "author1": "Foco e Estrutura",
@@ -32,6 +38,16 @@
       "description": "A sua sessão expirou. Inicie sessão para continuar.",
       "failedAttempt": "Falha no login. Tente novamente ou vá para a página de login.",
       "goToLogin": "Ir para a página de login"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Adicione uma passkey para iniciar sessão sem palavra-passe usando Face ID, Touch ID ou uma chave de segurança.",
+      "add": "Adicionar passkey",
+      "remove": "Remover",
+      "empty": "Nenhuma passkey registada",
+      "enrollmentSuccess": "Passkey adicionada",
+      "enrollmentError": "Falha ao adicionar passkey",
+      "deleteError": "Falha ao remover passkey"
     }
   },
   "common": {

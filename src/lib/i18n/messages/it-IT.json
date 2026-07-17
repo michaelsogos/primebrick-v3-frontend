@@ -15,6 +15,12 @@
     "invalidCredentials": "Nome utente o password non validi",
     "accountLocked": "Account bloccato temporaneamente. Riprova tra {minutes} minuti.",
     "userNoPermission": "L'utente non ha permessi!",
+    "or": "oppure",
+    "passkey": {
+      "button": "Accedi con passkey",
+      "error": "Accesso con passkey non riuscito",
+      "unsupported": "I passkey non sono supportati su questo dispositivo"
+    },
     "hero": {
       "quote1": "La piattaforma di gestione solida, modulare ed efficiente per il controllo completo dei tuoi progetti.",
       "author1": "Focus & Struttura",
@@ -32,6 +38,16 @@
       "description": "La sessione è scaduta. Accedi di nuovo per continuare.",
       "failedAttempt": "Login fallito. Riprova o vai alla pagina di login.",
       "goToLogin": "Vai alla pagina di login"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Aggiungi una passkey per accedere senza password usando Face ID, Touch ID o una chiave di sicurezza.",
+      "add": "Aggiungi passkey",
+      "remove": "Rimuovi",
+      "empty": "Nessuna passkey registrata",
+      "enrollmentSuccess": "Passkey aggiunta",
+      "enrollmentError": "Impossibile aggiungere la passkey",
+      "deleteError": "Impossibile rimuovere la passkey"
     }
   },
   "common": {

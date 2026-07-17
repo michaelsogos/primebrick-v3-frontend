@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "overview",
+    "getting-started",
+    "app-shell",
+    "authentication",
+    "entity-list-table",
+    "settings",
+    "ui-components",
+    "api-reference"
+  ]
+}

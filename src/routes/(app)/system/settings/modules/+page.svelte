@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import { Switch } from '$lib/components/ui/switch';
@@ -12,12 +13,24 @@
   import Store from '@lucide/svelte/icons/store';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Hourglass from '@lucide/svelte/icons/hourglass';
+  import Cloud from '@lucide/svelte/icons/cloud';
+  import CloudOff from '@lucide/svelte/icons/cloud-off';
+  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+  import Database from '@lucide/svelte/icons/database';
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import Layers from '@lucide/svelte/icons/layers';
   import { pushNotification } from '$lib/errors/app-errors';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { fetchServices, toggleModule, deleteModule } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
+  import { backendState } from '$lib/backend-availability';
+  import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
+  import { cn } from '$lib/utils';
 
   let services = $state<ServiceInfo[]>([]);
   let loading = $state(true);
@@ -26,6 +39,24 @@
   let deleteDialogOpen = $state(false);
   let deleteTarget = $state<ServiceInfo | null>(null);
   let isDeleting = $state(false);
+
+  const groupedServices = $derived(groupByCode(services));
+  const healthChip = $derived(backendState.healthChip as HealthChip);
+  const healthChipLabel = $derived(chipLabel(healthChip));
+  const healthChipClass = $derived(chipClass(healthChip));
+
+  function statusBadgeClass(status: string): string {
+    switch (status) {
+      case 'online':
+        return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+      case 'going_live':
+        return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300';
+      case 'offline':
+        return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
+      default:
+        return 'border-border/60 bg-muted/30 text-muted-foreground';
+    }
+  }
 
   onMount(async () => {
     await loadServices();
@@ -134,7 +165,11 @@
         segments={[
           { label: $t('shell.system') },
           { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.tabs.modules') }
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.modules.title')}</h1>
@@ -181,7 +216,12 @@
             </div>
           {:else}
             <div class="space-y-2">
-              {#each services as module (module.code)}
+              {#each groupedServices as [code, instances] (code)}
+                {@const isReserved = instances[0].is_reserved === true}
+                {@const aggStatus = aggregateStatus(instances)}
+                {@const behindScaler = instances[0].is_behind_scaler}
+                {@const healthyCount = instances.filter((i) => i.status === 'online').length}
+                {@const module = instances[0]}
                 <div class="flex items-center justify-between rounded-lg border p-3">
                   <div class="flex items-center gap-3 min-w-0">
                     {#if module.icon && module.icon_type === 'icon'}
@@ -204,6 +244,11 @@
                             v{module.service_version}
                           </Badge>
                         {/if}
+                        {#if isReserved}
+                          <Badge variant="outline" class="text-[11px] font-medium">
+                            {$t('shell.settings.modules.reserved')}
+                          </Badge>
+                        {/if}
                       </div>
                       {#if module.description}
                         <p class="text-sm text-muted-foreground truncate">{module.description}</p>
@@ -212,26 +257,78 @@
                   </div>
 
                   <div class="flex items-center gap-2 shrink-0">
-                    <Switch
-                      checked={module.is_enabled}
-                      onCheckedChange={() => handleToggle(module)}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onclick={() => openConfigPage(module)}
-                      title={$t('shell.settings.modules.configure')}
-                    >
-                      <Settings class="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onclick={() => openDeleteDialog(module)}
-                      title={$t('common.delete')}
-                    >
-                      <Trash2 class="size-4 text-destructive" />
-                    </Button>
+                    <!-- Status badge -->
+                    {#if isReserved}
+                      <Badge
+                        variant="outline"
+                        class={cn('gap-1 font-mono text-[11px] font-medium', healthChipClass)}
+                      >
+                        {#if healthChip === 'backend_offline'}
+                          <CloudOff class="size-3.5 opacity-90" />
+                        {:else if healthChip === 'db_offline'}
+                          <Database class="size-3.5 opacity-90" />
+                        {:else if healthChip === 'idp_offline'}
+                          <ShieldAlert class="size-3.5 opacity-90" />
+                        {:else}
+                          <Cloud class="size-3.5 opacity-90" />
+                        {/if}
+                        <span>{healthChipLabel}</span>
+                      </Badge>
+                    {:else}
+                      <Badge
+                        variant="outline"
+                        class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass(aggStatus))}
+                      >
+                        {#if aggStatus === 'online'}
+                          <Cloud class="size-3.5 opacity-90" />
+                        {:else if aggStatus === 'going_live'}
+                          <AlertCircle class="size-3.5 opacity-90" />
+                        {:else if aggStatus === 'unknown'}
+                          <CircleQuestionMark class="size-3.5 opacity-90" />
+                        {:else}
+                          <CloudOff class="size-3.5 opacity-90" />
+                        {/if}
+                        <span>{$t(`shell.health.${aggStatus}`)}</span>
+                      </Badge>
+                    {/if}
+
+                    <!-- Instance count (non-reserved, non-scaler only) -->
+                    {#if !isReserved && !behindScaler}
+                      <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                        {healthyCount}/{instances.length}
+                      </Badge>
+                    {/if}
+
+                    <!-- Scaler indicator -->
+                    {#if !isReserved && behindScaler}
+                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('shell.settings.modules.behindScaler')}>
+                        <Layers class="size-3.5 opacity-90" />
+                        <span>{$t('shell.settings.modules.behindScaler')}</span>
+                      </Badge>
+                    {/if}
+
+                    {#if !isReserved}
+                      <Switch
+                        checked={module.is_enabled}
+                        onCheckedChange={() => handleToggle(module)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onclick={() => openConfigPage(module)}
+                        title={$t('shell.settings.modules.configure')}
+                      >
+                        <Settings class="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onclick={() => openDeleteDialog(module)}
+                        title={$t('common.delete')}
+                      >
+                        <Trash2 class="size-4 text-destructive" />
+                      </Button>
+                    {/if}
                   </div>
                 </div>
               {/each}

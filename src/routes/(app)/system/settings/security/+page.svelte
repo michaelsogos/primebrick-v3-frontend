@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
+  import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import * as Password from '$lib/components/ui/password';
@@ -12,6 +13,7 @@
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   let currentPassword = $state('');
   let newPassword = $state('');
@@ -71,7 +73,11 @@
         segments={[
           { label: $t('shell.system') },
           { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.tabs.security') }
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.security.title')}</h1>

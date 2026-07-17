@@ -1,0 +1,56 @@
+---
+title: Overview
+description: Primebrick frontend — a SvelteKit + Svelte 5 + TypeScript application providing the admin shell, entity management UI, and settings for the Primebrick platform.
+---
+
+# Overview
+
+The Primebrick frontend (`primebrick-fe-v3`) is the web administration
+application for the Primebrick platform. It is built with **SvelteKit**,
+**Svelte 5 (runes mode)**, and **TypeScript**, and uses **Shadcn-Svelte** as
+its component primitive layer on top of **Tailwind CSS**.
+
+## What the frontend does
+
+- Renders the **application shell** — sidebar, topbar, command palette, health
+  and version badges, global side sheets — for all authenticated routes.
+- Talks to the **Primebrick backend** (`primebrick-be-v3`) over a REST API
+  (`/api/v1/...`) and to registered **microservices** (`primebrick-us-v3`)
+  through a backend proxy (`/ws/<SERVICE>/...`).
+- Provides a generic, reusable **entity list table** system used by every
+  module to render lists with table/card views, filtering, sorting, bulk
+  actions, export, and inline preview.
+- Hosts the **System Settings** area (modules, organizations, users, profile,
+  security, email providers, templates) under `/system/settings`.
+- Implements **MCP (Model Context Protocol) OAuth consent** so AI agents can
+  request scoped access to the platform on behalf of a user.
+
+## Architecture at a glance
+
+<Mermaid chart={`flowchart LR
+  subgraph Browser
+    SK[SvelteKit app]
+  end
+  subgraph Primebrick
+    BE[Backend v3<br/>REST /api/v1]
+    US[Microservices v3<br/>proxy /ws]
+  end
+  SK -->|REST| BE
+  SK -->|proxy /ws| US
+  BE --> US
+`} />
+
+The frontend is the only user-facing surface. It has **no auto-deploy CI** —
+deployment follows GitFlow: a release branch is closed, merged to `main`, and
+tagged. The docs site (`docs.primebrick.dev`) is a separate repo that pulls
+these `docs/user-guide/` MDX files in its own CI pipeline.
+
+## Where to go next
+
+- [Getting started](/docs/user-guide/getting-started) — stack, commands, project layout
+- [App shell & sidebar](/docs/user-guide/app-shell) — layout, navigation, modules
+- [Authentication & sessions](/docs/user-guide/authentication) — login, session expiry, password policy
+- [Entity list table](/docs/user-guide/entity-list-table) — the reusable list/table/card system
+- [System settings](/docs/user-guide/settings) — modules, orgs, users, profile, email providers
+- [UI components](/docs/user-guide/ui-components) — custom components on top of Shadcn-Svelte
+- [API reference](/docs/user-guide/api-reference) — every exported Svelte component

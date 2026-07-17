@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { page as appPage } from '$app/state';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
@@ -18,6 +19,7 @@
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -719,7 +721,11 @@
         segments={[
           { label: $t('shell.system') },
           { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.tabs.organizations') }
+          settingsTabMenuSegment({
+            pathname: appPage.url.pathname,
+            searchParams: appPage.url.searchParams,
+            t: (key) => $t(key)
+          })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.organizations')}</h1>

@@ -40,7 +40,8 @@
       {$t('common.cancel')}
     </Button>
     <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
+      variant="warning"
+      class="hover:scale-105 transition-all"
       onclick={onConfirm}
       disabled={isRestoring}
     >

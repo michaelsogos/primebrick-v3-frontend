@@ -51,7 +51,7 @@
           </Button>
         {/snippet}
       </Popover.Trigger>
-      <Popover.Content class="w-auto p-0">
+      <Popover.Content class="z-[100] w-auto p-0">
         <div class="p-3">
           <ColorPicker.Root bind:value />
         </div>

@@ -1,0 +1,112 @@
+---
+title: Getting started
+description: Stack, commands, and project layout for the Primebrick frontend repository.
+---
+
+# Getting started
+
+## Stack
+
+| | |
+|--|--|
+| Framework | SvelteKit |
+| UI runtime | Svelte 5 (runes mode exclusively) |
+| Language | TypeScript (strict) |
+| Component primitives | Shadcn-Svelte (vendored in `src/lib/components/ui/`) |
+| Styling | Tailwind CSS |
+| Package manager | pnpm |
+| Test runner | Vitest |
+| i18n | Custom Paraglide-based message store in `src/lib/i18n/` |
+
+## Commands
+
+| | |
+|--|--|
+| Install | `pnpm install` |
+| Dev server | `pnpm run dev` (port **5173**) |
+| Typecheck | `pnpm run check` |
+| Build | `pnpm run build` |
+| Tests | `pnpm run test` |
+| Component extraction | `pnpm extract-docs` |
+
+`pnpm extract-docs` regenerates `docs/user-guide/_extracted/components.json`
+from every `.svelte` file under `src/lib/components/` using sveld. Run it
+whenever component props change before refreshing the API reference page.
+
+## Project layout
+
+```
+src/
+├── lib/
+│   ├── components/          # Svelte components
+│   │   ├── ui/              # Shadcn-Svelte primitives (vendored)
+│   │   ├── entity-list-table/  # Reusable list/table/card system
+│   │   ├── sidebar/         # Sidebar sub-components
+│   │   ├── forms/           # Form building blocks
+│   │   └── auth/            # Login, session-expired dialog
+│   ├── composables/         # use* composables (Svelte 5 runes)
+│   ├── shell/               # App shell state: modules, sheets
+│   ├── entity-list/         # Entity-list types & sheet panels
+│   ├── errors/              # RFC7807 + pushNotification infrastructure
+│   ├── i18n/                # Translations (en, de, es, fr, it, pt)
+│   ├── types/               # Shared types (DeepReadonly, password-policy)
+│   ├── utils/               # Pure utilities
+│   └── api.ts / api-ext.ts  # Backend + microservice clients
+├── routes/
+│   ├── (app)/               # Authenticated routes (under the shell)
+│   │   └── system/settings/ # Settings area
+│   ├── login/               # Public login page
+│   └── mcp/consent/         # MCP OAuth consent screen
+└── app.html
+```
+
+## Svelte 5 conventions
+
+This repo uses **runes exclusively**. The key rules (enforced in `AGENTS.md`):
+
+- **State**: `let x = $state<Type>(value)`
+- **Props**: typed destructuring from `$props()` — `let { name }: { name: string } = $props();`
+- **Derived**: `$derived(expr)` (no anonymous functions) or `$derived.by<Type>(() => { ... })`
+- **Events**: callback props, never `createEventDispatcher`
+- **Children/snippets**: typed as `Snippet`
+
+### Composable state exposure pattern
+
+All `use*` composables consolidate internal `$state` into a single `_state`
+object and expose it read-only via a `get state()` getter returning
+`DeepReadonly<typeof _state>`. Mutations happen only through exposed mutator
+functions. `$derived` values are exposed via individual getters, never inside
+the `$state` object.
+
+```ts
+import type { DeepReadonly } from '$lib/types/deep-readonly';
+
+export function useSomething() {
+  const _state = $state({ open: false, items: [] as string[] });
+  const itemCount = $derived(_state.items.length);
+  return {
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
+    get itemCount() { return itemCount; },
+    open: () => { _state.open = true; },
+  };
+}
+```
+
+## Error notifications
+
+**Never call `toast.*()` directly.** Use `pushNotification(...)` from
+`$lib/errors/app-errors` so errors appear in both the topbar error badge /
+errors sheet and as a toast with correct impact styling.
+
+## Data model conventions
+
+All TS types, component props, and store shapes use **snake_case** matching
+the backend JSON response. No DTO layer renames fields between the API
+response and the TS model. See `.devin/rules/data-model-conventions.md` for
+the full rule.
+
+## Next steps
+
+- [App shell & sidebar](/docs/user-guide/app-shell)
+- [Authentication & sessions](/docs/user-guide/authentication)
+- [Entity list table](/docs/user-guide/entity-list-table)

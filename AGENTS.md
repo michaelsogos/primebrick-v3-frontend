@@ -151,3 +151,18 @@ $derived(something.state.items.length) // tracked (deep)
 // Must use mutators:
 something.open();                      // only path to mutation
 ```
+
+## User-facing documentation
+
+User-facing developer documentation lives in `docs/user-guide/` as MDX files.
+These are synced to `docs.primebrick.dev` by the docs repo's CI pipeline.
+
+- **Location**: `docs/user-guide/*.mdx` — one file per topic
+- **Ordering**: `docs/user-guide/_order.json` defines the sidebar page order
+- **Conventions**: see `.devin/rules/docs-user-guide.md` for editorial rules
+- **Mermaid**: use `<Mermaid chart={...} />`, never ` ```Code ` or ` ```mermaid `
+- **Component extraction**: run `pnpm extract-docs` to generate
+  `docs/user-guide/_extracted/components.json` from Svelte components
+- **Do NOT hand-edit** files in `docs/ai/` or `docs/skills/` — those are internal
+- **Internal docs** (`docs/ai/`, `docs/skills/`, `docs/gitflow.md`) are NOT synced
+  to the docs site — they stay in this repo for AI agents only

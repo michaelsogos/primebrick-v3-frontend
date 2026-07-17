@@ -15,6 +15,12 @@
     "invalidCredentials": "Ungültiger Benutzername oder Passwort",
     "accountLocked": "Konto vorübergehend gesperrt. Bitte versuchen Sie es in {minutes} Minuten erneut.",
     "userNoPermission": "Benutzer hat keine Berechtigung!",
+    "or": "oder",
+    "passkey": {
+      "button": "Mit Passkey anmelden",
+      "error": "Passkey-Anmeldung fehlgeschlagen",
+      "unsupported": "Passkeys werden auf diesem Gerät nicht unterstützt"
+    },
     "hero": {
       "quote1": "Die solide, modulare und effiziente Management-Plattform für die vollständige Kontrolle Ihrer Projekte.",
       "author1": "Fokus & Struktur",
@@ -32,6 +38,16 @@
       "description": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich an, um fortzufahren.",
       "failedAttempt": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut oder gehen Sie zur Anmeldeseite.",
       "goToLogin": "Zur Anmeldeseite gehen"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Fügen Sie einen Passkey hinzu, um sich ohne Passwort mit Face ID, Touch ID oder einem Sicherheitsschlüssel anzumelden.",
+      "add": "Passkey hinzufügen",
+      "remove": "Entfernen",
+      "empty": "Keine Passkeys registriert",
+      "enrollmentSuccess": "Passkey hinzugefügt",
+      "enrollmentError": "Passkey konnte nicht hinzugefügt werden",
+      "deleteError": "Passkey konnte nicht entfernt werden"
     }
   },
   "common": {

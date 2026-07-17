@@ -31,7 +31,7 @@
 </script>
 
 <Dialog.Root bind:open={sessionExpiredStore.isOpen}>
-  <Dialog.Content class="max-w-md">
+  <Dialog.Content class="max-w-md border-primary-gradient-popover">
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2 text-destructive">
         <ShieldUser class="size-5" />

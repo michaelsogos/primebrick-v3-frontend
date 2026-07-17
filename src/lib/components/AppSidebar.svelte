@@ -47,9 +47,7 @@
     window.location.href = '/login';
   }
 
-  afterNavigate(({ from }) => {
-    sidebar.setOpenMobile(false);
-    if (from && !sidebar.isMobile) sidebar.setOpen(false);
+  afterNavigate(() => {
     shellNav.saveLastRoute(page.url.pathname);
   });
 </script>

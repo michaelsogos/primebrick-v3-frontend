@@ -49,7 +49,8 @@
 	let inputClass = $derived(
 		cn(
 			showTrailing && "pr-9",
-			mode === "readonly" && "bg-muted",
+			mode === "readonly" && "border-readonly-gradient",
+			mode === "disabled" && "border-readonly-gradient",
 			className,
 		),
 	);
@@ -84,7 +85,7 @@
 								size="icon"
 								animationDuration={copyAnimationDuration}
 								onCopy={onCopy}
-								class={inputTrailingIconButtonClasses}
+								class={cn(inputTrailingIconButtonClasses, "text-foreground")}
 								{...tooltipProps}
 							/>
 						{/snippet}
@@ -98,7 +99,7 @@
 					size="icon"
 					animationDuration={copyAnimationDuration}
 					onCopy={onCopy}
-					class={inputTrailingIconButtonClasses}
+					class={cn(inputTrailingIconButtonClasses, "text-foreground")}
 				/>
 			{/if}
 		{:else if mode === "editable"}

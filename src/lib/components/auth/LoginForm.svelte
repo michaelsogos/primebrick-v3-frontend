@@ -14,6 +14,16 @@
   import * as Password from '$lib/components/ui/password';
   import { t } from '$lib/i18n';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import PasskeyButton from './PasskeyButton.svelte';
+  import { isWebauthnSupported } from '$lib/webauthn/codec';
+  import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
+
+  // Trigger the auth config fetch during component initialization.
+  void loadAuthConfig();
+
+  // Read $state directly — same pattern as userProfileState in the profile page.
+  const enableFormauth = $derived(authConfigState.config?.enable_formauth ?? false);
+  const enableWebauthn = $derived(authConfigState.config?.enable_webauthn ?? false);
 
   const loginSchema = z.object({
     username: z.string().min(1, 'Username is required'),
@@ -98,6 +108,7 @@
 
 <form use:enhance>
   <div class="space-y-4">
+    {#if enableFormauth}
     <FormField form={superFormObj} name="username">
       <FormControl>
         {#snippet children({ props })}
@@ -137,6 +148,21 @@
       {/if}
       {$submitting ? $t('login.buttonLoading') : $t('login.button')}
     </Button>
+    {/if}
+
+    {#if enableWebauthn && isWebauthnSupported()}
+      {#if enableFormauth}
+      <div class="relative my-2">
+        <div class="absolute inset-0 flex items-center">
+          <span class="w-full border-t border-border"></span>
+        </div>
+        <div class="relative flex justify-center text-xs uppercase">
+          <span class="bg-card px-2 text-muted-foreground">{$t('login.or')}</span>
+        </div>
+      </div>
+      {/if}
+      <PasskeyButton {onsuccess} {onerror} />
+    {/if}
 
     {#if $message}
       <Alert variant="destructive" class="mt-4">

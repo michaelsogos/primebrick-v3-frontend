@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
@@ -13,6 +14,7 @@
   import Plus from '@lucide/svelte/icons/plus';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   let uploadedFile = $state<File | null>(null);
   let selectedType = $state<'pdf' | 'email' | 'excel' | 'html'>('pdf');
@@ -66,7 +68,11 @@
         segments={[
           { label: $t('shell.system') },
           { label: $t('shell.settings.title'), href: '/system/settings/profile' },
-          { label: $t('shell.settings.tabs.templates') }
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.templates.title')}</h1>

@@ -116,8 +116,8 @@
     <div class="hidden lg:flex items-center justify-between px-8 pt-8">
       <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-8 w-auto" />
       <div class="flex items-center gap-2">
-        <ThemeToggle />
         <LangSelect />
+        <ThemeToggle />
       </div>
     </div>
 
@@ -152,13 +152,13 @@
           <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-7 w-auto" />
         </div>
         <div class="flex items-center gap-2">
-          <ThemeToggle />
           <LangSelect />
+          <ThemeToggle />
         </div>
       </div>
 
       <!-- Login Card -->
-      <Card class="border-border">
+      <Card class="border-primary-gradient shadow-sm">
         <CardHeader class="space-y-1">
           <CardTitle class="text-2xl font-semibold">{$t('login.title')}</CardTitle>
           <CardDescription>{$t('login.description')}</CardDescription>

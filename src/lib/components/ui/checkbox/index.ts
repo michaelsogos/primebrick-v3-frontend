@@ -1,4 +1,4 @@
-import Root from "./checkbox.svelte";
+import Root, { type CheckboxTone } from "./checkbox.svelte";
 
 /**
  * Base checkbox styling for consistent appearance across the application.
@@ -21,4 +21,4 @@ export const checkboxVisualOnlyClass =
 export const checkboxInteractiveClass =
 	checkboxBaseClass;
 
-export { Root, Root as Checkbox };
+export { Root, Root as Checkbox, type CheckboxTone };

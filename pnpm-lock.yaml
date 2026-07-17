@@ -75,9 +75,6 @@ importers:
       '@tsconfig/svelte':
         specifier: ^5.0.8
         version: 5.0.8
-      '@types/dompurify':
-        specifier: ^3.2.0
-        version: 3.2.0
       '@types/json-bigint':
         specifier: ^1.0.4
         version: 1.0.4
@@ -111,9 +108,12 @@ importers:
       runed:
         specifier: ^0.37.1
         version: 0.37.1(@sveltejs/kit@2.61.1(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.56.0)(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)))(svelte@5.56.0)(typescript@6.0.3)(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)))(svelte@5.56.0)(zod@4.4.3)
+      sveld:
+        specifier: 0.36.0
+        version: 0.36.0
       svelte:
-        specifier: ^5.56.0
-        version: 5.56.0
+        specifier: 5.56.4
+        version: 5.56.4
       svelte-check:
         specifier: ^4.4.8
         version: 4.4.8(picomatch@4.0.4)(svelte@5.56.0)(typescript@6.0.3)
@@ -133,7 +133,7 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
       typescript:
-        specifier: ~6.0.3
+        specifier: 6.0.3
         version: 6.0.3
       unplugin-icons:
         specifier: ^23.0.1
@@ -551,10 +551,6 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
-  '@types/dompurify@3.2.0':
-    resolution: {integrity: sha512-Fgg31wv9QbLDA0SpTOXO3MaxySc4DKGLi8sna4/Utjo4r3ZRPdCt4UQee8BWr+Q5z21yifghREPJGYaEOEIACg==}
-    deprecated: This is a stub types definition. dompurify provides its own type definitions, so you do not need this installed.
-
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
@@ -921,6 +917,14 @@ packages:
 
   esm-env@1.2.2:
     resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
+
+  esrap@2.2.13:
+    resolution: {integrity: sha512-m8jH5hZgJE2RRUK/jjkGPcJEDAV+dYnZYFkosQaPTcE+Yw4xynXHOo6FUdwaWBtdR3b1MMa7wEDTSHeR2VWsGA==}
+    peerDependencies:
+      '@typescript-eslint/types': ^8.2.0
+    peerDependenciesMeta:
+      '@typescript-eslint/types':
+        optional: true
 
   esrap@2.2.9:
     resolution: {integrity: sha512-4KijP+NxCWthMCUC3qHbE6n4vCjqgJS1uAYKhuT/GWfFTf1Qyive2TgOjep+gzbSzRfnNyaN/UU9YmdOt8Eg0A==}
@@ -1504,6 +1508,10 @@ packages:
     resolution: {integrity: sha512-uV+TFRZdXsqXTL2pRvujROjdZQ4RAlBUS5BTh9IGm+jTqQntYThciG/qu57Gs69yjnVUSqdxF9YLmSnpupBW9A==}
     engines: {node: '>=14.0.0'}
 
+  sveld@0.36.0:
+    resolution: {integrity: sha512-YQ7Na2Scgfggx+FwdSXsqRimSF8Vto+kz0mwagETDv+UlLjlE3imYp7Dab3VD6TD0/xXOQaB8LzVIzMR0anZXQ==}
+    hasBin: true
+
   svelte-check@4.4.8:
     resolution: {integrity: sha512-67adfgBox5eNSNIvIIwgFizKGdcRrGpiMoNO2obHcYuLz7iTa8Xgm/NGU3ntMFnNm8K1grFOIG6HhMLX/vcN8w==}
     engines: {node: '>= 18.0.0'}
@@ -1542,6 +1550,10 @@ packages:
 
   svelte@5.56.0:
     resolution: {integrity: sha512-kTXr26t1bchFp28ROrb957LtbujpBmBDibmqMGziVpUs7awBi96TGgX6SovrA8BNoEUDVRK2Fb9FkeYlGspoVg==}
+    engines: {node: '>=18'}
+
+  svelte@5.56.4:
+    resolution: {integrity: sha512-/d0QHehmRuJW8gVz395MTkPcPozxzdjBMBE8oEYGz8O3b9KTMzzQ9ZHJQLuFKOHOPQbU6kx/X4iid/EBBzH7iw==}
     engines: {node: '>=18'}
 
   sveltekit-superforms@2.30.1:
@@ -2258,10 +2270,6 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
-  '@types/dompurify@3.2.0':
-    dependencies:
-      dompurify: 3.4.7
-
   '@types/estree@1.0.9': {}
 
   '@types/hast@3.0.4':
@@ -2666,6 +2674,10 @@ snapshots:
       hasown: 2.0.4
 
   esm-env@1.2.2: {}
+
+  esrap@2.2.13:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
 
   esrap@2.2.9:
     dependencies:
@@ -3325,6 +3337,8 @@ snapshots:
   superstruct@2.0.2:
     optional: true
 
+  sveld@0.36.0: {}
+
   svelte-check@4.4.8(picomatch@4.0.4)(svelte@5.56.0)(typescript@6.0.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -3387,6 +3401,27 @@ snapshots:
       devalue: 5.8.1
       esm-env: 1.2.2
       esrap: 2.2.9
+      is-reference: 3.0.3
+      locate-character: 3.0.0
+      magic-string: 0.30.21
+      zimmerframe: 1.1.4
+    transitivePeerDependencies:
+      - '@typescript-eslint/types'
+
+  svelte@5.56.4:
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      '@jridgewell/sourcemap-codec': 1.5.5
+      '@sveltejs/acorn-typescript': 1.0.10(acorn@8.16.0)
+      '@types/estree': 1.0.9
+      '@types/trusted-types': 2.0.7
+      acorn: 8.16.0
+      aria-query: 5.3.1
+      axobject-query: 4.1.0
+      clsx: 2.1.1
+      devalue: 5.8.1
+      esm-env: 1.2.2
+      esrap: 2.2.13
       is-reference: 3.0.3
       locate-character: 3.0.0
       magic-string: 0.30.21

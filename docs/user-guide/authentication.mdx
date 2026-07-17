@@ -1,0 +1,179 @@
+---
+title: Authentication & sessions
+description: Login flow, session expiration handling, password policy enforcement, MCP OAuth consent, and form guards.
+---
+
+# Authentication & sessions
+
+## Login
+
+`src/routes/login/+page.svelte` renders `<LoginForm>` from
+`src/lib/components/auth/LoginForm.svelte`. The form uses
+`sveltekit-superforms` with a Zod schema (`username`, `password` both
+required) and POSTs to `/api/v1/auth/login`.
+
+On success it stores the user in `userProfileStore` and invokes the
+`onsuccess` callback, which the login page uses to redirect to the saved
+redirect URL (or `/`). On failure it maps RFC7807 error responses to
+i18n-localized messages, with special handling for rate-limited attempts
+(showing minutes remaining).
+
+```svelte
+<LoginForm
+  onsuccess={() => {
+    const redirectUrl = getAndClearRedirectUrl();
+    window.location.href = redirectUrl || '/';
+  }}
+/>
+```
+
+## Session expiration
+
+When an API call returns **401**, the request is enqueued in the
+session-expired store and the `SessionExpiredDialog` opens so the user can
+re-authenticate without losing context.
+
+`src/lib/auth/session-expired-store.svelte.ts` exposes:
+
+| Member | Purpose |
+|--------|---------|
+| `enqueue(input, init)` | Enqueues a failed request and opens the dialog; returns a `Promise<Response>` that resolves after re-login |
+| `drainPending()` | Returns and clears the queued requests (called after successful re-login) |
+| `setFailed()` | Marks the last login attempt as failed (shows the error alert + "Go to login" button) |
+| `close()` | Closes the dialog and resets state |
+
+State is exposed read-only via `state` (`isOpen`, `pendingRequests`,
+`hasFailedAttempt`). After a successful re-login in the dialog,
+`handleLoginSuccess()` calls `close()` and `drainPending()`, and the
+enqueued requests are retried with a `_sessionRetry` flag to avoid
+re-triggering the dialog.
+
+## Password policy
+
+The backend exposes the active password policy at
+`GET /api/v1/system/password-policy`. The `usePasswordPolicy()` composable
+fetches it and exposes both the rules and a derived validation regex.
+
+### Policies
+
+| Policy | Rules enforced |
+|--------|----------------|
+| `alpha_numeric` | Length 8–64, alphanumeric only |
+| `letter_and_number` | Length, ≥1 letter, ≥1 number |
+| `letter_number_special` | Length, letter, number, special char |
+| `mixed_case_special` | Length, lowercase, uppercase, number, special char |
+
+Allowed special characters: `*-_.#@!|?^:`
+
+The regex patterns are kept in sync with the backend exactly:
+
+```ts
+ALPHA_NUMERIC:        /^[A-Za-z0-9]{8,64}$/
+LETTER_AND_NUMBER:    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{8,64}$/
+LETTER_NUMBER_SPECIAL:/^(?=.*[A-Za-z])(?=.*\d)(?=.*[*\-_.#@!|?^:])[A-Za-z0-9*\-_.#@!|?^:]{8,64}$/
+MIXED_CASE_SPECIAL:   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[*\-_.#@!|?^:])[A-Za-z0-9*\-_.#@!|?^:]{8,64}$/
+```
+
+### Composable API
+
+```ts
+const policy = usePasswordPolicy();
+policy.state.policy          // PasswordPolicy enum
+policy.state.checklistRules  // PasswordChecklistRule[]
+policy.state.specialChars    // string
+policy.state.loading         // boolean
+policy.state.loaded          // boolean
+policy.regex                 // RegExp matching the active policy
+policy.load()                // fetch from backend
+```
+
+### Password checklist
+
+`PasswordChecklist.svelte` renders a live checklist of the active rules
+(`length`, `letter`, `lowercase`, `uppercase`, `number`, `special`) with
+check/circle icons, updating as the user types. It takes `password`,
+`rules: PasswordChecklistRule[]`, and optional `specialChars`.
+
+### Change password dialog
+
+`ChangePasswordDialog.svelte` (in the entity-list-table dialogs) loads the
+policy on open, validates the new password against `policy.regex`, requires
+confirmation match, and POSTs to
+`/api/v1/entities/user_profiles/{uuid}/change-password`. It embeds
+`<PasswordChecklist>` for inline feedback.
+
+## Password UI components
+
+The `src/lib/components/ui/password/` family wraps password input with
+strength checking via `@zxcvbn-ts/core`:
+
+- `Password.Root` — context provider (`usePassword({ hidden, minScore })`)
+- `Password.Input` — the input itself (`usePasswordInput({ value, ref })`)
+- `Password.ToggleVisibility` — show/hide toggle
+- `Password.Copy` — copy-to-clipboard
+- `Password.Strength` — zxcvbn strength meter
+- `PasswordInputField` — convenience wrapper combining Root + Input + Toggle
+
+zxcvbn is lazy-loaded and strength checking is debounced with request
+cancellation. When the score is below `minScore`, the input's custom
+validity is set.
+
+## Active roles
+
+`useActiveRoles()` fetches roles from `/api/v1/system/roles/active` and
+exposes `state.roles` (`ActiveRole[]` with `idp_role`, `label_key`,
+`permissions`, `is_admin`) plus a derived `roleNames` getter for use in
+forms.
+
+## MCP OAuth consent
+
+`src/lib/mcp-oauth.ts` provides OAuth client helpers for the MCP consent
+screen at `/mcp/consent`:
+
+| Function | Purpose |
+|----------|---------|
+| `parseConsentParams(searchParams)` | Parses OAuth params from the URL query string |
+| `parseScopes(scopeString)` | Splits the scope string into `{ name, description }` entries |
+| `buildApproveUrl(params, beBaseUrl)` | Builds the backend authorize URL with `consent_approved=true` |
+| `buildDenyUrl(params)` | Builds the deny redirect URL per RFC 6749 §4.1.2.1 |
+
+The consent page checks `/api/v1/auth/me`; if the user is not logged in it
+shows `<LoginForm>` and reloads on success. Otherwise it shows the client
+name and requested scopes, then redirects to the approve or deny URL.
+
+## Form guards
+
+Two composables consolidate logic shared across the settings form pages:
+
+### `useFormGuard`
+
+Derives `hasChanges` and `canSave` from a SuperForm instance. Because
+Superform's auto-subscription does not work inside `.svelte.ts` files, it
+takes **getter functions** for `$tainted` and `$errors` plus the form's
+`isTainted` function:
+
+```ts
+const guard = useFormGuard(() => $tainted, () => $errors, (p) => isTainted(p));
+$derived(guard.hasChanges); // true when form is tainted
+$derived(guard.canSave);    // hasChanges && no errors
+```
+
+### `useUnsavedChangesGuard`
+
+Registers navigation guards for unsaved changes:
+
+```ts
+const guard = useUnsavedChangesGuard(() => formGuard.hasChanges, 'settings.unsavedChangesConfirm');
+```
+
+- `handleBeforeUnload` — for `<svelte:window onbeforeunload>`, prevents
+  browser close/refresh
+- `handleCancel` — for the footer Cancel button; confirms then closes the
+  window or navigates back
+- Internally registers a SvelteKit `beforeNavigate` guard that prompts on
+  in-app navigation
+
+## Next steps
+
+- [System settings](/docs/user-guide/settings)
+- [Entity list table](/docs/user-guide/entity-list-table)

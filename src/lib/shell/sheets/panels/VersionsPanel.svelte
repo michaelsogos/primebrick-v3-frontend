@@ -138,6 +138,7 @@
       {:else}
         <div class="space-y-3">
           {#each groupedServices as [code, instances] (code)}
+            {@const isReserved = instances[0].is_reserved === true}
             {@const aggStatus = aggregateStatus(instances)}
             {@const behindScaler = instances[0].is_behind_scaler}
             {@const healthyCount = instances.filter((i) => i.status === 'online').length}
@@ -160,27 +161,46 @@
                 {/if}
               </div>
               <div class="flex shrink-0 items-center gap-2">
-                <Badge
-                  variant="outline"
-                  class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass(aggStatus))}
-                >
-                  {#if aggStatus === 'online'}
-                    <Cloud class="size-3.5 opacity-90" />
-                  {:else if aggStatus === 'going_live'}
-                    <AlertCircle class="size-3.5 opacity-90" />
-                  {:else if aggStatus === 'unknown'}
-                    <CircleQuestionMark class="size-3.5 opacity-90" />
-                  {:else}
-                    <CloudOff class="size-3.5 opacity-90" />
-                  {/if}
-                  <span>{$t(`shell.health.${aggStatus}`)}</span>
-                </Badge>
+                {#if isReserved}
+                  <!-- Reserved services (HOME/SETTINGS) are part of the BE shell — show BE health badge -->
+                  <Badge
+                    variant="outline"
+                    class={cn('gap-1 font-mono text-[11px] font-medium', healthChipClass)}
+                  >
+                    {#if healthChip === 'backend_offline'}
+                      <CloudOff class="size-3.5 opacity-90" />
+                    {:else if healthChip === 'db_offline'}
+                      <Database class="size-3.5 opacity-90" />
+                    {:else if healthChip === 'idp_offline'}
+                      <ShieldAlert class="size-3.5 opacity-90" />
+                    {:else}
+                      <Cloud class="size-3.5 opacity-90" />
+                    {/if}
+                    <span>{healthChipLabel}</span>
+                  </Badge>
+                {:else}
+                  <Badge
+                    variant="outline"
+                    class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass(aggStatus))}
+                  >
+                    {#if aggStatus === 'online'}
+                      <Cloud class="size-3.5 opacity-90" />
+                    {:else if aggStatus === 'going_live'}
+                      <AlertCircle class="size-3.5 opacity-90" />
+                    {:else if aggStatus === 'unknown'}
+                      <CircleQuestionMark class="size-3.5 opacity-90" />
+                    {:else}
+                      <CloudOff class="size-3.5 opacity-90" />
+                    {/if}
+                    <span>{$t(`shell.health.${aggStatus}`)}</span>
+                  </Badge>
+                {/if}
                 {#if instances[0].service_version}
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     v{instances[0].service_version}
                   </Badge>
                 {/if}
-                {#if !behindScaler}
+                {#if !isReserved && !behindScaler}
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {healthyCount}/{instances.length}
                   </Badge>
@@ -188,8 +208,8 @@
               </div>
             </div>
 
-            <!-- Instance rows (only for direct mode) -->
-            {#if !behindScaler}
+            <!-- Instance rows (only for non-reserved direct mode) -->
+            {#if !isReserved && !behindScaler}
               <div class="ml-4 space-y-1">
                 {#each instances as inst (inst.base_url)}
                   <div class="flex items-center justify-between gap-3 text-xs">

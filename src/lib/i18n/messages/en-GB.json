@@ -15,6 +15,12 @@
     "invalidCredentials": "Invalid username or password",
     "accountLocked": "Account temporarily locked. Please try again in {minutes} minutes.",
     "userNoPermission": "User doesn't have permission!",
+    "or": "or",
+    "passkey": {
+      "button": "Sign in with passkey",
+      "error": "Passkey sign-in failed",
+      "unsupported": "Passkeys are not supported on this device"
+    },
     "hero": {
       "quote1": "The solid, modular, and efficient management platform for complete control of your projects.",
       "author1": "Focus & Structure",
@@ -32,6 +38,16 @@
       "description": "Your session has expired. Please log in to continue.",
       "failedAttempt": "Login failed. Please try again or go to the login page.",
       "goToLogin": "Go to login page"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Add a passkey to sign in without a password using Face ID, Touch ID, or a security key.",
+      "add": "Add passkey",
+      "remove": "Remove",
+      "empty": "No passkeys enrolled",
+      "enrollmentSuccess": "Passkey added",
+      "enrollmentError": "Failed to add passkey",
+      "deleteError": "Failed to remove passkey"
     }
   },
   "common": {

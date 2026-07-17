@@ -3,6 +3,7 @@
   import { superForm, defaults } from "sveltekit-superforms";
   import { zod4 } from "sveltekit-superforms/adapters";
   import { t } from "$lib/i18n";
+  import { page } from "$app/state";
   import { AvatarPreview } from "$lib/components/ui/avatar-preview";
   import { Button } from "$lib/components/ui/button";
   import { TextInput } from "$lib/components/ui/input";
@@ -27,6 +28,8 @@
   import { formatUiDateTime } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
+  import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
+  import { settingsTabMenuSegment } from "$lib/breadcrumb/settings-breadcrumb";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import type { MetaColumn } from "$lib/entity-list/types";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
@@ -36,6 +39,7 @@
   import { buildAuditData } from "$lib/utils/audit-data";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
   import { displayNameSchema } from "$lib/validation/display-name";
+  import PasskeyEnrollment from "$lib/components/auth/PasskeyEnrollment.svelte";
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -281,6 +285,22 @@
     auditingColumns={(metadata.state.meta?.list?.auditingColumns as MetaColumn[] | undefined) || []}
     isCreatePage={isCreatePage}
   >
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: (key) => $t(key)
+          })
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.profile.title')}</h1>
+    </div>
+  {/snippet}
   {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <div class="space-y-6">
@@ -527,6 +547,9 @@
             </div>
           </div>
         </form>
+
+        <!-- Passkey / WebAuthn enrollment section -->
+        <PasskeyEnrollment />
       </div>
     </div>
   {/snippet}

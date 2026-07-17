@@ -15,6 +15,12 @@
     "invalidCredentials": "Nombre de usuario o contraseña inválidos",
     "accountLocked": "Cuenta bloqueada temporalmente. Por favor intente nuevamente en {minutes} minutos.",
     "userNoPermission": "¡El usuario no tiene permisos!",
+    "or": "o",
+    "passkey": {
+      "button": "Iniciar sesión con passkey",
+      "error": "Error al iniciar sesión con passkey",
+      "unsupported": "Los passkeys no son compatibles con este dispositivo"
+    },
     "hero": {
       "quote1": "La plataforma de gestión sólida, modular y eficiente para el control completo de sus proyectos.",
       "author1": "Enfoque y Estructura",
@@ -32,6 +38,16 @@
       "description": "Su sesión ha expirado. Inicie sesión para continuar.",
       "failedAttempt": "Error de inicio de sesión. Inténtelo de nuevo o vaya a la página de inicio de sesión.",
       "goToLogin": "Ir a la página de inicio de sesión"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Añade un passkey para iniciar sesión sin contraseña usando Face ID, Touch ID o una llave de seguridad.",
+      "add": "Añadir passkey",
+      "remove": "Eliminar",
+      "empty": "No hay passkeys registrados",
+      "enrollmentSuccess": "Passkey añadido",
+      "enrollmentError": "Error al añadir passkey",
+      "deleteError": "Error al eliminar passkey"
     }
   },
   "common": {
