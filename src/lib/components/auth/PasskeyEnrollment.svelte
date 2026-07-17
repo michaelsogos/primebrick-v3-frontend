@@ -19,6 +19,8 @@
     id: string;
     aaguid?: string;
     transports?: string[];
+    label?: string | null;
+    created_at?: string;
   }
 
   let credentials = $state<WebauthnCredentialInfo[]>([]);
@@ -68,8 +70,7 @@
       // inner publicKey object (base64url strings → ArrayBuffers) and pass it
       // directly to navigator.credentials.create().
       const decoded = decodeCredentialCreationOptions(options);
-      const publicKey = decoded.publicKey as PublicKeyCredentialCreationOptions;
-      const credential = await navigator.credentials.create({ publicKey });
+      const credential = await navigator.credentials.create({ publicKey: decoded.publicKey });
 
       if (!credential) {
         return; // User cancelled
@@ -168,9 +169,19 @@
         <ul class="space-y-2">
           {#each credentials as cred (cred.id)}
             <li class="flex items-center justify-between rounded-md border border-border px-3 py-2">
-              <div class="flex items-center gap-2">
-                <Fingerprint class="size-4 text-muted-foreground" />
-                <span class="text-sm font-mono truncate max-w-[200px]">{cred.id}</span>
+              <div class="flex items-center gap-2 min-w-0">
+                <Fingerprint class="size-4 text-muted-foreground shrink-0" />
+                <div class="flex flex-col min-w-0">
+                  {#if cred.label}
+                    <span class="text-sm font-medium truncate">{cred.label}</span>
+                    <span class="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{cred.id}</span>
+                  {:else}
+                    <span class="text-sm font-mono truncate max-w-[200px]">{cred.id}</span>
+                  {/if}
+                  {#if cred.created_at}
+                    <span class="text-xs text-muted-foreground">{new Date(cred.created_at).toLocaleDateString()}</span>
+                  {/if}
+                </div>
               </div>
               <Button
                 variant="ghost"

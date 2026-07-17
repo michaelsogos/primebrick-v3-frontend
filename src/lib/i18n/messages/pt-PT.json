@@ -2,6 +2,52 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Bem-vindo ao Primebrick",
+    "verifying": "A verificar o seu convite...",
+    "otp": {
+      "title": "Verifique o seu email",
+      "description": "Olá {name}, enviámos um código de verificação de 6 dígitos para o seu endereço de email. Introduza-o abaixo para continuar.",
+      "codeLabel": "Código de verificação",
+      "verifyButton": "Verificar código",
+      "verifying": "A verificar...",
+      "resendButton": "Reenviar código",
+      "resendIn": "Reenviar código em {seconds}s"
+    },
+    "setPassword": {
+      "title": "Defina a sua palavra-passe",
+      "description": "Escolha uma palavra-passe segura para a sua conta. Pode alterá-la mais tarde nas definições do seu perfil.",
+      "newPasswordLabel": "Nova palavra-passe",
+      "newPasswordPlaceholder": "Introduza a sua nova palavra-passe",
+      "confirmPasswordLabel": "Confirmar palavra-passe",
+      "confirmPasswordPlaceholder": "Reintroduza a sua nova palavra-passe",
+      "passwordsDoNotMatch": "As palavras-passe não coincidem",
+      "completeButton": "Concluir configuração",
+      "completing": "A concluir a configuração..."
+    },
+    "complete": {
+      "title": "Configuração concluída!",
+      "description": "A sua conta está pronta. Pode agora iniciar sessão com o seu nome de utilizador e a palavra-passe que acabou de definir.",
+      "loginButton": "Ir para o início de sessão"
+    },
+    "passkey": {
+      "title": "Adicionar uma passkey (opcional)",
+      "description": "Inicie sessão mais rapidamente e com mais segurança com Face ID™, Touch ID™, Windows Hello™ ou uma chave de segurança — sem palavra-passe.",
+      "enrollButton": "Configurar passkey",
+      "enrolling": "A aguardar autenticador...",
+      "enrolled": "Passkey adicionada com sucesso!"
+    },
+    "error": {
+      "title": "Ocorreu um erro",
+      "noToken": "Nenhum token de convite encontrado. Utilize o link do seu email de convite.",
+      "invalidToken": "Este link de convite é inválido, expirou ou já foi utilizado.",
+      "networkError": "Erro de rede. Verifique a sua ligação e tente novamente.",
+      "otpSendFailed": "Falha ao enviar o código de verificação. Tente novamente.",
+      "otpInvalid": "Código de verificação inválido. Verifique e tente novamente.",
+      "completeFailed": "Falha ao concluir a configuração. Tente novamente.",
+      "backToLogin": "Voltar ao início de sessão"
+    }
+  },
   "login": {
     "title": "Entrar",
     "description": "Insira as suas credenciais para aceder ao Primebrick",
@@ -30,6 +76,9 @@
       "author3": "Eficiência Operacional",
       "quote4": "Simplifique a complexidade. Transforme dados brutos em decisões estratégicas.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "Detetámos atividade não autorizada na sua conta. O seu administrador foi notificado. Inicie sessão e altere a sua palavra-passe se ainda não o fez."
     }
   },
   "auth": {
@@ -48,6 +97,16 @@
       "enrollmentSuccess": "Passkey adicionada",
       "enrollmentError": "Falha ao adicionar passkey",
       "deleteError": "Falha ao remover passkey"
+    },
+    "passkeyPrompt": {
+      "title": "Proteja a sua conta com uma passkey",
+      "description": "As passkeys são uma forma mais rápida e segura de iniciar sessão. Em vez de digitar a sua palavra-passe, use Face ID™, Touch ID™, Windows Hello™ ou uma chave de segurança. Demora apenas alguns segundos.",
+      "benefitSecurity": "Mais seguras que as palavras-passe — resistentes ao phishing e ao preenchimento de credenciais",
+      "benefitConvenience": "Inicie sessão instantaneamente com biometria ou uma chave de segurança — sem palavra-passe para memorizar",
+      "enrollButton": "Configurar passkey",
+      "dismissButton": "Agora não",
+      "dontAskAgain": "Não mostrar novamente esta janela",
+      "enrolling": "A aguardar o autenticador..."
     }
   },
   "common": {
@@ -310,6 +369,10 @@
           "idpOrgSearch": "Pesquisar organizações...",
           "idpUsername": "Nome de utilizador",
           "idpPassword": "Palavra-passe",
+          "sendInvitation": "Enviar email de convite",
+          "sendInvitationTooltipTitle": "Enviar convite",
+          "sendInvitationTooltip": "Quando ativado, será enviado um email de convite ao utilizador. Este definirá a sua própria palavra-passe através de uma página de boas-vindas segura. O campo de palavra-passe acima passa a ser opcional — se deixado vazio, é definido um marcador de posição aleatório no fornecedor de identidade e o utilizador define-o no primeiro acesso.",
+          "invitationSent": "Convite enviado para {email}",
           "copyIdpUsername": "Copiar IDP Nome de Utilizador",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copiar IDP Code",

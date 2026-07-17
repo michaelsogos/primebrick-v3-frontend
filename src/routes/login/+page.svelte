@@ -15,6 +15,9 @@
   import Database from '@lucide/svelte/icons/database'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
+  import { apiFetch } from '$lib/api';
+  import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
 
   const health = $derived(backendState.health);
@@ -72,12 +75,32 @@
   let heroIndex = $state(0);
   const currentHero = $derived(heroes[heroIndex]);
 
+  // Login alert — detects ?alert=...&token=... from notification email links
+  const alertType = $derived(page.url.searchParams.get('alert'));
+  const alertToken = $derived(page.url.searchParams.get('token'));
+  const hasAlert = $derived(!!alertType && !!alertToken);
+
   onMount(() => {
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
 
     // Select random hero
     heroIndex = Math.floor(Math.random() * heroes.length);
+
+    // If there's a login alert, notify the BE to send admin alert email
+    if (alertType && alertToken) {
+      void (async () => {
+        try {
+          await apiFetch('/api/v1/auth/login-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alert_type: alertType, token: alertToken }),
+          });
+        } catch (e) {
+          console.error('[login] Failed to send login alert:', e);
+        }
+      })();
+    }
   });
 </script>
 
@@ -156,6 +179,16 @@
           <ThemeToggle />
         </div>
       </div>
+
+      <!-- Login alert banner (from notification email "if this wasn't you" link) -->
+      {#if hasAlert}
+        <Alert variant="destructive" class="border-primary-gradient">
+          <ShieldAlert class="size-4" />
+          <AlertDescription>
+            {$t('login.alert.description')}
+          </AlertDescription>
+        </Alert>
+      {/if}
 
       <!-- Login Card -->
       <Card class="border-primary-gradient shadow-sm">

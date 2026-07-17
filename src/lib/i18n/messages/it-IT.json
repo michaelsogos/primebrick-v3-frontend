@@ -2,6 +2,52 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Benvenuto su Primebrick",
+    "verifying": "Verifica del tuo invito in corso...",
+    "otp": {
+      "title": "Verifica la tua email",
+      "description": "Ciao {name}, abbiamo inviato un codice di verifica a 6 cifre al tuo indirizzo email. Inseriscilo qui sotto per continuare.",
+      "codeLabel": "Codice di verifica",
+      "verifyButton": "Verifica codice",
+      "verifying": "Verifica in corso...",
+      "resendButton": "Reinvia codice",
+      "resendIn": "Reinvia codice tra {seconds}s"
+    },
+    "setPassword": {
+      "title": "Imposta la tua password",
+      "description": "Scegli una password sicura per il tuo account. Puoi cambiarla in seguito dalle impostazioni del profilo.",
+      "newPasswordLabel": "Nuova password",
+      "newPasswordPlaceholder": "Inserisci la tua nuova password",
+      "confirmPasswordLabel": "Conferma password",
+      "confirmPasswordPlaceholder": "Reinserisci la tua nuova password",
+      "passwordsDoNotMatch": "Le password non corrispondono",
+      "completeButton": "Completa la configurazione",
+      "completing": "Completamento della configurazione..."
+    },
+    "complete": {
+      "title": "Configurazione completata!",
+      "description": "Il tuo account è pronto. Ora puoi accedere con il tuo nome utente e la password che hai appena impostato.",
+      "loginButton": "Vai al login"
+    },
+    "passkey": {
+      "title": "Aggiungi una passkey (opzionale)",
+      "description": "Accedi più velocemente e in modo più sicuro con Face ID™, Touch ID™, Windows Hello™ o una chiave di sicurezza — senza password.",
+      "enrollButton": "Configura passkey",
+      "enrolling": "In attesa dell'autenticatore...",
+      "enrolled": "Passkey aggiunta con successo!"
+    },
+    "error": {
+      "title": "Si è verificato un errore",
+      "noToken": "Nessun token di invito trovato. Utilizza il link dalla tua email di invito.",
+      "invalidToken": "Questo link di invito non è valido, è scaduto o è già stato utilizzato.",
+      "networkError": "Errore di rete. Controlla la tua connessione e riprova.",
+      "otpSendFailed": "Impossibile inviare il codice di verifica. Riprova.",
+      "otpInvalid": "Codice di verifica non valido. Controlla e riprova.",
+      "completeFailed": "Impossibile completare la configurazione. Riprova.",
+      "backToLogin": "Torna al login"
+    }
+  },
   "login": {
     "title": "Accedi",
     "description": "Inserisci le tue credenziali per accedere a Primebrick",
@@ -30,6 +76,9 @@
       "author3": "Efficienza Operativa",
       "quote4": "Semplifica la complessità. Trasforma i dati grezzi in decisioni strategiche.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "Abbiamo rilevato attività non autorizzata sul tuo account. Il tuo amministratore è stato avvisato. Accedi e cambia la password se non l'hai già fatto."
     }
   },
   "auth": {
@@ -48,6 +97,16 @@
       "enrollmentSuccess": "Passkey aggiunta",
       "enrollmentError": "Impossibile aggiungere la passkey",
       "deleteError": "Impossibile rimuovere la passkey"
+    },
+    "passkeyPrompt": {
+      "title": "Proteggi il tuo account con una passkey",
+      "description": "Le passkey sono un modo più veloce e sicuro per accedere. Invece di digitare la password, usa Face ID™, Touch ID™, Windows Hello™ o una chiave di sicurezza. Ci vogliono solo pochi secondi.",
+      "benefitSecurity": "Più sicure delle password — resistenti al phishing e al credential stuffing",
+      "benefitConvenience": "Accedi istantaneamente con biometria o una chiave di sicurezza — nessuna password da ricordare",
+      "enrollButton": "Configura passkey",
+      "dismissButton": "Non ora",
+      "dontAskAgain": "Non mostrare più questa finestra",
+      "enrolling": "In attesa dell'autenticatore..."
     }
   },
   "common": {
@@ -310,6 +369,10 @@
           "idpOrgSearch": "Cerca organizzazioni...",
           "idpUsername": "Nome Utente",
           "idpPassword": "Password",
+          "sendInvitation": "Invia email di invito",
+          "sendInvitationTooltipTitle": "Invia invito",
+          "sendInvitationTooltip": "Quando attivato, verrà inviata un'email di invito all'utente. Quest'ultimo imposterà la propria password tramite una pagina di benvenuto sicura. Il campo password sopra diventa facoltativo — se lasciato vuoto, viene impostato un segnaposto casuale nel provider di identità e l'utente lo imposta al primo accesso.",
+          "invitationSent": "Invito inviato a {email}",
           "copyIdpUsername": "Copia IDP Nome Utente",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copia IDP Code",

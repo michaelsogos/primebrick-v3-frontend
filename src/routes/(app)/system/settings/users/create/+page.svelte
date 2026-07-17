@@ -21,6 +21,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { apiFetch } from '$lib/api';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import ImageOff from '@lucide/svelte/icons/image-off';
@@ -109,7 +110,6 @@
   const createSchema = z.object({
     idpUsername: idpNameSchema(z.string()),
     password: z.string()
-      .min(1, { message: 'validation.passwordRequired' })
       .min(8, { message: minMsg(8) })
       .max(64, { message: maxMsg(64) })
       .superRefine((val, ctx) => {
@@ -121,7 +121,9 @@
             message: passwordPolicy.state.errorLabelKey,
           });
         }
-      }),
+      })
+      .optional(),
+    send_invitation: z.boolean().default(false),
     display_name: displayNameSchema(z.string()),
     email: z.string()
       .min(1, { message: 'validation.emailRequired' })
@@ -139,6 +141,15 @@
     is_admin: z.boolean().default(false),
     is_verified: z.boolean().default(false),
     email_verified: z.boolean().default(false),
+  }).superRefine((data, ctx) => {
+    // Password is required when send_invitation is false
+    if (!data.send_invitation && !data.password) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['password'],
+        message: 'validation.passwordRequired',
+      });
+    }
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -163,7 +174,8 @@
       try {
         const body = {
           username: updateForm.data.idpUsername,
-          password: updateForm.data.password,
+          password: updateForm.data.password || undefined,
+          send_invitation: updateForm.data.send_invitation,
           display_name: updateForm.data.display_name || undefined,
           email: updateForm.data.email || undefined,
           roles: updateForm.data.roles || [],
@@ -192,6 +204,15 @@
 
         const data = await response.json();
         console.log('User created successfully');
+
+        // Show toast — different message when invitation was sent
+        if (updateForm.data.send_invitation && data.profile?.email) {
+          pushNotification({
+            impact: 'LOW',
+            message: $t('shell.settings.users.create.invitationSent', { values: { email: data.profile.email } }),
+            scope: 'auth',
+          });
+        }
 
         // Clear persisted avatar color after successful creation
         clearPersistedAvatarColor();
@@ -510,11 +531,29 @@
               </FormControl>
             </FormField>
 
+            <FormField form={superFormObj} name="send_invitation">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="flex items-center space-x-2">
+                    <Checkbox {...props} bind:checked={$form.send_invitation} id="send_invitation" />
+                    <label for="send_invitation" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {$t('shell.settings.users.create.sendInvitation')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('shell.settings.users.create.sendInvitationTooltip')}
+                        priority="HINT"
+                        title={$t('shell.settings.users.create.sendInvitationTooltipTitle')}
+                      />
+                    </label>
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
             <FormField form={superFormObj} name="password">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
+                    <FormLabel for={props.id} required={!$form.send_invitation}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
                     <Password.PasswordInput
                       {...props}
                       bind:value={$form.password}
@@ -522,11 +561,13 @@
                       autocomplete="new-password"
                     />
                     <TranslatedFormFieldErrors />
-                    <PasswordChecklist
-                      password={$form.password}
-                      rules={[...passwordPolicy.state.checklistRules]}
-                      specialChars={passwordPolicy.state.specialChars}
-                    />
+                    {#if $form.password}
+                      <PasswordChecklist
+                        password={$form.password}
+                        rules={[...passwordPolicy.state.checklistRules]}
+                        specialChars={passwordPolicy.state.specialChars}
+                      />
+                    {/if}
                   </div>
                 {/snippet}
               </FormControl>

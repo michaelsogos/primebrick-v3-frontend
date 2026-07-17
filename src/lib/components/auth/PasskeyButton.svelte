@@ -54,8 +54,7 @@
       // inner publicKey object (base64url strings → ArrayBuffers) and pass it
       // directly to navigator.credentials.get().
       const decoded = decodeCredentialRequestOptions(options);
-      const publicKey = decoded.publicKey as PublicKeyCredentialRequestOptions;
-      const credential = await navigator.credentials.get({ publicKey });
+      const credential = await navigator.credentials.get({ publicKey: decoded.publicKey });
 
       if (!credential) {
         // User cancelled the OS prompt

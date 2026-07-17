@@ -2,6 +2,52 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Bienvenue sur Primebrick",
+    "verifying": "Vérification de votre invitation...",
+    "otp": {
+      "title": "Vérifiez votre e-mail",
+      "description": "Bonjour {name}, nous avons envoyé un code de vérification à 6 chiffres à votre adresse e-mail. Saisissez-le ci-dessous pour continuer.",
+      "codeLabel": "Code de vérification",
+      "verifyButton": "Vérifier le code",
+      "verifying": "Vérification...",
+      "resendButton": "Renvoyer le code",
+      "resendIn": "Renvoyer le code dans {seconds}s"
+    },
+    "setPassword": {
+      "title": "Définissez votre mot de passe",
+      "description": "Choisissez un mot de passe sécurisé pour votre compte. Vous pourrez le modifier ultérieurement dans les paramètres de votre profil.",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "Saisissez votre nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Saisissez à nouveau votre nouveau mot de passe",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+      "completeButton": "Terminer la configuration",
+      "completing": "Finalisation de la configuration..."
+    },
+    "complete": {
+      "title": "Configuration terminée !",
+      "description": "Votre compte est prêt. Vous pouvez maintenant vous connecter avec votre nom d'utilisateur et le mot de passe que vous venez de définir.",
+      "loginButton": "Aller à la connexion"
+    },
+    "passkey": {
+      "title": "Ajouter une passkey (facultatif)",
+      "description": "Connectez-vous plus rapidement et plus sécurisé avec Face ID™, Touch ID™, Windows Hello™ ou une clé de sécurité — sans mot de passe.",
+      "enrollButton": "Configurer la passkey",
+      "enrolling": "En attente de l'authentificateur...",
+      "enrolled": "Passkey ajoutée avec succès !"
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "noToken": "Aucun jeton d'invitation trouvé. Veuillez utiliser le lien de votre e-mail d'invitation.",
+      "invalidToken": "Ce lien d'invitation est invalide, expiré ou a déjà été utilisé.",
+      "networkError": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+      "otpSendFailed": "Échec de l'envoi du code de vérification. Veuillez réessayer.",
+      "otpInvalid": "Code de vérification invalide. Vérifiez et réessayez.",
+      "completeFailed": "Échec de la finalisation de la configuration. Veuillez réessayer.",
+      "backToLogin": "Retour à la connexion"
+    }
+  },
   "login": {
     "title": "Connexion",
     "description": "Entrez vos identifiants pour accéder à Primebrick",
@@ -30,6 +76,9 @@
       "author3": "Efficacité Opérationnelle",
       "quote4": "Simplifiez la complexité. Transformez les données brutes en décisions stratégiques.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "Nous avons détecté une activité non autorisée sur votre compte. Votre administrateur a été informé. Veuillez vous connecter et changer votre mot de passe si ce n'est pas déjà fait."
     }
   },
   "auth": {
@@ -48,6 +97,16 @@
       "enrollmentSuccess": "Passkey ajoutée",
       "enrollmentError": "Échec de l'ajout de la passkey",
       "deleteError": "Échec de la suppression de la passkey"
+    },
+    "passkeyPrompt": {
+      "title": "Sécurisez votre compte avec une passkey",
+      "description": "Les passkeys sont un moyen plus rapide et plus sûr de se connecter. Au lieu de saisir votre mot de passe, utilisez Face ID™, Touch ID™, Windows Hello™ ou une clé de sécurité. Cela ne prend que quelques secondes.",
+      "benefitSecurity": "Plus sécurisé que les mots de passe — résistant au phishing et au bourrage d'identifiants",
+      "benefitConvenience": "Connectez-vous instantanément avec la biométrie ou une clé de sécurité — aucun mot de passe à mémoriser",
+      "enrollButton": "Configurer une passkey",
+      "dismissButton": "Pas maintenant",
+      "dontAskAgain": "Ne plus afficher cette fenêtre",
+      "enrolling": "En attente de l'authentificateur..."
     }
   },
   "common": {
@@ -310,6 +369,10 @@
           "idpOrgSearch": "Rechercher des organisations...",
           "idpUsername": "Nom d'utilisateur",
           "idpPassword": "Mot de passe",
+          "sendInvitation": "Envoyer un e-mail d'invitation",
+          "sendInvitationTooltipTitle": "Envoyer l'invitation",
+          "sendInvitationTooltip": "Lorsqu'activé, un e-mail d'invitation sera envoyé à l'utilisateur. Celui-ci définira son propre mot de passe via une page d'accueil sécurisée. Le champ de mot de passe ci-dessus devient facultatif — s'il est laissé vide, un espace réservé aléatoire est défini dans le fournisseur d'identité et l'utilisateur le définit lors du premier accès.",
+          "invitationSent": "Invitation envoyée à {email}",
           "copyIdpUsername": "Copier IDP Nom d'utilisateur",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copier IDP Code",

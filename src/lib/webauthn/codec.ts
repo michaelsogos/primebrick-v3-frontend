@@ -63,17 +63,21 @@ const BUFFER_FIELDS = new Set([
  * Decode `PublicKeyCredentialRequestOptions` (signin) or
  * `PublicKeyCredentialCreationOptions` (signup) from JSON (base64url strings)
  * into the browser-native format with ArrayBuffers.
+ *
+ * The BE returns `{ publicKey: { ... } }` — the browser API expects this
+ * wrapper shape for `navigator.credentials.get({ publicKey })` and
+ * `navigator.credentials.create({ publicKey })`.
  */
 export function decodeCredentialRequestOptions(
   json: Record<string, unknown>,
-): PublicKeyCredentialRequestOptions {
-  return deepDecodeBuffers(json) as PublicKeyCredentialRequestOptions;
+): { publicKey: PublicKeyCredentialRequestOptions } {
+  return deepDecodeBuffers(json) as { publicKey: PublicKeyCredentialRequestOptions };
 }
 
 export function decodeCredentialCreationOptions(
   json: Record<string, unknown>,
-): PublicKeyCredentialCreationOptions {
-  return deepDecodeBuffers(json) as PublicKeyCredentialCreationOptions;
+): { publicKey: PublicKeyCredentialCreationOptions } {
+  return deepDecodeBuffers(json) as { publicKey: PublicKeyCredentialCreationOptions };
 }
 
 /**

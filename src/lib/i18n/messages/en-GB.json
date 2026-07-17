@@ -2,6 +2,52 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Welcome to Primebrick",
+    "verifying": "Verifying your invitation...",
+    "otp": {
+      "title": "Verify your email",
+      "description": "Hello {name}, we've sent a 6-digit verification code to your email address. Enter it below to continue.",
+      "codeLabel": "Verification code",
+      "verifyButton": "Verify code",
+      "verifying": "Verifying...",
+      "resendButton": "Resend code",
+      "resendIn": "Resend code in {seconds}s"
+    },
+    "setPassword": {
+      "title": "Set your password",
+      "description": "Choose a secure password for your account. You can change it later from your profile settings.",
+      "newPasswordLabel": "New password",
+      "newPasswordPlaceholder": "Enter your new password",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Re-enter your new password",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "completeButton": "Complete setup",
+      "completing": "Completing setup..."
+    },
+    "complete": {
+      "title": "Setup complete!",
+      "description": "Your account is ready. You can now log in with your username and the password you just set.",
+      "loginButton": "Go to login"
+    },
+    "passkey": {
+      "title": "Add a passkey (optional)",
+      "description": "Sign in faster and more securely with Face ID\u2122, Touch ID\u2122, Windows Hello\u2122, or a security key — no password needed.",
+      "enrollButton": "Set up passkey",
+      "enrolling": "Waiting for authenticator...",
+      "enrolled": "Passkey added successfully!"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "noToken": "No invitation token found. Please use the link from your invitation email.",
+      "invalidToken": "This invitation link is invalid, expired, or has already been used.",
+      "networkError": "Network error. Please check your connection and try again.",
+      "otpSendFailed": "Failed to send verification code. Please try again.",
+      "otpInvalid": "Invalid verification code. Please check and try again.",
+      "completeFailed": "Failed to complete setup. Please try again.",
+      "backToLogin": "Back to login"
+    }
+  },
   "login": {
     "title": "Login",
     "description": "Enter your credentials to access Primebrick",
@@ -30,6 +76,9 @@
       "author3": "Operational Efficiency",
       "quote4": "Simplify complexity. Transform raw data into strategic decisions.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "We've detected unauthorized activity on your account. Your administrator has been notified. Please log in and change your password if you haven't already."
     }
   },
   "auth": {
@@ -48,6 +97,16 @@
       "enrollmentSuccess": "Passkey added",
       "enrollmentError": "Failed to add passkey",
       "deleteError": "Failed to remove passkey"
+    },
+    "passkeyPrompt": {
+      "title": "Secure your account with a passkey",
+      "description": "Passkeys are a faster, safer way to sign in. Instead of typing your password, use Face ID\u2122, Touch ID\u2122, Windows Hello\u2122, or a security key. It only takes a few seconds.",
+      "benefitSecurity": "More secure than passwords — resistant to phishing and credential stuffing",
+      "benefitConvenience": "Sign in instantly with biometrics or a security key — no password to remember",
+      "enrollButton": "Set up passkey",
+      "dismissButton": "Not now",
+      "dontAskAgain": "Don't show this window again",
+      "enrolling": "Waiting for authenticator..."
     }
   },
   "common": {
@@ -310,6 +369,10 @@
           "idpOrgSearch": "Search organizations...",
           "idpUsername": "Username",
           "idpPassword": "Password",
+          "sendInvitation": "Send invitation email",
+          "sendInvitationTooltipTitle": "Send invitation",
+          "sendInvitationTooltip": "When enabled, an invitation email will be sent to the user. They will set their own password via a secure welcome page. The password field above becomes optional — if left blank, a random placeholder is set in the identity provider and the user sets it on first access.",
+          "invitationSent": "Invitation sent to {email}",
           "copyIdpUsername": "Copy IDP Username",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copy IDP Code",
@@ -363,6 +426,10 @@
         "confirmPassword": "Confirm Password",
         "confirmPasswordPlaceholder": "Confirm new password",
         "changePasswordButton": "Change Password",
+        "changingPassword": "Changing password...",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "passwordChangedSuccess": "Password changed successfully. You will receive a notification email.",
+        "passwordChangedError": "Failed to change password. Please try again.",
         "oidcParams": "OIDC Parameters",
         "oidcIssuer": "OIDC Issuer",
         "oidcClientId": "Client ID",

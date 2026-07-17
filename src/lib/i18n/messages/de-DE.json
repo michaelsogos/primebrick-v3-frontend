@@ -2,6 +2,52 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Willkommen bei Primebrick",
+    "verifying": "Ihre Einladung wird überprüft...",
+    "otp": {
+      "title": "Bestätigen Sie Ihre E-Mail",
+      "description": "Hallo {name}, wir haben einen 6-stelligen Bestätigungscode an Ihre E-Mail-Adresse gesendet. Geben Sie ihn unten ein, um fortzufahren.",
+      "codeLabel": "Bestätigungscode",
+      "verifyButton": "Code bestätigen",
+      "verifying": "Überprüfung...",
+      "resendButton": "Code erneut senden",
+      "resendIn": "Code in {seconds}s erneut senden"
+    },
+    "setPassword": {
+      "title": "Passwort festlegen",
+      "description": "Wählen Sie ein sicheres Passwort für Ihr Konto. Sie können es später in Ihren Profileinstellungen ändern.",
+      "newPasswordLabel": "Neues Passwort",
+      "newPasswordPlaceholder": "Geben Sie Ihr neues Passwort ein",
+      "confirmPasswordLabel": "Passwort bestätigen",
+      "confirmPasswordPlaceholder": "Geben Sie Ihr neues Passwort erneut ein",
+      "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
+      "completeButton": "Einrichtung abschließen",
+      "completing": "Einrichtung wird abgeschlossen..."
+    },
+    "complete": {
+      "title": "Einrichtung abgeschlossen!",
+      "description": "Ihr Konto ist bereit. Sie können sich jetzt mit Ihrem Benutzernamen und dem gerade festgelegten Passwort anmelden.",
+      "loginButton": "Zur Anmeldung"
+    },
+    "passkey": {
+      "title": "Passkey hinzufügen (optional)",
+      "description": "Schneller und sicherer anmelden mit Face ID™, Touch ID™, Windows Hello™ oder einem Security Key — kein Passwort nötig.",
+      "enrollButton": "Passkey einrichten",
+      "enrolling": "Warte auf Authenticator...",
+      "enrolled": "Passkey erfolgreich hinzugefügt!"
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "noToken": "Kein Einladungs-Token gefunden. Bitte verwenden Sie den Link aus Ihrer Einladungs-E-Mail.",
+      "invalidToken": "Dieser Einladungslink ist ungültig, abgelaufen oder wurde bereits verwendet.",
+      "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      "otpSendFailed": "Bestätigungscode konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "otpInvalid": "Ungültiger Bestätigungscode. Bitte überprüfen Sie ihn und versuchen Sie es erneut.",
+      "completeFailed": "Einrichtung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+      "backToLogin": "Zurück zur Anmeldung"
+    }
+  },
   "login": {
     "title": "Anmelden",
     "description": "Geben Sie Ihre Anmeldedaten ein, um auf Primebrick zuzugreifen",
@@ -30,6 +76,9 @@
       "author3": "Operationale Effizienz",
       "quote4": "Vereinfachen Sie Komplexität. Verwandeln Sie Rohdaten in strategische Entscheidungen.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "Wir haben unbefugte Aktivitäten auf Ihrem Konto festgestellt. Ihr Administrator wurde benachrichtigt. Bitte melden Sie sich an und ändern Sie Ihr Passwort, falls Sie dies noch nicht getan haben."
     }
   },
   "auth": {
@@ -48,6 +97,16 @@
       "enrollmentSuccess": "Passkey hinzugefügt",
       "enrollmentError": "Passkey konnte nicht hinzugefügt werden",
       "deleteError": "Passkey konnte nicht entfernt werden"
+    },
+    "passkeyPrompt": {
+      "title": "Sichern Sie Ihr Konto mit einem Passkey",
+      "description": "Passkeys sind eine schnellere, sicherere Möglichkeit zur Anmeldung. Anstatt Ihr Passwort einzugeben, verwenden Sie Face ID™, Touch ID™, Windows Hello™ oder einen Sicherheitsschlüssel. Es dauert nur wenige Sekunden.",
+      "benefitSecurity": "Sicherer als Passwörter — resistent gegen Phishing und Credential Stuffing",
+      "benefitConvenience": "Melden Sie sich sofort mit Biometrie oder einem Sicherheitsschlüssel an — kein Passwort zu merken",
+      "enrollButton": "Passkey einrichten",
+      "dismissButton": "Nicht jetzt",
+      "dontAskAgain": "Dieses Fenster nicht mehr anzeigen",
+      "enrolling": "Warten auf Authentifikator..."
     }
   },
   "common": {
@@ -310,6 +369,10 @@
           "idpOrgSearch": "Organisationen suchen...",
           "idpUsername": "Benutzername",
           "idpPassword": "Passwort",
+          "sendInvitation": "Einladungs-E-Mail senden",
+          "sendInvitationTooltipTitle": "Einladung senden",
+          "sendInvitationTooltip": "Wenn aktiviert, wird eine Einladungs-E-Mail an den Benutzer gesendet. Dieser legt sein eigenes Passwort über eine sichere Willkommensseite fest. Das Passwortfeld oben wird optional — wenn es leer bleibt, wird ein zufälliger Platzhalter im Identitätsanbieter gesetzt und der Benutzer legt es beim ersten Zugriff fest.",
+          "invitationSent": "Einladung an {email} gesendet",
           "copyIdpUsername": "IDP Benutzername kopieren",
           "idpCode": "IDP Code",
           "copyIdpCode": "IDP Code kopieren",

@@ -28,6 +28,8 @@ export interface UserProfile {
   deleted_by_name?: string;
   version?: number;
   last_synced_at?: string;
+  has_passkey?: boolean;
+  passkey_prompt_dismissed?: boolean;
 }
 
 function loadFromStorage(): UserProfile | null {
