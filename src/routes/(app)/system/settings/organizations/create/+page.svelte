@@ -3,7 +3,7 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -17,72 +17,39 @@
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
-  import { onMount } from 'svelte';
-  import { beforeNavigate, goto } from '$app/navigation';
+  import { tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult } from '$lib/types/validation.js';
   import type { ValidationStatus } from '$lib/types/validation.js';
-  import * as Tooltip from '$lib/components/ui/tooltip';
-  import { CopyButton } from '$lib/components/ui/copy-button';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { buildAuditData } from '$lib/utils/audit-data';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
 
-  const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
-  let syncChannel: BroadcastChannel | null = null;
-
-  // Custom refinement to ensure strings start and end with alphanumeric characters
-  function startsAndEndsWithAlphanumeric(value: string): boolean {
-    if (!value || value.length === 0) return true; // Skip empty strings (handled by required)
-    const firstChar = value[0];
-    const lastChar = value[value.length - 1];
-    const alphanumericRegex = /^[a-z0-9]$/i;
-    return alphanumericRegex.test(firstChar) && alphanumericRegex.test(lastChar);
-  }
-
-  onMount(() => {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-
-    return () => {
-      syncChannel?.close();
-      syncChannel = null;
-    };
-  });
-
-  function notifyParentRefresh() {
-    if (!syncChannel) return;
-    try {
-      syncChannel.postMessage('refresh');
-    } catch (e) {
-      console.warn(`[${SYNC_CHANNEL_NAME}] Channel not ready, skipping refresh notification:`, e);
-    }
-  }
+  const { notifyParentRefresh } = useSyncChannel('primebrick_organizations_sync', { mode: 'sender' });
 
   // Zod schema for organization create form
   const createSchema = z.object({
-    display_name: z.string()
-      .min(5, { message: 'validation.tooShort' })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' }),
+    display_name: displayNameSchema(z.string()),
     website_url: z.string()
       .url({ message: 'validation.invalidUrl' })
-      .max(2048, { message: 'validation.tooLong' })
+      .max(2048, { message: maxMsg(2048) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
-      .optional()
-      .or(z.literal('')),
+      .or(z.literal(''))
+      .default(''),
     idp_owner: z.string()
       .min(1, { message: 'validation.required' })
-      .max(255, { message: 'validation.tooLong' })
+      .max(255, { message: maxMsg(255) })
       .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
       .default('admin'),
-    idp_name: z.string()
-      .min(5, { message: 'validation.tooShort' })
-      .max(255, { message: 'validation.tooLong' })
-      .superRefine((value, ctx) => {
-        if (!startsAndEndsWithAlphanumeric(value)) {
-          ctx.addIssue({ code: 'custom', message: 'validation.invalidFormat' });
-        }
-      }),
+    idp_name: idpNameSchema(z.string()),
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -137,36 +104,45 @@
     },
   });
 
-  const { form, errors, enhance, tainted, reset, isTainted } = superFormObj;
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const hasChanges = $derived(isTainted($tainted));
+  const { hasChanges, canSave } = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
+  );
 
-  // Auto-slug idp_name from display_name when idp_name is empty (set once only)
-  let didAutoSlugIdpName = $state(false);
+  // Auto-slug idp_name from display_name on blur (not on every keystroke).
+  // On blur of display_name: compute slug once, write to idp_name, then
+  // dispatch a synthetic input event on the idp_name input so the
+  // AsyncValidatedInput's handleInputChange fires and starts the availability check.
+  let userTouchedIdpName = $state(false);
 
-  $effect(() => {
-    if (didAutoSlugIdpName) return;
-
-    // If user already has an idp_name (e.g. loaded defaults), stop
-    if ($form.idp_name) {
-      didAutoSlugIdpName = true;
-      return;
-    }
-
-    const display = $form.display_name?.trim();
-    if (!display) return;
-
-    const slug = display
+  function slugify(text: string): string {
+    return text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
 
-    // Important: do not write an empty slug (prevents infinite loop)
-    if (!slug) return;
-
+  async function handleDisplayNameBlur() {
+    if (userTouchedIdpName) return;
+    const display = $form.display_name?.trim() ?? '';
+    const slug = slugify(display);
+    if ($form.idp_name === slug) return;
     $form.idp_name = slug;
-    didAutoSlugIdpName = true;
-  });
+    // Wait for the DOM to update, then trigger the AsyncValidatedInput's
+    // validation by dispatching an input event on the idp_name field.
+    await tick();
+    const idpNameInput = document.querySelector<HTMLInputElement>('input[name="idp_name"]');
+    if (idpNameInput) {
+      idpNameInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  function handleIdpNameInput() {
+    userTouchedIdpName = true;
+  }
 
   // Computed idp_code from idp_owner and idp_name (reactive, not sent to API)
   const idpCode = $derived.by(() => {
@@ -179,50 +155,12 @@
   let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
 
-  const auditData = $derived({
-    uuid: '',
-    version: 0,
-    created_at: undefined,
-    created_by: undefined,
-    created_by_name: undefined,
-    updated_at: undefined,
-    updated_by: undefined,
-    updated_by_name: undefined,
-    deleted_at: undefined,
-    deleted_by: undefined,
-    deleted_by_name: undefined,
-    last_synced_at: undefined
-  });
+  const auditData = $derived(buildAuditData());
 
-  function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (hasChanges) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  }
-
-  function handleCancel() {
-    if (hasChanges) {
-      const ok = confirm($t('shell.settings.organizations.create.unsavedChanges'));
-      if (!ok) return;
-    }
-    if (window.opener) {
-      // Opened as child window from organizations list
-      window.close();
-    } else {
-      // Direct navigation — go back
-      history.back();
-    }
-  }
-
-  beforeNavigate((navigation) => {
-    if (hasChanges) {
-      const confirmLeave = confirm($t('shell.settings.organizations.create.unsavedChanges'));
-      if (!confirmLeave) {
-        navigation.cancel();
-      }
-    }
-  });
+  const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
+    () => hasChanges,
+    'shell.settings.organizations.create.unsavedChanges',
+  );
 
   // Validation function for idp_name availability
   async function checkIdpNameAvailability(idpName: string): Promise<ValidationResult> {
@@ -273,12 +211,13 @@
       <AppPageBreadcrumb
         segments={[
           { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
-          })
+          }),
+          { label: $t('shell.settings.tabs.organizations'), href: '/system/settings/organizations' },
+          { label: $t('shell.settings.organizations.create.title') }
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.organizations.create.title')}</h1>
@@ -296,9 +235,10 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.display_name}
+                      onblur={handleDisplayNameBlur}
                       placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
                     />
                     <TranslatedFormFieldErrors />
@@ -312,7 +252,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
-                    <Input
+                    <TextInput
                       {...props}
                       bind:value={$form.website_url}
                       placeholder="https://example.com"
@@ -330,50 +270,25 @@
               <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 {$t('shell.settings.organizations.create.idpCode')}
               </label>
-              <div class="relative">
-                <Input
-                  id="idp-code-display"
-                  value={idpCode}
-                  readonly
-                  class="bg-muted pr-10"
-                />
-                {#if idpCode}
-                  <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Tooltip.Root>
-                      <Tooltip.Trigger>
-                        {#snippet child({ props: tooltipProps })}
-                          <CopyButton
-                            text={idpCode}
-                            variant="ghost"
-                            size="icon"
-                            class="h-8 w-8 hover:bg-transparent"
-                            animationDuration={2000}
-                            {...tooltipProps}
-                          />
-                        {/snippet}
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>{$t('shell.settings.organizations.create.copyIdpCode')}</Tooltip.Content>
-                    </Tooltip.Root>
-                  </div>
-                {/if}
-              </div>
+              <TextInput
+                id="idp-code-display"
+                value={idpCode}
+                readonly
+                copyTooltipLabel={$t('shell.settings.organizations.create.copyIdpCode')}
+              />
             </div>
 
-            <FormField form={superFormObj} name="idp_owner">
-              <FormControl>
-                {#snippet children({ props })}
-                  <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpOwner')}</FormLabel>
-                    <Input
-                      {...props}
-                      bind:value={$form.idp_owner}
-                      placeholder="admin"
-                    />
-                    <TranslatedFormFieldErrors />
-                  </div>
-                {/snippet}
-              </FormControl>
-            </FormField>
+            <div class="space-y-2">
+              <label for="idp-owner-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                {$t('shell.settings.organizations.create.idpOwner')}
+              </label>
+              <TextInput
+                id="idp-owner-display"
+                value="admin"
+                readonly
+                copyTooltipLabel={$t('shell.settings.organizations.create.copyIdpOwner')}
+              />
+            </div>
 
             <FormField form={superFormObj} name="idp_name">
               <FormControl>
@@ -387,6 +302,7 @@
                       validateFn={checkIdpNameAvailability}
                       placeholder="acme-corp"
                       onStatusChange={handleIdpNameStatusChange}
+                      oninput={handleIdpNameInput}
                       externalInvalid={hasZodError}
                       aria-invalid={hasAsyncError ? true : props['aria-invalid']}
                       data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
@@ -412,7 +328,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('common.cancel')}
       </Button>
-      <Button type="submit" form="org-create-form" disabled={!hasChanges}>
+      <Button type="submit" form="org-create-form" disabled={!canSave}>
         {$t('common.save')}
       </Button>
     </div>

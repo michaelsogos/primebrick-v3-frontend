@@ -1,17 +1,22 @@
-import { ensureBackendOnlineOrThrow, noteGatewayFailure } from '$lib/backend-availability';
+import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
-import { pushRFC7807Error } from '$lib/errors/app-errors';
+import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
+import { userProfileState } from '$lib/user-profile-store.svelte';
+import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
   ApiUnreachableError,
   isUnreachableHttpStatus,
   type HealthPayload,
-  type ModuleInfo
+  type ModuleInfo,
+  type ModuleNav,
+  type ModuleConfigEntry,
+  type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
 
-export type { HealthModule, HealthPayload, ModuleInfo } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
@@ -123,10 +128,11 @@ async function handleRFC7807Error(res: Response): Promise<Response> {
   try {
     const contentType = res.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      const errorData = await res.json();
+      // Clone before reading so the caller can still access the body
+      const errorData = await res.clone().json();
       // Check if it looks like RFC7807 format (has type, title, status)
       if (errorData.type && errorData.title && errorData.status) {
-        pushRFC7807Error(errorData);
+        pushNotification(errorData);
       }
     }
   } catch (e) {
@@ -163,18 +169,25 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
       (e instanceof Error && e.name === 'AbortError');
     if (aborted) throw e;
-    // Network error / no response = backend unreachable
-    noteGatewayFailure(503);
+    // Network error / no response = backend unreachable (fetch threw, not a 503 response)
+    noteGatewayFailure(502);
     throw new ApiUnreachableError(null);
   }
 
-  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop)
+  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop).
+  // Force a /health probe so the chip reflects db_offline / idp_offline immediately
+  // instead of waiting for the next periodic poll.
   if (res.status === 503) {
+    void probeHealth({ force: true });
     throw new ApiDatabaseUnavailableError(503);
   }
 
   // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
+    // If this is a retry after session-expired login and it's STILL 401, don't re-enqueue
+    if ((nextInit as any)._sessionRetry) {
+      throw new Error('Session retry failed - still 401 after successful login');
+    }
     // Skip refresh for auth endpoints - user doesn't have tokens yet
     const url = requestUrlString(input);
     if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
@@ -184,11 +197,14 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
     // Check if we have a local session before attempting refresh
     if (!hasLocalSession()) {
-      // No local session - redirect to login without attempting refresh
-      console.error('[api] No local session, redirecting to login');
+      // No local session - open session-expired dialog instead of force-redirecting
+      console.error('[api] No local session, opening session-expired dialog');
       if (typeof window !== 'undefined') {
+        // Clear in-memory profile so the passkey dialog doesn't render
+        // on top of the session-expired dialog with stale data.
+        userProfileState.current = null;
         saveRedirectUrl(window.location.pathname + window.location.search);
-        window.location.href = '/login';
+        return sessionExpiredStore.enqueue(input, nextInit);
       }
       throw new Error('No local session');
     }
@@ -201,13 +217,16 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
         // Retry the original request after successful refresh
         return await apiFetch(input, nextInit);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        console.error('[api] Token refresh failed, redirecting to login:', refreshError);
+        // Refresh failed, open session-expired dialog instead of force-redirecting
+        console.error('[api] Token refresh failed, opening session-expired dialog:', refreshError);
         if (typeof window !== 'undefined') {
-          // Clear corrupted session data before redirect
+          // Clear corrupted session data (both sessionStorage and in-memory)
+          // before showing dialog so the passkey dialog doesn't render with
+          // stale profile data.
           sessionStorage.removeItem('user');
+          userProfileState.current = null;
           saveRedirectUrl(window.location.pathname + window.location.search);
-          window.location.href = '/login';
+          return sessionExpiredStore.enqueue(input, nextInit);
         }
         throw new Error('Token refresh failed');
       }
@@ -217,10 +236,33 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     }
   }
 
-  // 502/504 = gateway/network failure
+  // 502/504/520-524 = gateway/network failure — but the BE itself may have
+  // returned an RFC 7807 error (BE is reachable, downstream US is unreachable).
+  // If the body is RFC 7807 JSON, push the notification with the real error
+  // details (title, detail, internal_code, severity, tags) and throw
+  // ApiUnreachableError with alreadyNotified=true so callers skip their
+  // generic catch-block notification.
+  // If the body is NOT RFC 7807 (raw gateway HTML/non-JSON), the BE is truly
+  // unreachable — call noteGatewayFailure and throw ApiUnreachableError.
   if (!res.ok && isUnreachableHttpStatus(res.status)) {
-    noteGatewayFailure(res.status);
-    throw new ApiUnreachableError(res.status);
+    let alreadyNotified = false;
+    try {
+      const contentType = res.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const errorData = await res.json();
+        if (errorData?.type && errorData?.title && typeof errorData?.status === 'number') {
+          pushNotification(errorData);
+          alreadyNotified = true;
+        }
+      }
+    } catch {
+      // Body is not parseable JSON — raw gateway error, fall through
+    }
+
+    if (!alreadyNotified) {
+      noteGatewayFailure(res.status);
+    }
+    throw new ApiUnreachableError(res.status, alreadyNotified);
   }
 
   // Auto-handle RFC7807 errors for non-auth endpoints
@@ -258,8 +300,70 @@ export async function fetchModules(): Promise<ModuleInfo[]> {
   return data.modules;
 }
 
+export async function fetchModuleMeta(code: string): Promise<ModuleNav> {
+  const res = await apiFetch(`/api/v1/modules/${encodeURIComponent(code)}/meta`);
+  if (!res.ok) throw new Error(`Module meta request failed (${res.status})`);
+  return (await res.json()) as ModuleNav;
+}
+
 export async function fetchHealth(): Promise<HealthPayload> {
   const res = await apiFetch('/api/v1/health');
   if (!res.ok) throw new Error(`Health request failed (${res.status})`);
   return (await res.json()) as HealthPayload;
+}
+
+export async function fetchServices(): Promise<ServiceInfo[]> {
+  const res = await apiFetch('/api/v1/system/services');
+  if (!res.ok) throw new Error(`Services request failed (${res.status})`);
+  const data = (await res.json()) as { services: ServiceInfo[] };
+  return data.services;
+}
+
+export async function fetchService(code: string): Promise<ServiceInfo> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`);
+  if (!res.ok) throw new Error(`Service request failed (${res.status})`);
+  const data = (await res.json()) as { service: ServiceInfo };
+  return data.service;
+}
+
+export async function toggleModule(code: string): Promise<{ is_enabled: boolean }> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}/toggle`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) throw new Error(`Toggle failed (${res.status})`);
+  return await res.json();
+}
+
+export async function deleteModule(code: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+}
+
+export async function updateService(code: string, data: Partial<ServiceInfo>): Promise<ServiceInfo> {
+  const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Update failed (${res.status})`);
+  const result = (await res.json()) as { service: ServiceInfo };
+  return result.service;
+}
+
+export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/list`);
+  if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
+  const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
+  return data.config_entries;
+}
+
+export async function updateModuleConfigKey(code: string, uuid: string, value: string): Promise<void> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }

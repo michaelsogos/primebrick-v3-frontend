@@ -13,7 +13,7 @@
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
-    totalCount: number;
+    totalCount: bigint;
     entity: string;
     isExporting: boolean;
     onConfirm: () => void;
@@ -53,7 +53,8 @@
       {$t('common.cancel')}
     </Button>
     <Button
-      class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all flex-1 sm:flex-none"
+      variant="warning"
+      class="hover:scale-105 transition-all flex-1 sm:flex-none"
       onclick={onConfirm}
       disabled={isExporting}
     >

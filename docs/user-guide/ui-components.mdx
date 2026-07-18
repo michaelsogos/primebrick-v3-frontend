@@ -1,0 +1,142 @@
+---
+title: UI components
+description: Custom Primebrick components built on top of Shadcn-Svelte — combo-select, dynamic-icon, color-selector, avatar-preview, and form helpers.
+---
+
+# UI components
+
+Primebrick uses **Shadcn-Svelte** as the vendored primitive layer in
+`src/lib/components/ui/`. On top of those primitives, several custom
+components are provided for common app-wide patterns. The full prop
+reference for every component is in the
+[API reference](/docs/user-guide/api-reference).
+
+## ComboSelect
+
+`src/lib/components/ui/combo-select/combo-select.svelte` — a searchable
+single/multi select built on Popover + Command primitives.
+
+```svelte
+<ComboSelect
+  mode="single"
+  bind:value
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+  isLabelTranslated
+  placeholder={$t('settings.selectRole')}
+/>
+```
+
+Key props:
+
+| Prop | Type | Purpose |
+|------|------|---------|
+| `mode` | `"single" \| "multi"` | Selection mode |
+| `value` | `string \| string[]` (bindable) | Selected value(s) |
+| `options` | `string[] \| Record<string, any>[]` | Option list |
+| `valueField`, `labelField` | `string` | Field names for object options |
+| `isLabelTranslated` | `boolean` | Treat labels as i18n keys |
+| `searchable` | `boolean` | Show search input (default `true`) |
+| `itemSnippet` | `Snippet` | Custom item rendering |
+| `selectedSnippet` | `Snippet` | Custom selected-chip rendering |
+| `isOptionDisabled` | `(option) => boolean` | Disable individual options |
+| `getSearchKeywords` | `(option) => string[]` | Extra search terms passed to bits-ui `Command.Item` keywords |
+
+## DynamicIcon
+
+`src/lib/components/ui/dynamic-icon/DynamicIcon.svelte` — renders any
+Lucide icon by name at runtime. It uses `import.meta.glob` to pre-register
+all icon modules under `@lucide/svelte/dist/icons/*.svelte` so Vite can
+statically analyze them, then lazy-loads and caches each icon component on
+first use.
+
+```svelte
+<DynamicIcon name="package" size={16} />
+```
+
+Props: `name: string`, `size?: number = 16`, `class?: string`. A placeholder
+span keeps layout stable while the icon chunk loads. If the name is not
+found, a warning is logged and nothing renders.
+
+This is used by the modules system to render module-configured icons
+without bundling every Lucide icon.
+
+## ColorSelector
+
+`src/lib/components/ui/color-selector/ColorSelector.svelte` — a color
+picker that presents a curated palette plus a native color input. The
+selected value is bindable.
+
+```svelte
+<ColorSelector bind:value={formData.avatar_color} />
+```
+
+Used by the profile and user-edit pages for avatar color selection.
+
+## AvatarPreview
+
+`src/lib/components/ui/avatar-preview/AvatarPreview.svelte` — renders a
+circular avatar preview from initials and a background color, with an
+optional image fallback. Used in profile/user forms.
+
+## Form helpers
+
+### FormLabelWithHelp
+
+`src/lib/components/forms/FormLabelWithHelp.svelte` — a form label with an
+inline help tooltip.
+
+### FormLabelWithPriorityHelp
+
+`src/lib/components/forms/FormLabelWithPriorityHelp.svelte` — a form label
+with a priority tooltip (uses `priority-tooltip-content`).
+
+### PasswordChecklist
+
+`src/lib/components/forms/PasswordChecklist.svelte` — live checklist of
+password policy rules. See
+[Password policy](/docs/user-guide/authentication#password-policy).
+
+## Tooltip system
+
+The tooltip layer in `src/lib/components/ui/tooltip/` adds:
+
+- `tooltip-portal.svelte` — portal wrapper
+- `tooltip-content.svelte` — standard content
+- `priority-tooltip-content.svelte` — priority-styled content (used by
+  `FormLabelWithPriorityHelp`)
+
+`TooltipPriority` types and the priority tooltip are used by entity list
+columns that set `tooltipPriority` on `MetaColumn`.
+
+## AsyncValidatedInput
+
+`src/lib/components/ui/input/async-validated-input.svelte` — an input that
+runs asynchronous validation (e.g. uniqueness checks against the backend)
+with debouncing and pending/error states.
+
+## TextInput
+
+`src/lib/components/ui/input/text-input.svelte` — a text input wrapper
+with consistent chrome (leading/trailing icons, loading spinner) via
+`input-chrome.ts`.
+
+## EventCard
+
+`src/lib/components/ui/event-card/` — renders error/notification event
+cards in the errors panel, with label, title, message, and time
+sub-components.
+
+## Sidebar badges
+
+`src/lib/components/sidebar/` contains the sidebar-specific components
+described in [App shell & sidebar](/docs/user-guide/app-shell):
+`SidebarOrgSwitcher`, `SidebarModuleSwitcher`, `SidebarProfileMenu`,
+`SidebarHealthBadge`, `SidebarVersionBadge`.
+
+## Next steps
+
+- [API reference](/docs/user-guide/api-reference) — full prop tables for every component
+- [Entity list table](/docs/user-guide/entity-list-table)
+- [App shell & sidebar](/docs/user-guide/app-shell)

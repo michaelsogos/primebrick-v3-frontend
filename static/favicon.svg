@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Primebrick favicon: 2x2 modular brick grid recalling the PB logo gradient.
+       TL = sky #0ea5e9 (prime, with white dot), TR/BL = interpolated stops, BR = indigo #4f46e5. -->
+  <rect x="4"  y="4"  width="26" height="26" rx="5" fill="#0ea5e9"/>
+  <rect x="34" y="4"  width="26" height="26" rx="5" fill="#2485e8"/>
+  <rect x="4"  y="34" width="26" height="26" rx="5" fill="#3966e7"/>
+  <rect x="34" y="34" width="26" height="26" rx="5" fill="#4f46e5"/>
+  <circle cx="17" cy="17" r="4" fill="#ffffff"/>
+</svg>

@@ -1,23 +1,12 @@
 <script lang="ts">
-  import { z } from 'zod';
-  import { superForm, defaults, setError, setMessage } from 'sveltekit-superforms';
-  import { zod4 } from 'sveltekit-superforms/adapters';
-  import { apiFetch } from '$lib/api';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Input } from '$lib/components/ui/input';
   import { Badge } from '$lib/components/ui/badge';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-  import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
-  import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
-  import * as Password from '$lib/components/ui/password';
   import { cn } from '$lib/utils';
-  import { toast } from 'svelte-sonner';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { APP_VERSION } from '$lib/version';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
@@ -26,116 +15,10 @@
   import Database from '@lucide/svelte/icons/database'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import { onMount } from 'svelte';
-  import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
-  import { pushRFC7807Error } from '$lib/errors/app-errors';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
-
-  // 1. Definisci lo schema Zod
-  const loginSchema = z.object({
-    username: z.string().min(1, 'Username is required'),
-    password: z.string().min(1, 'Password is required'),
-  });
-
-  type LoginForm = z.infer<typeof loginSchema>;
-
-  // 2. Configura Superforms in SPA mode
-  const superFormObj = superForm(
-    defaults(zod4(loginSchema)),
-    {
-      SPA: true,
-      validators: zod4(loginSchema),
-      invalidateAll: false,
-
-      // In Superforms, per fare chiamate API asincrone in SPA mode,
-      // il posto corretto è `onUpdate` invece di bloccare `onSubmit` col cancel()
-      async onUpdate({ form: updateForm, cancel }) {
-        // Se la validazione Zod fallisce, si ferma qui e mostra gli errori nella UI
-        if (!updateForm.valid) return;
-
-        try {
-          const response = await apiFetch('/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            // Prendi i dati tipizzati e validati direttamente dal form
-            body: JSON.stringify(updateForm.data),
-          });
-
-          // DEBUG: Log response details
-          console.log('[Login Debug] Response status:', response.status);
-          console.log('[Login Debug] Response headers:', Object.fromEntries(response.headers.entries()));
-
-          if (!response.ok) {
-            const errorData = await response.json();
-
-            // Push error to global error panel (no toast in login page)
-            pushRFC7807Error(errorData, { showToast: false });
-
-            // Map error to inline message for 401 (translated)
-            if (response.status === 401) {
-              const mappedError = mapRFC7807ToMessageKey({
-                status: response.status,
-                internal_code: errorData.internal_code,
-                detail: errorData.detail
-              });
-
-              let errorMsg = errorData.detail || 'Invalid credentials';
-              if (mappedError) {
-                let translatedMsg = $t(mappedError.key);
-                if (mappedError.minutes !== undefined) {
-                  translatedMsg = translatedMsg.replace('{minutes}', mappedError.minutes.toString());
-                }
-                errorMsg = translatedMsg;
-              }
-
-              // Use the destructured store directly (closure captures message lazily)
-              message.set(errorMsg);
-            } else if (response.status === 400 && errorData.issues) {
-              // Map validation errors from backend using setError
-              for (const issue of errorData.issues) {
-                const fieldName = issue.path[0];
-                setError(updateForm, fieldName, issue.message);
-              }
-              message.set(errorData.detail || 'Validation error');
-            } else {
-              // Other errors - show in message
-              message.set(errorData.detail || 'Login failed');
-            }
-            // Cancel form commit to prevent message/errors reset
-            cancel();
-            return;
-          }
-
-          const data = await response.json();
-
-          // DEBUG: Log response data and token size
-          console.log('[Login Debug] Response data:', data);
-          if (data.user) {
-            console.log('[Login Debug] User data size:', JSON.stringify(data.user).length, 'bytes');
-          }
-
-          if (data.success && data.user) {
-            userProfileStore.set(data.user);
-            console.log('[Login Debug] Cookies after login:', document.cookie);
-          }
-
-          const redirectUrl = getAndClearRedirectUrl();
-          window.location.href = redirectUrl || '/';
-
-        } catch (error) {
-          console.error('[Login Error]', error);
-          message.set('Errore di connessione o login fallito.');
-          cancel();
-        }
-      }
-    }
-  );
-
-  const { form, errors, message, enhance, submitting } = superFormObj;
-
-  const userAvatarSeed = 'PB';
-  const avatarChromeFallbackClass = avatarFallbackChromeClasses(userAvatarSeed);
+  import { page } from '$app/state';
+  import { apiFetch } from '$lib/api';
+  import { Alert, AlertDescription } from '$lib/components/ui/alert';
+  import LoginForm from '$lib/components/auth/LoginForm.svelte';
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -192,12 +75,32 @@
   let heroIndex = $state(0);
   const currentHero = $derived(heroes[heroIndex]);
 
+  // Login alert — detects ?alert=...&token=... from notification email links
+  const alertType = $derived(page.url.searchParams.get('alert'));
+  const alertToken = $derived(page.url.searchParams.get('token'));
+  const hasAlert = $derived(!!alertType && !!alertToken);
+
   onMount(() => {
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
 
     // Select random hero
     heroIndex = Math.floor(Math.random() * heroes.length);
+
+    // If there's a login alert, notify the BE to send admin alert email
+    if (alertType && alertToken) {
+      void (async () => {
+        try {
+          await apiFetch('/api/v1/auth/login-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alert_type: alertType, token: alertToken }),
+          });
+        } catch (e) {
+          console.error('[login] Failed to send login alert:', e);
+        }
+      })();
+    }
   });
 </script>
 
@@ -216,17 +119,7 @@
     
     <!-- Dark overlay for text contrast -->
     <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/75 to-zinc-950/40 z-10"></div>
-    
-    <!-- Logo PrimeBrick -->
-    <div class="relative z-20 flex items-center text-lg font-medium tracking-tight">
-      <Avatar class="size-8 rounded-none avatar-hex mr-3">
-        <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-          {userAvatarSeed}
-        </AvatarFallback>
-      </Avatar>
-      <span class="text-xl font-semibold">PrimeBrick</span>
-    </div>
-    
+
     <!-- Dynamic quote - vertically centered -->
     <div class="relative z-20 flex-1 flex items-center justify-center">
       <blockquote class="space-y-2">
@@ -241,7 +134,16 @@
   </div>
 
   <!-- Left Column: Login Form (Always visible) -->
-  <div class="lg:p-8 flex min-h-screen items-center justify-center bg-background relative">
+  <div class="lg:p-8 flex min-h-screen flex-col bg-background relative">
+    <!-- Top bar: Logo + theme/language selectors (desktop) -->
+    <div class="hidden lg:flex items-center justify-between px-8 pt-8">
+      <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-8 w-auto" />
+      <div class="flex items-center gap-2">
+        <LangSelect />
+        <ThemeToggle />
+      </div>
+    </div>
+
     <!-- Health badge in bottom left (desktop) -->
     <div class="absolute bottom-8 left-8 hidden lg:block">
       <Badge
@@ -264,95 +166,41 @@
       </Badge>
     </div>
 
-    <!-- Theme and language selectors in top right (desktop) -->
-    <div class="absolute top-8 right-8 hidden lg:flex items-center gap-2">
-      <ThemeToggle />
-      <LangSelect />
-    </div>
-
-    <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
+    <div class="flex flex-1 items-center justify-center">
+      <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
       
       <!-- Mobile header: Logo + theme/language selectors -->
       <div class="flex items-center justify-between lg:hidden">
         <div class="flex items-center gap-3">
-          <Avatar class="size-8 rounded-none avatar-hex">
-            <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-              {userAvatarSeed}
-            </AvatarFallback>
-          </Avatar>
-          <span class="text-xl font-semibold">PrimeBrick</span>
+          <img src="/logo-full-dark.svg" alt="PrimeBrick" width="170" height="32" class="h-7 w-auto" />
         </div>
         <div class="flex items-center gap-2">
-          <ThemeToggle />
           <LangSelect />
+          <ThemeToggle />
         </div>
       </div>
 
+      <!-- Login alert banner (from notification email "if this wasn't you" link) -->
+      {#if hasAlert}
+        <Alert variant="destructive" class="border-primary-gradient">
+          <ShieldAlert class="size-4" />
+          <AlertDescription>
+            {$t('login.alert.description')}
+          </AlertDescription>
+        </Alert>
+      {/if}
+
       <!-- Login Card -->
-      <Card class="border-border">
+      <Card class="border-primary-gradient shadow-sm">
         <CardHeader class="space-y-1">
           <CardTitle class="text-2xl font-semibold">{$t('login.title')}</CardTitle>
           <CardDescription>{$t('login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
-          <form use:enhance>
-            <div class="space-y-4">
-      <!-- Campo Username -->
-      <FormField form={superFormObj} name="username">
-        <FormControl>
-          <!-- SINTASSI CORRETTA SVELTE 5: Snippet al posto di let:attrs -->
-          {#snippet children({ props })}
-            <div class="space-y-2">
-              <!-- Usiamo props.id anzichè attrs.id -->
-              <FormLabel for={props.id}>{$t('login.username')}</FormLabel>
-              <Input
-                type="text"
-                placeholder={$t('login.usernamePlaceholder')}
-                bind:value={$form.username}
-                {...props}
-              />
-              <FormFieldErrors />
-            </div>
-          {/snippet}
-        </FormControl>
-      </FormField>
-
-      <!-- Campo Password -->
-      <FormField form={superFormObj} name="password">
-        <FormControl>
-          {#snippet children({ props })}
-            <div class="space-y-2">
-              <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
-              <Password.Root>
-                <Password.Input
-                  placeholder={$t('login.passwordPlaceholder')}
-                  bind:value={$form.password}
-                  {...props}
-                >
-                  <Password.ToggleVisibility />
-                </Password.Input>
-              </Password.Root>
-              <FormFieldErrors />
-            </div>
-          {/snippet}
-        </FormControl>
-      </FormField>
-
-              <Button type="submit" class="w-full" disabled={$submitting}>
-                {#if $submitting}
-                  <Spinner class="mr-2" />
-                {/if}
-                {$submitting ? $t('login.buttonLoading') : $t('login.button')}
-              </Button>
-
-              {#if $message}
-                <Alert variant="destructive" class="mt-4">
-                  <ShieldAlert class="size-4" />
-                  <AlertDescription>{$message}</AlertDescription>
-                </Alert>
-              {/if}
-            </div>
-          </form>
+          <LoginForm onsuccess={() => {
+            const redirectUrl = getAndClearRedirectUrl();
+            window.location.href = redirectUrl || '/';
+          }} />
         </CardContent>
       </Card>
 
@@ -381,6 +229,7 @@
         </Badge>
       </div>
 
+    </div>
     </div>
 
     <!-- Version badge in bottom right (desktop) -->

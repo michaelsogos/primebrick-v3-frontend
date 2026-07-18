@@ -278,7 +278,7 @@
 									</button>
 								{/snippet}
 							</DropdownMenu.Trigger>
-							<DropdownMenu.Content class="w-full min-w-52 max-h-80 overflow-y-auto">
+							<DropdownMenu.Content align="start" class="w-full min-w-52 max-h-80 overflow-y-auto">
 								<div class="p-2 sticky top-0 bg-background border-b">
 									<Input
 										bind:value={timezoneSearch}

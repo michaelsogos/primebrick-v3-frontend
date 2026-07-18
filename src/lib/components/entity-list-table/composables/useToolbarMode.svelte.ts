@@ -1,4 +1,5 @@
 import type { AdvancedFilter } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export type ToolbarMode = 'filters' | 'bulk';
 
@@ -10,10 +11,11 @@ export function useToolbarMode(options: {
   const safeFilterValues = $derived.by(() => options.filterValues() ?? {});
   const safeAdvancedFilters = $derived.by(() => options.advancedFilters() ?? []);
 
-  let toolbarMode = $state<ToolbarMode>('filters');
-
-  let lastSelectionChange = $state(0);
-  let lastFilterChange = $state(0);
+  const _state = $state({
+    toolbarMode: 'filters' as ToolbarMode,
+    lastSelectionChange: 0,
+    lastFilterChange: 0,
+  });
 
   const hasAppliedFilters = $derived.by(() => {
     const filters = safeFilterValues;
@@ -23,37 +25,37 @@ export function useToolbarMode(options: {
 
   $effect(() => {
     void options.selectedKeys();
-    lastSelectionChange = Date.now();
+    _state.lastSelectionChange = Date.now();
   });
 
   $effect(() => {
     void options.filterValues();
     void options.advancedFilters();
-    lastFilterChange = Date.now();
+    _state.lastFilterChange = Date.now();
   });
 
   $effect(() => {
-    void lastSelectionChange;
-    void lastFilterChange;
+    void _state.lastSelectionChange;
+    void _state.lastFilterChange;
     void hasAppliedFilters;
 
-    if (lastSelectionChange > lastFilterChange) {
-      toolbarMode = 'bulk';
+    if (_state.lastSelectionChange > _state.lastFilterChange) {
+      _state.toolbarMode = 'bulk';
     } else if (hasAppliedFilters) {
-      toolbarMode = 'filters';
+      _state.toolbarMode = 'filters';
     } else {
-      toolbarMode = 'bulk';
+      _state.toolbarMode = 'bulk';
     }
   });
 
   return {
-    get toolbarMode() { return toolbarMode; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     get hasAppliedFilters() { return hasAppliedFilters; },
     toggle: () => {
-      toolbarMode = toolbarMode === 'filters' ? 'bulk' : 'filters';
+      _state.toolbarMode = _state.toolbarMode === 'filters' ? 'bulk' : 'filters';
     },
     setMode: (mode: ToolbarMode) => {
-      toolbarMode = mode;
+      _state.toolbarMode = mode;
     }
   };
 }

@@ -51,6 +51,7 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
+    handleCustomAction,
     stickyCellClass
   }: {
     error: string | null;
@@ -70,8 +71,8 @@
     rowSelectionEnabled: boolean;
     selectedKeys: string[];
     rowRangeSelection: {
-      rowRangeMouseDown: boolean;
-      rangeDragActive: boolean;
+      state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };
+      onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     };
     datetimeIanaRenderTick: number;
     rowKey: (row: TRow) => string;
@@ -104,12 +105,13 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
+    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
   } = $props();
 </script>
 
 <Table.Body
-  class={rowSelectionEnabled && rowRangeSelection.rowRangeMouseDown && rowRangeSelection.rangeDragActive ? 'select-none' : undefined}
+  class={rowSelectionEnabled && rowRangeSelection.state.rowRangeMouseDown && rowRangeSelection.state.rangeDragActive ? 'select-none' : undefined}
 >
   {#if error}
     {#if errorView}
@@ -191,40 +193,43 @@
       {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
       {@const rowDeleted = isRowDeleted(r)}
       <TableRow
-        {i}
-        row={r}
-        rowKey={rk}
-        rowSelected={rowSelected}
-        rowDeleted={rowDeleted}
-        {shownColumns}
-        {extraCols}
-        {rowSelectionEnabled}
-        {selectedKeys}
-        {rowRangeSelection}
-        {datetimeIanaRenderTick}
-        {previewPanel}
-        {actionsEnabled}
-        {rowChromeH}
-        {stickyColumnsGroup}
-        {stickyColumnsState}
-        {datetimeIanaModeByKey}
-        {cell}
-        {rowActions}
-        {entityRowActions}
-        {dropdownMenuRow}
-        {isRowDeleted}
-        onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
-        onEntityRowClick={onEntityRowClick}
-        onPreviewRow={onPreviewRow}
-        onToggleRowSelect={onToggleRowSelect}
-        onOpenRowDropdown={onOpenRowDropdown}
-        onCloseRowDropdown={onCloseRowDropdown}
-        onEditRow={onEditRow}
-        onLoadVersionHistory={onLoadVersionHistory}
-        onDuplicateRow={onDuplicateRow}
-        onDeleteRow={onDeleteRow}
-        onRestoreRow={onRestoreRow}
-        {stickyCellClass}
+        {...({
+          index: i,
+          row: r,
+          rowKey: rk,
+          rowSelected,
+          rowDeleted,
+          shownColumns,
+          extraCols,
+          rowSelectionEnabled,
+          selectedKeys,
+          rowRangeSelection,
+          datetimeIanaRenderTick,
+          previewPanel,
+          actionsEnabled,
+          rowChromeH,
+          stickyColumnsGroup,
+          stickyColumnsState,
+          datetimeIanaModeByKey,
+          cell,
+          rowActions,
+          entityRowActions,
+          dropdownMenuRow,
+          isRowDeleted,
+          onRowRangeMouseDown: (index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e),
+          onEntityRowClick,
+          onPreviewRow,
+          onToggleRowSelect,
+          onOpenRowDropdown,
+          onCloseRowDropdown,
+          onEditRow,
+          onLoadVersionHistory,
+          onDuplicateRow,
+          onDeleteRow,
+          onRestoreRow,
+          handleCustomAction,
+          stickyCellClass
+        } as any)}
       />
     {/each}
   {/if}

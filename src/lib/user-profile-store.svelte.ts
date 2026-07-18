@@ -1,6 +1,6 @@
 import { getContrastTextColor } from './avatar-chrome-palette';
 
-interface UserProfile {
+export interface UserProfile {
   uuid?: string;
   username?: string;
   idp_code?: string;
@@ -15,6 +15,7 @@ interface UserProfile {
   is_verified?: boolean;
   email_verified?: boolean;
   issuer?: string;
+  roles?: string[];
   // Audit fields
   created_at?: string;
   created_by?: string;
@@ -27,6 +28,8 @@ interface UserProfile {
   deleted_by_name?: string;
   version?: number;
   last_synced_at?: string;
+  has_passkey?: boolean;
+  passkey_prompt_dismissed?: boolean;
 }
 
 function loadFromStorage(): UserProfile | null {
@@ -44,7 +47,7 @@ export const userProfileState = $state({
 
 export const userProfileStore = {
   get current() { return userProfileState.current; },
-  
+
   set(profile: Partial<UserProfile>) {
     const current = userProfileState.current;
     // Always assign a NEW object reference to `.current` to force updates
@@ -52,7 +55,12 @@ export const userProfileStore = {
     const next = current ? { ...current, ...profile } : ({ ...profile } as UserProfile);
     userProfileState.current = next;
     sessionStorage.setItem('user', JSON.stringify(next));
-  }
+  },
+
+  clear() {
+    userProfileState.current = null;
+    sessionStorage.removeItem('user');
+  },
 };
 
 export function getUserAvatarStyle(): { style: string; class: string } | null {

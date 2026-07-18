@@ -1,5 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import CardViewRenderer from './CardViewRenderer.svelte';
+  import type { Snippet } from 'svelte';
 
   let {
     viewMode,
@@ -66,12 +67,12 @@
     cell: any;
     stickyColumnsGroup: any[];
     error: string | null;
-    errorView?: (() => void) | null;
+    errorView?: Snippet;
     rowsLoading: boolean;
-    rowsLoadingView?: (() => void) | null;
+    rowsLoadingView?: Snippet;
     loadingText: string;
     rows: TRow[];
-    emptyView?: (() => void) | null;
+    emptyView?: Snippet;
     emptyText: string;
     showSelectedOnly: boolean;
     selectionCount: number;
@@ -82,7 +83,7 @@
     allColumns: any[];
     effectiveSortKey: string | null;
     sortDir: 'asc' | 'desc';
-    onSortChange: (key: string, dir: 'asc' | 'desc') => void;
+    onSortChange: (key: string | null, dir: 'asc' | 'desc') => void;
     sortableColumns: any[];
     datetimeIanaToggleColumns: any[];
     toggleDatetimeIana: (col: any) => void;

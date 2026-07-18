@@ -1,0 +1,66 @@
+---
+title: DynamicIcon
+description: Render any Lucide icon by name at runtime, with build-time glob registration and lazy chunk loading. Used by the modules system to render module-configured icons without bundling every Lucide icon.
+---
+
+# DynamicIcon
+
+`src/lib/components/ui/dynamic-icon/DynamicIcon.svelte`
+
+## Purpose
+
+Renders any Lucide icon by name at runtime. The icon name is not known at
+build time (e.g. it comes from module configuration), so a static import is
+not possible. `DynamicIcon` solves this by pre-registering every icon module
+under `@lucide/svelte/dist/icons/*.svelte` via `import.meta.glob`, then
+lazy-loading and caching the requested icon on first use.
+
+## Origin
+
+**Custom** — fully Primebrick-written. Uses `import.meta.glob` (Vite) and
+`@lucide/svelte`. Not vendored from any registry.
+
+## How it works
+
+1. A module-level `import.meta.glob('/node_modules/@lucide/svelte/dist/icons/*.svelte')`
+   call produces a map of path → lazy import function that Vite can statically
+   analyze. This is required because Vite cannot resolve dynamic `import()`
+   with template literals.
+2. On each name change, an `$effect` calls `loadIcon(name)` which looks up the
+   loader for `/node_modules/@lucide/svelte/dist/icons/${name}.svelte`, invokes
+   it, and caches the resolved component in a `Map`.
+3. While the chunk loads, a placeholder `<span>` of the icon's `size` keeps
+   layout stable.
+4. If the name is not found, a warning is logged and nothing renders.
+
+## Usage
+
+### Default
+
+```svelte
+<DynamicIcon name="package" size={16} />
+```
+
+### With a class
+
+```svelte
+<DynamicIcon name="settings" size={20} class="text-muted-foreground" />
+```
+
+### Driven by module config
+
+```svelte
+<DynamicIcon name={module.icon_name} size={18} />
+```
+
+## Props
+
+Full prop table: see [API reference — dynamicicon](/docs/user-guide/api-reference#dynamicicon).
+
+Props: `name: string`, `size?: number = 16`, `class?: string`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#dynamicicon)

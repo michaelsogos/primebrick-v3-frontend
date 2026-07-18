@@ -41,10 +41,9 @@
   class="
     group/input
     w-full
-    bg-sky-50/20 border border-input
-    hover:bg-sky-50/45 hover:border-ring/40
-    focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring
-    dark:bg-input/40 dark:hover:bg-input/55
+    border-primary-gradient
+    hover:brightness-105
+    focus-within:ring-2 focus-within:ring-ring/50
     rounded-md transition-all duration-200
   "
 >

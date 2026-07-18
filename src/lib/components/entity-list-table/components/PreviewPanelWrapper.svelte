@@ -9,13 +9,16 @@
 
   interface PreviewPanelWrapperProps {
     previewPanel: {
-      previewPanelOpen: boolean;
-      previewRow: TRow | null;
+      state: {
+        previewPanelOpen: boolean;
+        previewRow: TRow | null;
+        focusedRowIndex: number | null;
+        previewEditMode: boolean;
+        previewRowIndex: number;
+      };
       openPreview: (row: TRow) => void;
       closePreview: () => void;
-      focusedRowIndex: number | null;
-      previewEditMode: boolean;
-      previewRowIndex: number;
+      setPreviewEditMode: (mode: boolean) => void;
     };
     rows: TRow[];
     viewRows: TRow[];
@@ -102,16 +105,16 @@
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
       // While restoring, preserve the key from session until previewRow is actually set
-      const rowKey_ = previewPanel.previewRow
-        ? String((previewPanel.previewRow as Record<string, unknown>)[uid])
+      const rowKey_ = previewPanel.state.previewRow
+        ? String((previewPanel.state.previewRow as Record<string, unknown>)[uid])
         : (_previewRestoredKey ?? null);
       const key = `pb-preview-panel:${entity ?? 'default'}`;
-      sessionStorage.setItem(key, JSON.stringify({ open: previewPanel.previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
+      sessionStorage.setItem(key, JSON.stringify({ open: previewPanel.state.previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
     }
   });
 
   $effect(() => {
-    if (_previewRestoredKey && previewPanel.previewPanelOpen && !rowsLoading && rows.length > 0) {
+    if (_previewRestoredKey && previewPanel.state.previewPanelOpen && !rowsLoading && rows.length > 0) {
       const idx = rows.findIndex((r) => String((r as Record<string, unknown>)[uid]) === _previewRestoredKey);
       if (idx !== -1) {
         previewPanel.openPreview(rows[idx]);
@@ -163,7 +166,7 @@
 
   // Reset previewRowIndex when page changes
   $effect(() => {
-    if (previewPanel.previewPanelOpen && viewRows.length > 0) {
+    if (previewPanel.state.previewPanelOpen && viewRows.length > 0) {
       if (navigatingToNextPage) {
         // Going to next page - reset to first record
         previewPanel.openPreview(viewRows[0]);
@@ -172,7 +175,7 @@
         // Going to previous page - go to last record
         previewPanel.openPreview(viewRows[viewRows.length - 1]);
         navigatingToPrevPage = false;
-      } else if (previewPanel.previewRowIndex >= viewRows.length) {
+      } else if (previewPanel.state.previewRowIndex >= viewRows.length) {
         // If previewRowIndex is out of bounds after page change, reset it
         previewPanel.openPreview(viewRows[0]);
       }
@@ -181,16 +184,16 @@
 
   // Handle page changes for navigation
   $effect(() => {
-    if (previewPanel.previewPanelOpen && previewPanel.previewRow) {
-      const currentIndex = viewRows.findIndex(r => rowKey(r) === rowKey(previewPanel.previewRow!));
+    if (previewPanel.state.previewPanelOpen && previewPanel.state.previewRow) {
+      const currentIndex = viewRows.findIndex(r => rowKey(r) === rowKey(previewPanel.state.previewRow!));
       
       // If navigating to next page and we're at the last record
-      if (currentIndex === viewRows.length - 1 && previewPanel.previewRowIndex < footerRangeTotal - 1) {
+      if (currentIndex === viewRows.length - 1 && previewPanel.state.previewRowIndex < footerRangeTotal - 1) {
         navigatingToNextPage = true;
         onPageChange(page + 1);
       }
       // If navigating to prev page and we're at the first record
-      else if (currentIndex === 0 && previewPanel.previewRowIndex > 0) {
+      else if (currentIndex === 0 && previewPanel.state.previewRowIndex > 0) {
         navigatingToPrevPage = true;
         onPageChange(page - 1);
       }
@@ -200,7 +203,7 @@
 
 </script>
 
-{#if previewPanel.previewPanelOpen}
+{#if previewPanel.state.previewPanelOpen}
   <!-- Resize handle between table and panel -->
   <button
     type="button"
@@ -214,19 +217,19 @@
 
 <div
   class="h-full overflow-hidden border-l bg-background {isResizing ? '' : 'transition-[width,min-width] duration-300 ease-in-out'}"
-  style="width: {previewPanel.previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanel.previewPanelOpen ? '220px' : '0'}"
+  style="width: {previewPanel.state.previewPanelOpen ? `${previewPanelWidth}%` : '0'}; min-width: {previewPanel.state.previewPanelOpen ? '220px' : '0'}"
 >
   <div class="h-full w-full overflow-auto">
-    {#if previewPanel.previewPanelOpen}
+    {#if previewPanel.state.previewPanelOpen}
       <PreviewPanel
-        row={previewPanel.previewRow!}
-        previewEditMode={previewPanel.previewEditMode}
-        previewRowIndex={previewPanel.previewRowIndex}
+        row={previewPanel.state.previewRow!}
+        previewEditMode={previewPanel.state.previewEditMode}
+        previewRowIndex={previewPanel.state.previewRowIndex}
         previewDropdownOpen={previewDropdownOpen}
         totalRecords={footerRangeTotal}
         currentPage={footerPage}
         pageSize={pageSize}
-        onPreviewEditModeChange={(mode: boolean) => previewPanel.previewEditMode = mode}
+        onPreviewEditModeChange={(mode: boolean) => previewPanel.setPreviewEditMode(mode)}
         onNavigatePreview={navigatePreview}
         onPreviewDropdownOpenChange={onPreviewDropdownOpenChange}
         onEditRow={onEditRow}
@@ -244,7 +247,7 @@
         entityRowActions={entityRowActions}
         isRowDeleted={isRowDeleted}
         rowSelectionEnabled={rowSelectionEnabled}
-        rowSelected={Array.from(selectedKeys).includes(rowKey(previewPanel.previewRow!))}
+        rowSelected={Array.from(selectedKeys).includes(rowKey(previewPanel.state.previewRow!))}
         {cell}
       />
     {/if}

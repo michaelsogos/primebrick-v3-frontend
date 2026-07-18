@@ -55,3 +55,17 @@
   transform-origin: center;
   animation: pb-watermark-error 2.2s ease-in-out infinite;
 }
+
+@keyframes pb-watermark-fade {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.pb-watermark-fade {
+  animation: pb-watermark-fade 2.6s ease-in-out infinite;
+}

@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "overview",
+    "getting-started",
+    "ui-stack",
+    "app-shell",
+    "authentication",
+    "entity-list-table",
+    "settings",
+    "ui-components",
+    "components/combo-select",
+    "components/dynamic-icon",
+    "components/color-selector",
+    "components/avatar-preview",
+    "components/event-card",
+    "components/command-palette",
+    "api-reference"
+  ]
+}

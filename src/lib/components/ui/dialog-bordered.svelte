@@ -46,9 +46,9 @@
 		const colorMap: Record<ColorVariant, string> = {
 			primary: 'bg-primary',
 			info: 'bg-info',
-			warning: 'bg-warning',
+			warning: 'bg-linear-to-r from-yellow-300 via-yellow-500 to-yellow-300 animate-gradient-pan',
 			success: 'bg-success',
-			destructive: 'bg-destructive',
+			destructive: 'bg-linear-to-r from-rose-400 via-red-600 to-rose-400 animate-gradient-pan',
 			neutral: 'bg-neutral-500',
 		};
 

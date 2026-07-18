@@ -6,7 +6,7 @@
 	import { uiLang } from "$lib/i18n/store.svelte";
 	import { get } from "svelte/store";
 
-	type ToastTone = "critical" | "error" | "warning" | "info";
+	type ToastTone = "critical" | "error" | "warning" | "info" | "success";
 	type AppErrorTag = { label: string; tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' };
 
 	let {
@@ -35,6 +35,8 @@
 				return "warning";
 			case "info":
 				return "info";
+			case "success":
+				return "success";
 			default:
 				return "error";
 		}

@@ -1,17 +1,11 @@
+import type { DeepReadonly } from '$lib/types/deep-readonly';
+
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export interface ViewModeOptions {
   initialMode?: ViewMode;
   onModeChange?: (mode: ViewMode) => void;
-  storageKey?: string;
-}
-
-export interface ViewModeReturn {
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
-  isTable: boolean;
-  isCards: boolean;
-  isCardsList: boolean;
+  storageKey?: () => string | undefined;
 }
 
 function readViewMode(storageKey: string): ViewMode | null {
@@ -34,27 +28,32 @@ function writeViewMode(storageKey: string, next: ViewMode) {
   }
 }
 
-export function useViewMode(options: ViewModeOptions = {}): ViewModeReturn {
-  const { initialMode = 'table', onModeChange, storageKey } = options;
+export function useViewMode(options: ViewModeOptions = {}) {
+  const { initialMode = 'table', onModeChange } = options;
+  const getStorageKey = options.storageKey;
 
   // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
-  const storedMode = storageKey ? readViewMode(storageKey) : null;
-  let viewMode = $state<ViewMode>(storedMode ?? initialMode);
+  const storedMode = getStorageKey ? readViewMode(getStorageKey() ?? '') : null;
+
+  const _state = $state({
+    viewMode: (storedMode ?? initialMode) as ViewMode,
+  });
 
   function setViewMode(mode: ViewMode) {
-    viewMode = mode;
-    if (storageKey) {
-      writeViewMode(storageKey, mode);
+    _state.viewMode = mode;
+    const sk = getStorageKey?.();
+    if (sk) {
+      writeViewMode(sk, mode);
     }
     onModeChange?.(mode);
   }
 
-  const isTable = $derived(viewMode === 'table');
-  const isCards = $derived(viewMode === 'cards');
-  const isCardsList = $derived(viewMode === 'cards_list');
+  const isTable = $derived(_state.viewMode === 'table');
+  const isCards = $derived(_state.viewMode === 'cards');
+  const isCardsList = $derived(_state.viewMode === 'cards_list');
 
   return {
-    get viewMode() { return viewMode; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     setViewMode,
     get isTable() { return isTable; },
     get isCards() { return isCards; },

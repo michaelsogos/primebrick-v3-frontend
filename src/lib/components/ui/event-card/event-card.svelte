@@ -3,8 +3,9 @@
 	import CircleAlert from '@lucide/svelte/icons/circle-alert'
   import Info from '@lucide/svelte/icons/info'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
 
-	type EventColor = "critical" | "error" | "warning" | "info";
+	type EventColor = "critical" | "error" | "warning" | "info" | "success";
 
 	let { class: className, eventColor = "info" }: { class?: string; eventColor?: EventColor } = $props();
 
@@ -15,6 +16,8 @@
 			case "critical":
 			case "error":
 				return CircleAlert;
+			case "success":
+				return CircleCheck;
 			default:
 				return Info;
 		}
@@ -27,6 +30,8 @@
 			case "critical":
 			case "error":
 				return "bg-red-100 text-red-800 ring-1 ring-red-500 dark:bg-red-950 dark:text-red-200";
+			case "success":
+				return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500 dark:bg-emerald-950 dark:text-emerald-200";
 			default:
 				return "bg-sky-100 text-sky-800 ring-1 ring-sky-500 dark:bg-sky-950 dark:text-sky-200";
 		}

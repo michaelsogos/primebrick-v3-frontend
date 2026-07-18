@@ -31,7 +31,7 @@
 	let velocity = 0;
 	let lastFrameTime = 0;
 	let animFrame: number;
-	let snapTimeout: ReturnType<typeof setTimeout>;
+	let snapTimeout: ReturnType<typeof setTimeout> | undefined;
 	let wheelSnapTimeout: ReturnType<typeof setTimeout>;
 
 	const ctxState = setWheelContext({

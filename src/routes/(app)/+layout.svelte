@@ -2,8 +2,12 @@
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
   import AppShell from '$lib/components/AppShell.svelte';
+  import PasskeyPromptDialog from '$lib/components/auth/PasskeyPromptDialog.svelte';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
 
   let { children }: { children: Snippet } = $props();
 
@@ -32,12 +36,26 @@
             updated_at: data.profile.updated_at,
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
-            version: data.profile.version
+            version: data.profile.version,
+            // Passkey prompt fields
+            has_passkey: data.has_passkey ?? false,
+            passkey_prompt_dismissed: data.passkey_prompt_dismissed ?? false,
           });
         }
+      } else if (res.status === 401) {
+        // Session is invalid — clear stale profile so the passkey dialog
+        // doesn't render on top of the session-expired dialog.
+        userProfileStore.clear();
       }
     } catch (error) {
       console.error('Failed to bootstrap user profile:', error);
+    }
+
+    // Restore last-visited route from localStorage (if not already on it)
+    const currentPath = page.url.pathname;
+    const lastRoute = shellNav.getLastRoute();
+    if (lastRoute && lastRoute !== '/login' && lastRoute !== currentPath) {
+      await goto(lastRoute);
     }
   });
 </script>
@@ -45,4 +63,6 @@
 <AppShell>
   {@render children()}
 </AppShell>
+
+<PasskeyPromptDialog />
 

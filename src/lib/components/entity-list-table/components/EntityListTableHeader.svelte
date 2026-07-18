@@ -1,5 +1,4 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { t } from '$lib/i18n';
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
   import { FiltersPanel, ColumnSelectorPanel } from '../panels';
@@ -78,7 +77,7 @@
     onCreateAction?: () => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
-    filterValues?: Record<string, any>;
+    filterValues: Record<string, any>;
     advancedFilters: AdvancedFilter[];
     selectedKeys: string[];
     hasDeletedSelected: boolean;
@@ -148,8 +147,7 @@
         visibleKeys,
         toggleColumnKey,
         onResetColumnVisibility: resetColumnsAndSorting,
-        sheetMenuCheckboxClass: checkboxVisualOnlyClass,
-        t: $t
+        sheetMenuCheckboxClass: checkboxVisualOnlyClass
       } as any,
       { contentClass: 'w-[360px] p-0' }
     )}

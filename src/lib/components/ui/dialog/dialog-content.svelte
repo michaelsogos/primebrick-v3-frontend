@@ -54,7 +54,7 @@
 		bind:ref
 		data-slot="dialog-content"
 		class={cn(
-			"bg-popover text-popover-foreground ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-xl p-4 text-sm ring-1 shadow-2xl sm:max-w-sm fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none",
+			"bg-popover text-popover-foreground ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-xl p-4 text-sm ring-1 shadow-2xl sm:max-w-sm fixed top-1/2 left-1/2 z-100 w-full -translate-x-1/2 -translate-y-1/2 outline-none",
 			className
 		)}
 		{...restProps}

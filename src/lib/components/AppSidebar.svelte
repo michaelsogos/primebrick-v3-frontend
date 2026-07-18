@@ -1,568 +1,156 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { Badge } from '$lib/components/ui/badge';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-  import { cn } from '$lib/utils';
-  import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
-  import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
-  import { APP_VERSION } from '$lib/version';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { pushImpactError } from '$lib/errors/app-errors';
-  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { afterNavigate } from '$app/navigation';
-  import { apiFetch } from '$lib/api';
   import { userProfileState } from '$lib/user-profile-store.svelte';
-  import BadgeCheck from '@lucide/svelte/icons/badge-check'
-  import Bell from '@lucide/svelte/icons/bell'
-  import Building2 from '@lucide/svelte/icons/building-2'
-  import Check from '@lucide/svelte/icons/check'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
-  import Cloud from '@lucide/svelte/icons/cloud'
-  import CloudOff from '@lucide/svelte/icons/cloud-off'
-  import CreditCard from '@lucide/svelte/icons/credit-card'
-  import Database from '@lucide/svelte/icons/database'
-  import LayoutGrid from '@lucide/svelte/icons/layout-grid'
-  import LifeBuoy from '@lucide/svelte/icons/life-buoy'
-  import LogOut from '@lucide/svelte/icons/log-out'
-  import Siren from '@lucide/svelte/icons/siren'
-  import Package from '@lucide/svelte/icons/package'
-  import Receipt from '@lucide/svelte/icons/receipt'
-  import Settings from '@lucide/svelte/icons/settings'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import Sparkles from '@lucide/svelte/icons/sparkles'
-  import User from '@lucide/svelte/icons/user'
-  import Users from '@lucide/svelte/icons/users';
+  import type { ModuleNavLink } from '$lib/api-types';
 
-  let selectedId = $state<string | null>(null);
-  let crmOpen = $state(false);
+  import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
+  import SidebarModuleSwitcher from '$lib/components/sidebar/SidebarModuleSwitcher.svelte';
+  import SidebarProfileMenu from '$lib/components/sidebar/SidebarProfileMenu.svelte';
+  import SidebarHealthBadge from '$lib/components/sidebar/SidebarHealthBadge.svelte';
+  import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
-  /** Demo-only org switcher (static); replace with API-backed org when available. */
-  type DemoOrgId = 'acme' | 'johnDoe';
-  let selectedOrgId = $state<DemoOrgId>('acme');
-  const selectedOrgLabel = $derived(
-    selectedOrgId === 'acme' ? $t('shell.org.acme') : $t('shell.org.johnDoe')
-  );
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+
+  let openGroups = $state<Record<string, boolean>>({});
 
   const sidebar = Sidebar.useSidebar();
   const collapsed = $derived(sidebar.state === 'collapsed');
 
-  async function demoToastProfile() {
-    try {
-      // Call customer list API to trigger LIST_FAILED error (when PB_CUSTOMERS_FORCE_ERROR=1)
-      const res = await apiFetch('/api/v1/entities/customer/list?force_error=1');
-      if (!res.ok) {
-        const data = await res.json() as { title?: string; internal_code?: string; instance?: string; status?: number; detail?: string };
-        const toneForImpact = 'danger'; // HIGH impact uses danger
-        pushImpactError({
-          impact: 'HIGH',
-          message: data.title || data.detail,
-          messageKey: !data.title && !data.detail ? 'shell.listFailed' : undefined,
-          scope: $t('errors.scope.customerListApi'),
-          tags: [
-            { label: data.internal_code || 'LIST_FAILED', tone: toneForImpact },
-            ...(data.status ? [{ label: `HTTP ${data.status}`, tone: toneForImpact } as const] : []),
-            ...(data.instance ? [{ label: data.instance, tone: toneForImpact } as const] : []),
-          ],
-          toast: true,
-        });
-      }
-    } catch (e) {
-      pushImpactError({
-        impact: 'HIGH',
-        messageKey: 'shell.listFailed',
-        scope: $t('errors.scope.customerListApi'),
-        toast: true
-      });
-    }
+  const user = $derived(userProfileState.current);
+
+  const navItems = $derived(shellNav.moduleNav?.nav ?? []);
+  const moduleNavLoading = $derived(shellNav.moduleNavLoading);
+  const moduleNavError = $derived(shellNav.moduleNavError);
+
+  function isLinkActive(href: string): boolean {
+    const pathname = page.url.pathname;
+    return pathname === href || pathname.startsWith(href + '/');
   }
 
-  function demoToastPreferences() {
-    pushImpactError({
-      impact: 'MEDIUM',
-      messageKey: 'shell.demoToast.preferencesMessage',
-      scopeKey: 'shell.nav.demoItemPreferences'
-    });
-  }
-
-  function demoToastHelp() {
-    pushImpactError({
-      impact: 'HIGH',
-      messageKey: 'shell.demoToast.helpMessage',
-      scopeKey: 'shell.nav.demoItemHelp'
-    });
-  }
-
-  function demoToastCritical() {
-    pushImpactError({
-      impact: 'CRITICAL',
-      messageKey: 'shell.demoToast.criticalMessage',
-      scopeKey: 'shell.nav.demoItemCriticalToast'
-    });
-  }
+  $effect(() => {
+    const pathname = page.url.pathname;
+    const loading = shellNav.loading;
+    const moduleCount = shellNav.modules.length;
+    if (loading || moduleCount === 0) return;
+    void shellNav.syncModuleFromRoute(pathname);
+  });
 
   async function handleLogout() {
-    // Clear cookies by setting them with past expiration
     document.cookie = 'access_token=; path=/; max-age=0';
     document.cookie = 'refresh_token=; path=/api/v1/auth/refresh; max-age=0';
-
-    // Clear sessionStorage
     sessionStorage.removeItem('user');
-
-    // Redirect to login page
     window.location.href = '/login';
   }
 
-  const health = $derived(backendState.health);
-  const healthOffline = $derived(backendState.offline);
-  const healthChip = $derived(backendState.healthChip);
-
-  const hrefForModule = (_id: string) => {
-    return undefined;
-  };
-
-  const customersActive = $derived(page.url.pathname === '/customers' || page.url.pathname.startsWith('/customers/'));
-  const pipelineActive = $derived(
-    page.url.pathname === '/crm/pipeline' || page.url.pathname.startsWith('/crm/pipeline/')
-  );
-
-  const navLoadFailed = $derived(shellNav.unreachable || !!shellNav.error);
-
-  const iconFor = (id: string) => {
-    const key = id.toLowerCase();
-    if (key.includes('crm') || key.includes('customer')) return Users;
-    if (key.includes('warehouse') || key.includes('stock')) return Package;
-    if (key.includes('account') || key.includes('invoice') || key.includes('billing')) return Receipt;
-    return LayoutGrid;
-  };
-
-  const healthChipLabel = $derived(
-    healthChip === 'backend_offline'
-      ? $t('shell.health.beOffline')
-      : healthChip === 'db_offline'
-        ? $t('shell.health.dbOffline')
-        : healthChip === 'idp_offline'
-          ? $t('shell.health.idpOffline')
-          : healthChip === 'ok'
-            ? $t('shell.health.beOnline')
-            : $t('common.loading')
-  );
-
-  const healthChipClass = $derived(
-    healthChip === 'backend_offline'
-      ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-      : healthChip === 'db_offline'
-        ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthChip === 'idp_offline'
-          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-          : healthChip === 'ok'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-            : 'border-border/60 bg-muted/30 text-muted-foreground'
-  );
-
-  // Use reactive user profile state — read .current directly so Svelte 5 tracks mutations
-  const user = $derived(userProfileState.current);
-
-  const userName = $derived(user?.display_name);
-  const userEmail = $derived(user?.email);
-  const avatarStyle = $derived.by(() => {
-    const color = user?.avatar_color;
-    if (!color) return null;
-    const textColor = getContrastTextColor(color);
-    return { style: `background-color: ${color}; color: ${textColor};`, class: 'rounded-none text-xs font-semibold' };
-  });
-  const userAvatarSeed = $derived(user?.avatar_initials);
-  const avatarChromeFallbackClass = $derived(avatarFallbackChromeClasses(userAvatarSeed || 'PB'));
-
-  $effect(() => {
-    if (shellNav.loading) return;
-    if (navLoadFailed) return;
-    const first = shellNav.modules.find((m) => m.enabled) ?? shellNav.modules[0];
-    selectedId = first?.id ?? null;
-    crmOpen = customersActive || pipelineActive;
-  });
-
-  /**
-   * Keep the shell behavior: close the mobile sheet on navigation and collapse on desktop after
-   * subsequent navigations so content keeps max width.
-   */
-  afterNavigate(({ from }) => {
-    sidebar.setOpenMobile(false);
-    if (from && !sidebar.isMobile) sidebar.setOpen(false);
+  afterNavigate(() => {
+    shellNav.saveLastRoute(page.url.pathname);
   });
 </script>
 
 <Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('shell.nav.aria')}>
   <Sidebar.Header>
-    <Sidebar.Menu>
-      <Sidebar.MenuItem>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Sidebar.MenuButton
-                {...props}
-                size="lg"
-                class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                title={selectedOrgLabel}
-                aria-label={$t('shell.org.switcherAria')}
-              >
-                <div
-                  class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"
-                >
-                  <Building2 class="size-4 opacity-90" aria-hidden="true" />
-                </div>
-                {#if !collapsed}
-                  <div class="grid min-w-0 flex-1 text-left leading-tight">
-                    <span class="truncate text-sm font-semibold">{selectedOrgLabel}</span>
-                    <span class="truncate text-xs text-muted-foreground">{$t('shell.org.subtitle')}</span>
-                  </div>
-                  <ChevronsUpDown class="ms-auto size-4 shrink-0 opacity-70" aria-hidden="true" />
-                {/if}
-              </Sidebar.MenuButton>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content
-            class="w-(--bits-dropdown-menu-anchor-width) min-w-56"
-            side="right"
-            align="end"
-          >
-            <DropdownMenu.Label class="px-2 text-xs font-medium text-muted-foreground">
-              {$t('shell.org.subtitle')}
-            </DropdownMenu.Label>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item
-              class={cn('gap-2', dropdownMenuSelectedItemClass(selectedOrgId === 'acme'))}
-              closeOnSelect={true}
-              onSelect={() => {
-                selectedOrgId = 'acme';
-              }}
-            >
-              <span class="flex size-4 shrink-0 items-center justify-center">
-                {#if selectedOrgId === 'acme'}
-                  <Check class="size-4" aria-hidden="true" />
-                {/if}
-              </span>
-              <span class="min-w-0 flex-1 truncate">{$t('shell.org.acme')}</span>
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class={cn('gap-2', dropdownMenuSelectedItemClass(selectedOrgId === 'johnDoe'))}
-              closeOnSelect={true}
-              onSelect={() => {
-                selectedOrgId = 'johnDoe';
-              }}
-            >
-              <span class="flex size-4 shrink-0 items-center justify-center">
-                {#if selectedOrgId === 'johnDoe'}
-                  <Check class="size-4" aria-hidden="true" />
-                {/if}
-              </span>
-              <span class="min-w-0 flex-1 truncate">{$t('shell.org.johnDoe')}</span>
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </Sidebar.MenuItem>
-    </Sidebar.Menu>
+    <SidebarOrgSwitcher {collapsed} />
   </Sidebar.Header>
 
   <Sidebar.Content>
     <Sidebar.Group>
-      <Sidebar.GroupLabel>{$t('shell.nav.modulesGroup')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel>{$t('shell.nav.module')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <Sidebar.Menu>
-          {#if shellNav.loading}
-            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('common.loading')}</div>
-          {:else}
-            {#each shellNav.modules as m (m.id)}
-              {@const Icon = iconFor(m.id)}
-              {@const href = hrefForModule(m.id)}
-              {@const isActive = href
-                ? page.url.pathname === href || page.url.pathname.startsWith(`${href}/`)
-                : selectedId === m.id}
-
-              <Sidebar.MenuItem>
-                {#if m.id === 'crm'}
-                  {@const crmParentActive = selectedId === m.id && !customersActive}
-                  <div
-                    class="group/collapsible"
-                    data-state={crmOpen ? 'open' : 'closed'}
-                  >
-                    <Sidebar.MenuButton
-                      isActive={crmParentActive || (collapsed && (customersActive || pipelineActive))}
-                      aria-disabled={!m.enabled}
-                      aria-expanded={crmOpen}
-                      title={m.name}
-                      onclick={() => {
-                        if (!m.enabled) return;
-                        if (collapsed) {
-                          sidebar.setOpen(true);
-                          crmOpen = true;
-                          return;
-                        }
-                        selectedId = m.id;
-                        crmOpen = !crmOpen;
-                      }}
-                    >
-                      <Icon />
-                      <span>{m.name}</span>
-                      {#if !m.enabled}
-                        <Badge
-                          variant="outline"
-                          class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden"
-                        >
-                          {$t('common.soon')}
-                        </Badge>
-                      {:else}
-                        <ChevronRight
-                          class="ms-auto size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
-                          aria-hidden="true"
-                        />
-                      {/if}
-                    </Sidebar.MenuButton>
-
-                    {#if crmOpen}
-                      <Sidebar.MenuSub>
-                        <Sidebar.MenuSubItem>
-                          <Sidebar.MenuSubButton href="/customers" isActive={customersActive}>
-                            <span>{$t('entities.customer.title')}</span>
-                          </Sidebar.MenuSubButton>
-                        </Sidebar.MenuSubItem>
-                        <Sidebar.MenuSubItem>
-                          <Sidebar.MenuSubButton href="/crm/pipeline" isActive={pipelineActive}>
-                            <span>{$t('entities.crm.pipeline.nav')}</span>
-                          </Sidebar.MenuSubButton>
-                        </Sidebar.MenuSubItem>
-                      </Sidebar.MenuSub>
-                    {/if}
-                  </div>
-                {:else}
-                  <Sidebar.MenuButton
-                    isActive={isActive}
-                    aria-disabled={!m.enabled}
-                    title={m.name}
-                  >
-                    {#snippet child({ props })}
-                      <a
-                        {...props}
-                        href={m.enabled ? href : undefined}
-                        aria-disabled={!m.enabled}
-                        onclick={(e) => {
-                          if (!m.enabled) e.preventDefault();
-                          if (!href && m.enabled) selectedId = m.id;
-                        }}
-                      >
-                        <Icon />
-                        <span>{m.name}</span>
-                        {#if !m.enabled}
-                          <Badge
-                            variant="outline"
-                            class="ml-auto h-5 px-2 text-[10px] group-data-[collapsible=icon]:hidden"
-                          >
-                            {$t('common.soon')}
-                          </Badge>
-                        {/if}
-                      </a>
-                    {/snippet}
-                  </Sidebar.MenuButton>
-                {/if}
-              </Sidebar.MenuItem>
-            {/each}
-          {/if}
-        </Sidebar.Menu>
+        <SidebarModuleSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group>
-      <Sidebar.GroupLabel>{$t('shell.nav.demoSettingsGroup')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton
-              type="button"
-              title={$t('shell.nav.demoItemProfile')}
-              aria-label={$t('shell.demoToast.profileAria')}
-              onclick={demoToastProfile}
-            >
-              <User aria-hidden="true" />
-              <span>{$t('shell.nav.demoItemProfile')}</span>
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton
-              type="button"
-              title={$t('shell.nav.demoItemPreferences')}
-              aria-label={$t('shell.demoToast.preferencesAria')}
-              onclick={demoToastPreferences}
-            >
-              <Settings aria-hidden="true" />
-              <span>{$t('shell.nav.demoItemPreferences')}</span>
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton
-              type="button"
-              title={$t('shell.nav.demoItemHelp')}
-              aria-label={$t('shell.demoToast.helpAria')}
-              onclick={demoToastHelp}
-            >
-              <LifeBuoy aria-hidden="true" />
-              <span>{$t('shell.nav.demoItemHelp')}</span>
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton
-              type="button"
-              title={$t('shell.nav.demoItemCriticalToast')}
-              aria-label={$t('shell.demoToast.criticalAria')}
-              onclick={demoToastCritical}
-            >
-              <Siren aria-hidden="true" />
-              <span>{$t('shell.nav.demoItemCriticalToast')}</span>
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
+          {#if moduleNavLoading}
+            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('common.loading')}</div>
+          {:else if moduleNavError}
+            <div class="px-2 py-1.5 text-xs text-destructive">
+              {$t('shell.modulesLoadFailed')}
+              <button onclick={() => shellNav.reloadModuleNav()} class="ml-2 underline">
+                {$t('shell.retry')}
+              </button>
+            </div>
+          {:else if navItems.length > 0}
+            {#each navItems as item (item.id)}
+              {@render navLink(item, 1)}
+            {/each}
+          {/if}
         </Sidebar.Menu>
       </Sidebar.GroupContent>
     </Sidebar.Group>
   </Sidebar.Content>
 
   <Sidebar.Footer class="gap-1.5 p-1.5">
-    {#if user}
-      <Sidebar.Menu>
-        <Sidebar.MenuItem>
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <Sidebar.MenuButton
-                  {...props}
-                  size="lg"
-                  title={userName}
-                  class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div class={cn("flex items-center", collapsed && "w-full justify-center")}>
-                    <Avatar class={cn(collapsed ? 'size-7' : 'size-8', 'rounded-none avatar-hex')}>
-                      {#if avatarStyle}
-                        <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
-                          {userAvatarSeed}
-                        </AvatarFallback>
-                      {:else}
-                        <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                          {userAvatarSeed}
-                        </AvatarFallback>
-                      {/if}
-                    </Avatar>
-                  </div>
-
-                  {#if !collapsed}
-                    <div class="grid min-w-0 flex-1 text-left leading-tight">
-                      <span class="truncate text-sm font-medium">{userName}</span>
-                      <span class="truncate text-xs text-muted-foreground">{$t('shell.userMenu.profileLabel')}</span>
-                    </div>
-                  {/if}
-
-                  <ChevronsUpDown class="ms-auto size-4 shrink-0 opacity-70 group-data-[collapsible=icon]:hidden" />
-                </Sidebar.MenuButton>
-              {/snippet}
-            </DropdownMenu.Trigger>
-
-            <DropdownMenu.Content
-              side="right"
-              align="end"
-              class="w-(--bits-dropdown-menu-anchor-width) min-w-56"
-            >
-              <DropdownMenu.Label class="p-0 font-normal">
-                <div class="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
-                  <Avatar class="size-8 rounded-none avatar-hex">
-                    {#if avatarStyle}
-                      <AvatarFallback class={avatarStyle.class} style={avatarStyle.style}>
-                        {userAvatarSeed}
-                      </AvatarFallback>
-                    {:else}
-                      <AvatarFallback class={cn('rounded-none text-xs font-semibold', avatarChromeFallbackClass)}>
-                        {userAvatarSeed}
-                      </AvatarFallback>
-                    {/if}
-                  </Avatar>
-                  <div class="grid flex-1 text-left leading-tight">
-                    <span class="truncate font-medium">{userName}</span>
-                    <span class="truncate text-xs text-muted-foreground">{userEmail}</span>
-                  </div>
-                </div>
-              </DropdownMenu.Label>
-
-              <DropdownMenu.Separator />
-
-              <DropdownMenu.Group>
-                <DropdownMenu.Item asChild>
-                  <a href="/system/settings/profile" class="flex items-center gap-2">
-                    <Settings />
-                    <span>{$t('shell.userMenu.itemSettings')}</span>
-                  </a>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item disabled>
-                  <Bell />
-                  <span>{$t('shell.userMenu.itemNotifications')}</span>
-                </DropdownMenu.Item>
-              </DropdownMenu.Group>
-
-              <DropdownMenu.Separator />
-
-              <DropdownMenu.Item variant="destructive" onclick={handleLogout}>
-                <LogOut />
-                <span>{$t('shell.userMenu.itemSignOut')}</span>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </Sidebar.MenuItem>
-      </Sidebar.Menu>
-    {/if}
+    <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 
     <Sidebar.Separator />
     <div class="w-full px-2 pb-1.5 pt-1 group-data-[collapsible=icon]:px-1.5">
-      <!-- Footer chips: health/status first; version control always last (shell convention). -->
       <div
         class="flex w-full flex-wrap items-center gap-2 group-data-[collapsible=icon]:flex-nowrap group-data-[collapsible=icon]:justify-center"
       >
-        <Badge
-          variant="outline"
-          class={cn(
-            'pointer-events-none w-fit gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
-            'group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:min-h-8! group-data-[collapsible=icon]:min-w-8! group-data-[collapsible=icon]:shrink-0 group-data-[collapsible=icon]:rounded-md! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:group-data-[collapsible=icon]:size-4!',
-            healthChipClass
-          )}
-          title={healthChipLabel}
-        >
-          {#if healthChip === 'backend_offline'}
-            <CloudOff class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
-          {:else if healthChip === 'db_offline'}
-            <Database class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
-          {:else if healthChip === 'idp_offline'}
-            <ShieldAlert class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
-          {:else}
-            <Cloud class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
-          {/if}
-          {#if !collapsed}
-            <span>{healthChipLabel}</span>
-          {/if}
-        </Badge>
-
-        {#if !collapsed || sidebar.isMobile}
-          <button
-            type="button"
-            class="inline-flex h-auto cursor-pointer rounded-md border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label={$t('shell.health.versionsTitle')}
-            title={$t('shell.health.versionsTitle')}
-            onclick={() => openSheet('shell.versions', {}, { contentClass: 'w-[420px] p-0' })}
-          >
-            <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
-              v{APP_VERSION}
-            </Badge>
-          </button>
-        {/if}
+        <SidebarHealthBadge {collapsed} />
+        <SidebarVersionBadge {collapsed} isMobile={sidebar.isMobile} />
       </div>
     </div>
   </Sidebar.Footer>
 </Sidebar.Root>
+
+{#snippet navLink(item: ModuleNavLink, level: 1 | 2)}
+  {#if item.children && item.children.length > 0}
+    {@const isParentActive = isLinkActive(item.href)}
+    {@const groupOpen = openGroups[item.id] ?? isParentActive}
+    <Sidebar.MenuItem>
+      <div class="group/collapsible" data-state={groupOpen ? 'open' : 'closed'}>
+        <Sidebar.MenuButton
+          isActive={isParentActive}
+          aria-expanded={groupOpen}
+          onclick={() => {
+            if (collapsed) {
+              sidebar.setOpen(true);
+              openGroups[item.id] = true;
+              return;
+            }
+            openGroups[item.id] = !groupOpen;
+          }}
+        >
+          <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+          <span>{$t(item.label_key)}</span>
+          <ChevronRight
+            class="ms-auto size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
+            aria-hidden="true"
+          />
+        </Sidebar.MenuButton>
+        {#if groupOpen}
+          <Sidebar.MenuSub>
+            {#each item.children as child (child.id)}
+              <Sidebar.MenuSubItem>
+                <Sidebar.MenuSubButton href={child.href} isActive={isLinkActive(child.href)}>
+                  <DynamicIcon name={child.icon ?? 'circle'} size={14} />
+                  <span>{$t(child.label_key)}</span>
+                </Sidebar.MenuSubButton>
+              </Sidebar.MenuSubItem>
+            {/each}
+          </Sidebar.MenuSub>
+        {/if}
+      </div>
+    </Sidebar.MenuItem>
+  {:else if level === 1}
+    <Sidebar.MenuItem>
+      <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
+        {#snippet child({ props })}
+          <a {...props} href={item.href}>
+            <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+            <span>{$t(item.label_key)}</span>
+          </a>
+        {/snippet}
+      </Sidebar.MenuButton>
+    </Sidebar.MenuItem>
+  {/if}
+{/snippet}

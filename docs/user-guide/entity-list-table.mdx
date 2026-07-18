@@ -1,0 +1,188 @@
+---
+title: Entity list table
+description: The reusable EntityListTable system — table/card views, filtering, sorting, selection, bulk actions, export, dialogs, and sheet panels.
+---
+
+# Entity list table
+
+`EntityListTable` is the generic, reusable component every module uses to
+render entity lists. It is generic over a row type `TRow extends
+Record<string, unknown>` and lives in
+`src/lib/components/entity-list-table/`.
+
+## Component overview
+
+<Mermaid chart={`flowchart TB
+  ELT["EntityListTable<TRow>"]
+  ELT --> Toolbar
+  ELT --> Views
+  ELT --> Dialogs
+  ELT --> Panels
+  Toolbar --> SearchBar
+  Toolbar --> FilterBar
+  Toolbar --> BulkActions
+  Toolbar --> ViewModeToggle
+  Views --> TableView["EntityListTableTableView"]
+  Views --> CardView["EntityListTableCardView"]
+  Dialogs --> Delete["Delete / Restore / Duplicate"]
+  Dialogs --> Bulk["BulkDelete / BulkRestore"]
+  Dialogs --> Export["Export / HtmlExport"]
+  Panels --> Columns["Columns panel"]
+  Panels --> Filters["Filters panel"]
+  Panels --> SearchIn["SearchIn panel"]
+  Panels --> Preview["Preview panel"]
+  Panels --> Versions["Version history panel"]
+`} />
+
+The component is **controlled**: the parent route owns the data and most
+state (rows, page, search, sort, filters, selection) and passes them in as
+props with `on*Change` callbacks. A few props (`selectedKeys`,
+`filtersOpen`, `deletionFilterMode`, `datetimeIanaModeByKey`) are bindable
+for two-way sync.
+
+## Key props
+
+| Group | Props |
+|-------|-------|
+| Identity | `uid`, `entity`, `columnOrderStorageKey`, `filterValuesStorageKey`, `advancedFiltersStorageKey` |
+| Columns | `stickyColumns`, `dataColumns`, `auditingColumns`, `columns` (back-compat), `viewVisibility` |
+| Data | `rows`, `total`, `metaLoading`, `rowsLoading`, `error` |
+| Pagination | `page`, `pageSize`, `pageSizeOptions`, `onPageChange`, `onPageSizeChange` |
+| Search | `search`, `onSearchInput`, `searchInKeys`, `onSearchInKeysChange`, `searchPlaceholderKey` |
+| Sorting | `sortKey`, `sortDir`, `onSortChange`, `defaultSort` |
+| Column visibility | `visibleKeys`, `onVisibleKeysChange`, `onResetColumnVisibility` |
+| Selection | `selectedKeys` (bindable), `onSelectedKeysChange`, `rowSelectionEnabled` |
+| Actions | `onRefresh`, `rowActions` (snippet), `entityRowActions`, `customActionHandlers`, `onCreateAction`, `onEditAction` |
+| Filters | `filtersOpen` (bindable), `filterValues`, `onFilterValuesChange`, `advancedFilters`, `onAdvancedFiltersChange` |
+| Deletion filter | `deletionFilterMode` (bindable), `onDeletionFilterModeChange` |
+| Customization | `cell` (snippet), `metaLoadingView`, `rowsLoadingView`, `emptyView`, `errorView` |
+
+The preferred column shape splits columns into `stickyColumns`,
+`dataColumns`, and `auditingColumns` groups; the flat `columns` array is
+kept for backwards compatibility.
+
+## Composable architecture
+
+Behavior is split into 18 composables under `composables/`, each following
+the composable state exposure pattern (read-only `state` getter, mutator
+functions, individual `$derived` getters).
+
+| Composable | Responsibility |
+|------------|----------------|
+| `useColumnOrder` | Column ordering within sticky/data/auditing groups; persists to sessionStorage |
+| `useViewMode` | `table` / `cards` / `cards_list` mode; persists to sessionStorage |
+| `useDeletionFilter` | `non_deleted` / `deleted` / `all` mode; persists to sessionStorage |
+| `useToolbarMode` | Auto-switches toolbar between `filters` and `bulk` modes |
+| `useSelection` | Basic toggle/select-all/clear logic |
+| `useClientSelection` | Selected-only view with client-side pagination |
+| `useRowRangeSelection` | Mouse-drag brush selection across rows |
+| `useFilters` | Basic filter values object |
+| `useAdvancedFilters` | Advanced filter builder with operators and AND/OR connector |
+| `useSorting` | Sort direction toggling (asc → desc → null) |
+| `useKeyboardNavigation` | Arrow keys, space, enter, escape shortcuts |
+| `useStickyColumns` | Sticky column positioning |
+| `useScrollPreservation` | Preserves scroll position across re-renders |
+| `useSheetPanelManagement` | Tracks last opened panel; coordinates with global SheetHost |
+| `useSheetPanels` | Orchestrates columns/filters/search-in panels |
+| `useDialogs` | Centralized dialog open/close state |
+| `useBulkActions` | Bulk delete/restore/duplicate via `/api/v1/entities/{entity}/bulk-*` |
+| `useRowActions` | Single-row edit/preview/delete/restore/duplicate |
+| `useExport` | XLSX/CSV export with HTML preview; `/api/v1/entities/{entity}/export` |
+| `usePreviewPanel` | Preview row, inline edit mode, prev/next navigation |
+
+## View modes
+
+Three view modes: `table`, `cards`, `cards_list`. The active mode is stored
+in sessionStorage under `{columnOrderStorageKey}:viewMode` (fallback
+`pb.entityList:{uid}:viewMode`). The toolbar's `ViewModeToggle` switches
+between them. Rendering is handled by `EntityListTableTableView` and
+`EntityListTableCardView`.
+
+Per-view column visibility is controlled by the `viewVisibility` prop, a
+`ListMetaViewVisibility` mapping each view name to a `ViewVisibilityConfig`
+(`visible`, `hidden`, `notDisplayable`, `notHideable`).
+
+## Selection model
+
+Two complementary models:
+
+- **Server selection (default)** — `selectedKeys` is owned by the parent
+  and persists across page navigation. Used for server-side bulk operations
+  and export.
+- **Client selection (selected-only view)** — `useClientSelection`
+  maintains a `Map<string, TRow>` of selected rows and provides client-side
+  pagination for the selected-only view. It automatically exits this view
+  on server reload, when selection empties, or when row selection is
+  disabled.
+
+Selection interactions: row checkboxes, header select-all, mouse-drag range
+selection (`useRowRangeSelection`), and keyboard space to toggle the
+focused row. The toolbar auto-switches to bulk mode when items are
+selected.
+
+## Dialogs
+
+All dialogs are centralized through `useDialogs` and rendered as separate
+Svelte components in `dialogs/`:
+
+| Dialog | Action |
+|--------|--------|
+| `DeleteDialog` | Single-row soft delete |
+| `RestoreDialog` | Single-row restore |
+| `DuplicateDialog` | Single or bulk duplicate (50-item limit for bulk) |
+| `BulkDeleteDialog` | Bulk soft delete |
+| `BulkRestoreDialog` | Bulk restore |
+| `ExportDialog` | Export format (XLSX/CSV) and scope (selected/all) |
+| `ExportPreviewDialog` | HTML export preview (PDF/email modes) |
+| `HtmlExportDialog` | HTML export confirmation |
+
+On success, dialogs refresh the list, clear selection, close, and switch
+the toolbar back to filters mode. Errors go through `pushNotification`.
+
+## Sheet panels
+
+Panels are mounted via the global `SheetHost` (see
+[App shell](/docs/user-guide/app-shell#global-side-sheets)) and orchestrated
+by `useSheetPanels`:
+
+| Panel ID | Component | Purpose |
+|----------|-----------|---------|
+| `entity.columns` | `ColumnsPanel` | Column visibility checkboxes + drag-and-drop reordering within groups |
+| `entity.filters` | `FiltersPanel` | Basic filters + advanced filter builder with operators (`=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `startsWith`, `endsWith`, `BETWEEN`) and AND/OR connector |
+| `entity.searchIn` | `SearchInPanel` | Toggles which columns are included in search |
+| preview | `PreviewPanel` | Full row preview with inline editing and prev/next navigation |
+| version history | `VersionHistoryPanel` | Audit trail from `/api/v1/entities/{entity}/{uuid}/audit` with a timeline UI |
+
+## Column types
+
+`MetaColumn` defines a column. Key fields:
+
+| Field | Purpose |
+|-------|---------|
+| `key` | Column identifier |
+| `labelKey` | i18n key for the header label |
+| `type` | `text`, `badge`, `date`, `datetime`, `color`, ... |
+| `sortable`, `searchable`, `filterable`, `hideable` | Capability flags |
+| `defaultVisible` | Shown by default |
+| `sticky` | Pinned to the left |
+| `badge` | Per-value `{ labelKey, labelText, color }` mapping |
+| `datetimeIanaToggle` | `{ recordIanaField }` for IANA timezone toggle |
+| `tooltip`, `tooltipPriority`, `tooltipTitle` | Tooltip configuration |
+
+Utility functions in `src/lib/entity-list/types.ts`:
+`orderedColumnsFromListMeta()`, `defaultVisibleColumnKeys()`,
+`sanitizeVisibleKeys()`, `getOperatorsForColumnType()`.
+
+## Persistence
+
+User preferences are persisted to **sessionStorage** (cleared when the tab
+closes): column order, view mode, filter values, deletion filter mode, and
+datetime IANA toggle mode. Storage keys are derived from
+`columnOrderStorageKey` / `filterValuesStorageKey` / `advancedFiltersStorageKey`
+props so each list instance has its own namespace.
+
+## Next steps
+
+- [System settings](/docs/user-guide/settings)
+- [UI components](/docs/user-guide/ui-components)
+- [API reference](/docs/user-guide/api-reference)

@@ -1,0 +1,4011 @@
+---
+title: API Reference
+description: Complete reference of every exported Svelte component in the Primebrick frontend.
+---
+
+<!-- AUTO-GENERATED:reference -->
+
+Every Svelte component exported from `src/lib/components/`, rendered mechanically
+from the sveld extraction JSON. No prose — just prop, slot, and event tables.
+
+## Root
+
+### `<AppPageBreadcrumb />`
+
+Source: `src/lib/components/AppPageBreadcrumb.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| segments | AppBreadcrumbSegment[] | — | no | yes | Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. |
+
+### `<AppPageLayout />`
+
+Source: `src/lib/components/AppPageLayout.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| segments | AppBreadcrumbSegment[] | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| actions | — |  |
+| title | — |  |
+
+### `<AppPageScaffold />`
+
+Source: `src/lib/components/AppPageScaffold.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| title | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| header | — |  |
+| headerExtras | — |  |
+
+### `<AppServerBanner />`
+
+Source: `src/lib/components/AppServerBanner.svelte`
+
+### `<AppShell />`
+
+Source: `src/lib/components/AppShell.svelte`
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<AppSidebar />`
+
+Source: `src/lib/components/AppSidebar.svelte`
+
+### `<AppTopbar />`
+
+Source: `src/lib/components/AppTopbar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| unreadNotifications | number | 3 | no | no |  |
+
+### `<BrowserClientInfo />`
+
+Source: `src/lib/components/BrowserClientInfo.svelte`
+
+### `<button />`
+
+Source: `src/lib/components/button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| loading | boolean | false | no | no |  |
+| onClickPromise | unknown | — | no | yes |  |
+| onclick | unknown | — | no | yes |  |
+| disabled | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<CommandPalette />`
+
+Source: `src/lib/components/CommandPalette.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+
+### `<FormPageLayout />`
+
+Source: `src/lib/components/FormPageLayout.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| title | string | — | no | no |  |
+| entity | string | — | no | yes |  |
+| rowUuid | string | — | no | yes |  |
+| auditData | Record<string, any> | — | no | yes |  |
+| auditingColumns | MetaColumn[] | — | no | yes |  |
+| isCreatePage | boolean | false | no | no |  |
+| meta | EntityMetadata | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| footerActions | — |  |
+| header | — |  |
+| headerExtras | — |  |
+
+### `<LangSelect />`
+
+Source: `src/lib/components/LangSelect.svelte`
+
+### `<ThemeToggle />`
+
+Source: `src/lib/components/ThemeToggle.svelte`
+
+## auth
+
+### `<LoginForm />`
+
+Source: `src/lib/components/auth/LoginForm.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| onsuccess | (data: { success: boolean; user: any }) => void | — | no | no |  |
+| onerror | () => void | — | no | no |  |
+
+### `<SessionExpiredDialog />`
+
+Source: `src/lib/components/auth/SessionExpiredDialog.svelte`
+
+## date-dropper
+
+### `<date-wheel-picker />`
+
+Source: `src/lib/components/date-dropper/date-wheel-picker.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | unknown | — | yes | yes |  |
+| placeholder | unknown | $t("common.selectDate") | no | no |  |
+| includeTime | boolean | false | no | no |  |
+| defaultTime | unknown | undefined | no | no |  |
+| timezone | unknown | — | yes | yes |  |
+
+## entity-list-table
+
+### `<BulkActions />`
+
+Source: `src/lib/components/entity-list-table/toolbar/BulkActions.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| selectedCount | number | — | no | yes |  |
+| onBulkDelete | () => void | — | no | yes |  |
+| onBulkRestore | () => void | — | no | yes |  |
+| onBulkExport | () => void | — | no | yes |  |
+| onBulkDuplicate | () => void | — | no | yes |  |
+| rowActions | { duplicate?: boolean; delete?: boolean; export?: boolean } | — | no | yes |  |
+
+### `<BulkActionsToolbar />`
+
+Source: `src/lib/components/entity-list-table/components/BulkActionsToolbar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| toolbarMode | 'filters' \| 'bulk' | — | no | yes |  |
+| hasAppliedFilters | boolean | — | no | yes |  |
+| filterValues | Record<string, unknown> | — | no | yes |  |
+| advancedFilters | AdvancedFilter[] | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| hasDeletedSelected | boolean | — | no | yes |  |
+| allSelectedDeleted | boolean | — | no | yes |  |
+| filterableColumns | MetaColumn[] | — | no | yes |  |
+| onResetFilters | () => void | — | no | yes |  |
+| onFilterValuesChange | (values: Record<string, unknown>) => void | — | no | yes |  |
+| onAdvancedFiltersChange | (filters: AdvancedFilter[], logic: 'AND' \| 'OR') => void | — | no | yes |  |
+| onToggleToolbarMode | () => void | — | no | yes |  |
+| onBulkExport | () => void | — | no | yes |  |
+| onHtmlExport | () => void | — | no | yes |  |
+| onBulkDuplicate | () => void | — | no | yes |  |
+| onBulkDelete | () => void | — | no | yes |  |
+| onBulkRestore | () => void | — | no | yes |  |
+
+### `<BulkDeleteDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| selectedCount | number | — | no | yes |  |
+| isDeleting | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<BulkRestoreDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/BulkRestoreDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| selectedCount | number | — | no | yes |  |
+| isRestoring | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<CardActions />`
+
+Source: `src/lib/components/entity-list-table/components/CardActions.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| rowKey | string | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+| rowDeleted | boolean | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+| isListMode | boolean | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| rowActions | — |  |
+
+### `<CardField />`
+
+Source: `src/lib/components/entity-list-table/cards/CardField.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | Record<string, unknown> | — | no | yes |  |
+| column | MetaColumn | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+| rowDeleted | boolean | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| viewMode | 'cards_grid' \| 'cards_list' | — | no | no |  |
+| datetimeIanaRenderTick | number | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| cell | — |  |
+
+### `<CardFieldRenderer />`
+
+Source: `src/lib/components/entity-list-table/components/CardFieldRenderer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| column | MetaColumn | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+| rowDeleted | boolean | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
+| viewMode | 'cards_list' \| 'cards_grid' | — | no | yes |  |
+
+### `<CardGrid />`
+
+Source: `src/lib/components/entity-list-table/cards/CardGrid.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| rows | Record<string, unknown>[] | — | no | yes |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| onSelectedKeysChange | (keys: string[]) => void | — | no | yes |  |
+| uid | string | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| rowActions | any | — | no | no |  |
+| entityRowActions | { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean } | — | no | no |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | no |  |
+| viewMode | 'cards_grid' \| 'cards_list' | — | no | yes |  |
+| onRowClick | (row: Record<string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
+| onPreviewRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onEditRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onDeleteRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onRestoreRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onDuplicateRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onVersionHistory | (row: Record<string, unknown>) => void | — | no | no |  |
+| rowFocusedIndex | number \| null | — | no | no |  |
+| cell | any | — | no | no |  |
+| isRowDeleted | (row: Record<string, unknown>) => boolean | — | no | no |  |
+
+### `<CardItem />`
+
+Source: `src/lib/components/entity-list-table/components/CardItem.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| index | number | — | no | yes |  |
+| rowKey | string | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+| rowDeleted | boolean | — | no | yes |  |
+| rowFocused | boolean | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| shownColumns | MetaColumn[] | — | no | yes |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
+| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
+| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| viewMode | 'cards_list' \| 'cards_grid' | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+
+### `<CardList />`
+
+Source: `src/lib/components/entity-list-table/cards/CardList.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| rows | Record<string, unknown>[] | — | no | yes |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| onSelectedKeysChange | (keys: string[]) => void | — | no | yes |  |
+| uid | string | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| rowActions | any | — | no | no |  |
+| entityRowActions | { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean } | — | no | no |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | no |  |
+| viewMode | 'cards_grid' \| 'cards_list' | — | no | yes |  |
+| onRowClick | (row: Record<string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
+| onPreviewRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onEditRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onDeleteRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onRestoreRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onDuplicateRow | (row: Record<string, unknown>) => void | — | no | no |  |
+| onVersionHistory | (row: Record<string, unknown>) => void | — | no | no |  |
+| rowFocusedIndex | number \| null | — | no | no |  |
+| cell | any | — | no | no |  |
+| isRowDeleted | (row: Record<string, unknown>) => boolean | — | no | no |  |
+
+### `<CardViewRenderer />`
+
+Source: `src/lib/components/entity-list-table/components/CardViewRenderer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| viewMode | 'cards_list' \| 'cards_grid' \| 'cards' | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+| shownColumns | MetaColumn[] | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| rowKey | (row: TRow) => string | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| previewPanel | { state: { focusedRowIndex: number \| null } } | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
+| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| error | string \| null | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| loadingText | string | — | no | yes |  |
+| rows | TRow[] | — | no | yes |  |
+| emptyText | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| orderedSelectedRows | TRow[] | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| allColumns | MetaColumn[] | — | no | yes |  |
+| effectiveSortKey | string \| null | — | no | yes |  |
+| sortDir | SortDir | — | no | yes |  |
+| onSortChange | (key: string \| null, dir: SortDir) => void | — | no | yes |  |
+| sortableColumns | MetaColumn[] | — | no | yes |  |
+| datetimeIanaToggleColumns | MetaColumn[] | — | no | yes |  |
+| toggleDatetimeIana | (col: MetaColumn) => void | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| emptyView | — |  |
+| errorView | — |  |
+| rowsLoadingView | — |  |
+
+### `<CellRenderer />`
+
+Source: `src/lib/components/entity-list-table/components/CellRenderer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| column | MetaColumn | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| cell | — |  |
+
+### `<ChangePasswordDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | no |  |
+| row | TRow \| null | — | no | yes |  |
+| uid | string | — | no | yes |  |
+
+### `<ColumnSelectorPanel />`
+
+Source: `src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| stickyColumns | ColumnLike[] | — | no | yes |  |
+| nonAuditingColumns | ColumnLike[] | — | no | yes |  |
+| auditingColumns | ColumnLike[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| toggleColumnKey | (key: string) => void | — | no | yes |  |
+| onReorderKeys | (group: 'sticky' \| 'data' \| 'auditing', keys: string[]) => void | — | no | no |  |
+| onResetColumnVisibility | () => void | — | no | yes |  |
+| t | (key: string) => string | — | no | yes |  |
+
+### `<DeleteDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/DeleteDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| isDeleting | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<DeletionFilterToggle />`
+
+Source: `src/lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| deletionFilterMode | 'non_deleted' \| 'deleted' \| 'all' | — | no | yes |  |
+| onDeletionFilterModeChange | (mode: 'non_deleted' \| 'deleted' \| 'all') => void | — | no | yes |  |
+
+### `<DuplicateDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/DuplicateDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| duplicateScope | 'single' \| 'selected' | — | no | yes |  |
+| selectedCount | number | — | no | yes |  |
+| entity | string | — | no | yes |  |
+| isDuplicating | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<EntityListTable />`
+
+Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| uid | unknown | — | no | yes |  |
+| entity | string | customer | no | no |  |
+| columns | unknown | — | no | yes |  |
+| stickyColumns | unknown | — | no | yes |  |
+| dataColumns | unknown | — | no | yes |  |
+| auditingColumns | unknown | — | no | yes |  |
+| viewVisibility | unknown | — | no | yes |  |
+| columnOrderStorageKey | unknown | — | no | yes |  |
+| defaultSort | unknown | — | no | yes |  |
+| pageSizeOptions | unknown | — | no | yes |  |
+| searchPlaceholderKey | unknown | — | no | yes |  |
+| selectionLabelKey | unknown | — | no | yes |  |
+| selectionLabelSingularKey | unknown | — | no | yes |  |
+| selectionLabelText | unknown | — | no | yes |  |
+| selectionLabelSingularText | unknown | — | no | yes |  |
+| rows | unknown | — | no | yes |  |
+| total | unknown | — | no | yes |  |
+| metaLoading | unknown | — | no | yes |  |
+| rowsLoading | unknown | — | no | yes |  |
+| error | unknown | — | no | yes |  |
+| page | unknown | — | no | yes |  |
+| pageSize | unknown | — | no | yes |  |
+| onPageChange | unknown | — | no | yes |  |
+| onPageSizeChange | unknown | — | no | yes |  |
+| search | unknown | — | no | yes |  |
+| onSearchInput | unknown | — | no | yes |  |
+| searchInKeys | unknown | — | no | yes |  |
+| onSearchInKeysChange | unknown | — | no | yes |  |
+| sortKey | unknown | — | no | yes |  |
+| sortDir | unknown | — | no | yes |  |
+| onSortChange | unknown | — | no | yes |  |
+| visibleKeys | unknown | — | no | yes |  |
+| onVisibleKeysChange | unknown | — | no | yes |  |
+| onResetColumnVisibility | unknown | — | no | yes |  |
+| selectedKeys | [] |  | yes | no |  |
+| onSelectedKeysChange | unknown | — | no | yes |  |
+| rowSelectionEnabled | boolean | true | no | no |  |
+| onRefresh | unknown | — | no | yes |  |
+| refreshDisabled | boolean | false | no | no |  |
+| rowActionsEnabled | boolean | false | no | no |  |
+| rowActions | unknown | — | no | yes |  |
+| entityRowActions | unknown | — | no | yes |  |
+| customActionHandlers | unknown | — | no | yes |  |
+| onCreateAction | unknown | — | no | yes |  |
+| onEditAction | unknown | — | no | yes |  |
+| filtersOpen | boolean | false | yes | no |  |
+| filterValues | {} | [object Object] | no | no |  |
+| onFilterValuesChange | unknown | — | no | yes |  |
+| onResetFilters | unknown | — | no | yes |  |
+| advancedFilters | [] |  | no | no |  |
+| onAdvancedFiltersChange | unknown | — | no | yes |  |
+| filterValuesStorageKey | unknown | — | no | yes |  |
+| advancedFiltersStorageKey | unknown | — | no | yes |  |
+| deletionFilterMode | string | non_deleted | yes | no |  |
+| onDeletionFilterModeChange | unknown | — | no | yes |  |
+| datetimeIanaModeByKey | {} | [object Object] | yes | no |  |
+| datetimeIanaRenderTick | number | 0 | yes | no |  |
+| cell | unknown | — | no | yes |  |
+| metaLoadingView | unknown | — | no | yes |  |
+| rowsLoadingView | unknown | — | no | yes |  |
+| emptyView | unknown | — | no | yes |  |
+| errorView | unknown | — | no | yes |  |
+| loadingMessage | unknown | — | no | yes |  |
+| noRecordsMessage | unknown | — | no | yes |  |
+
+### `<EntityListTableCardView />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableCardView.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| viewMode | 'table' \| 'cards' \| 'cards_list' | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+| shownColumns | any[] | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| rowKey | (row: TRow) => string | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| previewPanel | any | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| rowActions | any | — | no | yes |  |
+| entityRowActions | any | — | no | yes |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | any | — | no | yes |  |
+| stickyColumnsGroup | any[] | — | no | yes |  |
+| error | string \| null | — | no | yes |  |
+| errorView | Snippet | — | no | no |  |
+| rowsLoading | boolean | — | no | yes |  |
+| rowsLoadingView | Snippet | — | no | no |  |
+| loadingText | string | — | no | yes |  |
+| rows | TRow[] | — | no | yes |  |
+| emptyView | Snippet | — | no | no |  |
+| emptyText | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| orderedSelectedRows | TRow[] | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| allColumns | any[] | — | no | yes |  |
+| effectiveSortKey | string \| null | — | no | yes |  |
+| sortDir | 'asc' \| 'desc' | — | no | yes |  |
+| onSortChange | (key: string \| null, dir: 'asc' \| 'desc') => void | — | no | yes |  |
+| sortableColumns | any[] | — | no | yes |  |
+| datetimeIanaToggleColumns | any[] | — | no | yes |  |
+| toggleDatetimeIana | (col: any) => void | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| rowActionsComposable | any | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+
+### `<EntityListTableContent />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableContent.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| metaLoading | boolean | — | no | yes |  |
+| viewMode | 'table' \| 'cards' \| 'cards_list' | — | no | yes |  |
+| metaLoadingView | Snippet | — | no | no |  |
+| loadingText | string | — | no | yes |  |
+| viewRows | any | — | no | yes |  |
+| shownColumns | any[] | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| rowKey | any | — | no | yes |  |
+| isRowDeleted | any | — | no | yes |  |
+| previewPanel | any | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| rowActions | any | — | no | yes |  |
+| entityRowActions | any | — | no | yes |  |
+| dropdownMenuRow | any | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | any | — | no | yes |  |
+| stickyColumnsGroup | any[] | — | no | yes |  |
+| error | string \| null | — | no | yes |  |
+| errorView | Snippet | — | no | no |  |
+| rowsLoading | boolean | — | no | yes |  |
+| rowsLoadingView | Snippet | — | no | no |  |
+| rows | any | — | no | yes |  |
+| emptyView | Snippet | — | no | no |  |
+| emptyText | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| orderedSelectedRows | any | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| allColumns | any[] | — | no | yes |  |
+| effectiveSortKey | string \| null | — | no | yes |  |
+| sortDir | 'asc' \| 'desc' | — | no | yes |  |
+| onSortChange | (key: string \| null, dir: 'asc' \| 'desc') => void | — | no | yes |  |
+| sortableColumns | any[] | — | no | yes |  |
+| datetimeIanaToggleColumns | any[] | — | no | yes |  |
+| toggleDatetimeIana | (col: any) => void | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: any) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: any) => void | — | no | yes |  |
+| rowActionsComposable | any | — | no | yes |  |
+| onPreviewRow | (row: any) => void | — | no | yes |  |
+| tableRef | any | — | no | yes |  |
+| tableDensityClass | string | — | no | yes |  |
+| stickyColumnsState | any | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| checkboxInteractiveClass | string | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| handleSortClick | (col: any) => void | — | no | yes |  |
+| rowRangeSelection | any | — | no | yes |  |
+| uid | string | — | no | yes |  |
+| pageSize | number | — | no | yes |  |
+| page | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+| entity | string | — | no | yes |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| stickyColumns | any[] \| undefined | — | no | yes |  |
+| dataColumns | any[] \| undefined | — | no | yes |  |
+| auditingColumns | any[] \| undefined | — | no | yes |  |
+| rowActionsEnabled | boolean | — | no | yes |  |
+| footerRangeTotal | number | — | no | yes |  |
+| footerPage | number | — | no | yes |  |
+| previewDropdownOpen | boolean | — | no | yes |  |
+| navigatePreview | (direction: number) => void | — | no | yes |  |
+| extraCols | number | — | no | yes |  |
+
+### `<EntityListTableDialogs />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableDialogs.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| dialogs | any | — | no | yes |  |
+| rowActionsComposable | any | — | no | yes |  |
+| bulkActions | any | — | no | yes |  |
+| exportComposable | any | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| total | bigint | — | no | yes |  |
+| entity | string | — | no | yes |  |
+
+### `<EntityListTableFooter />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableFooter.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| footerRangeTotal | number | — | no | yes |  |
+| footerRangeStart | number | — | no | yes |  |
+| footerRangeEnd | number | — | no | yes |  |
+| footerPage | number | — | no | yes |  |
+| footerTotalPages | number | — | no | yes |  |
+| footerUsesClientPaging | boolean | — | no | yes |  |
+| clientSelectedPage | number | 1 | yes | no |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| selectionLabelKey | string | — | no | no |  |
+| selectionLabelSingularKey | string | — | no | no |  |
+| selectionLabelText | string | — | no | no |  |
+| selectionLabelSingularText | string | — | no | no |  |
+| selectionPastParticipleKey | string | — | no | yes |  |
+| showSelectedOnly | boolean | false | yes | no |  |
+| pageSize | number | — | no | yes |  |
+| pageSizeOptions | number[] | — | no | yes |  |
+| page | number | — | no | yes |  |
+| totalPages | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+| onPageSizeChange | (size: number) => void | — | no | yes |  |
+
+### `<EntityListTableHeader />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableHeader.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| search | string | — | no | yes |  |
+| onSearchInput | (value: string) => void | — | no | yes |  |
+| searchPlaceholderKey | string | — | no | no |  |
+| searchInKeys | string[] \| null | — | no | yes |  |
+| searchableColumns | MetaColumn[] | — | no | yes |  |
+| onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
+| toggleSearchKey | (key: string) => void | — | no | yes |  |
+| viewMode | 'table' \| 'cards' \| 'cards_list' | — | no | yes |  |
+| onViewModeChange | (mode: 'table' \| 'cards' \| 'cards_list') => void | — | no | yes |  |
+| deletionFilterMode | 'non_deleted' \| 'deleted' \| 'all' | — | no | yes |  |
+| onDeletionFilterModeChange | (mode: 'non_deleted' \| 'deleted' \| 'all') => void | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| refreshDisabled | boolean | — | no | yes |  |
+| onRefresh | () => void | — | no | yes |  |
+| filterableColumns | MetaColumn[] | — | no | yes |  |
+| filtersOpen | boolean | — | no | yes |  |
+| onFiltersOpenChange | (open: boolean) => void | — | no | yes |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| nonAuditingColumns | MetaColumn[] | — | no | yes |  |
+| auditingColumnsGroup | MetaColumn[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| toggleColumnKey | (key: string) => void | — | no | yes |  |
+| resetColumnsAndSorting | () => void | — | no | yes |  |
+| checkboxVisualOnlyClass | string | — | no | yes |  |
+| onCreateAction | () => void | — | no | no |  |
+| toolbarMode | 'filters' \| 'bulk' | — | no | yes |  |
+| hasAppliedFilters | boolean | — | no | yes |  |
+| filterValues | Record<string, any> | — | no | yes |  |
+| advancedFilters | AdvancedFilter[] | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| hasDeletedSelected | boolean | — | no | yes |  |
+| allSelectedDeleted | boolean | — | no | yes |  |
+| onResetFilters | () => void | — | no | yes |  |
+| onFilterValuesChange | (values: Record<string, any>) => void | — | no | no |  |
+| onAdvancedFiltersChange | (filters: AdvancedFilter[], connector: 'AND' \| 'OR') => void | — | no | no |  |
+| onToggleToolbarMode | () => void | — | no | yes |  |
+| onBulkExport | () => void | — | no | yes |  |
+| onHtmlExport | () => void | — | no | yes |  |
+| onBulkDuplicate | () => void | — | no | yes |  |
+| onBulkDelete | () => void | — | no | yes |  |
+| onBulkRestore | () => void | — | no | yes |  |
+
+### `<EntityListTableHeaderRow />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableHeaderRow.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| stickyColumnsState | any | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| checkboxInteractiveClass | string | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| shownColumns | any[] | — | no | yes |  |
+| stickyColumnsGroup | any[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| sortKey | string \| null | — | no | yes |  |
+| sortDir | 'asc' \| 'desc' | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| handleSortClick | (col: any) => void | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| toggleDatetimeIana | (col: any) => void | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| previewPanel | any | — | no | yes |  |
+| viewRows | any[] | — | no | yes |  |
+
+### `<EntityListTableLoading />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableLoading.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| metaLoading | boolean | — | no | yes |  |
+| loadingText | string | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| metaLoadingView | — |  |
+
+### `<EntityListTableTableView />`
+
+Source: `src/lib/components/entity-list-table/components/EntityListTableTableView.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| tableRef | any | — | no | yes |  |
+| tableDensityClass | string | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| stickyColumnsState | any | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| checkboxInteractiveClass | string | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| shownColumns | any[] | — | no | yes |  |
+| stickyColumnsGroup | any[] | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| sortKey | string \| null | — | no | yes |  |
+| sortDir | 'asc' \| 'desc' | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| handleSortClick | (col: any) => void | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| toggleDatetimeIana | (col: any) => void | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| previewPanel | any | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+| error | string \| null | — | no | yes |  |
+| errorView | Snippet | — | no | no |  |
+| rowsLoadingView | Snippet | — | no | no |  |
+| loadingText | string | — | no | yes |  |
+| rows | any | — | no | yes |  |
+| extraCols | number | — | no | yes |  |
+| emptyView | Snippet | — | no | no |  |
+| emptyText | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| orderedSelectedRows | TRow[] | — | no | yes |  |
+| rowRangeSelection | any | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| rowKey | (row: TRow) => string | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| cell | any | — | no | yes |  |
+| rowActions | any | — | no | yes |  |
+| entityRowActions | any | — | no | yes |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| handlePreviewRow | (row: TRow) => void | — | no | yes |  |
+| toggleRowSelect | (key: string) => void | — | no | yes |  |
+| openRowDropdown | (row: TRow) => void | — | no | yes |  |
+| closeRowDropdown | () => void | — | no | yes |  |
+| handleEditRow | (row: TRow) => void | — | no | yes |  |
+| rowActionsComposable | any | — | no | yes |  |
+| uid | string | — | no | yes |  |
+| pageSize | number | — | no | yes |  |
+| page | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+| entity | string | — | no | yes |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| stickyColumns | any[] \| undefined | — | no | yes |  |
+| dataColumns | any[] \| undefined | — | no | yes |  |
+| auditingColumns | any[] \| undefined | — | no | yes |  |
+| rowActionsEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| footerRangeTotal | number | — | no | yes |  |
+| footerPage | number | — | no | yes |  |
+| previewDropdownOpen | boolean | — | no | yes |  |
+| navigatePreview | (direction: number) => void | — | no | yes |  |
+
+### `<EntityListToolbar />`
+
+Source: `src/lib/components/entity-list-table/toolbar/EntityListToolbar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| search | string | — | no | yes |  |
+| onSearchInput | (value: string) => void | — | no | yes |  |
+| searchPlaceholderKey | string | — | no | no |  |
+| searchInKeys | string[] \| null | — | no | yes |  |
+| searchableColumns | any[] | — | no | yes |  |
+| onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
+| toggleSearchKey | (key: string) => void | — | no | yes |  |
+| viewMode | ViewName | — | no | yes |  |
+| onViewModeChange | (mode: ViewName) => void | — | no | yes |  |
+| deletionFilterMode | 'non_deleted' \| 'deleted' \| 'all' | — | no | yes |  |
+| onDeletionFilterModeChange | (mode: 'non_deleted' \| 'deleted' \| 'all') => void | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| refreshDisabled | boolean | — | no | yes |  |
+| onRefresh | () => void | — | no | yes |  |
+| filterableColumns | any[] | — | no | yes |  |
+| filtersOpen | boolean | — | no | yes |  |
+| onFiltersOpenChange | (open: boolean) => void | — | no | yes |  |
+| onColumnSelectorClick | () => void | — | no | yes |  |
+| onCreateAction | () => void | — | no | no |  |
+
+### `<ExportDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/ExportDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| selectedCount | number | — | no | yes |  |
+| totalCount | bigint | — | no | yes |  |
+| entity | string | — | no | yes |  |
+| exportScope | 'selected' \| 'all' | — | no | yes |  |
+| onExportScopeChange | (scope: 'selected' \| 'all') => void | — | no | yes |  |
+| fileType | string \| null | — | no | yes |  |
+| isExporting | boolean | — | no | yes |  |
+| onFileTypeChange | (type: string) => void | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<ExportPreviewDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/ExportPreviewDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| previewMode | 'html' \| 'pdf' \| 'email' | — | no | yes |  |
+| onPreviewModeChange | (mode: 'html' \| 'pdf' \| 'email') => void | — | no | yes |  |
+| htmlPreviewContent | string | — | no | yes |  |
+| pdfBlobUrl | string \| null | — | no | yes |  |
+| emailHtmlContent | string | — | no | yes |  |
+| isEmailPreparing | boolean | — | no | yes |  |
+| emailCopied | boolean | — | no | yes |  |
+| onGeneratePdfPreview | () => void | — | no | yes |  |
+| onPrepareEmailHtml | () => void | — | no | yes |  |
+| onCopyHtmlToClipboard | () => void | — | no | yes |  |
+| onCopyEmailHtmlToClipboard | () => void | — | no | yes |  |
+| onClose | () => void | — | no | yes |  |
+
+### `<FilterBar />`
+
+Source: `src/lib/components/entity-list-table/toolbar/FilterBar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| hasAppliedFilters | boolean | — | no | yes |  |
+| filterValues | Record<string, any> | — | no | yes |  |
+| advancedFilters | AdvancedFilter[] | — | no | yes |  |
+| filterableColumns | MetaColumn[] | — | no | yes |  |
+| onResetFilters | () => void | — | no | yes |  |
+| onFilterValuesChange | (values: Record<string, any>) => void | — | no | yes |  |
+| onAdvancedFiltersChange | (filters: AdvancedFilter[]) => void | — | no | yes |  |
+
+### `<FiltersPanel />`
+
+Source: `src/lib/components/entity-list-table/panels/FiltersPanel.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| content | any | — | no | yes |  |
+| filterableColumns | MetaColumn[] |  | no | no |  |
+| filterValues | Record<string, any> | [object Object] | no | no |  |
+| onFilterValuesChange | (values: Record<string, any>) => void | — | no | no |  |
+| onResetFilters | () => void | — | no | no |  |
+| modal | boolean | true | no | no |  |
+| advancedFilters | AdvancedFilter[] |  | no | no |  |
+| onAdvancedFiltersChange | (filters: AdvancedFilter[], connector: 'AND' \| 'OR') => void | — | no | no |  |
+
+### `<HtmlExportDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/HtmlExportDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| selectedCount | number | — | no | yes |  |
+| totalCount | bigint | — | no | yes |  |
+| entity | string | — | no | yes |  |
+| isExporting | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<Pagination />`
+
+Source: `src/lib/components/entity-list-table/pagination/Pagination.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| currentPage | number | — | no | yes |  |
+| totalPages | number | — | no | yes |  |
+| usesClientPaging | boolean | — | no | yes |  |
+| clientSelectedPage | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+
+### `<PreviewPanel />`
+
+Source: `src/lib/components/entity-list-table/panels/PreviewPanel.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| previewEditMode | boolean | — | no | yes |  |
+| previewRowIndex | number | — | no | yes |  |
+| previewDropdownOpen | boolean | — | no | yes |  |
+| totalRecords | number | — | no | yes |  |
+| currentPage | number | — | no | yes |  |
+| pageSize | number | — | no | yes |  |
+| onPreviewEditModeChange | (mode: boolean) => void | — | no | yes |  |
+| onNavigatePreview | (direction: number) => void | — | no | yes |  |
+| onPreviewDropdownOpenChange | (open: boolean) => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onClosePreview | () => void | — | no | yes |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| stickyColumns | MetaColumn[] |  | no | no |  |
+| dataColumns | MetaColumn[] |  | no | no |  |
+| auditingColumns | MetaColumn[] |  | no | no |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| entityRowActions | { edit?: boolean; duplicate?: boolean; delete?: boolean; preview?: boolean } | — | no | no |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| cell | — |  |
+
+### `<PreviewPanelWrapper />`
+
+Source: `src/lib/components/entity-list-table/components/PreviewPanelWrapper.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| previewPanel | {       state: {         previewPanelOpen: boolean;         previewRow: TRow \| null;         focusedRowIndex: number \| null;         previewEditMode: boolean;         previewRowIndex: number;       };       openPreview: (row: TRow) => void;       closePreview: () => void;       setPreviewEditMode: (mode: boolean) => void;     } | — | no | yes |  |
+| rows | TRow[] | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+| uid | string | — | no | yes |  |
+| pageSize | number | — | no | yes |  |
+| page | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+| entity | string | default | no | no |  |
+| columns | MetaColumn[] | — | no | yes |  |
+| stickyColumns | MetaColumn[] |  | no | no |  |
+| dataColumns | MetaColumn[] |  | no | no |  |
+| auditingColumns | MetaColumn[] |  | no | no |  |
+| rowActionsEnabled | boolean | — | no | yes |  |
+| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
+| entityRowActions | { edit?: boolean; duplicate?: boolean; preview?: boolean; delete?: boolean } | — | no | no |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| rowKey | (row: TRow) => string | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectedKeys | Set<string> \| string[] | — | no | yes |  |
+| footerRangeTotal | number | — | no | yes |  |
+| footerPage | number | — | no | yes |  |
+| previewDropdownOpen | boolean | — | no | yes |  |
+| navigatePreview | (direction: number) => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| onPreviewDropdownOpenChange | (open: boolean) => void | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| cell | Snippet<[PreviewPanelWrapperCellArgs]> | — | no | no |  |
+
+### `<RestoreDialog />`
+
+Source: `src/lib/components/entity-list-table/dialogs/RestoreDialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| onOpenChange | (open: boolean) => void | — | no | yes |  |
+| isRestoring | boolean | — | no | yes |  |
+| onConfirm | () => void | — | no | yes |  |
+| onCancel | () => void | — | no | yes |  |
+
+### `<SearchBar />`
+
+Source: `src/lib/components/entity-list-table/toolbar/SearchBar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| search | string | — | no | yes |  |
+| onSearchInput | (value: string) => void | — | no | yes |  |
+| searchPlaceholderKey | string | — | no | no |  |
+| searchInKeys | string[] \| null | — | no | yes |  |
+| searchableColumns | MetaColumn[] | — | no | yes |  |
+| onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
+| toggleSearchKey | (key: string) => void | — | no | yes |  |
+
+### `<SearchInPanel />`
+
+Source: `src/lib/components/entity-list-table/panels/SearchInPanel.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| searchInKeys | string[] \| null \| undefined | — | no | yes |  |
+| searchableColumns | ColumnLike[] | — | no | yes |  |
+| onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
+| toggleSearchKey | (key: string) => void | — | no | yes |  |
+
+### `<SearchSyntaxHighlighter />`
+
+Source: `src/lib/components/entity-list-table/search/SearchSyntaxHighlighter.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| search | string |  | no | no |  |
+| disablePadding | boolean | false | no | no |  |
+
+### `<SelectionCounter />`
+
+Source: `src/lib/components/entity-list-table/toolbar/SelectionCounter.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| selectionCount | number | — | no | yes |  |
+| selectionLabelKey | string | — | no | no |  |
+| selectionLabelSingularKey | string | — | no | no |  |
+| selectionLabelText | string | — | no | no |  |
+| selectionLabelSingularText | string | — | no | no |  |
+| selectionPastParticipleKey | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| onShowSelectedOnlyChange | (show: boolean) => void | — | no | yes |  |
+
+### `<StateRenderer />`
+
+Source: `src/lib/components/entity-list-table/components/StateRenderer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| isDeleted | boolean | — | no | yes |  |
+| onDelete | (row: TRow) => void | — | no | yes |  |
+| onRestore | (row: TRow) => void | — | no | yes |  |
+
+### `<TableBody />`
+
+Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| error | string \| null | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| loadingText | string | — | no | yes |  |
+| rows | TRow[] | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+| shownColumns | MetaColumn[] | — | no | yes |  |
+| extraCols | number | — | no | yes |  |
+| emptyText | string | — | no | yes |  |
+| showSelectedOnly | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| orderedSelectedRows | TRow[] | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| rowRangeSelection | {       state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };       onRowRangeMouseDown: (index: number, e: MouseEvent) => void;     } | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| rowKey | (row: TRow) => string | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+| previewPanel | {       focusedRowIndex: number \| null;     } | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| stickyColumnsState | any | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| cell | Snippet<[ { row: TRow; column: MetaColumn } ]> | — | no | no |  |
+| rowActions | Snippet<[ { row: TRow } ]> | — | no | no |  |
+| entityRowActions | {       duplicate?: boolean;       delete?: boolean;       edit?: boolean;       preview?: boolean;     } | — | no | no |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| handleCustomAction | (action: { actionName: string; translationKey: string }, row: TRow) => void | — | no | no |  |
+| stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| emptyView | — |  |
+| errorView | — |  |
+| rowsLoadingView | — |  |
+
+### `<TableCell />`
+
+Source: `src/lib/components/entity-list-table/table/TableCell.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | Record<string, unknown> | — | no | yes |  |
+| column | MetaColumn | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| cellSnippet | — |  |
+
+### `<TableFooter />`
+
+Source: `src/lib/components/entity-list-table/components/TableFooter.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| footerRangeTotal | number | — | no | yes |  |
+| footerRangeStart | number | — | no | yes |  |
+| footerRangeEnd | number | — | no | yes |  |
+| footerPage | number | — | no | yes |  |
+| footerTotalPages | number | — | no | yes |  |
+| footerUsesClientPaging | boolean | — | no | yes |  |
+| clientSelectedPage | number | 1 | yes | no |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| selectionCount | number | — | no | yes |  |
+| selectionLabelKey | string | — | no | no |  |
+| selectionLabelSingularKey | string | — | no | no |  |
+| selectionLabelText | string | — | no | no |  |
+| selectionLabelSingularText | string | — | no | no |  |
+| selectionPastParticipleKey | string | — | no | yes |  |
+| showSelectedOnly | boolean | false | yes | no |  |
+| pageSize | number | — | no | yes |  |
+| pageSizeOptions | number[] | — | no | yes |  |
+| page | number | — | no | yes |  |
+| totalPages | number | — | no | yes |  |
+| onPageChange | (page: number) => void | — | no | yes |  |
+| onPageSizeChange | (size: number) => void | — | no | yes |  |
+
+### `<TableHeader />`
+
+Source: `src/lib/components/entity-list-table/components/TableHeader.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| stickyColumnsState | {       checkboxHeadRef: HTMLTableCellElement \| null;       state: { stickyLeftOffsets: Record<string, number> };       stickyRef: any;     } | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| toggleAllOnPage | () => void | — | no | yes |  |
+| shownColumns | MetaColumn[] | — | no | yes |  |
+| stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
+| stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
+| handleSortClick | (col: MetaColumn) => void | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| sortKey | string \| null | — | no | yes |  |
+| sortDir | SortDir | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| toggleDatetimeIana | (col: MetaColumn) => void | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| previewPanel | {       state: {         previewPanelOpen: boolean;         previewRow: TRow \| null;       };       openPreview: (row: TRow) => void;       closePreview: () => void;     } | — | no | yes |  |
+| viewRows | TRow[] | — | no | yes |  |
+
+### `<TableHeader />`
+
+Source: `src/lib/components/entity-list-table/table/TableHeader.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| columns | MetaColumn[] | — | no | yes |  |
+| sortKey | string \| null | — | no | yes |  |
+| sortDir | 'asc' \| 'desc' | — | no | yes |  |
+| onSortChange | (key: string \| null, dir: 'asc' \| 'desc') => void | — | no | yes |  |
+| visibleKeys | string[] | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| allOnPageSelected | boolean | — | no | yes |  |
+| headerIndeterminate | boolean | — | no | yes |  |
+| onToggleAllOnPage | () => void | — | no | yes |  |
+| rowsLoading | boolean | — | no | yes |  |
+| stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+
+### `<TableRow />`
+
+Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| row | TRow | — | no | yes |  |
+| index | number | — | no | yes |  |
+| rowKey | string | — | no | yes |  |
+| rowSelected | boolean | — | no | yes |  |
+| rowDeleted | boolean | — | no | yes |  |
+| rowFocused | boolean | — | no | yes |  |
+| rowSelectionEnabled | boolean | — | no | yes |  |
+| actionsEnabled | boolean | — | no | yes |  |
+| rowChromeH | string | — | no | yes |  |
+| selectedKeys | string[] | — | no | yes |  |
+| shownColumns | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
+| stickyColumnsGroup | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
+| stickyColumnsState | {       state: { stickyLeftOffsets: Record<string, number> };       stickyRef: any;     } | — | no | yes |  |
+| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaRenderTick | number | — | no | yes |  |
+| cell | Snippet<[TableRowCellArgs]> | — | no | no |  |
+| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;       customActions?: Array<{         actionName: string;         translationKey: string;         icon: string;         textColor?: string;         disabledWhenDeleted?: boolean;       }>;     } | — | no | no |  |
+| dropdownMenuRow | TRow \| null | — | no | yes |  |
+| previewPanel | {       focusedRowIndex: number \| null;     } | — | no | yes |  |
+| onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
+| onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
+| onPreviewRow | (row: TRow) => void | — | no | yes |  |
+| onToggleRowSelect | (key: string) => void | — | no | yes |  |
+| onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
+| onCloseRowDropdown | () => void | — | no | yes |  |
+| onEditRow | (row: TRow) => void | — | no | yes |  |
+| onLoadVersionHistory | (row: TRow) => void | — | no | yes |  |
+| onDuplicateRow | (row: TRow) => void | — | no | yes |  |
+| onDeleteRow | (row: TRow) => void | — | no | yes |  |
+| onRestoreRow | (row: TRow) => void | — | no | yes |  |
+| handleCustomAction | (action: { actionName: string; translationKey: string }, row: TRow) => void | — | no | no |  |
+| stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
+| isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| rowActions | — |  |
+
+### `<ViewModeToggle />`
+
+Source: `src/lib/components/entity-list-table/toolbar/ViewModeToggle.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| viewMode | ViewName | — | no | yes |  |
+| onViewModeChange | (mode: ViewName) => void | — | no | yes |  |
+
+## forms
+
+### `<FormLabelWithHelp />`
+
+Source: `src/lib/components/forms/FormLabelWithHelp.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| text | string | — | no | yes |  |
+
+### `<FormLabelWithPriorityHelp />`
+
+Source: `src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| text | string | — | no | yes |  |
+| priority | TooltipPriority | — | no | no |  |
+| title | string | — | no | no |  |
+
+### `<PasswordChecklist />`
+
+Source: `src/lib/components/forms/PasswordChecklist.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| password | string | — | no | yes |  |
+| rules | PasswordChecklistRule[] | — | no | yes |  |
+| specialChars | string | *-_.#@!\|?^: | no | no |  |
+
+## sidebar
+
+### `<SidebarHealthBadge />`
+
+Source: `src/lib/components/sidebar/SidebarHealthBadge.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| collapsed | boolean | — | no | yes |  |
+
+### `<SidebarModuleSwitcher />`
+
+Source: `src/lib/components/sidebar/SidebarModuleSwitcher.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| collapsed | boolean | — | no | yes |  |
+
+### `<SidebarOrgSwitcher />`
+
+Source: `src/lib/components/sidebar/SidebarOrgSwitcher.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| collapsed | boolean | — | no | yes |  |
+
+### `<SidebarProfileMenu />`
+
+Source: `src/lib/components/sidebar/SidebarProfileMenu.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| user | UserProfile \| null | — | no | yes |  |
+| collapsed | boolean | — | no | yes |  |
+| onLogout | () => void | — | no | yes |  |
+
+### `<SidebarVersionBadge />`
+
+Source: `src/lib/components/sidebar/SidebarVersionBadge.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| collapsed | boolean | — | no | yes |  |
+| isMobile | boolean | — | no | yes |  |
+
+## toasts
+
+### `<EventToast />`
+
+Source: `src/lib/components/toasts/EventToast.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| label | string | — | no | yes |  |
+| title | string | — | no | yes |  |
+| message | string | — | no | yes |  |
+| time | Date \| number \| string | — | no | yes |  |
+| tone | ToastTone | error | no | no |  |
+| tags | AppErrorTag[] | — | no | no |  |
+| detail | string | — | no | no |  |
+
+## ui
+
+### `<alert />`
+
+Source: `src/lib/components/ui/alert/alert.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| variant | AlertVariant | default | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<alert-description />`
+
+Source: `src/lib/components/ui/alert/alert-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<alert-title />`
+
+Source: `src/lib/components/ui/alert/alert-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<async-validated-input />`
+
+Source: `src/lib/components/ui/input/async-validated-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string |  | yes | no |  |
+| onChange | (value: string) => void | — | no | no |  |
+| validateFn | (value: string) => Promise<ValidationResult> | — | no | yes |  |
+| onStatusChange | (status: ValidationStatus) => void | — | no | no |  |
+| externalInvalid | boolean | false | no | no |  |
+| name | string | — | no | no |  |
+| id | string | — | no | no |  |
+| placeholder | string | — | no | no |  |
+| disabled | boolean | false | no | no |  |
+| class | string | — | no | no |  |
+| type | HTMLInputTypeAttribute | text | no | no |  |
+| required | boolean | — | no | no |  |
+| minlength | number | — | no | no |  |
+| maxlength | number | — | no | no |  |
+| pattern | string | — | no | no |  |
+| aria-invalid | string \| boolean | — | no | no |  |
+| aria-describedby | string | — | no | no |  |
+| aria-required | string \| boolean | — | no | no |  |
+| data-fs-error | string | — | no | no |  |
+| oninput | (e: Event) => void | — | no | no |  |
+| onblur | (e: FocusEvent) => void | — | no | no |  |
+| onchange | (e: Event) => void | — | no | no |  |
+
+### `<avatar />`
+
+Source: `src/lib/components/ui/avatar/avatar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| loadingStatus | string | loading | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<avatar-fallback />`
+
+Source: `src/lib/components/ui/avatar/avatar-fallback.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<avatar-image />`
+
+Source: `src/lib/components/ui/avatar/avatar-image.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<AvatarPreview />`
+
+Source: `src/lib/components/ui/avatar-preview/AvatarPreview.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| displayName | string \| undefined | — | no | yes |  |
+| avatarColor | string \| undefined | — | no | yes |  |
+| defaultSeed | string | ?? | no | no |  |
+
+### `<badge />`
+
+Source: `src/lib/components/ui/badge/badge.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLElement | null | yes | no |  |
+| href | unknown | — | no | yes |  |
+| class | unknown | — | no | yes |  |
+| variant | BadgeVariant | default | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<breadcrumb />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<breadcrumb-ellipsis />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-ellipsis.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLSpanElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<breadcrumb-item />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLLIElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<breadcrumb-link />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-link.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLAnchorElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| href | unknown | undefined | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<breadcrumb-list />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-list.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLOListElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<breadcrumb-page />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-page.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLSpanElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<breadcrumb-separator />`
+
+Source: `src/lib/components/ui/breadcrumb/breadcrumb-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLLIElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<button />`
+
+Source: `src/lib/components/ui/button/button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | unknown | — | no | yes |  |
+| variant | string | default | no | no |  |
+| size | string | default | no | no |  |
+| tone | string | primary | no | no |  |
+| ref | null \| HTMLAnchorElement \| HTMLButtonElement | null | yes | no |  |
+| href | unknown | undefined | no | no |  |
+| type | string | button | no | no |  |
+| disabled | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<button-group />`
+
+Source: `src/lib/components/ui/button-group/button-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| orientation | ButtonGroupOrientation | horizontal | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<button-group-separator />`
+
+Source: `src/lib/components/ui/button-group/button-group-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| orientation | string | vertical | no | no |  |
+
+### `<button-group-text />`
+
+Source: `src/lib/components/ui/button-group/button-group-text.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| child | — |  |
+
+### `<card />`
+
+Source: `src/lib/components/ui/card/card.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-action />`
+
+Source: `src/lib/components/ui/card/card-action.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-content />`
+
+Source: `src/lib/components/ui/card/card-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-description />`
+
+Source: `src/lib/components/ui/card/card-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLParagraphElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-footer />`
+
+Source: `src/lib/components/ui/card/card-footer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-header />`
+
+Source: `src/lib/components/ui/card/card-header.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<card-title />`
+
+Source: `src/lib/components/ui/card/card-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<checkbox />`
+
+Source: `src/lib/components/ui/checkbox/checkbox.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| checked | boolean | false | yes | no |  |
+| indeterminate | boolean | false | yes | no |  |
+| tone | CheckboxTone | primary | no | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<choicebox />`
+
+Source: `src/lib/components/ui/choicebox/choicebox.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string | — | yes | no |  |
+| class | string | — | no | no |  |
+| name | string | — | no | no |  |
+| onValueChange | (value: string) => void | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<choicebox-description />`
+
+Source: `src/lib/components/ui/choicebox/choicebox-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<choicebox-indicator />`
+
+Source: `src/lib/components/ui/choicebox/choicebox-indicator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+### `<choicebox-item />`
+
+Source: `src/lib/components/ui/choicebox/choicebox-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string | — | no | yes |  |
+| class | string | — | no | no |  |
+| disabled | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<choicebox-title />`
+
+Source: `src/lib/components/ui/choicebox/choicebox-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<color-picker />`
+
+Source: `src/lib/components/ui/color-picker/color-picker.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string | #000000 | yes | no |  |
+| class | string | — | no | no |  |
+| allowOpacity | boolean | false | no | no |  |
+| defaultFormat | ColorFormat | hex | no | no |  |
+| formats | ColorFormat[] | hex,rgb,hsl,oklch | no | no |  |
+
+### `<ColorSelector />`
+
+Source: `src/lib/components/ui/color-selector/ColorSelector.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string \| undefined | — | yes | yes |  |
+| labelKey | string | — | no | yes |  |
+| placeholderKey | string | — | no | no |  |
+| fallbackColor | string | #000000 | no | no |  |
+| triggerId | string | — | no | no |  |
+
+### `<combo-select />`
+
+Source: `src/lib/components/ui/combo-select/combo-select.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| mode | ComboSelectMode | — | no | yes |  |
+| value | string \| string[] | — | yes | yes |  |
+| onChange | (value: string \| string[]) => void | — | no | no |  |
+| options | string[] \| Record<string, any>[] | — | no | yes |  |
+| valueField | string | — | no | no |  |
+| labelField | string | — | no | no |  |
+| isLabelTranslated | boolean | false | no | no |  |
+| placeholder | string | Select... | no | no |  |
+| disabled | boolean | false | no | no |  |
+| loading | boolean | false | no | no |  |
+| id | string | — | no | no |  |
+| searchable | boolean | true | no | no |  |
+| searchPlaceholder | string | Search... | no | no |  |
+| isOptionDisabled | (option: string \| Record<string, any>) => boolean | — | no | no |  |
+| getSearchKeywords | (option: string \| Record<string, any>) => string[] | — | no | no |  |
+| aria-invalid | boolean \| "true" \| "false" | — | no | no |  |
+| aria-describedby | string | — | no | no |  |
+| aria-required | boolean \| "true" \| "false" | — | no | no |  |
+| data-fs-error | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| itemSnippet | — |  |
+| selectedSnippet | — |  |
+
+### `<command />`
+
+Source: `src/lib/components/ui/command/command.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| api | CommandRootApi \| null | null | yes | no |  |
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<command-dialog />`
+
+Source: `src/lib/components/ui/command/command-dialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| title | string | Command Palette | no | no |  |
+| description | string | Search for a command to run... | no | no |  |
+| showCloseButton | boolean | false | no | no |  |
+| portalProps | DialogPrimitive.PortalProps | — | no | no |  |
+| class | string | — | no | no |  |
+
+### `<command-empty />`
+
+Source: `src/lib/components/ui/command/command-empty.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<command-group />`
+
+Source: `src/lib/components/ui/command/command-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| heading | string | — | no | no |  |
+| value | unknown | — | no | yes |  |
+
+### `<command-input />`
+
+Source: `src/lib/components/ui/command/command-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | HTMLInputElement \| null | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| value | string |  | yes | no |  |
+
+### `<command-item />`
+
+Source: `src/lib/components/ui/command/command-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<command-link-item />`
+
+Source: `src/lib/components/ui/command/command-link-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<command-list />`
+
+Source: `src/lib/components/ui/command/command-list.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<command-loading />`
+
+Source: `src/lib/components/ui/command/command-loading.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<command-separator />`
+
+Source: `src/lib/components/ui/command/command-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<command-shortcut />`
+
+Source: `src/lib/components/ui/command/command-shortcut.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLSpanElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<copy-button />`
+
+Source: `src/lib/components/ui/copy-button/copy-button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| text | unknown | — | no | yes |  |
+| animationDuration | number | 500 | no | no |  |
+| variant | string | ghost | no | no |  |
+| size | string | icon | no | no |  |
+| onCopy | unknown | — | no | yes |  |
+| class | unknown | — | no | yes |  |
+| tabindex | number | -1 | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| icon | — |  |
+
+### `<dialog />`
+
+Source: `src/lib/components/ui/dialog/dialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+
+### `<dialog-bordered />`
+
+Source: `src/lib/components/ui/dialog-bordered.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | no |  |
+| showCloseButton | boolean | true | no | no |  |
+| class | string |  | no | no |  |
+| color | ColorVariant | primary | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dialog-close />`
+
+Source: `src/lib/components/ui/dialog/dialog-close.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| type | string | button | no | no |  |
+
+### `<dialog-content />`
+
+Source: `src/lib/components/ui/dialog/dialog-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| portalProps | WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>> | — | no | no |  |
+| showCloseButton | boolean | true | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dialog-description />`
+
+Source: `src/lib/components/ui/dialog/dialog-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<dialog-footer />`
+
+Source: `src/lib/components/ui/dialog/dialog-footer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| showCloseButton | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dialog-header />`
+
+Source: `src/lib/components/ui/dialog/dialog-header.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dialog-overlay />`
+
+Source: `src/lib/components/ui/dialog/dialog-overlay.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<dialog-portal />`
+
+Source: `src/lib/components/ui/dialog/dialog-portal.svelte`
+
+### `<dialog-title />`
+
+Source: `src/lib/components/ui/dialog/dialog-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<dialog-trigger />`
+
+Source: `src/lib/components/ui/dialog/dialog-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| type | string | button | no | no |  |
+
+### `<dock />`
+
+Source: `src/lib/components/ui/dock/dock.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+| magnification | number | 60 | no | no |  |
+| distance | number | 140 | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dock-icon />`
+
+Source: `src/lib/components/ui/dock/dock-icon.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+| tooltip | string | — | no | no |  |
+| onclick | () => void | — | no | no |  |
+| transparent | boolean | false | no | no |  |
+| selected | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dock-separator />`
+
+Source: `src/lib/components/ui/dock/dock-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+### `<dropdown-menu />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+
+### `<dropdown-menu-checkbox-group />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | [] |  | yes | no |  |
+
+### `<dropdown-menu-checkbox-item />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| checked | boolean | false | yes | no |  |
+| indeterminate | boolean | false | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dropdown-menu-content />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| sideOffset | number | 4 | no | no |  |
+| portalProps | WithoutChildrenOrChild<ComponentProps<typeof DropdownMenuPortal>> | — | no | no |  |
+| class | unknown | — | no | yes |  |
+| onCloseAutoFocus | (e: any) => any | (e: Event) => e.preventDefault() | no | no |  |
+
+### `<dropdown-menu-group />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<dropdown-menu-group-heading />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group-heading.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| inset | boolean | — | no | no |  |
+
+### `<dropdown-menu-item />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| inset | boolean | — | no | no |  |
+| variant | "default" \| "destructive" | default | no | no |  |
+
+### `<dropdown-menu-label />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-label.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| inset | boolean | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dropdown-menu-portal />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-portal.svelte`
+
+### `<dropdown-menu-radio-group />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | unknown | — | yes | yes |  |
+
+### `<dropdown-menu-radio-item />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dropdown-menu-separator />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<dropdown-menu-shortcut />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-shortcut.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLSpanElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dropdown-menu-sub />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+
+### `<dropdown-menu-sub-content />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<dropdown-menu-sub-trigger />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| inset | boolean | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<dropdown-menu-trigger />`
+
+Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<DynamicIcon />`
+
+Source: `src/lib/components/ui/dynamic-icon/DynamicIcon.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| name | string | — | no | yes |  |
+| size | number | 16 | no | no |  |
+| class | string | — | no | no |  |
+
+### `<event-card />`
+
+Source: `src/lib/components/ui/event-card/event-card.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+| eventColor | EventColor | info | no | no |  |
+
+### `<event-card-label />`
+
+Source: `src/lib/components/ui/event-card/event-card-label.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| eventColor | EventColor | info | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<event-card-message />`
+
+Source: `src/lib/components/ui/event-card/event-card-message.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<event-card-root />`
+
+Source: `src/lib/components/ui/event-card/event-card-root.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| eventColor | EventColor | info | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<event-card-time />`
+
+Source: `src/lib/components/ui/event-card/event-card-time.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<event-card-title />`
+
+Source: `src/lib/components/ui/event-card/event-card-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLHeadingElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<form-button />`
+
+Source: `src/lib/components/ui/form/form-button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<form-description />`
+
+Source: `src/lib/components/ui/form/form-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<form-element-field />`
+
+Source: `src/lib/components/ui/form/form-element-field.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| form | unknown | — | no | yes |  |
+| name | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<form-field />`
+
+Source: `src/lib/components/ui/form/form-field.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| form | unknown | — | no | yes |  |
+| name | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<form-field-errors />`
+
+Source: `src/lib/components/ui/form/form-field-errors.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| errorClasses | string \| undefined \| null | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<form-fieldset />`
+
+Source: `src/lib/components/ui/form/form-fieldset.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| form | unknown | — | no | yes |  |
+| name | unknown | — | no | yes |  |
+
+### `<form-label />`
+
+Source: `src/lib/components/ui/form/form-label.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| required | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<form-legend />`
+
+Source: `src/lib/components/ui/form/form-legend.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<highlighted-input />`
+
+Source: `src/lib/components/ui/input-group/highlighted-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string |  | yes | no |  |
+| class | unknown | — | no | yes |  |
+| type | string | text | no | no |  |
+| placeholder | unknown | — | no | yes |  |
+
+### `<input />`
+
+Source: `src/lib/components/ui/input/input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLInputElement | null | yes | no |  |
+| value | unknown | — | yes | yes |  |
+| type | unknown | — | no | yes |  |
+| files | unknown | — | yes | yes |  |
+| class | unknown | — | no | yes |  |
+| data-slot | string | input | no | no |  |
+
+### `<input-group />`
+
+Source: `src/lib/components/ui/input-group/input-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<input-group-addon />`
+
+Source: `src/lib/components/ui/input-group/input-group-addon.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| align | InputGroupAddonAlign | inline-start | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<input-group-button />`
+
+Source: `src/lib/components/ui/input-group/input-group-button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| type | string | button | no | no |  |
+| variant | string | ghost | no | no |  |
+| size | InputGroupButtonSize | xs | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<input-group-input />`
+
+Source: `src/lib/components/ui/input-group/input-group-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLInputElement | null | yes | no |  |
+| value | unknown | — | yes | yes |  |
+| class | unknown | — | no | yes |  |
+| type | string | text | no | no |  |
+
+### `<input-group-text />`
+
+Source: `src/lib/components/ui/input-group/input-group-text.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLSpanElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<input-group-textarea />`
+
+Source: `src/lib/components/ui/input-group/input-group-textarea.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | unknown | — | yes | yes |  |
+| class | unknown | — | no | yes |  |
+
+### `<JsonTableViewer />`
+
+Source: `src/lib/components/ui/JsonTableViewer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| data | unknown | — | no | yes |  |
+| isNested | boolean | false | no | no |  |
+
+### `<kbd />`
+
+Source: `src/lib/components/ui/kbd/kbd.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| size | KbdSize | key | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<label />`
+
+Source: `src/lib/components/ui/label/label.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<loading-bar />`
+
+Source: `src/lib/components/ui/loading-bar/loading-bar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| size | LoadingBarSize | xs | no | no |  |
+| variant | LoadingBarVariant | muted | no | no |  |
+| duration | string | 1.2s | no | no |  |
+| easing | string | ease-in-out | no | no |  |
+| barClass | string | — | no | no |  |
+
+### `<MetadataLoading />`
+
+Source: `src/lib/components/ui/metadata-loading/MetadataLoading.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| entityName | string | — | no | no |  |
+| loadingText | string | — | no | no |  |
+
+### `<password />`
+
+Source: `src/lib/components/ui/password/password.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| hidden | boolean | true | yes | no |  |
+| minScore | number | 3 | no | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<password-copy />`
+
+Source: `src/lib/components/ui/password/password-copy.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<password-input />`
+
+Source: `src/lib/components/ui/password/password-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<password-input-field />`
+
+Source: `src/lib/components/ui/password/password-input-field.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| minScore | 0 \| 1 \| 2 \| 3 \| 4 | 3 | no | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<password-strength />`
+
+Source: `src/lib/components/ui/password/password-strength.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| strength | unknown | — | yes | yes |  |
+| class | unknown | — | no | yes |  |
+
+### `<password-toggle-visibility />`
+
+Source: `src/lib/components/ui/password/password-toggle-visibility.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<popover-content />`
+
+Source: `src/lib/components/ui/popover/popover-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| sideOffset | number | 4 | no | no |  |
+| class | unknown | — | no | yes |  |
+| align | string | center | no | no |  |
+
+### `<popover-trigger />`
+
+Source: `src/lib/components/ui/popover/popover-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<priority-tooltip-content />`
+
+Source: `src/lib/components/ui/tooltip/priority-tooltip-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| sideOffset | number | 4 | no | no |  |
+| priority | TooltipPriority | INFORMATION | no | no |  |
+| title | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<resizable-handle />`
+
+Source: `src/lib/components/ui/resizable/resizable-handle.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| withHandle | boolean | false | no | no |  |
+
+### `<resizable-pane-group />`
+
+Source: `src/lib/components/ui/resizable/resizable-pane-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| this | ResizablePrimitive.PaneGroup | — | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<rfc-error-dialog />`
+
+Source: `src/lib/components/ui/rfc-error-dialog.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | — | yes | yes |  |
+| error | RFC7807Error \| null | — | no | yes |  |
+| showCloseButton | boolean | false | no | no |  |
+| color | 'critical' \| 'error' \| 'warning' \| 'info' | error | no | no |  |
+
+### `<scroll-area />`
+
+Source: `src/lib/components/ui/scroll-area/scroll-area.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| viewportRef | HTMLElement \| null | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| orientation | "vertical" \| "horizontal" \| "both" \| undefined | vertical | no | no |  |
+| scrollbarXClasses | string \| undefined |  | no | no |  |
+| scrollbarYClasses | string \| undefined |  | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<scroll-area-scrollbar />`
+
+Source: `src/lib/components/ui/scroll-area/scroll-area-scrollbar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| orientation | string | vertical | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<separator />`
+
+Source: `src/lib/components/ui/separator/separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| orientation | string | horizontal | no | no |  |
+
+### `<sheet />`
+
+Source: `src/lib/components/ui/sheet/sheet.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| open | boolean | false | yes | no |  |
+
+### `<sheet-close />`
+
+Source: `src/lib/components/ui/sheet/sheet-close.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<sheet-content />`
+
+Source: `src/lib/components/ui/sheet/sheet-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| side | Side | right | no | no |  |
+| showClose | boolean | true | no | no |  |
+| modal | boolean | true | no | no |  |
+| portalProps | SheetPrimitive.PortalProps | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sheet-description />`
+
+Source: `src/lib/components/ui/sheet/sheet-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sheet-footer />`
+
+Source: `src/lib/components/ui/sheet/sheet-footer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sheet-header />`
+
+Source: `src/lib/components/ui/sheet/sheet-header.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sheet-overlay />`
+
+Source: `src/lib/components/ui/sheet/sheet-overlay.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sheet-portal />`
+
+Source: `src/lib/components/ui/sheet/sheet-portal.svelte`
+
+### `<sheet-title />`
+
+Source: `src/lib/components/ui/sheet/sheet-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sheet-trigger />`
+
+Source: `src/lib/components/ui/sheet/sheet-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+
+### `<sidebar />`
+
+Source: `src/lib/components/ui/sidebar/sidebar.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| side | "left" \| "right" | left | no | no |  |
+| variant | "sidebar" \| "floating" \| "inset" | sidebar | no | no |  |
+| collapsible | "offcanvas" \| "icon" \| "none" | offcanvas | no | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-content />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-footer />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-footer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-group />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-group-action />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-group-action.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLButtonElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<sidebar-group-content />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-group-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-group-label />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-group-label.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<sidebar-header />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-header.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-input />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sidebar-inset />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-inset.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLUListElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu-action />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-action.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLButtonElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| showOnHover | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<sidebar-menu-badge />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-badge.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu-button />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLButtonElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| variant | SidebarMenuButtonVariant | default | no | no |  |
+| size | SidebarMenuButtonSize | default | no | no |  |
+| isActive | boolean | false | no | no |  |
+| tooltipContent | Snippet | — | no | no |  |
+| tooltipContentProps | WithoutChildrenOrChild<ComponentProps<typeof Tooltip.Content>> | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<sidebar-menu-item />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLLIElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu-skeleton />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| showIcon | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu-sub />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-sub.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLUListElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-menu-sub-button />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLAnchorElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| size | "sm" \| "md" | md | no | no |  |
+| isActive | boolean | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+| child | — |  |
+
+### `<sidebar-menu-sub-item />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLLIElement | null | yes | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-provider />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-provider.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| open | boolean | true | yes | no |  |
+| onOpenChange | (open: boolean) => void | () => {} | no | no |  |
+| class | unknown | — | no | yes |  |
+| style | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-rail />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-rail.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLButtonElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sidebar-separator />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sidebar-trigger />`
+
+Source: `src/lib/components/ui/sidebar/sidebar-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| onclick | (e: MouseEvent) => void | — | no | no |  |
+
+### `<skeleton />`
+
+Source: `src/lib/components/ui/skeleton/skeleton.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLDivElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<sonner />`
+
+Source: `src/lib/components/ui/sonner/sonner.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | unknown | — | no | yes |  |
+
+### `<sortable />`
+
+Source: `src/lib/components/ui/sortable/sortable.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| items | any[] |  | yes | no |  |
+| class | string | — | no | no |  |
+| onSort | (items: any[]) => void | — | no | no |  |
+| animation | number | 200 | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sortable-handle />`
+
+Source: `src/lib/components/ui/sortable/sortable-handle.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<sortable-item />`
+
+Source: `src/lib/components/ui/sortable/sortable-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| id | string | — | no | yes |  |
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<spinner />`
+
+Source: `src/lib/components/ui/spinner/spinner.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | unknown | — | no | yes |  |
+| role | string | status | no | no |  |
+| name | unknown | — | no | yes |  |
+| color | unknown | — | no | yes |  |
+| stroke | unknown | — | no | yes |  |
+| aria-label | string | Loading | no | no |  |
+
+### `<switch />`
+
+Source: `src/lib/components/ui/switch/switch.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| checked | boolean | false | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| thumbIcons | — |  |
+
+### `<table />`
+
+Source: `src/lib/components/ui/table/table.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableElement | null | yes | no |  |
+| containerClass | string |  | no | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-body />`
+
+Source: `src/lib/components/ui/table/table-body.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableSectionElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-caption />`
+
+Source: `src/lib/components/ui/table/table-caption.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableCaptionElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-cell />`
+
+Source: `src/lib/components/ui/table/table-cell.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableCellElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-footer />`
+
+Source: `src/lib/components/ui/table/table-footer.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableSectionElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-head />`
+
+Source: `src/lib/components/ui/table/table-head.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableCellElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-header />`
+
+Source: `src/lib/components/ui/table/table-header.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableSectionElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<table-row />`
+
+Source: `src/lib/components/ui/table/table-row.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTableRowElement | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| suppressCellHoverMuted | boolean | false | no | no | When true, do not paint all cells `bg-muted` on row hover (entity list applies per-cell palette hovers). |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<tabs />`
+
+Source: `src/lib/components/ui/tabs/tabs.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<tabs-content />`
+
+Source: `src/lib/components/ui/tabs/tabs-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<tabs-list />`
+
+Source: `src/lib/components/ui/tabs/tabs-list.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| variant | TabsListVariant | default | no | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<tabs-trigger />`
+
+Source: `src/lib/components/ui/tabs/tabs-trigger.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+
+### `<text-input />`
+
+Source: `src/lib/components/ui/input/text-input.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| value | string |  | yes | no |  |
+| type | unknown | — | no | yes |  |
+| readonly | boolean | false | no | no |  |
+| disabled | boolean | false | no | no |  |
+| onClear | unknown | — | no | yes |  |
+| clearLabel | string | Clear | no | no |  |
+| onCopy | unknown | — | no | yes |  |
+| copyTooltipLabel | unknown | — | no | yes |  |
+| copyAnimationDuration | number | 2000 | no | no |  |
+| class | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+| trailing | — |  |
+
+### `<textarea />`
+
+Source: `src/lib/components/ui/textarea/textarea.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | null \| HTMLTextAreaElement | null | yes | no |  |
+| value | unknown | — | yes | yes |  |
+| class | unknown | — | no | yes |  |
+| data-slot | string | textarea | no | no |  |
+
+### `<timeline />`
+
+Source: `src/lib/components/ui/timeline/timeline.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-content />`
+
+Source: `src/lib/components/ui/timeline/timeline-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-date />`
+
+Source: `src/lib/components/ui/timeline/timeline-date.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-description />`
+
+Source: `src/lib/components/ui/timeline/timeline-description.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-item />`
+
+Source: `src/lib/components/ui/timeline/timeline-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-separator />`
+
+Source: `src/lib/components/ui/timeline/timeline-separator.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<timeline-title />`
+
+Source: `src/lib/components/ui/timeline/timeline-title.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<toggle />`
+
+Source: `src/lib/components/ui/toggle/toggle.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| pressed | boolean | false | yes | no |  |
+| class | unknown | — | no | yes |  |
+| size | ToggleSize | default | no | no |  |
+| variant | ToggleVariant | default | no | no |  |
+
+### `<tooltip-content />`
+
+Source: `src/lib/components/ui/tooltip/tooltip-content.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| sideOffset | number | 4 | no | no |  |
+
+### `<tooltip-portal />`
+
+Source: `src/lib/components/ui/tooltip/tooltip-portal.svelte`
+
+### `<translated-field-errors />`
+
+Source: `src/lib/components/ui/form/translated-field-errors.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| ref | unknown | null | yes | no |  |
+| class | unknown | — | no | yes |  |
+| errorClasses | string \| undefined \| null | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<wheel-picker />`
+
+Source: `src/lib/components/ui/wheel-picker/wheel-picker.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | string | — | no | no |  |
+| collapsed | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<wheel-picker-group />`
+
+Source: `src/lib/components/ui/wheel-picker/wheel-picker-group.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string | — | yes | no |  |
+| class | string | — | no | no |  |
+| onValueChange | (val: string) => void | — | no | no |  |
+| loop | boolean | false | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<wheel-picker-item />`
+
+Source: `src/lib/components/ui/wheel-picker/wheel-picker-item.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| value | string | — | no | yes |  |
+| class | string | — | no | no |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+### `<window />`
+
+Source: `src/lib/components/ui/window/window.svelte`
+
+| Prop | Type | Default | Bindable | Required | Description |
+|------|------|---------|----------|----------|-------------|
+| class | unknown | — | no | yes |  |
+| contentClass | unknown | — | no | yes |  |
+
+**Slots**
+
+| Name | Props | Description |
+|------|-------|-------------|
+|  | — |  |
+
+<!-- END -->

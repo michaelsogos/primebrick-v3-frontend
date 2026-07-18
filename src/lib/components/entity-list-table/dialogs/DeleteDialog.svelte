@@ -36,7 +36,8 @@
       {$t('common.cancel')}
     </Button>
     <Button
-      class="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:scale-105 transition-all"
+      variant="destructive"
+      class="hover:scale-105 transition-all"
       onclick={onConfirm}
       disabled={isDeleting}
     >

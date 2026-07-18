@@ -116,7 +116,7 @@
 </script>
 
 <header
-  class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground shadow-sm dark:border-border/60 dark:bg-muted/25 dark:backdrop-blur-xs"
+  class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground dark:bg-muted/25 dark:backdrop-blur-xs"
 >
   <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
   <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">

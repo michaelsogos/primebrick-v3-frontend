@@ -4,8 +4,8 @@
  * If a path does not exist, the original placeholder is returned.
  */
 export function interpolateTemplate(template: string, data: Record<string, unknown>): string {
-  return template.replace(/\$\{([\w.]+)\}/g, (match, path) => {
-    const value = path.split('.').reduce<unknown>((acc, key) => {
+  return template.replace(/\$\{([\w.]+)\}/g, (match: string, path: string) => {
+    const value = path.split('.').reduce<unknown>((acc: unknown, key: string) => {
       if (acc && typeof acc === 'object') {
         return (acc as Record<string, unknown>)[key];
       }
