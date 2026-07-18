@@ -28,6 +28,15 @@
    ... `<!-- END -->` contain extracted API facts. Update these from the
    extraction JSON. Never modify prose outside these blocks unless the
    underlying concept has changed.
+9. **MDX escaping** (MANDATORY): MDX parses `<` as JSX tags, `{`/`}` as
+   expression delimiters, and bare `<url>` as JSX (not autolinks). In all
+   MDX content:
+   - Escape `<` as `&lt;` in TS type generics (e.g. `Record&lt;string, any>`)
+   - Escape `{` as `&lbrace;` and `}` as `&rbrace;` in TS object types
+     (e.g. `(data: &lbrace; success: boolean &rbrace;) => void`)
+   - Use `[text](url)` for links, NEVER `<url>` angle-bracket autolinks
+   - Inside `<Mermaid chart={`...`} />` template literals, `<br/>` is fine
+     (it's inside a JS string, not parsed as MDX)
 
 ## Forbidden
 - ❌ ` ```Code ` blocks for Mermaid diagrams
@@ -35,3 +44,5 @@
 - ❌ Rewriting unchanged pages (creates git diff churn)
 - ❌ Inventing APIs, props, or endpoints not in the extraction JSON or code
 - ❌ Marketing language or superlatives
+- ❌ `<url>` angle-bracket autolinks (MDX parses `<` as JSX — use `[url](url)`)
+- ❌ Unescaped `<`, `{`, `}` in TS type names in table cells
