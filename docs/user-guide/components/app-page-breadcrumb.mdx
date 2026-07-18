@@ -1,0 +1,81 @@
+---
+title: AppPageBreadcrumb
+description: Breadcrumb renderer for ancestor segments, with dropdown-menu segments for sibling navigation and a trailing separator.
+---
+
+# AppPageBreadcrumb
+
+`src/lib/components/AppPageBreadcrumb.svelte`
+
+## Purpose
+
+Renders ancestor breadcrumb segments (the current page title is shown
+separately, e.g. in an `h1`). Each segment is either a plain link, a static
+label, or a **menu segment** that opens a `DropdownMenu` of sibling destinations
+(selecting one calls `goto`). A trailing `/` separator is always rendered after
+the last segment. Built on the shadcn-svelte `Breadcrumb` and `DropdownMenu`
+primitives.
+
+## Origin
+
+**Custom** — Primebrick-written, using shadcn-svelte `Breadcrumb` and
+`DropdownMenu` primitives plus `@lucide/svelte` `ChevronDown`.
+
+## Usage
+
+### Default
+
+```svelte
+<script lang="ts">
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+
+  const segments: AppBreadcrumbSegment[] = [
+    { label: 'System', href: '/system' },
+    { label: 'Settings', href: '/system/settings' }
+  ];
+</script>
+
+<AppPageBreadcrumb {segments} />
+```
+
+### With a menu segment (sibling switcher)
+
+```svelte
+<script lang="ts">
+  import { isMenuSegment, type AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+
+  const segments: AppBreadcrumbSegment[] = [
+    {
+      label: 'Settings',
+      menuAriaLabel: 'Switch settings section',
+      items: [
+        { label: 'Profile', href: '/system/settings/profile', current: true },
+        { label: 'Security', href: '/system/settings/security', current: false }
+      ]
+    }
+  ];
+</script>
+
+<AppPageBreadcrumb {segments} />
+```
+
+### Empty (no segments)
+
+When `segments` is empty, nothing renders.
+
+```svelte
+<AppPageBreadcrumb segments={[]} />
+```
+
+## Props
+
+Full prop table: see [API reference — apppagebreadcrumb](/docs/user-guide/api-reference#apppagebreadcrumb).
+
+Key props: `segments: AppBreadcrumbSegment[]` (ancestor segments only).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#apppagebreadcrumb)

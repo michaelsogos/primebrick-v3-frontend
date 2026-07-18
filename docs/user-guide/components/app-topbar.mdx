@@ -1,0 +1,61 @@
+---
+title: AppTopbar
+description: Sticky top bar with the sidebar trigger, command palette, IANA timezone, language selector, errors badge, notifications bell, and theme toggle.
+---
+
+# AppTopbar
+
+`src/lib/components/AppTopbar.svelte`
+
+## Purpose
+
+The sticky top bar of the authenticated shell. A three-track grid
+(`1fr | auto | 1fr`) keeps the `CommandPalette` on the true horizontal center.
+The left track holds the `Sidebar.Trigger`; the right track shows the resolved
+IANA timezone, `LangSelect`, an errors button (badge with the max-impact color
+of all `appErrors`, opening the errors sheet), a notifications bell with an
+unread badge, and `ThemeToggle`. The errors badge caps at `99+` and derives its
+color from the highest impact among current errors.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses shadcn-svelte `Button`, `Badge`, and
+`Sidebar.Trigger`, plus `CommandPalette`, `LangSelect`, `ThemeToggle`, and
+`@lucide/svelte` icons.
+
+## Usage
+
+### Default (mounted by AppShell)
+
+```svelte
+<AppTopbar />
+```
+
+### With an unread notifications count
+
+```svelte
+<AppTopbar unreadNotifications={12} />
+```
+
+### Error badge behavior
+
+The errors button opens the `shell.errors` sheet via `openSheet`. Its badge
+shows `$appErrors.length` (capped at `99+`) colored by `maxImpact($appErrors)`.
+
+```svelte
+<Button onclick={() => openSheet('shell.errors', {}, { contentClass: 'w-[420px] p-0' })}>
+  <TriangleAlert class="size-4" />
+</Button>
+```
+
+## Props
+
+Full prop table: see [API reference — apptopbar](/docs/user-guide/api-reference#apptopbar).
+
+Key props: `unreadNotifications?: number` (default `3`).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#apptopbar)

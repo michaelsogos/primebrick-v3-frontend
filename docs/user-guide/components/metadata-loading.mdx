@@ -1,0 +1,65 @@
+---
+title: MetadataLoading
+description: Centered loading placeholder shown while entity list metadata is being fetched.
+---
+
+# MetadataLoading
+
+`src/lib/components/ui/metadata-loading/MetadataLoading.svelte`
+
+## Purpose
+
+Full-height centered loading placeholder used inside list/table views while the
+metadata describing the entity collection is still being fetched. Renders a
+fading `Cloud` watermark with a spinning `RefreshCw` overlay and a localized
+status line. Drop it in wherever a list panel would otherwise be empty during
+the initial metadata load.
+
+## Origin
+
+**Custom** — Primebrick-built placeholder. Uses the `pb-watermark-fade`
+animation defined in `src/app.css`.
+
+## Usage
+
+### Default (localized generic message)
+
+```svelte
+<script lang="ts">
+  import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
+</script>
+
+<MetadataLoading />
+```
+
+### Named entity
+
+```svelte
+<MetadataLoading entityName="users" />
+```
+
+Renders the localized string for `metadata.loading.entity` with `{ entity: "users" }`.
+
+### Custom loading text
+
+```svelte
+<MetadataLoading loadingText="Fetching schema…" />
+```
+
+## Props
+
+Full prop table: see [API reference — metadataloading](/docs/user-guide/api-reference#metadataloading).
+
+Key props:
+
+- `entityName` (`string`) — when provided, shows `metadata.loading.entity` with this value.
+- `loadingText` (`string`) — overrides both of the above with a literal string.
+
+When neither is provided, the localized `metadata.loading.default` string is used.
+
+## Next steps
+
+- [LoadingBar](/docs/user-guide/components/loading-bar)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#metadataloading)

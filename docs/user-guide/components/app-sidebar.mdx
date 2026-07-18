@@ -1,0 +1,68 @@
+---
+title: AppSidebar
+description: Application sidebar composing the org switcher, module switcher, module navigation links, profile menu, health badge, and version badge.
+---
+
+# AppSidebar
+
+`src/lib/components/AppSidebar.svelte`
+
+## Purpose
+
+The left navigation rail for the authenticated shell. It renders the
+`SidebarOrgSwitcher` in the header, the `SidebarModuleSwitcher` plus the current
+module's nav links in the content, and the `SidebarProfileMenu`,
+`SidebarHealthBadge`, and `SidebarVersionBadge` in the footer. Nav links are
+driven by `shellNav.moduleNav` and support two-level collapsible groups with
+active-route highlighting. On `afterNavigate` it persists the last route, and an
+`$effect` keeps the selected module in sync with the current pathname.
+
+## Origin
+
+**Custom** — Primebrick-written, built on the shadcn-svelte `Sidebar` primitive
+and composing five custom `Sidebar*` subcomponents plus `DynamicIcon`.
+
+## Usage
+
+### Default (mounted by AppShell)
+
+```svelte
+<Sidebar.Provider class="flex h-full min-h-0 w-full flex-1 flex-row">
+  <AppSidebar />
+  <Sidebar.Inset class="min-h-0 flex-1">{@render children()}</Sidebar.Inset>
+</Sidebar.Provider>
+```
+
+### Collapsible icon mode
+
+The sidebar uses `collapsible="icon"`. When collapsed, group parents expand the
+rail on click instead of toggling, and labels hide via
+`group-data-[collapsible=icon]` utilities.
+
+```svelte
+<Sidebar.Root side="left" variant="sidebar" collapsible="icon">
+  <!-- header / content / footer as in AppSidebar -->
+</Sidebar.Root>
+```
+
+### Logout handling
+
+`AppSidebar` owns the logout flow (clears tokens, session storage, redirects to
+`/login`) and passes it down as `onLogout` to `SidebarProfileMenu`.
+
+```svelte
+<SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
+```
+
+## Props
+
+Full prop table: see [API reference — appsidebar](/docs/user-guide/api-reference#appsidebar).
+
+Key props: none — `AppSidebar` takes no props; it reads state from `shellNav`,
+`userProfileState`, and the `Sidebar.useSidebar()` context.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#appsidebar)

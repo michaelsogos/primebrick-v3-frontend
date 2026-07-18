@@ -1,0 +1,98 @@
+---
+title: FormPageLayout
+description: Layout shell for entity create/edit form pages with a header, footer actions, an audit box, and a form content slot.
+---
+
+# FormPageLayout
+
+`src/lib/components/FormPageLayout.svelte`
+
+## Purpose
+
+Provides the standard layout shell for entity create and edit form pages. It
+renders an optional header (title or custom header snippet), a bordered content
+area for the form, and a footer split into an audit box (version, created/updated
+metadata) and action buttons. Use it on every entity create/edit route so that
+audit metadata and action placement stay consistent.
+
+## Origin
+
+**Custom** — Primebrick-written. Composes `Badge` and the `useAuditBox`
+composable for the footer audit metadata.
+
+## Usage
+
+### Edit page (with audit box)
+
+```svelte
+<FormPageLayout
+  title={$t('users.editTitle')}
+  entity="users"
+  rowUuid={row.uuid}
+  auditData={row}
+  auditingColumns={auditingColumns}
+  meta={entityMeta}
+  footerActions={@render actions()}
+>
+  <UserForm bind:value={row} />
+</FormPageLayout>
+```
+
+### Create page (audit box hidden)
+
+Set `isCreatePage` to suppress the audit box — new records have no audit
+metadata yet.
+
+```svelte
+<FormPageLayout
+  title={$t('users.createTitle')}
+  entity="users"
+  rowUuid=""
+  auditData={{}}
+  auditingColumns={[]}
+  isCreatePage
+  footerActions={@render actions()}
+>
+  <UserForm bind:value={draft} />
+</FormPageLayout>
+```
+
+### Custom header snippet
+
+Pass a `header` snippet to fully replace the default title row (for example, to
+add breadcrumbs or inline actions).
+
+```svelte
+<FormPageLayout
+  entity="users"
+  rowUuid={row.uuid}
+  auditData={row}
+  auditingColumns={auditingColumns}
+  footerActions={@render actions()}
+>
+  {#snippet header()}
+    <div class="flex items-center justify-between">
+      <Breadcrumbs />
+      <Button size="sm">{$t('common.duplicate')}</Button>
+    </div>
+  {/snippet}
+  <UserForm bind:value={row} />
+</FormPageLayout>
+```
+
+## Props
+
+Full prop table: see [API reference — formpagelayout](/docs/user-guide/api-reference#formpagelayout).
+
+Key props: `title` (string, default header text), `header` (Snippet, overrides
+title), `headerExtras` (Snippet, rendered next to title), `children` (Snippet,
+form content), `footerActions` (Snippet, action buttons), `entity` (string),
+`rowUuid` (string), `auditData` (Record&lt;string, any&gt;), `auditingColumns`
+(MetaColumn[]), `isCreatePage` (boolean, default `false`, hides audit box),
+`meta` (EntityMetadata, used for the entity ID display).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#formpagelayout)

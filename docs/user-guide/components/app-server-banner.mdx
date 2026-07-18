@@ -1,0 +1,67 @@
+---
+title: AppServerBanner
+description: Inline alert banner shown under the topbar when the backend is unreachable or module navigation fails to load, with a retry button.
+---
+
+# AppServerBanner
+
+`src/lib/components/AppServerBanner.svelte`
+
+## Purpose
+
+A thin inline alert banner rendered directly beneath `AppTopbar`. It appears in
+two cases driven by `shellNav`: when the backend is **unreachable** (destructive
+red banner with `TriangleAlert`), or when module navigation **failed to load**
+but the backend is reachable (warning amber banner with `AlertCircle`). Both
+variants expose a **Retry** button that re-invokes `loadShellNav()`. When
+neither condition holds, the banner renders nothing.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Button` and
+`@lucide/svelte` icons.
+
+## Usage
+
+### Default (mounted by AppShell)
+
+```svelte
+<AppServerBanner />
+```
+
+### Conditional rendering logic
+
+The component self-guards on `shellNav.unreachable` and `shellNav.error`; you
+never need to wrap it.
+
+```svelte
+{#if shellNav.unreachable}
+  <!-- destructive banner + Retry -->
+{:else if shellNav.error}
+  <!-- warning banner + Retry -->
+{/if}
+```
+
+### Retry behavior
+
+Retry calls `loadShellNav()` directly, which re-fetches module navigation from
+the backend.
+
+```svelte
+<Button variant="outline" size="sm" onclick={() => loadShellNav()}>
+  {$t('shell.retry')}
+</Button>
+```
+
+## Props
+
+Full prop table: see [API reference — appserverbanner](/docs/user-guide/api-reference#appserverbanner).
+
+Key props: none — `AppServerBanner` takes no props; it reads state from
+`shellNav`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#appserverbanner)

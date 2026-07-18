@@ -1,0 +1,71 @@
+---
+title: AppShell
+description: Root application shell that wires together the sidebar, topbar, server banner, toaster, and sheet host, plus backend health polling and global error capture.
+---
+
+# AppShell
+
+`src/lib/components/AppShell.svelte`
+
+## Purpose
+
+The root layout for every authenticated page. It composes the sidebar
+(`AppSidebar`), the topbar (`AppTopbar`), the server-unreachable banner
+(`AppServerBanner`), the global `Toaster`, and the `SheetHost`, then renders the
+single route tree via `{@render children()}`. On mount it probes backend health,
+loads shell navigation, starts services polling, and installs global
+`unhandledrejection` / `error` listeners that funnel failures into
+`pushNotification`. A `$effect` re-probes health every 5s while the backend, DB,
+or IDP is down, and re-loads module nav once after recovery.
+
+## Origin
+
+**Custom** — Primebrick-written. Composes the shadcn-svelte `Sidebar` provider
+with custom shell pieces and the `Toaster` / `SheetHost` infrastructure.
+
+## Usage
+
+### Default (root layout)
+
+```svelte
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import AppShell from '$lib/components/AppShell.svelte';
+
+  let { children }: { children: Snippet } = $props();
+</script>
+
+<AppShell>
+  {@render children()}
+</AppShell>
+```
+
+### Inside a SvelteKit layout
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script lang="ts">
+  import AppShell from '$lib/components/AppShell.svelte';
+  let { children } = $props();
+</script>
+
+<AppShell>
+  {@render children()}
+</AppShell>
+```
+
+The shell renders a single `{@render children()}` — never duplicate it across
+desktop/mobile columns, or every page mounts twice (duplicate effects, duplicate
+errors).
+
+## Props
+
+Full prop table: see [API reference — appshell](/docs/user-guide/api-reference#appshell).
+
+Key props: `children: Snippet` (the route tree).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#appshell)

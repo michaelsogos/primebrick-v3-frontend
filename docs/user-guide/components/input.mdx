@@ -1,0 +1,149 @@
+---
+title: Input
+description: shadcn-svelte Input extended with TextInput (clear/copy chrome) and AsyncValidatedInput (debounced server validation).
+---
+
+# Input
+
+`src/lib/components/ui/input/`
+
+## Purpose
+
+Text input primitives for forms. The barrel exports three components:
+
+- **`Input`** (`input.svelte`) — the base shadcn-svelte `<input>` wrapper. Handles `file` vs text types, animated focus border, and `aria-invalid` styling.
+- **`TextInput`** (`text-input.svelte`) — `Input` wrapped in a `relative` div with trailing chrome: a clear `X` button when editable, a `CopyButton` (with optional tooltip) when readonly, and an optional `trailing` snippet for custom status icons.
+- **`AsyncValidatedInput`** (`async-validated-input.svelte`) — `TextInput` with debounced server-side validation. Shows `idle | loading | valid | not-valid | api-error` status icons and exposes status via `onStatusChange`.
+
+`input-chrome.ts` exports shared class constants (`inputControlHoverClasses`,
+`inputTrailingIconColorClasses`, `inputTrailingIconButtonClasses`) used to keep
+trailing-icon styling consistent across inputs and the command palette.
+
+## Origin
+
+**shadcn-svelte (extended)** — `Input` is the standard shadcn-svelte input
+with Primebrick's `border-primary-gradient` / animated-border treatment.
+`TextInput` and `AsyncValidatedInput` are Primebrick additions on top of it.
+
+## Usage
+
+### Plain Input
+
+```svelte
+<script lang="ts">
+  import { Input } from "$lib/components/ui/input";
+  let value = $state("");
+</script>
+
+<Input bind:value placeholder="Enter name" />
+```
+
+### File input
+
+```svelte
+<script lang="ts">
+  import { Input } from "$lib/components/ui/input";
+  let files = $state<FileList>();
+</script>
+
+<Input type="file" bind:files />
+```
+
+### TextInput — editable with clear button
+
+```svelte
+<script lang="ts">
+  import { TextInput } from "$lib/components/ui/input";
+  let value = $state("");
+</script>
+
+<TextInput
+  bind:value
+  placeholder="Search…"
+  onClear={() => console.log("cleared")}
+  clearLabel="Clear search"
+/>
+```
+
+### TextInput — readonly with copy tooltip
+
+```svelte
+<TextInput
+  value={apiKey}
+  readonly
+  copyTooltipLabel="Copy API key"
+  onCopy={(status) => console.log("copy", status)}
+/>
+```
+
+### AsyncValidatedInput — server-side uniqueness check
+
+```svelte
+<script lang="ts">
+  import AsyncValidatedInput from "$lib/components/ui/input/async-validated-input.svelte";
+  import type { ValidationResult } from "$lib/types/validation";
+
+  async function checkSlug(value: string): Promise<ValidationResult> {
+    const res = await fetch(`/api/slugs/available?slug=${value}`);
+    const data = await res.json();
+    return data.available
+      ? { valid: true }
+      : { valid: false, message: "validation.slugTaken" };
+  }
+
+  let slug = $state("");
+</script>
+
+<AsyncValidatedInput
+  bind:value={slug}
+  placeholder="unique-slug"
+  validateFn={checkSlug}
+  onStatusChange={(s) => console.log("status", s)}
+  data-testid="slug-input"
+/>
+```
+
+Validation is debounced (`DEBOUNCE_DELAY = 300ms`) and only fires once the
+value reaches `MIN_CHARS = 3` characters. Pass `externalInvalid` to force the
+`not-valid` UI from outside (e.g. when a form-level validator rejects the
+field).
+
+## Props
+
+Full prop table: see [API reference — input](/docs/user-guide/api-reference#input).
+
+Key props:
+
+**Input**
+
+- `value` (bindable) — the input value.
+- `type` — standard HTML input type, or `"file"`.
+- `files` (bindable) — `FileList` for `type="file"`.
+- `ref` (bindable) — underlying `<input>` element.
+- Standard `HTMLInputAttributes` are forwarded.
+
+**TextInput** (extends `Input`)
+
+- `onClear` (`() => void`) — invoked after the clear button resets `value` to `""`.
+- `clearLabel` (`string`, default `"Clear"`) — `aria-label`/`title` for the clear button.
+- `onCopy` (`(status: "success" | "failure" | undefined) => void`) — forwarded to `CopyButton`.
+- `copyTooltipLabel` (`string`) — when set, wraps the copy button in a `Tooltip`.
+- `copyAnimationDuration` (`number`, default `2000`) — `CopyButton` animation.
+- `trailing` (`Snippet`) — extra content rendered after the clear/copy button (e.g. an async status icon).
+- `readonly`, `disabled` — switch the trailing chrome mode (`readonly` → copy, `editable` → clear, `disabled` → none).
+
+**AsyncValidatedInput**
+
+- `validateFn` (`(value: string) => Promise&lt;ValidationResult&gt;`, required) — server validation callback.
+- `onStatusChange` (`(status: ValidationStatus) => void`) — `idle | loading | valid | not-valid | api-error`.
+- `externalInvalid` (`boolean`, default `false`) — force `not-valid` UI from outside.
+- `onChange` (`(value: string) => void`) — value change callback.
+- Standard input attributes (`name`, `id`, `placeholder`, `disabled`, `type`, `required`, `minlength`, `maxlength`, `pattern`, aria/data attributes).
+
+## Next steps
+
+- [Tooltip](/docs/user-guide/components/tooltip)
+- [Form](/docs/user-guide/components/form)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#input)

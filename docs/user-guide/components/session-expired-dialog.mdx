@@ -1,0 +1,77 @@
+---
+title: SessionExpiredDialog
+description: Modal that re-authenticates an expired session inline via LoginForm, then drains and retries pending requests.
+---
+
+# SessionExpiredDialog
+
+`src/lib/components/auth/SessionExpiredDialog.svelte`
+
+## Purpose
+
+A modal that appears when the user's session expires mid-task. It embeds
+a [LoginForm](/docs/user-guide/components/login-form) so the user can
+re-authenticate without leaving the page; on success it closes the
+dialog, drains the queue of pending API requests, and retries each one
+with a `_sessionRetry` flag. On repeated failure it offers a "go to
+login" fallback that preserves the current URL as a redirect.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Dialog` +
+`Button` + `Alert`, `@lucide/svelte`'s `ShieldUser` icon, the
+`sessionExpiredStore`, and the redirect cache in
+`$lib/auth/redirect-cache`. Not vendored from any registry.
+
+## Usage
+
+### Mount once
+
+```svelte
+<script>
+  import SessionExpiredDialog from '$lib/components/auth/SessionExpiredDialog.svelte';
+</script>
+
+<SessionExpiredDialog />
+```
+
+The component takes no props. Its visibility is bound to
+`sessionExpiredStore.isOpen`, which is toggled by the API layer when a
+request returns 401.
+
+### How it wires LoginForm
+
+```svelte
+<LoginForm onsuccess={handleLoginSuccess} onerror={handleLoginError} />
+```
+
+`handleLoginSuccess` closes the dialog, drains
+`sessionExpiredStore.drainPending()`, and retries each queued request
+with `_sessionRetry: true` so the API layer does not re-trigger the
+dialog. `handleLoginError` flips `sessionExpiredStore.hasFailedAttempt`,
+which surfaces a destructive alert and a "go to login" button.
+
+## Behavior
+
+- **Controlled by the store**: `bind:open={sessionExpiredStore.isOpen}`
+  — the dialog opens/closes purely through the store.
+- **Failed attempt**: when `hasFailedAttempt` is set, a destructive
+  `Alert` is shown and the footer renders a "go to login" button.
+- **Go to login**: `saveRedirectUrl` stashes
+  `window.location.pathname + window.location.search`, then navigates to
+  `/login` so the login page can redirect back after success.
+- **Inline retry**: successful re-auth drains the pending request queue
+  and resolves/rejects each original promise, so callers are unaware the
+  session was ever expired.
+
+## Props
+
+Full prop table: see [API reference — sessionexpireddialog](/docs/user-guide/api-reference#sessionexpireddialog).
+
+This component takes no props.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#sessionexpireddialog)
