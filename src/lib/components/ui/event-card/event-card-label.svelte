@@ -2,7 +2,7 @@
 	import type { HTMLAttributes } from "svelte/elements";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
-	type EventColor = "critical" | "error" | "warning" | "info";
+	type EventColor = "critical" | "error" | "warning" | "info" | "success";
 
 	let {
 		ref = $bindable(null),
@@ -22,6 +22,8 @@
 				return "text-red-600 dark:text-red-400";
 			case "warning":
 				return "text-amber-700 dark:text-amber-400";
+			case "success":
+				return "text-emerald-700 dark:text-emerald-400";
 			default:
 				return "text-sky-700 dark:text-sky-400";
 		}

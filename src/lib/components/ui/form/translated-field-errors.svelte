@@ -13,22 +13,19 @@
 		errorClasses?: string | undefined | null;
 	} = $props();
 
-	function translateError(error: string, errorObj?: any): string {
-		// If the error is a translation key, translate it with parameters
-		if (error.startsWith('validation.')) {
-			// Extract parameters from Zod error object
-			const params: Record<string, any> = {};
-			
-			if (errorObj) {
-				// Handle Zod error parameters
-				if (errorObj.minimum !== undefined) params.min = errorObj.minimum;
-				if (errorObj.maximum !== undefined) params.max = errorObj.maximum;
-			}
-			
-			return $t(error, params);
+	function translateError(error: string): string {
+		// Generic format: `translationKey|jsonParams` (e.g., `validation.tooShort|{"min": 3}`)
+		// If no `|` separator, the error is a plain translation key with no params.
+		if (!error.includes('|')) return $t(error);
+
+		const [key, jsonParams] = error.split('|', 2);
+		try {
+			const params = JSON.parse(jsonParams);
+			return $t(key, params);
+		} catch {
+			// Malformed JSON — fall back to translating the key without params
+			return $t(key);
 		}
-		// Otherwise return as-is
-		return error;
 	}
 </script>
 

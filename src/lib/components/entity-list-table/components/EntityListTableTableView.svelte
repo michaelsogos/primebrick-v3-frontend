@@ -5,6 +5,8 @@
   import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';
   import EntityListTableHeaderRow from './EntityListTableHeaderRow.svelte';
   import { stickyCellClassWithCompute } from '../utils/cell-styling';
+  import type { Snippet } from 'svelte';
+  import type { MetaColumn } from '$lib/entity-list/types';
 
   let {
     tableRef,
@@ -94,12 +96,12 @@
     previewPanel: any;
     viewRows: TRow[];
     error: string | null;
-    errorView?: (() => void) | null;
-    rowsLoadingView?: (() => void) | null;
+    errorView?: Snippet;
+    rowsLoadingView?: Snippet;
     loadingText: string;
     rows: any;
     extraCols: number;
-    emptyView?: (() => void) | null;
+    emptyView?: Snippet;
     emptyText: string;
     showSelectedOnly: boolean;
     selectionCount: number;
@@ -124,7 +126,7 @@
     page: number;
     onPageChange: (page: number) => void;
     entity: string;
-    columns: any[] | undefined;
+    columns: MetaColumn[];
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
     auditingColumns: any[] | undefined;
@@ -203,6 +205,7 @@
         onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
         onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
         onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
+        handleCustomAction={rowActionsComposable.handleCustomAction}
         stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
       />
     {/snippet}

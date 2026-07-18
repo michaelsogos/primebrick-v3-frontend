@@ -2,8 +2,7 @@ import { Context, watch } from 'runed';
 import type { ReadableBoxedValues, WritableBoxedValues } from 'svelte-toolbelt';
 import type { ZxcvbnResult } from '@zxcvbn-ts/core';
 
-type ZxcvbnCoreModule = typeof import('@zxcvbn-ts/core');
-type ZxcvbnRunner = ZxcvbnCoreModule['zxcvbn'];
+type ZxcvbnRunner = (password: string) => ZxcvbnResult;
 
 let zxcvbnRunnerPromise: Promise<ZxcvbnRunner> | null = null;
 
@@ -16,7 +15,7 @@ const loadZxcvbnRunner = async (): Promise<ZxcvbnRunner> => {
 		import('@zxcvbn-ts/language-en')
 	])
 		.then(([core, common, en]) => {
-			core.zxcvbnOptions.setOptions({
+			const zxcvbn = new core.ZxcvbnFactory({
 				translations: en.translations,
 				graphs: common.adjacencyGraphs,
 				dictionary: {
@@ -24,8 +23,7 @@ const loadZxcvbnRunner = async (): Promise<ZxcvbnRunner> => {
 					...en.dictionary
 				}
 			});
-
-			return core.zxcvbn;
+			return (password: string) => zxcvbn.check(password);
 		})
 		.catch((error: unknown) => {
 			zxcvbnRunnerPromise = null;
@@ -137,13 +135,18 @@ class PasswordInputState {
 		});
 	}
 
-	props = $derived.by(() => ({
-		'aria-invalid':
+	props = $derived.by((): Record<string, unknown> => {
+		const strengthInvalid =
 			!this.root.strengthLoading &&
 			(this.root.strength?.score ?? 0) < this.root.opts.minScore.current &&
 			this.root.passwordState.tainted &&
-			this.root.passwordState.strengthMounted
-	}));
+			this.root.passwordState.strengthMounted;
+
+		// Only emit aria-invalid when the strength check fails.
+		// When it doesn't (e.g. no Password.Strength mounted), omit the key
+		// so mergeProps preserves the caller's aria-invalid (from superforms/zod).
+		return strengthInvalid ? { 'aria-invalid': true } : {};
+	});
 }
 
 class PasswordToggleVisibilityState {

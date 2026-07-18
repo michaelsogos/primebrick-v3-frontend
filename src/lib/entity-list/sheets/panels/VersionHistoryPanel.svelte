@@ -1,5 +1,6 @@
 <script lang="ts">
   import { apiFetch } from "$lib/api";
+  import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -37,7 +38,7 @@
   let versionHistoryError = $state<string | null>(null);
   let versionHistoryPage = $state<number>(1);
   let versionHistoryLimit = $state<number>(50);
-  let versionHistoryTotal = $state<number>(0);
+  let versionHistoryTotal = $state<bigint>(0n);
   let versionHistoryHasMore = $state<boolean>(false);
   let expandedEntries = $state<Set<number>>(new Set());
 
@@ -63,9 +64,9 @@
         throw new Error('Failed to load version history');
       }
 
-      const data = await res.json();
+      const data = extJsonParse<{ data: any[]; pagination: { total: bigint; hasMore: boolean } }>(await res.text());
       versionHistoryData = data.data || [];
-      versionHistoryTotal = data.pagination?.total || 0;
+      versionHistoryTotal = data.pagination?.total || 0n;
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
       versionHistoryError = $t('entities.versionHistory.error');
@@ -88,7 +89,7 @@
         throw new Error('Failed to load version history');
       }
 
-      const data = await res.json();
+      const data = extJsonParse<{ data: any[]; pagination: { hasMore: boolean } }>(await res.text());
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {

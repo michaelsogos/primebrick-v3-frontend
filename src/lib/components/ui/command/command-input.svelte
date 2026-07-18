@@ -9,7 +9,7 @@
 		class: className,
 		value = $bindable(""),
 		...restProps
-	}: CommandPrimitive.InputProps = $props();
+	}: Omit<CommandPrimitive.InputProps, 'ref'> & { ref?: HTMLInputElement | null } = $props();
 </script>
 
 <div data-slot="command-input-wrapper" class="p-1 pb-0">

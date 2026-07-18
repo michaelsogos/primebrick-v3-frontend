@@ -2,6 +2,54 @@
   "app": {
     "title": "Primebrick"
   },
+  "welcome": {
+    "title": "Bienvenue sur Primebrick",
+    "verifying": "Vérification de votre invitation...",
+    "otp": {
+      "title": "Vérifiez votre e-mail",
+      "description": "Bonjour {name}, nous avons envoyé un code de vérification à 6 chiffres à votre adresse e-mail. Saisissez-le ci-dessous pour continuer.",
+      "codeLabel": "Code de vérification",
+      "verifyButton": "Vérifier le code",
+      "verifying": "Vérification...",
+      "resendButton": "Renvoyer le code",
+      "resendIn": "Renvoyer le code dans {seconds}s"
+    },
+    "setPassword": {
+      "title": "Définissez votre mot de passe",
+      "description": "Choisissez un mot de passe sécurisé pour votre compte. Vous pourrez le modifier ultérieurement dans les paramètres de votre profil.",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "Saisissez votre nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Saisissez à nouveau votre nouveau mot de passe",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+      "completeButton": "Terminer la configuration",
+      "completing": "Finalisation de la configuration..."
+    },
+    "complete": {
+      "title": "Configuration terminée !",
+      "description": "Votre compte est prêt. Vous pouvez maintenant vous connecter avec votre nom d'utilisateur et le mot de passe que vous venez de définir.",
+      "loginButton": "Aller à la connexion"
+    },
+    "passkey": {
+      "title": "Ajouter une passkey (facultatif)",
+      "description": "Connectez-vous plus rapidement et plus sécurisé avec Face ID™, Touch ID™, Windows Hello™ ou une clé de sécurité — sans mot de passe.",
+      "titleRequired": "Passkey requise",
+      "descriptionRequired": "Après vous être connecté, vous devrez configurer une passkey. Il s'agit d'une mesure de sécurité obligatoire pour votre compte.",
+      "enrollButton": "Configurer la passkey",
+      "enrolling": "En attente de l'authentificateur...",
+      "enrolled": "Passkey ajoutée avec succès !"
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "noToken": "Aucun jeton d'invitation trouvé. Veuillez utiliser le lien de votre e-mail d'invitation.",
+      "invalidToken": "Ce lien d'invitation est invalide, expiré ou a déjà été utilisé.",
+      "networkError": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+      "otpSendFailed": "Échec de l'envoi du code de vérification. Veuillez réessayer.",
+      "otpInvalid": "Code de vérification invalide. Vérifiez et réessayez.",
+      "completeFailed": "Échec de la finalisation de la configuration. Veuillez réessayer.",
+      "backToLogin": "Retour à la connexion"
+    }
+  },
   "login": {
     "title": "Connexion",
     "description": "Entrez vos identifiants pour accéder à Primebrick",
@@ -15,6 +63,12 @@
     "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
     "accountLocked": "Compte temporairement verrouillé. Veuillez réessayer dans {minutes} minutes.",
     "userNoPermission": "L'utilisateur n'a pas la permission!",
+    "or": "ou",
+    "passkey": {
+      "button": "Se connecter avec une passkey",
+      "error": "Échec de la connexion par passkey",
+      "unsupported": "Les passkeys ne sont pas prises en charge sur cet appareil"
+    },
     "hero": {
       "quote1": "La plateforme de gestion solide, modulaire et efficace pour un contrôle complet de vos projets.",
       "author1": "Focus & Structure",
@@ -24,6 +78,38 @@
       "author3": "Efficacité Opérationnelle",
       "quote4": "Simplifiez la complexité. Transformez les données brutes en décisions stratégiques.",
       "author4": "Data Driven"
+    },
+    "alert": {
+      "description": "Nous avons détecté une activité non autorisée sur votre compte. Votre administrateur a été informé. Veuillez vous connecter et changer votre mot de passe si ce n'est pas déjà fait."
+    }
+  },
+  "auth": {
+    "sessionExpired": {
+      "title": "Session expirée",
+      "description": "Votre session a expiré. Veuillez vous connecter pour continuer.",
+      "failedAttempt": "Échec de la connexion. Veuillez réessayer ou aller à la page de connexion.",
+      "goToLogin": "Aller à la page de connexion"
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Ajoutez une passkey pour vous connecter sans mot de passe via Face ID, Touch ID ou une clé de sécurité.",
+      "add": "Ajouter une passkey",
+      "remove": "Supprimer",
+      "empty": "Aucune passkey enregistrée",
+      "enrollmentSuccess": "Passkey ajoutée",
+      "enrollmentError": "Échec de l'ajout de la passkey",
+      "alreadyEnrolled": "Vous avez déjà une passkey sur cet appareil",
+      "deleteError": "Échec de la suppression de la passkey"
+    },
+    "passkeyPrompt": {
+      "title": "Sécurisez votre compte avec une passkey",
+      "description": "Les passkeys sont un moyen plus rapide et plus sûr de se connecter. Au lieu de saisir votre mot de passe, utilisez Face ID™, Touch ID™, Windows Hello™ ou une clé de sécurité. Cela ne prend que quelques secondes.",
+      "benefitSecurity": "Plus sécurisé que les mots de passe — résistant au phishing et au bourrage d'identifiants",
+      "benefitConvenience": "Connectez-vous instantanément avec la biométrie ou une clé de sécurité — aucun mot de passe à mémoriser",
+      "enrollButton": "Configurer une passkey",
+      "dismissButton": "Pas maintenant",
+      "dontAskAgain": "Ne plus afficher cette fenêtre",
+      "enrolling": "En attente de l'authentificateur..."
     }
   },
   "common": {
@@ -56,8 +142,12 @@
     "exit": "Quitter",
     "remove": "Supprimer",
     "clearAll": "Effacer tous les filtres",
+    "clearSelection": "Effacer la sélection",
     "delete": "Supprimer",
     "deleting": "Suppression…",
+    "saving": "Enregistrement…",
+    "saveSuccess": "Enregistré avec succès",
+    "saveFailed": "Échec de l'enregistrement",
     "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
     "deleteConfirm": "Cette action ne peut pas être annulée.",
     "restore": "Restaurer",
@@ -85,11 +175,36 @@
   "validation": {
     "required": "Ce champ est obligatoire",
     "invalidUrl": "Format d'URL invalide",
-    "tooShort": "Doit contenir au moins 5 caractères",
+    "invalidEmail": "Format d'e-mail non valide",
+    "emailRequired": "L'email est obligatoire",
+    "tooShort": "Doit contenir au moins {min} caractères",
     "tooLong": "Ne doit pas dépasser {max} caractères",
     "invalid": "Valeur invalide",
     "nameTaken": "Ce nom est déjà utilisé",
-    "invalidFormat": "Doit commencer et finir par une lettre ou un chiffre"
+    "invalidFormat": "Doit commencer et finir par une lettre ou un chiffre",
+    "rolesRequired": "Au moins un rôle est requis",
+    "orgRequired": "L'organisation est requise",
+    "passwordWeak": "Le mot de passe doit contenir: majuscule, minuscule, chiffre et caractère spécial (8-64 caractères)",
+    "passwordMinLength": "Au moins 8 caractères",
+    "passwordUppercase": "Au moins une lettre majuscule",
+    "passwordLowercase": "Au moins une lettre minuscule",
+    "passwordNumber": "Au moins un chiffre",
+    "passwordSpecial": "Au moins un caractère spécial",
+    "passwordRequired": "Le mot de passe est obligatoire",
+    "passwordLetter": "Au moins une lettre",
+    "passwordPolicyAlphaNumeric": "Le mot de passe doit contenir 8-64 caractères alphanumériques (lettres et/ou chiffres, sans caractères spéciaux)",
+    "passwordPolicyLetterAndNumber": "Le mot de passe doit contenir 8-64 caractères avec au moins une lettre et un chiffre (sans caractères spéciaux)",
+    "passwordPolicyLetterNumberSpecial": "Le mot de passe doit contenir 8-64 caractères avec au moins une lettre, un chiffre et un caractère spécial (* - _ . # @ ! | ? ^ :)",
+    "passwordPolicyMixedCaseSpecial": "Le mot de passe doit contenir 8-64 caractères avec au moins une minuscule, une majuscule, un chiffre et un caractère spécial (* - _ . # @ ! | ? ^ :)"
+  },
+  "roles": {
+    "administrators": "Administrateur",
+    "sales": "Ventes",
+    "customer_service": "Service Client",
+    "hr": "Ressources Humaines",
+    "ops": "Opérations",
+    "systemAdministrator": "Administrateur système",
+    "notValidRole": "Rôle non valide"
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -99,12 +214,7 @@
     "nav": {
       "aria": "Navigation",
       "open": "Ouvrir la navigation",
-      "modulesGroup": "Modules",
-      "demoSettingsGroup": "Paramètres",
-      "demoItemProfile": "Profil",
-      "demoItemPreferences": "Préférences",
-      "demoItemHelp": "Aide et support",
-      "demoItemCriticalToast": "Toast critique (démo)",
+      "module": "Module",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Sections CRM"
     },
@@ -162,7 +272,8 @@
         "users": "Utilisateurs",
         "security": "Sécurité",
         "modules": "Modules",
-        "templates": "Modèles"
+        "templates": "Modèles",
+        "emailProviders": "Fournisseurs d'email"
       },
       "profile": {
         "title": "Profil",
@@ -172,22 +283,25 @@
         "displayNamePlaceholder": "Votre nom",
         "email": "E-mail",
         "emailPlaceholder": "votre@email.com",
-        "idpCode": "IDP Code",
+        "idpCode": "ID d'identité",
         "copyIdpCode": "Copier IDP Code",
-        "idpOwner": "IDP Owner",
+        "idpOwner": "Propriétaire de l'identité",
         "copyIdpOwner": "Copier IDP Owner",
-        "idpName": "IDP Name",
+        "idpName": "Nom de l'identité",
         "copyIdpName": "Copier IDP Name",
-        "idpAdmin": "IDP Administrateur",
-        "idpVerified": "IDP Vérifié",
-        "idpEmailVerified": "IDP E-mail Vérifié",
-        "idpIssuer": "IDP Issuer",
+        "idpAdmin": "Administrateur de l'identité",
+        "idpVerified": "Identité vérifiée",
+        "idpEmailVerified": "E-mail vérifiée",
+        "idpIssuer": "Émetteur de l'identité",
         "copyIdpIssuer": "Copier IDP Issuer",
         "createdAt": "Créé le",
         "createdBy": "Créé par",
         "updatedAt": "Mis à jour le",
         "updatedBy": "Mis à jour par",
-        "version": "Version"
+        "version": "Version",
+        "roles": "Rôles applicatifs",
+        "rolesPlaceholder": "Aucun rôle attribué",
+        "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter ?"
       },
       "audit": {
         "id": "ID",
@@ -202,30 +316,42 @@
       "organizations": {
         "title": "Organisations",
         "create": {
-          "idpCode": "IDP Code",
+          "idpCode": "ID d'identité",
           "copyIdpCode": "Copier IDP Code",
+          "copyIdpOwner": "Copier IDP Owner",
           "displayName": "Nom d'affichage",
           "displayNamePlaceholder": "Nom de l'organisation",
           "websiteUrl": "URL du site web",
-          "idpOwner": "IDP Owner",
-          "idpName": "IDP Name",
+          "idpOwner": "Propriétaire de l'identité",
+          "idpName": "Nom de l'identité",
           "title": "Nouvelle Organisation",
           "unsavedChanges": "Vous avez des modifications non enregistrées. Quitter quand même?"
         },
         "update": {
-          "idpCode": "IDP Code",
+          "title": "Modifier l'Organisation",
+          "idpCode": "ID d'identité",
           "copyIdpCode": "Copier IDP Code",
           "copyIdpOwner": "Copier IDP Owner",
           "copyIdpName": "Copier IDP Name",
           "displayName": "Nom d'affichage",
           "displayNamePlaceholder": "Nom de l'organisation",
           "websiteUrl": "URL du site web",
-          "idpOwner": "IDP Owner",
-          "idpName": "IDP Name",
+          "idpOwner": "Propriétaire de l'identité",
+          "idpName": "Nom de l'identité",
           "unsavedChanges": "Il y a des modifications non enregistrées. Êtes-vous sûr de vouloir partir?"
         }
       },
       "users": {
+        "changePassword": "Changer le mot de passe",
+        "changePasswordTitle": "Changer le mot de passe",
+        "changePasswordDescription": "Définissez un nouveau mot de passe pour cet utilisateur. Il devra utiliser le nouveau mot de passe lors de la prochaine connexion.",
+        "changePasswordNew": "Nouveau mot de passe",
+        "changePasswordNewPlaceholder": "Entrez le nouveau mot de passe",
+        "changePasswordConfirm": "Confirmer le mot de passe",
+        "changePasswordConfirmPlaceholder": "Entrez à nouveau le mot de passe",
+        "changePasswordMismatch": "Les mots de passe ne correspondent pas",
+        "changePasswordSuccess": "Mot de passe modifié avec succès",
+        "changePasswordFailed": "Échec de la modification du mot de passe",
         "create": {
           "title": "Créer Utilisateur",
           "username": "Nom d'utilisateur",
@@ -236,21 +362,33 @@
           "displayNamePlaceholder": "Entrez le nom d'affichage",
           "email": "E-mail",
           "emailPlaceholder": "Entrez l'e-mail",
-          "roles": "Rôles",
+          "roles": "Rôles applicatifs",
+          "rolesPlaceholder": "Sélectionner des rôles...",
           "avatarInitials": "Initiales de l'avatar",
           "avatarInitialsPlaceholder": "Entrez les initiales (ex. JD)",
           "avatarColor": "Couleur de l'avatar",
-          "idpOrg": "IDP Organisation",
-          "idpUsername": "IDP Nom d'utilisateur",
-          "idpPassword": "IDP Mot de passe",
+          "idpOrg": "Organisation",
+          "idpOrgPlaceholder": "Sélectionner une organisation...",
+          "idpOrgSearch": "Rechercher des organisations...",
+          "idpUsername": "Nom d'utilisateur",
+          "idpPassword": "Mot de passe",
+          "sendInvitation": "Envoyer un e-mail d'invitation",
+          "sendInvitationTooltipTitle": "Envoyer l'invitation",
+          "sendInvitationTooltip": "Lorsqu'activé, un e-mail d'invitation sera envoyé à l'utilisateur. Celui-ci définira son propre mot de passe via une page d'accueil sécurisée. Le champ de mot de passe ci-dessus devient facultatif — s'il est laissé vide, un espace réservé aléatoire est défini dans le fournisseur d'identité et l'utilisateur le définit lors du premier accès.",
+          "invitationSent": "Invitation envoyée à {email}",
           "copyIdpUsername": "Copier IDP Nom d'utilisateur",
           "idpCode": "IDP Code",
           "copyIdpCode": "Copier IDP Code",
-          "idpActive": "IDP Actif",
-          "idpAdmin": "IDP Administrateur",
-          "idpVerified": "IDP Vérifié",
-          "idpEmailVerified": "IDP Email Vérifié",
-          "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
+          "idpActive": "Activé",
+          "idpAdmin": "Administrateur de l'identité",
+          "idpAdminHint": "ATTENTION : Le statut d'Administrateur de l'identité permet à l'utilisateur d'accéder au système IDP pour effectuer des modifications au niveau administratif, mais n'accorde pas de droits d'administration sur cette application. Pour accorder des droits d'administration sur l'application, définissez les rôles applicatifs.",
+          "idpVerified": "Identité vérifiée",
+          "idpVerifiedHint": "Indique si le processus de vérification d'identité a été conclu avec succès. Il peut dépendre d'un processus KYC ou d'un autre type de vérification.",
+          "idpEmailVerified": "E-mail vérifiée",
+          "idpEmailVerifiedHint": "Indique si l'e-mail a été vérifié, généralement via un lien envoyé à la boîte de réception qui est censée être lisible uniquement par l'utilisateur dont nous configurons le profil.",
+          "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?",
+          "usernameDisabledPlaceholder": "Sélectionnez d'abord une organisation",
+          "usernameSelectOrgFirst": "Vous devez sélectionner une organisation avant de saisir un nom d'utilisateur."
         },
         "update": {
           "title": "Modifier Utilisateur",
@@ -262,15 +400,22 @@
           "avatarInitials": "Initiales de l'avatar",
           "avatarInitialsPlaceholder": "Entrez les initiales (ex. JD)",
           "avatarColor": "Couleur de l'avatar",
-          "isActive": "Actif",
-          "isAdmin": "Administrateur",
-          "roles": "Rôles",
-          "idpCode": "IDP Code",
+          "selectColorPlaceholder": "Sélectionner une couleur",
+          "isActive": "Activé",
+          "isAdmin": "Administrateur de l'identité",
+          "roles": "Rôles applicatifs",
+          "rolesPlaceholder": "Sélectionner des rôles...",
+          "idpCode": "ID d'identité",
           "copyIdpCode": "Copier IDP Code",
-          "idpOwner": "IDP Owner",
+          "idpOwner": "Propriétaire de l'identité",
           "copyIdpOwner": "Copier IDP Owner",
-          "idpName": "IDP Nom d'utilisateur",
+          "idpName": "Nom de l'identité",
           "copyIdpName": "Copier IDP Nom d'utilisateur",
+          "idpOrg": "Organisation",
+          "idpUsername": "Nom d'utilisateur",
+          "issuer": "Émetteur de l'identité",
+          "isVerified": "Identité vérifiée",
+          "emailVerified": "E-mail vérifiée",
           "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
         }
       },
@@ -296,13 +441,44 @@
       },
       "modules": {
         "title": "Modules",
-        "uploadModule": "Télécharger un module",
-        "selectModuleFile": "Sélectionner un fichier de module (.zip, .tar.gz)",
-        "installButton": "Installer",
-        "installedModules": "Modules installés",
+        "importModule": "Importer un Module",
+        "openMarketplace": "Ouvrir le Marketplace",
+        "notImplemented": "PAS ENCORE IMPLÉMENTÉ !",
+        "installedModules": "Modules Installés",
         "version": "Version",
         "active": "Actif",
-        "inactive": "Inactif"
+        "inactive": "Inactif",
+        "configure": "Configurer",
+        "noModules": "Aucun module installé",
+        "noModulesHint": "Démarrez un microservice pour le voir apparaître ici automatiquement.",
+        "loadFailed": "Impossible de charger les modules",
+        "moduleEnabled": "Module activé",
+        "moduleDisabled": "Module désactivé",
+        "moduleDeleted": "Module supprimé",
+        "toggleFailed": "Impossible de basculer le module",
+        "deleteFailed": "Impossible de supprimer le module",
+        "reserved": "Réservé",
+        "behindScaler": "Scaler",
+        "config": {
+          "serviceInfo": "Info Service",
+          "moduleConfig": "Configuration du Module",
+          "name": "Nom",
+          "baseUrl": "URL de Base",
+          "description": "Description",
+          "icon": "Icône",
+          "iconPlaceholder": "Nom d'icône Lucide, URL, SVG ou base64",
+          "iconType": "Type d'Icône",
+          "iconTypeIcon": "Icône Lucide",
+          "iconTypeUrl": "URL d'Image",
+          "iconTypeSvg": "SVG XML",
+          "iconTypeBase64": "Base64",
+          "author": "Auteur",
+          "githubRepoUrl": "URL du Repo GitHub",
+          "serviceVersion": "Version du Service",
+          "serviceVersionHint": "Définie par le microservice lors de l'enregistrement",
+          "configNotAvailable": "API de configuration non disponible pour ce module.",
+          "noConfigEntries": "Aucune entrée de configuration pour ce module."
+        }
       },
       "templates": {
         "title": "Modèles",
@@ -311,6 +487,34 @@
         "uploadButton": "Télécharger",
         "templatesList": "Liste des modèles",
         "createTemplate": "Créer un modèle"
+      },
+      "emailProviders": {
+        "title": "Fournisseurs d'email",
+        "addProvider": "Ajouter un fournisseur",
+        "createProvider": "Créer un fournisseur d'email",
+        "editProvider": "Modifier le fournisseur d'email",
+        "providerName": "Nom du fournisseur",
+        "apiKey": "Clé API",
+        "apiKeyLeaveBlank": "Laisser vide pour conserver la clé actuelle",
+        "apiEndpoint": "Point de terminaison API",
+        "fromEmail": "Email d'expédition",
+        "fromName": "Nom d'expédition",
+        "replyTo": "Répondre à",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce fournisseur ?",
+        "noProviders": "Aucun fournisseur d'email configuré.",
+        "errors": {
+          "providerRequired": "Le nom du fournisseur est requis",
+          "apiKeyRequired": "La clé API est requise",
+          "invalidEmail": "Adresse email invalide"
+        },
+        "notifications": {
+          "created": "Fournisseur d'email créé avec succès",
+          "updated": "Fournisseur d'email mis à jour avec succès",
+          "deleted": "Fournisseur d'email supprimé avec succès"
+        }
       }
     },
     "errors": {
@@ -326,27 +530,25 @@
       "unhandledRejectionFallback": "Rejet non géré",
       "unhandledErrorFallback": "Erreur non gérée"
     },
-    "demoToast": {
-      "profileMessage": "Notification d'information de démonstration (impact faible).",
-      "preferencesMessage": "Avertissement de démonstration (impact moyen).",
-      "helpMessage": "Erreur de démonstration (impact élevé).",
-      "profileAria": "Profil — afficher un toast d'information de démo",
-      "preferencesAria": "Préférences — afficher un toast d'avertissement de démo",
-      "helpAria": "Aide et support — afficher un toast d'erreur de démo",
-      "criticalMessage": "Notification critique / urgente de démonstration (distincte de l'erreur standard).",
-      "criticalAria": "Toast critique — afficher un toast urgent de démo"
-    },
     "listFailed": "Liste échouée",
     "health": {
       "beOnline": "En ligne",
+      "statusLabel": "Statut",
       "beOffline": "Hors ligne",
       "dbOffline": "DB hors ligne",
       "idpOffline": "IDP hors ligne",
       "identityProvider": "Fournisseur d'identité",
       "versionsTitle": "Versions",
-      "shellVersion": "Shell",
+      "statusTooltip": "STATUT : {status} | Version : {version}",
+      "shellVersion": "Web Shell",
       "backendVersion": "Backend",
       "modulesTitle": "Modules",
+      "microservicesTitle": "Microservices",
+      "noMicroservices": "Aucun microservice enregistré",
+      "online": "En ligne",
+      "going_live": "Démarrage",
+      "offline": "Hors ligne",
+      "unknown": "Inconnu",
       "clientTitle": "Ce navigateur",
       "ianaTimezone": "Fuseau horaire IANA",
       "preferredLanguages": "Langues préférées",
@@ -359,6 +561,20 @@
       "osArch": "Architecture",
       "browser": "Nom du navigateur",
       "browserVersion": "Version du navigateur"
+    }
+  },
+  "errors": {
+    "scope": {
+      "customersPageInit": "Initialisation page clients",
+      "customersList": "Liste clients",
+      "bulkDeleteApi": "API suppression en masse",
+      "duplicateAction": "Action dupliquer",
+      "duplicateApi": "API duplication",
+      "customerListApi": "API liste clients"
+    },
+    "notImplemented": {
+      "title": "Non implémenté",
+      "detail": "L'action '{action}' n'est pas encore disponible."
     }
   },
   "entities": {
@@ -422,8 +638,8 @@
         "avatar_initials": "Initiales de l'avatar",
         "idp_org": "Propriétaire IDP",
         "idp_username": "Nom d'utilisateur IDP",
-        "is_active": "Actif",
-        "is_active_false": "Inactif",
+        "is_active": "Activé",
+        "is_active_false": "Désactivé",
         "is_admin": "Administrateur",
         "is_admin_false": "Non administrateur",
         "is_verified": "Vérifié",
@@ -438,6 +654,14 @@
         "version": "Version",
         "deleted_at": "Supprimé le",
         "deleted_by": "Supprimé par"
+      },
+      "hints": {
+        "is_admin": "L'indicateur d'administrateur d'identité permet à l'utilisateur d'accéder au système IDP pour effectuer des modifications de niveau administratif, mais n'accorde pas de droits d'administration à cette application. Pour accorder des accès d'administration à l'application, définissez les rôles applicatifs.",
+        "is_admin_title": "Ce n'est pas un rôle administratif",
+        "is_verified": "Indique si le processus de vérification de l'identité a été mené à bien. Il peut dépendre d'un processus KYC ou d'un autre type de vérification.",
+        "is_verified_title": "Vérification de l'identité",
+        "email_verified": "Indique si l'e-mail a été vérifié, généralement via un lien envoyé à la boîte de réception qui est censé être lisible uniquement par l'utilisateur dont nous configurons le profil.",
+        "email_verified_title": "Vérification de l'e-mail"
       }
     },
     "user_profiles": {
@@ -682,6 +906,25 @@
         "deleted_at": "Supprimé le",
         "deleted_by": "Supprimé par"
       }
+    }
+  },
+  "mcp": {
+    "consent": {
+      "title": "Autoriser le client MCP",
+      "description": "Un client AI demande l'accès à votre compte Primebrick",
+      "clientName": "Client",
+      "requestedScopes": "Permissions demandées",
+      "approve": "Autoriser",
+      "deny": "Refuser",
+      "approveButton": "Autoriser {client}",
+      "denyButton": "Refuser l'accès",
+      "loginRequired": "Vous devez être connecté pour autoriser ce client",
+      "loginFirst": "Veuillez vous connecter pour continuer",
+      "invalidParams": "Paramètres OAuth invalides — champs obligatoires manquants",
+      "redirecting": "Redirection...",
+      "approved": "Consentement approuvé. Redirection vers l'authentification...",
+      "denied": "Accès refusé. Retour au client...",
+      "securityNote": "En autorisant, vous permettez à ce client d'accéder à vos données Primebrick à l'aide des outils MCP. Vous pouvez révoquer cet accès à tout moment."
     }
   }
 }

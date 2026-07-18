@@ -16,5 +16,5 @@ export interface RFC7807Error {
   /** URI reference to specific occurrence (API path) */
   instance?: string;
   /** Severity/impact level override */
-  severity?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  severity?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
 }

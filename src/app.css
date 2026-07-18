@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,hover-border-primary-gradient-soft}");
+
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
 
@@ -91,6 +93,238 @@
 @utility avatar-hex {
   /** Pointy-top hexagon clip; use with Avatar: `class="… rounded-none avatar-hex"` to override default circles. */
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/**
+ * Reusable gradient border (sky-400 → indigo-400, oblique top-left → bottom-right),
+ * matching the PB logo gradient. Uses the double-background trick so it works with
+ * border-radius: a solid background clipped to padding-box, and the gradient clipped
+ * to border-box (visible only in the 1px border area).
+ *
+ * Usage: replace `border bg-background` (or `border bg-card`) with `border-primary-gradient`.
+ */
+@utility border-primary-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Dialog variant of border-primary-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ */
+@utility border-primary-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Soft variant of the primary gradient border: same gradient border, but with a
+ * tenue sky→indigo gradient background (≈10% opacity) instead of a solid fill.
+ * Used by soft-primary buttons.
+ */
+@utility border-primary-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #bae6fd, #c7d2fe) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Readonly/disabled gradient border: grey gradient (gray-400 → gray-500),
+ * matching the Primebrick Docs logo palette. Used by readonly inputs to
+ * visually distinguish them from active inputs (which use border-primary-gradient).
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-readonly-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #9ca3af, #6b7280) border-box;
+}
+
+/**
+ * Destructive gradient border: rose-400 → red-600 gradient (same as destructive button).
+ * Used by inputs with aria-invalid to show validation errors with a red gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-destructive-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Bump animation for persistent dialogs — triggered when the user
+ * clicks outside the dialog to signal it can't be dismissed that way.
+ * A single quick scale pulse (not a shake). Only animates `scale` —
+ * the dialog's centering is handled by Tailwind's `translate` property,
+ * so we must NOT touch `transform` or `translate` here.
+ */
+.dialog-bump {
+  animation: dialogBump 0.3s ease-out !important;
+}
+
+@keyframes dialogBump {
+  0% { scale: 1; }
+  50% { scale: 1.03; }
+  100% { scale: 1; }
+}
+
+/**
+ * Neutralize browser autofill styling so the gradient borders keep working
+ * when the browser fills an input with saved credentials.
+ *
+ * Chromium's `:-webkit-autofill` UA rule forces `background-image: none` and
+ * a pale autofill fill at UA !important priority. Critically, UA !important
+ * BEATS author !important, so it is IMPOSSIBLE to restore `background-image`
+ * on an autofilled input via author CSS (verified empirically via CDP
+ * Autofill.trigger: even an inline author <style> with !important leaves
+ * backgroundImage === "none"). Since the gradient border is painted via the
+ * input's `background-image` border-box layer, it is destroyed on autofill
+ * and cannot be repainted on the input itself.
+ *
+ * Strategy:
+ *  1. Global rule: cover the UA's pale autofill fill with a 1000px inset
+ *     box-shadow clipped to the padding box (box-shadow is NOT locked by the
+ *     UA, so author !important works), and restore the text color (UA forces
+ *     -webkit-text-fill-color). This fixes the background fill + text color
+ *     for every autofilled input.
+ *  2. The gradient border is repainted on the input's WRAPPER via ::after
+ *     (see below). The wrapper is a separate element, so its background is
+ *     unaffected by the inner input's autofill state. This works for inputs
+ *     rendered through the Input component, which wraps non-file inputs in
+ *     `<span data-animated-border>`. Inputs without that wrapper (Textarea,
+ *     ComboSelect, SearchBar) keep the fill fix from step 1 but lose the
+ *     gradient ring on autofill; browsers typically do not autofill those.
+ *
+ * Works in both light and dark themes since hsl(var(--*)) resolves to the
+ * active theme token.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  caret-color: hsl(var(--foreground)) !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/**
+ * Repaint the primary gradient border on the Input wrapper when the inner
+ * input is autofilled. The UA forces `background-image: none` on the input
+ * itself (unbeatable by author CSS), so we paint the sky→indigo gradient
+ * ring on the wrapper's `::after`.
+ *
+ * We use the SAME double-background-clip technique as `border-primary-gradient`
+ * (`border: 1px solid transparent` + `background: solid padding-box, gradient
+ * border-box`) rather than the mask-composite trick. This makes the autofilled
+ * ring render with the browser's native border-radius anti-aliasing —
+ * pixel-identical to the non-autofilled border at the corners. The mask-composite
+ * approach composites a separate masked layer and anti-aliases differently at
+ * curved corners, producing a subtly thinner / more opaque ring.
+ *
+ * Geometry: the wrapper tightly wraps the input, so `inset: 0` makes the
+ * `::after` box equal the input's border-box. With `border-radius: 0.375rem`
+ * (matching `rounded-md`) and a 1px transparent border, the ::after's gradient
+ * ring sits at the exact same pixels as the input's normal 1px border ring.
+ * The input sits at z-1 above the z-0 `::after`, and its inset box-shadow
+ * covers the center, leaving only the gradient ring visible.
+ */
+[data-animated-border]:has(input:-webkit-autofill)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/**
+ * Animated destructive border: a bright rose "comet" spot (thicker than the
+ * base 1px border) rotates around the input perimeter using a ::before
+ * pseudo-element with conic-gradient + mask-composite: exclude technique.
+ * The base border stays 1px red (border-destructive-gradient on the input);
+ * the ::before adds a 3px ring outside the input with a bright spike that
+ * rotates, creating the illusion of a thicker luminous point traveling around.
+ */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+[data-animated-border]:has(input[aria-invalid="true"])::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 8px;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0deg,
+    transparent 50deg,
+    #fb7185 70deg,
+    #f43f5e 90deg,
+    #fb7185 110deg,
+    transparent 130deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  padding: 3px;
+  animation: border-rotate 3s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes border-rotate {
+  to { --border-angle: 360deg; }
+}
+
+/**
+ * Hover-only soft primary style: applies the soft gradient border + tenue
+ * gradient background only on hover. Used by ghost buttons inside soft
+ * button groups (e.g. ViewModeToggle, DeletionFilterToggle).
+ */
+@utility hover-border-primary-gradient-soft {
+  &:hover {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(to bottom right, #bae6fd, #c7d2fe) padding-box,
+      linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+  }
+}
+
+/**
+ * Animated gradient pan: scrolls a 200%-wide gradient horizontally.
+ * Combine with `bg-linear-to-r from-* to-*` and `bg-[length:200%_100%]`.
+ */
+@utility animate-gradient-pan {
+  background-size: 200% 100%;
+  animation: gradient-pan 3s linear infinite;
+}
+
+@keyframes gradient-pan {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
 }
 
 @layer base {

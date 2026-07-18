@@ -17,6 +17,8 @@ export type ListMetaViewVisibility = {
   [K in ViewName]: ViewVisibilityConfig;
 };
 
+import type { TooltipPriority } from '$lib/components/ui/tooltip';
+
 /** Column definition from entity list meta (API). */
 export type MetaColumn = {
   key: string;
@@ -42,6 +44,16 @@ export type MetaColumn = {
   datetimeIanaToggle?: {
     recordIanaField: string;
   };
+  /** i18n key for tooltip content. If set, a tooltip renders in form and/or list contexts (per show flags). Works as plain tooltip even without priority/title. */
+  tooltip?: string;
+  /** Priority/severity for the tooltip icon + title color. Optional/advanced. */
+  tooltipPriority?: TooltipPriority;
+  /** i18n key for tooltip title (shown in priority color). Optional/advanced. */
+  tooltipTitle?: string;
+  /** Show tooltip in form context. Default: true if `tooltip` is set. */
+  showFormTooltip?: boolean;
+  /** Show tooltip in list/table/card context. Default: true if `tooltip` is set. */
+  showListTooltip?: boolean;
 };
 
 /** `meta.list` slice shared by entity list UIs. */

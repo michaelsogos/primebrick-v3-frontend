@@ -9,19 +9,20 @@
 		variants: {
 			variant: {
 				default:
-					"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+					"bg-linear-to-br from-sky-400 to-indigo-400 text-white shadow-xs hover:from-sky-500 hover:to-indigo-500 hover:brightness-105",
 				// MANTENUTO: Il tuo stile originale glass
 				glass:
 					"bg-primary/80 text-primary-foreground shadow-xs backdrop-blur-xs ring-1 ring-white/15 hover:bg-primary/75 active:bg-primary/85",
 				// AGGIUNTO: aria-invalid del suggerito incorporato nel tuo destructive
 				destructive:
-					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white shadow-xs focus-visible:border-destructive/40",
-				// MANTENUTO: Il tuo stile originale soft
-				soft:
-					"border border-input bg-sky-100/50 text-foreground shadow-xs hover:bg-sky-100 hover:border-ring/50 dark:border-input dark:bg-input/40 dark:hover:bg-input/55 dark:hover:border-ring/45",
+					"bg-linear-to-br from-rose-400 to-red-600 text-white shadow-xs hover:from-rose-500 hover:to-red-700 hover:brightness-105 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 focus-visible:border-destructive/40",
+				warning:
+					"bg-linear-to-br from-yellow-300 to-yellow-500 text-yellow-950 shadow-xs hover:from-yellow-400 hover:to-yellow-600 hover:brightness-105",
+				// Soft: structural base only — color/border come from tone compound variants
+				soft: "shadow-xs",
 				// AGGIUNTO: aria-expanded dal suggerito
 				outline:
-					"bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border shadow-xs aria-expanded:bg-muted aria-expanded:text-foreground",
+					"bg-background hover:brightness-105 dark:bg-input/30 dark:hover:bg-input/50 border-primary-gradient shadow-xs aria-expanded:bg-muted aria-expanded:text-foreground",
 				// AGGIUNTO: aria-expanded dal suggerito
 				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
 				// MANTENUTO: Il tuo stile originale secondary-outline
@@ -29,6 +30,11 @@
 				// AGGIUNTO: aria-expanded dal suggerito
 				ghost: "hover:bg-neutral-200/80 hover:text-neutral-900 dark:hover:bg-neutral-700/80 dark:hover:text-neutral-100 aria-expanded:bg-muted aria-expanded:text-foreground",
 				link: "text-primary underline-offset-4 hover:underline",
+			},
+			tone: {
+				primary: "",
+				destructive: "",
+				warning: "",
 			},
 			size: {
 				// AGGIUNTI: in-data-[slot] e has-data-[icon] dal suggerito per spaziare i gruppi e le icone
@@ -42,19 +48,30 @@
 				"icon-lg": "size-10",
 			},
 		},
+		compoundVariants: [
+			// Soft + primary: gradient border + tenue gradient background, dark text (not in tinta)
+			{
+				variant: "soft",
+				tone: "primary",
+				class: "border-primary-gradient-soft text-foreground hover:brightness-105",
+			},
+		],
 		defaultVariants: {
 			variant: "default",
 			size: "default",
+			tone: "primary",
 		},
 	});
 
 	export type ButtonVariant = VariantProps<typeof buttonVariants>["variant"];
 	export type ButtonSize = VariantProps<typeof buttonVariants>["size"];
+	export type ButtonTone = VariantProps<typeof buttonVariants>["tone"];
 
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
 			variant?: ButtonVariant;
 			size?: ButtonSize;
+			tone?: ButtonTone;
 		};
 </script>
 
@@ -63,6 +80,7 @@
 		class: className,
 		variant = "default",
 		size = "default",
+		tone = "primary",
 		ref = $bindable(null),
 		href = undefined,
 		type = "button",
@@ -76,7 +94,7 @@
 	<a
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ variant, size, tone }), className)}
 		href={disabled ? undefined : href}
 		aria-disabled={disabled}
 		role={disabled ? "link" : undefined}
@@ -89,7 +107,7 @@
 	<button
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ variant, size, tone }), className)}
 		{type}
 		{disabled}
 		{...restProps}

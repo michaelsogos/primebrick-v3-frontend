@@ -1,0 +1,140 @@
+---
+title: App shell & sidebar
+description: The application shell layout, sidebar navigation, module switching, and health/version badges.
+---
+
+# App shell & sidebar
+
+The application shell is the single layout that wraps every authenticated
+route. It is mounted once in `src/routes/(app)/+layout.svelte`, which fetches
+the user profile, restores the last visited route, and renders `<AppShell>`.
+
+## Structure
+
+<Mermaid chart={`flowchart TB
+  Layout["(app)/+layout.svelte<br/>fetch /api/v1/auth/me"]
+  Layout --> AppShell
+  AppShell --> Toaster
+  AppShell --> SheetHost["SheetHost<br/>global side sheets"]
+  AppShell --> SP["Sidebar.Provider"]
+  SP --> AppSidebar
+  SP --> Inset["Sidebar.Inset"]
+  Inset --> AppTopbar
+  Inset --> Banner["AppServerBanner"]
+  Inset --> Children["page children"]
+  AppSidebar --> OrgSwitcher["SidebarOrgSwitcher"]
+  AppSidebar --> ModSwitcher["SidebarModuleSwitcher"]
+  AppSidebar --> NavMenu["Navigation menu<br/>from module_nav"]
+  AppSidebar --> Footer["Footer"]
+  Footer --> ProfileMenu["SidebarProfileMenu"]
+  Footer --> HealthBadge["SidebarHealthBadge"]
+  Footer --> VersionBadge["SidebarVersionBadge"]
+`} />
+
+`AppShell.svelte` is responsible for bootstrapping the runtime: probing
+backend health, loading shell navigation, starting services polling, and
+registering global error handlers (`unhandledrejection`, `window error`).
+When the backend is offline or the DB/IDP is degraded, health is re-probed
+every 5 seconds; on recovery the modules list is reloaded.
+
+## Topbar
+
+`AppTopbar.svelte` is a 3-column grid:
+
+- **Left**: sidebar trigger (collapse/expand)
+- **Center**: `CommandPalette`
+- **Right**: detected IANA timezone, `LangSelect`, errors button (badge with
+  impact-colored count, opens the errors sheet), notifications, `ThemeToggle`
+
+## Module navigation
+
+Module loading and selection is centralized in
+`src/lib/shell/modules-shell.svelte.ts` (exported as `shellNav`).
+
+| Function | Purpose |
+|----------|---------|
+| `loadShellNav()` | Fetches the available modules from the backend |
+| `selectModule(id)` | Selects a module and fetches its navigation tree |
+| `reloadModuleNav()` | Reloads the current module's navigation (retry) |
+| `syncModuleFromRoute(pathname)` | Auto-selects the module that owns the current route via `route_prefixes` |
+| `getLastRoute()` / `saveLastRoute(pathname)` | localStorage persistence of the last visited route |
+
+When the user navigates to a route, `syncModuleFromRoute` matches the
+pathname against each module's `route_prefixes` and switches module
+automatically, loading that module's navigation structure.
+
+`SidebarModuleSwitcher` renders the dropdown that lists modules from
+`shellNav.modules` and calls `shellNav.selectModule(id)` on selection.
+
+## Organization switcher
+
+`SidebarOrgSwitcher` fetches active organizations from
+`/api/v1/system/organizations/active` and lets the user pick one. The
+selected org is tracked in local state.
+
+```ts
+type ActiveOrg = {
+  uuid: string;
+  idp_code: string;
+  idp_name: string;
+  display_name: string;
+  avatar: string | null;
+};
+```
+
+## Profile menu
+
+`SidebarProfileMenu` shows the user avatar (with `avatar_color` /
+`avatar_initials` from the profile), display name, and email. The dropdown
+contains a **Settings** action (switches to the `settings` module and
+navigates to `/system/settings/profile`) and a **Sign out** action that
+calls the `onLogout` callback (clears cookies, redirects to `/login`).
+
+## Health badge
+
+`SidebarHealthBadge` uses the `useHealthChip()` composable and reads
+`backendState.healthChip`. The chip state drives the icon and color:
+
+| State | Icon | Color |
+|-------|------|-------|
+| `backend_offline` | CloudOff | red |
+| `db_offline` | Database | red |
+| `idp_offline` | ShieldAlert | orange |
+| `ok` | Cloud | green |
+| `loading` | — | gray |
+
+Clicking the badge opens the `shell.versions` sheet, which shows detailed
+version and health information.
+
+## Version badge
+
+`SidebarVersionBadge` displays `APP_VERSION` from `$lib/version` in a
+monospace `v{version}` badge. It is hidden when the sidebar is collapsed on
+desktop but always visible on mobile. Clicking it also opens the
+`shell.versions` sheet.
+
+## Services store
+
+`src/lib/services-store.svelte.ts` polls microservice status every 30s
+(`startServicesPolling(30000)`), started by `AppShell` on mount. It exposes
+`probeServices()`, `aggregateStatus(instances)`, and `groupByCode(services)`,
+which the Settings → Modules page uses to render grouped service cards with
+per-instance status badges (`online`, `going_live`, `offline`, `unknown`).
+
+## Global side sheets
+
+The right-hand sheet is **not route-owned**. A single `SheetHost` is mounted
+in `AppShell` and picks the panel component from a registry by `sheetState.panelId`.
+Open a panel with `openSheet('<id>', props, { contentClass, side })` from a
+click handler — never from an `$effect` tied to a bindable `open` flag (that
+causes re-open loops while the sheet is closing).
+
+Built-in shell panels live in `src/lib/shell/sheets/panels/` (errors,
+versions). Entity-list panels (columns, filters, search-in, preview, version
+history) live in `src/lib/entity-list/sheets/panels/`.
+
+## Next steps
+
+- [Authentication & sessions](/docs/user-guide/authentication)
+- [System settings](/docs/user-guide/settings)
+- [API reference](/docs/user-guide/api-reference)

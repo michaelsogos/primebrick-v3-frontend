@@ -1,0 +1,89 @@
+---
+title: EventCard
+description: Composable error/notification event card with icon, label, title, message, and time sub-components. Renders in the errors panel and toasts.
+---
+
+# EventCard
+
+`src/lib/components/ui/event-card/`
+
+## Purpose
+
+A composable card for rendering error and notification events in the shell
+errors panel and in toasts. Provides `Root`, `Icon`, `Label`, `Title`,
+`Message`, and `Time` sub-components so each event's layout is fully
+controlled by the consumer.
+
+## Origin
+
+**Custom** — fully Primebrick-written. Uses `@lucide/svelte` icons
+(`CircleAlert`, `Info`, `TriangleAlert`, `CircleCheck`) and `$lib/utils`.
+Not vendored from any registry.
+
+## Usage
+
+### Default (info event)
+
+```svelte
+<script>
+  import { EventCardRoot, EventCardIcon, EventCardLabel, EventCardTitle, EventCardMessage, EventCardTime } from '$lib/components/ui/event-card';
+</script>
+
+<EventCardRoot>
+  <div class="flex gap-3">
+    <EventCardIcon eventColor="info" />
+    <div class="flex flex-col gap-1">
+      <EventCardLabel>auth</EventCardLabel>
+      <EventCardTitle>Session refreshed</EventCardTitle>
+      <EventCardMessage>Token rotated successfully.</EventCardMessage>
+      <EventCardTime>{new Date().toISOString()}</EventCardTime>
+    </div>
+  </div>
+</EventCardRoot>
+```
+
+### Error event
+
+```svelte
+<EventCardIcon eventColor="error" />
+```
+
+### Warning event
+
+```svelte
+<EventCardIcon eventColor="warning" />
+```
+
+### Success event
+
+```svelte
+<EventCardIcon eventColor="success" />
+```
+
+### Critical event
+
+```svelte
+<EventCardIcon eventColor="critical" />
+```
+
+## eventColor mapping
+
+| `eventColor` | Icon | Styling |
+|--------------|------|---------|
+| `info` | `Info` | sky |
+| `warning` | `TriangleAlert` | amber |
+| `error` | `CircleAlert` | red |
+| `critical` | `CircleAlert` | red |
+| `success` | `CircleCheck` | emerald |
+
+## Props
+
+Full prop table: see [API reference — eventcard](/docs/user-guide/api-reference#event-card).
+
+`EventCardIcon` props: `eventColor?: "critical" | "error" | "warning" | "info" | "success" = "info"`, `class?: string`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [App shell](/docs/user-guide/app-shell) — where the errors panel lives
+- [API reference](/docs/user-guide/api-reference#event-card)

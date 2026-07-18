@@ -1,10 +1,14 @@
+import type { DeepReadonly } from '$lib/types/deep-readonly';
+
 export function useScrollPreservation(options: {
   tableRef: () => HTMLTableElement | null;
   rowsLoading: () => boolean;
 }) {
-  let savedTableScrollLeft = $state(0);
-  let prevRowsLoadingForScrollSave = $state(false);
-  let prevRowsLoadingForScrollRestore = $state(false);
+  const _state = $state({
+    savedTableScrollLeft: 0,
+    prevRowsLoadingForScrollSave: false,
+    prevRowsLoadingForScrollRestore: false,
+  });
 
   function tableScrollHost(table: HTMLTableElement | null): HTMLElement | null {
     if (!table) return null;
@@ -16,16 +20,16 @@ export function useScrollPreservation(options: {
     void options.rowsLoading();
     void options.tableRef();
     const host = tableScrollHost(options.tableRef());
-    if (options.rowsLoading() && !prevRowsLoadingForScrollSave && host) savedTableScrollLeft = host.scrollLeft;
-    prevRowsLoadingForScrollSave = options.rowsLoading();
+    if (options.rowsLoading() && !_state.prevRowsLoadingForScrollSave && host) _state.savedTableScrollLeft = host.scrollLeft;
+    _state.prevRowsLoadingForScrollSave = options.rowsLoading();
   });
 
   $effect(() => {
     void options.rowsLoading();
     void options.tableRef();
     const host = tableScrollHost(options.tableRef());
-    if (!options.rowsLoading() && prevRowsLoadingForScrollRestore && host) {
-      const left = savedTableScrollLeft;
+    if (!options.rowsLoading() && _state.prevRowsLoadingForScrollRestore && host) {
+      const left = _state.savedTableScrollLeft;
       queueMicrotask(() => {
         host.scrollLeft = left;
         requestAnimationFrame(() => {
@@ -33,11 +37,11 @@ export function useScrollPreservation(options: {
         });
       });
     }
-    prevRowsLoadingForScrollRestore = options.rowsLoading();
+    _state.prevRowsLoadingForScrollRestore = options.rowsLoading();
   });
 
   return {
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     tableScrollHost,
-    get savedTableScrollLeft() { return savedTableScrollLeft; }
   };
 }

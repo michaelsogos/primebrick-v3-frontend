@@ -81,7 +81,7 @@
                         class="inline-flex"
                         title={$t('entities.versionHistory.title')}
                       >
-                        <Badge class="text-xs font-semibold border border-sky-600 dark:border-sky-400 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20" variant="outline">
+                        <Badge class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10" variant="outline">
                           v{auditData.version}
                         </Badge>
                       </button>

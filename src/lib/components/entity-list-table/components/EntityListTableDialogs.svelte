@@ -8,24 +8,7 @@
     exportComposable,
     selectedKeys,
     total,
-    entity,
-    confirmDeleteRow,
-    confirmRestoreRow,
-    confirmBulkDelete,
-    cancelBulkDelete,
-    confirmBulkRestore,
-    cancelBulkRestore,
-    confirmExportRow,
-    cancelExportRow,
-    confirmHtmlExport,
-    cancelHtmlExport,
-    confirmDuplicate,
-    cancelDuplicate,
-    generatePdfPreview,
-    prepareEmailHtml,
-    copyHtmlToClipboard,
-    copyEmailHtmlToClipboard,
-    closeHtmlPreview
+    entity
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -34,110 +17,178 @@
     bulkActions: any;
     exportComposable: any;
     selectedKeys: string[];
-    total: number;
+    total: bigint;
     entity: string;
-    confirmDeleteRow: () => void;
-    confirmRestoreRow: () => void;
-    confirmBulkDelete: () => void;
-    cancelBulkDelete: () => void;
-    confirmBulkRestore: () => void;
-    cancelBulkRestore: () => void;
-    confirmExportRow: () => void;
-    cancelExportRow: () => void;
-    confirmHtmlExport: () => void;
-    cancelHtmlExport: () => void;
-    confirmDuplicate: () => void;
-    cancelDuplicate: () => void;
-    generatePdfPreview: () => void;
-    prepareEmailHtml: () => void;
-    copyHtmlToClipboard: () => void;
-    copyEmailHtmlToClipboard: () => void;
-    closeHtmlPreview: () => void;
   };
+
+  async function confirmDeleteRow() {
+    if (!dialogs.state.rowToDelete) return;
+    await rowActionsComposable.confirmDeleteRow(dialogs.state.rowToDelete);
+    dialogs.closeDeleteDialog();
+    dialogs.setRowToDelete(null);
+  }
+
+  async function confirmRestoreRow() {
+    if (!dialogs.state.rowToRestore) return;
+    await rowActionsComposable.confirmRestoreRow(dialogs.state.rowToRestore);
+    dialogs.closeRestoreDialog();
+    dialogs.setRowToRestore(null);
+  }
+
+  async function confirmBulkDelete() {
+    await bulkActions.confirmBulkDelete();
+    dialogs.closeBulkDeleteDialog();
+  }
+
+  function cancelBulkDelete() {
+    dialogs.closeBulkDeleteDialog();
+  }
+
+  async function confirmBulkRestore() {
+    await bulkActions.confirmBulkRestore();
+    dialogs.closeBulkRestoreDialog();
+  }
+
+  function cancelBulkRestore() {
+    dialogs.closeBulkRestoreDialog();
+  }
+
+  async function confirmExportRow() {
+    if (!exportComposable.state.fileType) return;
+    await exportComposable.handleExport(exportComposable.state.fileType);
+    exportComposable.closeExportDialog();
+  }
+
+  function cancelExportRow() {
+    exportComposable.closeExportDialog();
+  }
+
+  async function confirmDuplicate() {
+    if (dialogs.state.duplicateScope === 'single' && dialogs.state.singleRowToDuplicate) {
+      await rowActionsComposable.confirmDuplicateRow(dialogs.state.singleRowToDuplicate);
+    } else if (dialogs.state.duplicateScope === 'selected') {
+      await bulkActions.confirmBulkDuplicate();
+    }
+    dialogs.closeDuplicateDialog();
+    dialogs.setSingleRowToDuplicate(null);
+  }
+
+  function cancelDuplicate() {
+    dialogs.closeDuplicateDialog();
+    dialogs.setSingleRowToDuplicate(null);
+  }
+
+  function cancelHtmlExport() {
+    exportComposable.closeHtmlExportConfirmDialog();
+  }
+
+  async function confirmHtmlExport() {
+    await exportComposable.handleHtmlExport();
+  }
+
+  function closeHtmlPreview() {
+    exportComposable.closeHtmlPreview();
+  }
+
+  async function copyHtmlToClipboard() {
+    await exportComposable.copyHtmlToClipboard();
+  }
+
+  async function generatePdfPreview() {
+    await exportComposable.generatePdfPreview();
+  }
+
+  async function prepareEmailHtml() {
+    await exportComposable.prepareEmailHtml();
+  }
+
+  async function copyEmailHtmlToClipboard() {
+    await exportComposable.copyEmailHtmlToClipboard();
+  }
 </script>
 
 <DeleteDialog
-  bind:open={dialogs.deleteDialogOpen}
+  open={dialogs.state.deleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
-  isDeleting={rowActionsComposable.isDeleting}
+  isDeleting={rowActionsComposable.state.isDeleting}
   onConfirm={confirmDeleteRow}
   onCancel={() => dialogs.closeDeleteDialog()}
 />
 
 <RestoreDialog
-  bind:open={dialogs.restoreDialogOpen}
+  open={dialogs.state.restoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
-  isRestoring={rowActionsComposable.isRestoring}
+  isRestoring={rowActionsComposable.state.isRestoring}
   onConfirm={confirmRestoreRow}
   onCancel={() => dialogs.closeRestoreDialog()}
 />
 
 <BulkDeleteDialog
-  bind:open={dialogs.bulkDeleteDialogOpen}
+  open={dialogs.state.bulkDeleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
   selectedCount={selectedKeys.length}
-  isDeleting={bulkActions.isDeleting}
+  isDeleting={bulkActions.state.isDeleting}
   onConfirm={confirmBulkDelete}
   onCancel={cancelBulkDelete}
 />
 
 <BulkRestoreDialog
-  bind:open={dialogs.bulkRestoreDialogOpen}
+  open={dialogs.state.bulkRestoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
   selectedCount={selectedKeys.length}
-  isRestoring={bulkActions.isRestoring}
+  isRestoring={bulkActions.state.isRestoring}
   onConfirm={confirmBulkRestore}
   onCancel={cancelBulkRestore}
 />
 
 <ExportDialog
-  bind:open={exportComposable.exportOpen}
+  open={exportComposable.state.exportOpen}
   onOpenChange={(open) => { if (!open) exportComposable.closeExportDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={entity}
-  exportScope={exportComposable.exportScope}
-  onExportScopeChange={(scope) => exportComposable.exportScope = scope}
-  fileType={exportComposable.fileType}
-  isExporting={exportComposable.isExporting}
+  exportScope={exportComposable.state.exportScope}
+  onExportScopeChange={(scope) => exportComposable.setExportScope(scope)}
+  fileType={exportComposable.state.fileType}
+  isExporting={exportComposable.state.isExporting}
   onFileTypeChange={(type) => exportComposable.setFileType(type as 'xlsx' | 'csv')}
   onConfirm={confirmExportRow}
   onCancel={cancelExportRow}
 />
 
 <HtmlExportDialog
-  bind:open={exportComposable.htmlExportConfirmDialogOpen}
+  open={exportComposable.state.htmlExportConfirmDialogOpen}
   onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportConfirmDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={entity}
-  isExporting={exportComposable.isHtmlExporting}
+  isExporting={exportComposable.state.isHtmlExporting}
   onConfirm={confirmHtmlExport}
   onCancel={cancelHtmlExport}
 />
 
 <DuplicateDialog
-  bind:open={dialogs.duplicateDialogOpen}
+  open={dialogs.state.duplicateDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDuplicateDialog(); }}
-  duplicateScope={dialogs.duplicateScope}
+  duplicateScope={dialogs.state.duplicateScope}
   selectedCount={selectedKeys.length}
   entity={entity}
-  isDuplicating={rowActionsComposable.isDuplicating}
+  isDuplicating={rowActionsComposable.state.isDuplicating}
   onConfirm={confirmDuplicate}
   onCancel={cancelDuplicate}
 />
 
 <!-- HTML preview full-screen dialog -->
 <ExportPreviewDialog
-  bind:open={exportComposable.htmlPreviewDialogOpen}
+  open={exportComposable.state.htmlPreviewDialogOpen}
   onOpenChange={(open) => { if (!open) exportComposable.closeHtmlExportDialog(); }}
-  previewMode={exportComposable.previewMode}
+  previewMode={exportComposable.state.previewMode}
   onPreviewModeChange={(mode: 'html' | 'pdf' | 'email') => exportComposable.setPreviewMode(mode)}
-  htmlPreviewContent={exportComposable.htmlPreviewContent}
-  pdfBlobUrl={exportComposable.pdfBlobUrl}
-  emailHtmlContent={exportComposable.emailHtmlContent}
-  isEmailPreparing={exportComposable.isEmailPreparing}
-  emailCopied={exportComposable.emailCopied}
+  htmlPreviewContent={exportComposable.state.htmlPreviewContent}
+  pdfBlobUrl={exportComposable.state.pdfBlobUrl}
+  emailHtmlContent={exportComposable.state.emailHtmlContent}
+  isEmailPreparing={exportComposable.state.isEmailPreparing}
+  emailCopied={exportComposable.state.emailCopied}
   onGeneratePdfPreview={generatePdfPreview}
   onPrepareEmailHtml={prepareEmailHtml}
   onCopyHtmlToClipboard={copyHtmlToClipboard}

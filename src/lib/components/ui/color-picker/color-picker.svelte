@@ -27,7 +27,8 @@
 	let s = $state(0);
 	let v = $state(0);
 	let a = $state(1);
-	let activeFormat = $state<ColorFormat>(((fmt) => fmt)(defaultFormat ?? 'hex'));
+	let userFormat = $state<ColorFormat | null>(null);
+	let activeFormat = $derived<ColorFormat>(userFormat ?? defaultFormat ?? 'hex');
 	let isDragging = $state(false);
 
 	let sbRef: HTMLDivElement | undefined = $state();
@@ -47,10 +48,14 @@
 					s = parsed.s;
 					v = parsed.v;
 					a = parsed.a;
-					if (value.startsWith('rgb')) activeFormat = 'rgb';
-					else if (value.startsWith('hsl')) activeFormat = 'hsl';
-					else if (value.startsWith('oklch')) activeFormat = 'oklch';
-					else activeFormat = 'hex';
+					// Only auto-detect format from the incoming value when the user hasn't
+					// explicitly chosen one yet — otherwise we'd fight the user's selection.
+					if (userFormat === null) {
+						if (value.startsWith('rgb')) userFormat = 'rgb';
+						else if (value.startsWith('hsl')) userFormat = 'hsl';
+						else if (value.startsWith('oklch')) userFormat = 'oklch';
+						else userFormat = 'hex';
+					}
 				}
 			}
 		}
@@ -61,7 +66,7 @@
 	}
 
 	function setFormat(fmt: ColorFormat) {
-		activeFormat = fmt;
+		userFormat = fmt;
 		updateExternal();
 		formatOpen = false;
 	}

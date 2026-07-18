@@ -1,106 +1,35 @@
-export interface DialogsReturn<TRow extends Record<string, unknown>> {
-  deleteDialogOpen: boolean;
-  restoreDialogOpen: boolean;
-  duplicateDialogOpen: boolean;
-  bulkDeleteDialogOpen: boolean;
-  bulkRestoreDialogOpen: boolean;
-  rowToDelete: TRow | null;
-  rowToRestore: TRow | null;
-  singleRowToDuplicate: TRow | null;
-  duplicateScope: 'selected' | 'single';
-  openDeleteDialog: () => void;
-  closeDeleteDialog: () => void;
-  openRestoreDialog: () => void;
-  closeRestoreDialog: () => void;
-  openDuplicateDialog: () => void;
-  closeDuplicateDialog: () => void;
-  openBulkDeleteDialog: () => void;
-  closeBulkDeleteDialog: () => void;
-  openBulkRestoreDialog: () => void;
-  closeBulkRestoreDialog: () => void;
-  setRowToDelete: (row: TRow | null) => void;
-  setRowToRestore: (row: TRow | null) => void;
-  setSingleRowToDuplicate: (row: TRow | null) => void;
-  setDuplicateScope: (scope: 'selected' | 'single') => void;
-}
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-export function useDialogs<TRow extends Record<string, unknown>>(): DialogsReturn<TRow> {
-  let deleteDialogOpen = $state(false);
-  let restoreDialogOpen = $state(false);
-  let duplicateDialogOpen = $state(false);
-  let bulkDeleteDialogOpen = $state(false);
-  let bulkRestoreDialogOpen = $state(false);
-  let rowToDelete: TRow | null = $state(null);
-  let rowToRestore: TRow | null = $state(null);
-  let singleRowToDuplicate: TRow | null = $state(null);
-  let duplicateScope = $state<'selected' | 'single'>('selected');
+export function useDialogs<TRow extends Record<string, unknown>>() {
+  const _state = $state({
+    deleteDialogOpen: false,
+    restoreDialogOpen: false,
+    duplicateDialogOpen: false,
+    bulkDeleteDialogOpen: false,
+    bulkRestoreDialogOpen: false,
+    rowToDelete: null as TRow | null,
+    rowToRestore: null as TRow | null,
+    singleRowToDuplicate: null as TRow | null,
+    duplicateScope: 'selected' as 'selected' | 'single',
+  });
 
-  function openDeleteDialog() {
-    deleteDialogOpen = true;
-  }
-
-  function closeDeleteDialog() {
-    deleteDialogOpen = false;
-  }
-
-  function openRestoreDialog() {
-    restoreDialogOpen = true;
-  }
-
-  function closeRestoreDialog() {
-    restoreDialogOpen = false;
-  }
-
-  function openDuplicateDialog() {
-    duplicateDialogOpen = true;
-  }
-
-  function closeDuplicateDialog() {
-    duplicateDialogOpen = false;
-  }
-
-  function openBulkDeleteDialog() {
-    bulkDeleteDialogOpen = true;
-  }
-
-  function closeBulkDeleteDialog() {
-    bulkDeleteDialogOpen = false;
-  }
-
-  function openBulkRestoreDialog() {
-    bulkRestoreDialogOpen = true;
-  }
-
-  function closeBulkRestoreDialog() {
-    bulkRestoreDialogOpen = false;
-  }
-
-  function setRowToDelete(row: TRow | null) {
-    rowToDelete = row;
-  }
-
-  function setRowToRestore(row: TRow | null) {
-    rowToRestore = row;
-  }
-
-  function setSingleRowToDuplicate(row: TRow | null) {
-    singleRowToDuplicate = row;
-  }
-
-  function setDuplicateScope(scope: 'selected' | 'single') {
-    duplicateScope = scope;
-  }
+  function openDeleteDialog() { _state.deleteDialogOpen = true; }
+  function closeDeleteDialog() { _state.deleteDialogOpen = false; }
+  function openRestoreDialog() { _state.restoreDialogOpen = true; }
+  function closeRestoreDialog() { _state.restoreDialogOpen = false; }
+  function openDuplicateDialog() { _state.duplicateDialogOpen = true; }
+  function closeDuplicateDialog() { _state.duplicateDialogOpen = false; }
+  function openBulkDeleteDialog() { _state.bulkDeleteDialogOpen = true; }
+  function closeBulkDeleteDialog() { _state.bulkDeleteDialogOpen = false; }
+  function openBulkRestoreDialog() { _state.bulkRestoreDialogOpen = true; }
+  function closeBulkRestoreDialog() { _state.bulkRestoreDialogOpen = false; }
+  function setRowToDelete(row: TRow | null) { _state.rowToDelete = row; }
+  function setRowToRestore(row: TRow | null) { _state.rowToRestore = row; }
+  function setSingleRowToDuplicate(row: TRow | null) { _state.singleRowToDuplicate = row; }
+  function setDuplicateScope(scope: 'selected' | 'single') { _state.duplicateScope = scope; }
 
   return {
-    get deleteDialogOpen() { return deleteDialogOpen; },
-    get restoreDialogOpen() { return restoreDialogOpen; },
-    get duplicateDialogOpen() { return duplicateDialogOpen; },
-    get bulkDeleteDialogOpen() { return bulkDeleteDialogOpen; },
-    get bulkRestoreDialogOpen() { return bulkRestoreDialogOpen; },
-    get rowToDelete() { return rowToDelete; },
-    get rowToRestore() { return rowToRestore; },
-    get singleRowToDuplicate() { return singleRowToDuplicate; },
-    get duplicateScope() { return duplicateScope; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     openDeleteDialog,
     closeDeleteDialog,
     openRestoreDialog,
@@ -114,6 +43,6 @@ export function useDialogs<TRow extends Record<string, unknown>>(): DialogsRetur
     setRowToDelete,
     setRowToRestore,
     setSingleRowToDuplicate,
-    setDuplicateScope
+    setDuplicateScope,
   };
 }

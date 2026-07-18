@@ -1,17 +1,16 @@
 import { sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-export interface SheetPanelManagementReturn {
-  lastPanelId: { value: string | null };
-}
+export function useSheetPanelManagement() {
+  const _state = $state({
+    lastPanelId: null as string | null,
+  });
 
-export function useSheetPanelManagement(): SheetPanelManagementReturn {
-  // Bridge the legacy `filtersOpen` boolean to the global SheetHost.
-  let lastPanelId = $state<string | null>(null);
   $effect(() => {
-    if (sheetState.panelId) lastPanelId = sheetState.panelId;
+    if (sheetState.panelId) _state.lastPanelId = sheetState.panelId;
   });
 
   return {
-    get lastPanelId() { return { value: lastPanelId }; }
+    get state(): DeepReadonly<typeof _state> { return _state; },
   };
 }

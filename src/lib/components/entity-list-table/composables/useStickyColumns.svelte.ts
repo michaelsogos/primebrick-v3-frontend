@@ -1,5 +1,6 @@
 import { onMount, untrack } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export function useStickyColumns(options: {
   rowSelectionEnabled: () => boolean;
@@ -8,10 +9,12 @@ export function useStickyColumns(options: {
 }) {
   const safeStickyColumnsGroup = $derived.by(() => options.stickyColumnsGroup() ?? []);
 
-  let checkboxHeadRef = $state<HTMLElement | null>(null);
-  let stickyHeadRefs = $state<Map<string, HTMLElement>>(new Map());
-  let stickyCellRefs = $state<Map<string, HTMLElement>>(new Map());
-  let stickyLeftOffsets = $state<Record<string, number>>({});
+  const _state = $state({
+    checkboxHeadRef: null as HTMLElement | null,
+    stickyHeadRefs: new Map<string, HTMLElement>(),
+    stickyCellRefs: new Map<string, HTMLElement>(),
+    stickyLeftOffsets: {} as Record<string, number>,
+  });
   let stickyRO: ResizeObserver | null = null;
 
   function stickyRef(node: HTMLElement, params: { key: string; isHead: boolean }) {
@@ -19,7 +22,7 @@ export function useStickyColumns(options: {
     let currentIsHead = params.isHead;
 
     // Initial registration
-    let refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+    let refs = currentIsHead ? _state.stickyHeadRefs : _state.stickyCellRefs;
     refs.set(currentKey, node);
     queueMicrotask(() => updateStickyOffsets());
 
@@ -35,14 +38,14 @@ export function useStickyColumns(options: {
           currentIsHead = newParams.isHead;
 
           // Register on correct Map
-          refs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+          refs = currentIsHead ? _state.stickyHeadRefs : _state.stickyCellRefs;
           refs.set(currentKey, node);
         }
         queueMicrotask(() => updateStickyOffsets());
       },
       destroy() {
         // Final cleanup on page change or row destruction
-        const finalRefs = currentIsHead ? stickyHeadRefs : stickyCellRefs;
+        const finalRefs = currentIsHead ? _state.stickyHeadRefs : _state.stickyCellRefs;
         finalRefs.delete(currentKey);
         queueMicrotask(() => updateStickyOffsets());
       }
@@ -67,15 +70,15 @@ export function useStickyColumns(options: {
       const newOffsets: Record<string, number> = {};
 
       for (const col of visibleStickyCols) {
-        const headRef = stickyHeadRefs.get(col.key);
-        const cellRef = stickyCellRefs.get(col.key);
+        const headRef = _state.stickyHeadRefs.get(col.key);
+        const cellRef = _state.stickyCellRefs.get(col.key);
 
         const headCellW = Math.ceil(headRef?.parentElement?.getBoundingClientRect().width ?? 0);
         const cellCellW = Math.ceil(cellRef?.parentElement?.getBoundingClientRect().width ?? 0);
         const colW = Math.max(headCellW, cellCellW);
 
-        if (colW === 0 && col.key in stickyLeftOffsets) {
-          newOffsets[col.key] = stickyLeftOffsets[col.key];
+        if (colW === 0 && col.key in _state.stickyLeftOffsets) {
+          newOffsets[col.key] = _state.stickyLeftOffsets[col.key];
         } else {
           newOffsets[col.key] = currentLeft;
           currentLeft += colW;
@@ -83,7 +86,7 @@ export function useStickyColumns(options: {
       }
 
       untrack(() => {
-        stickyLeftOffsets = newOffsets;
+        _state.stickyLeftOffsets = newOffsets;
       });
     } finally {
       updatingStickyOffsets = false;
@@ -102,16 +105,16 @@ export function useStickyColumns(options: {
   // ResizeObserver effect: watches DOM dimension changes only
   $effect(() => {
     // Track checkboxHeadRef so effect re-runs when ref populates after mount
-    void checkboxHeadRef;
+    void _state.checkboxHeadRef;
 
     stickyRO?.disconnect();
     stickyRO = null;
 
-    const allRefs = [...stickyHeadRefs.values(), ...stickyCellRefs.values()];
+    const allRefs = [..._state.stickyHeadRefs.values(), ..._state.stickyCellRefs.values()];
     
     // Add checkbox ref if it exists (matching original implementation)
-    if (checkboxHeadRef) {
-      allRefs.push(checkboxHeadRef);
+    if (_state.checkboxHeadRef) {
+      allRefs.push(_state.checkboxHeadRef);
     }
     
     if (allRefs.length > 0) {
@@ -130,11 +133,9 @@ export function useStickyColumns(options: {
   });
 
   return {
-    get checkboxHeadRef() { return checkboxHeadRef; },
-    set checkboxHeadRef(v) { checkboxHeadRef = v; },
-    get stickyHeadRefs() { return stickyHeadRefs; },
-    get stickyCellRefs() { return stickyCellRefs; },
-    get stickyLeftOffsets() { return stickyLeftOffsets; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
+    get checkboxHeadRef() { return _state.checkboxHeadRef; },
+    set checkboxHeadRef(v) { _state.checkboxHeadRef = v; },
     stickyRef,
     updateStickyOffsets
   };

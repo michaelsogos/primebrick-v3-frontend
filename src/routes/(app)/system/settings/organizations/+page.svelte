@@ -1,9 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { page as appPage } from '$app/state';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { extJsonParse } from '$lib/api-ext';
+  import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
@@ -14,9 +16,10 @@
   } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
-  import { onDestroy } from 'svelte';
-
-  const SYNC_CHANNEL_NAME = 'primebrick_organizations_sync';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   type OrganizationMeta = {
     entity: 'organization';
@@ -44,7 +47,7 @@
     rows: OrganizationListRow[];
     page: number;
     page_size: number;
-    total: number;
+    total: bigint;
   };
 
   let meta = $state<OrganizationMeta | null>(null);
@@ -61,7 +64,7 @@
 
   let page = $state(1);
   let pageSize = $state(25);
-  let total = $state(0);
+  let total = $state<bigint>(0n);
 
   let filtersOpen = $state(false);
 
@@ -103,21 +106,9 @@
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
 
   // BroadcastChannel for sync with child windows
-  let syncChannel: BroadcastChannel | null = null;
-
-  if (browser) {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    syncChannel.onmessage = (event) => {
-      if (event.data === 'refresh') {
-        void refreshRows();
-      }
-    };
-  }
-
-  onDestroy(() => {
-    if (syncChannel) {
-      syncChannel.close();
-    }
+  useSyncChannel('primebrick_organizations_sync', {
+    mode: 'receiver',
+    onRefresh: () => void refreshRows(),
   });
 
   function ensureVisibleKeys() {
@@ -437,7 +428,7 @@
       const code = apiDetails.code ?? 'GET_ENTITY_LIST_FAILED';
       throw new ApiListError(code, listRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
     }
-    const list = (await listRes.json()) as ListResponse;
+    const list = extJsonParse<ListResponse>(await listRes.text());
     rows = list.rows;
     total = list.total;
   }
@@ -449,7 +440,7 @@
     try {
       await loadRows();
       if (opts?.clampPage) {
-        const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+        const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
         if (page > nextTotalPages) {
           page = 1;
           await loadRows();
@@ -466,7 +457,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.organizationsList',
@@ -489,7 +480,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.organizationsList',
@@ -510,7 +501,7 @@
     try {
       await loadMeta();
       await loadRows();
-      const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
       if (page > nextTotalPages) {
         page = 1;
         await loadRows();
@@ -527,7 +518,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.organizationsPageInit',
@@ -550,7 +541,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.organizationsPageInit',
@@ -723,7 +714,24 @@
   }
 </script>
 
-<div class="h-full flex flex-col">
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({
+            pathname: appPage.url.pathname,
+            searchParams: appPage.url.searchParams,
+            t: (key) => $t(key)
+          })
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.organizations')}</h1>
+    </div>
+  {/snippet}
+
   <EntityListTable
     entity="organization"
     bind:datetimeIanaModeByKey
@@ -776,4 +784,4 @@
     viewVisibility={viewVisibility}
   >
   </EntityListTable>
-</div>
+</AppPageScaffold>

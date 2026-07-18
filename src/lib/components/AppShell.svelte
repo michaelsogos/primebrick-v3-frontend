@@ -12,7 +12,8 @@
   import { loadShellNav } from '$lib/shell/modules-shell.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { backendState, probeHealth } from '$lib/backend-availability';
-  import { pushAppError } from '$lib/errors/app-errors';
+  import { pushNotification } from '$lib/errors/app-errors';
+  import { startServicesPolling, stopServicesPolling } from '$lib/services-store.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -22,17 +23,19 @@
   onMount(() => {
     void probeHealth();
     void loadShellNav();
+    startServicesPolling();
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
       const fallback = $t('shell.errors.unhandledRejectionFallback');
       const msg = reason instanceof Error ? reason.message : String(reason ?? fallback);
-      pushAppError({ message: msg, scope: $t('shell.errors.unhandledRejection') });
+      pushNotification({ impact: 'HIGH', message: msg, scope: $t('shell.errors.unhandledRejection') });
     };
     const onWindowError = (e: ErrorEvent) => {
       const fallback = $t('shell.errors.unhandledErrorFallback');
       const msg = e.error instanceof Error ? e.error.message : e.message;
-      pushAppError({
+      pushNotification({
+        impact: 'HIGH',
         message: msg || fallback,
         scope: $t('shell.errors.unhandledError')
       });
@@ -42,6 +45,7 @@
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onWindowError);
+      stopServicesPolling();
     };
   });
 
@@ -90,7 +94,7 @@
         <AppServerBanner />
       </div>
 
-      <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="relative min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
       </div>
     </Sidebar.Inset>

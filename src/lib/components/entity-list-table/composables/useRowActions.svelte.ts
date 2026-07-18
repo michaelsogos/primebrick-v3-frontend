@@ -1,21 +1,23 @@
 import { apiFetch } from '$lib/api';
-import { pushImpactError, pushRFC7807Error } from '$lib/errors/app-errors';
+import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
   uid: () => string;
   columns: () => MetaColumn[];
-  onEditAction?: (row: TRow) => void;
+  onEditAction?: () => ((row: TRow) => void) | undefined;
   onRowActionComplete?: () => void;
   onRowActionError?: (error: Error) => void;
-  onRefresh?: () => void;
+  onRefresh?: () => (() => void) | undefined;
   isRowDeleted?: (row: TRow) => boolean;
   rowKey?: (row: TRow) => string;
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, any>) => string;
+  customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
   dialogs?: {
     openDeleteDialog: () => void;
     closeDeleteDialog: () => void;
@@ -30,66 +32,42 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   };
 }
 
-export interface RowActionsReturn<TRow extends Record<string, unknown>> {
-  handleEditRow: (row: TRow) => void;
-  handleDeleteRow: (row: TRow) => void;
-  handleRestoreRow: (row: TRow) => void;
-  handleDuplicateRow: (row: TRow) => void;
-  handlePreviewRow: (row: TRow) => void;
-  confirmDeleteRow: (row: TRow) => Promise<void>;
-  confirmRestoreRow: (row: TRow) => Promise<void>;
-  confirmDuplicateRow: (row: TRow) => Promise<void>;
-  confirmDeleteRowWrapper: () => Promise<void>;
-  confirmRestoreRowWrapper: () => Promise<void>;
-  confirmDuplicateWrapper: () => Promise<void>;
-  cancelDuplicate: () => void;
-  loadVersionHistory: (row: TRow) => Promise<void>;
-  rowToDelete: TRow | null;
-  rowToRestore: TRow | null;
-  singleRowToDuplicate: TRow | null;
-  duplicateScope: 'selected' | 'single';
-  isDeleting: boolean;
-  isRestoring: boolean;
-  isDuplicating: boolean;
-}
-
 export function useRowActions<TRow extends Record<string, unknown>>(
   options: RowActionsOptions<TRow>
-): RowActionsReturn<TRow> {
+) {
   const {
     entity: entityFn,
     uid: uidFn,
     columns: columnsFn,
-    onEditAction,
+    onEditAction: getOnEditAction,
     onRowActionComplete,
     onRowActionError,
-    onRefresh,
+    onRefresh: getOnRefresh,
     isRowDeleted,
     rowKey,
     onPreviewRow,
     closeRowDropdown,
     dialogs,
+    customActionHandlers: getCustomActionHandlers,
     t: tFn = (key: string) => key // Default fallback
   } = options;
 
-  let isDeleting = $state(false);
-  let isRestoring = $state(false);
-  let isDuplicating = $state(false);
-
-  // Dialog state
-  let rowToDelete = $state<TRow | null>(null);
-  let rowToRestore = $state<TRow | null>(null);
-  let singleRowToDuplicate = $state<TRow | null>(null);
-  let duplicateScope = $state<'selected' | 'single'>('selected');
+  const _state = $state({
+    isDeleting: false,
+    isRestoring: false,
+    isDuplicating: false,
+    rowToDelete: null as TRow | null,
+    rowToRestore: null as TRow | null,
+    singleRowToDuplicate: null as TRow | null,
+    duplicateScope: 'selected' as 'selected' | 'single'
+  });
 
   function handleEditRow(row: TRow) {
     if (isRowDeleted?.(row)) {
       console.log('Cannot edit deleted row:', rowKey?.(row));
       return;
     }
-    if (onEditAction) {
-      onEditAction(row);
-    }
+    getOnEditAction?.()?.(row);
     closeRowDropdown?.();
   }
 
@@ -126,13 +104,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isDeleting = true;
+      _state.isDeleting = true;
       const uuidValue = row[uid] as string;
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Delete failed:', error);
@@ -147,9 +125,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
           instance: err.instance,
           severity: err.severity
         };
-        pushRFC7807Error(rfcError, { showToast: true });
+        pushNotification(rfcError);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.deleteFailed',
           scope: tFn('errors.scope.deleteApi'),
@@ -159,7 +137,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
       onRowActionError?.(error as Error);
     } finally {
-      isDeleting = false;
+      _state.isDeleting = false;
     }
   }
 
@@ -168,13 +146,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isRestoring = true;
+      _state.isRestoring = true;
       const uuidValue = row[uid] as string;
       await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
         method: 'POST'
       });
       // Refresh the list after successful restore
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Restore failed:', error);
@@ -189,9 +167,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
           instance: err.instance,
           severity: err.severity
         };
-        pushRFC7807Error(rfcError, { showToast: true });
+        pushNotification(rfcError);
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.restoreFailed',
           scope: tFn('errors.scope.restoreApi'),
@@ -201,7 +179,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
       onRowActionError?.(error as Error);
     } finally {
-      isRestoring = false;
+      _state.isRestoring = false;
     }
   }
 
@@ -210,7 +188,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const uid = uidFn();
     if (!row) return;
     try {
-      isDuplicating = true;
+      _state.isDuplicating = true;
       const uuidValue = row[uid] as string;
       const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
         method: 'POST',
@@ -221,20 +199,20 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (!response.ok) {
         const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
-        pushRFC7807Error(enhancedError, { showToast: true });
+        pushNotification(enhancedError);
         throw enhancedError;
       }
 
       const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
-        pushImpactError({
+        pushNotification({
           impact: 'MEDIUM',
           messageKey: 'entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
           scope: tFn('errors.scope.duplicateApi')
         });
       } else {
-        pushImpactError({
+        pushNotification({
           impact: 'LOW',
           messageKey: 'entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
@@ -243,42 +221,42 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       }
 
       // Refresh the list
-      onRefresh?.();
+      getOnRefresh?.()?.();
       onRowActionComplete?.();
     } catch (error) {
       console.error('Duplicate failed:', error);
       onRowActionError?.(error as Error);
     } finally {
-      isDuplicating = false;
+      _state.isDuplicating = false;
     }
   }
 
   // Wrapper functions that manage dialog state
   async function confirmDeleteRowWrapper() {
-    if (!rowToDelete) return;
-    await confirmDeleteRowImpl(rowToDelete);
+    if (!_state.rowToDelete) return;
+    await confirmDeleteRowImpl(_state.rowToDelete);
     dialogs?.closeDeleteDialog();
-    rowToDelete = null;
+    _state.rowToDelete = null;
   }
 
   async function confirmRestoreRowWrapper() {
-    if (!rowToRestore) return;
-    await confirmRestoreRowImpl(rowToRestore);
+    if (!_state.rowToRestore) return;
+    await confirmRestoreRowImpl(_state.rowToRestore);
     dialogs?.closeRestoreDialog();
-    rowToRestore = null;
+    _state.rowToRestore = null;
   }
 
   async function confirmDuplicateWrapper() {
-    if (duplicateScope === 'single' && singleRowToDuplicate) {
-      await confirmDuplicateRowImpl(singleRowToDuplicate);
+    if (_state.duplicateScope === 'single' && _state.singleRowToDuplicate) {
+      await confirmDuplicateRowImpl(_state.singleRowToDuplicate);
     }
     dialogs?.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    _state.singleRowToDuplicate = null;
   }
 
   function cancelDuplicate() {
     dialogs?.closeDuplicateDialog();
-    singleRowToDuplicate = null;
+    _state.singleRowToDuplicate = null;
   }
 
   async function loadVersionHistory(row: TRow) {
@@ -294,20 +272,41 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     });
   }
 
+  function handleCustomAction(action: { actionName: string; translationKey: string }, row: TRow) {
+    const handler = getCustomActionHandlers?.()?.[action.actionName];
+    if (handler) {
+      handler(row);
+    } else {
+      // No handler registered for this action — show a "not implemented"
+      // toast so the user sees the action exists but isn't wired yet.
+      pushNotification({
+        type: '/errors/not-implemented',
+        title: tFn('errors.notImplemented.title'),
+        status: 501,
+        detail: tFn('errors.notImplemented.detail', { action: action.actionName }),
+        instance: `customAction:${action.actionName}`,
+        internal_code: 'CUSTOM_ACTION_NO_HANDLER',
+        severity: 'LOW',
+      });
+    }
+    closeRowDropdown?.();
+  }
+
   // Keep original function names for backward compatibility, but they now call the impl versions
-  async function confirmDeleteRow(row: TRow) {
-    await confirmDeleteRowImpl(row);
+  async function confirmDeleteRow(row: DeepReadonly<TRow>) {
+    await confirmDeleteRowImpl(row as TRow);
   }
 
-  async function confirmRestoreRow(row: TRow) {
-    await confirmRestoreRowImpl(row);
+  async function confirmRestoreRow(row: DeepReadonly<TRow>) {
+    await confirmRestoreRowImpl(row as TRow);
   }
 
-  async function confirmDuplicateRow(row: TRow) {
-    await confirmDuplicateRowImpl(row);
+  async function confirmDuplicateRow(row: DeepReadonly<TRow>) {
+    await confirmDuplicateRowImpl(row as TRow);
   }
 
   return {
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     handleEditRow,
     handleDeleteRow,
     handleRestoreRow,
@@ -321,12 +320,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     confirmDuplicateWrapper,
     cancelDuplicate,
     loadVersionHistory,
-    get rowToDelete() { return rowToDelete; },
-    get rowToRestore() { return rowToRestore; },
-    get singleRowToDuplicate() { return singleRowToDuplicate; },
-    get duplicateScope() { return duplicateScope; },
-    get isDeleting() { return isDeleting; },
-    get isRestoring() { return isRestoring; },
-    get isDuplicating() { return isDuplicating; }
+    handleCustomAction
   };
 }

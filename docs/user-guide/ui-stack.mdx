@@ -1,0 +1,131 @@
+---
+title: UI stack
+description: The layered UI stack powering the Primebrick frontend — BITS UI, shadcn-svelte, more-shadcn-svelte, shadcn-svelte-extras, and Tailwind CSS. Learn the basics upstream; this page explains how they fit together here.
+---
+
+# UI stack
+
+The Primebrick frontend UI is built from **five layered technologies**. Each
+layer builds on the one below it. Before reading the component catalog, learn
+the basics of each layer on its official site — this page only explains how
+they combine inside Primebrick.
+
+## Layering
+
+<Mermaid chart={`flowchart TB
+  Tailwind["Tailwind CSS<br/>utility styles + design tokens"]
+  BitsUI["BITS UI<br/>headless Svelte primitives"]
+  Shadcn["shadcn-svelte<br/>vendored styled primitives<br/>style: nova, baseColor: zinc"]
+  More["more-shadcn-svelte<br/>extra primitives<br/>dock, sortable, timeline, wheel-picker, color-picker"]
+  Extras["shadcn-svelte-extras<br/>turn-key components<br/>password, copy-button, window"]
+  Custom["Primebrick custom & wrapped<br/>combo-select, dynamic-icon,<br/>entity-list-table, app-shell, ..."]
+  Tailwind --> BitsUI
+  BitsUI --> Shadcn
+  Shadcn --> More
+  Shadcn --> Extras
+  Shadcn --> Custom
+  More --> Custom
+  Extras --> Custom
+`} />
+
+## The five layers
+
+### 1. Tailwind CSS
+
+Utility-first CSS framework and the source of all design tokens (colors,
+radius, spacing). Primebrick uses **Tailwind CSS v4** with the Vite plugin.
+Global styles and shadcn CSS variables live in `src/app.css`.
+
+- **Repo path**: configured via `@tailwindcss/vite`; tokens in `src/app.css`
+- **Companions**: `tailwind-merge`, `tailwind-variants`, `class-variance-authority`, `tw-animate-css`
+- **Learn the basics**: <https://tailwindcss.com>
+
+### 2. BITS UI
+
+Headless, accessible Svelte component primitives (the Svelte equivalent of
+Radix UI). shadcn-svelte is built on top of BITS UI. You rarely use BITS UI
+directly in Primebrick — you use the shadcn-svelte wrappers in
+`src/lib/components/ui/`. Reach for BITS UI only when you need a primitive
+shadcn-svelte does not wrap.
+
+- **Repo path**: npm dependency `bits-ui@2.18.1` (not vendored)
+- **Learn the basics**: <https://www.bits-ui.org>
+
+### 3. shadcn-svelte
+
+The primary primitive layer. Components are **vendored** (copy-pasted) into
+`src/lib/components/ui/` — they are not an npm dependency. Configuration lives
+in `components.json`: `style: "nova"`, `baseColor: "zinc"`, `iconLibrary: "lucide"`,
+registry `https://shadcn-svelte.com/registry`. Add new primitives with
+`npx shadcn-svelte@latest add <name>`.
+
+- **Repo path**: `src/lib/components/ui/<name>/` (31 vendored primitives in Primebrick)
+- **Companions**: `formsnap` (form layer), `paneforge` (resizable), `runed` (runes utilities), `svelte-sonner` (toast)
+- **Learn the basics**: <https://www.shadcn-svelte.com> · <https://www.shadcn-svelte.com/docs/components>
+
+### 4. more-shadcn-svelte
+
+A community registry (`kevwpl/more-shadcn-svelte`) extending shadcn-svelte with
+components the base registry lacks. Same copy-paste model. Add components with
+`npx shadcn-svelte@latest add https://more-shadcn.noair.fun/r/<name>.json`.
+
+Primebrick vendors 5 components from this registry:
+
+| Component | Path |
+|-----------|------|
+| Color Picker | `src/lib/components/ui/color-picker/` |
+| Dock | `src/lib/components/ui/dock/` |
+| Sortable | `src/lib/components/ui/sortable/` |
+| Timeline | `src/lib/components/ui/timeline/` |
+| Wheel Picker | `src/lib/components/ui/wheel-picker/` |
+
+- **Learn the basics**: <https://more-shadcn.noair.fun> · <https://github.com/kevwpl/more-shadcn-svelte>
+
+### 5. shadcn-svelte-extras
+
+A second community registry (`ieedan/shadcn-svelte-extras`) of turn-key
+components. Same copy-paste model. Add components with
+`npx shadcn-svelte@latest add https://shadcn-svelte-extras.com/r/<name>.json`.
+
+Primebrick vendors 3 components from this registry:
+
+| Component | Path |
+|-----------|------|
+| Copy Button | `src/lib/components/ui/copy-button/` |
+| Password | `src/lib/components/ui/password/` |
+| Window | `src/lib/components/ui/window/` |
+
+- **Learn the basics**: <https://www.shadcn-svelte-extras.com> · <https://github.com/ieedan/shadcn-svelte-extras>
+
+## When to use which
+
+Before writing a new component, check the layers in this order:
+
+1. **shadcn-svelte** (`src/lib/components/ui/`) — does a primitive already exist?
+2. **shadcn-svelte-extras** — does a turn-key component exist on the extras site?
+3. **more-shadcn-svelte** — does a component exist on the more-shadcn site?
+4. **BITS UI** — does a headless primitive exist that none of the above wrap?
+5. **Custom** — only if none of the above fit. Custom components live under
+   `src/lib/components/` (root), `src/lib/components/<feature>/`, or
+   `src/lib/components/ui/<name>/` when they extend a primitive.
+
+Vendored primitives stay in `src/lib/components/ui/`. App-specific and
+domain components live in feature subdirectories
+(`auth/`, `entity-list-table/`, `forms/`, `sidebar/`, `toasts/`,
+`date-dropper/`) or as root files (`AppShell.svelte`, `CommandPalette.svelte`,
+etc.).
+
+## Provenance
+
+Because all three registries use the copy-paste model, vendored components
+carry no attribution comments in source. Provenance for every component is
+recorded in `docs/user-guide/_extracted/component-provenance.json`
+(hand-maintained, not synced to the docs site). The
+[Component catalog](/docs/user-guide/components) groups every component by
+origin.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component, grouped by origin
+- [Getting started](/docs/user-guide/getting-started) — stack, commands, project layout
+- [API reference](/docs/user-guide/api-reference) — full prop tables for every component

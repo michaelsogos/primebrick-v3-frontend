@@ -17,7 +17,7 @@
 </script>
 
 <div
-  class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
+  class="inline-flex items-center gap-1 rounded-md border-primary-gradient-soft p-0.5 shadow-xs"
   role="group"
   aria-label={$t('entities.list.viewMode.groupAria')}
 >
@@ -25,10 +25,7 @@
     variant={viewMode === 'table' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      viewMode !== 'table' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', viewMode !== 'table' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'table'}
     title={$t('entities.list.viewMode.table')}
     onclick={() => onViewModeChange('table')}
@@ -39,10 +36,7 @@
     variant={viewMode === 'cards' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      viewMode !== 'cards' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', viewMode !== 'cards' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'cards'}
     title={$t('entities.list.viewMode.cards')}
     onclick={() => onViewModeChange('cards')}
@@ -53,10 +47,7 @@
     variant={viewMode === 'cards_list' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      viewMode !== 'cards_list' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', viewMode !== 'cards_list' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'cards_list'}
     title={$t('entities.list.viewMode.cardsList')}
     onclick={() => onViewModeChange('cards_list')}

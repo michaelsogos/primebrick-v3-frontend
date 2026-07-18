@@ -1,8 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { page as appPage } from '$app/state';
   import { EntityListTable } from '$lib/components/entity-list-table';
+  import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { extJsonParse } from '$lib/api-ext';
+  import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
@@ -11,12 +14,12 @@
     orderedColumnsFromListMeta,
     sanitizeVisibleKeys
   } from '$lib/entity-list';
-  import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
-  import { onDestroy } from 'svelte';
   import { onMount } from 'svelte';
-
-  const SYNC_CHANNEL_NAME = 'primebrick_users_sync';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   type UserProfileMeta = {
     entity: 'user_profiles';
@@ -46,13 +49,17 @@
     rows: UserProfileListRow[];
     page: number;
     page_size: number;
-    total: number;
+    total: bigint;
   };
 
   let meta = $state<UserProfileMeta | null>(null);
   let rows = $state<UserProfileListRow[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  // Change password dialog state
+  let changePasswordOpen = $state(false);
+  let changePasswordRow = $state<UserProfileListRow | null>(null);
 
   let search = $state('');
   let appliedSearch = $state('');
@@ -63,7 +70,7 @@
 
   let page = $state(1);
   let pageSize = $state(25);
-  let total = $state(0);
+  let total = $state<bigint>(0n);
 
   let filtersOpen = $state(false);
 
@@ -105,21 +112,9 @@
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
 
   // BroadcastChannel for sync with child windows
-  let syncChannel: BroadcastChannel | null = null;
-
-  if (browser) {
-    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-    syncChannel.onmessage = (event) => {
-      if (event.data === 'refresh') {
-        void refreshRows();
-      }
-    };
-  }
-
-  onDestroy(() => {
-    if (syncChannel) {
-      syncChannel.close();
-    }
+  const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', {
+    mode: 'receiver',
+    onRefresh: () => void refreshRows(),
   });
 
   function ensureVisibleKeys() {
@@ -311,7 +306,7 @@
         const code = apiDetails.code ?? 'LIST_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      const data = (await res.json()) as ListResponse;
+      const data = extJsonParse<ListResponse>(await res.text());
       rows = data.rows;
       page = data.page;
       pageSize = data.page_size;
@@ -324,7 +319,7 @@
       const isDbDown = apiError?.code === 'DATABASE_UNAVAILABLE';
       if (apiError && isBackendGatewayUnreachable(apiError.code, apiError.status)) {
         error = $t('shell.apiError.unreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.usersList',
@@ -339,7 +334,7 @@
           { label: apiError.code, tone: toneForImpact },
           ...(apiError.status !== null ? [{ label: `HTTP ${apiError.status}`, tone: toneForImpact } as const] : []),
         ] : [];
-        pushImpactError({
+        pushNotification({
           impact,
           messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
           scopeKey: 'errors.scope.usersList',
@@ -502,13 +497,11 @@
         const code = apiDetails.code ?? 'DELETE_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      if (syncChannel) {
-        syncChannel.postMessage('refresh');
-      }
+      notifyParentRefresh();
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           messageKey: 'common.deleteFailed',
           scopeKey: 'errors.scope.usersList',
@@ -530,13 +523,11 @@
         const code = apiDetails.code ?? 'RESTORE_FAILED';
         throw new ApiListError(code, res.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
       }
-      if (syncChannel) {
-        syncChannel.postMessage('refresh');
-      }
+      notifyParentRefresh();
       void refreshRows();
     } catch (err) {
       if (err instanceof ApiListError) {
-        pushImpactError({
+        pushNotification({
           impact: 'HIGH',
           messageKey: 'common.restoreFailed',
           scopeKey: 'errors.scope.usersList',
@@ -562,7 +553,24 @@
   });
 </script>
 
-<div class="h-full flex flex-col">
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('shell.system') },
+          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({
+            pathname: appPage.url.pathname,
+            searchParams: appPage.url.searchParams,
+            t: (key) => $t(key)
+          })
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.users')}</h1>
+    </div>
+  {/snippet}
+
   <EntityListTable
     entity="user_profiles"
     bind:datetimeIanaModeByKey
@@ -575,6 +583,12 @@
     columns={columns}
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
+    customActionHandlers={{
+      changePassword: (row: UserProfileListRow) => {
+        changePasswordRow = row;
+        changePasswordOpen = true;
+      },
+    }}
     onCreateAction={openNewUser}
     onEditAction={openEditUser}
     defaultSort={meta?.list.defaultSort}
@@ -609,4 +623,10 @@
     {onDeletionFilterModeChange}
     onRefresh={() => void refreshRows()}
   />
-</div>
+
+  <ChangePasswordDialog
+    bind:open={changePasswordOpen}
+    row={changePasswordRow}
+    uid={meta?.uid ?? 'uuid'}
+  />
+</AppPageScaffold>

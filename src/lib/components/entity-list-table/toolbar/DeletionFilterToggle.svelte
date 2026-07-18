@@ -16,7 +16,7 @@
 </script>
 
 <div
-  class="inline-flex rounded-md border border-input bg-sky-100/50 p-0.5 shadow-xs dark:border-input dark:bg-muted/20"
+  class="inline-flex items-center gap-1 rounded-md border-primary-gradient-soft p-0.5 shadow-xs"
   role="group"
   aria-label={$t('entities.list.deletionFilter.groupAria')}
 >
@@ -24,10 +24,7 @@
     variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      deletionFilterMode !== 'non_deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', deletionFilterMode !== 'non_deleted' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'non_deleted'}
     title={$t('entities.list.deletionFilter.nonDeleted')}
     onclick={() => onDeletionFilterModeChange('non_deleted')}
@@ -38,10 +35,7 @@
     variant={deletionFilterMode === 'deleted' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      deletionFilterMode !== 'deleted' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', deletionFilterMode !== 'deleted' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'deleted'}
     title={$t('entities.list.deletionFilter.deleted')}
     onclick={() => onDeletionFilterModeChange('deleted')}
@@ -52,10 +46,7 @@
     variant={deletionFilterMode === 'all' ? 'default' : 'ghost'}
     size="icon-sm"
     type="button"
-    class={cn(
-      'rounded-sm border border-transparent transition-colors hover:border-ring/50 dark:border-transparent dark:hover:border-ring/45',
-      deletionFilterMode !== 'all' && 'hover:bg-sky-100 dark:hover:bg-accent/50 dark:hover:text-accent-foreground'
-    )}
+    class={cn('rounded-sm', deletionFilterMode !== 'all' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'all'}
     title={$t('entities.list.deletionFilter.all')}
     onclick={() => onDeletionFilterModeChange('all')}

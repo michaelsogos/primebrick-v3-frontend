@@ -8,12 +8,9 @@
 
 /** `DropdownMenu.Item` when selected (unprefixed; merged last on the item). */
 export const menuListSelectedSurfaceDropdownClasses = [
-	'border-transparent bg-sky-100 font-semibold text-sky-950 shadow-xs',
-	'data-highlighted:bg-sky-200 data-highlighted:text-sky-950',
-	'[&_svg]:text-sky-950',
-	'dark:border-transparent dark:bg-neutral-800 dark:text-neutral-50 dark:shadow-xs',
-	'dark:data-highlighted:bg-neutral-700 dark:data-highlighted:text-neutral-50',
-	'dark:[&_svg]:text-neutral-50',
+	'border-primary-gradient-soft font-semibold text-foreground shadow-xs',
+	'data-highlighted:brightness-105',
+	'dark:border-primary-gradient-soft dark:text-foreground dark:shadow-xs',
 ].join(' ');
 
 /** Sidebar buttons & menu links: same neutral hover as list rows */
@@ -48,11 +45,9 @@ export const menuSoftFocusKeyboard = [
 ].join(' ');
 
 export const menuSoftAriaSelected = [
-	'aria-selected:border-transparent aria-selected:bg-sky-100 aria-selected:font-semibold aria-selected:text-sky-950 aria-selected:shadow-xs',
-	'dark:aria-selected:border-transparent dark:aria-selected:bg-neutral-800 dark:aria-selected:text-neutral-50',
-	'[&_svg]:aria-selected:text-sky-950 dark:[&_svg]:aria-selected:text-neutral-50',
-	'aria-selected:data-highlighted:bg-sky-200 aria-selected:data-highlighted:text-sky-950',
-	'dark:aria-selected:data-highlighted:bg-neutral-700 dark:aria-selected:data-highlighted:text-neutral-50',
+	'aria-selected:border-primary-gradient-soft aria-selected:font-semibold aria-selected:text-foreground aria-selected:shadow-xs',
+	'dark:aria-selected:border-primary-gradient-soft dark:aria-selected:text-foreground',
+	'aria-selected:data-highlighted:brightness-105',
 ].join(' ');
 
 /** `Command.Item`: layout + soft frame + highlight + aria-selected */
@@ -66,9 +61,7 @@ export const commandMenuItemClassName = [
 
 /** Sidebar: active route row — same selected surface as dropdowns / command list */
 export const menuSidebarActiveChrome = [
-	'data-[active=true]:border-transparent data-[active=true]:bg-sky-100 data-[active=true]:font-semibold data-[active=true]:text-sky-950 data-[active=true]:shadow-xs',
-	'dark:data-[active=true]:border-transparent dark:data-[active=true]:bg-neutral-800 dark:data-[active=true]:text-neutral-50',
-	'data-[active=true]:hover:bg-sky-200 data-[active=true]:hover:text-sky-950',
-	'dark:data-[active=true]:hover:bg-neutral-700 dark:data-[active=true]:hover:text-neutral-50',
-	'[&>svg]:data-[active=true]:text-sky-950 dark:[&>svg]:data-[active=true]:text-neutral-50',
+	'data-[active=true]:border-primary-gradient-soft data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:shadow-xs',
+	'dark:data-[active=true]:border-primary-gradient-soft dark:data-[active=true]:text-foreground',
+	'data-[active=true]:hover:brightness-105',
 ].join(' ');

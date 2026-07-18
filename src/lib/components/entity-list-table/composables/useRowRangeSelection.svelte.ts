@@ -1,4 +1,5 @@
 import { untrack } from 'svelte';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export function useRowRangeSelection<T>(options: {
   rowSelectionEnabled: () => boolean;
@@ -12,10 +13,12 @@ export function useRowRangeSelection<T>(options: {
   page: () => number;
   pageSize: () => number;
 }) {
-  let rowRangeMouseDown = $state(false);
-  let rangeAnchorIndex = $state<number | null>(null);
-  let rangeDragActive = $state(false);
-  let lastRangeEndIndex = $state<number | null>(null);
+  const _state = $state({
+    rowRangeMouseDown: false,
+    rangeAnchorIndex: null as number | null,
+    rangeDragActive: false,
+    lastRangeEndIndex: null as number | null,
+  });
   let selectionSnapshotAtMouseDown: Set<string> | null = null;
   let skipNextRowClickSelectToggle = false;
 
@@ -34,14 +37,14 @@ export function useRowRangeSelection<T>(options: {
     if (!canStartRowRangeSelect(e)) return;
     e.preventDefault();
     selectionSnapshotAtMouseDown = new Set(options.selectedKeys());
-    rowRangeMouseDown = true;
-    rangeAnchorIndex = i;
-    rangeDragActive = false;
-    lastRangeEndIndex = null;
+    _state.rowRangeMouseDown = true;
+    _state.rangeAnchorIndex = i;
+    _state.rangeDragActive = false;
+    _state.lastRangeEndIndex = null;
   }
 
   function onRowRangeMouseMove(e: MouseEvent) {
-    if (!rowRangeMouseDown || rangeAnchorIndex === null) return;
+    if (!_state.rowRangeMouseDown || _state.rangeAnchorIndex === null) return;
     
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const tr = el?.closest?.('tr[data-row-index]');
@@ -51,13 +54,13 @@ export function useRowRangeSelection<T>(options: {
     const currentViewRows = options.viewRows();
     if (!Number.isFinite(idx) || idx < 0 || idx >= currentViewRows.length) return;
     
-    if (!rangeDragActive) {
-      if (idx === rangeAnchorIndex) return;
-      rangeDragActive = true;
+    if (!_state.rangeDragActive) {
+      if (idx === _state.rangeAnchorIndex) return;
+      _state.rangeDragActive = true;
     }
-    if (lastRangeEndIndex === idx) return;
-    lastRangeEndIndex = idx;
-    applyRowRangeBrush(rangeAnchorIndex, idx);
+    if (_state.lastRangeEndIndex === idx) return;
+    _state.lastRangeEndIndex = idx;
+    applyRowRangeBrush(_state.rangeAnchorIndex, idx);
   }
 
   function applyRowRangeBrush(anchor: number, end: number) {
@@ -87,11 +90,11 @@ export function useRowRangeSelection<T>(options: {
   }
 
   function resetRowRangeSelect() {
-    if (untrack(() => rowRangeMouseDown && rangeDragActive)) skipNextRowClickSelectToggle = true;
-    rowRangeMouseDown = false;
-    rangeAnchorIndex = null;
-    rangeDragActive = false;
-    lastRangeEndIndex = null;
+    if (untrack(() => _state.rowRangeMouseDown && _state.rangeDragActive)) skipNextRowClickSelectToggle = true;
+    _state.rowRangeMouseDown = false;
+    _state.rangeAnchorIndex = null;
+    _state.rangeDragActive = false;
+    _state.lastRangeEndIndex = null;
     selectionSnapshotAtMouseDown = null;
   }
 
@@ -105,8 +108,8 @@ export function useRowRangeSelection<T>(options: {
 
   // Global mouse listeners
   $effect(() => {
-    void rowRangeMouseDown;
-    if (!rowRangeMouseDown) return;
+    void _state.rowRangeMouseDown;
+    if (!_state.rowRangeMouseDown) return;
     const move = (e: MouseEvent) => onRowRangeMouseMove(e);
     const up = () => resetRowRangeSelect();
     window.addEventListener('mousemove', move);
@@ -118,8 +121,7 @@ export function useRowRangeSelection<T>(options: {
   });
 
   return {
-    get rowRangeMouseDown() { return rowRangeMouseDown; },
-    get rangeDragActive() { return rangeDragActive; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     get skipNextRowClickSelectToggle() { return skipNextRowClickSelectToggle; },
     set skipNextRowClickSelectToggle(value: boolean) { skipNextRowClickSelectToggle = value; },
     onRowRangeMouseDown,

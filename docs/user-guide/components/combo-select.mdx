@@ -1,0 +1,105 @@
+---
+title: ComboSelect
+description: Searchable single/multi select built on Popover + Command primitives. Supports object options, translated labels, disabled options, custom item/selected rendering, and keyword boosting.
+---
+
+# ComboSelect
+
+`src/lib/components/ui/combo-select/combo-select.svelte`
+
+## Purpose
+
+A searchable single- or multi-select dropdown. Built on the shadcn-svelte
+`Popover` and `Command` primitives (which wrap BITS UI). Used across the
+settings area for role, permission, org, and module selection.
+
+## Origin
+
+**Custom** — fully Primebrick-written. Composes shadcn-svelte `Popover` +
+`Command` + `Badge`. Not vendored from any registry.
+
+## Usage
+
+### Default (single select, object options)
+
+```svelte
+<ComboSelect
+  mode="single"
+  bind:value
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+  isLabelTranslated
+  placeholder={$t('settings.selectRole')}
+/>
+```
+
+### Multi select
+
+```svelte
+<ComboSelect
+  mode="multi"
+  bind:value={selectedRoles}
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+  isLabelTranslated
+/>
+```
+
+### Disabled options
+
+```svelte
+<ComboSelect
+  mode="single"
+  bind:value
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+  isOptionDisabled={(o) => o.idp_role === 'admin'}
+/>
+```
+
+### Custom item rendering
+
+```svelte
+<ComboSelect mode="single" bind:value options={roles} valueField="idp_role" labelField="label_key">
+  {#snippet item({ option, selected, resolvedLabel })}
+    <span class="flex items-center gap-2">
+      {#if selected}<Check class="size-4" />{/if}
+      {resolvedLabel}
+    </span>
+  {/snippet}
+</ComboSelect>
+```
+
+### Keyword boosting
+
+Pass `getSearchKeywords` to let users find an option by fields not present in
+the value/label (e.g. searching a role by its permissions). Keywords are passed
+to bits-ui's `Command.Item` `keywords` prop for scoring.
+
+```svelte
+<ComboSelect
+  mode="single"
+  bind:value
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+  getSearchKeywords={(o) => o.permissions ?? []}
+/>
+```
+
+## Props
+
+Full prop table: see [API reference — combo-select](/docs/user-guide/api-reference#combo-select).
+
+Key props: `mode`, `value` (bindable), `options`, `valueField`, `labelField`,
+`isLabelTranslated`, `searchable`, `disabled`, `loading`, `itemSnippet`,
+`selectedSnippet`, `isOptionDisabled`, `getSearchKeywords`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#combo-select)

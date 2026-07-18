@@ -1,0 +1,106 @@
+---
+title: System settings
+description: The System Settings area — modules, organizations, users, profile, security, email providers, and templates.
+---
+
+# System settings
+
+The System Settings area lives under `/system/settings` and groups the
+platform administration pages. Each page uses `AppPageScaffold` +
+`AppPageBreadcrumb` for consistent layout.
+
+## Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/system/settings/modules` | List, enable/disable, delete, and inspect registered microservice modules |
+| `/system/settings/modules/[code]` | Edit a single module's metadata and configuration entries |
+| `/system/settings/organizations` | List organizations |
+| `/system/settings/organizations/[uuid]` | Edit an organization |
+| `/system/settings/organizations/create` | Create an organization |
+| `/system/settings/users` | List users (entity list table) |
+| `/system/settings/users/[uuid]` | Edit a user (with change-password dialog) |
+| `/system/settings/users/create` | Create a user |
+| `/system/settings/profile` | Edit the current user's profile |
+| `/system/settings/security` | Security settings |
+| `/system/settings/email-providers` | Manage email provider configurations |
+| `/system/settings/templates` | Manage templates |
+
+## Modules
+
+The modules page (`/system/settings/modules`) fetches services via
+`fetchServices()` and groups them by code using `groupByCode()` from
+`src/lib/services-store.svelte.ts`. Each group shows aggregated status
+badges (`online`, `going_live`, `offline`, `unknown`) computed by
+`aggregateStatus()`.
+
+Actions per module:
+
+- **Toggle** — `toggleModule(code)` enables/disables the module
+- **Delete** — `deleteModule(code)` with a `DeleteDialog` confirmation
+- **Configure** — navigates to `/system/settings/modules/[code]`
+
+The page also reflects the backend health chip from `backendState.healthChip`
+via `useHealthChip()` (`chipLabel`, `chipClass`).
+
+### Module detail
+
+`/system/settings/modules/[code]` has two tabs:
+
+1. **Service info** — editable fields: `name`, `description`, `base_url`,
+   `icon`, `icon_type` (`icon` | `url` | `image_url`), `author`,
+   `github_repo_url`. Saved via `updateService(code, data)`.
+2. **Module config** — lazy-loaded key/value entries fetched with
+   `fetchModuleConfig(code)` and saved individually via
+   `updateModuleConfigKey(code, key, value)`.
+
+The module's icon is rendered with `<DynamicIcon>` (see
+[UI components](/docs/user-guide/ui-components#dynamicicon)) when
+`icon_type` is `icon`.
+
+## Organizations
+
+The organizations list and forms use standard entity patterns. The create
+page (`/system/settings/organizations/create`) and edit page
+(`/system/settings/organizations/[uuid]`) use `FormPageLayout` and
+SuperForms with the form guards described in
+[Authentication & sessions](/docs/user-guide/authentication#form-guards).
+
+## Users
+
+The users list (`/system/settings/users`) renders an `EntityListTable` with
+row actions including edit and **change password**. The change-password
+action opens `ChangePasswordDialog`, which loads the active password policy
+and validates against it (see
+[Password policy](/docs/user-guide/authentication#password-policy)).
+
+The user edit page (`/system/settings/users/[uuid]`) and create page
+(`/system/settings/users/create`) use SuperForms with `useFormGuard` and
+`useUnsavedChangesGuard`.
+
+## Profile
+
+`/system/settings/profile` edits the current user's profile. It uses
+SuperForms with the form guards and includes avatar preview/color selection
+(see [UI components](/docs/user-guide/ui-components)).
+
+## Email providers
+
+`/system/settings/email-providers` manages email provider configurations
+(provider name, API key, endpoint, from email/name, reply-to). It talks to
+the `EMAILSENDER` microservice through the backend proxy at
+`/ws/EMAILSENDER/api/v1/entities/providers` using `apiFetchExt` from
+`src/lib/api-ext.ts`. `ApiUnreachableError` is handled gracefully — when
+the microservice is offline and the error has already been notified, the
+page suppresses duplicate notifications.
+
+## Templates
+
+`/system/settings/templates` manages templates. It uses the standard
+`AppPageScaffold` layout.
+
+## Next steps
+
+- [App shell & sidebar](/docs/user-guide/app-shell)
+- [Authentication & sessions](/docs/user-guide/authentication)
+- [API reference](/docs/user-guide/api-reference)

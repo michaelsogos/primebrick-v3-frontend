@@ -1,64 +1,64 @@
 import type { Snippet } from 'svelte';
+import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
   viewRows: () => TRow[];
   rowKey: (row: TRow) => string;
   onFieldChange?: (row: TRow, field: string, value: any) => void;
-  onRefresh?: () => void;
-}
-
-export interface PreviewPanelReturn<TRow extends Record<string, unknown>> {
-  previewRow: TRow | null;
-  previewRowIndex: number;
-  previewEditMode: boolean;
-  previewPanelOpen: boolean;
-  focusedRowIndex: number;
-  openPreview: (row: TRow) => void;
-  closePreview: () => void;
-  toggleEditMode: () => void;
-  handleFieldChange: (field: string, value: any) => void;
-  navigatePreview: (direction: 'next' | 'prev') => void;
-  canNavigateNext: boolean;
-  canNavigatePrev: boolean;
+  onRefresh?: () => () => void;
 }
 
 export function usePreviewPanel<TRow extends Record<string, unknown>>(
   options: PreviewPanelOptions<TRow>
-): PreviewPanelReturn<TRow> {
-  const { viewRows: viewRowsFn, rowKey, onFieldChange, onRefresh } = options;
+) {
+  const { viewRows: viewRowsFn, rowKey, onFieldChange, onRefresh: getOnRefresh } = options;
 
-  let previewRow = $state<TRow | null>(null);
-  let previewRowIndex = $state(0);
-  let previewEditMode = $state(false);
-  let previewPanelOpen = $state(false);
-  let focusedRowIndex = $state(0);
+  const _state = $state({
+    previewRow: null as TRow | null,
+    previewRowIndex: 0,
+    previewEditMode: false,
+    previewPanelOpen: false,
+    focusedRowIndex: 0,
+  });
 
   function openPreview(row: TRow) {
-    previewRow = row;
-    previewRowIndex = viewRowsFn().findIndex(r => rowKey(r) === rowKey(row));
-    focusedRowIndex = previewRowIndex;
-    previewEditMode = false;
-    previewPanelOpen = true;
+    _state.previewRow = row;
+    _state.previewRowIndex = viewRowsFn().findIndex(r => rowKey(r) === rowKey(row));
+    _state.focusedRowIndex = _state.previewRowIndex;
+    _state.previewEditMode = false;
+    _state.previewPanelOpen = true;
   }
 
   function closePreview() {
-    previewPanelOpen = false;
-    previewRow = null;
-    previewEditMode = false;
+    _state.previewPanelOpen = false;
+    _state.previewRow = null;
+    _state.previewEditMode = false;
   }
 
   function toggleEditMode() {
-    previewEditMode = !previewEditMode;
+    _state.previewEditMode = !_state.previewEditMode;
+  }
+
+  function setPreviewEditMode(mode: boolean) {
+    _state.previewEditMode = mode;
   }
 
   function handleFieldChange(field: string, value: any) {
-    if (previewRow) {
+    if (_state.previewRow) {
       if (onFieldChange) {
-        onFieldChange(previewRow, field, value);
+        onFieldChange(_state.previewRow, field, value);
       }
       // Update local preview row state
-      previewRow = { ...previewRow, [field]: value };
+      _state.previewRow = { ..._state.previewRow, [field]: value };
     }
+  }
+
+  function refresh() {
+    getOnRefresh?.()();
+  }
+
+  function setFocusedRowIndex(index: number) {
+    _state.focusedRowIndex = index;
   }
 
   function navigatePreview(direction: 'next' | 'prev') {
@@ -66,39 +66,37 @@ export function usePreviewPanel<TRow extends Record<string, unknown>>(
     if (rows.length === 0) return;
 
     if (direction === 'next') {
-      const nextIndex = Math.min(previewRowIndex + 1, rows.length - 1);
-      if (nextIndex !== previewRowIndex) {
-        previewRow = rows[nextIndex];
-        previewRowIndex = nextIndex;
-        focusedRowIndex = nextIndex;
-        previewEditMode = false;
+      const nextIndex = Math.min(_state.previewRowIndex + 1, rows.length - 1);
+      if (nextIndex !== _state.previewRowIndex) {
+        _state.previewRow = rows[nextIndex];
+        _state.previewRowIndex = nextIndex;
+        _state.focusedRowIndex = nextIndex;
+        _state.previewEditMode = false;
       }
     } else {
-      const prevIndex = Math.max(previewRowIndex - 1, 0);
-      if (prevIndex !== previewRowIndex) {
-        previewRow = rows[prevIndex];
-        previewRowIndex = prevIndex;
-        focusedRowIndex = prevIndex;
-        previewEditMode = false;
+      const prevIndex = Math.max(_state.previewRowIndex - 1, 0);
+      if (prevIndex !== _state.previewRowIndex) {
+        _state.previewRow = rows[prevIndex];
+        _state.previewRowIndex = prevIndex;
+        _state.focusedRowIndex = prevIndex;
+        _state.previewEditMode = false;
       }
     }
   }
 
-  const canNavigateNext = $derived(previewRowIndex < viewRowsFn().length - 1);
-  const canNavigatePrev = $derived(previewRowIndex > 0);
+  const canNavigateNext = $derived(_state.previewRowIndex < viewRowsFn().length - 1);
+  const canNavigatePrev = $derived(_state.previewRowIndex > 0);
 
   return {
-    get previewRow() { return previewRow; },
-    get previewRowIndex() { return previewRowIndex; },
-    get previewEditMode() { return previewEditMode; },
-    get previewPanelOpen() { return previewPanelOpen; },
-    get focusedRowIndex() { return focusedRowIndex; },
+    get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
     get canNavigateNext() { return canNavigateNext; },
     get canNavigatePrev() { return canNavigatePrev; },
     openPreview,
     closePreview,
     toggleEditMode,
+    setPreviewEditMode,
     handleFieldChange,
+    setFocusedRowIndex,
     navigatePreview
   };
 }

@@ -22,10 +22,14 @@
 <div class="grid h-full place-items-center p-3">
   <div class="relative flex flex-col items-center gap-2 text-center">
     <div class="relative">
-      <!-- Cloud icon (static) -->
-      <Cloud class="size-20 text-info" />
+      <!-- Cloud icon (static, opacity fade) -->
+      <div class="pb-watermark-fade">
+        <Cloud class="size-20 text-info" />
+      </div>
       <!-- Refresh arrows (rotating) -->
-      <RefreshCw class="absolute inset-0 m-auto size-8 text-info animate-spin opacity-70" />
+      <div class="absolute inset-0 m-auto flex size-6 -translate-x-0.5 translate-y-1 items-center justify-center">
+        <RefreshCw class="size-6 text-info animate-spin opacity-70" />
+      </div>
     </div>
     <div class="text-sm font-medium text-muted-foreground">{displayText}</div>
   </div>

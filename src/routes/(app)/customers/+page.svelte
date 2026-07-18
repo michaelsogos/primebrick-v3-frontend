@@ -16,7 +16,8 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
-  import { pushImpactError } from '$lib/errors/app-errors';
+  import { extJsonParse } from '$lib/api-ext';
+  import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
@@ -60,7 +61,7 @@
     rows: CustomerListRow[];
     page: number;
     page_size: number;
-    total: number;
+    total: bigint;
   };
 
   let meta = $state<CustomerMeta | null>(null);
@@ -77,7 +78,7 @@
 
   let page = $state(1);
   let pageSize = $state(25);
-  let total = $state(0);
+  let total = $state<bigint>(0n);
 
   let filtersOpen = $state(false);
 
@@ -173,7 +174,7 @@
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
       ensureVisibleKeys();
       return;
     }
@@ -186,7 +187,7 @@
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
       ensureVisibleKeys();
       return;
     }
@@ -220,7 +221,7 @@
       sortKey = null;
       sortDir = defSort?.dir ?? 'asc';
     }
-    pageSize = m.list.defaultPageSize ?? pageSize;
+    pageSize = Number(m.list.defaultPageSize ?? pageSize);
     ensureVisibleKeys();
   }
 
@@ -467,7 +468,7 @@
       const code = apiDetails.code ?? 'GET_ENTITY_LIST_FAILED';
       throw new ApiListError(code, listRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
     }
-    const list = (await listRes.json()) as ListResponse;
+    const list = extJsonParse<ListResponse>(await listRes.text());
     rows = list.rows;
     total = list.total;
   }
@@ -482,7 +483,7 @@
     try {
       await loadRows();
       if (opts?.clampPage) {
-        const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+        const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
         if (page > nextTotalPages) {
           page = 1;
           await loadRows();
@@ -499,7 +500,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.customersList',
@@ -525,7 +526,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.customersList',
@@ -547,7 +548,7 @@
       // Sequential: if meta fails with gateway/offline, loadRows is not called (no second error, no extra fetch).
       await loadMeta();
       await loadRows();
-      const nextTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
       if (page > nextTotalPages) {
         page = 1;
         await loadRows();
@@ -564,7 +565,7 @@
 
       if (isGateway) {
         error = $t('shell.serverUnreachable');
-        pushImpactError({
+        pushNotification({
           impact: 'CRITICAL',
           messageKey: 'shell.serverUnreachable',
           scopeKey: 'errors.scope.customersPageInit',
@@ -590,7 +591,7 @@
       if (err instanceof ApiListError && err.instance) {
         tags.push({ label: err.instance, tone: toneForImpact });
       }
-      pushImpactError({
+      pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
         messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
         scopeKey: 'errors.scope.customersPageInit',

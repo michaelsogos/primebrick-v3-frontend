@@ -4,7 +4,7 @@ import { toast } from '$lib/errors/toast';
 import { t } from '$lib/i18n';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 
-export type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
 
 export type AppErrorTag = {
   label: string;
@@ -51,11 +51,12 @@ function baseToastOpts(description?: string, tags?: AppErrorTag[], detail?: stri
 }
 
 /**
- * Toast mapping (no `success` — these are error-domain notifications):
+ * Toast mapping:
  * - CRITICAL: urgent / semaphore red (`--critical`), brighter than standard error
  * - HIGH: standard error (`toast.error` / destructive)
  * - MEDIUM: warning
  * - LOW: info
+ * - NONE: success (green) — the operation completed, no impact on error state
  */
 function showImpactToast(impact: ImpactLevel, message: string, description?: string, tags?: AppErrorTag[], detail?: string) {
   const opts = baseToastOpts(description);
@@ -70,6 +71,8 @@ function showImpactToast(impact: ImpactLevel, message: string, description?: str
       return toast.warning(message, opts);
     case 'LOW':
       return toast.info(message, opts);
+    case 'NONE':
+      return toast.success(message, opts);
     default:
       return toast.error(message, opts);
   }
@@ -84,88 +87,31 @@ function prependCapped(xs: AppError[], err: AppError): AppError[] {
   return next.length > MAX_APP_ERRORS ? next.slice(0, MAX_APP_ERRORS) : next;
 }
 
-export function pushAppError(input: { message: string; scope?: string; detail?: string; toast?: boolean }) {
-  const err: AppError = {
-    id: uid('err'),
-    impact: 'HIGH',
-    message: input.message,
-    scope: input.scope,
-    detail: input.detail,
-    createdAt: Date.now()
-  };
-  appErrors.update((xs) => prependCapped(xs, err));
-
-  if (input.toast !== false) {
-    toast.error(input.message, baseToastOpts(input.scope));
-  }
-
-  return err.id;
-}
-
-export function pushImpactError(input: {
-  impact: ImpactLevel;
-  messageKey?: string;
-  message?: string;
-  scopeKey?: string;
-  scope?: string;
-  tags?: AppErrorTag[];
-  detail?: string;
-  toast?: boolean;
-  [key: string]: any; // Allow extra fields
-}) {
-  const tr = translate();
-  const messageValue = input.messageKey ? tr(input.messageKey) : input.message ?? '';
-  const scopeValue = input.scopeKey ? tr(input.scopeKey) : input.scope;
-
-  // Extract standard fields
-  const { impact, messageKey, message, scopeKey, scope, tags, detail, toast, ...extraFields } = input;
-
-  const err: AppError = {
-    id: uid('err'),
-    impact,
-    messageKey,
-    message,
-    scopeKey,
-    scope,
-    tags,
-    detail,
-    createdAt: Date.now(),
-    ...extraFields // Preserve extra fields like duplicateResults
-  };
-
-  appErrors.update((xs) => prependCapped(xs, err));
-
-  if (input.toast !== false) {
-    showImpactToast(input.impact, messageValue, scopeValue, input.tags, input.detail);
-  }
-
-  return err.id;
-}
-
 export function clearAppErrors() {
   appErrors.set([]);
 }
 
 /**
- * Map RFC 7807 severity to ImpactLevel
- * Defaults to HIGH if severity is not specified or invalid
+ * Map RFC 7807 severity to ImpactLevel.
+ * RFC7807 never sends `NONE` (it's always an error response), but we handle
+ * it gracefully anyway. Defaults to HIGH if severity is not specified or invalid.
  */
 function mapSeverityToImpact(severity?: string): ImpactLevel {
-  if (severity && ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(severity)) {
+  if (severity && ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'NONE'].includes(severity)) {
     return severity as ImpactLevel;
   }
-  // Default to HIGH if not specified
   return 'HIGH';
 }
 
-/**
- * Push RFC 7807 compliant error from backend
- * Accepts the exact RFC 7807 error response from the backend without DTO transformation
- * Preserves extra fields beyond standard RFC7807 fields for detailed error viewing
- */
-export function pushRFC7807Error(error: RFC7807Error & Record<string, any>, options?: { showToast?: boolean }) {
+/** Detect RFC7807 shape: has both `type` (string) and `status` (number) fields. */
+function isRFC7807Input(input: any): input is RFC7807Error & Record<string, any> {
+  return typeof input?.type === 'string' && typeof input?.status === 'number';
+}
+
+/** Map RFC7807 fields to NotificationInput params. */
+function normalizeRFC7807(error: RFC7807Error & Record<string, any>): NotificationInput {
   const impact = mapSeverityToImpact(error.severity);
-  const tone: 'danger' | 'neutral' | 'warning' | 'info' | 'success' = 'danger';
+  const tone: AppErrorTag['tone'] = 'danger';
 
   const tags: AppErrorTag[] = [];
   if (error.internal_code) {
@@ -185,13 +131,75 @@ export function pushRFC7807Error(error: RFC7807Error & Record<string, any>, opti
     }
   }
 
-  pushImpactError({
+  return {
     impact,
     message: error.detail,
     scope: error.title,
-    detail: undefined,
     tags,
-    toast: options?.showToast !== false,
-    ...extraFields, // Preserve extra fields like duplicateResults
-  });
+    ...extraFields
+  };
+}
+
+export type NotificationInput = {
+  impact: ImpactLevel;
+  message?: string;
+  messageKey?: string;
+  scope?: string;
+  scopeKey?: string;
+  tags?: AppErrorTag[];
+  detail?: string;
+  toast?: boolean;
+  [key: string]: any;
+};
+
+/**
+ * Unified notification method. Accepts either plain params or an RFC7807
+ * error object (detected by presence of `type` + `status` fields).
+ *
+ * - ALWAYS shows a toast (unless `toast: false`).
+ * - Adds an event card to the errors panel for all impacts EXCEPT `NONE`
+ *   (success — toast only, no event card because it's not an error).
+ *
+ * @returns the error id (for programmatic dismissal if needed)
+ */
+export function pushNotification(
+  input: NotificationInput | (RFC7807Error & Record<string, any>)
+): string {
+  // 1. Detect RFC7807 and normalize to NotificationInput
+  const normalized = isRFC7807Input(input)
+    ? normalizeRFC7807(input as RFC7807Error & Record<string, any>)
+    : (input as NotificationInput);
+
+  // 2. Translate i18n keys if present
+  const tr = translate();
+  const messageValue = normalized.messageKey ? tr(normalized.messageKey) : normalized.message ?? '';
+  const scopeValue = normalized.scopeKey ? tr(normalized.scopeKey) : normalized.scope;
+
+  // 3. Build AppError object
+  const { impact, messageKey, message, scopeKey, scope, tags, detail, toast: showToast, ...extraFields } = normalized;
+
+  const err: AppError = {
+    id: uid('err'),
+    impact,
+    messageKey,
+    message,
+    scopeKey,
+    scope,
+    tags,
+    detail,
+    createdAt: Date.now(),
+    ...extraFields
+  };
+
+  // 4. Add to errors panel ONLY if impact !== NONE
+  if (impact !== 'NONE') {
+    appErrors.update((xs) => prependCapped(xs, err));
+  }
+
+  // 5. Always show toast (unless toast === false)
+  if (showToast !== false) {
+    showImpactToast(impact, messageValue, scopeValue, tags, detail);
+  }
+
+  return err.id;
 }

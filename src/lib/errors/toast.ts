@@ -8,7 +8,7 @@ import type { AppErrorTag } from './app-errors';
 /** Matches `app.css` — `li.toast-impact-critical` rules for surface + copy color. */
 export const TOAST_CRITICAL_CLASS = 'toast-impact-critical';
 
-type ToastTone = 'critical' | 'error' | 'warning' | 'info';
+type ToastTone = 'critical' | 'error' | 'warning' | 'info' | 'success';
 
 function toastEvent(tone: ToastTone, message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) {
   const scope = typeof data?.description === 'string' ? data.description : undefined;
@@ -21,7 +21,9 @@ function toastEvent(tone: ToastTone, message: string, data?: ExternalToast & { t
         ? tr('impact.error')
         : tone === 'warning'
           ? tr('impact.warning')
-          : tr('impact.information');
+          : tone === 'success'
+            ? tr('impact.success')
+            : tr('impact.information');
 
   return sonnerToast.custom(
     EventToast,
@@ -66,10 +68,12 @@ export const toast = Object.assign(sonnerToast, {
   critical: toastCritical,
   error: (message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) => toastEvent('error', message, data),
   warning: (message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) => toastEvent('warning', message, data),
-  info: (message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) => toastEvent('info', message, data)
+  info: (message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) => toastEvent('info', message, data),
+  success: (message: string, data?: ExternalToast & { tags?: AppErrorTag[]; detail?: string }) => toastEvent('success', message, data)
 }) as typeof sonnerToast & {
   critical: typeof toastCritical;
   error: typeof sonnerToast.error;
   warning: typeof sonnerToast.warning;
   info: typeof sonnerToast.info;
+  success: typeof sonnerToast.success;
 };

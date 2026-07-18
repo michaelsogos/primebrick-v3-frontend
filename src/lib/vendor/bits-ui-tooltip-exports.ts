@@ -7,5 +7,7 @@ export {
 	Trigger,
 	Provider,
 	Content,
+	Portal,
 } from '../../../node_modules/bits-ui/dist/bits/tooltip/exports.js';
 export type { ContentProps } from '../../../node_modules/bits-ui/dist/bits/tooltip/exports.js';
+export type { PortalProps } from '../../../node_modules/bits-ui/dist/bits/tooltip/exports.js';

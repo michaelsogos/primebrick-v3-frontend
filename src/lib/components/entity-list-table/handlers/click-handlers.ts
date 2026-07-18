@@ -1,9 +1,9 @@
 export function createClickHandlers<TRow extends Record<string, unknown>>(
   rowActionsComposable: any,
   previewPanel: any,
-  rowSelectionEnabled: boolean,
-  rowsLoading: boolean,
-  error: string | null,
+  rowSelectionEnabled: () => boolean,
+  rowsLoading: () => boolean,
+  error: () => string | null,
   rowRangeSelection: any,
   toggleRowSelect: (key: string) => void
 ) {
@@ -16,7 +16,7 @@ export function createClickHandlers<TRow extends Record<string, unknown>>(
   }
 
   function onEntityRowClick(key: string, e: MouseEvent) {
-    if (!rowSelectionEnabled || rowsLoading || error) return;
+    if (!rowSelectionEnabled() || rowsLoading() || error()) return;
     const t = e.target as HTMLElement | null;
     if (!t) return;
     if (
@@ -35,7 +35,7 @@ export function createClickHandlers<TRow extends Record<string, unknown>>(
   }
 
   function onEntityCardClick(key: string, e: MouseEvent) {
-    if (!rowSelectionEnabled || rowsLoading || error) return;
+    if (!rowSelectionEnabled() || rowsLoading() || error()) return;
     const t = e.target as HTMLElement | null;
     if (!t) return;
     if (
