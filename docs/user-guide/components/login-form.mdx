@@ -1,0 +1,91 @@
+---
+title: LoginForm
+description: Username/password login form with optional passkey button, driven by the auth config and sveltekit-superforms.
+---
+
+# LoginForm
+
+`src/lib/components/auth/LoginForm.svelte`
+
+## Purpose
+
+A self-contained login form that posts credentials to
+`/api/v1/auth/login` and reacts to the backend auth config. When
+`enable_formauth` is on it renders the username/password fields; when
+`enable_webauthn` is on (and the browser supports WebAuthn) it renders a
+[PasskeyButton](/docs/user-guide/components/passkey-button) below the
+form. Use it on the login page and inside the
+[SessionExpiredDialog](/docs/user-guide/components/session-expired-dialog).
+
+## Origin
+
+**Custom** — Primebrick-written. Built on `sveltekit-superforms` + Zod,
+the shadcn-svelte `form`/`input`/`button`/`alert` primitives, and the
+custom `Password` input. Not vendored from any registry.
+
+## Usage
+
+### Default (login page)
+
+```svelte
+<script>
+  import LoginForm from '$lib/components/auth/LoginForm.svelte';
+
+  function onsuccess(data) {
+    // data: { success: boolean; user: any } — redirect to the app
+    goto('/');
+  }
+</script>
+
+<LoginForm {onsuccess} />
+```
+
+### With error callback
+
+```svelte
+<LoginForm
+  onsuccess={() => goto('/')}
+  onerror={() => console.warn('login failed')}
+/>
+```
+
+### Inside the session-expired dialog
+
+```svelte
+<LoginForm
+  onsuccess={handleLoginSuccess}
+  onerror={handleLoginError}
+/>
+```
+
+The parent decides what to do on success — the login page redirects,
+while the session-expired dialog drains and retries pending requests.
+
+## Behavior
+
+- **Auth-config driven**: reads `authConfigState` (`enable_formauth`,
+  `enable_webauthn`). The password form only renders when form auth is
+  enabled; the passkey button only renders when WebAuthn is enabled and
+  the browser supports it.
+- **Validation**: Zod schema requires non-empty `username` and
+  `password`; field-level errors are mapped from RFC7807 `issues`.
+- **Error display**: a destructive `Alert` shows the translated message
+  set via `setMessage` (e.g. invalid credentials, account locked with
+  `{minutes}` interpolation).
+- **User store**: on success, `userProfileStore.set(data.user)` is
+  called before `onsuccess`.
+
+## Props
+
+Full prop table: see [API reference — loginform](/docs/user-guide/api-reference#loginform).
+
+Key props:
+
+- `onsuccess?: (data: &lbrace; success: boolean; user: any &rbrace;) => void` — called after a successful login.
+- `onerror?: () => void` — called when login fails (bad credentials, network error, etc.).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#loginform)

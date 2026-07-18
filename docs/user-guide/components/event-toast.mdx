@@ -1,0 +1,89 @@
+---
+title: EventToast
+description: Toast notification rendering an error/event card with tone, tags, and timestamp via svelte-sonner.
+---
+
+# EventToast
+
+`src/lib/components/toasts/EventToast.svelte`
+
+## Purpose
+
+Renders a single notification event as a toast body, using the `EventCard`
+primitive plus optional `Badge` tags. It is the visual payload pushed by the
+shell's `pushNotification` infrastructure when an error or notification event
+needs to surface to the user. Use it indirectly through `pushNotification` —
+you rarely render `<EventToast>` yourself.
+
+## Origin
+
+**Custom** — built on top of the in-repo `EventCard` primitive and `Badge`,
+rendered inside a `svelte-sonner` toast slot.
+
+## Usage
+
+### Default (error tone)
+
+```svelte
+<script lang="ts">
+  import EventToast from "$lib/components/toasts/EventToast.svelte";
+</script>
+
+<EventToast
+  label="API"
+  title="Request failed"
+  message="The server returned 503 Service Unavailable."
+  time={new Date()}
+  tone="error"
+/>
+```
+
+### Critical tone with tags and detail
+
+```svelte
+<EventToast
+  label="Auth"
+  title="Session terminated"
+  message="Your session was invalidated by a concurrent login."
+  time={Date.now()}
+  tone="critical"
+  tags={[
+    { label: "RFC-7807", tone: "danger" },
+    { label: "impact: HIGH", tone: "danger" }
+  ]}
+  detail="Trace id: 4f9c…"
+/>
+```
+
+### Success tone
+
+```svelte
+<EventToast
+  label="Sync"
+  title="Repository synced"
+  message="12 modules imported successfully."
+  time={new Date()}
+  tone="success"
+/>
+```
+
+## Props
+
+Full prop table: see [API reference — eventtoast](/docs/user-guide/api-reference#eventtoast).
+
+Key props:
+
+- `label` (required) — short category label rendered as `EventCard.Label`.
+- `title` (required) — single-line title.
+- `message` (required) — body message.
+- `time` (`Date | number | string`) — formatted via `formatUiDateTime` using the active `uiLang`.
+- `tone` (`"critical" | "error" | "warning" | "info" | "success"`, default `"error"`) — drives `eventColor`.
+- `tags` (`Array&lt;&lbrace; label: string; tone: "danger" | "neutral" | "warning" | "info" | "success" &rbrace;&gt;`) — optional badges.
+- `detail` (`string`) — optional secondary line rendered smaller under the message.
+
+## Next steps
+
+- [EventCard](/docs/user-guide/components/event-card)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#eventtoast)

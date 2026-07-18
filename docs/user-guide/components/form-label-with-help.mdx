@@ -1,0 +1,54 @@
+---
+title: FormLabelWithHelp
+description: Form label with an inline help tooltip triggered by a small question-mark icon.
+---
+
+# FormLabelWithHelp
+
+`src/lib/components/forms/FormLabelWithHelp.svelte`
+
+## Purpose
+
+Renders a help-circle icon next to a form label that, on hover/focus, shows a
+tooltip with explanatory text. Use it inline within a label row to give users
+context about a field without cluttering the form layout.
+
+## Origin
+
+**Custom** — Primebrick-written. Wraps the shadcn-svelte `Tooltip` primitive and
+the Lucide `HelpCircle` icon.
+
+## Usage
+
+### Default
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('users.fields.email')}
+  <FormLabelWithHelp text={$t('users.fields.emailHelp')} />
+</label>
+```
+
+### Inside a form field
+
+```svelte
+<div class="space-y-1">
+  <label class="flex items-center gap-1">
+    {$t('settings.fields.oidcIssuerUrl')}
+    <FormLabelWithHelp text={$t('settings.fields.oidcIssuerUrlHelp')} />
+  </label>
+  <Input bind:value={config.oidc_issuer_url} />
+</div>
+```
+
+## Props
+
+Full prop table: see [API reference — formlabelwithhelp](/docs/user-guide/api-reference#formlabelwithhelp).
+
+Props: `text: string` — the tooltip content shown on hover/focus.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#formlabelwithhelp)

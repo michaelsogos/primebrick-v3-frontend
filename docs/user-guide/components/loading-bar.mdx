@@ -1,0 +1,74 @@
+---
+title: LoadingBar
+description: Indeterminate top-style loading bar with a custom pb-loading-bar animation.
+---
+
+# LoadingBar
+
+`src/lib/components/ui/loading-bar/loading-bar.svelte`
+
+## Purpose
+
+Indeterminate loading indicator that animates a short bar across a track. Use
+it for in-progress async operations that have no determinate progress value —
+e.g. route transitions, lazy module loads, or while a fetch is in flight. The
+animation is driven by the `pb-loading-bar` keyframe and exposes CSS variables
+for duration and easing.
+
+## Origin
+
+**Custom** — Primebrick-built primitive. Variants are defined with
+`tailwind-variants` (`loadingBarVariants`).
+
+## Usage
+
+### Default (xs, muted)
+
+```svelte
+<script lang="ts">
+  import { LoadingBar } from "$lib/components/ui/loading-bar";
+</script>
+
+<LoadingBar />
+```
+
+### Larger size with custom duration
+
+```svelte
+<LoadingBar size="sm" duration="2s" easing="linear" />
+```
+
+### Custom bar color
+
+```svelte
+<LoadingBar barClass="bg-success" />
+```
+
+### Inline at the top of a card
+
+```svelte
+<div class="rounded-xl border">
+  <LoadingBar />
+  <div class="p-4">Card content…</div>
+</div>
+```
+
+## Props
+
+Full prop table: see [API reference — loadingbar](/docs/user-guide/api-reference#loadingbar).
+
+Key props:
+
+- `size` (`"xs" | "sm"`, default `"xs"`) — track height.
+- `variant` (`"muted"`, default `"muted"`) — track background.
+- `duration` (`string`, default `"1.2s"`) — CSS var `--pb-loading-bar-duration`.
+- `easing` (`string`, default `"ease-in-out"`) — CSS var `--pb-loading-bar-easing`.
+- `barClass` (`string`) — extra classes for the animated bar (e.g. `bg-success`).
+- `class` — extra classes for the track.
+
+## Next steps
+
+- [MetadataLoading](/docs/user-guide/components/metadata-loading)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#loadingbar)

@@ -1,0 +1,66 @@
+---
+title: SidebarOrgSwitcher
+description: Sidebar dropdown for switching the active organization, backed by the /api/v1/system/organizations/active endpoint, with avatar and display name.
+---
+
+# SidebarOrgSwitcher
+
+`src/lib/components/sidebar/SidebarOrgSwitcher.svelte`
+
+## Purpose
+
+A large sidebar menu button in the sidebar header that shows the currently
+selected organization (avatar or `ImageOff` fallback + display name + subtitle)
+and opens a `DropdownMenu` of all active organizations. On mount it fetches
+active orgs from `/api/v1/system/organizations/active` and defaults to the first
+one. Selecting an item sets `selectedOrgId` to the org's `idp_code`. The org
+shape is `{ uuid, idp_code, idp_name, display_name, avatar }` (snake_case, per
+the data-model convention). When collapsed, only the avatar tile shows.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses shadcn-svelte `Sidebar`, `DropdownMenu`,
+and `Avatar`, `apiFetch`, and `@lucide/svelte` `ImageOff` / `ChevronsUpDown`.
+
+## Usage
+
+### Default (mounted in AppSidebar header)
+
+```svelte
+<SidebarOrgSwitcher {collapsed} />
+```
+
+### Collapsed (avatar-only tile)
+
+When `collapsed` is true, only the 8x8 avatar tile renders; the label, subtitle,
+and chevron hide.
+
+```svelte
+<SidebarOrgSwitcher collapsed={true} />
+```
+
+### Org data shape
+
+The component consumes the raw API response shape directly (no DTO renaming).
+
+```ts
+type ActiveOrg = {
+  uuid: string;
+  idp_code: string;
+  idp_name: string;
+  display_name: string;
+  avatar: string | null;
+};
+```
+
+## Props
+
+Full prop table: see [API reference — sidebarorgswitcher](/docs/user-guide/api-reference#sidebarorgswitcher).
+
+Key props: `collapsed: boolean` (whether the sidebar is in icon-only mode).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#sidebarorgswitcher)

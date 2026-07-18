@@ -1,0 +1,68 @@
+---
+title: SidebarProfileMenu
+description: Sidebar footer dropdown showing the signed-in user with avatar, settings link, and a destructive sign-out action.
+---
+
+# SidebarProfileMenu
+
+`src/lib/components/sidebar/SidebarProfileMenu.svelte`
+
+## Purpose
+
+A sidebar footer dropdown that shows the signed-in user. The trigger is a large
+`Sidebar.MenuButton` with a hex avatar (colored fallback from
+`avatar_color` + initials, or a chrome-palette fallback) and the user's display
+name plus a profile label. The dropdown header restates the avatar, name, and
+email; a **Settings** item navigates to `/system/settings/profile` (and switches
+to the `settings` module); a destructive **Sign out** item calls the `onLogout`
+callback. The whole component only renders when `user` is non-null. When
+collapsed, the trigger centers the avatar and hides the label and chevron.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses shadcn-svelte `Sidebar`, `DropdownMenu`,
+and `Avatar`, `$lib/avatar-chrome-palette`, and `@lucide/svelte` icons.
+
+## Usage
+
+### Default (mounted in AppSidebar footer)
+
+```svelte
+<SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
+```
+
+### Collapsed (avatar-only)
+
+When `collapsed` is true, the avatar is centered full-width and the label/chevron
+hide via `group-data-[collapsible=icon]`.
+
+```svelte
+<SidebarProfileMenu {user} collapsed={true} onLogout={handleLogout} />
+```
+
+### Settings + sign-out wiring
+
+Settings switches to the `settings` module and navigates; sign-out delegates to
+the parent's `onLogout`.
+
+```svelte
+<DropdownMenu.Item onSelect={() => { void shellNav.selectModule('settings'); void goto('/system/settings/profile'); }}>
+  <Settings /> {$t('shell.userMenu.itemSettings')}
+</DropdownMenu.Item>
+<DropdownMenu.Item variant="destructive" onclick={onLogout}>
+  <LogOut /> {$t('shell.userMenu.itemSignOut')}
+</DropdownMenu.Item>
+```
+
+## Props
+
+Full prop table: see [API reference — sidebarprofilemenu](/docs/user-guide/api-reference#sidebarprofilemenu).
+
+Key props: `user: UserProfile | null`, `collapsed: boolean`,
+`onLogout: () => void`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#sidebarprofilemenu)
