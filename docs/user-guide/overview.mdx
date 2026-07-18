@@ -7,8 +7,10 @@ description: Primebrick frontend — a SvelteKit + Svelte 5 + TypeScript applica
 
 The Primebrick frontend (`primebrick-fe-v3`) is the web administration
 application for the Primebrick platform. It is built with **SvelteKit**,
-**Svelte 5 (runes mode)**, and **TypeScript**, and uses **Shadcn-Svelte** as
-its component primitive layer on top of **Tailwind CSS**.
+**Svelte 5 (runes mode)**, and **TypeScript**, and uses a layered UI stack:
+**Tailwind CSS** → **BITS UI** → **shadcn-svelte** → **more-shadcn-svelte** and
+**shadcn-svelte-extras** → Primebrick's own custom and wrapped components. See
+[UI stack](/docs/user-guide/ui-stack) for the full layering and official links.
 
 ## What the frontend does
 
@@ -47,6 +49,7 @@ these `docs/user-guide/` MDX files in its own CI pipeline.
 
 ## Where to go next
 
+- [UI stack](/docs/user-guide/ui-stack) — the five layered UI technologies and official links
 - [Getting started](/docs/user-guide/getting-started) — stack, commands, project layout
 - [App shell & sidebar](/docs/user-guide/app-shell) — layout, navigation, modules
 - [Authentication & sessions](/docs/user-guide/authentication) — login, session expiry, password policy

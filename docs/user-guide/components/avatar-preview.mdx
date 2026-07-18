@@ -1,0 +1,60 @@
+---
+title: AvatarPreview
+description: Hex-shaped avatar preview from initials and a background color, with a deterministic chrome-palette fallback. Used in profile and user form pages.
+---
+
+# AvatarPreview
+
+`src/lib/components/ui/avatar-preview/AvatarPreview.svelte`
+
+## Purpose
+
+A reusable avatar preview block for Profile, Create User, and Edit User form
+pages. Renders a hex-shaped avatar with initials derived from the display name,
+using either the user-selected color or a deterministic chrome-palette
+fallback. Created to consolidate the duplicated Avatar + AvatarFallback block
+across those pages.
+
+## Origin
+
+**Custom** — Primebrick-written. Composes shadcn-svelte `Avatar` +
+`AvatarFallback` and the `useAvatarPreview` composable. Not vendored from any
+registry.
+
+## Usage
+
+### Default
+
+```svelte
+<AvatarPreview
+  displayName={formData.display_name}
+  avatarColor={formData.avatar_color}
+/>
+```
+
+### With a custom default seed
+
+```svelte
+<AvatarPreview
+  displayName={formData.display_name}
+  avatarColor={formData.avatar_color}
+  defaultSeed="??"
+/>
+```
+
+When `avatarColor` is undefined, a deterministic chrome-palette class is
+applied (derived from the display name seed) so every user gets a stable
+fallback color.
+
+## Props
+
+Full prop table: see [API reference — avatarpreview](/docs/user-guide/api-reference#avatarpreview).
+
+Props: `displayName: string | undefined`, `avatarColor: string | undefined`,
+`defaultSeed?: string = "??"`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [ColorSelector](/docs/user-guide/components/color-selector) — used alongside this in user forms
+- [API reference](/docs/user-guide/api-reference#avatarpreview)

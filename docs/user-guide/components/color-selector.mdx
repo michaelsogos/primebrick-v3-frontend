@@ -1,0 +1,60 @@
+---
+title: ColorSelector
+description: Curated-palette color picker with a Popover trigger showing a swatch and hex value. Built on the more-shadcn color-picker primitive. Used by profile and user forms for avatar color selection.
+---
+
+# ColorSelector
+
+`src/lib/components/ui/color-selector/ColorSelector.svelte`
+
+## Purpose
+
+A color picker with a Popover trigger button showing a color swatch and the
+current hex value. Opens to the more-shadcn `color-picker` primitive. Created
+to consolidate the duplicated Popover + Button + swatch + label block across
+Profile, Create User, and Edit User pages.
+
+Not avatar-specific — can be used for any color selection field.
+
+## Origin
+
+**Custom** — Primebrick-written wrapper composing shadcn-svelte `Popover` +
+`Button` and the more-shadcn-svelte `color-picker` primitive
+(`src/lib/components/ui/color-picker/`). Not vendored as a unit from any
+registry.
+
+## Usage
+
+### Default (bindable value)
+
+```svelte
+<ColorSelector
+  bind:value={formData.avatar_color}
+  labelKey="profile.avatarColor"
+  placeholderKey="profile.selectColor"
+/>
+```
+
+### With a fallback color
+
+```svelte
+<ColorSelector
+  bind:value={formData.avatar_color}
+  labelKey="profile.avatarColor"
+  fallbackColor="#0ea5e9"
+/>
+```
+
+## Props
+
+Full prop table: see [API reference — colorselector](/docs/user-guide/api-reference#colorselector).
+
+Props: `value` (bindable, `string | undefined`), `labelKey: string`,
+`placeholderKey?: string`, `fallbackColor?: string = "#000000"`,
+`triggerId?: string`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [Color picker (more-shadcn)](https://more-shadcn.noair.fun/r/color-picker.json) — the underlying primitive
+- [API reference](/docs/user-guide/api-reference#colorselector)

@@ -1,0 +1,62 @@
+---
+title: CommandPalette
+description: Global Cmd+K / Ctrl+K command palette built on bits-ui Command, with navigation and action commands. Mounted once in the app shell.
+---
+
+# CommandPalette
+
+`src/lib/components/CommandPalette.svelte`
+
+## Purpose
+
+A global command palette opened with **Cmd+K** (macOS) / **Ctrl+K** (other
+platforms). Provides quick navigation to settings sections and triggers
+actions. Mounted once in the app shell; visibility is controlled via the
+bindable `open` prop.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses `bits-ui`'s `Command` primitive
+directly (not the shadcn-svelte `command` wrapper), plus `@lucide/svelte`
+icons and the `Kbd` primitive. Not vendored from any registry.
+
+## Usage
+
+### Mount in the shell (controlled)
+
+```svelte
+<script>
+  import CommandPalette from '$lib/components/CommandPalette.svelte';
+  let paletteOpen = $state(false);
+</script>
+
+<CommandPalette bind:open={paletteOpen} />
+```
+
+The shell registers a global keydown listener for Cmd/Ctrl+K that toggles
+`open`, and Escape closes it.
+
+### Programmatic open
+
+```svelte
+<button onclick={() => (paletteOpen = true)}>Open palette</button>
+```
+
+## Behavior
+
+- **Toggle**: Cmd+K / Ctrl+K toggles `open`. Escape closes.
+- **Platform-aware shortcut glyph**: shows `⌘` on Apple platforms, `Ctrl+K` elsewhere.
+- **List overflow**: subpixel rounding is tolerated (`LIST_SCROLL_TOLERANCE_PX = 2`) so a 1-2px scrollHeight excess does not show a useless scrollbar.
+- **Commands**: navigation commands (settings sections) and action commands, each with an icon and a shortcut `Kbd`.
+
+## Props
+
+Full prop table: see [API reference — commandpalette](/docs/user-guide/api-reference#commandpalette).
+
+Props: `open?: boolean` (bindable, default `false`).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [App shell](/docs/user-guide/app-shell) — where the palette is mounted
+- [API reference](/docs/user-guide/api-reference#commandpalette)
