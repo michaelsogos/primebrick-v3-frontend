@@ -17,6 +17,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [["html", { open: "never" }], ["list"]],
+  // Global setup: precondition port checks + start fake Brevo + upsert
+  // providers row. Global teardown: stop fake Brevo + close PG pool.
+  // Both run once per test run, in the same Node process.
+  globalSetup: "./src/e2e/global.setup.ts",
+  globalTeardown: "./src/e2e/global.teardown.ts",
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173",
     trace: "on-first-retry",

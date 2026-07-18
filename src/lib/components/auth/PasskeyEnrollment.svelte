@@ -180,11 +180,15 @@
           <Spinner />
         </div>
       {:else if credentials.length === 0}
-        <p class="text-sm text-muted-foreground py-2">{$t("auth.passkeys.empty")}</p>
+        <p class="text-sm text-muted-foreground py-2" data-testid="passkey-enrollment-empty">{$t("auth.passkeys.empty")}</p>
       {:else}
-        <ul class="space-y-2">
+        <ul class="space-y-2" data-testid="passkey-enrollment-list">
           {#each credentials as cred (cred.id)}
-            <li class="flex items-center justify-between rounded-md border border-border px-3 py-2">
+            <li
+              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
+              data-testid="passkey-enrollment-item"
+              data-credential-id={cred.id}
+            >
               <div class="flex items-center gap-2 min-w-0">
                 <Fingerprint class="size-4 text-muted-foreground shrink-0" />
                 <div class="flex flex-col min-w-0">
@@ -202,6 +206,7 @@
               <Button
                 variant="ghost"
                 size="sm"
+                data-testid="passkey-enrollment-delete-button"
                 onclick={() => deletePasskey(cred.id)}
                 disabled={deletingId === cred.id}
               >
@@ -218,7 +223,12 @@
       {/if}
 
       <!-- Add passkey button -->
-      <Button variant="outline" onclick={addPasskey} disabled={enrolling}>
+      <Button
+        variant="outline"
+        data-testid="passkey-enrollment-add-button"
+        onclick={addPasskey}
+        disabled={enrolling}
+      >
         {#if enrolling}
           <Spinner class="mr-2" />
         {:else}

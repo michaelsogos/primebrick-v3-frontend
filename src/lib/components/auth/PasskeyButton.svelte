@@ -109,6 +109,7 @@
 
 <Button
   variant="outline"
+  data-testid="login-passkey-button"
   class="w-full"
   onclick={signInWithPasskey}
   disabled={loading}

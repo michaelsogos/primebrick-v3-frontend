@@ -116,6 +116,7 @@
             <FormLabel for={props.id}>{$t('login.username')}</FormLabel>
             <Input
               type="text"
+              data-testid="login-username-input"
               placeholder={$t('login.usernamePlaceholder')}
               bind:value={$form.username}
               {...props}
@@ -132,6 +133,7 @@
           <div class="space-y-2">
             <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
             <Password.PasswordInput
+              data-testid="login-password-input"
               placeholder={$t('login.passwordPlaceholder')}
               bind:value={$form.password}
               {...props}
@@ -142,7 +144,7 @@
       </FormControl>
     </FormField>
 
-    <Button type="submit" class="w-full" disabled={$submitting}>
+    <Button type="submit" data-testid="login-submit-button" class="w-full" disabled={$submitting}>
       {#if $submitting}
         <Spinner class="mr-2" />
       {/if}

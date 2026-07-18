@@ -73,6 +73,7 @@
     "aria-describedby": ariaDescribedby,
     "aria-required": ariaRequired,
     "data-fs-error": dataFsError,
+    "data-testid": dataTestId,
     ...restProps
   }: Props = $props();
 
@@ -217,6 +218,7 @@
         aria-describedby={ariaDescribedby}
         aria-required={ariaRequired}
         data-fs-error={dataFsError}
+        data-testid={dataTestId}
       >
         {#if mode === "single"}
           {#if selectedNormalized}

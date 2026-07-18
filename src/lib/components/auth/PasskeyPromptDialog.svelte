@@ -246,6 +246,7 @@
       {#if !passkeyRequired}
         <Button
           variant="secondary-outline"
+          data-testid="passkey-prompt-dismiss-button"
           onclick={dismissPrompt}
           disabled={enrolling || dismissing}
         >
@@ -253,6 +254,7 @@
         </Button>
       {/if}
       <Button
+        data-testid="passkey-prompt-enroll-button"
         onclick={enrollPasskey}
         disabled={enrolling || dismissing}
       >

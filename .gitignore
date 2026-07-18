@@ -20,6 +20,9 @@ coverage
 playwright-report
 test-results
 
+# Playwright saved auth state (passkey credentials, captured during E2E runs)
+playwright/.auth
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

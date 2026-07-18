@@ -99,6 +99,20 @@ for the full rule and upgrade procedure.
 
 See `docs/ai/` for UI patterns, skills selection, and suggested workflows.
 
+### E2E `data-testid` convention (MANDATORY for E2E + interactive elements)
+
+Every interactive DOM element that an E2E test needs to locate MUST carry a
+stable `data-testid` following the `<component-scope>-<element-purpose>`
+kebab-case convention. Testids are derived from the element's **purpose**,
+never from CSS classes, i18n labels, or visible text. This is a
+**brittle-on-purpose** strategy: a failing E2E locator is a desired signal
+that a significant refactor happened.
+
+- Full convention + testid registry: [`docs/ai/e2e-testid-convention.md`](./docs/ai/e2e-testid-convention.md)
+- Enforcing Devin rule: `.devin/rules/e2e-testid-convention.md` (always-on)
+- E2E suites using this convention: `src/e2e/auth-password.spec.ts`,
+  `src/e2e/auth-passkey.spec.ts`
+
 ## Composable state exposure pattern (MANDATORY)
 
 All `use{Something}` composables MUST follow this pattern for exposing `$state`:

@@ -30,6 +30,7 @@
 		"aria-describedby"?: string;
 		"aria-required"?: string | boolean;
 		"data-fs-error"?: string;
+		"data-testid"?: string;
 		// Event handlers - we will compose these
 		oninput?: (e: Event) => void;
 		onblur?: (e: FocusEvent) => void;
@@ -56,6 +57,7 @@
 		"aria-describedby": ariaDescribedby,
 		"aria-required": ariaRequired,
 		"data-fs-error": dataFsError,
+		"data-testid": dataTestId,
 		oninput,
 		onblur,
 		onchange,
@@ -177,6 +179,7 @@
 	aria-describedby={ariaDescribedby}
 	aria-required={ariaRequired === "true" || ariaRequired === true}
 	data-fs-error={dataFsError}
+	data-testid={dataTestId}
 	class={cn(inputPadding, className)}
 	onClear={handleClear}
 	oninput={handleInputChange}

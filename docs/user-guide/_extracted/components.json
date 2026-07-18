@@ -394,7 +394,7 @@
           "column": 0
         },
         "end": {
-          "line": 149,
+          "line": 175,
           "column": 0
         }
       },
@@ -413,11 +413,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 26,
+              "line": 36,
               "column": 4
             },
             "end": {
-              "line": 26,
+              "line": 36,
               "column": 13
             }
           }
@@ -434,16 +434,137 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 27,
+              "line": 37,
               "column": 4
             },
             "end": {
-              "line": 27,
+              "line": 37,
               "column": 11
             }
           }
         }
       ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/auth/PasskeyButton.svelte",
+    "component": "PasskeyButton",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 123,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "onsuccess",
+          "kind": "let",
+          "type": "(data: { success: boolean; user: any }) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 20,
+              "column": 4
+            },
+            "end": {
+              "line": 20,
+              "column": 13
+            }
+          }
+        },
+        {
+          "name": "onerror",
+          "kind": "let",
+          "type": "() => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 21,
+              "column": 11
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/auth/PasskeyEnrollment.svelte",
+    "component": "PasskeyEnrollment",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 232,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/auth/PasskeyPromptDialog.svelte",
+    "component": "PasskeyPromptDialog",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 265,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [],
       "moduleExports": [],
       "slots": [],
       "events": [],

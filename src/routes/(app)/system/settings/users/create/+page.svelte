@@ -328,7 +328,7 @@
 
   {#snippet children()}
     <div class="flex-1 overflow-auto">
-      <form id="user-create-form" use:enhance>
+      <form id="user-create-form" data-testid="admin-user-create-form" use:enhance>
         <!-- Avatar Section -->
         <div class="p-4 border-b">
           <div class="space-y-4">
@@ -368,6 +368,7 @@
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.displayName')}</FormLabel>
                     <TextInput
                       {...props}
+                      data-testid="admin-user-create-display-name-input"
                       bind:value={$form.display_name}
                       placeholder={$t('shell.settings.users.create.displayNamePlaceholder')}
                     />
@@ -385,6 +386,7 @@
                     <TextInput
                       {...props}
                       type="email"
+                      data-testid="admin-user-create-email-input"
                       bind:value={$form.email}
                       placeholder={$t('shell.settings.users.create.emailPlaceholder')}
                     />
@@ -402,6 +404,7 @@
                     <ComboSelect
                       {...props}
                       mode="multi"
+                      data-testid="admin-user-create-roles-select"
                       bind:value={$form.roles}
                       options={availableRoles.length > 0 ? availableRoles : [
                         { idp_role: 'administrators' },
@@ -466,6 +469,7 @@
                     <ComboSelect
                       {...props}
                       mode="single"
+                      data-testid="admin-user-create-org-select"
                       bind:value={$form.idp_org}
                       options={availableOrgs}
                       valueField="idp_name"
@@ -506,6 +510,7 @@
                     <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
                     <AsyncValidatedInput
                       {...props}
+                      data-testid="admin-user-create-username-input"
                       bind:value={$form.idpUsername}
                       validateFn={checkUsernameAvailability}
                       placeholder={isUsernameEnabled
@@ -535,7 +540,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.send_invitation} id="send_invitation" />
+                    <Checkbox {...props} data-testid="admin-user-create-send-invitation-toggle" bind:checked={$form.send_invitation} id="send_invitation" />
                     <label for="send_invitation" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('shell.settings.users.create.sendInvitation')}
                       <FormLabelWithPriorityHelp
@@ -663,7 +668,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('common.cancel')}
       </Button>
-      <Button type="submit" form="user-create-form" disabled={!canSave}>
+      <Button type="submit" form="user-create-form" data-testid="admin-user-create-submit-button" disabled={!canSave}>
         {$t('common.save')}
       </Button>
     </div>

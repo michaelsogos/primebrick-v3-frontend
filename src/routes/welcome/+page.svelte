@@ -275,7 +275,7 @@
     <div class="w-full max-w-md">
       <!-- Loading state -->
       {#if _state.step === 'loading'}
-        <Card>
+        <Card data-testid="welcome-step-loading">
           <CardContent class="flex flex-col items-center justify-center py-12">
             <Spinner class="w-8 h-8" />
             <p class="mt-4 text-sm text-muted-foreground">{$t('welcome.verifying')}</p>
@@ -285,13 +285,13 @@
 
       <!-- Error state -->
       {#if _state.step === 'error'}
-        <Card>
+        <Card data-testid="welcome-step-error">
           <CardHeader>
             <div class="flex items-center gap-2">
               <AlertCircle class="w-5 h-5 text-destructive" />
               <CardTitle>{$t('welcome.error.title')}</CardTitle>
             </div>
-            <CardDescription>{_state.error_message}</CardDescription>
+            <CardDescription data-testid="welcome-error-message">{_state.error_message}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onclick={handleGoToLogin} variant="outline" class="w-full">
@@ -304,7 +304,7 @@
 
       <!-- OTP sent — enter OTP code -->
       {#if _state.step === 'otp-sent'}
-        <Card>
+        <Card data-testid="welcome-step-otp-sent">
           <CardHeader>
             <div class="flex items-center gap-2">
               <MailCheck class="w-5 h-5 text-primary" />
@@ -316,7 +316,7 @@
           </CardHeader>
           <CardContent class="space-y-4">
             {#if _state.error_message}
-              <Alert variant="destructive">
+              <Alert variant="destructive" data-testid="welcome-error-alert">
                 <AlertDescription>{_state.error_message}</AlertDescription>
               </Alert>
             {/if}
@@ -329,6 +329,7 @@
                 inputmode="numeric"
                 pattern="[0-9]{6}"
                 maxlength={6}
+                data-testid="welcome-otp-input"
                 bind:value={_state.otp_code}
                 placeholder="000000"
                 class="text-center text-2xl tracking-[0.5em] font-mono"
@@ -336,7 +337,12 @@
               />
             </div>
 
-            <Button onclick={handleVerifyOtp} disabled={!canVerifyOtp} class="w-full">
+            <Button
+              onclick={handleVerifyOtp}
+              disabled={!canVerifyOtp}
+              data-testid="welcome-next-button"
+              class="w-full"
+            >
               {#if _state.submitting}
                 {$t('welcome.otp.verifying')}
               {:else}
@@ -351,6 +357,7 @@
               {:else}
                 <button
                   type="button"
+                  data-testid="welcome-resend-otp-button"
                   class="text-primary hover:underline"
                   onclick={handleResendOtp}
                 >
@@ -364,7 +371,7 @@
 
       <!-- OTP verified — set password -->
       {#if _state.step === 'otp-verified'}
-        <Card>
+        <Card data-testid="welcome-step-otp-verified">
           <CardHeader>
             <div class="flex items-center gap-2">
               <Lock class="w-5 h-5 text-primary" />
@@ -374,7 +381,7 @@
           </CardHeader>
           <CardContent class="space-y-4">
             {#if _state.error_message}
-              <Alert variant="destructive">
+              <Alert variant="destructive" data-testid="welcome-error-alert">
                 <AlertDescription>{_state.error_message}</AlertDescription>
               </Alert>
             {/if}
@@ -383,6 +390,7 @@
               <label for="new_password" class="text-sm font-medium">{$t('welcome.setPassword.newPasswordLabel')}</label>
               <Password.PasswordInput
                 id="new_password"
+                data-testid="welcome-password-input"
                 bind:value={_state.new_password}
                 placeholder={$t('welcome.setPassword.newPasswordPlaceholder')}
                 autocomplete="new-password"
@@ -393,6 +401,7 @@
               <label for="confirm_password" class="text-sm font-medium">{$t('welcome.setPassword.confirmPasswordLabel')}</label>
               <Password.PasswordInput
                 id="confirm_password"
+                data-testid="welcome-password-confirm-input"
                 bind:value={_state.confirm_password}
                 placeholder={$t('welcome.setPassword.confirmPasswordPlaceholder')}
                 autocomplete="new-password"
@@ -410,7 +419,12 @@
               />
             {/if}
 
-            <Button onclick={handleComplete} disabled={!canComplete} class="w-full">
+            <Button
+              onclick={handleComplete}
+              disabled={!canComplete}
+              data-testid="welcome-complete-button"
+              class="w-full"
+            >
               {#if _state.submitting}
                 {$t('welcome.setPassword.completing')}
               {:else}
@@ -424,7 +438,7 @@
 
       <!-- Complete — success + passkey info -->
       {#if _state.step === 'complete'}
-        <Card>
+        <Card data-testid="welcome-step-complete">
           <CardHeader>
             <div class="flex items-center gap-2">
               <ShieldCheck class="w-5 h-5 text-emerald-500" />
