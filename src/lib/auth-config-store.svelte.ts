@@ -16,6 +16,7 @@ import { apiFetch } from "$lib/api";
 export interface AuthConfigPublic {
   enable_formauth: boolean;
   enable_webauthn: boolean;
+  passkey_required: boolean;
 }
 
 // Export the $state directly — same pattern as userProfileState.
@@ -50,6 +51,9 @@ export const authConfigStore = {
   },
   get enable_webauthn(): boolean {
     return authConfigState.config?.enable_webauthn ?? false;
+  },
+  get passkey_required(): boolean {
+    return authConfigState.config?.passkey_required ?? false;
   },
   get loaded(): boolean {
     return authConfigState.loaded;

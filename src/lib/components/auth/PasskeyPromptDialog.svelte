@@ -32,18 +32,20 @@
   const profile = $derived(userProfileStore.current);
   const webauthnEnabled = $derived(authConfigState.config?.enable_webauthn ?? false);
   const webauthnSupported = $derived(isWebauthnSupported());
+  const passkeyRequired = $derived(authConfigState.config?.passkey_required ?? false);
 
   // Show the dialog when:
   // - WebAuthn is enabled in auth config
   // - The browser supports WebAuthn
-  // - The user has no passkey
-  // - The user hasn't dismissed the prompt
+  // - The user profile is loaded (has a uuid — set by /auth/me, not by login)
+  // - The user has no passkey (explicitly false, not undefined from login response)
+  // - The user hasn't dismissed the prompt (ignored if passkey is required)
   const shouldShow = $derived(
     webauthnEnabled &&
     webauthnSupported &&
-    !!profile &&
-    !profile?.has_passkey &&
-    !profile?.passkey_prompt_dismissed,
+    !!profile?.uuid &&
+    profile?.has_passkey === false &&
+    (passkeyRequired || !profile?.passkey_prompt_dismissed),
   );
 
   // Auto-open when shouldShow becomes true
@@ -113,6 +115,26 @@
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return; // User cancelled — not an error
+      }
+      if (error instanceof DOMException && error.name === 'InvalidStateError') {
+        // The authenticator already contains a credential for this RP.
+        // The user already has a passkey — treat as success, not error.
+        // Sync Casdoor→PG so has_passkey is coherent on next login.
+        try {
+          await apiFetch('/api/v1/auth/webauthn/sync-passkeys', { method: 'POST' });
+        } catch {
+          // Best-effort — don't block the UX
+        }
+        if (profile) {
+          userProfileStore.set({ ...profile, has_passkey: true });
+        }
+        pushNotification({
+          impact: 'NONE',
+          message: $t('auth.passkeys.alreadyEnrolled'),
+          scope: 'auth',
+        });
+        open = false;
+        return;
       }
       console.error('[PasskeyPrompt] Failed to enroll passkey:', error);
       pushNotification({
@@ -204,28 +226,32 @@
         </div>
       {/if}
 
-      <!-- Don't ask me again checkbox — primary tone, gradient border when unchecked -->
-      <div class="flex items-start space-x-2 pt-2">
-        <Checkbox
-          id="dont_ask_again"
-          bind:checked={dontAskAgain}
-          tone="primary"
-          class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
-        />
-        <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {$t('auth.passkeyPrompt.dontAskAgain')}
-        </label>
-      </div>
+      <!-- Don't ask me again checkbox — hidden when passkey is required -->
+      {#if !passkeyRequired}
+        <div class="flex items-start space-x-2 pt-2">
+          <Checkbox
+            id="dont_ask_again"
+            bind:checked={dontAskAgain}
+            tone="primary"
+            class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
+          />
+          <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            {$t('auth.passkeyPrompt.dontAskAgain')}
+          </label>
+        </div>
+      {/if}
     </div>
 
     <Dialog.Footer class="gap-2 sm:space-x-0">
-      <Button
-        variant="secondary-outline"
-        onclick={dismissPrompt}
-        disabled={enrolling || dismissing}
-      >
-        {$t('auth.passkeyPrompt.dismissButton')}
-      </Button>
+      {#if !passkeyRequired}
+        <Button
+          variant="secondary-outline"
+          onclick={dismissPrompt}
+          disabled={enrolling || dismissing}
+        >
+          {$t('auth.passkeyPrompt.dismissButton')}
+        </Button>
+      {/if}
       <Button
         onclick={enrollPasskey}
         disabled={enrolling || dismissing}

@@ -15,6 +15,7 @@
 /**
  * Decode a base64url string to an ArrayBuffer.
  * Handles both base64url (no padding, -/_) and standard base64.
+ * Throws if the input is not valid base64url.
  */
 export function base64urlToBuffer(base64url: string): ArrayBuffer {
   // Convert base64url to standard base64
@@ -91,7 +92,13 @@ function deepDecodeBuffers(obj: unknown): unknown {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       if (typeof value === "string" && isBufferField(key, value)) {
-        result[key] = base64urlToBuffer(value);
+        try {
+          result[key] = base64urlToBuffer(value);
+        } catch {
+          // Not valid base64url — leave as string (e.g. Casdoor may return
+          // a non-base64 id field that matches the buffer field name heuristic)
+          result[key] = value;
+        }
       } else if (value && typeof value === "object") {
         result[key] = deepDecodeBuffers(value);
       } else {
@@ -106,6 +113,7 @@ function deepDecodeBuffers(obj: unknown): unknown {
 /**
  * Heuristic: a field is a buffer field if its name is in the known set AND the
  * value looks like base64url (only contains base64url chars, length > 0).
+ * The try/catch in deepDecodeBuffers handles false positives gracefully.
  */
 function isBufferField(key: string, value: string): boolean {
   if (!BUFFER_FIELDS.has(key)) return false;

@@ -33,6 +33,8 @@
     "passkey": {
       "title": "Add a passkey (optional)",
       "description": "Sign in faster and more securely with Face ID\u2122, Touch ID\u2122, Windows Hello\u2122, or a security key — no password needed.",
+      "titleRequired": "Passkey Required",
+      "descriptionRequired": "After logging in, you will be required to set up a passkey. This is a mandatory security measure for your account.",
       "enrollButton": "Set up passkey",
       "enrolling": "Waiting for authenticator...",
       "enrolled": "Passkey added successfully!"
@@ -96,6 +98,7 @@
       "empty": "No passkeys enrolled",
       "enrollmentSuccess": "Passkey added",
       "enrollmentError": "Failed to add passkey",
+      "alreadyEnrolled": "You already have a passkey on this device",
       "deleteError": "Failed to remove passkey"
     },
     "passkeyPrompt": {

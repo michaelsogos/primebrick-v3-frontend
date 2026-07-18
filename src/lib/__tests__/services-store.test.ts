@@ -40,9 +40,9 @@ describe("aggregateStatus", () => {
     expect(aggregateStatus(services)).toBe("going_live");
   });
 
-  it("all going_live (no online) → 'offline'", () => {
+  it("all going_live (no online) → 'unknown'", () => {
     const services = [makeService({ status: "going_live" }), makeService({ status: "going_live" })];
-    expect(aggregateStatus(services)).toBe("offline");
+    expect(aggregateStatus(services)).toBe("unknown");
   });
 });
 

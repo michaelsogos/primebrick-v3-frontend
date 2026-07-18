@@ -33,6 +33,8 @@
     "passkey": {
       "title": "Aggiungi una passkey (opzionale)",
       "description": "Accedi più velocemente e in modo più sicuro con Face ID™, Touch ID™, Windows Hello™ o una chiave di sicurezza — senza password.",
+      "titleRequired": "Passkey obbligatoria",
+      "descriptionRequired": "Dopo aver effettuato l'accesso, dovrai configurare una passkey. Questa è una misura di sicurezza obbligatoria per il tuo account.",
       "enrollButton": "Configura passkey",
       "enrolling": "In attesa dell'autenticatore...",
       "enrolled": "Passkey aggiunta con successo!"
@@ -96,6 +98,7 @@
       "empty": "Nessuna passkey registrata",
       "enrollmentSuccess": "Passkey aggiunta",
       "enrollmentError": "Impossibile aggiungere la passkey",
+      "alreadyEnrolled": "Hai gia una passkey su questo dispositivo",
       "deleteError": "Impossibile rimuovere la passkey"
     },
     "passkeyPrompt": {

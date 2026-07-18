@@ -1,6 +1,7 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
+import { userProfileState } from '$lib/user-profile-store.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
@@ -127,7 +128,8 @@ async function handleRFC7807Error(res: Response): Promise<Response> {
   try {
     const contentType = res.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      const errorData = await res.json();
+      // Clone before reading so the caller can still access the body
+      const errorData = await res.clone().json();
       // Check if it looks like RFC7807 format (has type, title, status)
       if (errorData.type && errorData.title && errorData.status) {
         pushNotification(errorData);
@@ -198,6 +200,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       // No local session - open session-expired dialog instead of force-redirecting
       console.error('[api] No local session, opening session-expired dialog');
       if (typeof window !== 'undefined') {
+        // Clear in-memory profile so the passkey dialog doesn't render
+        // on top of the session-expired dialog with stale data.
+        userProfileState.current = null;
         saveRedirectUrl(window.location.pathname + window.location.search);
         return sessionExpiredStore.enqueue(input, nextInit);
       }
@@ -215,8 +220,11 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
         // Refresh failed, open session-expired dialog instead of force-redirecting
         console.error('[api] Token refresh failed, opening session-expired dialog:', refreshError);
         if (typeof window !== 'undefined') {
-          // Clear corrupted session data before showing dialog
+          // Clear corrupted session data (both sessionStorage and in-memory)
+          // before showing dialog so the passkey dialog doesn't render with
+          // stale profile data.
           sessionStorage.removeItem('user');
+          userProfileState.current = null;
           saveRedirectUrl(window.location.pathname + window.location.search);
           return sessionExpiredStore.enqueue(input, nextInit);
         }

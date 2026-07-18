@@ -47,7 +47,7 @@ export const userProfileState = $state({
 
 export const userProfileStore = {
   get current() { return userProfileState.current; },
-  
+
   set(profile: Partial<UserProfile>) {
     const current = userProfileState.current;
     // Always assign a NEW object reference to `.current` to force updates
@@ -55,7 +55,12 @@ export const userProfileStore = {
     const next = current ? { ...current, ...profile } : ({ ...profile } as UserProfile);
     userProfileState.current = next;
     sessionStorage.setItem('user', JSON.stringify(next));
-  }
+  },
+
+  clear() {
+    userProfileState.current = null;
+    sessionStorage.removeItem('user');
+  },
 };
 
 export function getUserAvatarStyle(): { style: string; class: string } | null {

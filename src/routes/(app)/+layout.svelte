@@ -42,6 +42,10 @@
             passkey_prompt_dismissed: data.passkey_prompt_dismissed ?? false,
           });
         }
+      } else if (res.status === 401) {
+        // Session is invalid — clear stale profile so the passkey dialog
+        // doesn't render on top of the session-expired dialog.
+        userProfileStore.clear();
       }
     } catch (error) {
       console.error('Failed to bootstrap user profile:', error);

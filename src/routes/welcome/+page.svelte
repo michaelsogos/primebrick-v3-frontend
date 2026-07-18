@@ -13,7 +13,7 @@
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import { authConfigState } from '$lib/auth-config-store.svelte';
-  import { isWebauthnSupported, decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
+  import { isWebauthnSupported } from '$lib/webauthn/codec';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -42,14 +42,13 @@
     submitting: false as boolean,
     error_message: '' as string,
     resend_cooldown: 0 as number,
-    enrolling_passkey: false as boolean,
-    passkey_enrolled: false as boolean,
   });
 
   // ─── Derived: passkey enrollment availability ───────────────────────────────
   const webauthnEnabled = $derived(authConfigState.config?.enable_webauthn ?? false);
   const webauthnSupported = $derived(isWebauthnSupported());
-  const showPasskeyStep = $derived(webauthnEnabled && webauthnSupported && !_state.passkey_enrolled);
+  const passkeyRequired = $derived(authConfigState.config?.passkey_required ?? false);
+  const showPasskeyStep = $derived(webauthnEnabled && webauthnSupported);
 
   // ─── Derived ────────────────────────────────────────────────────────────────
   const passwordValid = $derived(
@@ -248,61 +247,9 @@
     void goto('/login');
   }
 
-  // ─── Passkey enrollment (optional step after password set) ──────────────────
-  async function enrollPasskey() {
-    if (_state.enrolling_passkey) return;
-    _state.enrolling_passkey = true;
-    try {
-      const beginResp = await apiFetch('/api/v1/auth/webauthn/signup/begin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (!beginResp.ok) {
-        const err = await beginResp.json();
-        pushNotification({ ...err, toast: false });
-        return;
-      }
-      const { nonce, options } = await beginResp.json();
-      const decoded = decodeCredentialCreationOptions(options);
-      const credential = await navigator.credentials.create({ publicKey: decoded.publicKey });
-      if (!credential) return;
-
-      const finishResp = await apiFetch('/api/v1/auth/webauthn/signup/finish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nonce,
-          credential: encodeAuthenticatorAttestation(credential as PublicKeyCredential),
-        }),
-      });
-      if (!finishResp.ok) {
-        const err = await finishResp.json();
-        pushNotification({ ...err, toast: false });
-        return;
-      }
-      _state.passkey_enrolled = true;
-      pushNotification({
-        impact: 'NONE',
-        message: $t('auth.passkeys.enrollmentSuccess'),
-        scope: 'auth',
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('[welcome] Passkey enrollment failed:', err);
-      pushNotification({
-        impact: 'HIGH',
-        message: $t('auth.passkeys.enrollmentError'),
-        scope: 'auth',
-      });
-    } finally {
-      _state.enrolling_passkey = false;
-    }
-  }
-
-  function skipPasskey() {
-    void goto('/login');
-  }
+  // ─── Passkey step is informational only ─────────────────────────────────────
+  // The actual enrollment happens after login via the PasskeyPromptDialog,
+  // because the WebAuthn signup endpoints require an authenticated session.
 </script>
 
 <svelte:head>
@@ -475,7 +422,7 @@
         </Card>
       {/if}
 
-      <!-- Complete — success + optional passkey enrollment -->
+      <!-- Complete — success + passkey info -->
       {#if _state.step === 'complete'}
         <Card>
           <CardHeader>
@@ -489,24 +436,18 @@
             {#if showPasskeyStep}
               <div class="space-y-3 rounded-lg border p-4 bg-muted/30">
                 <div class="flex items-center gap-2">
-                  <Fingerprint class="size-5 text-primary" />
-                  <span class="font-medium text-sm">{$t('welcome.passkey.title')}</span>
+                  <Fingerprint class="size-5 {passkeyRequired ? 'text-destructive' : 'text-primary'}" />
+                  <span class="font-medium text-sm">
+                    {passkeyRequired
+                      ? $t('welcome.passkey.titleRequired')
+                      : $t('welcome.passkey.title')}
+                  </span>
                 </div>
-                <p class="text-sm text-muted-foreground">{$t('welcome.passkey.description')}</p>
-                {#if _state.passkey_enrolled}
-                  <p class="text-sm text-emerald-600 font-medium">{$t('welcome.passkey.enrolled')}</p>
-                {/if}
-                <div class="flex gap-2">
-                  <Button onclick={enrollPasskey} disabled={_state.enrolling_passkey || _state.passkey_enrolled} variant="secondary-outline">
-                    {#if _state.enrolling_passkey}
-                      <Spinner class="size-4 mr-2" />
-                      {$t('welcome.passkey.enrolling')}
-                    {:else}
-                      <Fingerprint class="size-4 mr-2" />
-                      {$t('welcome.passkey.enrollButton')}
-                    {/if}
-                  </Button>
-                </div>
+                <p class="text-sm text-muted-foreground">
+                  {passkeyRequired
+                    ? $t('welcome.passkey.descriptionRequired')
+                    : $t('welcome.passkey.description')}
+                </p>
               </div>
             {/if}
 

@@ -105,6 +105,22 @@
       if (error instanceof DOMException && error.name === "AbortError") {
         return; // User cancelled — not an error
       }
+      if (error instanceof DOMException && error.name === "InvalidStateError") {
+        // The authenticator already contains a credential for this RP.
+        // Sync Casdoor→PG so has_passkey is coherent.
+        try {
+          await apiFetch("/api/v1/auth/webauthn/sync-passkeys", { method: "POST" });
+        } catch {
+          // Best-effort
+        }
+        pushNotification({
+          impact: "NONE",
+          message: $t("auth.passkeys.alreadyEnrolled"),
+          scope: "auth",
+        });
+        await loadCredentials();
+        return;
+      }
       console.error("[PasskeyEnrollment] Failed to add passkey:", error);
       pushNotification({
         impact: "HIGH",
