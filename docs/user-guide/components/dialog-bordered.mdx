@@ -1,0 +1,73 @@
+---
+title: DialogBordered
+description: Dialog wrapper that adds a colored top border strip to the standard ui/dialog.
+---
+
+# DialogBordered
+
+`src/lib/components/ui/dialog-bordered.svelte`
+
+## Purpose
+
+Wraps `ui/dialog` to add a colored top strip (2px tall) above the dialog body.
+The strip color signals the dialog's semantic intent (primary, info, warning,
+success, destructive, neutral). Use it anywhere you want a dialog that
+visually communicates its category at a glance — confirmation prompts,
+error detail viewers, success notices.
+
+## Origin
+
+**Custom** — thin wrapper around the in-repo `ui/dialog` (shadcn-svelte
+extended). Adds the colored header strip and forwards `open`/`children`.
+
+## Usage
+
+### Default (primary)
+
+```svelte
+<script lang="ts">
+  import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
+  let open = $state(false);
+</script>
+
+<BorderedDialog bind:open>
+  <h2 class="text-lg font-semibold">Confirm action</h2>
+  <p class="text-sm text-muted-foreground">Are you sure?</p>
+</BorderedDialog>
+```
+
+### Destructive confirmation
+
+```svelte
+<BorderedDialog bind:open color="destructive">
+  <h2 class="text-lg font-semibold text-destructive">Delete repository</h2>
+  <p class="text-sm text-muted-foreground">This action cannot be undone.</p>
+</BorderedDialog>
+```
+
+### Warning without close button
+
+```svelte
+<BorderedDialog bind:open color="warning" showCloseButton={false}>
+  <p>Read-only notice.</p>
+</BorderedDialog>
+```
+
+## Props
+
+Full prop table: see [API reference — dialog-bordered](/docs/user-guide/api-reference#dialog-bordered).
+
+Key props:
+
+- `open` (`boolean`, bindable) — controls dialog visibility.
+- `color` (`"primary" | "info" | "warning" | "success" | "destructive" | "neutral"`, default `"primary"`) — top strip color. `warning` and `destructive` use an animated gradient pan.
+- `showCloseButton` (`boolean`, default `true`) — forwarded to `Dialog.Content`.
+- `class` — extra classes for `Dialog.Content`.
+- `children` (`Snippet`, required) — dialog body.
+
+## Next steps
+
+- [RFCErrorDialog](/docs/user-guide/components/rfc-error-dialog)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#dialog-bordered)

@@ -1,0 +1,74 @@
+---
+title: FormLabelWithPriorityHelp
+description: Form label with a help tooltip that supports priority-styled content (info, warning, error) via PriorityTooltipContent.
+---
+
+# FormLabelWithPriorityHelp
+
+`src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
+
+## Purpose
+
+Like `FormLabelWithHelp`, but the tooltip can be styled by priority
+(info/warning/error) using `PriorityTooltipContent`. Use it when a field's help
+text carries a severity — for example, a warning that a setting is irreversible,
+or an info note about a recommended value.
+
+## Origin
+
+**Custom** — Primebrick-written. Wraps the shadcn-svelte `Tooltip` primitive,
+`PriorityTooltipContent`, and the Lucide `HelpCircle` icon.
+
+## Usage
+
+### Default (no priority)
+
+Without a `priority`, it behaves like `FormLabelWithHelp` — a plain tooltip.
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('users.fields.username')}
+  <FormLabelWithPriorityHelp text={$t('users.fields.usernameHelp')} />
+</label>
+```
+
+### With priority and title
+
+Pass `priority` to render a styled tooltip with an optional `title` header.
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('settings.fields.deleteMode')}
+  <FormLabelWithPriorityHelp
+    text={$t('settings.fields.deleteModeWarning')}
+    priority="warning"
+    title={$t('settings.fields.deleteModeTitle')}
+  />
+</label>
+```
+
+### Info priority
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('settings.fields.syncInterval')}
+  <FormLabelWithPriorityHelp
+    text={$t('settings.fields.syncIntervalHelp')}
+    priority="info"
+  />
+</label>
+```
+
+## Props
+
+Full prop table: see [API reference — formlabelwithpriorityhelp](/docs/user-guide/api-reference#formlabelwithpriorityhelp).
+
+Key props: `text: string` (tooltip body), `priority?: TooltipPriority`
+(`'info' | 'warning' | 'error'`, optional — when omitted a plain tooltip is
+shown), `title?: string` (optional header shown inside the priority tooltip).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#formlabelwithpriorityhelp)

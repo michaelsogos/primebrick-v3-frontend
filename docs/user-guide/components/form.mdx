@@ -1,0 +1,105 @@
+---
+title: Form
+description: shadcn-svelte form primitives (formsnap) extended with TranslatedFieldErrors for i18n-aware validation messages.
+---
+
+# Form
+
+`src/lib/components/ui/form/`
+
+## Purpose
+
+Form primitives built on top of `formsnap` (the shadcn-svelte form layer).
+The barrel re-exports the standard primitives — `Field`, `Control`, `Label`,
+`Description`, `FieldErrors`, `Fieldset`, `Legend`, `ElementField`,
+`Button` — and adds one Primebrick extension:
+
+- **`TranslatedFieldErrors`** (`translated-field-errors.svelte`) — drop-in replacement for `FieldErrors` that translates each error string through `$t`. Errors may be either a plain translation key (`validation.required`) or a key with JSON params (`validation.tooShort|{"min": 3}`). Malformed JSON falls back to translating the key alone.
+
+## Origin
+
+**shadcn-svelte (extended)** — base primitives come from `formsnap` /
+shadcn-svelte. `TranslatedFieldErrors` is a Primebrick addition that wires
+the error list into the project's i18n (`$lib/i18n`).
+
+## Usage
+
+### Standard field with translated errors
+
+```svelte
+<script lang="ts">
+  import * as Form from "$lib/components/ui/form";
+  import { Input } from "$lib/components/ui/input";
+</script>
+
+<Form.Field {form} name="email">
+  <Form.Control>
+    <Form.Label>Email</Form.Label>
+    <Input type="email" />
+    <Form.Description>We will never share your email.</Form.Description>
+    <Form.TranslatedFieldErrors />
+  </Form.Control>
+</Form.Field>
+```
+
+The backend (or `formsnap`) emits errors as translation keys. The component
+renders them through `$t`, so the user sees a localized message.
+
+### Error key with params
+
+If the validator emits `validation.tooShort|{"min": 3}`, the component calls
+`$t("validation.tooShort", { min: 3 })` and renders the localized result.
+
+### Custom error rendering
+
+```svelte
+<Form.TranslatedFieldErrors>
+  {#snippet children({ errors, errorProps })}
+    {#each errors as error (error)}
+      <div {...errorProps} class="text-destructive text-xs">{error}</div>
+    {/each}
+  {/snippet}
+</Form.TranslatedFieldErrors>
+```
+
+When a `children` snippet is provided, it overrides the default translation
+rendering — useful for debugging raw error keys.
+
+### Fieldset + Legend
+
+```svelte
+<Form.Fieldset>
+  <Form.Legend>Address</Form.Legend>
+  <Form.Field {form} name="street">
+    <Form.Control>
+      <Form.Label>Street</Form.Label>
+      <Input />
+    </Form.Control>
+  </Form.Field>
+</Form.Fieldset>
+```
+
+## Props
+
+Full prop table: see [API reference — form](/docs/user-guide/api-reference#form).
+
+Key exports (all re-exported from the barrel with `Form*` aliases):
+
+- `Field` / `FormField` — `formsnap` field context.
+- `Control` / `FormControl` — `formsnap.Control`.
+- `Label` / `FormLabel` — styled label.
+- `Description` / `FormDescription` — helper text under the control.
+- `FieldErrors` / `FormFieldErrors` — raw (untranslated) error list.
+- `TranslatedFieldErrors` / `TranslatedFormFieldErrors` — translated error list. Accepts `FieldErrorsProps` plus `errorClasses` (`string`) for per-error styling and an optional `children` snippet override.
+- `Fieldset` / `FormFieldset`, `Legend` / `FormLegend` — grouping primitives.
+- `ElementField` / `FormElementField` — field for a single form element.
+- `Button` / `FormButton` — form submit button.
+
+## Next steps
+
+- [Input](/docs/user-guide/components/input)
+- [FormLabelWithHelp](/docs/user-guide/components/form-label-with-help)
+- [FormPageLayout](/docs/user-guide/components/form-page-layout)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#form)

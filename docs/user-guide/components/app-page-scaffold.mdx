@@ -1,0 +1,67 @@
+---
+title: AppPageScaffold
+description: Low-level page shell providing outer padding, an optional header (title string or full header snippet), and a bordered body region.
+---
+
+# AppPageScaffold
+
+`src/lib/components/AppPageScaffold.svelte`
+
+## Purpose
+
+The low-level page shell that fills the main content region (full width, no
+max-width). It applies outer padding (`p-2 sm:p-3`), a vertical stack with
+`gap-4` and `min-h-0` so flex children can shrink, and a bordered body region
+for `children`. The header is either a legacy full `header` snippet, or a
+`title` string (rendered as a truncated `h1`) plus optional `headerExtras`
+snippet. `AppPageLayout` builds on top of this with breadcrumbs and actions.
+
+## Origin
+
+**Custom** — Primebrick-written.
+
+## Usage
+
+### Title string
+
+```svelte
+<AppPageScaffold title="Dashboard">
+  <Dashboard />
+</AppPageScaffold>
+```
+
+### Title with header extras
+
+```svelte
+<AppPageScaffold title="Users" headerExtras={<Badge>{count} total</Badge>}>
+  <UserTable />
+</AppPageScaffold>
+```
+
+### Legacy full header snippet
+
+```svelte
+<AppPageScaffold>
+  {#snippet header()}
+    <header>
+      <AppPageBreadcrumb {segments} />
+      <h1>Users</h1>
+    </header>
+  {/snippet}
+
+  <UserTable />
+</AppPageScaffold>
+```
+
+## Props
+
+Full prop table: see [API reference — apppagescaffold](/docs/user-guide/api-reference#apppagescaffold).
+
+Key props: `title?: string`, `headerExtras?: Snippet`, `header?: Snippet`
+(legacy), `children?: Snippet`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#apppagescaffold)

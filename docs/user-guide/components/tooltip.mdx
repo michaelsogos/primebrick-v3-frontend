@@ -1,0 +1,99 @@
+---
+title: Tooltip
+description: shadcn-svelte Tooltip extended with PriorityContent (semaphoric icon + title) and a Portal wrapper.
+---
+
+# Tooltip
+
+`src/lib/components/ui/tooltip/`
+
+## Purpose
+
+Tooltip primitives. The barrel re-exports `Root`, `Trigger`, `Provider` from
+`bits-ui` (via `$lib/vendor/bits-ui-tooltip-exports` to dodge a Vite 8 SSR
+namespace issue) and adds two Primebrick extensions:
+
+- **`Content`** (`tooltip-content.svelte`) — the standard shadcn-svelte tooltip content with Primebrick styling.
+- **`PriorityContent`** (`priority-tooltip-content.svelte`) — tooltip content with a semaphoric icon and optional title. `priority` (`INFORMATION | WARNING | ERROR | QUESTION | HINT | SUCCESS`) selects the icon and color (`text-info`, `text-warning`, `text-destructive`, `text-success`).
+- **`TooltipPortal`** (`tooltip-portal.svelte`) — portal wrapper used by `PriorityContent`.
+
+## Origin
+
+**shadcn-svelte (extended)** — base primitives come from `bits-ui` /
+shadcn-svelte. `PriorityContent` and the project-specific `Content` styling
+are Primebrick additions.
+
+## Usage
+
+### Plain tooltip
+
+```svelte
+<script lang="ts">
+  import * as Tooltip from "$lib/components/ui/tooltip";
+</script>
+
+<Tooltip.Root>
+  <Tooltip.Trigger>Hover me</Tooltip.Trigger>
+  <Tooltip.Content>Simple tooltip</Tooltip.Content>
+</Tooltip.Root>
+```
+
+### Trigger as a child snippet
+
+```svelte
+<Tooltip.Root>
+  <Tooltip.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class="btn">Custom trigger</button>
+    {/snippet}
+  </Tooltip.Trigger>
+  <Tooltip.Content>Content</Tooltip.Content>
+</Tooltip.Root>
+```
+
+### Priority tooltip — warning with title
+
+```svelte
+<Tooltip.Root>
+  <Tooltip.Trigger>Field name</Tooltip.Trigger>
+  <Tooltip.PriorityContent priority="WARNING" title="Reserved name">
+    This name is reserved and cannot be used.
+  </Tooltip.PriorityContent>
+</Tooltip.Root>
+```
+
+### Priority tooltip — hint
+
+```svelte
+<Tooltip.Root>
+  <Tooltip.Trigger>Slug</Tooltip.Trigger>
+  <Tooltip.PriorityContent priority="HINT">
+    Use lowercase kebab-case, e.g. <code>my-module</code>.
+  </Tooltip.PriorityContent>
+</Tooltip.Root>
+```
+
+## Props
+
+Full prop table: see [API reference — tooltip](/docs/user-guide/api-reference#tooltip).
+
+Key props:
+
+**Content** — accepts `ContentProps` from `bits-ui` plus standard styling props (`class`, `ref`, `sideOffset`).
+
+**PriorityContent** — extends `ContentProps` with:
+
+- `priority` (`TooltipPriority`, default `"INFORMATION"`) — one of `INFORMATION | WARNING | ERROR | QUESTION | HINT | SUCCESS`. Selects the leading icon and its semaphoric color.
+- `title` (`string`) — optional bold heading rendered above the body. When omitted, only the icon is shown next to the body.
+- `children` (`Snippet`, required) — tooltip body.
+
+The exported `TooltipPriority` type is re-exported from the barrel.
+
+## Next steps
+
+- [Input](/docs/user-guide/components/input)
+- [FormLabelWithHelp](/docs/user-guide/components/form-label-with-help)
+- [FormLabelWithPriorityHelp](/docs/user-guide/components/form-label-with-priority-help)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#tooltip)

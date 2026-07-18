@@ -1,0 +1,70 @@
+---
+title: JsonTableViewer
+description: Recursively renders a JSON object or array as a readable two-column table.
+---
+
+# JsonTableViewer
+
+`src/lib/components/ui/JsonTableViewer.svelte`
+
+## Purpose
+
+Renders an arbitrary JSON object/array as a two-column `Property | Value` table.
+Nested objects and arrays are rendered recursively with a left border indent,
+type badges (`Array [n]`, `Object {}`), and array indices shown as `Item N`
+badges. Primitive values are rendered inline; booleans render as colored
+badges; `null`/`undefined` render as italic muted text. Use it to display
+debug/inspection payloads — most notably inside `RFCErrorDialog` for the
+`extra.issues` block of an RFC7807 error.
+
+## Origin
+
+**Custom** — Primebrick-built recursive viewer. Uses the in-repo `ui/table`
+and `ui/badge` primitives.
+
+## Usage
+
+### Root object
+
+```svelte
+<script lang="ts">
+  import JsonTableViewer from "$lib/components/ui/JsonTableViewer.svelte";
+  const payload = {
+    id: "abc-123",
+    active: true,
+    count: 4,
+    owner: null,
+    tags: ["alpha", "beta"],
+    meta: { created_at: 1718000000, source: "import" }
+  };
+</script>
+
+<JsonTableViewer data={payload} />
+```
+
+### Inside a bordered container
+
+```svelte
+<div class="rounded-lg border p-2">
+  <JsonTableViewer data={apiResponse} />
+</div>
+```
+
+The `isNested` prop is set automatically by the component during recursion —
+you should not pass it from the outside.
+
+## Props
+
+Full prop table: see [API reference — jsontableviewer](/docs/user-guide/api-reference#jsontableviewer).
+
+Key props:
+
+- `data` (`any`, required) — the JSON value to render. At the root level this should be a plain object; arrays and nested objects are handled recursively.
+- `isNested` (`boolean`, default `false`) — internal flag. When `true`, renders a CSS grid layout instead of the `Table.Root` to avoid nested `<table>` elements. Do not set this manually.
+
+## Next steps
+
+- [RFCErrorDialog](/docs/user-guide/components/rfc-error-dialog)
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#jsontableviewer)

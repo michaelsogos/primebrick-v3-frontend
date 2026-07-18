@@ -1,0 +1,75 @@
+---
+title: PasskeyPromptDialog
+description: Persistent dialog that prompts users without a passkey to enroll one, with a "don't ask again" option.
+---
+
+# PasskeyPromptDialog
+
+`src/lib/components/auth/PasskeyPromptDialog.svelte`
+
+## Purpose
+
+A persistent dialog that prompts users who have no passkey to enroll
+one right after login. It auto-opens when the conditions are met
+(WebAuthn enabled + supported, profile loaded, `has_passkey === false`,
+not previously dismissed) and runs the WebAuthn enrollment ceremony
+inline. Use it once, mounted in the app shell or a top-level layout.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Dialog` +
+`Button` + `Checkbox` + `Spinner`, `@lucide/svelte` icons
+(`Fingerprint`, `KeyRound`, `ShieldCheck`), and the WebAuthn codec
+helpers. Not vendored from any registry.
+
+## Usage
+
+### Mount once
+
+```svelte
+<script>
+  import PasskeyPromptDialog from '$lib/components/auth/PasskeyPromptDialog.svelte';
+</script>
+
+<PasskeyPromptDialog />
+```
+
+The component takes no props. It reads `userProfileStore` and
+`authConfigState` and manages its own `open` state via an `$effect`.
+
+### Required passkey mode
+
+When `passkey_required` is `true` in the auth config, the "don't ask
+again" checkbox is hidden and the dialog cannot be dismissed — the user
+must enroll a passkey to proceed.
+
+## Behavior
+
+- **Auto-show**: `shouldShow` is `true` when WebAuthn is enabled and
+  supported, the profile has a `uuid`, `has_passkey === false`, and
+  (unless `passkey_required`) the prompt has not been dismissed. An
+  `$effect` mirrors `shouldShow` into `open`.
+- **Persistent**: `showCloseButton` is `false`, Escape is ignored, and
+  clicking outside triggers a "bump" shake animation instead of closing.
+- **Enroll inline**: `POST /api/v1/auth/webauthn/signup/begin` →
+  `navigator.credentials.create()` →
+  `POST /api/v1/auth/webauthn/signup/finish`. On success the profile
+  store is updated with `has_passkey: true` and the dialog closes.
+- **Already enrolled**: an `InvalidStateError` triggers a best-effort
+  `sync-passkeys` call, updates the store, and closes the dialog.
+- **Dismiss**: when "don't ask again" is checked,
+  `POST /api/v1/auth/me/dismiss-passkey-prompt` persists the dismissal
+  and the store is updated with `passkey_prompt_dismissed: true`.
+- **Notifications**: all outcomes go through `pushNotification`.
+
+## Props
+
+Full prop table: see [API reference — passkeypromptdialog](/docs/user-guide/api-reference#passkeypromptdialog).
+
+This component takes no props.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#passkeypromptdialog)

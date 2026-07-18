@@ -1,0 +1,100 @@
+---
+title: Choicebox
+description: Custom radiogroup-style selectable card list with context-based active state, composed of Root, Item, Title, Description, and Indicator parts.
+---
+
+# Choicebox
+
+`src/lib/components/ui/choicebox/choicebox.svelte`
+
+## Purpose
+
+A radiogroup-style list of selectable cards. Each card (Item) can show a title,
+description, and a radio indicator. Selection state is shared via Svelte context
+(`ctx.ts`) so Items read the active value and set it without prop drilling. Use
+it for settings choices where each option deserves a card with a title and
+description rather than a plain radio label.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses Svelte context (`setContext`/`getContext`)
+for the active-value contract; no BITS UI dependency.
+
+## Usage
+
+### Default
+
+```svelte
+<Choicebox.Root bind:value={authMode} name="auth_mode">
+  <Choicebox.Item value="casdoor">
+    <Choicebox.Title>Casdoor</Choicebox.Title>
+    <Choicebox.Description>Managed identity provider</Choicebox.Description>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+  <Choicebox.Item value="oidc">
+    <Choicebox.Title>OIDC</Choicebox.Title>
+    <Choicebox.Description>External OpenID Connect</Choicebox.Description>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+</Choicebox.Root>
+```
+
+### With onValueChange callback
+
+```svelte
+<Choicebox.Root
+  value={selectedTheme}
+  onValueChange={(v) => (selectedTheme = v)}
+  name="theme"
+>
+  <Choicebox.Item value="light">
+    <Choicebox.Title>Light</Choicebox.Title>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+  <Choicebox.Item value="dark">
+    <Choicebox.Title>Dark</Choicebox.Title>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+</Choicebox.Root>
+```
+
+### Disabled item
+
+```svelte
+<Choicebox.Root bind:value={mode} name="mode">
+  <Choicebox.Item value="auto">
+    <Choicebox.Title>Auto</Choicebox.Title>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+  <Choicebox.Item value="manual" disabled>
+    <Choicebox.Title>Manual</Choicebox.Title>
+    <Choicebox.Description>Not available in this plan</Choicebox.Description>
+    <Choicebox.Indicator />
+  </Choicebox.Item>
+</Choicebox.Root>
+```
+
+## Context API
+
+The Root calls `setChoiceboxContext` with `activeValue()` (a getter returning the
+current value) and `setActive(v)` (sets the value and fires `onValueChange`).
+Each Item calls `getChoiceboxContext()` to read whether it is selected and to
+report clicks. You normally do not touch the context directly — use the
+`Choicebox.Root` / `Choicebox.Item` parts.
+
+## Props
+
+Full prop table: see [API reference — choicebox](/docs/user-guide/api-reference#choicebox).
+
+Key props (Root): `value` (bindable string), `name` (string, optional — emits a
+hidden input for native form submission), `onValueChange` (callback), `class`,
+`children` (Snippet).
+
+Key props (Item): `value` (string), `disabled` (boolean, default `false`),
+`class`, `children` (Snippet).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#choicebox)

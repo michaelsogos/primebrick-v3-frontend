@@ -1,0 +1,59 @@
+---
+title: BrowserClientInfo
+description: Read-only diagnostic panel showing the browser's resolved IANA timezone, locale, calendar, numbering system, hour cycle, OS, and browser version.
+---
+
+# BrowserClientInfo
+
+`src/lib/components/BrowserClientInfo.svelte`
+
+## Purpose
+
+A read-only diagnostic panel that snapshots the browser environment on mount and
+renders a label/value list: resolved IANA timezone, preferred languages,
+resolved locale, calendar system, numbering system, hour cycle, operating
+system (name, version, architecture), and browser (name, version). OS and
+browser are parsed from `navigator.userAgent`; locale data comes from
+`Intl.DateTimeFormat().resolvedOptions()`. If detection throws, `snapshot` stays
+`null` and nothing renders. Used inside the shell versions/health sheet.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses `$lib/browser-iana-timezone` and
+`$lib/i18n`.
+
+## Usage
+
+### Default
+
+```svelte
+<BrowserClientInfo />
+```
+
+### Inside a sheet
+
+The component is designed for the `shell.versions` sheet content; it renders
+only after mount (browser-only detection).
+
+```svelte
+import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
+
+<BrowserClientInfo />
+```
+
+### Empty state
+
+If `Intl`/`navigator` detection fails, `snapshot` is `null` and the panel
+renders nothing — no fallback values are fabricated.
+
+## Props
+
+Full prop table: see [API reference — browserclientinfo](/docs/user-guide/api-reference#browserclientinfo).
+
+Key props: none — `BrowserClientInfo` takes no props.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#browserclientinfo)

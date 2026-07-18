@@ -1,0 +1,79 @@
+---
+title: Button (async)
+description: Custom Button wrapper that adds a loading state and onClickPromise async handler on top of the shadcn-svelte ui/button primitive.
+---
+
+# Button (async)
+
+`src/lib/components/button.svelte`
+
+## Purpose
+
+A thin wrapper around the shadcn-svelte `ui/button` primitive. It adds two
+features the base button lacks: a `loading` prop that disables the button and
+shows a spinner, and an `onClickPromise` callback that is awaited while the
+button automatically tracks pending state. Use it for any action that triggers
+an async operation (save, delete, fetch) where you want the button to show a
+spinner and prevent double-clicks without manual state management.
+
+## Origin
+
+**Custom** — Primebrick-written wrapper around `ui/button` + `ui/spinner`.
+
+## Usage
+
+### Default (async action with auto loading state)
+
+```svelte
+<Button onClickPromise={async () => {
+  await api.saveUser(formData);
+}}>
+  {$t('common.save')}
+</Button>
+```
+
+### Explicit loading control
+
+Pass `loading` directly when you want to drive the spinner from external state
+(for example, a parent form-submit flow that does more than the button's own
+promise).
+
+```svelte
+<Button loading={isSubmitting} disabled={!isValid}>
+  {$t('common.save')}
+</Button>
+```
+
+### Size and variant
+
+All `ui/button` props pass through via `...restProps`, so `variant`, `size`,
+`class`, and `href` (for link buttons) work as expected.
+
+```svelte
+<Button variant="destructive" size="sm" onClickPromise={deleteItem}>
+  {$t('common.delete')}
+</Button>
+```
+
+### Icon button
+
+```svelte
+<Button variant="outline" size="icon" onClickPromise={refresh}>
+  <RefreshCw class="size-4" />
+</Button>
+```
+
+## Props
+
+Full prop table: see [API reference — button](/docs/user-guide/api-reference#button).
+
+Key props: `loading` (boolean, default `false`), `onClickPromise` (async
+handler that is awaited; sets `pending` automatically), `onclick` (standard
+sync handler, called before the promise), `disabled`, `ref` (bindable), plus
+all `ui/button` props (`variant`, `size`, `class`, `href`, `children`).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#button)

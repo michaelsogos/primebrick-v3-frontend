@@ -1,0 +1,61 @@
+---
+title: SidebarVersionBadge
+description: Sidebar footer badge showing the current app version, opening the versions sheet on click; hidden in collapsed (non-mobile) mode.
+---
+
+# SidebarVersionBadge
+
+`src/lib/components/sidebar/SidebarVersionBadge.svelte`
+
+## Purpose
+
+A small monospace badge in the sidebar footer that displays the current app
+version (`v{APP_VERSION}` from `$lib/version`). Clicking it opens the
+`shell.versions` sheet (health + version + browser client info). The badge is
+hidden when the sidebar is collapsed to icon mode **unless** the sidebar is in
+mobile mode (`isMobile`), where the collapsed state does not apply. This avoids
+a cramped icon-only footer on desktop while keeping the version visible on
+mobile.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses shadcn-svelte `Badge`,
+`$lib/shell/sheets/sheet-manager.svelte`, and `$lib/version`.
+
+## Usage
+
+### Default (mounted in AppSidebar footer)
+
+```svelte
+<SidebarVersionBadge {collapsed} isMobile={sidebar.isMobile} />
+```
+
+### Mobile (always visible)
+
+On mobile the sidebar is an overlay, so the badge shows even when "collapsed".
+
+```svelte
+<SidebarVersionBadge collapsed={false} isMobile={true} />
+```
+
+### Opening the versions sheet
+
+Clicking the badge calls `openSheet('shell.versions', ...)`.
+
+```svelte
+<button onclick={() => openSheet('shell.versions', {}, { contentClass: 'w-[420px] p-0' })}>
+  <Badge variant="outline" class="font-mono">v{APP_VERSION}</Badge>
+</button>
+```
+
+## Props
+
+Full prop table: see [API reference — sidebarversionbadge](/docs/user-guide/api-reference#sidebarversionbadge).
+
+Key props: `collapsed: boolean`, `isMobile: boolean`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#sidebarversionbadge)

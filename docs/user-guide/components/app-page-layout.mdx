@@ -1,0 +1,75 @@
+---
+title: AppPageLayout
+description: Authenticated page layout combining AppPageScaffold with a breadcrumb header, optional title snippet, and action buttons.
+---
+
+# AppPageLayout
+
+`src/lib/components/AppPageLayout.svelte`
+
+## Purpose
+
+The standard page wrapper for authenticated routes. It renders an
+`AppPageScaffold` whose `header` snippet places `AppPageBreadcrumb` (ancestor
+segments) on the left, an optional `title` snippet below it, and an optional
+`actions` snippet (toolbar buttons) on the right. The page body is passed as
+`children` into the scaffold's bordered content region.
+
+## Origin
+
+**Custom** — Primebrick-written. Composes `AppPageScaffold` and
+`AppPageBreadcrumb`.
+
+## Usage
+
+### Default with breadcrumb and title
+
+```svelte
+<script lang="ts">
+  import AppPageLayout from '$lib/components/AppPageLayout.svelte';
+  import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+
+  const segments: AppBreadcrumbSegment[] = [
+    { label: 'System', href: '/system' },
+    { label: 'Settings', href: '/system/settings' }
+  ];
+</script>
+
+<AppPageLayout {segments} title="Profile">
+  <p>Page body…</p>
+</AppPageLayout>
+```
+
+### With action buttons
+
+```svelte
+<AppPageLayout {segments}>
+  {#snippet title()}<h1>Users</h1>{/snippet}
+  {#snippet actions()}
+    <Button onclick={openCreate}>New user</Button>
+  {/snippet}
+
+  <UserTable />
+</AppPageLayout>
+```
+
+### Breadcrumb-only (no title)
+
+```svelte
+<AppPageLayout {segments}>
+  <Dashboard />
+</AppPageLayout>
+```
+
+## Props
+
+Full prop table: see [API reference — apppagelayout](/docs/user-guide/api-reference#apppagelayout).
+
+Key props: `segments: AppBreadcrumbSegment[]` (ancestor breadcrumb segments),
+`title?: Snippet`, `actions?: Snippet`, `children?: Snippet`.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#apppagelayout)

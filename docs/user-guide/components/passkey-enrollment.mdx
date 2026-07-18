@@ -1,0 +1,85 @@
+---
+title: PasskeyEnrollment
+description: Card for listing, adding, and deleting the current user's enrolled passkeys via the WebAuthn signup flow.
+---
+
+# PasskeyEnrollment
+
+`src/lib/components/auth/PasskeyEnrollment.svelte`
+
+## Purpose
+
+A self-contained card that lets an authenticated user manage their
+enrolled passkeys. It lists existing credentials (with label, id, and
+creation date), offers an "Add passkey" button that runs the WebAuthn
+enrollment ceremony, and a per-credential delete button. Use it on a
+security/account settings page.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Card` +
+`Button` + `Spinner`, `@lucide/svelte` icons (`Fingerprint`, `Plus`,
+`Trash2`), and the WebAuthn codec helpers in `$lib/webauthn/codec`. Not
+vendored from any registry.
+
+## Usage
+
+### Default
+
+```svelte
+<script>
+  import PasskeyEnrollment from '$lib/components/auth/PasskeyEnrollment.svelte';
+</script>
+
+<PasskeyEnrollment />
+```
+
+The component takes no props. It loads the credential list on mount and
+reloads after each add/delete.
+
+### On a settings page
+
+```svelte
+<section class="space-y-6">
+  <h2>Security</h2>
+  <PasskeyEnrollment />
+</section>
+```
+
+### Unsupported browser
+
+When `isWebauthnSupported()` returns `false` the component renders
+nothing — the entire card is omitted.
+
+## Behavior
+
+- **List**: `GET /api/v1/auth/webauthn/credentials` returns
+  `credentials` with `id`, `aaguid`, `transports`, `label`, and
+  `created_at` per credential.
+- **Add**: `POST /api/v1/auth/webauthn/signup/begin` →
+  `navigator.credentials.create()` →
+  `POST /api/v1/auth/webauthn/signup/finish` with the encoded
+  attestation. On success the list reloads and a success notification is
+  pushed.
+- **Already enrolled**: an `InvalidStateError` (the authenticator
+  already holds a credential for this RP) triggers a best-effort
+  `sync-passkeys` call and is reported as "already enrolled" rather than
+  an error.
+- **Delete**: `DELETE /api/v1/auth/webauthn/credentials/&lbrace;id&rbrace;`
+  removes the credential and reloads the list.
+- **Cancellation**: an `AbortError` from the browser prompt is silently
+  ignored (no notification).
+- **Notifications**: all outcomes go through `pushNotification`, never
+  direct toasts.
+
+## Props
+
+Full prop table: see [API reference — passkeyenrollment](/docs/user-guide/api-reference#passkeyenrollment).
+
+This component takes no props.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#passkeyenrollment)

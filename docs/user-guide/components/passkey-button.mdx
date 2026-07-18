@@ -1,0 +1,83 @@
+---
+title: PasskeyButton
+description: Discoverable passkey sign-in button that runs the WebAuthn ceremony and posts the assertion to the backend.
+---
+
+# PasskeyButton
+
+`src/lib/components/auth/PasskeyButton.svelte`
+
+## Purpose
+
+A full-width outline button that triggers discoverable (username-less)
+passkey login. It runs the three-step WebAuthn flow — `signin/begin`,
+the browser `navigator.credentials.get()` ceremony, and
+`signin/finish` — and shares the same `onsuccess`/`onerror` contract as
+[LoginForm](/docs/user-guide/components/login-form) so the two paths are
+interchangeable from the parent's perspective.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Button` +
+`Spinner`, `@lucide/svelte`'s `Fingerprint` icon, and the WebAuthn
+codec helpers in `$lib/webauthn/codec`. Not vendored from any registry.
+
+## Usage
+
+### Default
+
+```svelte
+<script>
+  import PasskeyButton from '$lib/components/auth/PasskeyButton.svelte';
+
+  function onsuccess(data) {
+    // data: { success: boolean; user: any }
+    goto('/');
+  }
+</script>
+
+<PasskeyButton {onsuccess} />
+```
+
+### With error callback
+
+```svelte
+<PasskeyButton
+  onsuccess={() => goto('/')}
+  onerror={() => console.warn('passkey sign-in failed or cancelled')}
+/>
+```
+
+### Embedded in LoginForm
+
+`LoginForm` already renders `<PasskeyButton {onsuccess} {onerror} />`
+when WebAuthn is enabled — you do not need to mount it separately there.
+
+## Behavior
+
+- **Discoverable login**: no username is sent to `signin/begin`; the OS
+  prompts the user to pick which passkey to use.
+- **Three-step flow**: `POST /api/v1/auth/webauthn/signin/begin` →
+  `navigator.credentials.get()` (FaceID / TouchID / security key) →
+  `POST /api/v1/auth/webauthn/signin/finish` with the encoded assertion.
+- **Cancellation is not an error**: an `AbortError` from the browser
+  prompt calls `onerror` without surfacing a notification.
+- **User store**: on success, `userProfileStore.set(data.user)` is
+  called before `onsuccess`.
+- **Loading state**: the button is disabled and shows a `Spinner` while
+  the ceremony is in flight.
+
+## Props
+
+Full prop table: see [API reference — passkeybutton](/docs/user-guide/api-reference#passkeybutton).
+
+Key props:
+
+- `onsuccess?: (data: &lbrace; success: boolean; user: any &rbrace;) => void` — called after a successful passkey sign-in.
+- `onerror?: () => void` — called when sign-in fails or the user cancels the browser prompt.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#passkeybutton)

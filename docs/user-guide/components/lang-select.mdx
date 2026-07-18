@@ -1,0 +1,62 @@
+---
+title: LangSelect
+description: Topbar language selector dropdown with flag + two-letter suffix, browser-sorted entries, and persisted selection via the uiLang store.
+---
+
+# LangSelect
+
+`src/lib/components/LangSelect.svelte`
+
+## Purpose
+
+The topbar language selector. A `DropdownMenu` whose trigger shows the current
+language's flag (via `flag-icons` `fi-*` classes) and a two-letter suffix
+(`uiLangTopBarTwoLetterSuffix`). The menu lists all supported UI languages
+sorted by the browser's `navigator.languages` (`orderLangEntriesByBrowser`),
+marks the active one with a selected class, and persists the choice via
+`setUiLang` (backed by the `uiLang` store). Supported codes: `en-GB`, `en-US`,
+`it-IT`, `fr-FR`, `es-ES`, `de-DE`, `pt-PT`.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses shadcn-svelte `Button` and `DropdownMenu`,
+`$lib/i18n/store.svelte`, and `@lucide/svelte` `ChevronDown`.
+
+## Usage
+
+### Default (mounted in AppTopbar)
+
+```svelte
+<LangSelect />
+```
+
+### Programmatic language change
+
+The selection is driven by the `uiLang` store; call `setUiLang` anywhere to
+update the trigger reactively.
+
+```svelte
+<script lang="ts">
+  import { setUiLang } from '$lib/i18n/store.svelte';
+</script>
+
+<button onclick={() => setUiLang('it-IT')}>Italiano</button>
+```
+
+### Trigger layout
+
+The trigger is a `soft`-variant `Button` capped at `14rem`, showing flag + 2-char
+suffix + chevron. It is `aria-label`ed with the current language label.
+
+## Props
+
+Full prop table: see [API reference — langselect](/docs/user-guide/api-reference#langselect).
+
+Key props: none — `LangSelect` takes no props; it reads/writes the `uiLang`
+store.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#langselect)

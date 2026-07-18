@@ -394,7 +394,7 @@
           "column": 0
         },
         "end": {
-          "line": 175,
+          "line": 177,
           "column": 0
         }
       },
@@ -463,7 +463,7 @@
           "column": 0
         },
         "end": {
-          "line": 123,
+          "line": 124,
           "column": 0
         }
       },
@@ -532,7 +532,7 @@
           "column": 0
         },
         "end": {
-          "line": 232,
+          "line": 242,
           "column": 0
         }
       },
@@ -558,7 +558,7 @@
           "column": 0
         },
         "end": {
-          "line": 265,
+          "line": 267,
           "column": 0
         }
       },
@@ -26608,7 +26608,7 @@
           "column": 0
         },
         "end": {
-          "line": 361,
+          "line": 363,
           "column": 0
         }
       },
@@ -27054,6 +27054,27 @@
               "column": 32
             }
           }
+        },
+        {
+          "name": "data-testid",
+          "localName": "dataTestId",
+          "kind": "let",
+          "typeSource": "unknown",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 76,
+              "column": 4
+            },
+            "end": {
+              "line": 76,
+              "column": 29
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -27064,11 +27085,11 @@
           "slot_props": "{\n  option: any;\n  selected: any;\n  resolvedLabel: any;\n  resolvedValue: any;\n}",
           "source": {
             "start": {
-              "line": 344,
+              "line": 346,
               "column": 18
             },
             "end": {
-              "line": 349,
+              "line": 351,
               "column": 21
             }
           }
@@ -27079,11 +27100,11 @@
           "slot_props": "{\n  option: any;\n  resolvedLabel: any;\n  resolvedValue: any;\n}",
           "source": {
             "start": {
-              "line": 224,
+              "line": 226,
               "column": 14
             },
             "end": {
-              "line": 228,
+              "line": 230,
               "column": 17
             }
           }
@@ -27093,7 +27114,24 @@
       "typedefs": [],
       "generics": null,
       "contexts": [],
-      "diagnostics": []
+      "diagnostics": [
+        {
+          "component": "src/lib/components/ui/combo-select/combo-select.svelte",
+          "kind": "prop-unknown-type",
+          "name": "data-testid",
+          "message": "Prop \"data-testid\" type could not be inferred; falling back to \"any\".",
+          "source": {
+            "start": {
+              "line": 76,
+              "column": 4
+            },
+            "end": {
+              "line": 76,
+              "column": 29
+            }
+          }
+        }
+      ]
     }
   },
   {
@@ -34470,7 +34508,7 @@
           "column": 0
         },
         "end": {
-          "line": 202,
+          "line": 205,
           "column": 0
         }
       },
@@ -34496,11 +34534,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 40,
+              "line": 41,
               "column": 2
             },
             "end": {
-              "line": 40,
+              "line": 41,
               "column": 23
             }
           }
@@ -34517,11 +34555,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 42,
               "column": 2
             },
             "end": {
-              "line": 41,
+              "line": 42,
               "column": 10
             }
           }
@@ -34538,11 +34576,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 43,
               "column": 2
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 12
             }
           }
@@ -34559,11 +34597,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 44,
               "column": 2
             },
             "end": {
-              "line": 43,
+              "line": 44,
               "column": 16
             }
           }
@@ -34586,11 +34624,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 45,
               "column": 2
             },
             "end": {
-              "line": 44,
+              "line": 45,
               "column": 25
             }
           }
@@ -34607,11 +34645,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 46,
               "column": 2
             },
             "end": {
-              "line": 45,
+              "line": 46,
               "column": 6
             }
           }
@@ -34628,11 +34666,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 2
             },
             "end": {
-              "line": 46,
+              "line": 47,
               "column": 4
             }
           }
@@ -34649,11 +34687,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 48,
               "column": 2
             },
             "end": {
-              "line": 47,
+              "line": 48,
               "column": 13
             }
           }
@@ -34676,11 +34714,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 49,
               "column": 2
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 18
             }
           }
@@ -34698,11 +34736,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 2
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 18
             }
           }
@@ -34725,11 +34763,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 2
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 15
             }
           }
@@ -34746,11 +34784,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 2
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 10
             }
           }
@@ -34767,11 +34805,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 2
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 11
             }
           }
@@ -34788,11 +34826,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 2
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 11
             }
           }
@@ -34809,11 +34847,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 2
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 9
             }
           }
@@ -34831,11 +34869,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 2
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 29
             }
           }
@@ -34853,11 +34891,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 57,
               "column": 2
             },
             "end": {
-              "line": 56,
+              "line": 57,
               "column": 37
             }
           }
@@ -34875,11 +34913,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 58,
               "column": 2
             },
             "end": {
-              "line": 57,
+              "line": 58,
               "column": 31
             }
           }
@@ -34897,12 +34935,34 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 59,
               "column": 2
             },
             "end": {
-              "line": 58,
+              "line": 59,
               "column": 30
+            }
+          }
+        },
+        {
+          "name": "data-testid",
+          "localName": "dataTestId",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 60,
+              "column": 2
+            },
+            "end": {
+              "line": 60,
+              "column": 27
             }
           }
         },
@@ -34918,11 +34978,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 61,
               "column": 2
             },
             "end": {
-              "line": 59,
+              "line": 61,
               "column": 9
             }
           }
@@ -34939,11 +34999,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 62,
               "column": 2
             },
             "end": {
-              "line": 60,
+              "line": 62,
               "column": 8
             }
           }
@@ -34960,11 +35020,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 63,
               "column": 2
             },
             "end": {
-              "line": 61,
+              "line": 63,
               "column": 10
             }
           }

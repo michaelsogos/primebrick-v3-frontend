@@ -1,0 +1,107 @@
+---
+title: RFCErrorDialog
+description: Full-screen dialog rendering an RFC7807 error object with aesthetic and raw JSON views.
+---
+
+# RFCErrorDialog
+
+`src/lib/components/ui/rfc-error-dialog.svelte`
+
+## Purpose
+
+Full-screen dialog for inspecting an RFC7807 problem-details error object.
+Renders two preview modes via a `Dock` switcher:
+
+- **Aesthetic** — `JsonTableViewer` rendering of the error (or `error.extra.issues` when present).
+- **Raw** — syntax-highlighted JSON via `shiki` (`light-plus` theme).
+
+A right-hand metadata panel shows `id`, `impact`, `scope`, `message`,
+`timestamp`, and `tags`. The dialog is opened by the shell's error panel when
+a user clicks an event card to inspect a backend error in detail.
+
+## Origin
+
+**Custom** — Primebrick-built. Composes `DialogBordered`, `JsonTableViewer`,
+`ui/dock`, `ui/badge`, and `shiki` for highlighting.
+
+## Usage
+
+### Basic open/close
+
+```svelte
+<script lang="ts">
+  import RFCErrorDialog from "$lib/components/ui/rfc-error-dialog.svelte";
+  let open = $state(false);
+  let error = $state(null);
+</script>
+
+<RFCErrorDialog bind:open {error} />
+```
+
+### With a captured RFC7807 error
+
+```svelte
+<script lang="ts">
+  import RFCErrorDialog from "$lib/components/ui/rfc-error-dialog.svelte";
+  let open = $state(true);
+  const error = {
+    type: "https://primebrick.dev/errors/forbidden",
+    title: "Forbidden",
+    status: 403,
+    detail: "You do not have permission to view this resource.",
+    impact: "HIGH",
+    scope: "repositories:view",
+    internal_code: "AUTH_403",
+    createdAt: Date.now(),
+    tags: [{ label: "rbac" }, { label: "tenant:acme" }]
+  };
+</script>
+
+<RFCErrorDialog bind:open {error} color="critical" />
+```
+
+### Warning severity without close button
+
+```svelte
+<RFCErrorDialog bind:open {error} color="warning" showCloseButton={false} />
+```
+
+## Props
+
+Full prop table: see [API reference — rfc-error-dialog](/docs/user-guide/api-reference#rfc-error-dialog).
+
+Key props:
+
+- `open` (`boolean`, bindable, required) — controls dialog visibility.
+- `error` (`RFC7807Error | null`, required) — the error object to render. The shape follows RFC 7807 with Primebrick extensions (`impact`, `scope`, `internal_code`, `severity`, `tags`, `extra`).
+- `showCloseButton` (`boolean`, default `false`) — forwarded to `DialogBordered`.
+- `color` (`"critical" | "error" | "warning" | "info"`, default `"error"`) — drives the icon and color of the `impact` row in the metadata panel.
+
+The `RFC7807Error` shape (excerpt):
+
+```ts
+type RFC7807Error = {
+  id?: string;
+  impact?: string;
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance?: string;
+  internal_code?: string;
+  severity?: string;
+  createdAt?: number;
+  tags?: Array<{ label: string; tone?: string }>;
+  scope?: string;
+  message?: string;
+  extra?: { viewer?: string; results?: any; issues?: any; [key: string]: any };
+};
+```
+
+## Next steps
+
+- [DialogBordered](/docs/user-guide/components/dialog-bordered)
+- [JsonTableViewer](/docs/user-guide/components/json-table-viewer)
+- [EventCard](/docs/user-guide/components/event-card)
+- [Component catalog](/docs/user-guide/components)
+- [API reference](/docs/user-guide/api-reference#rfc-error-dialog)

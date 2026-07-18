@@ -1,0 +1,75 @@
+---
+title: DateWheelPicker
+description: Date and time picker popover built on the more-shadcn wheel-picker primitive, with day/month/year wheels, optional time wheels, and IANA timezone selection.
+---
+
+# DateWheelPicker
+
+`src/lib/components/date-dropper/date-wheel-picker.svelte`
+
+## Purpose
+
+A popover-based date (and optional time) picker that uses scrollable wheel
+pickers instead of a calendar grid. It returns a `CalendarDate` (date-only) or
+`CalendarDateTime` (date + time) from `@internationalized/date`. When time is
+enabled, a timezone selector lets the user pick any IANA timezone. Use it where
+a wheel-style picker is preferred over a calendar, or where timezone selection
+matters.
+
+## Origin
+
+**Custom** — Primebrick-written. Composes `Popover`, `Tabs`, `WheelPicker`
+primitives, and `@internationalized/date`.
+
+## Usage
+
+### Date only
+
+```svelte
+<DateWheelPicker bind:value={birthDate} placeholder={$t('common.selectDate')} />
+```
+
+### Date and time
+
+Set `includeTime` to render hour/minute/second wheels and a timezone selector.
+The bound value becomes a `CalendarDateTime`.
+
+```svelte
+<DateWheelPicker bind:value={scheduledAt} includeTime />
+```
+
+### Date and time with default time
+
+Pass `defaultTime` as an `HH:MM:SS` string to pre-fill the time wheels when the
+user opens the popover without an existing value.
+
+```svelte
+<DateWheelPicker
+  bind:value={eventStart}
+  includeTime
+  defaultTime="09:00:00"
+/>
+```
+
+### Two-way timezone binding
+
+The `timezone` prop is bindable and reflects the selected IANA timezone string.
+
+```svelte
+<DateWheelPicker bind:value={meetingAt} bind:timezone={selectedTz} includeTime />
+```
+
+## Props
+
+Full prop table: see [API reference — date-wheel-picker](/docs/user-guide/api-reference#date-wheel-picker).
+
+Key props: `value` (bindable `CalendarDate | CalendarDateTime`), `placeholder`
+(string, default translated "Select date"), `includeTime` (boolean, default
+`false`), `defaultTime` (string `HH:MM:SS`, optional), `timezone` (bindable
+string, IANA timezone, defaults to browser-resolved timezone).
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#date-wheel-picker)

@@ -1,0 +1,61 @@
+---
+title: ThemeToggle
+description: Light/dark theme toggle button persisting to localStorage under the pb.theme key, with system-preference fallback on first load.
+---
+
+# ThemeToggle
+
+`src/lib/components/ThemeToggle.svelte`
+
+## Purpose
+
+A ghost icon button that toggles between light and dark themes. On mount it
+reads the saved preference from `localStorage` under the `pb.theme` key; if none
+is saved, it falls back to the OS `prefers-color-scheme` media query. Toggling
+applies the `dark` class on `document.documentElement` and persists the choice.
+The icon swaps to `Sun` in dark mode (click for light) and `Moon` otherwise,
+with an i18n `aria-label`.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte `Button` and
+`@lucide/svelte` `Moon` / `Sun` icons.
+
+## Usage
+
+### Default (mounted in AppTopbar)
+
+```svelte
+<ThemeToggle />
+```
+
+### Theme application
+
+The toggle mutates the document root class and localStorage directly — no store
+is involved.
+
+```ts
+document.documentElement.classList.toggle('dark', next === 'dark');
+localStorage.setItem('pb.theme', next);
+```
+
+### First-load fallback
+
+With no saved preference, the OS media query decides the initial theme.
+
+```ts
+const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+apply(prefersDark ? 'dark' : 'light');
+```
+
+## Props
+
+Full prop table: see [API reference — themetoggle](/docs/user-guide/api-reference#themetoggle).
+
+Key props: none — `ThemeToggle` takes no props.
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#themetoggle)
