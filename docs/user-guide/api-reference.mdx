@@ -1,16 +1,16 @@
----
+﻿---
 title: API Reference
 description: Complete reference of every exported Svelte component in the Primebrick frontend.
 ---
 
-<!-- AUTO-GENERATED:reference -->
+&lt;!-- AUTO-GENERATED:reference -->
 
 Every Svelte component exported from `src/lib/components/`, rendered mechanically
 from the sveld extraction JSON. No prose — just prop, slot, and event tables.
 
 ## Root
 
-### `<AppPageBreadcrumb />`
+### `&lt;AppPageBreadcrumb />`
 
 Source: `src/lib/components/AppPageBreadcrumb.svelte`
 
@@ -18,7 +18,7 @@ Source: `src/lib/components/AppPageBreadcrumb.svelte`
 |------|------|---------|----------|----------|-------------|
 | segments | AppBreadcrumbSegment[] | — | no | yes | Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. |
 
-### `<AppPageLayout />`
+### `&lt;AppPageLayout />`
 
 Source: `src/lib/components/AppPageLayout.svelte`
 
@@ -34,7 +34,7 @@ Source: `src/lib/components/AppPageLayout.svelte`
 | actions | — |  |
 | title | — |  |
 
-### `<AppPageScaffold />`
+### `&lt;AppPageScaffold />`
 
 Source: `src/lib/components/AppPageScaffold.svelte`
 
@@ -50,11 +50,11 @@ Source: `src/lib/components/AppPageScaffold.svelte`
 | header | — |  |
 | headerExtras | — |  |
 
-### `<AppServerBanner />`
+### `&lt;AppServerBanner />`
 
 Source: `src/lib/components/AppServerBanner.svelte`
 
-### `<AppShell />`
+### `&lt;AppShell />`
 
 Source: `src/lib/components/AppShell.svelte`
 
@@ -64,11 +64,11 @@ Source: `src/lib/components/AppShell.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<AppSidebar />`
+### `&lt;AppSidebar />`
 
 Source: `src/lib/components/AppSidebar.svelte`
 
-### `<AppTopbar />`
+### `&lt;AppTopbar />`
 
 Source: `src/lib/components/AppTopbar.svelte`
 
@@ -76,11 +76,11 @@ Source: `src/lib/components/AppTopbar.svelte`
 |------|------|---------|----------|----------|-------------|
 | unreadNotifications | number | 3 | no | no |  |
 
-### `<BrowserClientInfo />`
+### `&lt;BrowserClientInfo />`
 
 Source: `src/lib/components/BrowserClientInfo.svelte`
 
-### `<button />`
+### `&lt;button />`
 
 Source: `src/lib/components/button.svelte`
 
@@ -98,7 +98,7 @@ Source: `src/lib/components/button.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<CommandPalette />`
+### `&lt;CommandPalette />`
 
 Source: `src/lib/components/CommandPalette.svelte`
 
@@ -106,7 +106,7 @@ Source: `src/lib/components/CommandPalette.svelte`
 |------|------|---------|----------|----------|-------------|
 | open | boolean | false | yes | no |  |
 
-### `<FormPageLayout />`
+### `&lt;FormPageLayout />`
 
 Source: `src/lib/components/FormPageLayout.svelte`
 
@@ -115,7 +115,7 @@ Source: `src/lib/components/FormPageLayout.svelte`
 | title | string | — | no | no |  |
 | entity | string | — | no | yes |  |
 | rowUuid | string | — | no | yes |  |
-| auditData | Record<string, any> | — | no | yes |  |
+| auditData | Record&lt;string, any> | — | no | yes |  |
 | auditingColumns | MetaColumn[] | — | no | yes |  |
 | isCreatePage | boolean | false | no | no |  |
 | meta | EntityMetadata | — | no | no |  |
@@ -129,32 +129,32 @@ Source: `src/lib/components/FormPageLayout.svelte`
 | header | — |  |
 | headerExtras | — |  |
 
-### `<LangSelect />`
+### `&lt;LangSelect />`
 
 Source: `src/lib/components/LangSelect.svelte`
 
-### `<ThemeToggle />`
+### `&lt;ThemeToggle />`
 
 Source: `src/lib/components/ThemeToggle.svelte`
 
 ## auth
 
-### `<LoginForm />`
+### `&lt;LoginForm />`
 
 Source: `src/lib/components/auth/LoginForm.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| onsuccess | (data: { success: boolean; user: any }) => void | — | no | no |  |
+| onsuccess | (data: &lbrace; success: boolean; user: any &rbrace;) => void | — | no | no |  |
 | onerror | () => void | — | no | no |  |
 
-### `<SessionExpiredDialog />`
+### `&lt;SessionExpiredDialog />`
 
 Source: `src/lib/components/auth/SessionExpiredDialog.svelte`
 
 ## date-dropper
 
-### `<date-wheel-picker />`
+### `&lt;date-wheel-picker />`
 
 Source: `src/lib/components/date-dropper/date-wheel-picker.svelte`
 
@@ -168,7 +168,7 @@ Source: `src/lib/components/date-dropper/date-wheel-picker.svelte`
 
 ## entity-list-table
 
-### `<BulkActions />`
+### `&lt;BulkActions />`
 
 Source: `src/lib/components/entity-list-table/toolbar/BulkActions.svelte`
 
@@ -179,9 +179,9 @@ Source: `src/lib/components/entity-list-table/toolbar/BulkActions.svelte`
 | onBulkRestore | () => void | — | no | yes |  |
 | onBulkExport | () => void | — | no | yes |  |
 | onBulkDuplicate | () => void | — | no | yes |  |
-| rowActions | { duplicate?: boolean; delete?: boolean; export?: boolean } | — | no | yes |  |
+| rowActions | &lbrace; duplicate?: boolean; delete?: boolean; export?: boolean &rbrace; | — | no | yes |  |
 
-### `<BulkActionsToolbar />`
+### `&lt;BulkActionsToolbar />`
 
 Source: `src/lib/components/entity-list-table/components/BulkActionsToolbar.svelte`
 
@@ -189,14 +189,14 @@ Source: `src/lib/components/entity-list-table/components/BulkActionsToolbar.svel
 |------|------|---------|----------|----------|-------------|
 | toolbarMode | 'filters' \| 'bulk' | — | no | yes |  |
 | hasAppliedFilters | boolean | — | no | yes |  |
-| filterValues | Record<string, unknown> | — | no | yes |  |
+| filterValues | Record&lt;string, unknown> | — | no | yes |  |
 | advancedFilters | AdvancedFilter[] | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
 | hasDeletedSelected | boolean | — | no | yes |  |
 | allSelectedDeleted | boolean | — | no | yes |  |
 | filterableColumns | MetaColumn[] | — | no | yes |  |
 | onResetFilters | () => void | — | no | yes |  |
-| onFilterValuesChange | (values: Record<string, unknown>) => void | — | no | yes |  |
+| onFilterValuesChange | (values: Record&lt;string, unknown>) => void | — | no | yes |  |
 | onAdvancedFiltersChange | (filters: AdvancedFilter[], logic: 'AND' \| 'OR') => void | — | no | yes |  |
 | onToggleToolbarMode | () => void | — | no | yes |  |
 | onBulkExport | () => void | — | no | yes |  |
@@ -205,7 +205,7 @@ Source: `src/lib/components/entity-list-table/components/BulkActionsToolbar.svel
 | onBulkDelete | () => void | — | no | yes |  |
 | onBulkRestore | () => void | — | no | yes |  |
 
-### `<BulkDeleteDialog />`
+### `&lt;BulkDeleteDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte`
 
@@ -218,7 +218,7 @@ Source: `src/lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<BulkRestoreDialog />`
+### `&lt;BulkRestoreDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/BulkRestoreDialog.svelte`
 
@@ -231,7 +231,7 @@ Source: `src/lib/components/entity-list-table/dialogs/BulkRestoreDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<CardActions />`
+### `&lt;CardActions />`
 
 Source: `src/lib/components/entity-list-table/components/CardActions.svelte`
 
@@ -244,7 +244,7 @@ Source: `src/lib/components/entity-list-table/components/CardActions.svelte`
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
-| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | onToggleRowSelect | (key: string) => void | — | no | yes |  |
 | onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
@@ -263,17 +263,17 @@ Source: `src/lib/components/entity-list-table/components/CardActions.svelte`
 |------|-------|-------------|
 | rowActions | — |  |
 
-### `<CardField />`
+### `&lt;CardField />`
 
 Source: `src/lib/components/entity-list-table/cards/CardField.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| row | Record<string, unknown> | — | no | yes |  |
+| row | Record&lt;string, unknown> | — | no | yes |  |
 | column | MetaColumn | — | no | yes |  |
 | rowSelected | boolean | — | no | yes |  |
 | rowDeleted | boolean | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | viewMode | 'cards_grid' \| 'cards_list' | — | no | no |  |
 | datetimeIanaRenderTick | number | — | no | no |  |
 
@@ -283,7 +283,7 @@ Source: `src/lib/components/entity-list-table/cards/CardField.svelte`
 |------|-------|-------------|
 | cell | — |  |
 
-### `<CardFieldRenderer />`
+### `&lt;CardFieldRenderer />`
 
 Source: `src/lib/components/entity-list-table/components/CardFieldRenderer.svelte`
 
@@ -295,18 +295,18 @@ Source: `src/lib/components/entity-list-table/components/CardFieldRenderer.svelt
 | rowDeleted | boolean | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
-| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
+| cell | Snippet&lt;[&lbrace; row: TRow; column: MetaColumn &rbrace;]> | — | no | no |  |
 | viewMode | 'cards_list' \| 'cards_grid' | — | no | yes |  |
 
-### `<CardGrid />`
+### `&lt;CardGrid />`
 
 Source: `src/lib/components/entity-list-table/cards/CardGrid.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| rows | Record<string, unknown>[] | — | no | yes |  |
+| rows | Record&lt;string, unknown>[] | — | no | yes |  |
 | columns | MetaColumn[] | — | no | yes |  |
 | visibleKeys | string[] | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
@@ -314,22 +314,22 @@ Source: `src/lib/components/entity-list-table/cards/CardGrid.svelte`
 | uid | string | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | rowActions | any | — | no | no |  |
-| entityRowActions | { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean } | — | no | no |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| entityRowActions | &lbrace; duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean &rbrace; | — | no | no |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | no |  |
 | viewMode | 'cards_grid' \| 'cards_list' | — | no | yes |  |
-| onRowClick | (row: Record<string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
-| onPreviewRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onEditRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onDeleteRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onRestoreRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onDuplicateRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onVersionHistory | (row: Record<string, unknown>) => void | — | no | no |  |
+| onRowClick | (row: Record&lt;string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
+| onPreviewRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onEditRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onDeleteRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onRestoreRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onDuplicateRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onVersionHistory | (row: Record&lt;string, unknown>) => void | — | no | no |  |
 | rowFocusedIndex | number \| null | — | no | no |  |
 | cell | any | — | no | no |  |
-| isRowDeleted | (row: Record<string, unknown>) => boolean | — | no | no |  |
+| isRowDeleted | (row: Record&lt;string, unknown>) => boolean | — | no | no |  |
 
-### `<CardItem />`
+### `&lt;CardItem />`
 
 Source: `src/lib/components/entity-list-table/components/CardItem.svelte`
 
@@ -345,11 +345,11 @@ Source: `src/lib/components/entity-list-table/components/CardItem.svelte`
 | actionsEnabled | boolean | — | no | yes |  |
 | shownColumns | MetaColumn[] | — | no | yes |  |
 | stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
-| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
-| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
-| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| cell | Snippet&lt;[&lbrace; row: TRow; column: MetaColumn &rbrace;]> | — | no | no |  |
+| rowActions | Snippet&lt;[&lbrace; row: TRow &rbrace;]> | — | no | no |  |
+| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | viewMode | 'cards_list' \| 'cards_grid' | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
@@ -364,13 +364,13 @@ Source: `src/lib/components/entity-list-table/components/CardItem.svelte`
 | onPreviewRow | (row: TRow) => void | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
 
-### `<CardList />`
+### `&lt;CardList />`
 
 Source: `src/lib/components/entity-list-table/cards/CardList.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| rows | Record<string, unknown>[] | — | no | yes |  |
+| rows | Record&lt;string, unknown>[] | — | no | yes |  |
 | columns | MetaColumn[] | — | no | yes |  |
 | visibleKeys | string[] | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
@@ -378,22 +378,22 @@ Source: `src/lib/components/entity-list-table/cards/CardList.svelte`
 | uid | string | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | rowActions | any | — | no | no |  |
-| entityRowActions | { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean } | — | no | no |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| entityRowActions | &lbrace; duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean &rbrace; | — | no | no |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | no |  |
 | viewMode | 'cards_grid' \| 'cards_list' | — | no | yes |  |
-| onRowClick | (row: Record<string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
-| onPreviewRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onEditRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onDeleteRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onRestoreRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onDuplicateRow | (row: Record<string, unknown>) => void | — | no | no |  |
-| onVersionHistory | (row: Record<string, unknown>) => void | — | no | no |  |
+| onRowClick | (row: Record&lt;string, unknown>, key: string, e: MouseEvent) => void | — | no | no |  |
+| onPreviewRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onEditRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onDeleteRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onRestoreRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onDuplicateRow | (row: Record&lt;string, unknown>) => void | — | no | no |  |
+| onVersionHistory | (row: Record&lt;string, unknown>) => void | — | no | no |  |
 | rowFocusedIndex | number \| null | — | no | no |  |
 | cell | any | — | no | no |  |
-| isRowDeleted | (row: Record<string, unknown>) => boolean | — | no | no |  |
+| isRowDeleted | (row: Record&lt;string, unknown>) => boolean | — | no | no |  |
 
-### `<CardViewRenderer />`
+### `&lt;CardViewRenderer />`
 
 Source: `src/lib/components/entity-list-table/components/CardViewRenderer.svelte`
 
@@ -406,14 +406,14 @@ Source: `src/lib/components/entity-list-table/components/CardViewRenderer.svelte
 | selectedKeys | string[] | — | no | yes |  |
 | rowKey | (row: TRow) => string | — | no | yes |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
-| previewPanel | { state: { focusedRowIndex: number \| null } } | — | no | yes |  |
+| previewPanel | &lbrace; state: &lbrace; focusedRowIndex: number \| null &rbrace; &rbrace; | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
-| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
-| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     } | — | no | no |  |
+| rowActions | Snippet&lt;[&lbrace; row: TRow &rbrace;]> | — | no | no |  |
+| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
-| cell | Snippet<[{ row: TRow; column: MetaColumn }]> | — | no | no |  |
+| cell | Snippet&lt;[&lbrace; row: TRow; column: MetaColumn &rbrace;]> | — | no | no |  |
 | stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
 | error | string \| null | — | no | yes |  |
 | rowsLoading | boolean | — | no | yes |  |
@@ -452,7 +452,7 @@ Source: `src/lib/components/entity-list-table/components/CardViewRenderer.svelte
 | errorView | — |  |
 | rowsLoadingView | — |  |
 
-### `<CellRenderer />`
+### `&lt;CellRenderer />`
 
 Source: `src/lib/components/entity-list-table/components/CellRenderer.svelte`
 
@@ -460,7 +460,7 @@ Source: `src/lib/components/entity-list-table/components/CellRenderer.svelte`
 |------|------|---------|----------|----------|-------------|
 | row | TRow | — | no | yes |  |
 | column | MetaColumn | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 
 **Slots**
@@ -469,7 +469,7 @@ Source: `src/lib/components/entity-list-table/components/CellRenderer.svelte`
 |------|-------|-------------|
 | cell | — |  |
 
-### `<ChangePasswordDialog />`
+### `&lt;ChangePasswordDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte`
 
@@ -480,7 +480,7 @@ Source: `src/lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelt
 | row | TRow \| null | — | no | yes |  |
 | uid | string | — | no | yes |  |
 
-### `<ColumnSelectorPanel />`
+### `&lt;ColumnSelectorPanel />`
 
 Source: `src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte`
 
@@ -495,7 +495,7 @@ Source: `src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte`
 | onResetColumnVisibility | () => void | — | no | yes |  |
 | t | (key: string) => string | — | no | yes |  |
 
-### `<DeleteDialog />`
+### `&lt;DeleteDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/DeleteDialog.svelte`
 
@@ -507,7 +507,7 @@ Source: `src/lib/components/entity-list-table/dialogs/DeleteDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<DeletionFilterToggle />`
+### `&lt;DeletionFilterToggle />`
 
 Source: `src/lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelte`
 
@@ -516,7 +516,7 @@ Source: `src/lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelt
 | deletionFilterMode | 'non_deleted' \| 'deleted' \| 'all' | — | no | yes |  |
 | onDeletionFilterModeChange | (mode: 'non_deleted' \| 'deleted' \| 'all') => void | — | no | yes |  |
 
-### `<DuplicateDialog />`
+### `&lt;DuplicateDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/DuplicateDialog.svelte`
 
@@ -531,7 +531,7 @@ Source: `src/lib/components/entity-list-table/dialogs/DuplicateDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<EntityListTable />`
+### `&lt;EntityListTable />`
 
 Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 
@@ -583,7 +583,7 @@ Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 | onCreateAction | unknown | — | no | yes |  |
 | onEditAction | unknown | — | no | yes |  |
 | filtersOpen | boolean | false | yes | no |  |
-| filterValues | {} | [object Object] | no | no |  |
+| filterValues | &lbrace;&rbrace; | [object Object] | no | no |  |
 | onFilterValuesChange | unknown | — | no | yes |  |
 | onResetFilters | unknown | — | no | yes |  |
 | advancedFilters | [] |  | no | no |  |
@@ -592,7 +592,7 @@ Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 | advancedFiltersStorageKey | unknown | — | no | yes |  |
 | deletionFilterMode | string | non_deleted | yes | no |  |
 | onDeletionFilterModeChange | unknown | — | no | yes |  |
-| datetimeIanaModeByKey | {} | [object Object] | yes | no |  |
+| datetimeIanaModeByKey | &lbrace;&rbrace; | [object Object] | yes | no |  |
 | datetimeIanaRenderTick | number | 0 | yes | no |  |
 | cell | unknown | — | no | yes |  |
 | metaLoadingView | unknown | — | no | yes |  |
@@ -602,7 +602,7 @@ Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 | loadingMessage | unknown | — | no | yes |  |
 | noRecordsMessage | unknown | — | no | yes |  |
 
-### `<EntityListTableCardView />`
+### `&lt;EntityListTableCardView />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableCardView.svelte`
 
@@ -620,7 +620,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableCardView
 | rowActions | any | — | no | yes |  |
 | entityRowActions | any | — | no | yes |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | cell | any | — | no | yes |  |
 | stickyColumnsGroup | any[] | — | no | yes |  |
@@ -653,7 +653,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableCardView
 | rowActionsComposable | any | — | no | yes |  |
 | onPreviewRow | (row: TRow) => void | — | no | yes |  |
 
-### `<EntityListTableContent />`
+### `&lt;EntityListTableContent />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableContent.svelte`
 
@@ -674,7 +674,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableContent.
 | rowActions | any | — | no | yes |  |
 | entityRowActions | any | — | no | yes |  |
 | dropdownMenuRow | any | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | cell | any | — | no | yes |  |
 | stickyColumnsGroup | any[] | — | no | yes |  |
@@ -729,7 +729,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableContent.
 | navigatePreview | (direction: number) => void | — | no | yes |  |
 | extraCols | number | — | no | yes |  |
 
-### `<EntityListTableDialogs />`
+### `&lt;EntityListTableDialogs />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableDialogs.svelte`
 
@@ -743,7 +743,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableDialogs.
 | total | bigint | — | no | yes |  |
 | entity | string | — | no | yes |  |
 
-### `<EntityListTableFooter />`
+### `&lt;EntityListTableFooter />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableFooter.svelte`
 
@@ -771,7 +771,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableFooter.s
 | onPageChange | (page: number) => void | — | no | yes |  |
 | onPageSizeChange | (size: number) => void | — | no | yes |  |
 
-### `<EntityListTableHeader />`
+### `&lt;EntityListTableHeader />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableHeader.svelte`
 
@@ -804,13 +804,13 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableHeader.s
 | onCreateAction | () => void | — | no | no |  |
 | toolbarMode | 'filters' \| 'bulk' | — | no | yes |  |
 | hasAppliedFilters | boolean | — | no | yes |  |
-| filterValues | Record<string, any> | — | no | yes |  |
+| filterValues | Record&lt;string, any> | — | no | yes |  |
 | advancedFilters | AdvancedFilter[] | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
 | hasDeletedSelected | boolean | — | no | yes |  |
 | allSelectedDeleted | boolean | — | no | yes |  |
 | onResetFilters | () => void | — | no | yes |  |
-| onFilterValuesChange | (values: Record<string, any>) => void | — | no | no |  |
+| onFilterValuesChange | (values: Record&lt;string, any>) => void | — | no | no |  |
 | onAdvancedFiltersChange | (filters: AdvancedFilter[], connector: 'AND' \| 'OR') => void | — | no | no |  |
 | onToggleToolbarMode | () => void | — | no | yes |  |
 | onBulkExport | () => void | — | no | yes |  |
@@ -819,7 +819,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableHeader.s
 | onBulkDelete | () => void | — | no | yes |  |
 | onBulkRestore | () => void | — | no | yes |  |
 
-### `<EntityListTableHeaderRow />`
+### `&lt;EntityListTableHeaderRow />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableHeaderRow.svelte`
 
@@ -839,13 +839,13 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableHeaderRo
 | sortDir | 'asc' \| 'desc' | — | no | yes |  |
 | rowsLoading | boolean | — | no | yes |  |
 | handleSortClick | (col: any) => void | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | toggleDatetimeIana | (col: any) => void | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | previewPanel | any | — | no | yes |  |
 | viewRows | any[] | — | no | yes |  |
 
-### `<EntityListTableLoading />`
+### `&lt;EntityListTableLoading />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableLoading.svelte`
 
@@ -860,7 +860,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableLoading.
 |------|-------|-------------|
 | metaLoadingView | — |  |
 
-### `<EntityListTableTableView />`
+### `&lt;EntityListTableTableView />`
 
 Source: `src/lib/components/entity-list-table/components/EntityListTableTableView.svelte`
 
@@ -882,7 +882,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableTableVie
 | sortDir | 'asc' \| 'desc' | — | no | yes |  |
 | rowsLoading | boolean | — | no | yes |  |
 | handleSortClick | (col: any) => void | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | toggleDatetimeIana | (col: any) => void | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | previewPanel | any | — | no | yes |  |
@@ -929,7 +929,7 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableTableVie
 | previewDropdownOpen | boolean | — | no | yes |  |
 | navigatePreview | (direction: number) => void | — | no | yes |  |
 
-### `<EntityListToolbar />`
+### `&lt;EntityListToolbar />`
 
 Source: `src/lib/components/entity-list-table/toolbar/EntityListToolbar.svelte`
 
@@ -955,7 +955,7 @@ Source: `src/lib/components/entity-list-table/toolbar/EntityListToolbar.svelte`
 | onColumnSelectorClick | () => void | — | no | yes |  |
 | onCreateAction | () => void | — | no | no |  |
 
-### `<ExportDialog />`
+### `&lt;ExportDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/ExportDialog.svelte`
 
@@ -974,7 +974,7 @@ Source: `src/lib/components/entity-list-table/dialogs/ExportDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<ExportPreviewDialog />`
+### `&lt;ExportPreviewDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/ExportPreviewDialog.svelte`
 
@@ -995,21 +995,21 @@ Source: `src/lib/components/entity-list-table/dialogs/ExportPreviewDialog.svelte
 | onCopyEmailHtmlToClipboard | () => void | — | no | yes |  |
 | onClose | () => void | — | no | yes |  |
 
-### `<FilterBar />`
+### `&lt;FilterBar />`
 
 Source: `src/lib/components/entity-list-table/toolbar/FilterBar.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
 | hasAppliedFilters | boolean | — | no | yes |  |
-| filterValues | Record<string, any> | — | no | yes |  |
+| filterValues | Record&lt;string, any> | — | no | yes |  |
 | advancedFilters | AdvancedFilter[] | — | no | yes |  |
 | filterableColumns | MetaColumn[] | — | no | yes |  |
 | onResetFilters | () => void | — | no | yes |  |
-| onFilterValuesChange | (values: Record<string, any>) => void | — | no | yes |  |
+| onFilterValuesChange | (values: Record&lt;string, any>) => void | — | no | yes |  |
 | onAdvancedFiltersChange | (filters: AdvancedFilter[]) => void | — | no | yes |  |
 
-### `<FiltersPanel />`
+### `&lt;FiltersPanel />`
 
 Source: `src/lib/components/entity-list-table/panels/FiltersPanel.svelte`
 
@@ -1017,14 +1017,14 @@ Source: `src/lib/components/entity-list-table/panels/FiltersPanel.svelte`
 |------|------|---------|----------|----------|-------------|
 | content | any | — | no | yes |  |
 | filterableColumns | MetaColumn[] |  | no | no |  |
-| filterValues | Record<string, any> | [object Object] | no | no |  |
-| onFilterValuesChange | (values: Record<string, any>) => void | — | no | no |  |
+| filterValues | Record&lt;string, any> | [object Object] | no | no |  |
+| onFilterValuesChange | (values: Record&lt;string, any>) => void | — | no | no |  |
 | onResetFilters | () => void | — | no | no |  |
 | modal | boolean | true | no | no |  |
 | advancedFilters | AdvancedFilter[] |  | no | no |  |
 | onAdvancedFiltersChange | (filters: AdvancedFilter[], connector: 'AND' \| 'OR') => void | — | no | no |  |
 
-### `<HtmlExportDialog />`
+### `&lt;HtmlExportDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/HtmlExportDialog.svelte`
 
@@ -1039,7 +1039,7 @@ Source: `src/lib/components/entity-list-table/dialogs/HtmlExportDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<Pagination />`
+### `&lt;Pagination />`
 
 Source: `src/lib/components/entity-list-table/pagination/Pagination.svelte`
 
@@ -1051,7 +1051,7 @@ Source: `src/lib/components/entity-list-table/pagination/Pagination.svelte`
 | clientSelectedPage | number | — | no | yes |  |
 | onPageChange | (page: number) => void | — | no | yes |  |
 
-### `<PreviewPanel />`
+### `&lt;PreviewPanel />`
 
 Source: `src/lib/components/entity-list-table/panels/PreviewPanel.svelte`
 
@@ -1077,8 +1077,8 @@ Source: `src/lib/components/entity-list-table/panels/PreviewPanel.svelte`
 | stickyColumns | MetaColumn[] |  | no | no |  |
 | dataColumns | MetaColumn[] |  | no | no |  |
 | auditingColumns | MetaColumn[] |  | no | no |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
-| entityRowActions | { edit?: boolean; duplicate?: boolean; delete?: boolean; preview?: boolean } | — | no | no |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
+| entityRowActions | &lbrace; edit?: boolean; duplicate?: boolean; delete?: boolean; preview?: boolean &rbrace; | — | no | no |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | rowSelected | boolean | — | no | yes |  |
@@ -1089,13 +1089,13 @@ Source: `src/lib/components/entity-list-table/panels/PreviewPanel.svelte`
 |------|-------|-------------|
 | cell | — |  |
 
-### `<PreviewPanelWrapper />`
+### `&lt;PreviewPanelWrapper />`
 
 Source: `src/lib/components/entity-list-table/components/PreviewPanelWrapper.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| previewPanel | {       state: {         previewPanelOpen: boolean;         previewRow: TRow \| null;         focusedRowIndex: number \| null;         previewEditMode: boolean;         previewRowIndex: number;       };       openPreview: (row: TRow) => void;       closePreview: () => void;       setPreviewEditMode: (mode: boolean) => void;     } | — | no | yes |  |
+| previewPanel | &lbrace;       state: &lbrace;         previewPanelOpen: boolean;         previewRow: TRow \| null;         focusedRowIndex: number \| null;         previewEditMode: boolean;         previewRowIndex: number;       &rbrace;;       openPreview: (row: TRow) => void;       closePreview: () => void;       setPreviewEditMode: (mode: boolean) => void;     &rbrace; | — | no | yes |  |
 | rows | TRow[] | — | no | yes |  |
 | viewRows | TRow[] | — | no | yes |  |
 | uid | string | — | no | yes |  |
@@ -1108,13 +1108,13 @@ Source: `src/lib/components/entity-list-table/components/PreviewPanelWrapper.sve
 | dataColumns | MetaColumn[] |  | no | no |  |
 | auditingColumns | MetaColumn[] |  | no | no |  |
 | rowActionsEnabled | boolean | — | no | yes |  |
-| rowActions | Snippet<[{ row: TRow }]> | — | no | no |  |
-| entityRowActions | { edit?: boolean; duplicate?: boolean; preview?: boolean; delete?: boolean } | — | no | no |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| rowActions | Snippet&lt;[&lbrace; row: TRow &rbrace;]> | — | no | no |  |
+| entityRowActions | &lbrace; edit?: boolean; duplicate?: boolean; preview?: boolean; delete?: boolean &rbrace; | — | no | no |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
 | rowKey | (row: TRow) => string | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
-| selectedKeys | Set<string> \| string[] | — | no | yes |  |
+| selectedKeys | Set&lt;string> \| string[] | — | no | yes |  |
 | footerRangeTotal | number | — | no | yes |  |
 | footerPage | number | — | no | yes |  |
 | previewDropdownOpen | boolean | — | no | yes |  |
@@ -1125,9 +1125,9 @@ Source: `src/lib/components/entity-list-table/components/PreviewPanelWrapper.sve
 | onRestoreRow | (row: TRow) => void | — | no | yes |  |
 | onPreviewDropdownOpenChange | (open: boolean) => void | — | no | yes |  |
 | rowsLoading | boolean | — | no | yes |  |
-| cell | Snippet<[PreviewPanelWrapperCellArgs]> | — | no | no |  |
+| cell | Snippet&lt;[PreviewPanelWrapperCellArgs]> | — | no | no |  |
 
-### `<RestoreDialog />`
+### `&lt;RestoreDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/RestoreDialog.svelte`
 
@@ -1139,7 +1139,7 @@ Source: `src/lib/components/entity-list-table/dialogs/RestoreDialog.svelte`
 | onConfirm | () => void | — | no | yes |  |
 | onCancel | () => void | — | no | yes |  |
 
-### `<SearchBar />`
+### `&lt;SearchBar />`
 
 Source: `src/lib/components/entity-list-table/toolbar/SearchBar.svelte`
 
@@ -1153,7 +1153,7 @@ Source: `src/lib/components/entity-list-table/toolbar/SearchBar.svelte`
 | onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
 | toggleSearchKey | (key: string) => void | — | no | yes |  |
 
-### `<SearchInPanel />`
+### `&lt;SearchInPanel />`
 
 Source: `src/lib/components/entity-list-table/panels/SearchInPanel.svelte`
 
@@ -1164,7 +1164,7 @@ Source: `src/lib/components/entity-list-table/panels/SearchInPanel.svelte`
 | onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
 | toggleSearchKey | (key: string) => void | — | no | yes |  |
 
-### `<SearchSyntaxHighlighter />`
+### `&lt;SearchSyntaxHighlighter />`
 
 Source: `src/lib/components/entity-list-table/search/SearchSyntaxHighlighter.svelte`
 
@@ -1173,7 +1173,7 @@ Source: `src/lib/components/entity-list-table/search/SearchSyntaxHighlighter.sve
 | search | string |  | no | no |  |
 | disablePadding | boolean | false | no | no |  |
 
-### `<SelectionCounter />`
+### `&lt;SelectionCounter />`
 
 Source: `src/lib/components/entity-list-table/toolbar/SelectionCounter.svelte`
 
@@ -1188,7 +1188,7 @@ Source: `src/lib/components/entity-list-table/toolbar/SelectionCounter.svelte`
 | showSelectedOnly | boolean | — | no | yes |  |
 | onShowSelectedOnlyChange | (show: boolean) => void | — | no | yes |  |
 
-### `<StateRenderer />`
+### `&lt;StateRenderer />`
 
 Source: `src/lib/components/entity-list-table/components/StateRenderer.svelte`
 
@@ -1199,7 +1199,7 @@ Source: `src/lib/components/entity-list-table/components/StateRenderer.svelte`
 | onDelete | (row: TRow) => void | — | no | yes |  |
 | onRestore | (row: TRow) => void | — | no | yes |  |
 
-### `<TableBody />`
+### `&lt;TableBody />`
 
 Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 
@@ -1218,19 +1218,19 @@ Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 | orderedSelectedRows | TRow[] | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
-| rowRangeSelection | {       state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };       onRowRangeMouseDown: (index: number, e: MouseEvent) => void;     } | — | no | yes |  |
+| rowRangeSelection | &lbrace;       state: &lbrace; rowRangeMouseDown: boolean; rangeDragActive: boolean &rbrace;;       onRowRangeMouseDown: (index: number, e: MouseEvent) => void;     &rbrace; | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | rowKey | (row: TRow) => string | — | no | yes |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
-| previewPanel | {       focusedRowIndex: number \| null;     } | — | no | yes |  |
+| previewPanel | &lbrace;       focusedRowIndex: number \| null;     &rbrace; | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | rowChromeH | string | — | no | yes |  |
 | stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
 | stickyColumnsState | any | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
-| cell | Snippet<[ { row: TRow; column: MetaColumn } ]> | — | no | no |  |
-| rowActions | Snippet<[ { row: TRow } ]> | — | no | no |  |
-| entityRowActions | {       duplicate?: boolean;       delete?: boolean;       edit?: boolean;       preview?: boolean;     } | — | no | no |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
+| cell | Snippet&lt;[ &lbrace; row: TRow; column: MetaColumn &rbrace; ]> | — | no | no |  |
+| rowActions | Snippet&lt;[ &lbrace; row: TRow &rbrace; ]> | — | no | no |  |
+| entityRowActions | &lbrace;       duplicate?: boolean;       delete?: boolean;       edit?: boolean;       preview?: boolean;     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
@@ -1243,7 +1243,7 @@ Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 | onDuplicateRow | (row: TRow) => void | — | no | yes |  |
 | onDeleteRow | (row: TRow) => void | — | no | yes |  |
 | onRestoreRow | (row: TRow) => void | — | no | yes |  |
-| handleCustomAction | (action: { actionName: string; translationKey: string }, row: TRow) => void | — | no | no |  |
+| handleCustomAction | (action: &lbrace; actionName: string; translationKey: string &rbrace;, row: TRow) => void | — | no | no |  |
 | stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
 
 **Slots**
@@ -1254,15 +1254,15 @@ Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 | errorView | — |  |
 | rowsLoadingView | — |  |
 
-### `<TableCell />`
+### `&lt;TableCell />`
 
 Source: `src/lib/components/entity-list-table/table/TableCell.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| row | Record<string, unknown> | — | no | yes |  |
+| row | Record&lt;string, unknown> | — | no | yes |  |
 | column | MetaColumn | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 
 **Slots**
@@ -1271,7 +1271,7 @@ Source: `src/lib/components/entity-list-table/table/TableCell.svelte`
 |------|-------|-------------|
 | cellSnippet | — |  |
 
-### `<TableFooter />`
+### `&lt;TableFooter />`
 
 Source: `src/lib/components/entity-list-table/components/TableFooter.svelte`
 
@@ -1299,14 +1299,14 @@ Source: `src/lib/components/entity-list-table/components/TableFooter.svelte`
 | onPageChange | (page: number) => void | — | no | yes |  |
 | onPageSizeChange | (size: number) => void | — | no | yes |  |
 
-### `<TableHeader />`
+### `&lt;TableHeader />`
 
 Source: `src/lib/components/entity-list-table/components/TableHeader.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
 | rowSelectionEnabled | boolean | — | no | yes |  |
-| stickyColumnsState | {       checkboxHeadRef: HTMLTableCellElement \| null;       state: { stickyLeftOffsets: Record<string, number> };       stickyRef: any;     } | — | no | yes |  |
+| stickyColumnsState | &lbrace;       checkboxHeadRef: HTMLTableCellElement \| null;       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;       stickyRef: any;     &rbrace; | — | no | yes |  |
 | rowChromeH | string | — | no | yes |  |
 | allOnPageSelected | boolean | — | no | yes |  |
 | headerIndeterminate | boolean | — | no | yes |  |
@@ -1318,13 +1318,13 @@ Source: `src/lib/components/entity-list-table/components/TableHeader.svelte`
 | rowsLoading | boolean | — | no | yes |  |
 | sortKey | string \| null | — | no | yes |  |
 | sortDir | SortDir | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | toggleDatetimeIana | (col: MetaColumn) => void | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
-| previewPanel | {       state: {         previewPanelOpen: boolean;         previewRow: TRow \| null;       };       openPreview: (row: TRow) => void;       closePreview: () => void;     } | — | no | yes |  |
+| previewPanel | &lbrace;       state: &lbrace;         previewPanelOpen: boolean;         previewRow: TRow \| null;       &rbrace;;       openPreview: (row: TRow) => void;       closePreview: () => void;     &rbrace; | — | no | yes |  |
 | viewRows | TRow[] | — | no | yes |  |
 
-### `<TableHeader />`
+### `&lt;TableHeader />`
 
 Source: `src/lib/components/entity-list-table/table/TableHeader.svelte`
 
@@ -1343,7 +1343,7 @@ Source: `src/lib/components/entity-list-table/table/TableHeader.svelte`
 | stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
 | rowChromeH | string | — | no | yes |  |
 
-### `<TableRow />`
+### `&lt;TableRow />`
 
 Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
 
@@ -1361,13 +1361,13 @@ Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
 | selectedKeys | string[] | — | no | yes |  |
 | shownColumns | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
 | stickyColumnsGroup | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
-| stickyColumnsState | {       state: { stickyLeftOffsets: Record<string, number> };       stickyRef: any;     } | — | no | yes |  |
-| datetimeIanaModeByKey | Record<string, 'browser' \| 'record'> | — | no | yes |  |
+| stickyColumnsState | &lbrace;       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;       stickyRef: any;     &rbrace; | — | no | yes |  |
+| datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
-| cell | Snippet<[TableRowCellArgs]> | — | no | no |  |
-| entityRowActions | {       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;       customActions?: Array<{         actionName: string;         translationKey: string;         icon: string;         textColor?: string;         disabledWhenDeleted?: boolean;       }>;     } | — | no | no |  |
+| cell | Snippet&lt;[TableRowCellArgs]> | — | no | no |  |
+| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;       customActions?: Array&lt;&lbrace;         actionName: string;         translationKey: string;         icon: string;         textColor?: string;         disabledWhenDeleted?: boolean;       &rbrace;>;     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
-| previewPanel | {       focusedRowIndex: number \| null;     } | — | no | yes |  |
+| previewPanel | &lbrace;       focusedRowIndex: number \| null;     &rbrace; | — | no | yes |  |
 | onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
 | onPreviewRow | (row: TRow) => void | — | no | yes |  |
@@ -1379,7 +1379,7 @@ Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
 | onDuplicateRow | (row: TRow) => void | — | no | yes |  |
 | onDeleteRow | (row: TRow) => void | — | no | yes |  |
 | onRestoreRow | (row: TRow) => void | — | no | yes |  |
-| handleCustomAction | (action: { actionName: string; translationKey: string }, row: TRow) => void | — | no | no |  |
+| handleCustomAction | (action: &lbrace; actionName: string; translationKey: string &rbrace;, row: TRow) => void | — | no | no |  |
 | stickyCellClass | (key: string, idx: number, isHeader: boolean) => string \| undefined | — | no | yes |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
 
@@ -1389,7 +1389,7 @@ Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
 |------|-------|-------------|
 | rowActions | — |  |
 
-### `<ViewModeToggle />`
+### `&lt;ViewModeToggle />`
 
 Source: `src/lib/components/entity-list-table/toolbar/ViewModeToggle.svelte`
 
@@ -1400,7 +1400,7 @@ Source: `src/lib/components/entity-list-table/toolbar/ViewModeToggle.svelte`
 
 ## forms
 
-### `<FormLabelWithHelp />`
+### `&lt;FormLabelWithHelp />`
 
 Source: `src/lib/components/forms/FormLabelWithHelp.svelte`
 
@@ -1408,7 +1408,7 @@ Source: `src/lib/components/forms/FormLabelWithHelp.svelte`
 |------|------|---------|----------|----------|-------------|
 | text | string | — | no | yes |  |
 
-### `<FormLabelWithPriorityHelp />`
+### `&lt;FormLabelWithPriorityHelp />`
 
 Source: `src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
 
@@ -1418,7 +1418,7 @@ Source: `src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
 | priority | TooltipPriority | — | no | no |  |
 | title | string | — | no | no |  |
 
-### `<PasswordChecklist />`
+### `&lt;PasswordChecklist />`
 
 Source: `src/lib/components/forms/PasswordChecklist.svelte`
 
@@ -1430,7 +1430,7 @@ Source: `src/lib/components/forms/PasswordChecklist.svelte`
 
 ## sidebar
 
-### `<SidebarHealthBadge />`
+### `&lt;SidebarHealthBadge />`
 
 Source: `src/lib/components/sidebar/SidebarHealthBadge.svelte`
 
@@ -1438,7 +1438,7 @@ Source: `src/lib/components/sidebar/SidebarHealthBadge.svelte`
 |------|------|---------|----------|----------|-------------|
 | collapsed | boolean | — | no | yes |  |
 
-### `<SidebarModuleSwitcher />`
+### `&lt;SidebarModuleSwitcher />`
 
 Source: `src/lib/components/sidebar/SidebarModuleSwitcher.svelte`
 
@@ -1446,7 +1446,7 @@ Source: `src/lib/components/sidebar/SidebarModuleSwitcher.svelte`
 |------|------|---------|----------|----------|-------------|
 | collapsed | boolean | — | no | yes |  |
 
-### `<SidebarOrgSwitcher />`
+### `&lt;SidebarOrgSwitcher />`
 
 Source: `src/lib/components/sidebar/SidebarOrgSwitcher.svelte`
 
@@ -1454,7 +1454,7 @@ Source: `src/lib/components/sidebar/SidebarOrgSwitcher.svelte`
 |------|------|---------|----------|----------|-------------|
 | collapsed | boolean | — | no | yes |  |
 
-### `<SidebarProfileMenu />`
+### `&lt;SidebarProfileMenu />`
 
 Source: `src/lib/components/sidebar/SidebarProfileMenu.svelte`
 
@@ -1464,7 +1464,7 @@ Source: `src/lib/components/sidebar/SidebarProfileMenu.svelte`
 | collapsed | boolean | — | no | yes |  |
 | onLogout | () => void | — | no | yes |  |
 
-### `<SidebarVersionBadge />`
+### `&lt;SidebarVersionBadge />`
 
 Source: `src/lib/components/sidebar/SidebarVersionBadge.svelte`
 
@@ -1475,7 +1475,7 @@ Source: `src/lib/components/sidebar/SidebarVersionBadge.svelte`
 
 ## toasts
 
-### `<EventToast />`
+### `&lt;EventToast />`
 
 Source: `src/lib/components/toasts/EventToast.svelte`
 
@@ -1491,7 +1491,7 @@ Source: `src/lib/components/toasts/EventToast.svelte`
 
 ## ui
 
-### `<alert />`
+### `&lt;alert />`
 
 Source: `src/lib/components/ui/alert/alert.svelte`
 
@@ -1507,7 +1507,7 @@ Source: `src/lib/components/ui/alert/alert.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<alert-description />`
+### `&lt;alert-description />`
 
 Source: `src/lib/components/ui/alert/alert-description.svelte`
 
@@ -1522,7 +1522,7 @@ Source: `src/lib/components/ui/alert/alert-description.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<alert-title />`
+### `&lt;alert-title />`
 
 Source: `src/lib/components/ui/alert/alert-title.svelte`
 
@@ -1537,7 +1537,7 @@ Source: `src/lib/components/ui/alert/alert-title.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<async-validated-input />`
+### `&lt;async-validated-input />`
 
 Source: `src/lib/components/ui/input/async-validated-input.svelte`
 
@@ -1545,7 +1545,7 @@ Source: `src/lib/components/ui/input/async-validated-input.svelte`
 |------|------|---------|----------|----------|-------------|
 | value | string |  | yes | no |  |
 | onChange | (value: string) => void | — | no | no |  |
-| validateFn | (value: string) => Promise<ValidationResult> | — | no | yes |  |
+| validateFn | (value: string) => Promise&lt;ValidationResult> | — | no | yes |  |
 | onStatusChange | (status: ValidationStatus) => void | — | no | no |  |
 | externalInvalid | boolean | false | no | no |  |
 | name | string | — | no | no |  |
@@ -1566,7 +1566,7 @@ Source: `src/lib/components/ui/input/async-validated-input.svelte`
 | onblur | (e: FocusEvent) => void | — | no | no |  |
 | onchange | (e: Event) => void | — | no | no |  |
 
-### `<avatar />`
+### `&lt;avatar />`
 
 Source: `src/lib/components/ui/avatar/avatar.svelte`
 
@@ -1576,7 +1576,7 @@ Source: `src/lib/components/ui/avatar/avatar.svelte`
 | loadingStatus | string | loading | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<avatar-fallback />`
+### `&lt;avatar-fallback />`
 
 Source: `src/lib/components/ui/avatar/avatar-fallback.svelte`
 
@@ -1585,7 +1585,7 @@ Source: `src/lib/components/ui/avatar/avatar-fallback.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<avatar-image />`
+### `&lt;avatar-image />`
 
 Source: `src/lib/components/ui/avatar/avatar-image.svelte`
 
@@ -1594,7 +1594,7 @@ Source: `src/lib/components/ui/avatar/avatar-image.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<AvatarPreview />`
+### `&lt;AvatarPreview />`
 
 Source: `src/lib/components/ui/avatar-preview/AvatarPreview.svelte`
 
@@ -1604,7 +1604,7 @@ Source: `src/lib/components/ui/avatar-preview/AvatarPreview.svelte`
 | avatarColor | string \| undefined | — | no | yes |  |
 | defaultSeed | string | ?? | no | no |  |
 
-### `<badge />`
+### `&lt;badge />`
 
 Source: `src/lib/components/ui/badge/badge.svelte`
 
@@ -1621,7 +1621,7 @@ Source: `src/lib/components/ui/badge/badge.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<breadcrumb />`
+### `&lt;breadcrumb />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb.svelte`
 
@@ -1636,7 +1636,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<breadcrumb-ellipsis />`
+### `&lt;breadcrumb-ellipsis />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-ellipsis.svelte`
 
@@ -1645,7 +1645,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-ellipsis.svelte`
 | ref | null \| HTMLSpanElement | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<breadcrumb-item />`
+### `&lt;breadcrumb-item />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-item.svelte`
 
@@ -1660,7 +1660,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<breadcrumb-link />`
+### `&lt;breadcrumb-link />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-link.svelte`
 
@@ -1677,7 +1677,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-link.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<breadcrumb-list />`
+### `&lt;breadcrumb-list />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-list.svelte`
 
@@ -1692,7 +1692,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-list.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<breadcrumb-page />`
+### `&lt;breadcrumb-page />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-page.svelte`
 
@@ -1707,7 +1707,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-page.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<breadcrumb-separator />`
+### `&lt;breadcrumb-separator />`
 
 Source: `src/lib/components/ui/breadcrumb/breadcrumb-separator.svelte`
 
@@ -1722,7 +1722,7 @@ Source: `src/lib/components/ui/breadcrumb/breadcrumb-separator.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<button />`
+### `&lt;button />`
 
 Source: `src/lib/components/ui/button/button.svelte`
 
@@ -1743,7 +1743,7 @@ Source: `src/lib/components/ui/button/button.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<button-group />`
+### `&lt;button-group />`
 
 Source: `src/lib/components/ui/button-group/button-group.svelte`
 
@@ -1759,7 +1759,7 @@ Source: `src/lib/components/ui/button-group/button-group.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<button-group-separator />`
+### `&lt;button-group-separator />`
 
 Source: `src/lib/components/ui/button-group/button-group-separator.svelte`
 
@@ -1769,7 +1769,7 @@ Source: `src/lib/components/ui/button-group/button-group-separator.svelte`
 | class | unknown | — | no | yes |  |
 | orientation | string | vertical | no | no |  |
 
-### `<button-group-text />`
+### `&lt;button-group-text />`
 
 Source: `src/lib/components/ui/button-group/button-group-text.svelte`
 
@@ -1784,7 +1784,7 @@ Source: `src/lib/components/ui/button-group/button-group-text.svelte`
 |------|-------|-------------|
 | child | — |  |
 
-### `<card />`
+### `&lt;card />`
 
 Source: `src/lib/components/ui/card/card.svelte`
 
@@ -1799,7 +1799,7 @@ Source: `src/lib/components/ui/card/card.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-action />`
+### `&lt;card-action />`
 
 Source: `src/lib/components/ui/card/card-action.svelte`
 
@@ -1814,7 +1814,7 @@ Source: `src/lib/components/ui/card/card-action.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-content />`
+### `&lt;card-content />`
 
 Source: `src/lib/components/ui/card/card-content.svelte`
 
@@ -1829,7 +1829,7 @@ Source: `src/lib/components/ui/card/card-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-description />`
+### `&lt;card-description />`
 
 Source: `src/lib/components/ui/card/card-description.svelte`
 
@@ -1844,7 +1844,7 @@ Source: `src/lib/components/ui/card/card-description.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-footer />`
+### `&lt;card-footer />`
 
 Source: `src/lib/components/ui/card/card-footer.svelte`
 
@@ -1859,7 +1859,7 @@ Source: `src/lib/components/ui/card/card-footer.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-header />`
+### `&lt;card-header />`
 
 Source: `src/lib/components/ui/card/card-header.svelte`
 
@@ -1874,7 +1874,7 @@ Source: `src/lib/components/ui/card/card-header.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<card-title />`
+### `&lt;card-title />`
 
 Source: `src/lib/components/ui/card/card-title.svelte`
 
@@ -1889,7 +1889,7 @@ Source: `src/lib/components/ui/card/card-title.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<checkbox />`
+### `&lt;checkbox />`
 
 Source: `src/lib/components/ui/checkbox/checkbox.svelte`
 
@@ -1901,7 +1901,7 @@ Source: `src/lib/components/ui/checkbox/checkbox.svelte`
 | tone | CheckboxTone | primary | no | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<choicebox />`
+### `&lt;choicebox />`
 
 Source: `src/lib/components/ui/choicebox/choicebox.svelte`
 
@@ -1918,7 +1918,7 @@ Source: `src/lib/components/ui/choicebox/choicebox.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<choicebox-description />`
+### `&lt;choicebox-description />`
 
 Source: `src/lib/components/ui/choicebox/choicebox-description.svelte`
 
@@ -1932,7 +1932,7 @@ Source: `src/lib/components/ui/choicebox/choicebox-description.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<choicebox-indicator />`
+### `&lt;choicebox-indicator />`
 
 Source: `src/lib/components/ui/choicebox/choicebox-indicator.svelte`
 
@@ -1940,7 +1940,7 @@ Source: `src/lib/components/ui/choicebox/choicebox-indicator.svelte`
 |------|------|---------|----------|----------|-------------|
 | class | string | — | no | no |  |
 
-### `<choicebox-item />`
+### `&lt;choicebox-item />`
 
 Source: `src/lib/components/ui/choicebox/choicebox-item.svelte`
 
@@ -1956,7 +1956,7 @@ Source: `src/lib/components/ui/choicebox/choicebox-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<choicebox-title />`
+### `&lt;choicebox-title />`
 
 Source: `src/lib/components/ui/choicebox/choicebox-title.svelte`
 
@@ -1970,7 +1970,7 @@ Source: `src/lib/components/ui/choicebox/choicebox-title.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<color-picker />`
+### `&lt;color-picker />`
 
 Source: `src/lib/components/ui/color-picker/color-picker.svelte`
 
@@ -1982,7 +1982,7 @@ Source: `src/lib/components/ui/color-picker/color-picker.svelte`
 | defaultFormat | ColorFormat | hex | no | no |  |
 | formats | ColorFormat[] | hex,rgb,hsl,oklch | no | no |  |
 
-### `<ColorSelector />`
+### `&lt;ColorSelector />`
 
 Source: `src/lib/components/ui/color-selector/ColorSelector.svelte`
 
@@ -1994,7 +1994,7 @@ Source: `src/lib/components/ui/color-selector/ColorSelector.svelte`
 | fallbackColor | string | #000000 | no | no |  |
 | triggerId | string | — | no | no |  |
 
-### `<combo-select />`
+### `&lt;combo-select />`
 
 Source: `src/lib/components/ui/combo-select/combo-select.svelte`
 
@@ -2003,7 +2003,7 @@ Source: `src/lib/components/ui/combo-select/combo-select.svelte`
 | mode | ComboSelectMode | — | no | yes |  |
 | value | string \| string[] | — | yes | yes |  |
 | onChange | (value: string \| string[]) => void | — | no | no |  |
-| options | string[] \| Record<string, any>[] | — | no | yes |  |
+| options | string[] \| Record&lt;string, any>[] | — | no | yes |  |
 | valueField | string | — | no | no |  |
 | labelField | string | — | no | no |  |
 | isLabelTranslated | boolean | false | no | no |  |
@@ -2013,8 +2013,8 @@ Source: `src/lib/components/ui/combo-select/combo-select.svelte`
 | id | string | — | no | no |  |
 | searchable | boolean | true | no | no |  |
 | searchPlaceholder | string | Search... | no | no |  |
-| isOptionDisabled | (option: string \| Record<string, any>) => boolean | — | no | no |  |
-| getSearchKeywords | (option: string \| Record<string, any>) => string[] | — | no | no |  |
+| isOptionDisabled | (option: string \| Record&lt;string, any>) => boolean | — | no | no |  |
+| getSearchKeywords | (option: string \| Record&lt;string, any>) => string[] | — | no | no |  |
 | aria-invalid | boolean \| "true" \| "false" | — | no | no |  |
 | aria-describedby | string | — | no | no |  |
 | aria-required | boolean \| "true" \| "false" | — | no | no |  |
@@ -2027,7 +2027,7 @@ Source: `src/lib/components/ui/combo-select/combo-select.svelte`
 | itemSnippet | — |  |
 | selectedSnippet | — |  |
 
-### `<command />`
+### `&lt;command />`
 
 Source: `src/lib/components/ui/command/command.svelte`
 
@@ -2038,7 +2038,7 @@ Source: `src/lib/components/ui/command/command.svelte`
 | value | string |  | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<command-dialog />`
+### `&lt;command-dialog />`
 
 Source: `src/lib/components/ui/command/command-dialog.svelte`
 
@@ -2053,7 +2053,7 @@ Source: `src/lib/components/ui/command/command-dialog.svelte`
 | portalProps | DialogPrimitive.PortalProps | — | no | no |  |
 | class | string | — | no | no |  |
 
-### `<command-empty />`
+### `&lt;command-empty />`
 
 Source: `src/lib/components/ui/command/command-empty.svelte`
 
@@ -2062,7 +2062,7 @@ Source: `src/lib/components/ui/command/command-empty.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<command-group />`
+### `&lt;command-group />`
 
 Source: `src/lib/components/ui/command/command-group.svelte`
 
@@ -2073,7 +2073,7 @@ Source: `src/lib/components/ui/command/command-group.svelte`
 | heading | string | — | no | no |  |
 | value | unknown | — | no | yes |  |
 
-### `<command-input />`
+### `&lt;command-input />`
 
 Source: `src/lib/components/ui/command/command-input.svelte`
 
@@ -2083,7 +2083,7 @@ Source: `src/lib/components/ui/command/command-input.svelte`
 | class | unknown | — | no | yes |  |
 | value | string |  | yes | no |  |
 
-### `<command-item />`
+### `&lt;command-item />`
 
 Source: `src/lib/components/ui/command/command-item.svelte`
 
@@ -2098,7 +2098,7 @@ Source: `src/lib/components/ui/command/command-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<command-link-item />`
+### `&lt;command-link-item />`
 
 Source: `src/lib/components/ui/command/command-link-item.svelte`
 
@@ -2107,7 +2107,7 @@ Source: `src/lib/components/ui/command/command-link-item.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<command-list />`
+### `&lt;command-list />`
 
 Source: `src/lib/components/ui/command/command-list.svelte`
 
@@ -2116,7 +2116,7 @@ Source: `src/lib/components/ui/command/command-list.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<command-loading />`
+### `&lt;command-loading />`
 
 Source: `src/lib/components/ui/command/command-loading.svelte`
 
@@ -2124,7 +2124,7 @@ Source: `src/lib/components/ui/command/command-loading.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<command-separator />`
+### `&lt;command-separator />`
 
 Source: `src/lib/components/ui/command/command-separator.svelte`
 
@@ -2133,7 +2133,7 @@ Source: `src/lib/components/ui/command/command-separator.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<command-shortcut />`
+### `&lt;command-shortcut />`
 
 Source: `src/lib/components/ui/command/command-shortcut.svelte`
 
@@ -2148,7 +2148,7 @@ Source: `src/lib/components/ui/command/command-shortcut.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<copy-button />`
+### `&lt;copy-button />`
 
 Source: `src/lib/components/ui/copy-button/copy-button.svelte`
 
@@ -2170,7 +2170,7 @@ Source: `src/lib/components/ui/copy-button/copy-button.svelte`
 |  | — |  |
 | icon | — |  |
 
-### `<dialog />`
+### `&lt;dialog />`
 
 Source: `src/lib/components/ui/dialog/dialog.svelte`
 
@@ -2178,7 +2178,7 @@ Source: `src/lib/components/ui/dialog/dialog.svelte`
 |------|------|---------|----------|----------|-------------|
 | open | boolean | false | yes | no |  |
 
-### `<dialog-bordered />`
+### `&lt;dialog-bordered />`
 
 Source: `src/lib/components/ui/dialog-bordered.svelte`
 
@@ -2195,7 +2195,7 @@ Source: `src/lib/components/ui/dialog-bordered.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dialog-close />`
+### `&lt;dialog-close />`
 
 Source: `src/lib/components/ui/dialog/dialog-close.svelte`
 
@@ -2204,7 +2204,7 @@ Source: `src/lib/components/ui/dialog/dialog-close.svelte`
 | ref | unknown | null | yes | no |  |
 | type | string | button | no | no |  |
 
-### `<dialog-content />`
+### `&lt;dialog-content />`
 
 Source: `src/lib/components/ui/dialog/dialog-content.svelte`
 
@@ -2212,7 +2212,7 @@ Source: `src/lib/components/ui/dialog/dialog-content.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
-| portalProps | WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>> | — | no | no |  |
+| portalProps | WithoutChildrenOrChild&lt;ComponentProps&lt;typeof DialogPortal>> | — | no | no |  |
 | showCloseButton | boolean | true | no | no |  |
 
 **Slots**
@@ -2221,7 +2221,7 @@ Source: `src/lib/components/ui/dialog/dialog-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dialog-description />`
+### `&lt;dialog-description />`
 
 Source: `src/lib/components/ui/dialog/dialog-description.svelte`
 
@@ -2230,7 +2230,7 @@ Source: `src/lib/components/ui/dialog/dialog-description.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<dialog-footer />`
+### `&lt;dialog-footer />`
 
 Source: `src/lib/components/ui/dialog/dialog-footer.svelte`
 
@@ -2246,7 +2246,7 @@ Source: `src/lib/components/ui/dialog/dialog-footer.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dialog-header />`
+### `&lt;dialog-header />`
 
 Source: `src/lib/components/ui/dialog/dialog-header.svelte`
 
@@ -2261,7 +2261,7 @@ Source: `src/lib/components/ui/dialog/dialog-header.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dialog-overlay />`
+### `&lt;dialog-overlay />`
 
 Source: `src/lib/components/ui/dialog/dialog-overlay.svelte`
 
@@ -2270,11 +2270,11 @@ Source: `src/lib/components/ui/dialog/dialog-overlay.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<dialog-portal />`
+### `&lt;dialog-portal />`
 
 Source: `src/lib/components/ui/dialog/dialog-portal.svelte`
 
-### `<dialog-title />`
+### `&lt;dialog-title />`
 
 Source: `src/lib/components/ui/dialog/dialog-title.svelte`
 
@@ -2283,7 +2283,7 @@ Source: `src/lib/components/ui/dialog/dialog-title.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<dialog-trigger />`
+### `&lt;dialog-trigger />`
 
 Source: `src/lib/components/ui/dialog/dialog-trigger.svelte`
 
@@ -2292,7 +2292,7 @@ Source: `src/lib/components/ui/dialog/dialog-trigger.svelte`
 | ref | unknown | null | yes | no |  |
 | type | string | button | no | no |  |
 
-### `<dock />`
+### `&lt;dock />`
 
 Source: `src/lib/components/ui/dock/dock.svelte`
 
@@ -2308,7 +2308,7 @@ Source: `src/lib/components/ui/dock/dock.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dock-icon />`
+### `&lt;dock-icon />`
 
 Source: `src/lib/components/ui/dock/dock-icon.svelte`
 
@@ -2326,7 +2326,7 @@ Source: `src/lib/components/ui/dock/dock-icon.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dock-separator />`
+### `&lt;dock-separator />`
 
 Source: `src/lib/components/ui/dock/dock-separator.svelte`
 
@@ -2334,7 +2334,7 @@ Source: `src/lib/components/ui/dock/dock-separator.svelte`
 |------|------|---------|----------|----------|-------------|
 | class | string | — | no | no |  |
 
-### `<dropdown-menu />`
+### `&lt;dropdown-menu />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu.svelte`
 
@@ -2342,7 +2342,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu.svelte`
 |------|------|---------|----------|----------|-------------|
 | open | boolean | false | yes | no |  |
 
-### `<dropdown-menu-checkbox-group />`
+### `&lt;dropdown-menu-checkbox-group />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-group.svelte`
 
@@ -2351,7 +2351,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-group.svelte
 | ref | unknown | null | yes | no |  |
 | value | [] |  | yes | no |  |
 
-### `<dropdown-menu-checkbox-item />`
+### `&lt;dropdown-menu-checkbox-item />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-item.svelte`
 
@@ -2368,7 +2368,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-checkbox-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dropdown-menu-content />`
+### `&lt;dropdown-menu-content />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-content.svelte`
 
@@ -2376,11 +2376,11 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-content.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 | sideOffset | number | 4 | no | no |  |
-| portalProps | WithoutChildrenOrChild<ComponentProps<typeof DropdownMenuPortal>> | — | no | no |  |
+| portalProps | WithoutChildrenOrChild&lt;ComponentProps&lt;typeof DropdownMenuPortal>> | — | no | no |  |
 | class | unknown | — | no | yes |  |
 | onCloseAutoFocus | (e: any) => any | (e: Event) => e.preventDefault() | no | no |  |
 
-### `<dropdown-menu-group />`
+### `&lt;dropdown-menu-group />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group.svelte`
 
@@ -2388,7 +2388,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<dropdown-menu-group-heading />`
+### `&lt;dropdown-menu-group-heading />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group-heading.svelte`
 
@@ -2398,7 +2398,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-group-heading.svelte`
 | class | unknown | — | no | yes |  |
 | inset | boolean | — | no | no |  |
 
-### `<dropdown-menu-item />`
+### `&lt;dropdown-menu-item />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-item.svelte`
 
@@ -2409,7 +2409,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-item.svelte`
 | inset | boolean | — | no | no |  |
 | variant | "default" \| "destructive" | default | no | no |  |
 
-### `<dropdown-menu-label />`
+### `&lt;dropdown-menu-label />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-label.svelte`
 
@@ -2425,11 +2425,11 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-label.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dropdown-menu-portal />`
+### `&lt;dropdown-menu-portal />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-portal.svelte`
 
-### `<dropdown-menu-radio-group />`
+### `&lt;dropdown-menu-radio-group />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-group.svelte`
 
@@ -2438,7 +2438,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-group.svelte`
 | ref | unknown | null | yes | no |  |
 | value | unknown | — | yes | yes |  |
 
-### `<dropdown-menu-radio-item />`
+### `&lt;dropdown-menu-radio-item />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-item.svelte`
 
@@ -2453,7 +2453,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-radio-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dropdown-menu-separator />`
+### `&lt;dropdown-menu-separator />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-separator.svelte`
 
@@ -2462,7 +2462,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-separator.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<dropdown-menu-shortcut />`
+### `&lt;dropdown-menu-shortcut />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-shortcut.svelte`
 
@@ -2477,7 +2477,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-shortcut.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dropdown-menu-sub />`
+### `&lt;dropdown-menu-sub />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub.svelte`
 
@@ -2485,7 +2485,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub.svelte`
 |------|------|---------|----------|----------|-------------|
 | open | boolean | false | yes | no |  |
 
-### `<dropdown-menu-sub-content />`
+### `&lt;dropdown-menu-sub-content />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-content.svelte`
 
@@ -2494,7 +2494,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-content.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<dropdown-menu-sub-trigger />`
+### `&lt;dropdown-menu-sub-trigger />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-trigger.svelte`
 
@@ -2510,7 +2510,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-sub-trigger.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<dropdown-menu-trigger />`
+### `&lt;dropdown-menu-trigger />`
 
 Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-trigger.svelte`
 
@@ -2518,7 +2518,7 @@ Source: `src/lib/components/ui/dropdown-menu/dropdown-menu-trigger.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<DynamicIcon />`
+### `&lt;DynamicIcon />`
 
 Source: `src/lib/components/ui/dynamic-icon/DynamicIcon.svelte`
 
@@ -2528,7 +2528,7 @@ Source: `src/lib/components/ui/dynamic-icon/DynamicIcon.svelte`
 | size | number | 16 | no | no |  |
 | class | string | — | no | no |  |
 
-### `<event-card />`
+### `&lt;event-card />`
 
 Source: `src/lib/components/ui/event-card/event-card.svelte`
 
@@ -2537,7 +2537,7 @@ Source: `src/lib/components/ui/event-card/event-card.svelte`
 | class | string | — | no | no |  |
 | eventColor | EventColor | info | no | no |  |
 
-### `<event-card-label />`
+### `&lt;event-card-label />`
 
 Source: `src/lib/components/ui/event-card/event-card-label.svelte`
 
@@ -2553,7 +2553,7 @@ Source: `src/lib/components/ui/event-card/event-card-label.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<event-card-message />`
+### `&lt;event-card-message />`
 
 Source: `src/lib/components/ui/event-card/event-card-message.svelte`
 
@@ -2568,7 +2568,7 @@ Source: `src/lib/components/ui/event-card/event-card-message.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<event-card-root />`
+### `&lt;event-card-root />`
 
 Source: `src/lib/components/ui/event-card/event-card-root.svelte`
 
@@ -2584,7 +2584,7 @@ Source: `src/lib/components/ui/event-card/event-card-root.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<event-card-time />`
+### `&lt;event-card-time />`
 
 Source: `src/lib/components/ui/event-card/event-card-time.svelte`
 
@@ -2599,7 +2599,7 @@ Source: `src/lib/components/ui/event-card/event-card-time.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<event-card-title />`
+### `&lt;event-card-title />`
 
 Source: `src/lib/components/ui/event-card/event-card-title.svelte`
 
@@ -2614,7 +2614,7 @@ Source: `src/lib/components/ui/event-card/event-card-title.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<form-button />`
+### `&lt;form-button />`
 
 Source: `src/lib/components/ui/form/form-button.svelte`
 
@@ -2622,7 +2622,7 @@ Source: `src/lib/components/ui/form/form-button.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<form-description />`
+### `&lt;form-description />`
 
 Source: `src/lib/components/ui/form/form-description.svelte`
 
@@ -2631,7 +2631,7 @@ Source: `src/lib/components/ui/form/form-description.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<form-element-field />`
+### `&lt;form-element-field />`
 
 Source: `src/lib/components/ui/form/form-element-field.svelte`
 
@@ -2648,7 +2648,7 @@ Source: `src/lib/components/ui/form/form-element-field.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<form-field />`
+### `&lt;form-field />`
 
 Source: `src/lib/components/ui/form/form-field.svelte`
 
@@ -2665,7 +2665,7 @@ Source: `src/lib/components/ui/form/form-field.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<form-field-errors />`
+### `&lt;form-field-errors />`
 
 Source: `src/lib/components/ui/form/form-field-errors.svelte`
 
@@ -2681,7 +2681,7 @@ Source: `src/lib/components/ui/form/form-field-errors.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<form-fieldset />`
+### `&lt;form-fieldset />`
 
 Source: `src/lib/components/ui/form/form-fieldset.svelte`
 
@@ -2692,7 +2692,7 @@ Source: `src/lib/components/ui/form/form-fieldset.svelte`
 | form | unknown | — | no | yes |  |
 | name | unknown | — | no | yes |  |
 
-### `<form-label />`
+### `&lt;form-label />`
 
 Source: `src/lib/components/ui/form/form-label.svelte`
 
@@ -2708,7 +2708,7 @@ Source: `src/lib/components/ui/form/form-label.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<form-legend />`
+### `&lt;form-legend />`
 
 Source: `src/lib/components/ui/form/form-legend.svelte`
 
@@ -2717,7 +2717,7 @@ Source: `src/lib/components/ui/form/form-legend.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<highlighted-input />`
+### `&lt;highlighted-input />`
 
 Source: `src/lib/components/ui/input-group/highlighted-input.svelte`
 
@@ -2728,7 +2728,7 @@ Source: `src/lib/components/ui/input-group/highlighted-input.svelte`
 | type | string | text | no | no |  |
 | placeholder | unknown | — | no | yes |  |
 
-### `<input />`
+### `&lt;input />`
 
 Source: `src/lib/components/ui/input/input.svelte`
 
@@ -2741,7 +2741,7 @@ Source: `src/lib/components/ui/input/input.svelte`
 | class | unknown | — | no | yes |  |
 | data-slot | string | input | no | no |  |
 
-### `<input-group />`
+### `&lt;input-group />`
 
 Source: `src/lib/components/ui/input-group/input-group.svelte`
 
@@ -2756,7 +2756,7 @@ Source: `src/lib/components/ui/input-group/input-group.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<input-group-addon />`
+### `&lt;input-group-addon />`
 
 Source: `src/lib/components/ui/input-group/input-group-addon.svelte`
 
@@ -2772,7 +2772,7 @@ Source: `src/lib/components/ui/input-group/input-group-addon.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<input-group-button />`
+### `&lt;input-group-button />`
 
 Source: `src/lib/components/ui/input-group/input-group-button.svelte`
 
@@ -2790,7 +2790,7 @@ Source: `src/lib/components/ui/input-group/input-group-button.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<input-group-input />`
+### `&lt;input-group-input />`
 
 Source: `src/lib/components/ui/input-group/input-group-input.svelte`
 
@@ -2801,7 +2801,7 @@ Source: `src/lib/components/ui/input-group/input-group-input.svelte`
 | class | unknown | — | no | yes |  |
 | type | string | text | no | no |  |
 
-### `<input-group-text />`
+### `&lt;input-group-text />`
 
 Source: `src/lib/components/ui/input-group/input-group-text.svelte`
 
@@ -2816,7 +2816,7 @@ Source: `src/lib/components/ui/input-group/input-group-text.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<input-group-textarea />`
+### `&lt;input-group-textarea />`
 
 Source: `src/lib/components/ui/input-group/input-group-textarea.svelte`
 
@@ -2826,7 +2826,7 @@ Source: `src/lib/components/ui/input-group/input-group-textarea.svelte`
 | value | unknown | — | yes | yes |  |
 | class | unknown | — | no | yes |  |
 
-### `<JsonTableViewer />`
+### `&lt;JsonTableViewer />`
 
 Source: `src/lib/components/ui/JsonTableViewer.svelte`
 
@@ -2835,7 +2835,7 @@ Source: `src/lib/components/ui/JsonTableViewer.svelte`
 | data | unknown | — | no | yes |  |
 | isNested | boolean | false | no | no |  |
 
-### `<kbd />`
+### `&lt;kbd />`
 
 Source: `src/lib/components/ui/kbd/kbd.svelte`
 
@@ -2851,7 +2851,7 @@ Source: `src/lib/components/ui/kbd/kbd.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<label />`
+### `&lt;label />`
 
 Source: `src/lib/components/ui/label/label.svelte`
 
@@ -2860,7 +2860,7 @@ Source: `src/lib/components/ui/label/label.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<loading-bar />`
+### `&lt;loading-bar />`
 
 Source: `src/lib/components/ui/loading-bar/loading-bar.svelte`
 
@@ -2874,7 +2874,7 @@ Source: `src/lib/components/ui/loading-bar/loading-bar.svelte`
 | easing | string | ease-in-out | no | no |  |
 | barClass | string | — | no | no |  |
 
-### `<MetadataLoading />`
+### `&lt;MetadataLoading />`
 
 Source: `src/lib/components/ui/metadata-loading/MetadataLoading.svelte`
 
@@ -2883,7 +2883,7 @@ Source: `src/lib/components/ui/metadata-loading/MetadataLoading.svelte`
 | entityName | string | — | no | no |  |
 | loadingText | string | — | no | no |  |
 
-### `<password />`
+### `&lt;password />`
 
 Source: `src/lib/components/ui/password/password.svelte`
 
@@ -2900,7 +2900,7 @@ Source: `src/lib/components/ui/password/password.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<password-copy />`
+### `&lt;password-copy />`
 
 Source: `src/lib/components/ui/password/password-copy.svelte`
 
@@ -2909,7 +2909,7 @@ Source: `src/lib/components/ui/password/password-copy.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<password-input />`
+### `&lt;password-input />`
 
 Source: `src/lib/components/ui/password/password-input.svelte`
 
@@ -2925,7 +2925,7 @@ Source: `src/lib/components/ui/password/password-input.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<password-input-field />`
+### `&lt;password-input-field />`
 
 Source: `src/lib/components/ui/password/password-input-field.svelte`
 
@@ -2936,7 +2936,7 @@ Source: `src/lib/components/ui/password/password-input-field.svelte`
 | minScore | 0 \| 1 \| 2 \| 3 \| 4 | 3 | no | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<password-strength />`
+### `&lt;password-strength />`
 
 Source: `src/lib/components/ui/password/password-strength.svelte`
 
@@ -2945,7 +2945,7 @@ Source: `src/lib/components/ui/password/password-strength.svelte`
 | strength | unknown | — | yes | yes |  |
 | class | unknown | — | no | yes |  |
 
-### `<password-toggle-visibility />`
+### `&lt;password-toggle-visibility />`
 
 Source: `src/lib/components/ui/password/password-toggle-visibility.svelte`
 
@@ -2954,7 +2954,7 @@ Source: `src/lib/components/ui/password/password-toggle-visibility.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<popover-content />`
+### `&lt;popover-content />`
 
 Source: `src/lib/components/ui/popover/popover-content.svelte`
 
@@ -2965,7 +2965,7 @@ Source: `src/lib/components/ui/popover/popover-content.svelte`
 | class | unknown | — | no | yes |  |
 | align | string | center | no | no |  |
 
-### `<popover-trigger />`
+### `&lt;popover-trigger />`
 
 Source: `src/lib/components/ui/popover/popover-trigger.svelte`
 
@@ -2973,7 +2973,7 @@ Source: `src/lib/components/ui/popover/popover-trigger.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<priority-tooltip-content />`
+### `&lt;priority-tooltip-content />`
 
 Source: `src/lib/components/ui/tooltip/priority-tooltip-content.svelte`
 
@@ -2991,7 +2991,7 @@ Source: `src/lib/components/ui/tooltip/priority-tooltip-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<resizable-handle />`
+### `&lt;resizable-handle />`
 
 Source: `src/lib/components/ui/resizable/resizable-handle.svelte`
 
@@ -3001,7 +3001,7 @@ Source: `src/lib/components/ui/resizable/resizable-handle.svelte`
 | class | unknown | — | no | yes |  |
 | withHandle | boolean | false | no | no |  |
 
-### `<resizable-pane-group />`
+### `&lt;resizable-pane-group />`
 
 Source: `src/lib/components/ui/resizable/resizable-pane-group.svelte`
 
@@ -3011,7 +3011,7 @@ Source: `src/lib/components/ui/resizable/resizable-pane-group.svelte`
 | this | ResizablePrimitive.PaneGroup | — | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<rfc-error-dialog />`
+### `&lt;rfc-error-dialog />`
 
 Source: `src/lib/components/ui/rfc-error-dialog.svelte`
 
@@ -3022,7 +3022,7 @@ Source: `src/lib/components/ui/rfc-error-dialog.svelte`
 | showCloseButton | boolean | false | no | no |  |
 | color | 'critical' \| 'error' \| 'warning' \| 'info' | error | no | no |  |
 
-### `<scroll-area />`
+### `&lt;scroll-area />`
 
 Source: `src/lib/components/ui/scroll-area/scroll-area.svelte`
 
@@ -3041,7 +3041,7 @@ Source: `src/lib/components/ui/scroll-area/scroll-area.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<scroll-area-scrollbar />`
+### `&lt;scroll-area-scrollbar />`
 
 Source: `src/lib/components/ui/scroll-area/scroll-area-scrollbar.svelte`
 
@@ -3057,7 +3057,7 @@ Source: `src/lib/components/ui/scroll-area/scroll-area-scrollbar.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<separator />`
+### `&lt;separator />`
 
 Source: `src/lib/components/ui/separator/separator.svelte`
 
@@ -3067,7 +3067,7 @@ Source: `src/lib/components/ui/separator/separator.svelte`
 | class | unknown | — | no | yes |  |
 | orientation | string | horizontal | no | no |  |
 
-### `<sheet />`
+### `&lt;sheet />`
 
 Source: `src/lib/components/ui/sheet/sheet.svelte`
 
@@ -3075,7 +3075,7 @@ Source: `src/lib/components/ui/sheet/sheet.svelte`
 |------|------|---------|----------|----------|-------------|
 | open | boolean | false | yes | no |  |
 
-### `<sheet-close />`
+### `&lt;sheet-close />`
 
 Source: `src/lib/components/ui/sheet/sheet-close.svelte`
 
@@ -3083,7 +3083,7 @@ Source: `src/lib/components/ui/sheet/sheet-close.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<sheet-content />`
+### `&lt;sheet-content />`
 
 Source: `src/lib/components/ui/sheet/sheet-content.svelte`
 
@@ -3102,7 +3102,7 @@ Source: `src/lib/components/ui/sheet/sheet-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sheet-description />`
+### `&lt;sheet-description />`
 
 Source: `src/lib/components/ui/sheet/sheet-description.svelte`
 
@@ -3111,7 +3111,7 @@ Source: `src/lib/components/ui/sheet/sheet-description.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sheet-footer />`
+### `&lt;sheet-footer />`
 
 Source: `src/lib/components/ui/sheet/sheet-footer.svelte`
 
@@ -3126,7 +3126,7 @@ Source: `src/lib/components/ui/sheet/sheet-footer.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sheet-header />`
+### `&lt;sheet-header />`
 
 Source: `src/lib/components/ui/sheet/sheet-header.svelte`
 
@@ -3141,7 +3141,7 @@ Source: `src/lib/components/ui/sheet/sheet-header.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sheet-overlay />`
+### `&lt;sheet-overlay />`
 
 Source: `src/lib/components/ui/sheet/sheet-overlay.svelte`
 
@@ -3150,11 +3150,11 @@ Source: `src/lib/components/ui/sheet/sheet-overlay.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sheet-portal />`
+### `&lt;sheet-portal />`
 
 Source: `src/lib/components/ui/sheet/sheet-portal.svelte`
 
-### `<sheet-title />`
+### `&lt;sheet-title />`
 
 Source: `src/lib/components/ui/sheet/sheet-title.svelte`
 
@@ -3163,7 +3163,7 @@ Source: `src/lib/components/ui/sheet/sheet-title.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sheet-trigger />`
+### `&lt;sheet-trigger />`
 
 Source: `src/lib/components/ui/sheet/sheet-trigger.svelte`
 
@@ -3171,7 +3171,7 @@ Source: `src/lib/components/ui/sheet/sheet-trigger.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | unknown | null | yes | no |  |
 
-### `<sidebar />`
+### `&lt;sidebar />`
 
 Source: `src/lib/components/ui/sidebar/sidebar.svelte`
 
@@ -3189,7 +3189,7 @@ Source: `src/lib/components/ui/sidebar/sidebar.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-content />`
+### `&lt;sidebar-content />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-content.svelte`
 
@@ -3204,7 +3204,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-footer />`
+### `&lt;sidebar-footer />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-footer.svelte`
 
@@ -3219,7 +3219,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-footer.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-group />`
+### `&lt;sidebar-group />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-group.svelte`
 
@@ -3234,7 +3234,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-group.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-group-action />`
+### `&lt;sidebar-group-action />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-group-action.svelte`
 
@@ -3250,7 +3250,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-group-action.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<sidebar-group-content />`
+### `&lt;sidebar-group-content />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-group-content.svelte`
 
@@ -3265,7 +3265,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-group-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-group-label />`
+### `&lt;sidebar-group-label />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-group-label.svelte`
 
@@ -3281,7 +3281,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-group-label.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<sidebar-header />`
+### `&lt;sidebar-header />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-header.svelte`
 
@@ -3296,7 +3296,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-header.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-input />`
+### `&lt;sidebar-input />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-input.svelte`
 
@@ -3306,7 +3306,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-input.svelte`
 | value | string |  | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sidebar-inset />`
+### `&lt;sidebar-inset />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-inset.svelte`
 
@@ -3321,7 +3321,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-inset.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu />`
+### `&lt;sidebar-menu />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu.svelte`
 
@@ -3336,7 +3336,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu-action />`
+### `&lt;sidebar-menu-action />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-action.svelte`
 
@@ -3353,7 +3353,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-action.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<sidebar-menu-badge />`
+### `&lt;sidebar-menu-badge />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-badge.svelte`
 
@@ -3368,7 +3368,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-badge.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu-button />`
+### `&lt;sidebar-menu-button />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-button.svelte`
 
@@ -3380,7 +3380,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-button.svelte`
 | size | SidebarMenuButtonSize | default | no | no |  |
 | isActive | boolean | false | no | no |  |
 | tooltipContent | Snippet | — | no | no |  |
-| tooltipContentProps | WithoutChildrenOrChild<ComponentProps<typeof Tooltip.Content>> | — | no | no |  |
+| tooltipContentProps | WithoutChildrenOrChild&lt;ComponentProps&lt;typeof Tooltip.Content>> | — | no | no |  |
 
 **Slots**
 
@@ -3389,7 +3389,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-button.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<sidebar-menu-item />`
+### `&lt;sidebar-menu-item />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-item.svelte`
 
@@ -3404,7 +3404,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu-skeleton />`
+### `&lt;sidebar-menu-skeleton />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte`
 
@@ -3420,7 +3420,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu-sub />`
+### `&lt;sidebar-menu-sub />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-sub.svelte`
 
@@ -3435,7 +3435,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-sub.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-menu-sub-button />`
+### `&lt;sidebar-menu-sub-button />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte`
 
@@ -3453,7 +3453,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte`
 |  | — |  |
 | child | — |  |
 
-### `<sidebar-menu-sub-item />`
+### `&lt;sidebar-menu-sub-item />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte`
 
@@ -3467,7 +3467,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-provider />`
+### `&lt;sidebar-provider />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-provider.svelte`
 
@@ -3475,7 +3475,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-provider.svelte`
 |------|------|---------|----------|----------|-------------|
 | ref | null \| HTMLDivElement | null | yes | no |  |
 | open | boolean | true | yes | no |  |
-| onOpenChange | (open: boolean) => void | () => {} | no | no |  |
+| onOpenChange | (open: boolean) => void | () => &lbrace;&rbrace; | no | no |  |
 | class | unknown | — | no | yes |  |
 | style | unknown | — | no | yes |  |
 
@@ -3485,7 +3485,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-provider.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-rail />`
+### `&lt;sidebar-rail />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-rail.svelte`
 
@@ -3500,7 +3500,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-rail.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sidebar-separator />`
+### `&lt;sidebar-separator />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-separator.svelte`
 
@@ -3509,7 +3509,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-separator.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sidebar-trigger />`
+### `&lt;sidebar-trigger />`
 
 Source: `src/lib/components/ui/sidebar/sidebar-trigger.svelte`
 
@@ -3519,7 +3519,7 @@ Source: `src/lib/components/ui/sidebar/sidebar-trigger.svelte`
 | class | unknown | — | no | yes |  |
 | onclick | (e: MouseEvent) => void | — | no | no |  |
 
-### `<skeleton />`
+### `&lt;skeleton />`
 
 Source: `src/lib/components/ui/skeleton/skeleton.svelte`
 
@@ -3528,7 +3528,7 @@ Source: `src/lib/components/ui/skeleton/skeleton.svelte`
 | ref | null \| HTMLDivElement | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<sonner />`
+### `&lt;sonner />`
 
 Source: `src/lib/components/ui/sonner/sonner.svelte`
 
@@ -3536,7 +3536,7 @@ Source: `src/lib/components/ui/sonner/sonner.svelte`
 |------|------|---------|----------|----------|-------------|
 | class | unknown | — | no | yes |  |
 
-### `<sortable />`
+### `&lt;sortable />`
 
 Source: `src/lib/components/ui/sortable/sortable.svelte`
 
@@ -3553,7 +3553,7 @@ Source: `src/lib/components/ui/sortable/sortable.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sortable-handle />`
+### `&lt;sortable-handle />`
 
 Source: `src/lib/components/ui/sortable/sortable-handle.svelte`
 
@@ -3567,7 +3567,7 @@ Source: `src/lib/components/ui/sortable/sortable-handle.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<sortable-item />`
+### `&lt;sortable-item />`
 
 Source: `src/lib/components/ui/sortable/sortable-item.svelte`
 
@@ -3582,7 +3582,7 @@ Source: `src/lib/components/ui/sortable/sortable-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<spinner />`
+### `&lt;spinner />`
 
 Source: `src/lib/components/ui/spinner/spinner.svelte`
 
@@ -3595,7 +3595,7 @@ Source: `src/lib/components/ui/spinner/spinner.svelte`
 | stroke | unknown | — | no | yes |  |
 | aria-label | string | Loading | no | no |  |
 
-### `<switch />`
+### `&lt;switch />`
 
 Source: `src/lib/components/ui/switch/switch.svelte`
 
@@ -3611,7 +3611,7 @@ Source: `src/lib/components/ui/switch/switch.svelte`
 |------|-------|-------------|
 | thumbIcons | — |  |
 
-### `<table />`
+### `&lt;table />`
 
 Source: `src/lib/components/ui/table/table.svelte`
 
@@ -3627,7 +3627,7 @@ Source: `src/lib/components/ui/table/table.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-body />`
+### `&lt;table-body />`
 
 Source: `src/lib/components/ui/table/table-body.svelte`
 
@@ -3642,7 +3642,7 @@ Source: `src/lib/components/ui/table/table-body.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-caption />`
+### `&lt;table-caption />`
 
 Source: `src/lib/components/ui/table/table-caption.svelte`
 
@@ -3657,7 +3657,7 @@ Source: `src/lib/components/ui/table/table-caption.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-cell />`
+### `&lt;table-cell />`
 
 Source: `src/lib/components/ui/table/table-cell.svelte`
 
@@ -3672,7 +3672,7 @@ Source: `src/lib/components/ui/table/table-cell.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-footer />`
+### `&lt;table-footer />`
 
 Source: `src/lib/components/ui/table/table-footer.svelte`
 
@@ -3687,7 +3687,7 @@ Source: `src/lib/components/ui/table/table-footer.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-head />`
+### `&lt;table-head />`
 
 Source: `src/lib/components/ui/table/table-head.svelte`
 
@@ -3702,7 +3702,7 @@ Source: `src/lib/components/ui/table/table-head.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-header />`
+### `&lt;table-header />`
 
 Source: `src/lib/components/ui/table/table-header.svelte`
 
@@ -3717,7 +3717,7 @@ Source: `src/lib/components/ui/table/table-header.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<table-row />`
+### `&lt;table-row />`
 
 Source: `src/lib/components/ui/table/table-row.svelte`
 
@@ -3733,7 +3733,7 @@ Source: `src/lib/components/ui/table/table-row.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<tabs />`
+### `&lt;tabs />`
 
 Source: `src/lib/components/ui/tabs/tabs.svelte`
 
@@ -3743,7 +3743,7 @@ Source: `src/lib/components/ui/tabs/tabs.svelte`
 | value | string |  | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<tabs-content />`
+### `&lt;tabs-content />`
 
 Source: `src/lib/components/ui/tabs/tabs-content.svelte`
 
@@ -3752,7 +3752,7 @@ Source: `src/lib/components/ui/tabs/tabs-content.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<tabs-list />`
+### `&lt;tabs-list />`
 
 Source: `src/lib/components/ui/tabs/tabs-list.svelte`
 
@@ -3762,7 +3762,7 @@ Source: `src/lib/components/ui/tabs/tabs-list.svelte`
 | variant | TabsListVariant | default | no | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<tabs-trigger />`
+### `&lt;tabs-trigger />`
 
 Source: `src/lib/components/ui/tabs/tabs-trigger.svelte`
 
@@ -3771,7 +3771,7 @@ Source: `src/lib/components/ui/tabs/tabs-trigger.svelte`
 | ref | unknown | null | yes | no |  |
 | class | unknown | — | no | yes |  |
 
-### `<text-input />`
+### `&lt;text-input />`
 
 Source: `src/lib/components/ui/input/text-input.svelte`
 
@@ -3795,7 +3795,7 @@ Source: `src/lib/components/ui/input/text-input.svelte`
 |------|-------|-------------|
 | trailing | — |  |
 
-### `<textarea />`
+### `&lt;textarea />`
 
 Source: `src/lib/components/ui/textarea/textarea.svelte`
 
@@ -3806,7 +3806,7 @@ Source: `src/lib/components/ui/textarea/textarea.svelte`
 | class | unknown | — | no | yes |  |
 | data-slot | string | textarea | no | no |  |
 
-### `<timeline />`
+### `&lt;timeline />`
 
 Source: `src/lib/components/ui/timeline/timeline.svelte`
 
@@ -3820,7 +3820,7 @@ Source: `src/lib/components/ui/timeline/timeline.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-content />`
+### `&lt;timeline-content />`
 
 Source: `src/lib/components/ui/timeline/timeline-content.svelte`
 
@@ -3834,7 +3834,7 @@ Source: `src/lib/components/ui/timeline/timeline-content.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-date />`
+### `&lt;timeline-date />`
 
 Source: `src/lib/components/ui/timeline/timeline-date.svelte`
 
@@ -3848,7 +3848,7 @@ Source: `src/lib/components/ui/timeline/timeline-date.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-description />`
+### `&lt;timeline-description />`
 
 Source: `src/lib/components/ui/timeline/timeline-description.svelte`
 
@@ -3862,7 +3862,7 @@ Source: `src/lib/components/ui/timeline/timeline-description.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-item />`
+### `&lt;timeline-item />`
 
 Source: `src/lib/components/ui/timeline/timeline-item.svelte`
 
@@ -3876,7 +3876,7 @@ Source: `src/lib/components/ui/timeline/timeline-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-separator />`
+### `&lt;timeline-separator />`
 
 Source: `src/lib/components/ui/timeline/timeline-separator.svelte`
 
@@ -3890,7 +3890,7 @@ Source: `src/lib/components/ui/timeline/timeline-separator.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<timeline-title />`
+### `&lt;timeline-title />`
 
 Source: `src/lib/components/ui/timeline/timeline-title.svelte`
 
@@ -3904,7 +3904,7 @@ Source: `src/lib/components/ui/timeline/timeline-title.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<toggle />`
+### `&lt;toggle />`
 
 Source: `src/lib/components/ui/toggle/toggle.svelte`
 
@@ -3916,7 +3916,7 @@ Source: `src/lib/components/ui/toggle/toggle.svelte`
 | size | ToggleSize | default | no | no |  |
 | variant | ToggleVariant | default | no | no |  |
 
-### `<tooltip-content />`
+### `&lt;tooltip-content />`
 
 Source: `src/lib/components/ui/tooltip/tooltip-content.svelte`
 
@@ -3926,11 +3926,11 @@ Source: `src/lib/components/ui/tooltip/tooltip-content.svelte`
 | class | unknown | — | no | yes |  |
 | sideOffset | number | 4 | no | no |  |
 
-### `<tooltip-portal />`
+### `&lt;tooltip-portal />`
 
 Source: `src/lib/components/ui/tooltip/tooltip-portal.svelte`
 
-### `<translated-field-errors />`
+### `&lt;translated-field-errors />`
 
 Source: `src/lib/components/ui/form/translated-field-errors.svelte`
 
@@ -3946,7 +3946,7 @@ Source: `src/lib/components/ui/form/translated-field-errors.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<wheel-picker />`
+### `&lt;wheel-picker />`
 
 Source: `src/lib/components/ui/wheel-picker/wheel-picker.svelte`
 
@@ -3961,7 +3961,7 @@ Source: `src/lib/components/ui/wheel-picker/wheel-picker.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<wheel-picker-group />`
+### `&lt;wheel-picker-group />`
 
 Source: `src/lib/components/ui/wheel-picker/wheel-picker-group.svelte`
 
@@ -3978,7 +3978,7 @@ Source: `src/lib/components/ui/wheel-picker/wheel-picker-group.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<wheel-picker-item />`
+### `&lt;wheel-picker-item />`
 
 Source: `src/lib/components/ui/wheel-picker/wheel-picker-item.svelte`
 
@@ -3993,7 +3993,7 @@ Source: `src/lib/components/ui/wheel-picker/wheel-picker-item.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-### `<window />`
+### `&lt;window />`
 
 Source: `src/lib/components/ui/window/window.svelte`
 
@@ -4008,4 +4008,4 @@ Source: `src/lib/components/ui/window/window.svelte`
 |------|-------|-------------|
 |  | — |  |
 
-<!-- END -->
+&lt;!-- END -->

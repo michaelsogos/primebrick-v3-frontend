@@ -75,6 +75,9 @@ Follow `.devin/rules/docs-user-guide.md` for editorial conventions:
 - Use `<Mermaid chart={...} />` for diagrams, never ```Code or ```mermaid
 - Minimal edits — preserve existing prose structure
 - Update `<!-- AUTO-GENERATED:reference -->` blocks with extracted component data
+- **MDX escaping**: when writing TS type names in prop tables, escape `<` as
+  `&lt;`, `{` as `&lbrace;`, `}` as `&rbrace;` (MDX parses these as JSX).
+  Use `[text](url)` for links, never `<url>` autolinks.
 
 ### 7. Report
 
