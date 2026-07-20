@@ -23,15 +23,21 @@
 
   interface $$Props {
     entity: string;
+    translationKey?: string;
     rowUuid: string;
     columns?: any[];
   }
 
   let {
     entity,
+    translationKey,
     rowUuid,
     columns = [],
   }: $$Props = $props();
+
+  // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
+  // Falls back to entity (snake_case plural) when not provided — back-compat.
+  const i18nEntity = translationKey ?? entity;
 
   let versionHistoryData = $state<any[]>([]);
   let versionHistoryLoading = $state<boolean>(false);
@@ -201,7 +207,7 @@
       let fieldLabel = $t(`entities.versionHistory.field.${field}`);
       if (fieldLabel === `entities.versionHistory.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
-        fieldLabel = $t(`entities.${entity}.fields.${field}`) || field;
+        fieldLabel = $t(`entities.${i18nEntity}.fields.${field}`) || field;
       }
       // Use display_name for audit fields if available, otherwise use raw value
       const oldValue = change.old_display_name || change.from || change.old;
@@ -214,7 +220,9 @@
 
       // Format value based on column type (date/datetime)
       function formatValue(value: any): string {
-        if (value === null || value === undefined) return String(value);
+        if (value === null || value === undefined) return $t('entities.versionHistory.null');
+        if (Array.isArray(value) && value.length === 0) return $t('entities.versionHistory.emptyList');
+        if (value === '') return $t('entities.versionHistory.null');
         if (column?.type === 'date') {
           return formatUiDate(value, $uiLang);
         }

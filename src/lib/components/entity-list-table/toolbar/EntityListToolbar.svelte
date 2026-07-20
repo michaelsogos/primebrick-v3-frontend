@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
   import { SearchBar, ViewModeToggle, DeletionFilterToggle } from '.';
   import RotateCw from '@lucide/svelte/icons/rotate-cw'
@@ -19,6 +20,7 @@
     onViewModeChange: (mode: ViewName) => void;
     deletionFilterMode: 'non_deleted' | 'deleted' | 'all';
     onDeletionFilterModeChange: (mode: 'non_deleted' | 'deleted' | 'all') => void;
+    hasSoftDelete?: boolean;
     rowsLoading: boolean;
     refreshDisabled: boolean;
     onRefresh: () => void;
@@ -41,6 +43,7 @@
     onViewModeChange,
     deletionFilterMode,
     onDeletionFilterModeChange,
+    hasSoftDelete = true,
     rowsLoading,
     refreshDisabled,
     onRefresh,
@@ -71,18 +74,20 @@
       onViewModeChange={onViewModeChange}
     />
 
-    <DeletionFilterToggle
-      deletionFilterMode={deletionFilterMode}
-      onDeletionFilterModeChange={onDeletionFilterModeChange}
-    />
+    {#if hasSoftDelete}
+      <DeletionFilterToggle
+        deletionFilterMode={deletionFilterMode}
+        onDeletionFilterModeChange={onDeletionFilterModeChange}
+      />
+    {/if}
 
     <Button
       variant="soft"
       size="icon-sm"
       disabled={rowsLoading || refreshDisabled}
       onclick={onRefresh}
-      aria-label="Refresh"
-      title="Refresh"
+      aria-label={$t('entities.list.refresh')}
+      title={$t('entities.list.refresh')}
     >
       <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
     </Button>
@@ -94,7 +99,7 @@
       onclick={onColumnSelectorClick}
     >
       <Columns3 class="size-4" />
-      Columns
+      {$t('entities.list.columns')}
     </Button>
 
     {#if filterableColumns.length > 0}
@@ -105,7 +110,7 @@
         onclick={() => onFiltersOpenChange(!filtersOpen)}
       >
         <SlidersHorizontal class="size-4" />
-        Filters
+        {$t('entities.list.filters')}
       </Button>
     {/if}
 
@@ -117,7 +122,7 @@
         type="button"
         onclick={onCreateAction}
       >
-        New
+        {$t('entities.list.new')}
       </Button>
     {/if}
   </div>

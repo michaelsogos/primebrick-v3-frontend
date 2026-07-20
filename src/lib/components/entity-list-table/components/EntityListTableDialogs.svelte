@@ -8,7 +8,8 @@
     exportComposable,
     selectedKeys,
     total,
-    entity
+    entity,
+    translationKey
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -19,6 +20,7 @@
     selectedKeys: string[];
     total: bigint;
     entity: string;
+    translationKey?: string;
   };
 
   async function confirmDeleteRow() {
@@ -146,7 +148,7 @@
   onOpenChange={(open) => { if (!open) exportComposable.closeExportDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
-  entity={entity}
+  entity={translationKey ?? entity}
   exportScope={exportComposable.state.exportScope}
   onExportScopeChange={(scope) => exportComposable.setExportScope(scope)}
   fileType={exportComposable.state.fileType}
@@ -161,7 +163,7 @@
   onOpenChange={(open: boolean) => { if (!open) exportComposable.closeHtmlExportConfirmDialog(); }}
   selectedCount={selectedKeys.length}
   totalCount={total}
-  entity={entity}
+  entity={translationKey ?? entity}
   isExporting={exportComposable.state.isHtmlExporting}
   onConfirm={confirmHtmlExport}
   onCancel={cancelHtmlExport}
@@ -172,7 +174,7 @@
   onOpenChange={(open) => { if (!open) dialogs.closeDuplicateDialog(); }}
   duplicateScope={dialogs.state.duplicateScope}
   selectedCount={selectedKeys.length}
-  entity={entity}
+  entity={translationKey ?? entity}
   isDuplicating={rowActionsComposable.state.isDuplicating}
   onConfirm={confirmDuplicate}
   onCancel={cancelDuplicate}

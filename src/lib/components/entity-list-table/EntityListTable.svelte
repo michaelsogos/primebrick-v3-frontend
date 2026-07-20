@@ -39,6 +39,7 @@
   let {
     uid,
     entity = 'customer',
+    translationKey,
     columns,
     stickyColumns,
     dataColumns,
@@ -109,6 +110,10 @@
     setAuditColumnsContext(auditingColumns);
   });
 
+  // Translation key for dynamic i18n keys (dialogs, version history).
+  // Falls back to `entity` when not explicitly provided.
+  const effectiveTranslationKey = $derived(translationKey ?? entity ?? 'customer');
+
   // Utility functions moved to utils.ts
   const rowKey = (row: TRow): string => getRowKey(row, uid);
 
@@ -166,6 +171,9 @@
   const auditingColumnsGroup = $derived(
     columnOrder.applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
   );
+  const hasSoftDelete = $derived(
+    auditingColumnsGroup.some((c) => c.key === 'deleted_at' || c.key === 'deleted_by')
+  );
   const nonAuditingColumns = $derived(
     columnOrder.applyKeyOrder(
       dataColumns ??
@@ -194,6 +202,15 @@
     () => onDeletionFilterModeChange
   );
   const deletionFilterMode = $derived(deletionFilterComposable.state.deletionFilterMode);
+
+  // When the entity has no soft-delete columns, force the deletion filter to
+  // 'non_deleted' so the BE never receives a deleted_records param and the
+  // toggle button group is hidden (see EntityListToolbar).
+  $effect(() => {
+    if (!hasSoftDelete && deletionFilterMode !== 'non_deleted') {
+      deletionFilterComposable.setDeletionFilterMode('non_deleted');
+    }
+  });
 
   // Sheet panel management composable
   const sheetPanels = useSheetPanels({
@@ -419,6 +436,7 @@
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
+    translationKey: () => effectiveTranslationKey,
     uid: () => uid,
     columns: () => columns,
     onEditAction: () => onEditAction,
@@ -539,6 +557,7 @@
     onViewModeChange={viewModeComposable.setViewMode}
     deletionFilterMode={deletionFilterMode}
     onDeletionFilterModeChange={deletionFilterComposable.setDeletionFilterMode}
+    hasSoftDelete={hasSoftDelete}
     rowsLoading={rowsLoading}
     refreshDisabled={refreshDisabled}
     onRefresh={onRefresh}
@@ -676,6 +695,7 @@
     {selectedKeys}
     {total}
     {entity}
+    translationKey={effectiveTranslationKey}
   />
 
 <style src="./EntityListTable.css"></style>

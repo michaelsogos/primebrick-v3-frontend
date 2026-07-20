@@ -35,15 +35,15 @@
   const permissionsCatalog = usePermissionsCatalog();
   const roleMappings = useRoleMappings();
 
-  const idp_role_param = $derived(page.params.idp_role);
+  const uuid_param = $derived(page.params.uuid);
 
   onMount(async () => {
-    if (!idp_role_param) {
+    if (!uuid_param) {
       notFound = true;
       loading = false;
       return;
     }
-    const loaded = await roleMappings.get(idp_role_param);
+    const loaded = await roleMappings.get(uuid_param);
     if (!loaded) {
       notFound = true;
       loading = false;
@@ -91,13 +91,13 @@
   async function handleSubmit() {
     if (!role) return;
     saving = true;
-    const result = await roleMappings.update(role.idp_role, {
+    const ok = await roleMappings.update(role.uuid, {
       label_key: label_key || undefined,
       is_admin,
       permissions: Array.from(selected_permissions),
     });
     saving = false;
-    if (result) {
+    if (ok) {
       goto('/system/settings/roles');
     }
   }
@@ -105,7 +105,7 @@
   async function handleDelete() {
     if (!role) return;
     deleting = true;
-    const ok = await roleMappings.remove(role.idp_role);
+    const ok = await roleMappings.remove(role.uuid);
     deleting = false;
     if (ok) {
       deleteOpen = false;

@@ -6,6 +6,7 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
+  translationKey?: () => string;
   uid: () => string;
   columns: () => MetaColumn[];
   onEditAction?: () => ((row: TRow) => void) | undefined;
@@ -37,6 +38,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
 ) {
   const {
     entity: entityFn,
+    translationKey: translationKeyFn,
     uid: uidFn,
     columns: columnsFn,
     onEditAction: getOnEditAction,
@@ -261,12 +263,14 @@ export function useRowActions<TRow extends Record<string, unknown>>(
 
   async function loadVersionHistory(row: TRow) {
     const entity = entityFn();
+    const translationKey = translationKeyFn?.() ?? entity;
     const uid = uidFn();
     const columns = columnsFn();
     const rowUuid = String((row as Record<string, unknown>)[uid]);
     const { openSheet } = await import('$lib/shell/sheets/sheet-manager.svelte');
     openSheet('entity.versionHistory', {
       entity,
+      translationKey,
       rowUuid,
       columns
     });

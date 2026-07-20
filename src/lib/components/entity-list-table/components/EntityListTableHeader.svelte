@@ -17,6 +17,7 @@
     onViewModeChange,
     deletionFilterMode,
     onDeletionFilterModeChange,
+    hasSoftDelete = true,
     rowsLoading,
     refreshDisabled,
     onRefresh,
@@ -61,6 +62,7 @@
     onViewModeChange: (mode: 'table' | 'cards' | 'cards_list') => void;
     deletionFilterMode: 'non_deleted' | 'deleted' | 'all';
     onDeletionFilterModeChange: (mode: 'non_deleted' | 'deleted' | 'all') => void;
+    hasSoftDelete?: boolean;
     rowsLoading: boolean;
     refreshDisabled: boolean;
     onRefresh: () => void;
@@ -106,6 +108,7 @@
   onViewModeChange={onViewModeChange}
   deletionFilterMode={deletionFilterMode}
   onDeletionFilterModeChange={onDeletionFilterModeChange}
+  hasSoftDelete={hasSoftDelete}
   rowsLoading={rowsLoading}
   refreshDisabled={refreshDisabled}
   onRefresh={onRefresh}

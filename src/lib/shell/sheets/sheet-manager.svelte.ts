@@ -33,6 +33,7 @@ export type SheetPanelPropsMap = {
   };
   'entity.versionHistory': {
     entity: string;
+    translationKey?: string;
     rowUuid: string;
     columns?: any[];
   };

@@ -63,7 +63,12 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 
 1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
 2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: always add translations immediately when adding labels).
-3. **`docs/ai/`** — skills selection and suggested workflows.
+3. **`.devin/rules/translation-key-convention.md`** — ⚠️ CRITICAL: translation keys MUST be snake_case singular (e.g. `entities.user_profile.fields.*`, NOT `userProfile` or `user_profiles`).
+4. **`docs/ai/`** — skills selection and suggested workflows.
+
+## List pages
+
+Any settings or module page that lists entity rows MUST use `EntityListTable` from `$lib/components/entity-list-table`. See `.devin/rules/entity-list-pages.md` for the full rule and the canonical pattern (mirror `users/+page.svelte`).
 
 ## GitFlow rules
 

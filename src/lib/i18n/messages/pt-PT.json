@@ -270,10 +270,58 @@
         "profile": "Perfil",
         "organizations": "Organizações",
         "users": "Utilizadores",
+        "roles": "Funções",
         "security": "Segurança",
         "modules": "Módulos",
         "templates": "Modelos",
         "emailProviders": "Fornecedores de email"
+      },
+      "roles": {
+        "title": "Funções",
+        "subtitle": "Gerir as mapeamentos função-permissão. Cada função mapeia uma função IDP a um conjunto de permissões Primebrick.",
+        "create": "Nova Função",
+        "createTitle": "Criar Função",
+        "createSubtitle": "Defina um novo mapeamento de função com função IDP e permissões.",
+        "editTitle": "Editar Função",
+        "editSubtitle": "Atualize as permissões da função e a etiqueta de exibição.",
+        "searchPlaceholder": "Pesquisar funções...",
+        "empty": "Nenhuma função encontrada.",
+        "notFound": "Função não encontrada.",
+        "admin": "Administrador",
+        "edit": "Editar",
+        "delete": "Excluir",
+        "lastSynced": "Última sync.",
+        "deleteConfirmTitle": "Excluir Função",
+        "deleteConfirmBody": "Tem a certeza de que pretende excluir a função \"{role}\"? Esta ação não pode ser desfeita.",
+        "colIdpRole": "Função IDP",
+        "colIdpOrg": "Organização",
+        "colLabel": "Etiqueta",
+        "colAdmin": "Administrador",
+        "colPermissions": "Permissões",
+        "colLastSynced": "Última sync.",
+        "colActions": "Ações",
+        "fieldIdpRole": "Função IDP",
+        "fieldIdpRoleHint": "O nome exato da função conforme emitido pelo IDP no JWT (sensível a maiúsculas).",
+        "fieldIdpRoleImmutable": "O nome da função IDP é imutável após a criação.",
+        "fieldIdpOrg": "Organização IDP",
+        "fieldIdpOrgHint": "A organização/proprietário Casdoor à qual a função pertence.",
+        "fieldIdpOrgPlaceholder": "Selecionar organização",
+        "fieldIdpOrgImmutable": "A organização IDP é imutável após a criação.",
+        "fieldLabelKey": "Chave da etiqueta de exibição",
+        "fieldLabelKeyHint": "Chave de tradução para o nome de exibição da função (ex. shell.settings.roles.label.admin).",
+        "fieldIsAdmin": "Super Administrador",
+        "fieldIsAdminHint": "Quando ativado, esta função concede TODAS as permissões (superutilizador).",
+        "tabDetails": "Detalhes",
+        "tabPermissions": "Permissões",
+        "modeShowAll": "Mostrar tudo",
+        "modeHide": "Ocultar",
+        "permissionsLoading": "A carregar permissões...",
+        "permissionsEmpty": "Nenhuma permissão selecionada.",
+        "validation": {
+          "idpRoleRequired": "A função IDP é obrigatória.",
+          "idpRoleFormat": "A função IDP deve conter apenas letras minúsculas, dígitos e underscores.",
+          "idpOrgRequired": "A organização IDP é obrigatória."
+        }
       },
       "profile": {
         "title": "Perfil",
@@ -621,12 +669,13 @@
       "changedFrom": "alterado de",
       "to": "para",
       "null": "vazio",
+      "emptyList": "lista vazia",
       "recordCreated": "Registo criado",
       "recordHardDeleted": "Registo eliminado definitivamente",
       "recordSoftDeleted": "Registo eliminado",
       "recordRestored": "Registo restaurado"
     },
-    "userProfile": {
+    "user_profile": {
       "title": "Utilizadores",
       "singular": "Utilizador",
       "plural": "Utilizadores",
@@ -665,9 +714,23 @@
         "email_verified_title": "Verificação do email"
       }
     },
-    "user_profiles": {
+    "role_mapping": {
+      "title": "Mapeamentos de Funções",
+      "singular": "Mapeamento de Função",
+      "plural": "Mapeamentos de Funções",
       "fields": {
-        "avatar_color": "Cor do avatar"
+        "uuid": "UUID",
+        "idp_role": "Função IDP",
+        "idp_org": "Organização",
+        "label_key": "Chave de Etiqueta",
+        "is_admin": "Administrador",
+        "permissions": "Permissões",
+        "last_synced_at": "Última Sync.",
+        "created_at": "Data de Criação",
+        "created_by": "Criado por",
+        "updated_at": "Data de Atualização",
+        "updated_by": "Atualizado por",
+        "version": "Versão"
       }
     },
     "list": {
@@ -675,7 +738,8 @@
         "hintBrowser": "Mostrado no fuso do navegador. Clique para usar a IANA guardada na linha.",
         "hintRecord": "Mostrado no fuso IANA guardado. Clique para usar o fuso do navegador."
       },
-      "searchPlaceholder": "Pesquisar clientes…",
+      "searchPlaceholder": "Pesquisar…",
+      "new": "Novo",
       "empty": "Sem resultados",
       "noRecords": "Sem registos",
       "selectedSingular": "selecionado",

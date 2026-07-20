@@ -1,11 +1,13 @@
-export type AppBreadcrumbPlainSegment = { label: string; href?: string };
+export type AppBreadcrumbPlainSegment = { label: string; href?: string; icon?: string };
 
 export type AppBreadcrumbMenuSegment = {
   kind: 'menu';
   label: string;
+  /** Optional icon name (lucide) rendered before the label. */
+  icon?: string;
   /** aria-label for the trigger (opens sibling section links). */
   menuAriaLabel?: string;
-  items: { label: string; href: string; current?: boolean }[];
+  items: { label: string; href: string; current?: boolean; icon?: string }[];
 };
 
 export type AppBreadcrumbSegment = AppBreadcrumbPlainSegment | AppBreadcrumbMenuSegment;

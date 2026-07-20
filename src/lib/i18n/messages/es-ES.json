@@ -270,10 +270,58 @@
         "profile": "Perfil",
         "organizations": "Organizaciones",
         "users": "Usuarios",
+        "roles": "Roles",
         "security": "Seguridad",
         "modules": "Módulos",
         "templates": "Plantillas",
         "emailProviders": "Proveedores de correo"
+      },
+      "roles": {
+        "title": "Roles",
+        "subtitle": "Gestiona las asignaciones de rol a permiso. Cada rol asigna un rol IDP a un conjunto de permisos de Primebrick.",
+        "create": "Nuevo Rol",
+        "createTitle": "Crear Rol",
+        "createSubtitle": "Define una nueva asignación de rol con rol IDP y permisos.",
+        "editTitle": "Editar Rol",
+        "editSubtitle": "Actualiza los permisos del rol y la etiqueta de visualización.",
+        "searchPlaceholder": "Buscar roles...",
+        "empty": "No se encontraron roles.",
+        "notFound": "Rol no encontrado.",
+        "admin": "Administrador",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "lastSynced": "Última sinc.",
+        "deleteConfirmTitle": "Eliminar Rol",
+        "deleteConfirmBody": "¿Estás seguro de que quieres eliminar el rol \"{role}\"? Esta acción no se puede deshacer.",
+        "colIdpRole": "Rol IDP",
+        "colIdpOrg": "Organización",
+        "colLabel": "Etiqueta",
+        "colAdmin": "Administrador",
+        "colPermissions": "Permisos",
+        "colLastSynced": "Última sinc.",
+        "colActions": "Acciones",
+        "fieldIdpRole": "Rol IDP",
+        "fieldIdpRoleHint": "El nombre exacto del rol tal como lo emite el IDP en el JWT (sensible a mayúsculas).",
+        "fieldIdpRoleImmutable": "El nombre del rol IDP es inmutable después de la creación.",
+        "fieldIdpOrg": "Organización IDP",
+        "fieldIdpOrgHint": "La organización/propietario Casdoor al que pertenece el rol.",
+        "fieldIdpOrgPlaceholder": "Seleccionar organización",
+        "fieldIdpOrgImmutable": "La organización IDP es inmutable después de la creación.",
+        "fieldLabelKey": "Clave de etiqueta de visualización",
+        "fieldLabelKeyHint": "Clave de traducción para el nombre de visualización del rol (ej. shell.settings.roles.label.admin).",
+        "fieldIsAdmin": "Super Administrador",
+        "fieldIsAdminHint": "Cuando está activado, este rol concede TODOS los permisos (superusuario).",
+        "tabDetails": "Detalles",
+        "tabPermissions": "Permisos",
+        "modeShowAll": "Mostrar todo",
+        "modeHide": "Ocultar",
+        "permissionsLoading": "Cargando permisos...",
+        "permissionsEmpty": "No hay permisos seleccionados.",
+        "validation": {
+          "idpRoleRequired": "El rol IDP es obligatorio.",
+          "idpRoleFormat": "El rol IDP debe contener solo letras minúsculas, dígitos y guiones bajos.",
+          "idpOrgRequired": "La organización IDP es obligatoria."
+        }
       },
       "profile": {
         "title": "Perfil",
@@ -621,12 +669,13 @@
       "changedFrom": "cambiado de",
       "to": "a",
       "null": "vacío",
+      "emptyList": "lista vacía",
       "recordCreated": "Registro creado",
       "recordHardDeleted": "Registro eliminado definitivamente",
       "recordSoftDeleted": "Registro eliminado",
       "recordRestored": "Registro restaurado"
     },
-    "userProfile": {
+    "user_profile": {
       "title": "Usuarios",
       "singular": "Usuario",
       "plural": "Usuarios",
@@ -665,9 +714,23 @@
         "email_verified_title": "Verificación del email"
       }
     },
-    "user_profiles": {
+    "role_mapping": {
+      "title": "Mapeos de Roles",
+      "singular": "Mapeo de Rol",
+      "plural": "Mapeos de Roles",
       "fields": {
-        "avatar_color": "Color de avatar"
+        "uuid": "UUID",
+        "idp_role": "Rol IDP",
+        "idp_org": "Organización",
+        "label_key": "Clave de Etiqueta",
+        "is_admin": "Administrador",
+        "permissions": "Permisos",
+        "last_synced_at": "Última Sinc.",
+        "created_at": "Fecha de Creación",
+        "created_by": "Creado por",
+        "updated_at": "Fecha de Actualización",
+        "updated_by": "Actualizado por",
+        "version": "Versión"
       }
     },
     "list": {
@@ -675,7 +738,8 @@
         "hintBrowser": "Mostrado en la zona horaria del navegador. Clic para usar la IANA guardada.",
         "hintRecord": "Mostrado en la zona IANA guardada. Clic para usar la del navegador."
       },
-      "searchPlaceholder": "Buscar clientes…",
+      "searchPlaceholder": "Buscar…",
+      "new": "Nuevo",
       "empty": "Sin resultados",
       "noRecords": "Sin registros",
       "selectedSingular": "seleccionado",

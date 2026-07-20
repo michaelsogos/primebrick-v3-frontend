@@ -270,10 +270,58 @@
         "profile": "Profil",
         "organizations": "Organisationen",
         "users": "Benutzer",
+        "roles": "Rollen",
         "security": "Sicherheit",
         "modules": "Module",
         "templates": "Vorlagen",
         "emailProviders": "E-Mail-Anbieter"
+      },
+      "roles": {
+        "title": "Rollen",
+        "subtitle": "Verwalten Sie die Rollen-zu-Berechtigungs-Zuordnungen. Jede Rolle ordnet eine IDP-Rolle einem Satz von Primebrick-Berechtigungen zu.",
+        "create": "Neue Rolle",
+        "createTitle": "Rolle erstellen",
+        "createSubtitle": "Definieren Sie eine neue Rollenzuordnung mit IDP-Rolle und Berechtigungen.",
+        "editTitle": "Rolle bearbeiten",
+        "editSubtitle": "Aktualisieren Sie die Rollenberechtigungen und die Beschriftung.",
+        "searchPlaceholder": "Rollen suchen...",
+        "empty": "Keine Rollen gefunden.",
+        "notFound": "Rolle nicht gefunden.",
+        "admin": "Administrator",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "lastSynced": "Letzte Sync.",
+        "deleteConfirmTitle": "Rolle löschen",
+        "deleteConfirmBody": "Sind Sie sicher, dass Sie die Rolle \"{role}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "colIdpRole": "IDP-Rolle",
+        "colIdpOrg": "Organisation",
+        "colLabel": "Beschriftung",
+        "colAdmin": "Administrator",
+        "colPermissions": "Berechtigungen",
+        "colLastSynced": "Letzte Sync.",
+        "colActions": "Aktionen",
+        "fieldIdpRole": "IDP-Rolle",
+        "fieldIdpRoleHint": "Der genaue Rollenname, wie vom IDP im JWT ausgegeben (Groß-/Kleinschreibung beachten).",
+        "fieldIdpRoleImmutable": "Der IDP-Rollenname ist nach der Erstellung unveränderlich.",
+        "fieldIdpOrg": "IDP-Organisation",
+        "fieldIdpOrgHint": "Die Casdoor-Organisation/Eigentümer, zu der die Rolle gehört.",
+        "fieldIdpOrgPlaceholder": "Organisation auswählen",
+        "fieldIdpOrgImmutable": "Die IDP-Organisation ist nach der Erstellung unveränderlich.",
+        "fieldLabelKey": "Beschriftungsschlüssel",
+        "fieldLabelKeyHint": "Übersetzungsschlüssel für den Anzeigenamen der Rolle (z.B. shell.settings.roles.label.admin).",
+        "fieldIsAdmin": "Super Administrator",
+        "fieldIsAdminHint": "Wenn aktiviert, gewährt diese Rolle ALLE Berechtigungen (Superuser).",
+        "tabDetails": "Details",
+        "tabPermissions": "Berechtigungen",
+        "modeShowAll": "Alle anzeigen",
+        "modeHide": "Ausblenden",
+        "permissionsLoading": "Berechtigungen werden geladen...",
+        "permissionsEmpty": "Keine Berechtigungen ausgewählt.",
+        "validation": {
+          "idpRoleRequired": "IDP-Rolle ist erforderlich.",
+          "idpRoleFormat": "IDP-Rolle darf nur Kleinbuchstaben, Ziffern und Unterstriche enthalten.",
+          "idpOrgRequired": "IDP-Organisation ist erforderlich."
+        }
       },
       "profile": {
         "title": "Profil",
@@ -619,12 +667,13 @@
       "changedFrom": "geändert von",
       "to": "zu",
       "null": "leer",
+      "emptyList": "leere Liste",
       "recordCreated": "Datensatz erstellt",
       "recordHardDeleted": "Datensatz hart gelöscht",
       "recordSoftDeleted": "Datensatz gelöscht",
       "recordRestored": "Datensatz wiederhergestellt"
     },
-    "userProfile": {
+    "user_profile": {
       "title": "Benutzer",
       "singular": "Benutzer",
       "plural": "Benutzer",
@@ -663,9 +712,23 @@
         "email_verified_title": "E-Mail-Verifikation"
       }
     },
-    "user_profiles": {
+    "role_mapping": {
+      "title": "Rollen-Zuordnungen",
+      "singular": "Rollen-Zuordnung",
+      "plural": "Rollen-Zuordnungen",
       "fields": {
-        "avatar_color": "Avatarfarbe"
+        "uuid": "UUID",
+        "idp_role": "IDP-Rolle",
+        "idp_org": "Organisation",
+        "label_key": "Beschriftungsschlüssel",
+        "is_admin": "Administrator",
+        "permissions": "Berechtigungen",
+        "last_synced_at": "Letzte Sync.",
+        "created_at": "Erstellt am",
+        "created_by": "Erstellt von",
+        "updated_at": "Aktualisiert am",
+        "updated_by": "Aktualisiert von",
+        "version": "Version"
       }
     },
     "list": {
@@ -673,7 +736,8 @@
         "hintBrowser": "In der Browser-Zeitzone. Klick für gespeicherte IANA der Zeile.",
         "hintRecord": "In der gespeicherten IANA-Zeitzone. Klick für Browser-Zeitzone."
       },
-      "searchPlaceholder": "Kunden suchen…",
+      "searchPlaceholder": "Suchen…",
+      "new": "Neu",
       "empty": "Keine Ergebnisse",
       "noRecords": "Keine Datensätze",
       "selectedSingular": "ausgewählt",

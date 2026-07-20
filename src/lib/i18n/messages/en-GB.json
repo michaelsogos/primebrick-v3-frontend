@@ -270,10 +270,58 @@
         "profile": "Profile",
         "organizations": "Organizations",
         "users": "Users",
+        "roles": "Roles",
         "security": "Security",
         "modules": "Modules",
         "templates": "Templates",
         "emailProviders": "Email Providers"
+      },
+      "roles": {
+        "title": "Roles",
+        "subtitle": "Manage role-to-permission mappings. Each role maps an IDP role to a set of Primebrick permissions.",
+        "create": "New Role",
+        "createTitle": "Create Role",
+        "createSubtitle": "Define a new role mapping with IDP role and permissions.",
+        "editTitle": "Edit Role",
+        "editSubtitle": "Update role permissions and display label.",
+        "searchPlaceholder": "Search roles...",
+        "empty": "No roles found.",
+        "notFound": "Role not found.",
+        "admin": "Admin",
+        "edit": "Edit",
+        "delete": "Delete",
+        "lastSynced": "Last synced",
+        "deleteConfirmTitle": "Delete Role",
+        "deleteConfirmBody": "Are you sure you want to delete the role \"{role}\"? This action cannot be undone.",
+        "colIdpRole": "IDP Role",
+        "colIdpOrg": "Organization",
+        "colLabel": "Label",
+        "colAdmin": "Admin",
+        "colPermissions": "Permissions",
+        "colLastSynced": "Last Synced",
+        "colActions": "Actions",
+        "fieldIdpRole": "IDP Role",
+        "fieldIdpRoleHint": "The exact role name as emitted by the IDP in the JWT (case-sensitive).",
+        "fieldIdpRoleImmutable": "The IDP role name is immutable after creation.",
+        "fieldIdpOrg": "IDP Organization",
+        "fieldIdpOrgHint": "The Casdoor organization/owner the role belongs to.",
+        "fieldIdpOrgPlaceholder": "Select organization",
+        "fieldIdpOrgImmutable": "The IDP organization is immutable after creation.",
+        "fieldLabelKey": "Display Label Key",
+        "fieldLabelKeyHint": "Translation key for the role display name (e.g. shell.settings.roles.label.admin).",
+        "fieldIsAdmin": "Super Admin",
+        "fieldIsAdminHint": "When enabled, this role grants ALL permissions (super-user).",
+        "tabDetails": "Details",
+        "tabPermissions": "Permissions",
+        "modeShowAll": "Show all",
+        "modeHide": "Hide",
+        "permissionsLoading": "Loading permissions...",
+        "permissionsEmpty": "No permissions selected.",
+        "validation": {
+          "idpRoleRequired": "IDP role is required.",
+          "idpRoleFormat": "IDP role must be lowercase letters, digits, and underscores only.",
+          "idpOrgRequired": "IDP organization is required."
+        }
       },
       "profile": {
         "title": "Profile",
@@ -636,12 +684,13 @@
       "changedFrom": "changed from",
       "to": "to",
       "null": "empty",
+      "emptyList": "empty list",
       "recordCreated": "Record created",
       "recordHardDeleted": "Record hard deleted",
       "recordSoftDeleted": "Record deleted",
       "recordRestored": "Record restored"
     },
-    "userProfile": {
+    "user_profile": {
       "title": "Users",
       "singular": "User",
       "plural": "Users",
@@ -680,9 +729,23 @@
         "email_verified_title": "Email verification"
       }
     },
-    "user_profiles": {
+    "role_mapping": {
+      "title": "Role Mappings",
+      "singular": "Role Mapping",
+      "plural": "Role Mappings",
       "fields": {
-        "avatar_color": "Avatar Color"
+        "uuid": "UUID",
+        "idp_role": "IDP Role",
+        "idp_org": "Organization",
+        "label_key": "Label Key",
+        "is_admin": "Admin",
+        "permissions": "Permissions",
+        "last_synced_at": "Last Synced At",
+        "created_at": "Created At",
+        "created_by": "Created By",
+        "updated_at": "Updated At",
+        "updated_by": "Updated By",
+        "version": "Version"
       }
     },
     "list": {
@@ -690,7 +753,8 @@
         "hintBrowser": "Shown in your browser time zone. Click to use the stored IANA from the row.",
         "hintRecord": "Shown in the stored IANA time zone. Click to use your browser time zone."
       },
-      "searchPlaceholder": "Search customers…",
+      "searchPlaceholder": "Search…",
+      "new": "New",
       "empty": "No results",
       "noRecords": "No records",
       "selectedSingular": "selected",

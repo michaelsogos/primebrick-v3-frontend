@@ -42,7 +42,7 @@
         <CircleCheck class="size-4 text-green-600 shrink-0" />
       </Tooltip.Trigger>
       <Tooltip.Content>
-        <p>{$t(`entities.userProfile.fields.${column.key}`)}</p>
+        <p>{$t(`entities.user_profile.fields.${column.key}`)}</p>
       </Tooltip.Content>
     </Tooltip.Root>
   {:else if value === false}
@@ -51,7 +51,7 @@
         <CircleX class="size-4 text-muted-foreground shrink-0" />
       </Tooltip.Trigger>
       <Tooltip.Content>
-        <p>{$t(`entities.userProfile.fields.${column.key}_false`)}</p>
+        <p>{$t(`entities.user_profile.fields.${column.key}_false`)}</p>
       </Tooltip.Content>
     </Tooltip.Root>
   {:else}

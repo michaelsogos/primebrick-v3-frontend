@@ -4,6 +4,47 @@ export type SortDir = 'asc' | 'desc';
 /** View mode for entity list display. */
 export type ViewName = 'table' | 'cards' | 'cards_list';
 
+/**
+ * Branded type that enforces snake_case singular (no uppercase letters).
+ * Used for `translationKey` in entity meta — the i18n key prefix.
+ *
+ * The brand is applied via the `asSnakeCaseSingular()` helper, which
+ * performs a runtime check rejecting strings containing A-Z.
+ * This catches camelCase (`userProfile`), PascalCase (`RoleMapping`),
+ * and UPPER_CASE (`USER_PROFILE`) at both compile time and runtime.
+ *
+ * @example
+ * const tk = asSnakeCaseSingular('user_profile');  // ✅
+ * const tk = asSnakeCaseSingular('userProfile');   // ❌ throws at runtime
+ */
+export type SnakeCaseSingular = string & {
+  readonly __snakeCaseSingularBrand: unique symbol;
+};
+
+/**
+ * Runtime validator for SnakeCaseSingular — rejects strings with uppercase letters.
+ * Use in meta-loading code to catch BE meta that violates the convention.
+ *
+ * @returns true if the value is valid snake_case (no uppercase letters)
+ */
+export function isSnakeCaseSingular(value: string): value is SnakeCaseSingular {
+  return !/[A-Z]/.test(value);
+}
+
+/**
+ * Branded constructor for SnakeCaseSingular.
+ * Throws if the value contains uppercase letters (camelCase/PascalCase/UPPER_CASE).
+ */
+export function asSnakeCaseSingular(value: string): SnakeCaseSingular {
+  if (/[A-Z]/.test(value)) {
+    throw new Error(
+      `Invalid translationKey "${value}" — must be snake_case singular (no uppercase letters). ` +
+      `Use snake_case singular like "user_profile" instead of "userProfile".`
+    );
+  }
+  return value as SnakeCaseSingular;
+}
+
 /** Visibility configuration for a specific view. */
 export type ViewVisibilityConfig = {
   visible?: string[];
@@ -84,6 +125,25 @@ export type EntityListListMeta = {
   };
   /** Whether the create action is enabled for this entity */
   enableCreateAction?: boolean;
+};
+
+/**
+ * Top-level entity meta shape returned by `GET /api/v1/entities/{entity}/meta`.
+ * Enforces the `translationKey` convention (snake_case singular, no uppercase).
+ */
+export type EntityListMeta = {
+  /** Entity name in snake_case plural — used for API URLs (e.g. `role_mappings`). */
+  entity: string;
+  /**
+   * Translation key prefix in snake_case singular (e.g. `role_mapping`).
+   * Used to build dynamic i18n keys like `entities.${translationKey}.plural`.
+   * MUST NOT contain uppercase letters.
+   */
+  translationKey?: SnakeCaseSingular;
+  titleKey?: string;
+  updatePageTitle?: string;
+  uid: string;
+  list: EntityListListMeta;
 };
 
 /** All columns in the order they should be displayed (sticky -> data -> auditing). */

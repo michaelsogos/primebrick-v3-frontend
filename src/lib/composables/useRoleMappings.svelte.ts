@@ -1,14 +1,17 @@
 /**
- * useRoleMappings — composable that provides CRUD operations for role mappings
- * via the `/api/v1/system/role-mappings` endpoints.
+ * useRoleMappings — composable that provides CRUD operations for role mappings.
+ *
+ * The list page uses the entity-pattern endpoints (`/api/v1/entities/role_mappings/...`)
+ * directly via EntityListTable. This composable is used by the create/edit pages
+ * for single-record CRUD.
  *
  * Exposes:
  *   - state: { roles, loading, error } (DeepReadonly)
- *   - list(): refresh the roles list
- *   - get(idp_role): fetch a single role
- *   - create(input): create a new role
- *   - update(idp_role, input): update a role
- *   - remove(idp_role): delete a role
+ *   - list(): refresh the roles list (legacy system endpoint)
+ *   - get(uuid): fetch a single role by uuid (entity endpoint)
+ *   - create(input): create a new role (entity endpoint)
+ *   - update(uuid, input): update a role by uuid (entity endpoint)
+ *   - remove(uuid): delete a role by uuid (entity endpoint)
  *
  * All field names are snake_case (matching the BE JSON shape).
  *
@@ -20,6 +23,7 @@ import { pushNotification } from "$lib/errors/app-errors";
 
 export interface RoleMapping {
   id: string;
+  uuid: string;
   idp_role: string;
   idp_org?: string;
   label_key?: string;
@@ -75,9 +79,9 @@ export function useRoleMappings() {
     }
   }
 
-  async function get(idp_role: string): Promise<RoleMapping | null> {
+  async function get(uuid: string): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch(`/api/v1/system/role-mappings/${encodeURIComponent(idp_role)}`);
+      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`);
       if (res.ok) {
         return (await res.json()) as RoleMapping;
       }
@@ -93,16 +97,16 @@ export function useRoleMappings() {
 
   async function create(input: CreateRoleInput): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch("/api/v1/system/role-mappings", {
+      const res = await apiFetch("/api/v1/entities/role_mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
       if (res.ok) {
-        const created = (await res.json()) as RoleMapping;
+        const data = (await res.json()) as { success: boolean; role: RoleMapping };
         await list();
         pushNotification({ impact: "NONE", message: "Role created", scope: "roles" });
-        return created;
+        return data.role;
       }
       const body = await res.json().catch(() => null);
       pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
@@ -114,32 +118,31 @@ export function useRoleMappings() {
     }
   }
 
-  async function update(idp_role: string, input: UpdateRoleInput): Promise<RoleMapping | null> {
+  async function update(uuid: string, input: UpdateRoleInput): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/system/role-mappings/${encodeURIComponent(idp_role)}`, {
+      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
       if (res.ok) {
-        const updated = (await res.json()) as RoleMapping;
         await list();
         pushNotification({ impact: "NONE", message: "Role updated", scope: "roles" });
-        return updated;
+        return true;
       }
       const body = await res.json().catch(() => null);
       pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
-      return null;
+      return false;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to update role";
       pushNotification({ impact: "HIGH", message: msg, scope: "roles" });
-      return null;
+      return false;
     }
   }
 
-  async function remove(idp_role: string): Promise<boolean> {
+  async function remove(uuid: string): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/system/role-mappings/${encodeURIComponent(idp_role)}`, {
+      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
         method: "DELETE",
       });
       if (res.ok) {
