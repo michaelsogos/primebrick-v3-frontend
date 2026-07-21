@@ -191,14 +191,20 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
   // ─── Step 8: passkey enrollment ────────────────────────────────────────────
 
   test("Step 8: enroll passkey via profile settings", async () => {
-    // The PasskeyPromptDialog may auto-open after login (if the user has no
-    // passkey and webauthn is enabled). If it appears, use it. Otherwise,
-    // navigate to the profile page where PasskeyEnrollment is mounted.
-    const promptButton = userPage.getByTestId("passkey-prompt-enroll-button");
+    // The AuthMethodsPromptDialog may auto-open after login (if the user has no
+    // passkey and webauthn is enabled). If it appears, select the passkey method
+    // and use it. Otherwise, navigate to the profile page where PasskeyEnrollment
+    // is mounted.
+    const promptPasskeyButton = userPage.getByTestId("auth-method-enforcer-enroll-passkey-button");
 
     let usedPrompt = false;
-    if (await promptButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await promptButton.click();
+    if (await promptPasskeyButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // If the method selector is visible, pick "passkey" first.
+      const passkeyChoicebox = userPage.getByRole("radio", { name: /passkey/i });
+      if (await passkeyChoicebox.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await passkeyChoicebox.click();
+      }
+      await promptPasskeyButton.click();
       usedPrompt = true;
     }
 

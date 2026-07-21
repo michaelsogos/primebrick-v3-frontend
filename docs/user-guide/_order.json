@@ -46,7 +46,7 @@
     "components/login-form",
     "components/passkey-button",
     "components/passkey-enrollment",
-    "components/passkey-prompt-dialog",
+    "components/auth-methods-prompt-dialog",
     "components/session-expired-dialog",
     "components/input",
     "components/tooltip",

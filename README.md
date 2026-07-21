@@ -19,7 +19,7 @@
 
 # Primebrick frontend
 
-SvelteKit (Svelte 5 + TypeScript) frontend for **Primebrick**.
+SvelteKit™ (Svelte™ 5 + TypeScript®) frontend for **Primebrick**.
 
 ## Commands
 
@@ -40,7 +40,7 @@ From the **repository root**, run `pnpm install` once (workspace). Then from `fr
 
 ## UI system
 
-This frontend uses **TailwindCSS + Shadcn-Svelte**.
+This frontend uses **TailwindCSS™ + Shadcn-Svelte™**.
 
 - Global styles/theme: `src/app.css`
 - Tailwind config: `tailwind.config.js`
@@ -49,4 +49,4 @@ This frontend uses **TailwindCSS + Shadcn-Svelte**.
 ## Development notes
 
 - The dev server proxies `/api` to the backend (see `vite.config.ts`).
-- If you’re an AI agent working in the frontend, follow `frontend/AGENTS.md` for conventions and the shadcn update/customization workflow.
+- If you’re an AI agent working in the frontend, follow `frontend/AGENTS.md` for conventions and the shadcn-svelte™ update/customization workflow.

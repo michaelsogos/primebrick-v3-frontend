@@ -114,7 +114,7 @@
         <div class="flex items-center gap-2">
           {#if backendState.health?.idp?.ok}
             <Badge variant="outline" class="border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-medium">
-              {backendState.health.idp.type || 'Casdoor'}
+              {backendState.health.idp.type || 'Casdoor™'}
             </Badge>
             <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
               {backendState.health.idp.version || 'unknown'}

@@ -81,6 +81,17 @@
     },
     "alert": {
       "description": "Abbiamo rilevato attività non autorizzata sul tuo account. Il tuo amministratore è stato avvisato. Accedi e cambia la password se non l'hai già fatto."
+    },
+    "mfa": {
+      "description": "Inserisci il codice a 6 cifre dalla tua app di autenticazione",
+      "code": "Codice di autenticazione",
+      "codeRequired": "Inserisci il codice a 6 cifre",
+      "invalidCode": "Codice di autenticazione non valido",
+      "connectionError": "Errore di connessione o verifica fallita",
+      "verify": "Verifica",
+      "verifying": "Verifica in corso...",
+      "back": "Torna al login",
+      "factorLabel": "Dispositivo"
     }
   },
   "auth": {
@@ -92,7 +103,7 @@
     },
     "passkeys": {
       "title": "Passkeys",
-      "description": "Aggiungi una passkey per accedere senza password usando Face ID, Touch ID o una chiave di sicurezza.",
+      "description": "Aggiungi una passkey per accedere senza password usando Face ID\u2122, Touch ID\u2122 o una chiave di sicurezza.",
       "add": "Aggiungi passkey",
       "remove": "Rimuovi",
       "empty": "Nessuna passkey registrata",
@@ -101,15 +112,64 @@
       "alreadyEnrolled": "Hai gia una passkey su questo dispositivo",
       "deleteError": "Impossibile rimuovere la passkey"
     },
-    "passkeyPrompt": {
-      "title": "Proteggi il tuo account con una passkey",
-      "description": "Le passkey sono un modo più veloce e sicuro per accedere. Invece di digitare la password, usa Face ID™, Touch ID™, Windows Hello™ o una chiave di sicurezza. Ci vogliono solo pochi secondi.",
-      "benefitSecurity": "Più sicure delle password — resistenti al phishing e al credential stuffing",
-      "benefitConvenience": "Accedi istantaneamente con biometria o una chiave di sicurezza — nessuna password da ricordare",
-      "enrollButton": "Configura passkey",
+    "mfa": {
+      "title": "Autenticazione a due fattori (2FA)",
+      "description": "Aggiungi un'app OTP come secondo livello di sicurezza per proteggere il tuo account, anche se la password viene compromessa.",
+      "empty": "Nessun fattore 2FA registrato. Aggiungine uno per proteggere l'account.",
+      "enrollButton": "Aggiungi fattore 2FA",
+      "enrollAnother": "Aggiungi un altro fattore",
+      "defaultLabel": "App OTP",
+      "factorType": "Tipo",
+      "preferred": "Preferito",
+      "lastUsed": "Ultimo utilizzo",
+      "delete": "Elimina",
+      "deleteSuccess": "Fattore 2FA rimosso",
+      "deleteError": "Impossibile rimuovere il fattore 2FA",
+      "enrollmentSuccess": "Fattore 2FA aggiunto",
+      "enrollmentError": "Impossibile avviare la registrazione 2FA",
+      "codeRequired": "Inserisci il codice a 6 cifre",
+      "invalidCode": "Codice di autenticazione non valido",
+      "connectionError": "Errore di connessione o verifica fallita",
+      "enrollDialogTitle": "Configura app OTP",
+      "enrollStepQr": "Scansiona questo codice QR\u00ae con la tua app OTP (Google Authenticator\u2122, Authy\u2122, 1Password\u2122, ecc.)",
+      "enrollStepVerify": "Inserisci il codice a 6 cifre mostrato nella tua app OTP",
+      "manualEntry": "Oppure inserisci questo codice manualmente",
+      "recoveryCodes": "Codici di backup \u2014 salvali in un posto sicuro, ti serviranno se perdi il telefono",
+      "recoveryCodesWarning": "Conservali in un luogo sicuro. Non verranno mostrati di nuovo.",
+      "continue": "Continua",
+      "label": "Etichetta (opzionale)",
+      "labelPlaceholder": "es. Google Authenticator\u2122",
+      "verifyCode": "Codice a 6 cifre",
+      "verifyAndEnable": "Verifica e attiva",
+      "deleteDialogTitle": "Rimuovere il fattore 2FA?",
+      "deleteDialogDescription": "Non ti verrà più chiesto questo codice al login. Assicurati di avere un'altra app OTP o una passkey per mantenere l'account sicuro."
+    },
+    "mfaStepUp": {
+      "stepUpTitle": "Verifica la tua identità",
+      "stepUpDescription": "Questa azione richiede verifica aggiuntiva. Inserisci il codice a 6 cifre dalla tua app OTP per continuare.",
+      "stepUpAction": "Azione",
+      "selectFactor": "Seleziona app OTP",
+      "verifyAndAuthorize": "Verifica e continua",
+      "stepUpAuthorized": "Verifica riuscita",
+      "stepUpInitiateError": "Impossibile avviare la verifica. Riprova."
+    },
+    "authMethodEnforcer": {
+      "title": "Proteggi il tuo account",
+      "description": "Scegli un metodo di accesso più sicuro per proteggere il tuo account. La configurazione richiede solo pochi secondi.",
+      "benefitSecurity": "Più sicuro della sola password \u2014 blocca i tentativi di furto dell'account e le truffe online (phishing)",
+      "benefitConveniencePasskey": "Accedi istantaneamente con Face ID\u2122, Touch ID\u2122, Windows Hello\u2122 o una chiave di sicurezza \u2014 nessuna password da ricordare",
+      "benefitConvenienceMfa": "Funziona con qualsiasi app OTP \u2014 Google Authenticator\u2122, Authy\u2122, 1Password\u2122, Microsoft Authenticator\u2122",
+      "warningMfa": "Attiva la 2FA per proteggere il tuo account da accessi non autorizzati.",
+      "methodPasskey": "Passkey",
+      "methodPasskeyDesc": "Accedi con Face ID\u2122, Touch ID\u2122, Windows Hello\u2122 o una chiave di sicurezza",
+      "methodMfa": "App di autenticazione (2FA)",
+      "methodMfaDesc": "Usa un'app OTP come Google Authenticator\u2122 o Microsoft Authenticator\u2122",
+      "enrollPasskeyButton": "Configura passkey",
+      "enrollMfaButton": "Configura 2FA",
       "dismissButton": "Non ora",
-      "dontAskAgain": "Non mostrare più questa finestra",
-      "enrolling": "In attesa dell'autenticatore..."
+      "dontAskAgain": "Non mostrarlo più",
+      "enrolling": "In attesa del dispositivo...",
+      "backToMethods": "Torna ai metodi"
     }
   },
   "common": {

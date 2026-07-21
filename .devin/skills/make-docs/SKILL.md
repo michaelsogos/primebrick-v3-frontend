@@ -25,7 +25,7 @@ diff base:
 ### 2. Run extraction (refresh component docs data)
 
 Run `pnpm extract-docs` to regenerate `docs/user-guide/_extracted/components.json`
-from the current Svelte components via sveld. This ensures the extraction JSON
+from the current Svelte™ components via sveld. This ensures the extraction JSON
 reflects the latest prop types, snippets, and bindable flags.
 
 If the command fails, report the error and stop — do not proceed with stale data.
@@ -43,7 +43,7 @@ changes detected. Docs are current." and stop.
 ### 4. Determine if user-facing files changed
 
 For this repo (frontend), user-facing changes include:
-- Svelte components (src/lib/components/**.svelte)
+- Svelte™ components (src/lib/components/**.svelte)
 - Layouts (src/routes/**/+layout.svelte)
 - Pages (src/routes/**/+page.svelte)
 - Component prop changes ($props() signature changes)

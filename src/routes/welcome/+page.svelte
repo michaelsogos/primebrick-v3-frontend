@@ -248,7 +248,7 @@
   }
 
   // ─── Passkey step is informational only ─────────────────────────────────────
-  // The actual enrollment happens after login via the PasskeyPromptDialog,
+  // The actual enrollment happens after login via the AuthMethodsPromptDialog,
   // because the WebAuthn signup endpoints require an authenticated session.
 </script>
 

@@ -29,7 +29,8 @@ export interface UserProfile {
   version?: number;
   last_synced_at?: string;
   has_passkey?: boolean;
-  passkey_prompt_dismissed?: boolean;
+  auth_method_enforcer_dismissed?: boolean;
+  has_mfa?: boolean;
 }
 
 function loadFromStorage(): UserProfile | null {

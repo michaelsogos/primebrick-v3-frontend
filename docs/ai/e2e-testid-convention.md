@@ -1,6 +1,6 @@
 # E2E `data-testid` Convention (brittle-on-purpose)
 
-> **Audience:** AI agents and humans writing E2E tests or Svelte components in
+> **Audience:** AI agents and humans writing E2E tests or Svelte™ components in
 > this repo. This doc is the reference; the enforcing rule lives in
 > `.devin/rules/e2e-testid-convention.md`.
 
@@ -10,7 +10,7 @@ E2E tests need to locate DOM elements reliably. Three locator strategies exist:
 
 | Strategy              | Breaks when...                              | Good break? |
 |-----------------------|---------------------------------------------|-------------|
-| CSS class / selector  | Tailwind/CSS refactor, class rename         | **No** — cosmetic, not behavioral |
+| CSS class / selector  | Tailwind™/CSS refactor, class rename         | **No** — cosmetic, not behavioral |
 | i18n label / text     | Translation change, locale switch, copy edit| **No** — cosmetic, not behavioral |
 | `data-testid`         | Element removed or its purpose changes      | **Yes** — structural/behavioral refactor |
 
@@ -22,7 +22,7 @@ and the test (and possibly the feature contract) needs review.
 
 Format: `<component-scope>-<element-purpose>` in `kebab-case`.
 
-- **`<component-scope>`** — the Svelte component or route that owns the element.
+- **`<component-scope>`** — the Svelte™ component or route that owns the element.
   Stable across refactors as long as the component's responsibility stays the
   same. Examples: `login`, `welcome`, `passkey-enrollment`, `passkey-prompt`,
   `admin-user-create`.
@@ -77,7 +77,7 @@ await page.getByTestId('login-submit-button').click();
 
 ## Passing `data-testid` through typed sub-components
 
-When an interactive element is rendered through a typed Svelte sub-component
+When an interactive element is rendered through a typed Svelte™ sub-component
 (e.g. `AsyncValidatedInput`, `TextInput`, `PasswordInput`, `Checkbox`), the
 `data-testid` attribute must be declared in the sub-component's `Props` type,
 destructured in `$props()`, and forwarded to the underlying native element.
@@ -100,7 +100,7 @@ let { /* ... */, "data-testid": dataTestId }: Props = $props();
 />
 ```
 
-This ensures `data-testid` passes TypeScript prop checking.
+This ensures `data-testid` passes TypeScript® prop checking.
 
 ## Testid registry
 
@@ -143,8 +143,9 @@ Devin rule (`.devin/rules/e2e-testid-convention.md`) references this doc.
 | `PasskeyEnrollment.svelte`                       | list item (row)    | `passkey-enrollment-item`              |
 | `PasskeyEnrollment.svelte`                       | delete button (row)| `passkey-enrollment-delete-button`     |
 | `PasskeyEnrollment.svelte`                       | add-passkey button | `passkey-enrollment-add-button`        |
-| `PasskeyPromptDialog.svelte`                     | dismiss button     | `passkey-prompt-dismiss-button`        |
-| `PasskeyPromptDialog.svelte`                     | enroll button      | `passkey-prompt-enroll-button`         |
+| `AuthMethodsPromptDialog.svelte`                 | dismiss button     | `auth-method-enforcer-dismiss-button`  |
+| `AuthMethodsPromptDialog.svelte`                 | enroll passkey btn | `auth-method-enforcer-enroll-passkey-button` |
+| `AuthMethodsPromptDialog.svelte`                 | enroll MFA button  | `auth-method-enforcer-enroll-mfa-button` |
 
 ### Admin user creation
 

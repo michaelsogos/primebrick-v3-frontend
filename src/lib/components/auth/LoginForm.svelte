@@ -15,6 +15,7 @@
   import { t } from '$lib/i18n';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import PasskeyButton from './PasskeyButton.svelte';
+  import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
 
@@ -24,6 +25,18 @@
   // Read $state directly — same pattern as userProfileState in the profile page.
   const enableFormauth = $derived(authConfigState.config?.enable_formauth ?? false);
   const enableWebauthn = $derived(authConfigState.config?.enable_webauthn ?? false);
+
+  // MFA challenge state — when login returns mfa_required, swap the form for
+  // the MFA challenge UI. The user enters a TOTP code; on success, onsuccess
+  // is called (same contract as a normal login).
+  let mfaChallenge = $state<{
+    mfa_challenge_token: string;
+    available_factors: Array<{ factor_id: string; factor_type: string; label: string | null }>;
+  } | null>(null);
+
+  function clearMfaChallenge() {
+    mfaChallenge = null;
+  }
 
   const loginSchema = z.object({
     username: z.string().min(1, 'Username is required'),
@@ -89,6 +102,17 @@
           }
 
           const data = await response.json();
+          if (data.mfa_required) {
+            // MFA challenge required — swap form for MFA challenge UI.
+            // Do NOT set cookies or call onsuccess yet — the user must verify
+            // a TOTP code first via the MfaChallenge component.
+            mfaChallenge = {
+              mfa_challenge_token: data.mfa_challenge_token,
+              available_factors: data.available_factors,
+            };
+            cancel();
+            return;
+          }
           if (data.success && data.user) {
             userProfileStore.set(data.user);
           }
@@ -108,7 +132,14 @@
 
 <form use:enhance>
   <div class="space-y-4">
-    {#if enableFormauth}
+    {#if mfaChallenge}
+      <MfaChallenge
+        mfa_challenge_token={mfaChallenge.mfa_challenge_token}
+        available_factors={mfaChallenge.available_factors}
+        {onsuccess}
+        oncancel={clearMfaChallenge}
+      />
+    {:else if enableFormauth}
     <FormField form={superFormObj} name="username">
       <FormControl>
         {#snippet children({ props })}
@@ -152,7 +183,7 @@
     </Button>
     {/if}
 
-    {#if enableWebauthn && isWebauthnSupported()}
+    {#if !mfaChallenge && enableWebauthn && isWebauthnSupported()}
       {#if enableFormauth}
       <div class="relative my-2">
         <div class="absolute inset-0 flex items-center">
@@ -166,7 +197,7 @@
       <PasskeyButton {onsuccess} {onerror} />
     {/if}
 
-    {#if $message}
+    {#if !mfaChallenge && $message}
       <Alert variant="destructive" class="mt-4">
         <ShieldAlert class="size-4" />
         <AlertDescription>{$message}</AlertDescription>

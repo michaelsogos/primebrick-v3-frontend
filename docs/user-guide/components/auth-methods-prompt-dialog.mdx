@@ -1,0 +1,104 @@
+---
+title: AuthMethodsPromptDialog
+description: Unified post-login dialog that prompts users to enroll a passkey or MFA factor, with a "don't ask again" option.
+---
+
+# AuthMethodsPromptDialog
+
+`src/lib/components/auth/AuthMethodsPromptDialog.svelte`
+
+## Purpose
+
+A unified persistent dialog that prompts users who lack a passkey and/or an
+MFA factor to enroll one right after login. It auto-opens when the
+conditions are met and runs the enrollment ceremony inline via two inner
+components: `PasskeyEnrollmentSection` and `MfaEnrollmentSection`.
+
+Replaces the previous separate `PasskeyPromptDialog` and `MfaPromptDialog`
+components (per the root MFA/2FA plan, Surface B). Use it once, mounted in
+the app shell or a top-level layout.
+
+## Origin
+
+**Custom** — Primebrick-written. Uses the shadcn-svelte™ `Dialog` +
+`Button` + `Checkbox` + `Choicebox`, `@lucide/svelte` icons
+(`Fingerprint`, `KeyRound`, `ShieldCheck`, `Smartphone`, `AlertTriangle`),
+and the WebAuthn codec helpers. Not vendored from any registry.
+
+## Usage
+
+### Mount once
+
+```svelte
+<script>
+  import AuthMethodsPromptDialog from '$lib/components/auth/AuthMethodsPromptDialog.svelte';
+</script>
+
+<AuthMethodsPromptDialog />
+```
+
+The component takes no props. It reads `userProfileStore` and
+`authConfigState` and manages its own `open` state via an `$effect`.
+
+### Required passkey mode
+
+When `passkey_required` is `true` in the auth config:
+- Only the passkey method is shown (no MFA card, no method selector)
+- The "don't ask again" checkbox is hidden
+- The "Not now" dismiss button is hidden
+- The user must enroll a passkey to proceed
+
+### Optional mode (passkey_required=false)
+
+When `passkey_required` is `false`:
+- Both passkey and MFA method cards are shown (if the user lacks them)
+- The user can pick a method from the selector
+- "Not now" dismiss button is visible
+- "Don't show this again" checkbox is visible
+- MFA is never mandatory at the dialog level — real MFA enforcement is
+  per-route step-up (Surface C)
+
+## Behavior
+
+- **Auto-show**: `shouldShow` is `true` when the profile has a `uuid` and:
+  - `passkey_required=true`: user has no passkey
+  - `passkey_required=false`: (user needs passkey OR MFA) AND not dismissed
+  An `$effect` mirrors `shouldShow` into `open`.
+- **Persistent**: `showCloseButton` is `false`, Escape is ignored, and
+  clicking outside triggers a "bump" shake animation instead of closing.
+- **Method selector**: when `passkey_required=false`, a `Choicebox` shows
+  passkey and MFA cards. Selecting one reveals the corresponding
+  enrollment section.
+- **Passkey enrollment inline**: `POST /api/v1/auth/webauthn/signup/begin` →
+  `navigator.credentials.create()` →
+  `POST /api/v1/auth/webauthn/signup/finish`. On success the profile
+  store is updated with `has_passkey: true` and the dialog closes.
+- **MFA enrollment inline** (Option B): `POST /api/v1/auth/mfa/enroll/begin`
+  → QR code displayed → user scans with OTP app →
+  `POST /api/v1/auth/mfa/enroll/finish`. On success the profile store is
+  updated with `has_mfa: true` and the dialog closes.
+- **Already enrolled**: an `InvalidStateError` triggers a best-effort
+  `sync-passkeys` call, updates the store, and closes the dialog.
+- **Dismiss**: when "don't show this again" is checked,
+  `POST /api/v1/auth/me/dismiss-auth-method-enforcer` persists the
+  dismissal and the store is updated with
+  `auth_method_enforcer_dismissed: true`. Without the checkbox, the
+  dismiss is session-only (dialog reappears on next login).
+- **Notifications**: all outcomes go through `pushNotification`.
+
+## Props
+
+Full prop table: see [API reference — authmethodspromptdialog](/docs/user-guide/api-reference#authmethodspromptdialog).
+
+This component takes no props.
+
+## Inner components
+
+- `PasskeyEnrollmentSection` — `src/lib/components/auth/PasskeyEnrollmentSection.svelte`
+- `MfaEnrollmentSection` — `src/lib/components/auth/MfaEnrollmentSection.svelte`
+
+## Next steps
+
+- [Component catalog](/docs/user-guide/components)
+- [UI stack](/docs/user-guide/ui-stack)
+- [API reference](/docs/user-guide/api-reference#authmethodspromptdialog)

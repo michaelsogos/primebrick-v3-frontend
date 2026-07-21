@@ -1,11 +1,11 @@
 ---
 title: UI components
-description: Custom Primebrick components built on top of Shadcn-Svelte — combo-select, dynamic-icon, color-selector, avatar-preview, and form helpers.
+description: Custom Primebrick components built on top of Shadcn-Svelte™ — combo-select, dynamic-icon, color-selector, avatar-preview, and form helpers.
 ---
 
 # UI components
 
-Primebrick uses **Shadcn-Svelte** as the vendored primitive layer in
+Primebrick uses **Shadcn-Svelte™** as the vendored primitive layer in
 `src/lib/components/ui/`. On top of those primitives, several custom
 components are provided for common app-wide patterns. The full prop
 reference for every component is in the
@@ -46,7 +46,7 @@ Key props:
 ## DynamicIcon
 
 `src/lib/components/ui/dynamic-icon/DynamicIcon.svelte` — renders any
-Lucide icon by name at runtime. It uses `import.meta.glob` to pre-register
+Lucide™ icon by name at runtime. It uses `import.meta.glob` to pre-register
 all icon modules under `@lucide/svelte/dist/icons/*.svelte` so Vite can
 statically analyze them, then lazy-loads and caches each icon component on
 first use.
@@ -60,7 +60,7 @@ span keeps layout stable while the icon chunk loads. If the name is not
 found, a warning is logged and nothing renders.
 
 This is used by the modules system to render module-configured icons
-without bundling every Lucide icon.
+without bundling every Lucide™ icon.
 
 ## ColorSelector
 
