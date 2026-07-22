@@ -13,7 +13,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { startServicesPolling, stopServicesPolling } from '$lib/services-store.svelte';
+  import { startServicesStream, stopServicesStream } from '$lib/services-store.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -23,7 +23,7 @@
   onMount(() => {
     void probeHealth();
     void loadShellNav();
-    startServicesPolling();
+    startServicesStream();
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
@@ -45,7 +45,7 @@
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onWindowError);
-      stopServicesPolling();
+      stopServicesStream();
     };
   });
 

@@ -49,6 +49,7 @@ export type ServiceInfo = {
   icon?: string;
   icon_type: IconType;
   is_reserved?: boolean;
+  uuid?: string;
 };
 
 export type ModuleConfigEntry = {
