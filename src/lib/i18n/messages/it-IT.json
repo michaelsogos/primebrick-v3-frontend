@@ -650,6 +650,7 @@
       "dbOffline": "DB offline",
       "idpOffline": "IDP offline",
       "identityProvider": "Identity Provider",
+      "redis": "Redis",
       "versionsTitle": "Versioni",
       "statusTooltip": "STATO: {status} | Versione: {version}",
       "shellVersion": "Web Shell",

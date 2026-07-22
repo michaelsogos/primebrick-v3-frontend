@@ -28,6 +28,7 @@ export type HealthPayload = {
   version: string;
   db: { ok: boolean };
   idp: { ok: boolean; type?: string; version?: string };
+  redis?: { ok: boolean; version?: string };
 };
 
 export type IconType = 'url' | 'svg' | 'base64' | 'icon';
@@ -70,7 +71,13 @@ export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (typeof (db as { ok?: unknown }).ok !== 'boolean') return false;
   const idp = o.idp;
   if (!idp || typeof idp !== 'object') return false;
-  return typeof (idp as { ok?: unknown }).ok === 'boolean';
+  if (typeof (idp as { ok?: unknown }).ok !== 'boolean') return false;
+  // redis is optional — if present, validate shape
+  if (o.redis !== undefined) {
+    if (typeof o.redis !== 'object') return false;
+    if (typeof (o.redis as { ok?: unknown }).ok !== 'boolean') return false;
+  }
+  return true;
 }
 
 /** Proxy/gateway/timeouts: backend likely down or unreachable.

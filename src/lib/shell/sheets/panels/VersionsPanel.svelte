@@ -126,6 +126,24 @@
           {/if}
         </div>
       </div>
+
+      <div class="flex items-center justify-between gap-3 text-sm">
+        <div class="text-muted-foreground">{$t('shell.health.redis')}</div>
+        <div class="flex items-center gap-2">
+          {#if backendState.health?.redis?.ok}
+            <Badge variant="outline" class="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-medium">
+              Online
+            </Badge>
+            <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+              {backendState.health.redis.version || 'unknown'}
+            </Badge>
+          {:else}
+            <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+              Offline
+            </Badge>
+          {/if}
+        </div>
+      </div>
     </div>
 
     <!-- Microservices section -->

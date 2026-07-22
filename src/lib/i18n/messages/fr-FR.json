@@ -635,6 +635,7 @@
       "dbOffline": "DB hors ligne",
       "idpOffline": "IDP hors ligne",
       "identityProvider": "Fournisseur d'identité",
+      "redis": "Redis",
       "versionsTitle": "Versions",
       "statusTooltip": "STATUT : {status} | Version : {version}",
       "shellVersion": "Web Shell",
