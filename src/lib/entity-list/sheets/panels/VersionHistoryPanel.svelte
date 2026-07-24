@@ -37,7 +37,8 @@
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
   // Falls back to entity (snake_case plural) when not provided — back-compat.
-  const i18nEntity = translationKey ?? entity;
+  // $derived: keep reactive link to props (avoids state_referenced_locally).
+  const i18nEntity = $derived(translationKey ?? entity);
 
   let versionHistoryData = $state<any[]>([]);
   let versionHistoryLoading = $state<boolean>(false);

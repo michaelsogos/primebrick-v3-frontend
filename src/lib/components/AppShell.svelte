@@ -49,14 +49,15 @@
     };
   });
 
-  /** Poll while BE is unreachable, or while BE is up but DB or IDP is down (503 health). */
+  /** Poll while BE is unreachable, or while BE is up but any infrastructure component is down (503 health). */
   $effect(() => {
     if (!browser) return;
-    const dbDown =
-      backendState.health !== null && !backendState.health.db.ok;
-    const idpDown =
-      backendState.health !== null && !backendState.health.idp.ok;
-    if (!backendState.offline && !dbDown && !idpDown) return;
+    const checks = backendState.health?.checks;
+    const dbDown = checks !== undefined && !checks.db?.ok;
+    const redisDown = checks !== undefined && !checks.redis?.ok;
+    const natsDown = checks !== undefined && !checks.nats?.ok;
+    const idpDown = checks !== undefined && !checks.idp?.ok;
+    if (!backendState.offline && !dbDown && !redisDown && !natsDown && !idpDown) return;
     const id = setInterval(() => void probeHealth(), 5000);
     return () => clearInterval(id);
   });

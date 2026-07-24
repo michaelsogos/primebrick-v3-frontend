@@ -18,6 +18,10 @@
 					"bg-linear-to-br from-rose-400 to-red-600 text-white shadow-xs hover:from-rose-500 hover:to-red-700 hover:brightness-105 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 focus-visible:border-destructive/40",
 				warning:
 					"bg-linear-to-br from-yellow-300 to-yellow-500 text-yellow-950 shadow-xs hover:from-yellow-400 hover:to-yellow-600 hover:brightness-105",
+				success:
+					"bg-linear-to-br from-emerald-400 to-emerald-600 text-white shadow-xs hover:from-emerald-500 hover:to-emerald-700 hover:brightness-105",
+				info:
+					"bg-linear-to-br from-sky-400 to-blue-600 text-white shadow-xs hover:from-sky-500 hover:to-blue-700 hover:brightness-105",
 				// Soft: structural base only — color/border come from tone compound variants
 				soft: "shadow-xs",
 				// AGGIUNTO: aria-expanded dal suggerito
@@ -35,6 +39,8 @@
 				primary: "",
 				destructive: "",
 				warning: "",
+				success: "",
+				info: "",
 			},
 			size: {
 				// AGGIUNTI: in-data-[slot] e has-data-[icon] dal suggerito per spaziare i gruppi e le icone
@@ -54,6 +60,18 @@
 				variant: "soft",
 				tone: "primary",
 				class: "border-primary-gradient-soft text-foreground hover:brightness-105",
+			},
+			// Soft + success: emerald gradient border + tenue emerald background
+			{
+				variant: "soft",
+				tone: "success",
+				class: "border-success-gradient-soft text-foreground hover:brightness-105",
+			},
+			// Soft + info: sky→blue gradient border + tenue sky/blue background
+			{
+				variant: "soft",
+				tone: "info",
+				class: "border-info-gradient-soft text-foreground hover:brightness-105",
 			},
 		],
 		defaultVariants: {

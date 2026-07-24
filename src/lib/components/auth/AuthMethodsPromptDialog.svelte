@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Choicebox from '$lib/components/ui/choicebox';
@@ -96,107 +97,108 @@
   }
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content
-    class="sm:max-w-md border-primary-gradient-popover {bump ? 'dialog-bump' : ''}"
-    showCloseButton={false}
-    escapeKeydownBehavior="ignore"
-    onInteractOutside={handleInteractOutside}
-  >
-    <Dialog.Header>
-      <Dialog.Title class="flex items-center gap-2">
-        <ShieldCheck class="size-5 text-primary" />
-        {$t('auth.authMethodEnforcer.title')}
-      </Dialog.Title>
-      <Dialog.Description>
-        {$t('auth.authMethodEnforcer.description')}
-      </Dialog.Description>
-    </Dialog.Header>
+<BorderedDialog
+  bind:open
+  severity="primary"
+  tone="soft"
+  showCloseButton={false}
+  escapeKeydownBehavior="ignore"
+  onInteractOutside={handleInteractOutside}
+  class="sm:max-w-md {bump ? 'dialog-bump' : ''}"
+>
+  <Dialog.Header>
+    <Dialog.Title class="flex items-center gap-2">
+      <ShieldCheck class="size-5 text-primary" />
+      {$t('auth.authMethodEnforcer.title')}
+    </Dialog.Title>
+    <Dialog.Description>
+      {$t('auth.authMethodEnforcer.description')}
+    </Dialog.Description>
+  </Dialog.Header>
 
-    <div class="space-y-4 py-2">
-      {#if passkeyRequired}
-        <!-- passkey_required=true: passkey only, no method selector, no dismiss -->
-        <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
-      {:else if selectedMethod === null}
-        <!-- Method selector: user picks passkey or MFA -->
-        <Choicebox.Root value="" onValueChange={(v) => (selectedMethod = v as 'passkey' | 'mfa')}>
-          {#if needsPasskey}
-            <Choicebox.Item value="passkey">
-              <Choicebox.Title class="flex items-center gap-2">
-                <Fingerprint class="size-4 text-primary" />
-                {$t('auth.authMethodEnforcer.methodPasskey')}
-              </Choicebox.Title>
-              <Choicebox.Description>
-                {$t('auth.authMethodEnforcer.methodPasskeyDesc')}
-              </Choicebox.Description>
-            </Choicebox.Item>
-          {/if}
-          {#if needsMfa}
-            <Choicebox.Item value="mfa">
-              <Choicebox.Title class="flex items-center gap-2">
-                <Smartphone class="size-4 text-primary" />
-                {$t('auth.authMethodEnforcer.methodMfa')}
-              </Choicebox.Title>
-              <Choicebox.Description>
-                {$t('auth.authMethodEnforcer.methodMfaDesc')}
-              </Choicebox.Description>
-            </Choicebox.Item>
-          {/if}
-        </Choicebox.Root>
-      {:else if selectedMethod === 'passkey'}
-        <!-- Passkey enrollment section -->
-        <div class="space-y-2">
-          <button
-            type="button"
-            class="text-xs text-muted-foreground hover:text-foreground underline"
-            onclick={() => (selectedMethod = null)}
-          >
-            ← {$t('auth.authMethodEnforcer.backToMethods')}
-          </button>
-          <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
-        </div>
-      {:else if selectedMethod === 'mfa'}
-        <!-- MFA enrollment section (inline QR/verify — Option B) -->
-        <div class="space-y-2">
-          <button
-            type="button"
-            class="text-xs text-muted-foreground hover:text-foreground underline"
-            onclick={() => (selectedMethod = null)}
-          >
-            ← {$t('auth.authMethodEnforcer.backToMethods')}
-          </button>
-          <MfaEnrollmentSection oncomplete={handleEnrollmentComplete} />
-        </div>
-      {/if}
-
-      <!-- Don't ask me again checkbox — only when passkey is NOT required -->
-      {#if !passkeyRequired}
-        <div class="flex items-start space-x-2 pt-2">
-          <Checkbox
-            id="dont_ask_again"
-            bind:checked={dontAskAgain}
-            tone="primary"
-            class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
-          />
-          <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            {$t('auth.authMethodEnforcer.dontAskAgain')}
-          </label>
-        </div>
-      {/if}
-    </div>
-
-    <!-- Footer: dismiss button only when passkey is NOT required -->
-    {#if !passkeyRequired}
-      <Dialog.Footer class="gap-2 sm:space-x-0">
-        <Button
-          variant="secondary-outline"
-          data-testid="auth-method-enforcer-dismiss-button"
-          onclick={dismissPrompt}
-          disabled={dismissing}
+  <div class="space-y-4 py-2">
+    {#if passkeyRequired}
+      <!-- passkey_required=true: passkey only, no method selector, no dismiss -->
+      <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
+    {:else if selectedMethod === null}
+      <!-- Method selector: user picks passkey or MFA -->
+      <Choicebox.Root value="" onValueChange={(v) => (selectedMethod = v as 'passkey' | 'mfa')}>
+        {#if needsPasskey}
+          <Choicebox.Item value="passkey">
+            <Choicebox.Title class="flex items-center gap-2">
+              <Fingerprint class="size-4 text-primary" />
+              {$t('auth.authMethodEnforcer.methodPasskey')}
+            </Choicebox.Title>
+            <Choicebox.Description>
+              {$t('auth.authMethodEnforcer.methodPasskeyDesc')}
+            </Choicebox.Description>
+          </Choicebox.Item>
+        {/if}
+        {#if needsMfa}
+          <Choicebox.Item value="mfa">
+            <Choicebox.Title class="flex items-center gap-2">
+              <Smartphone class="size-4 text-primary" />
+              {$t('auth.authMethodEnforcer.methodMfa')}
+            </Choicebox.Title>
+            <Choicebox.Description>
+              {$t('auth.authMethodEnforcer.methodMfaDesc')}
+            </Choicebox.Description>
+          </Choicebox.Item>
+        {/if}
+      </Choicebox.Root>
+    {:else if selectedMethod === 'passkey'}
+      <!-- Passkey enrollment section -->
+      <div class="space-y-2">
+        <button
+          type="button"
+          class="text-xs text-muted-foreground hover:text-foreground underline"
+          onclick={() => (selectedMethod = null)}
         >
-          {$t('auth.authMethodEnforcer.dismissButton')}
-        </Button>
-      </Dialog.Footer>
+          ← {$t('auth.authMethodEnforcer.backToMethods')}
+        </button>
+        <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
+      </div>
+    {:else if selectedMethod === 'mfa'}
+      <!-- MFA enrollment section (inline QR/verify — Option B) -->
+      <div class="space-y-2">
+        <button
+          type="button"
+          class="text-xs text-muted-foreground hover:text-foreground underline"
+          onclick={() => (selectedMethod = null)}
+        >
+          ← {$t('auth.authMethodEnforcer.backToMethods')}
+        </button>
+        <MfaEnrollmentSection oncomplete={handleEnrollmentComplete} />
+      </div>
     {/if}
-  </Dialog.Content>
-</Dialog.Root>
+
+    <!-- Don't ask me again checkbox — only when passkey is NOT required -->
+    {#if !passkeyRequired}
+      <div class="flex items-start space-x-2 pt-2">
+        <Checkbox
+          id="dont_ask_again"
+          bind:checked={dontAskAgain}
+          tone="primary"
+          class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
+        />
+        <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          {$t('auth.authMethodEnforcer.dontAskAgain')}
+        </label>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Footer: dismiss button only when passkey is NOT required -->
+  {#if !passkeyRequired}
+    <Dialog.Footer class="gap-2 sm:space-x-0">
+      <Button
+        variant="secondary-outline"
+        data-testid="auth-method-enforcer-dismiss-button"
+        onclick={dismissPrompt}
+        disabled={dismissing}
+      >
+        {$t('auth.authMethodEnforcer.dismissButton')}
+      </Button>
+    </Dialog.Footer>
+  {/if}
+</BorderedDialog>

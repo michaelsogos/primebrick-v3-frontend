@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -112,9 +113,8 @@
   }
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header>
+<BorderedDialog bind:open severity="primary" tone="soft" class="sm:max-w-md">
+  <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <ShieldCheck class="size-5 text-primary" />
         {$t('auth.mfaStepUp.stepUpTitle')}
@@ -189,5 +189,4 @@
         </Button>
       </div>
     {/if}
-  </Dialog.Content>
-</Dialog.Root>
+</BorderedDialog>

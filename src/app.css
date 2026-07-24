@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,hover-border-primary-gradient-soft}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-warning-gradient-popover,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -134,6 +134,33 @@
 }
 
 /**
+ * Soft primary gradient background ONLY (no border trick).
+ * Same sky→indigo tenue gradient fill as border-primary-gradient-soft, but
+ * without the double-background border painting. Use on elements that already
+ * sit inside a bordered container (e.g. a button flush against an input) where
+ * an extra border would double up.
+ */
+@utility bg-primary-gradient-soft {
+  background: linear-gradient(to bottom right, #bae6fd, #c7d2fe);
+}
+
+/**
+ * Soft primary gradient background + LEFT-ONLY gradient border.
+ * Same double-background trick as border-primary-gradient-soft, but the border
+ * is applied only on the left edge (border-right/top/bottom = 0). Used on
+ * elements flush inside a bordered container (e.g. a button sitting against an
+ * input) where we want the soft fill plus a left separator that matches the
+ * container's gradient border, without doubling borders on the other sides.
+ */
+@utility border-left-primary-gradient-soft {
+  border: 0 solid transparent;
+  border-left-width: 1px;
+  background:
+    linear-gradient(to bottom right, #bae6fd, #c7d2fe) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
  * Readonly/disabled gradient border: grey gradient (gray-400 → gray-500),
  * matching the Primebrick Docs logo palette. Used by readonly inputs to
  * visually distinguish them from active inputs (which use border-primary-gradient).
@@ -156,6 +183,113 @@
   background:
     linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
     linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Success gradient border: emerald-400 → emerald-600 (matches the success button
+ * variant). Used by inputs/surfaces that need a green gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-success-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Info gradient border: sky-400 → blue-600 (matches the info button variant).
+ * Used by inputs/surfaces that need a blue gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-info-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Soft variant of the success gradient border: same gradient border, but with a
+ * tenue emerald gradient background instead of a solid fill.
+ * Used by soft-success buttons.
+ */
+@utility border-success-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #a7f3d0, #a7f3d0) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Soft variant of the info gradient border: same gradient border, but with a
+ * tenue sky→blue gradient background instead of a solid fill.
+ * Used by soft-info buttons.
+ */
+@utility border-info-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #bae6fd, #bfdbfe) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Dialog variant of border-info-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="info" tone="soft".
+ */
+@utility border-info-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Dialog variant of border-success-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="success" tone="soft".
+ */
+@utility border-success-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Dialog variant of a warning gradient border: uses --popover as the fill color.
+ * Used by BorderedDialog with severity="warning" tone="soft".
+ */
+@utility border-warning-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
+}
+
+/**
+ * Dialog variant of border-destructive-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="destructive" tone="soft"
+ * (e.g. SessionExpiredDialog).
+ */
+@utility border-destructive-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Dialog variant of a neutral (grey) gradient border: uses --popover as the fill
+ * color. Used by BorderedDialog with severity="neutral" tone="soft".
+ */
+@utility border-neutral-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #9ca3af, #6b7280) border-box;
 }
 
 /**

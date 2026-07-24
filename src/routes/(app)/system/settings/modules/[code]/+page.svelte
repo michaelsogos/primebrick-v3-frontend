@@ -12,8 +12,14 @@
   import type { ServiceInfo, ModuleConfigEntry, IconType } from '$lib/api-types';
 
   let { data } = $props();
+  // svelte-ignore state_referenced_locally
+  // service is local mutable state initialized from the SvelteKit load prop.
+  // It is reassigned on save (handleSaveServiceInfo), so $derived cannot be used.
   let service = $state<ServiceInfo>(data.service);
 
+  // svelte-ignore state_referenced_locally
+  // formData is local form state initialized from service fields.
+  // It is mutated via bind:value in the form, so $derived cannot be used.
   let formData = $state({
     name: service.name || '',
     description: service.description || '',

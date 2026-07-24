@@ -7,7 +7,8 @@
   import { Label } from "$lib/components/ui/label";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "$lib/components/ui/card";
-  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "$lib/components/ui/dialog";
+  import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "$lib/components/ui/dialog";
+  import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
   import { t } from "$lib/i18n";
   import { authConfigState, loadAuthConfig } from "$lib/auth-config-store.svelte";
   import Smartphone from "@lucide/svelte/icons/smartphone";
@@ -263,8 +264,7 @@
   </Card>
 
   <!-- Enrollment Dialog -->
-  <Dialog bind:open={enrollDialogOpen}>
-    <DialogContent class="sm:max-w-md">
+  <BorderedDialog bind:open={enrollDialogOpen} severity="primary" tone="soft" class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <QrCode class="size-5" />
@@ -348,12 +348,10 @@
           </Button>
         </div>
       {/if}
-    </DialogContent>
-  </Dialog>
+  </BorderedDialog>
 
   <!-- Delete Confirmation Dialog -->
-  <Dialog bind:open={deleteDialogOpen}>
-    <DialogContent class="sm:max-w-md">
+  <BorderedDialog bind:open={deleteDialogOpen} severity="destructive" class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{$t("auth.mfa.deleteDialogTitle")}</DialogTitle>
         <DialogDescription>{$t("auth.mfa.deleteDialogDescription")}</DialogDescription>
@@ -366,6 +364,5 @@
           {$t("auth.mfa.delete")}
         </Button>
       </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  </BorderedDialog>
 {/if}

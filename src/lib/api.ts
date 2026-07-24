@@ -5,6 +5,7 @@ import { userProfileState } from '$lib/user-profile-store.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
+  ApiRedisUnavailableError,
   ApiUnreachableError,
   isUnreachableHttpStatus,
   type HealthPayload,
@@ -17,7 +18,7 @@ import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo } from '$lib/api-types';
-export { ApiDatabaseUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
+export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
@@ -174,11 +175,21 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     throw new ApiUnreachableError(null);
   }
 
-  // 503 from backend = application-level DB unavailable signal (NOT gateway failure → no loop).
-  // Force a /health probe so the chip reflects db_offline / idp_offline immediately
+  // 503 from backend = application-level infrastructure unavailable signal (NOT gateway failure → no loop).
+  // Force a /health probe so the chip reflects the offline component immediately
   // instead of waiting for the next periodic poll.
+  // Check the response body's internal_code to distinguish REDIS_UNAVAILABLE from DATABASE_UNAVAILABLE.
   if (res.status === 503) {
+    let internalCode: string | undefined;
+    try {
+      const cloned = res.clone();
+      const body = await cloned.json();
+      internalCode = body?.internal_code;
+    } catch { /* not JSON — treat as generic 503 */ }
     void probeHealth({ force: true });
+    if (internalCode === 'REDIS_UNAVAILABLE') {
+      throw new ApiRedisUnavailableError(503);
+    }
     throw new ApiDatabaseUnavailableError(503);
   }
 

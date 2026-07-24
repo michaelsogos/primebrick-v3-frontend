@@ -23,6 +23,22 @@ You are an expert Svelte™ 5 and TypeScript® developer. You MUST EXCLUSIVELY u
    - Example: `let { onchange }: { onchange: (v: string) => void } = $props();`
 5. **CHILDREN & SNIPPETS**: To pass HTML elements or components as children, use the `Snippet` type.
    - Example: `let { children }: { children: Snippet } = $props();` inside `{#render children()}`
+6. **REACTIVITY**: Any value computed from `$props()`, `$state`, or other reactive
+   sources MUST be declared with `$derived` (or `$derived.by` for complex logic).
+   Never read reactive sources into a plain `const`/`let` at component top level —
+   this triggers `state_referenced_locally` (elevated to a **build-breaking error**
+   in production via `svelte.config.js` `onwarn`) and produces stale values.
+   - ❌ `const i18nEntity = translationKey ?? entity;` (snapshots initial value)
+   - ✅ `const i18nEntity = $derived(translationKey ?? entity);`
+   - Use `svelte-ignore state_referenced_locally` ONLY when the value is genuinely
+     static (e.g., local mutable state initialized from a prop, then reassigned on
+     save). Add a comment explaining why.
+   - See [`.devin/rules/svelte-runes.md`](./.devin/rules/svelte-runes.md) and
+     [`docs/ai/svelte-runes.md`](./docs/ai/svelte-runes.md) for the full pattern guide.
+7. **SVELTE MCP TOOL**: Before writing any `.svelte` file, agents MUST pass the
+   proposed code to the `svelte-autofixer` MCP tool and fix any `issues` returned.
+   Use `get-documentation` to pull authoritative Svelte 5 docs instead of relying
+   on web search or memory.
 
 ## Repository overview
 
