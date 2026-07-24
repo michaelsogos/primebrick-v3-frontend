@@ -8,7 +8,7 @@
   import Funnel from '@lucide/svelte/icons/funnel'
   import Download from '@lucide/svelte/icons/download'
   import Copy from '@lucide/svelte/icons/copy'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Trash from '@lucide/svelte/icons/trash'
   import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
 
   let {
@@ -115,7 +115,7 @@
         onclick={onBulkDelete}
         disabled={selectedKeys.length < 2 || hasDeletedSelected}
       >
-        <Trash2 class="size-3.5" />
+        <Trash class="size-3.5" />
         {$t('entities.list.bulkActions.delete')}
       </Button>
       {#if hasDeletedSelected}
@@ -127,8 +127,8 @@
           disabled={!allSelectedDeleted}
         >
           <span class="relative flex items-center justify-center">
-            <Trash2 class="size-3.5 text-warning/70" />
-            <ArrowUpFromLine class="absolute -bottom-[1px] size-2.5 text-warning/70" />
+            <Trash class="size-3.5" />
+            <ArrowUpFromLine class="absolute bottom-0 size-2.5" />
           </span>
           {$t('entities.list.bulkActions.restore')}
         </Button>
