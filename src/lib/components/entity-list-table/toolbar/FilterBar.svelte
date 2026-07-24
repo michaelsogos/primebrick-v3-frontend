@@ -81,7 +81,7 @@
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
-              class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+              class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
               onclick={() => {
                 const next = { ...filterValues };
                 delete next[key];
@@ -121,7 +121,7 @@
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
-              class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+              class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
               onclick={() => {
                 const next = advancedFilters.filter((f) => f.id !== filter.id);
                 onAdvancedFiltersChange?.(next);

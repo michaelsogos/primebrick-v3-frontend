@@ -545,8 +545,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                 {#snippet child({ props })}
                   <Button
                     id="filter-{col.key}"
-                    variant="ghost"
-                    class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                    variant="outline"
+                    class="h-9 w-full justify-between font-normal"
                     {...props}
                   >
                     <span
@@ -562,7 +562,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                       {#if selectedKeys.length > 0}
                         <button
                           type="button"
-                          class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          class="flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                           onpointerdown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -617,7 +617,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               {#if dateDropperValues[col.key]}
                 <button
                   type="button"
-                  class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => clearTempFilter(col.key)}
                   title={$t("common.clear")}
                 >
@@ -644,7 +644,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               {#if value}
                 <button
                   type="button"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => clearTempFilter(col.key)}
                   title={$t("common.clear")}
                 >
@@ -717,7 +717,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               <div class="flex items-center gap-1">
                 <button
                   type="button"
-                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => editAdvancedFilter(filter)}
                   title={$t("common.edit")}
                 >
@@ -725,7 +725,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                 </button>
                 <button
                   type="button"
-                  class="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => removeAdvancedFilter(filter.id)}
                   title={$t("common.remove")}
                 >
@@ -747,8 +747,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
                   <Button
-                    variant="ghost"
-                    class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                    variant="outline"
+                    class="h-9 w-full justify-between font-normal"
                     {...props}
                   >
                     <span
@@ -804,8 +804,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                 <DropdownMenu.Trigger>
                   {#snippet child({ props })}
                     <Button
-                      variant="ghost"
-                      class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                      variant="outline"
+                      class="h-9 w-full justify-between font-normal"
                       {...props}
                     >
                       <span class="text-foreground">
@@ -843,8 +843,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   <DropdownMenu.Trigger>
                     {#snippet child({ props })}
                       <Button
-                        variant="ghost"
-                        class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] justify-between font-normal"
+                        variant="outline"
+                        class="h-9 w-full justify-between font-normal"
                         {...props}
                       >
                         <span
