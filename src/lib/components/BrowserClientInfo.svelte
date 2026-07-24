@@ -3,6 +3,14 @@
   import { onMount } from 'svelte';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
   import { t } from '$lib/i18n';
+  import MapPin from '@lucide/svelte/icons/map-pin';
+  import Languages from '@lucide/svelte/icons/languages';
+  import Globe from '@lucide/svelte/icons/globe';
+  import Calendar from '@lucide/svelte/icons/calendar';
+  import Hash from '@lucide/svelte/icons/hash';
+  import Clock from '@lucide/svelte/icons/clock';
+  import Monitor from '@lucide/svelte/icons/monitor';
+  import PanelTop from '@lucide/svelte/icons/panel-top';
 
   type Snapshot = {
     ianaTz: string;
@@ -155,38 +163,61 @@
 
 {#if snapshot}
   <div>
-    <div class="mb-3 text-xs font-medium text-primary">{$t('shell.health.clientTitle')}</div>
     <div class="space-y-3">
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.ianaTimezone')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <MapPin class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.ianaTimezone')}</span>
+        </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.ianaTz}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.preferredLanguages')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Languages class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.preferredLanguages')}</span>
+        </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.languages}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.resolvedLocale')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Globe class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.resolvedLocale')}</span>
+        </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.resolvedLocale}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.calendarSystem')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Calendar class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.calendarSystem')}</span>
+        </div>
         <div class="min-w-0 text-right text-xs">{snapshot.calendar}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.numberingSystem')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Hash class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.numberingSystem')}</span>
+        </div>
         <div class="min-w-0 text-right text-xs">{snapshot.numberingSystem}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.hourCycle')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Clock class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.hourCycle')}</span>
+        </div>
         <div class="min-w-0 text-right text-xs">{snapshot.hourCycle}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.operatingSystem')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Monitor class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.operatingSystem')}</span>
+        </div>
         <div class="min-w-0 text-right text-xs">{snapshot.os} ({snapshot.osVersion} - {snapshot.osArch})</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="shrink-0 text-muted-foreground">{$t('shell.health.browser')}</div>
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <PanelTop class="size-4 shrink-0 text-primary" />
+          <span>{$t('shell.health.browser')}</span>
+        </div>
         <div class="min-w-0 text-right text-xs">{snapshot.browserName} ({snapshot.browserVersion})</div>
       </div>
     </div>
