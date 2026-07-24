@@ -128,7 +128,7 @@
         >
           <span class="relative flex items-center justify-center">
             <Trash class="size-3.5" />
-            <ArrowUpFromLine class="absolute bottom-0 size-2.5" />
+            <ArrowUpFromLine class="absolute bottom-0 size-2" />
           </span>
           {$t('entities.list.bulkActions.restore')}
         </Button>
