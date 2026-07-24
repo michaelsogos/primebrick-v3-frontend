@@ -58,14 +58,14 @@
   <div class="flex flex-wrap items-center gap-2">
     <Button
       variant="soft"
+      tone="primary"
       size="xs"
-      class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
       onclick={onResetFilters}
     >
       <XIcon class="size-3.5" />
       {$t('common.clearAll')}
     </Button>
-    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+    <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
       {#each Object.entries(filterValues) as [key, value]}
         {@const col = filterableColumns.find((c) => c.key === key)}

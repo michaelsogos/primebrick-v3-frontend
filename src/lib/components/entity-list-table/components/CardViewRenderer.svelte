@@ -203,7 +203,7 @@
           </span>
         {/if}
 
-        <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+        <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
         <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
         <DropdownMenu.Root>
@@ -262,7 +262,7 @@
         </DropdownMenu.Root>
 
         {#each datetimeIanaToggleColumns as col (col.key)}
-          <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+          <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
           <div class="flex items-center gap-2">
             <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
             <Switch

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-warning-gradient-popover,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -161,6 +161,16 @@
 }
 
 /**
+ * Vertical gradient divider (sky-400 → indigo-400 at 50% opacity, top → bottom).
+ * Branded replacement for `bg-border/60` on 1px-wide vertical separators in
+ * toolbars/footers. Same visual weight as the old grey divider but with the
+ * Primebrick gradient identity. Use on elements with `w-px` and a fixed height.
+ */
+@utility divider-primary-gradient {
+  background: linear-gradient(to bottom, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5));
+}
+
+/**
  * Readonly/disabled gradient border: grey gradient (gray-400 → gray-500),
  * matching the Primebrick Docs logo palette. Used by readonly inputs to
  * visually distinguish them from active inputs (which use border-primary-gradient).
@@ -183,6 +193,18 @@
   background:
     linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
     linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Warning gradient border: yellow-300 → yellow-500 (matches the warning button
+ * variant). Used by inputs/surfaces that need a yellow gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-warning-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
 }
 
 /**
@@ -217,7 +239,7 @@
 @utility border-success-gradient-soft {
   border: 1px solid transparent;
   background:
-    linear-gradient(to bottom right, #a7f3d0, #a7f3d0) padding-box,
+    linear-gradient(to bottom right, #a7f3d0, #34d399) padding-box,
     linear-gradient(to bottom right, #34d399, #059669) border-box;
 }
 
@@ -229,8 +251,32 @@
 @utility border-info-gradient-soft {
   border: 1px solid transparent;
   background:
-    linear-gradient(to bottom right, #bae6fd, #bfdbfe) padding-box,
+    linear-gradient(to bottom right, #bae6fd, #60a5fa) padding-box,
     linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Soft variant of the destructive gradient border: same gradient border, but
+ * with a tenue rose/red gradient background instead of a solid fill.
+ * Used by soft-destructive buttons.
+ */
+@utility border-destructive-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #ffe4e6, #fca5a5) padding-box,
+    linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Soft variant of the warning gradient border: same gradient border, but with a
+ * tenue yellow gradient background instead of a solid fill.
+ * Used by soft-warning buttons.
+ */
+@utility border-warning-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #fef9c3, #fde047) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
 }
 
 /**

@@ -73,6 +73,48 @@
 				tone: "info",
 				class: "border-info-gradient-soft text-foreground hover:brightness-105",
 			},
+			// Soft + destructive: rose→red gradient border + tenue rose/red background
+			{
+				variant: "soft",
+				tone: "destructive",
+				class: "border-destructive-gradient-soft text-foreground hover:brightness-105",
+			},
+			// Soft + warning: yellow gradient border + tenue yellow background
+			{
+				variant: "soft",
+				tone: "warning",
+				class: "border-warning-gradient-soft text-foreground hover:brightness-105",
+			},
+			// Outline + primary: sky→indigo gradient border (default, already in variant base)
+			{
+				variant: "outline",
+				tone: "primary",
+				class: "border-primary-gradient",
+			},
+			// Outline + destructive: rose→red gradient border
+			{
+				variant: "outline",
+				tone: "destructive",
+				class: "border-destructive-gradient",
+			},
+			// Outline + warning: yellow gradient border
+			{
+				variant: "outline",
+				tone: "warning",
+				class: "border-warning-gradient",
+			},
+			// Outline + success: emerald gradient border
+			{
+				variant: "outline",
+				tone: "success",
+				class: "border-success-gradient",
+			},
+			// Outline + info: sky→blue gradient border
+			{
+				variant: "outline",
+				tone: "info",
+				class: "border-info-gradient",
+			},
 		],
 		defaultVariants: {
 			variant: "default",
