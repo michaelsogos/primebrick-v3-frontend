@@ -171,16 +171,18 @@
 }
 
 /**
- * Readonly/disabled gradient border: grey gradient (gray-400 → gray-500),
- * matching the Primebrick Docs logo palette. Used by readonly inputs to
- * visually distinguish them from active inputs (which use border-primary-gradient).
+ * Readonly/disabled gradient border: same sky→indigo gradient as
+ * border-primary-gradient but at 50% opacity, matching the disabled checkbox
+ * appearance (from-sky-400 to-indigo-400 + disabled:opacity-50).
+ * Used by readonly/disabled inputs to visually distinguish them from active
+ * inputs (which use border-primary-gradient at full opacity).
  * Defined AFTER border-primary-gradient so it wins when both classes are present.
  */
 @utility border-readonly-gradient {
   border: 1px solid transparent;
   background:
     linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
-    linear-gradient(to bottom right, #9ca3af, #6b7280) border-box;
+    linear-gradient(to bottom right, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5)) border-box;
 }
 
 /**

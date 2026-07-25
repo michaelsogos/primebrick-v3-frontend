@@ -61,14 +61,14 @@
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
-    <Sidebar.Group class="pt-0">
+    <Sidebar.Group class="pt-0 pb-0">
       <Sidebar.GroupLabel class="h-7">{$t('shell.nav.module')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarModuleSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
-    <Sidebar.Group>
+    <Sidebar.Group class="pt-0">
       <Sidebar.GroupLabel class="h-7">{$t('shell.nav.links')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
