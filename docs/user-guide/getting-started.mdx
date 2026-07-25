@@ -60,6 +60,26 @@ src/
 └── app.html
 ```
 
+## Verify the dev server
+
+After `pnpm install` and `pnpm run dev`, open `http://localhost:5173` in your
+browser. You should see the login page. The frontend talks to the backend at
+`http://localhost:3001` — if the backend is not running, the page still loads
+but the login form will show a connection error.
+
+To verify the typecheck passes:
+
+```bash
+pnpm run check        # svelte-check + tsc, exits 0 on success
+```
+
+To regenerate the component API extraction (needed before refreshing the
+[API reference](/docs/user-guide/api-reference) page when component props change):
+
+```bash
+pnpm extract-docs     # writes docs/user-guide/_extracted/components.json
+```
+
 ## Svelte 5 conventions
 
 This repo uses **runes exclusively**. The key rules (enforced in `AGENTS.md`):
@@ -109,4 +129,6 @@ the full rule.
 
 - [App shell & sidebar](/docs/user-guide/app-shell)
 - [Authentication & sessions](/docs/user-guide/authentication)
-- [Entity list table](/docs/user-guide/entity-list-table)
+- [Entity list table](/docs/user-guide/components/entity-list-table)
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component
+- [UI stack](/docs/user-guide/ui-stack) — the five layered UI technologies

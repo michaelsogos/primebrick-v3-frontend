@@ -11,6 +11,23 @@ components are provided for common app-wide patterns. The full prop
 reference for every component is in the
 [API reference](/docs/user-guide/api-reference).
 
+## Where custom components live
+
+<Mermaid chart={`flowchart TB
+  Shadcn["shadcn-svelte primitives<br/>src/lib/components/ui/*<br/>(31 vendored, unmodified)"]
+  Wrapped["Wrapped primitives (3)<br/>input, tooltip, form<br/>(shadcn + Primebrick extensions)"]
+  Custom["Custom components (40)<br/>combo-select, dynamic-icon,<br/>entity-list-table, app-shell, ..."]
+  Shadcn --> Wrapped
+  Shadcn --> Custom
+  Wrapped --> Custom
+`} />
+
+The [component catalog](/docs/user-guide/components) lists every component
+grouped by origin (custom, wrapped, more-shadcn-svelte, shadcn-svelte-extras,
+unmodified shadcn-svelte). The sections below cover the most commonly used
+custom components. See [UI stack](/docs/user-guide/ui-stack) for the full
+layering of all five UI technologies.
+
 ## ComboSelect
 
 `src/lib/components/ui/combo-select/combo-select.svelte` — a searchable
@@ -137,6 +154,7 @@ described in [App shell & sidebar](/docs/user-guide/app-shell):
 
 ## Next steps
 
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component, grouped by origin
 - [API reference](/docs/user-guide/api-reference) — full prop tables for every component
-- [Entity list table](/docs/user-guide/entity-list-table)
+- [Entity list table](/docs/user-guide/components/entity-list-table) — the flagship custom component
 - [App shell & sidebar](/docs/user-guide/app-shell)
