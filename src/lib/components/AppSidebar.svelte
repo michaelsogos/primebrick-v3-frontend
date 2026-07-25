@@ -53,19 +53,23 @@
 </script>
 
 <Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('shell.nav.aria')}>
-  <Sidebar.Header>
-    <SidebarOrgSwitcher {collapsed} />
-  </Sidebar.Header>
-
   <Sidebar.Content>
-    <Sidebar.Group>
-      <Sidebar.GroupLabel>{$t('shell.nav.module')}</Sidebar.GroupLabel>
+    <Sidebar.Group class="pb-0">
+      <Sidebar.GroupLabel class="h-7">{$t('shell.org.subtitle')}</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <SidebarOrgSwitcher {collapsed} />
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+
+    <Sidebar.Group class="pt-0">
+      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.module')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarModuleSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group>
+      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.links')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           {#if moduleNavLoading}
@@ -88,6 +92,12 @@
   </Sidebar.Content>
 
   <Sidebar.Footer class="gap-1.5 p-1.5">
+    <div
+      class="text-sidebar-foreground/70 ring-sidebar-ring flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0"
+      data-sidebar="group-label"
+    >
+      {$t('shell.userMenu.title')}
+    </div>
     <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 
     <Sidebar.Separator />

@@ -66,7 +66,6 @@
               {#if !collapsed}
                 <div class="grid min-w-0 flex-1 text-left leading-tight">
                   <span class="truncate text-sm font-medium">{userName}</span>
-                  <span class="truncate text-xs text-muted-foreground">{$t('shell.userMenu.profileLabel')}</span>
                 </div>
               {/if}
 

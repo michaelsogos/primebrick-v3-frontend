@@ -3,7 +3,6 @@
   import { tick, onMount } from 'svelte';
   import { Command } from 'bits-ui';
   import { cn } from '$lib/utils';
-  import { inputControlHoverClasses } from '$lib/components/ui/input/input-chrome';
   import { commandMenuItemClassName } from '$lib/components/ui/menu-row-chrome';
   import { t } from '$lib/i18n';
   import CalculatorIcon from '@lucide/svelte/icons/calculator';
@@ -128,13 +127,10 @@
       <!-- Chrome matches `$lib/components/ui/input` (wrapper carries border/bg/hover/focus; inner `Command.Input` is borderless). -->
       <div
         class={cn(
-          'relative flex h-8 w-full items-center rounded-md border shadow-xs ring-offset-background transition-colors',
+          'relative flex h-8 w-full items-center rounded-md shadow-xs ring-offset-background transition-all',
           open
-            ? 'z-10 rounded-b-none border-border border-b-transparent bg-popover shadow-md'
-            : cn(
-                'border-input bg-background dark:bg-input/30 focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
-                inputControlHoverClasses
-              )
+            ? 'z-10 rounded-b-none border-primary-gradient-popover border-b-0 shadow-md'
+            : 'border-primary-gradient hover:brightness-105 focus-within:ring-ring/50 focus-within:ring-[3px]'
         )}
       >
         <span
@@ -163,9 +159,10 @@
           bind:ref={inputRef}
           id="pb-command-palette-input"
           class={cn(
-            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm text-foreground outline-hidden',
+            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm font-medium text-foreground outline-hidden',
             browser && 'pr-21',
             'placeholder:text-muted-foreground',
+            'selection:bg-primary selection:text-primary-foreground',
             'focus-visible:ring-0 focus-visible:ring-offset-0'
           )}
           placeholder={$t('shell.search.placeholder')}
@@ -192,7 +189,7 @@
       >
         <div
           id={listDomId}
-          class={cn('pb-cube-panel border border-t-0 border-border bg-popover text-popover-foreground shadow-xl')}
+          class={cn('pb-cube-panel border-primary-gradient-popover border-t-0 text-popover-foreground shadow-xl')}
           data-state={open ? 'open' : 'closed'}
         >
           <Command.List

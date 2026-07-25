@@ -264,6 +264,7 @@
       "aria": "Navigation",
       "open": "Navigation öffnen",
       "module": "Modul",
+      "links": "Links",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM-Bereiche"
     },

@@ -275,6 +275,7 @@
       "aria": "Navigation",
       "open": "Open navigation",
       "module": "Module",
+      "links": "Links",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "CRM sections"
     },
