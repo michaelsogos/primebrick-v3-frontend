@@ -1,5 +1,3 @@
-import { getContrastTextColor } from './avatar-chrome-palette';
-
 export interface UserProfile {
   uuid?: string;
   username?: string;
@@ -63,15 +61,6 @@ export const userProfileStore = {
     sessionStorage.removeItem('user');
   },
 };
-
-export function getUserAvatarStyle(): { style: string; class: string } | null {
-  if (!userProfileState.current?.avatar_color) return null;
-  const textColor = getContrastTextColor(userProfileState.current.avatar_color);
-  return {
-    style: `background-color: ${userProfileState.current.avatar_color}; color: ${textColor};`,
-    class: 'rounded-none text-xs font-semibold'
-  };
-}
 
 export function getUserName(): string {
   return userProfileState.current?.display_name || userProfileState.current?.username || 'Prime Brick';

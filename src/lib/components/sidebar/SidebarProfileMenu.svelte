@@ -4,7 +4,7 @@
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { avatarFallbackChromeClasses, getContrastTextColor } from '$lib/avatar-chrome-palette';
+  import { avatarFallbackChromeClasses, computeAvatarGradient } from '$lib/avatar-chrome-palette';
   import { goto } from '$app/navigation';
   import type { UserProfile } from '$lib/user-profile-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -27,9 +27,9 @@
   const avatarStyle = $derived.by(() => {
     const color = user?.avatar_color;
     if (!color) return null;
-    const textColor = getContrastTextColor(color);
+    const g = computeAvatarGradient(color);
     return {
-      style: `background-color: ${color}; color: ${textColor};`,
+      style: `background: linear-gradient(135deg, ${g.start}, ${g.end}); color: ${g.textColor};`,
       class: 'rounded-none text-xs font-semibold'
     };
   });

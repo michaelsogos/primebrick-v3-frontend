@@ -10,7 +10,7 @@
   import { untrack } from "svelte";
   import { Avatar, AvatarFallback } from "$lib/components/ui/avatar";
   import { cn } from "$lib/utils";
-  import { getContrastTextColor } from "$lib/avatar-chrome-palette";
+  import { computeAvatarGradient } from "$lib/avatar-chrome-palette";
   import { useAvatarPreview } from "$lib/composables/useAvatarPreview.svelte";
 
   let {
@@ -27,6 +27,12 @@
     () => displayName,
     untrack(() => defaultSeed),
   );
+
+  const gradientStyle = $derived.by(() => {
+    if (!avatarColor) return "";
+    const g = computeAvatarGradient(avatarColor);
+    return `background: linear-gradient(135deg, ${g.start}, ${g.end}); color: ${g.textColor};`;
+  });
 </script>
 
 <Avatar class="size-14 rounded-none avatar-hex">
@@ -35,9 +41,7 @@
       "rounded-none text-2xl font-semibold",
       avatarColor ? "" : chromeFallbackClass,
     )}
-    style={avatarColor
-      ? `background-color: ${avatarColor}; color: ${getContrastTextColor(avatarColor)};`
-      : ""}
+    style={gradientStyle}
   >
     {seed}
   </AvatarFallback>
