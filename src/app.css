@@ -847,3 +847,89 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
 .dark .pb-shell-error-card--info [data-slot='alert-description'] {
   color: hsl(216 87% 65% / 0.88) !important;
 }
+
+/**
+ * Big watermark icon animations (size-20 / 80px+ tier).
+ * Global utilities — consumed by EntityListTable children (TableBody,
+ * CardViewRenderer, EntityListTableLoading), MetadataLoading, VersionHistoryPanel,
+ * ErrorsPanel, and standalone pages (e.g. settings/modules). Defined here (not in
+ * a scoped Svelte <style>) so every consumer receives the effect regardless of
+ * component boundaries.
+ *
+ * Effect taxonomy (per icon semantic):
+ *  - pb-watermark-loading : Hourglass — rotate 180° + zoom (loading in progress)
+ *  - pb-watermark-error   : CircleX   — error pulse (opacity + scale)
+ *  - pb-watermark-empty   : TriangleAlert / Info / ThumbsUp — bounce (opacity + translateY + scale)
+ *  - pb-watermark-fade    : Cloud     — opacity fade (static metadata loading)
+ */
+@keyframes pb-watermark-pulse {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.22;
+    transform: translateY(-6px) scale(1.06);
+  }
+}
+
+@keyframes pb-watermark-hourglass {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.12;
+  }
+  45% {
+    transform: rotate(0deg) scale(1.06);
+    opacity: 0.22;
+  }
+  55% {
+    transform: rotate(180deg) scale(1.06);
+    opacity: 0.22;
+  }
+  100% {
+    transform: rotate(180deg) scale(1);
+    opacity: 0.12;
+  }
+}
+
+@keyframes pb-watermark-error {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.18;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pb-watermark-fade {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.pb-watermark-empty {
+  transform-origin: center;
+  animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+}
+
+.pb-watermark-loading {
+  transform-origin: center;
+  animation: pb-watermark-hourglass 1.8s ease-in-out infinite alternate;
+}
+
+.pb-watermark-error {
+  transform-origin: center;
+  animation: pb-watermark-error 2.2s ease-in-out infinite;
+}
+
+.pb-watermark-fade {
+  animation: pb-watermark-fade 2.6s ease-in-out infinite;
+}

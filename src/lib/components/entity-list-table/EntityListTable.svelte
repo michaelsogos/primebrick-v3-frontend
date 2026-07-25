@@ -698,5 +698,3 @@
     translationKey={effectiveTranslationKey}
   />
 
-<style src="./EntityListTable.css"></style>
-
