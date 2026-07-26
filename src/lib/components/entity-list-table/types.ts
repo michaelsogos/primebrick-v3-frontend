@@ -27,6 +27,15 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   /** Entity type for API calls (e.g., 'customer', 'product') */
   entity?: string;
   /**
+   * Snake_case singular translation key prefix for dynamic i18n keys.
+   * Used by dialogs and version history to build keys like
+   * `entities.${translationKey}.plural` and `entities.${translationKey}.fields.${field}`.
+   * MUST be snake_case singular (no uppercase letters) — enforced at runtime
+   * by `isSnakeCaseSingular()` in the meta-loading code.
+   * Defaults to `entity` when not provided.
+   */
+  translationKey?: string;
+  /**
    * Columns to render/select in the UI.
    * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
    * - Back-compat: provide `columns` only

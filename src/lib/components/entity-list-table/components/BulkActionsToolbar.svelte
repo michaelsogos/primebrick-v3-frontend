@@ -9,6 +9,7 @@
   import Download from '@lucide/svelte/icons/download'
   import Copy from '@lucide/svelte/icons/copy'
   import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Trash from '@lucide/svelte/icons/trash'
   import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
 
   let {
@@ -54,7 +55,6 @@
   <Button
     variant="outline"
     size="xs"
-    class="h-6 text-xs border border-neutral-300 hover:border-neutral-400"
     onclick={onToggleToolbarMode}
   >
     {#if toolbarMode === 'filters'}
@@ -65,7 +65,7 @@
       {$t('entities.list.bulkActions.toggleToFilters')}
     {/if}
   </Button>
-  <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+  <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
   {#if toolbarMode === 'filters'}
     <div in:fly={{ y: 20, duration: 200 }}>
@@ -83,8 +83,8 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       <Button
         variant="soft"
+        tone="primary"
         size="xs"
-        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
         onclick={onBulkExport}
       >
         <Download class="size-3.5" />
@@ -92,8 +92,8 @@
       </Button>
       <Button
         variant="soft"
+        tone="primary"
         size="xs"
-        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
         onclick={onHtmlExport}
       >
         <Download class="size-3.5" />
@@ -101,8 +101,8 @@
       </Button>
       <Button
         variant="soft"
+        tone="primary"
         size="xs"
-        class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
         onclick={onBulkDuplicate}
         disabled={selectedKeys.length < 2}
       >
@@ -111,8 +111,8 @@
       </Button>
       <Button
         variant="soft"
+        tone="destructive"
         size="xs"
-        class="h-6 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50 border-destructive/20"
         onclick={onBulkDelete}
         disabled={selectedKeys.length < 2 || hasDeletedSelected}
       >
@@ -122,14 +122,14 @@
       {#if hasDeletedSelected}
         <Button
           variant="soft"
+          tone="warning"
           size="xs"
-          class="h-6 text-xs bg-warning/10 text-warning hover:bg-warning/20 hover:border-warning/50 border-warning/20"
           onclick={onBulkRestore}
           disabled={!allSelectedDeleted}
         >
           <span class="relative flex items-center justify-center">
-            <Trash2 class="size-3.5 text-warning/70" />
-            <ArrowUpFromLine class="absolute -bottom-[1px] size-2.5 text-warning/70" />
+            <Trash class="size-3.5" />
+            <ArrowUpFromLine class="absolute bottom-px size-2" />
           </span>
           {$t('entities.list.bulkActions.restore')}
         </Button>

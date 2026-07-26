@@ -22,12 +22,26 @@ export type ModuleNav = {
 };
 
 export type HealthModule = { id: string; version: string };
+
+/** A single health check result entry in the unified `checks` map. */
+export type HealthCheckEntry = {
+  ok: boolean;
+  version?: string;
+  type?: string;
+  error?: string;
+};
+
+/**
+ * Unified health response — same shape from both BE and US microservices.
+ * The `checks` map is extensible: each service registers only the checks it has
+ * (BE: db, redis, nats, idp; US: db, redis, nats).
+ */
 export type HealthPayload = {
-  ok: true;
+  ok: boolean;
   service: string;
   version: string;
-  db: { ok: boolean };
-  idp: { ok: boolean; type?: string; version?: string };
+  url?: string;
+  checks: Record<string, HealthCheckEntry>;
 };
 
 export type IconType = 'url' | 'svg' | 'base64' | 'icon';
@@ -48,6 +62,7 @@ export type ServiceInfo = {
   icon?: string;
   icon_type: IconType;
   is_reserved?: boolean;
+  uuid?: string;
 };
 
 export type ModuleConfigEntry = {
@@ -62,15 +77,18 @@ export type ModuleConfigEntry = {
 export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (!x || typeof x !== 'object') return false;
   const o = x as Record<string, unknown>;
-  if (o.ok !== true) return false;
+  if (typeof o.ok !== 'boolean') return false;
   if (typeof o.service !== 'string') return false;
   if (typeof o.version !== 'string') return false;
-  const db = o.db;
-  if (!db || typeof db !== 'object') return false;
-  if (typeof (db as { ok?: unknown }).ok !== 'boolean') return false;
-  const idp = o.idp;
-  if (!idp || typeof idp !== 'object') return false;
-  return typeof (idp as { ok?: unknown }).ok === 'boolean';
+  if (!o.checks || typeof o.checks !== 'object') return false;
+  // Validate each check entry has a boolean ok
+  const checks = o.checks as Record<string, unknown>;
+  for (const key of Object.keys(checks)) {
+    const entry = checks[key];
+    if (!entry || typeof entry !== 'object') return false;
+    if (typeof (entry as { ok?: unknown }).ok !== 'boolean') return false;
+  }
+  return true;
 }
 
 /** Proxy/gateway/timeouts: backend likely down or unreachable.
@@ -105,6 +123,19 @@ export class ApiDatabaseUnavailableError extends Error {
 
   constructor(status: number) {
     super('ApiDatabaseUnavailableError');
+    this.status = status;
+  }
+}
+
+/** BE responded; downstream Redis is unavailable — not the same as DB or gateway/offline.
+ *  The health chip will show redis_offline. Callers can distinguish this from
+ *  ApiDatabaseUnavailableError for feature-specific UI (e.g. WebAuthn unavailable). */
+export class ApiRedisUnavailableError extends Error {
+  override readonly name = 'ApiRedisUnavailableError';
+  readonly status: number;
+
+  constructor(status: number) {
+    super('ApiRedisUnavailableError');
     this.status = status;
   }
 }

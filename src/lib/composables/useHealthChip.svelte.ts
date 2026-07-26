@@ -12,11 +12,15 @@ export function chipLabel(chip: HealthChipState): string {
     ? tt('shell.health.beOffline')
     : chip === 'db_offline'
       ? tt('shell.health.dbOffline')
-      : chip === 'idp_offline'
-        ? tt('shell.health.idpOffline')
-        : chip === 'ok'
-          ? tt('shell.health.beOnline')
-          : tt('common.loading');
+      : chip === 'redis_offline'
+        ? tt('shell.health.redisOffline')
+        : chip === 'nats_offline'
+          ? tt('shell.health.natsOffline')
+          : chip === 'idp_offline'
+            ? tt('shell.health.idpOffline')
+            : chip === 'ok'
+              ? tt('shell.health.beOnline')
+              : tt('common.loading');
 }
 
 /** Pure function: maps chip state → CSS class string for the chip badge */
@@ -25,11 +29,15 @@ export function chipClass(chip: HealthChipState): string {
     ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
     : chip === 'db_offline'
       ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-      : chip === 'idp_offline'
-        ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-        : chip === 'ok'
-          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-          : 'border-border/60 bg-muted/30 text-muted-foreground';
+      : chip === 'redis_offline'
+        ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
+        : chip === 'nats_offline'
+          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+          : chip === 'idp_offline'
+            ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+            : chip === 'ok'
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+              : 'border-border/60 bg-muted/30 text-muted-foreground';
 }
 
 /** Pure function: maps chip state → text CSS class string */
@@ -38,11 +46,15 @@ export function chipTextClass(chip: HealthChipState): string {
     ? 'text-destructive'
     : chip === 'db_offline'
       ? 'text-destructive'
-      : chip === 'idp_offline'
-        ? 'text-warning'
-        : chip === 'ok'
-          ? 'text-success'
-          : 'text-muted-foreground';
+      : chip === 'redis_offline'
+        ? 'text-destructive'
+        : chip === 'nats_offline'
+          ? 'text-warning'
+          : chip === 'idp_offline'
+            ? 'text-warning'
+            : chip === 'ok'
+              ? 'text-success'
+              : 'text-muted-foreground';
 }
 
 /**

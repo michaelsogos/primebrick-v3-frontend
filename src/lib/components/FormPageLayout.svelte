@@ -61,7 +61,7 @@
 
     {#if children}
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
-        <div class="flex-1 overflow-hidden">
+        <div class="flex-1 overflow-auto">
           {@render children()}
         </div>
         

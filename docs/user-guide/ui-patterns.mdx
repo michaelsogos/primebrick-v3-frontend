@@ -1,0 +1,289 @@
+---
+title: UI patterns
+description: Primebrick detail-page layout conventions — the two allowed layouts for non-table pages, the primary CTA placement rule, and when to use FormPageLayout vs AppPageScaffold.
+---
+
+# UI patterns
+
+Primebrick standardizes **detail pages** (any non-table page: form pages,
+settings sub-pages, entity edit/create pages) around two layouts. Following
+these layouts keeps validation UX, button hierarchy, and card wrapping
+consistent across the app.
+
+## What is a detail page?
+
+A **detail page** is any page that is **not** a table/list page. Examples:
+
+- `/system/settings/profile` — profile form
+- `/system/settings/credentials` — change password + passkeys + MFA
+- `/system/settings/organizations/create` — org create form
+- `/system/settings/organizations/{uuid}` — org edit form
+
+Table pages (entity lists) use `EntityListTable` and are covered in
+[Entity list table](/docs/user-guide/components/entity-list-table). This page
+only covers detail pages.
+
+## The two layouts
+
+<Mermaid chart={`flowchart TB
+  Start["Detail page (non-table)"]
+  Q{"Entire content is a single<br/>2-col form, no other sections?"}
+  L1["Layout 1 — Pure form (TUTTO FORM)<br/>FormPageLayout<br/>DEFAULT primary in footer<br/>No extra Card around form<br/>No other primary in content"]
+  L2["Layout 2 — Mixed content<br/>(UN PO' FORM + UN PO' ALTRO)<br/>AppPageScaffold<br/>No primary in footer<br/>Each card: DEFAULT primary inside<br/>Form wrapped in Card, keeps 2-col"]
+  Start --> Q
+  Q -->|Yes| L1
+  Q -->|No| L2
+`} />
+
+### Layout 1 — Pure form (TUTTO FORM)
+
+The entire content is a **single 2-column form** (`grid grid-cols-2 gap-6`)
+with no other sections (no in-card lists, no extra cards, no info boxes).
+
+Rules:
+
+- Use **`FormPageLayout`** — it provides the outer card wrapper
+  (`rounded-md border bg-background`) and the audit footer.
+- The **DEFAULT primary button lives in the footer** via the `footerActions`
+  snippet.
+- **No other primary button may appear inside the content** — the footer
+  already holds the primary action.
+- The footer MAY contain multiple CTAs (primary + secondary) if needed
+  (e.g. Cancel + Save, Delete + Save).
+- The form is **NOT** wrapped in an extra `<Card>` — `FormPageLayout` already
+  provides the wrapper.
+- The form keeps the 2-column grid, validation (`use:enhance`,
+  `FormField`/`FormLabel`/`FormControl`), and `PasswordChecklist`/custom
+  components as needed.
+
+Example — the Profile settings page:
+
+```svelte
+<FormPageLayout
+  entity="user_profiles"
+  rowUuid={userUuid}
+  meta={metadata.state.meta}
+  auditData={auditData}
+  auditingColumns={auditingColumns}
+  isCreatePage={isCreatePage}
+>
+  {#snippet header()}
+    <AppPageBreadcrumb segments={[...]} />
+    <h1 class="truncate text-xl font-semibold leading-tight">
+      {$t('shell.settings.profile.title')}
+    </h1>
+  {/snippet}
+
+  {#snippet children()}
+    <div class="flex-1 overflow-auto p-4">
+      <form id="profile-form" use:enhance>
+        <div class="grid grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <!-- Column 1 fields -->
+          </div>
+          <div class="space-y-4">
+            <!-- Column 2 fields -->
+          </div>
+        </div>
+      </form>
+    </div>
+  {/snippet}
+
+  {#snippet footerActions()}
+    <Button type="submit" form="profile-form" disabled={!canSave}>
+      {$t('common.save')}
+    </Button>
+  {/snippet}
+</FormPageLayout>
+```
+
+### Layout 2 — Mixed content (UN PO' FORM + UN PO' ALTRO)
+
+The page **mixes a form with other content** — in-card lists, info boxes,
+multiple cards, etc.
+
+Rules:
+
+- Use **`AppPageScaffold`** (NOT `FormPageLayout`) — there is no single
+  footer primary to render.
+- **No primary button in the footer.** The footer (if any) may hold only
+  secondary/tertiary actions.
+- Each card that needs an action puts its own **DEFAULT primary button
+  inside the card content** (`variant="default"` with default
+  `tone="primary"` — the full sky-to-indigo gradient, white text).
+- The form keeps ALL its characteristics: 2-column grid, validation,
+  `use:enhance`, `FormField`/`FormLabel`/`FormControl` blocks, etc.
+- The form **MUST be wrapped in a `<Card>`** — `AppPageScaffold` does not
+  provide a per-section card wrapper, only the outer page shell.
+
+Example — the Credentials settings page (3 cards: Change Password, Passkeys,
+MFA):
+
+```svelte
+<AppPageScaffold>
+  {#snippet header()}
+    <AppPageBreadcrumb segments={[...]} />
+    <h1 class="truncate text-xl font-semibold leading-tight">
+      {$t('shell.settings.credentials.title')}
+    </h1>
+  {/snippet}
+
+  {#snippet children()}
+    <div class="flex-1 overflow-auto p-4">
+      <div class="space-y-6">
+        <!-- Card 1: Change password (form, wrapped in Card per mixed-page rule) -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <KeyRound class="size-5" />
+              {$t('shell.settings.credentials.changePassword.title')}
+            </CardTitle>
+            <CardDescription>
+              {$t('shell.settings.credentials.changePassword.description')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <form id="change-password-form" onsubmit={handleChangePassword} class="grid grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <!-- Column 1: current + new password -->
+              </div>
+              <div class="space-y-4">
+                <!-- Column 2: confirm + CTA -->
+                <div class="flex justify-end">
+                  <!-- DEFAULT primary CTA inside the card (no footer primary) -->
+                  <Button type="submit" form="change-password-form" disabled={!canChangePassword}>
+                    {$t('shell.settings.credentials.changePassword.button')}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <!-- Card 2: Passkeys (in-card list) -->
+        <PasskeyEnrollment />
+
+        <!-- Card 3: MFA (in-card list) -->
+        <MfaManagement />
+      </div>
+    </div>
+  {/snippet}
+</AppPageScaffold>
+```
+
+## Button variants recap
+
+The `Button` component (`src/lib/components/ui/button/`) supports these
+variants relevant to detail pages:
+
+| Variant | Tone | Look | Use on detail pages |
+|---------|------|------|---------------------|
+| `default` | `primary` (default) | Full sky→indigo gradient, white text | **DEFAULT PRIMARY** — footer CTA in Layout 1, in-card CTA in Layout 2 |
+| `soft` | `primary` | Gradient border + subtle background, dark text | In-card CTA **only in Layout 1** when a footer primary already exists |
+| `outline` | — | Border with gradient, hover background | Secondary action (Cancel, etc.) |
+| `destructive` | — | Rose→red gradient | Delete / irreversible action |
+| `ghost` | — | Transparent, hover background | Icon-only actions (trash, settings) |
+
+### Soft primary vs default primary
+
+`variant="soft" tone="primary"` (gradient border, subtle background, dark text)
+is used for in-card CTAs **only when** a DEFAULT primary already exists in the
+footer (Layout 1 with extra in-card actions). When there is no footer primary
+(Layout 2), in-card CTAs are **DEFAULT primary** — never soft primary.
+
+## In-card list pattern
+
+When a card contains a list of records (e.g. enrolled passkeys, MFA factors),
+use this shared structure so all in-card lists look consistent:
+
+- **Card title** with an icon (`CardTitle class="flex items-center gap-2"` +
+  a Lucide™ icon at `size-5`).
+- **Card subtitle** via `CardDescription`.
+- **List items** with `rounded-md border-primary-gradient px-3 py-2` (the
+  gradient border utility from `src/app.css`).
+- **Item icon** at `size-5 text-muted-foreground shrink-0 mt-0.5`.
+- **Item title** at `text-sm font-medium truncate`.
+- **Item meta lines** at `text-xs text-muted-foreground`.
+- **Delete button** at `variant="ghost" size="sm"` with a `Trash2` icon at
+  `size-4` and an `sr-only` label for accessibility.
+- **Empty state** using the huge-icon pattern (see below).
+- **Card-level CTA** as a DEFAULT primary button rendered after the list
+  (works both when the list is empty and when it has items).
+
+### Empty state (huge icon)
+
+When the list is empty, render the moduli-style empty state instead of a
+plain text paragraph:
+
+```svelte
+<div class="grid min-h-56 place-items-center p-3" data-testid="<scope>-empty">
+  <div class="relative flex flex-col items-center gap-2 text-center">
+    <div class="pb-watermark-empty">
+      <Icon class="size-20 text-muted-foreground" />
+    </div>
+    <div class="text-sm font-medium text-muted-foreground">
+      {$t("<scope>.emptyTitle")}
+    </div>
+    <div class="text-xs text-muted-foreground">
+      {$t("<scope>.emptyHint")}
+    </div>
+  </div>
+</div>
+```
+
+The `pb-watermark-empty` class (defined in `src/app.css`) applies a bounce +
+opacity-pulse animation to the icon. The empty-state text uses two lines:
+a primary line (`emptyTitle`, e.g. "No passkey found") and a hint line
+(`emptyHint`, e.g. "Add a passkey to sign in faster without a password.").
+Both are distinct in weight and size from the card subtitle.
+
+The card-level CTA renders **below** the empty state, so the user sees the
+"no record found" message and the primary action to add one in the same
+card.
+
+## Decision checklist
+
+Before adding any button to a detail page, answer these questions:
+
+1. **Is the entire content a single 2-col form with no other sections?**
+   - Yes → Layout 1. Put the DEFAULT primary in `footerActions`. Do not add
+     any other primary inside the content. Do not wrap the form in a `<Card>`.
+   - No → Layout 2. Use `AppPageScaffold`. Do not put a primary in the
+     footer. Put a DEFAULT primary inside each card that needs an action.
+     Wrap any form in a `<Card>`.
+
+2. **Do I need a secondary action (Cancel, Delete) alongside the primary?**
+   - Layout 1 → put both in `footerActions` (primary + secondary).
+   - Layout 2 → put the secondary inside its own card or next to the
+     primary inside the relevant card.
+
+3. **Is the in-card action in a Layout 1 page (extra action inside a card
+   while the footer already has the primary)?**
+   - Use `variant="soft" tone="primary"` for that in-card action.
+   - Never use DEFAULT primary inside a Layout 1 card.
+
+4. **Is the in-card action in a Layout 2 page (no footer primary)?**
+   - Use DEFAULT primary (`variant="default"`, default `tone="primary"`).
+   - Never use soft primary as the main card CTA in Layout 2.
+
+## Real examples in the codebase
+
+| Page | Layout | Scaffold | Primary CTA location |
+|------|--------|----------|----------------------|
+| `/system/settings/profile` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
+| `/system/settings/credentials` | 2 (mixed) | `AppPageScaffold` | Inside each of the 3 cards |
+| `/system/settings/organizations/create` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
+| `/system/settings/organizations/{uuid}` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
+| `/system/settings/security` | 2 (mixed) | `AppPageScaffold` | Footer (Save OIDC) + Delete Account |
+
+## Next steps
+
+- [UI components](/docs/user-guide/ui-components) — custom components built on
+  Shadcn-Svelte™
+- [FormPageLayout](/docs/user-guide/components/form-page-layout) — the Layout 1
+  scaffold with audit footer
+- [AppPageScaffold](/docs/user-guide/components/app-page-scaffold) — the
+  Layout 2 scaffold for mixed-content pages
+- [Entity list table](/docs/user-guide/components/entity-list-table) — table
+  pages (not covered by this page)
+- [Settings](/docs/user-guide/settings) — the settings module overview

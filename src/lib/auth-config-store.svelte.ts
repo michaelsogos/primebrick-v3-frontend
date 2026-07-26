@@ -17,6 +17,7 @@ export interface AuthConfigPublic {
   enable_formauth: boolean;
   enable_webauthn: boolean;
   passkey_required: boolean;
+  enable_mfa: boolean;
 }
 
 // Export the $state directly — same pattern as userProfileState.
@@ -54,6 +55,9 @@ export const authConfigStore = {
   },
   get passkey_required(): boolean {
     return authConfigState.config?.passkey_required ?? false;
+  },
+  get enable_mfa(): boolean {
+    return authConfigState.config?.enable_mfa ?? false;
   },
   get loaded(): boolean {
     return authConfigState.loaded;

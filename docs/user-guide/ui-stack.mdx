@@ -1,6 +1,6 @@
 ---
 title: UI stack
-description: The layered UI stack powering the Primebrick frontend — BITS UI, shadcn-svelte, more-shadcn-svelte, shadcn-svelte-extras, and Tailwind CSS. Learn the basics upstream; this page explains how they fit together here.
+description: The layered UI stack powering the Primebrick frontend — BITS UI™, shadcn-svelte™, more-shadcn-svelte™, shadcn-svelte-extras™, and Tailwind CSS™. Learn the basics upstream; this page explains how they fit together here.
 ---
 
 # UI stack
@@ -30,28 +30,28 @@ they combine inside Primebrick.
 
 ## The five layers
 
-### 1. Tailwind CSS
+### 1. Tailwind CSS™
 
 Utility-first CSS framework and the source of all design tokens (colors,
-radius, spacing). Primebrick uses **Tailwind CSS v4** with the Vite plugin.
+radius, spacing). Primebrick uses **Tailwind CSS™ v4** with the Vite plugin.
 Global styles and shadcn CSS variables live in `src/app.css`.
 
 - **Repo path**: configured via `@tailwindcss/vite`; tokens in `src/app.css`
 - **Companions**: `tailwind-merge`, `tailwind-variants`, `class-variance-authority`, `tw-animate-css`
 - **Learn the basics**: [https://tailwindcss.com](https://tailwindcss.com)
 
-### 2. BITS UI
+### 2. BITS UI™
 
-Headless, accessible Svelte component primitives (the Svelte equivalent of
-Radix UI). shadcn-svelte is built on top of BITS UI. You rarely use BITS UI
-directly in Primebrick — you use the shadcn-svelte wrappers in
-`src/lib/components/ui/`. Reach for BITS UI only when you need a primitive
-shadcn-svelte does not wrap.
+Headless, accessible Svelte™ component primitives (the Svelte™ equivalent of
+Radix UI). shadcn-svelte™ is built on top of BITS UI™. You rarely use BITS UI™
+directly in Primebrick — you use the shadcn-svelte™ wrappers in
+`src/lib/components/ui/`. Reach for BITS UI™ only when you need a primitive
+shadcn-svelte™ does not wrap.
 
 - **Repo path**: npm dependency `bits-ui@2.18.1` (not vendored)
 - **Learn the basics**: [https://www.bits-ui.org](https://www.bits-ui.org)
 
-### 3. shadcn-svelte
+### 3. shadcn-svelte™
 
 The primary primitive layer. Components are **vendored** (copy-pasted) into
 `src/lib/components/ui/` — they are not an npm dependency. Configuration lives
@@ -63,9 +63,9 @@ registry `https://shadcn-svelte.com/registry`. Add new primitives with
 - **Companions**: `formsnap` (form layer), `paneforge` (resizable), `runed` (runes utilities), `svelte-sonner` (toast)
 - **Learn the basics**: [https://www.shadcn-svelte.com](https://www.shadcn-svelte.com) · [https://www.shadcn-svelte.com/docs/components](https://www.shadcn-svelte.com/docs/components)
 
-### 4. more-shadcn-svelte
+### 4. more-shadcn-svelte™
 
-A community registry (`kevwpl/more-shadcn-svelte`) extending shadcn-svelte with
+A community registry (`kevwpl/more-shadcn-svelte`) extending shadcn-svelte™ with
 components the base registry lacks. Same copy-paste model. Add components with
 `npx shadcn-svelte@latest add https://more-shadcn.noair.fun/r/<name>.json`.
 
@@ -81,7 +81,7 @@ Primebrick vendors 5 components from this registry:
 
 - **Learn the basics**: [https://more-shadcn.noair.fun](https://more-shadcn.noair.fun) · [https://github.com/kevwpl/more-shadcn-svelte](https://github.com/kevwpl/more-shadcn-svelte)
 
-### 5. shadcn-svelte-extras
+### 5. shadcn-svelte-extras™
 
 A second community registry (`ieedan/shadcn-svelte-extras`) of turn-key
 components. Same copy-paste model. Add components with
@@ -101,10 +101,10 @@ Primebrick vendors 3 components from this registry:
 
 Before writing a new component, check the layers in this order:
 
-1. **shadcn-svelte** (`src/lib/components/ui/`) — does a primitive already exist?
-2. **shadcn-svelte-extras** — does a turn-key component exist on the extras site?
-3. **more-shadcn-svelte** — does a component exist on the more-shadcn site?
-4. **BITS UI** — does a headless primitive exist that none of the above wrap?
+1. **shadcn-svelte™** (`src/lib/components/ui/`) — does a primitive already exist?
+2. **shadcn-svelte-extras™** — does a turn-key component exist on the extras site?
+3. **more-shadcn-svelte™** — does a component exist on the more-shadcn site?
+4. **BITS UI™** — does a headless primitive exist that none of the above wrap?
 5. **Custom** — only if none of the above fit. Custom components live under
    `src/lib/components/` (root), `src/lib/components/<feature>/`, or
    `src/lib/components/ui/<name>/` when they extend a primitive.

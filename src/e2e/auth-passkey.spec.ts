@@ -191,20 +191,26 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
   // ─── Step 8: passkey enrollment ────────────────────────────────────────────
 
   test("Step 8: enroll passkey via profile settings", async () => {
-    // The PasskeyPromptDialog may auto-open after login (if the user has no
-    // passkey and webauthn is enabled). If it appears, use it. Otherwise,
-    // navigate to the profile page where PasskeyEnrollment is mounted.
-    const promptButton = userPage.getByTestId("passkey-prompt-enroll-button");
+    // The AuthMethodsPromptDialog may auto-open after login (if the user has no
+    // passkey and webauthn is enabled). If it appears, select the passkey method
+    // and use it. Otherwise, navigate to the profile page where PasskeyEnrollment
+    // is mounted.
+    const promptPasskeyButton = userPage.getByTestId("auth-method-enforcer-enroll-passkey-button");
 
     let usedPrompt = false;
-    if (await promptButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await promptButton.click();
+    if (await promptPasskeyButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // If the method selector is visible, pick "passkey" first.
+      const passkeyChoicebox = userPage.getByRole("radio", { name: /passkey/i });
+      if (await passkeyChoicebox.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await passkeyChoicebox.click();
+      }
+      await promptPasskeyButton.click();
       usedPrompt = true;
     }
 
     if (!usedPrompt) {
-      // Navigate to the profile settings page where PasskeyEnrollment is mounted.
-      await userPage.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
+      // Navigate to the credentials settings page where PasskeyEnrollment is mounted.
+      await userPage.goto("/system/settings/credentials", { waitUntil: "domcontentloaded" });
 
       // Wait for the PasskeyEnrollment component to render.
       const addButton = userPage.getByTestId("passkey-enrollment-add-button");
@@ -217,10 +223,10 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
     const passkeyItem = userPage.getByTestId("passkey-enrollment-item").first();
     await passkeyItem.waitFor({ state: "visible", timeout: 15000 });
 
-    // If we used the prompt dialog, it should have closed. Navigate to profile
+    // If we used the prompt dialog, it should have closed. Navigate to credentials
     // to verify the passkey is listed there.
     if (usedPrompt) {
-      await userPage.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
+      await userPage.goto("/system/settings/credentials", { waitUntil: "domcontentloaded" });
       await userPage.getByTestId("passkey-enrollment-item").first().waitFor({ state: "visible", timeout: 15000 });
     }
   });

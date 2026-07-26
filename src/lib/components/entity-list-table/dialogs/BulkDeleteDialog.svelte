@@ -23,7 +23,7 @@
   }: BulkDeleteDialogProps = $props();
 </script>
 
-<DialogBordered bind:open={open} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+<DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
     <Dialog.Description>

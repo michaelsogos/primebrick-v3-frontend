@@ -75,9 +75,9 @@
   {/if}
 
   <InputGroupButton
-    variant="soft"
+    variant="ghost"
     size="xs"
-    class="mr-1 bg-sky-100/50 hover:bg-sky-200/50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+    class="h-full rounded-l-none rounded-r-md border-left-primary-gradient-soft hover:brightness-105 transition-colors"
     onclick={() =>
       openSheet(
         'entity.searchIn',

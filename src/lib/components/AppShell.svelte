@@ -13,7 +13,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { startServicesPolling, stopServicesPolling } from '$lib/services-store.svelte';
+  import { startServicesStream, stopServicesStream } from '$lib/services-store.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -23,7 +23,7 @@
   onMount(() => {
     void probeHealth();
     void loadShellNav();
-    startServicesPolling();
+    startServicesStream();
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
@@ -45,18 +45,19 @@
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onWindowError);
-      stopServicesPolling();
+      stopServicesStream();
     };
   });
 
-  /** Poll while BE is unreachable, or while BE is up but DB or IDP is down (503 health). */
+  /** Poll while BE is unreachable, or while BE is up but any infrastructure component is down (503 health). */
   $effect(() => {
     if (!browser) return;
-    const dbDown =
-      backendState.health !== null && !backendState.health.db.ok;
-    const idpDown =
-      backendState.health !== null && !backendState.health.idp.ok;
-    if (!backendState.offline && !dbDown && !idpDown) return;
+    const checks = backendState.health?.checks;
+    const dbDown = checks !== undefined && !checks.db?.ok;
+    const redisDown = checks !== undefined && !checks.redis?.ok;
+    const natsDown = checks !== undefined && !checks.nats?.ok;
+    const idpDown = checks !== undefined && !checks.idp?.ok;
+    if (!backendState.offline && !dbDown && !redisDown && !natsDown && !idpDown) return;
     const id = setInterval(() => void probeHealth(), 5000);
     return () => clearInterval(id);
   });
@@ -94,7 +95,7 @@
         <AppServerBanner />
       </div>
 
-      <div class="relative min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}
       </div>
     </Sidebar.Inset>

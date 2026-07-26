@@ -12,7 +12,8 @@
   import {
     defaultVisibleColumnKeys,
     orderedColumnsFromListMeta,
-    sanitizeVisibleKeys
+    sanitizeVisibleKeys,
+    isSnakeCaseSingular
   } from '$lib/entity-list';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { onMount } from 'svelte';
@@ -23,6 +24,7 @@
 
   type UserProfileMeta = {
     entity: 'user_profiles';
+    translationKey?: string;
     titleKey?: string;
     uid: string;
     list: EntityListListMeta;
@@ -573,6 +575,7 @@
 
   <EntityListTable
     entity="user_profiles"
+    translationKey={meta?.translationKey && isSnakeCaseSingular(meta.translationKey) ? meta.translationKey : 'user_profile'}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick
     uid={meta?.uid ?? 'uuid'}
@@ -594,8 +597,8 @@
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.userProfile.singular"
-    selectionLabelKey="entities.userProfile.plural"
+    selectionLabelSingularKey="entities.user_profile.singular"
+    selectionLabelKey="entities.user_profile.plural"
     rows={rows}
     {total}
     {metaLoading}

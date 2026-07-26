@@ -6,6 +6,7 @@
   import { isMenuSegment, type AppBreadcrumbSegment } from '$lib/breadcrumb/types';
   import { cn } from '$lib/utils';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
   /** Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. */
   let {
@@ -35,28 +36,42 @@
                 )}
                 aria-label={seg.menuAriaLabel ?? seg.label}
               >
+                {#if seg.icon}
+                  <DynamicIcon name={seg.icon} size={14} class="shrink-0 opacity-70" />
+                {/if}
                 <span class="truncate">{seg.label}</span>
                 <ChevronDown class="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" class="min-w-48">
                 {#each seg.items as item (item.href)}
                   <DropdownMenu.Item
-                    class={dropdownMenuSelectedItemClass(item.current)}
+                    class={cn(dropdownMenuSelectedItemClass(item.current), 'flex items-center gap-2')}
                     onSelect={() => {
                       if (!item.current) void goto(item.href);
                     }}
                   >
+                    {#if item.icon}
+                      <DynamicIcon name={item.icon} size={14} class="shrink-0 opacity-70" />
+                    {/if}
                     {item.label}
                   </DropdownMenu.Item>
                 {/each}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           {:else if seg.href}
-            <Breadcrumb.Link href={seg.href} class="truncate hover:underline">
-              {seg.label}
+            <Breadcrumb.Link href={seg.href} class="inline-flex items-center gap-1 truncate hover:underline">
+              {#if seg.icon}
+                <DynamicIcon name={seg.icon} size={14} class="shrink-0 opacity-70" />
+              {/if}
+              <span class="truncate">{seg.label}</span>
             </Breadcrumb.Link>
           {:else}
-            <span class="truncate">{seg.label}</span>
+            <span class="inline-flex items-center gap-1 truncate">
+              {#if seg.icon}
+                <DynamicIcon name={seg.icon} size={14} class="shrink-0 opacity-70" />
+              {/if}
+              <span class="truncate">{seg.label}</span>
+            </span>
           {/if}
         </Breadcrumb.Item>
       {/each}

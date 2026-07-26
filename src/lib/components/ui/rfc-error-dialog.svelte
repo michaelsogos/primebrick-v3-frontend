@@ -106,7 +106,7 @@
 
 <BorderedDialog
   bind:open={open}
-  color="destructive"
+  severity="destructive"
   class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4"
   {showCloseButton}
 >

@@ -210,22 +210,4 @@
 <!-- Error details fullscreen dialog -->
 <RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} color={selectedErrorColor} />
 
-<style>
-  @keyframes pb-watermark-pulse {
-    0%,
-    100% {
-      opacity: 0.12;
-      transform: translateY(0) scale(1);
-    }
-    50% {
-      opacity: 0.22;
-      transform: translateY(-6px) scale(1.06);
-    }
-  }
-
-  .pb-watermark-empty {
-    transform-origin: center;
-    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
-  }
-</style>
 

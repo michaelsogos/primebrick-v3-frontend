@@ -1,4 +1,5 @@
 import { fetchServices, type ServiceInfo } from '$lib/api';
+import { createSseConnection, parseSseData } from '$lib/sse/create-sse-connection';
 
 export const servicesState = $state({
   services: [] as ServiceInfo[],
@@ -6,8 +7,12 @@ export const servicesState = $state({
   lastCheckedAt: null as number | null,
 });
 
-let pollInterval: ReturnType<typeof setInterval> | null = null;
+let closeSse: (() => void) | null = null;
 
+/**
+ * Initial fetch — loads services via REST before SSE connects.
+ * This ensures the UI has data even if SSE takes a moment to connect.
+ */
 export async function probeServices(): Promise<void> {
   try {
     servicesState.services = await fetchServices();
@@ -19,16 +24,62 @@ export async function probeServices(): Promise<void> {
   }
 }
 
-export function startServicesPolling(intervalMs = 30000): void {
-  if (pollInterval) return;
+/**
+ * Start streaming service events via SSE.
+ * Replaces the 30s polling loop with real-time push.
+ * Falls back to REST fetch if SSE fails to connect.
+ */
+export function startServicesStream(): void {
+  if (closeSse) return;
+
+  // Initial REST fetch for immediate data
   void probeServices();
-  pollInterval = setInterval(() => void probeServices(), intervalMs);
+
+  closeSse = createSseConnection({
+    url: '/api/v1/system/services/events',
+    onMessage: (msg) => {
+      if (msg.event === 'snapshot') {
+        const data = parseSseData<{ services: ServiceInfo[] }>(msg.data);
+        servicesState.services = data.services;
+        servicesState.lastCheckedAt = Date.now();
+        servicesState.loading = false;
+      } else if (
+        msg.event === 'service.register' ||
+        msg.event === 'service.heartbeat' ||
+        msg.event === 'service.unregister' ||
+        msg.event === 'service.stale'
+      ) {
+        const service = parseSseData<ServiceInfo>(msg.data);
+        upsertService(service);
+        servicesState.lastCheckedAt = Date.now();
+      }
+    },
+    onError: () => {
+      // SSE error — backoff and reconnect is handled by createSseConnection.
+      // The services panel is non-critical; no notification needed.
+    },
+  });
 }
 
-export function stopServicesPolling(): void {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
+export function stopServicesStream(): void {
+  if (closeSse) {
+    closeSse();
+    closeSse = null;
+  }
+}
+
+/**
+ * Upsert a single service into the state array.
+ * Matches by code + base_url (composite key for non-scaler services).
+ */
+function upsertService(service: ServiceInfo): void {
+  const idx = servicesState.services.findIndex(
+    (s) => s.code === service.code && s.base_url === service.base_url,
+  );
+  if (idx >= 0) {
+    servicesState.services[idx] = service;
+  } else {
+    servicesState.services.push(service);
   }
 }
 

@@ -92,24 +92,89 @@
     },
     "passkeys": {
       "title": "Passkeys",
-      "description": "Ajoutez une passkey pour vous connecter sans mot de passe via Face ID, Touch ID ou une clé de sécurité.",
+      "description": "Ajoutez une passkey pour vous connecter sans mot de passe via Face ID\u2122, Touch ID\u2122 ou une clé de sécurité.",
       "add": "Ajouter une passkey",
       "remove": "Supprimer",
       "empty": "Aucune passkey enregistrée",
+      "emptyTitle": "Aucune passkey trouvée",
+      "emptyHint": "Ajoutez une passkey pour vous connecter plus rapidement sans mot de passe.",
       "enrollmentSuccess": "Passkey ajoutée",
       "enrollmentError": "Échec de l'ajout de la passkey",
       "alreadyEnrolled": "Vous avez déjà une passkey sur cet appareil",
-      "deleteError": "Échec de la suppression de la passkey"
+      "deleteError": "Échec de la suppression de la passkey",
+      "unknownPasskey": "Passkey",
+      "neverUsed": "Jamais utilisée",
+      "unknownDevice": "Appareil inconnu",
+      "enrolledOn": "Enregistrée le {date}",
+      "lastUsed": "Dernière utilisation {date}",
+      "transport": {
+        "internal": "Interne",
+        "hybrid": "Hybride",
+        "usb": "USB",
+        "nfc": "NFC",
+        "ble": "Bluetooth"
+      }
     },
-    "passkeyPrompt": {
-      "title": "Sécurisez votre compte avec une passkey",
-      "description": "Les passkeys sont un moyen plus rapide et plus sûr de se connecter. Au lieu de saisir votre mot de passe, utilisez Face ID™, Touch ID™, Windows Hello™ ou une clé de sécurité. Cela ne prend que quelques secondes.",
-      "benefitSecurity": "Plus sécurisé que les mots de passe — résistant au phishing et au bourrage d'identifiants",
-      "benefitConvenience": "Connectez-vous instantanément avec la biométrie ou une clé de sécurité — aucun mot de passe à mémoriser",
-      "enrollButton": "Configurer une passkey",
+    "mfa": {
+      "title": "Authentification à deux facteurs (2FA)",
+      "description": "Ajoutez une application d'authentification comme deuxième couche de sécurité. Même si votre mot de passe fuit, votre compte reste protégé.",
+      "empty": "Aucun facteur 2FA enregistré. Ajoutez-en un pour sécuriser votre compte.",
+      "emptyTitle": "Aucun facteur MFA trouvé",
+      "emptyHint": "Ajoutez une application d'authentification pour protéger votre compte avec un deuxième facteur.",
+      "enrollButton": "Ajouter un facteur 2FA",
+      "enrollAnother": "Ajouter un autre facteur",
+      "defaultLabel": "Application OTP",
+      "factorType": "Type",
+      "preferred": "Préféré",
+      "lastUsed": "Dernière utilisation",
+      "delete": "Supprimer",
+      "deleteSuccess": "Facteur 2FA supprimé",
+      "deleteError": "Échec de la suppression du facteur 2FA",
+      "enrollmentSuccess": "Facteur 2FA ajouté",
+      "enrollmentError": "Échec du démarrage de l'enregistrement 2FA",
+      "codeRequired": "Veuillez saisir le code à 6 chiffres",
+      "invalidCode": "Code d'authentification invalide",
+      "connectionError": "Erreur de connexion ou échec de la vérification",
+      "enrollDialogTitle": "Configurer l'application OTP",
+      "enrollStepQr": "Scannez ce code QR\u00ae avec votre application OTP (Google Authenticator\u2122, Authy\u2122, 1Password\u2122, etc.)",
+      "enrollStepVerify": "Saisissez le code à 6 chiffres affiché dans votre application OTP",
+      "manualEntry": "Ou saisissez ce code manuellement",
+      "recoveryCodes": "Codes de secours \u2014 enregistrez-les dans un endroit sûr, vous en aurez besoin si vous perdez votre téléphone",
+      "recoveryCodesWarning": "Conservez-les dans un endroit sûr. Ils ne seront plus affichés.",
+      "continue": "Continuer",
+      "label": "Étiquette (facultatif)",
+      "labelPlaceholder": "ex. Google Authenticator\u2122",
+      "verifyCode": "Code à 6 chiffres",
+      "verifyAndEnable": "Vérifier et activer",
+      "deleteDialogTitle": "Supprimer le facteur 2FA ?",
+      "deleteDialogDescription": "Ce code ne vous sera plus demandé à la connexion. Assurez-vous d'avoir une autre application OTP ou une passkey pour sécuriser votre compte."
+    },
+    "mfaStepUp": {
+      "stepUpTitle": "Vérifiez votre identité",
+      "stepUpDescription": "Cette action nécessite une vérification supplémentaire. Saisissez le code à 6 chiffres de votre application OTP pour continuer.",
+      "stepUpAction": "Action",
+      "selectFactor": "Sélectionner l'application OTP",
+      "verifyAndAuthorize": "Vérifier et continuer",
+      "stepUpAuthorized": "Vérification réussie",
+      "stepUpInitiateError": "Échec du démarrage de la vérification. Veuillez réessayer."
+    },
+    "authMethodEnforcer": {
+      "title": "Sécurisez votre compte",
+      "description": "Choisissez une méthode de connexion plus sécurisée pour protéger votre compte. La configuration ne prend que quelques secondes.",
+      "benefitSecurity": "Plus sécurisé que les mots de passe seuls \u2014 protège contre le vol de compte et les arnaques en ligne (phishing)",
+      "benefitConveniencePasskey": "Connectez-vous instantanément avec Face ID\u2122, Touch ID\u2122, Windows Hello\u2122 ou une clé de sécurité \u2014 aucun mot de passe à mémoriser",
+      "benefitConvenienceMfa": "Fonctionne avec n'importe quelle application OTP \u2014 Google Authenticator\u2122, Authy\u2122, 1Password\u2122, Microsoft Authenticator\u2122",
+      "warningMfa": "Activez la 2FA pour protéger votre compte contre les accès non autorisés.",
+      "methodPasskey": "Passkey",
+      "methodPasskeyDesc": "Connectez-vous avec Face ID\u2122, Touch ID\u2122, Windows Hello\u2122 ou une clé de sécurité",
+      "methodMfa": "Application d'authentification (2FA)",
+      "methodMfaDesc": "Utilisez une application OTP comme Google Authenticator\u2122 ou Microsoft Authenticator\u2122",
+      "enrollPasskeyButton": "Configurer une passkey",
+      "enrollMfaButton": "Configurer la 2FA",
       "dismissButton": "Pas maintenant",
-      "dontAskAgain": "Ne plus afficher cette fenêtre",
-      "enrolling": "En attente de l'authentificateur..."
+      "dontAskAgain": "Ne plus afficher",
+      "enrolling": "En attente de l'appareil...",
+      "backToMethods": "Retour aux méthodes"
     }
   },
   "common": {
@@ -215,6 +280,7 @@
       "aria": "Navigation",
       "open": "Ouvrir la navigation",
       "module": "Module",
+      "links": "Liens",
       "crmFallback": "CRM",
       "crmBreadcrumbMenu": "Sections CRM"
     },
@@ -268,12 +334,61 @@
       "breadcrumbMenu": "Onglets de paramètres",
       "tabs": {
         "profile": "Profil",
+        "credentials": "Identifiants",
         "organizations": "Organisations",
         "users": "Utilisateurs",
+        "roles": "Rôles",
         "security": "Sécurité",
         "modules": "Modules",
         "templates": "Modèles",
         "emailProviders": "Fournisseurs d'email"
+      },
+      "roles": {
+        "title": "Rôles",
+        "subtitle": "Gérez les mappages rôle-permission. Chaque rôle associe un rôle IDP à un ensemble de permissions Primebrick.",
+        "create": "Nouveau Rôle",
+        "createTitle": "Créer un Rôle",
+        "createSubtitle": "Définissez un nouveau mappage de rôle avec rôle IDP et permissions.",
+        "editTitle": "Modifier le Rôle",
+        "editSubtitle": "Mettez à jour les permissions du rôle et l'étiquette d'affichage.",
+        "searchPlaceholder": "Rechercher des rôles...",
+        "empty": "Aucun rôle trouvé.",
+        "notFound": "Rôle introuvable.",
+        "admin": "Administrateur",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "lastSynced": "Dernière sync.",
+        "deleteConfirmTitle": "Supprimer le Rôle",
+        "deleteConfirmBody": "Êtes-vous sûr de vouloir supprimer le rôle \"{role}\" ? Cette action ne peut pas être annulée.",
+        "colIdpRole": "Rôle IDP",
+        "colIdpOrg": "Organisation",
+        "colLabel": "Étiquette",
+        "colAdmin": "Administrateur",
+        "colPermissions": "Permissions",
+        "colLastSynced": "Dernière sync.",
+        "colActions": "Actions",
+        "fieldIdpRole": "Rôle IDP",
+        "fieldIdpRoleHint": "Le nom exact du rôle tel qu'émis par l'IDP dans le JWT (sensible à la casse).",
+        "fieldIdpRoleImmutable": "Le nom du rôle IDP est immuable après la création.",
+        "fieldIdpOrg": "Organisation IDP",
+        "fieldIdpOrgHint": "L'organisation/propriétaire Casdoor à laquelle appartient le rôle.",
+        "fieldIdpOrgPlaceholder": "Sélectionner l'organisation",
+        "fieldIdpOrgImmutable": "L'organisation IDP est immuable après la création.",
+        "fieldLabelKey": "Clé d'étiquette d'affichage",
+        "fieldLabelKeyHint": "Clé de traduction pour le nom d'affichage du rôle (ex. shell.settings.roles.label.admin).",
+        "fieldIsAdmin": "Super Administrateur",
+        "fieldIsAdminHint": "Lorsqu'activé, ce rôle accorde TOUTES les permissions (super-utilisateur).",
+        "tabDetails": "Détails",
+        "tabPermissions": "Permissions",
+        "modeShowAll": "Tout afficher",
+        "modeHide": "Masquer",
+        "permissionsLoading": "Chargement des permissions...",
+        "permissionsEmpty": "Aucune permission sélectionnée.",
+        "validation": {
+          "idpRoleRequired": "Le rôle IDP est requis.",
+          "idpRoleFormat": "Le rôle IDP ne doit contenir que des lettres minuscules, des chiffres et des tirets bas.",
+          "idpOrgRequired": "L'organisation IDP est requise."
+        }
       },
       "profile": {
         "title": "Profil",
@@ -419,6 +534,15 @@
           "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
         }
       },
+      "credentials": {
+        "title": "Identifiants",
+        "description": "Gérez vos identifiants de connexion : mot de passe, passkeys et authentification à deux facteurs.",
+        "changePassword": {
+          "title": "Modifier le mot de passe",
+          "description": "Mettez à jour le mot de passe que vous utilisez pour vous connecter. Vous recevrez un e-mail de notification après une modification réussie.",
+          "button": "Modifier le mot de passe"
+        }
+      },
       "security": {
         "title": "Sécurité",
         "changePassword": "Changer le mot de passe",
@@ -537,8 +661,15 @@
       "beOffline": "Hors ligne",
       "dbOffline": "DB hors ligne",
       "idpOffline": "IDP hors ligne",
+      "redisOffline": "Redis hors ligne",
+      "natsOffline": "NATS hors ligne",
       "identityProvider": "Fournisseur d'identité",
+      "redis": "Redis",
+      "nats": "NATS",
       "versionsTitle": "Versions",
+      "coreModulesTitle": "Modules Core",
+      "installedModulesTitle": "Modules Installés",
+      "systemInfoTitle": "Infos Système",
       "statusTooltip": "STATUT : {status} | Version : {version}",
       "shellVersion": "Web Shell",
       "backendVersion": "Backend",
@@ -620,12 +751,13 @@
       "changedFrom": "modifié de",
       "to": "à",
       "null": "vide",
+      "emptyList": "liste vide",
       "recordCreated": "Enregistrement créé",
       "recordHardDeleted": "Enregistrement supprimé définitivement",
       "recordSoftDeleted": "Enregistrement supprimé",
       "recordRestored": "Enregistrement restauré"
     },
-    "userProfile": {
+    "user_profile": {
       "title": "Utilisateurs",
       "singular": "Utilisateur",
       "plural": "Utilisateurs",
@@ -664,9 +796,23 @@
         "email_verified_title": "Vérification de l'e-mail"
       }
     },
-    "user_profiles": {
+    "role_mapping": {
+      "title": "Mappages de Rôles",
+      "singular": "Mappage de Rôle",
+      "plural": "Mappages de Rôles",
       "fields": {
-        "avatar_color": "Couleur de l'avatar"
+        "uuid": "UUID",
+        "idp_role": "Rôle IDP",
+        "idp_org": "Organisation",
+        "label_key": "Clé d'Étiquette",
+        "is_admin": "Administrateur",
+        "permissions": "Permissions",
+        "last_synced_at": "Dernière Sync.",
+        "created_at": "Date de Création",
+        "created_by": "Créé par",
+        "updated_at": "Date de Mise à Jour",
+        "updated_by": "Mis à Jour par",
+        "version": "Version"
       }
     },
     "list": {
@@ -674,7 +820,8 @@
         "hintBrowser": "Affiché dans le fuseau du navigateur. Clic pour l’IANA enregistrée sur la ligne.",
         "hintRecord": "Affiché dans le fuseau IANA enregistré. Clic pour le fuseau du navigateur."
       },
-      "searchPlaceholder": "Rechercher des clients…",
+      "searchPlaceholder": "Rechercher…",
+      "new": "Nouveau",
       "empty": "Aucun résultat",
       "noRecords": "Aucun enregistrement",
       "selectedSingular": "sélectionné",

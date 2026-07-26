@@ -14,8 +14,8 @@ function getBranchName() {
 }
 
 function parseTag(tag) {
-  // 0.1.2 (no v prefix)
-  const m = /^(0)\.(\d+)\.(\d+)$/.exec(tag);
+  // 0.1.2 or v0.1.2 (tolerate legacy 'v' prefix)
+  const m = /^v?(0)\.(\d+)\.(\d+)$/.exec(tag);
   if (!m) return null;
   return { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) };
 }
@@ -33,7 +33,8 @@ function format(v) {
 function latestTagVersion() {
   let tags = [];
   try {
-    const out = sh('git tag --list "0.*.*"');
+    // List both "0.*.*" (current convention) and "v0.*.*" (legacy tags).
+    const out = sh('git tag --list "0.*.*" "v0.*.*"');
     tags = out ? out.split(/\r?\n/).filter(Boolean) : [];
   } catch {
     tags = [];
@@ -74,6 +75,7 @@ const kind = branch.startsWith("release/")
 
 if (!kind) process.exit(0);
 
+const pkgPath = "package.json";
 const latest = latestTagVersion();
 const expected = nextVersion(kind, latest);
 const expectedBranch = `${kind}/${format(expected)}`;
@@ -90,7 +92,6 @@ if (branch !== expectedBranch) {
   process.exit(1);
 }
 
-const pkgPath = "package.json";
 const pkg = readJson(pkgPath);
 const expectedVersion = format(expected);
 

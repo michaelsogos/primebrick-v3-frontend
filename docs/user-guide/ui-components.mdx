@@ -1,15 +1,32 @@
 ---
 title: UI components
-description: Custom Primebrick components built on top of Shadcn-Svelte — combo-select, dynamic-icon, color-selector, avatar-preview, and form helpers.
+description: Custom Primebrick components built on top of Shadcn-Svelte™ — combo-select, dynamic-icon, color-selector, avatar-preview, and form helpers.
 ---
 
 # UI components
 
-Primebrick uses **Shadcn-Svelte** as the vendored primitive layer in
+Primebrick uses **Shadcn-Svelte™** as the vendored primitive layer in
 `src/lib/components/ui/`. On top of those primitives, several custom
 components are provided for common app-wide patterns. The full prop
 reference for every component is in the
 [API reference](/docs/user-guide/api-reference).
+
+## Where custom components live
+
+<Mermaid chart={`flowchart TB
+  Shadcn["shadcn-svelte primitives<br/>src/lib/components/ui/*<br/>(31 vendored, unmodified)"]
+  Wrapped["Wrapped primitives (3)<br/>input, tooltip, form<br/>(shadcn + Primebrick extensions)"]
+  Custom["Custom components (40)<br/>combo-select, dynamic-icon,<br/>entity-list-table, app-shell, ..."]
+  Shadcn --> Wrapped
+  Shadcn --> Custom
+  Wrapped --> Custom
+`} />
+
+The [component catalog](/docs/user-guide/components) lists every component
+grouped by origin (custom, wrapped, more-shadcn-svelte, shadcn-svelte-extras,
+unmodified shadcn-svelte). The sections below cover the most commonly used
+custom components. See [UI stack](/docs/user-guide/ui-stack) for the full
+layering of all five UI technologies.
 
 ## ComboSelect
 
@@ -46,7 +63,7 @@ Key props:
 ## DynamicIcon
 
 `src/lib/components/ui/dynamic-icon/DynamicIcon.svelte` — renders any
-Lucide icon by name at runtime. It uses `import.meta.glob` to pre-register
+Lucide™ icon by name at runtime. It uses `import.meta.glob` to pre-register
 all icon modules under `@lucide/svelte/dist/icons/*.svelte` so Vite can
 statically analyze them, then lazy-loads and caches each icon component on
 first use.
@@ -60,7 +77,7 @@ span keeps layout stable while the icon chunk loads. If the name is not
 found, a warning is logged and nothing renders.
 
 This is used by the modules system to render module-configured icons
-without bundling every Lucide icon.
+without bundling every Lucide™ icon.
 
 ## ColorSelector
 
@@ -137,6 +154,7 @@ described in [App shell & sidebar](/docs/user-guide/app-shell):
 
 ## Next steps
 
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component, grouped by origin
 - [API reference](/docs/user-guide/api-reference) — full prop tables for every component
-- [Entity list table](/docs/user-guide/entity-list-table)
+- [Entity list table](/docs/user-guide/components/entity-list-table) — the flagship custom component
 - [App shell & sidebar](/docs/user-guide/app-shell)

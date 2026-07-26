@@ -92,3 +92,108 @@ export function getContrastTextColor(hex: string): 'white' | 'black' {
   const luminance = calculateLuminance(hex);
   return luminance > 0.5 ? 'black' : 'white';
 }
+
+// ─── Avatar gradient logic ────────────────────────────────────────────────
+// The user's avatar_color is used as the centroid of a gradient. Start and
+// end colors are computed by shifting hue ±30° and lightness ±12%, producing
+// two distinct but harmonious colors (like the PrimeBrick logo sky→indigo).
+
+/**
+ * Convert hex color to HSL.
+ * @returns [hue(0-360), saturation(0-100), lightness(0-100)] or null if invalid
+ */
+export function hexToHsl(hex: string): [number, number, number] | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+  return [h * 360, s * 100, l * 100];
+}
+
+/**
+ * Convert HSL to hex color. Handles hue wraparound and clamps saturation/lightness.
+ * @param h hue (0-360, wraps around)
+ * @param s saturation (0-100, clamped)
+ * @param l lightness (0-100, clamped)
+ */
+export function hslToHex(h: number, s: number, l: number): string {
+  const hue = ((h % 360) + 360) % 360;
+  const sat = Math.max(0, Math.min(100, s)) / 100;
+  const light = Math.max(0, Math.min(100, l)) / 100;
+  const c = (1 - Math.abs(2 * light - 1)) * sat;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = light - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (hue < 60) { r = c; g = x; b = 0; }
+  else if (hue < 120) { r = x; g = c; b = 0; }
+  else if (hue < 180) { r = 0; g = c; b = x; }
+  else if (hue < 240) { r = 0; g = x; b = c; }
+  else if (hue < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Determine text color (white or black) based on the average luminance of two
+ * gradient colors. Used for gradient backgrounds where the midpoint luminance
+ * is more representative than either endpoint alone.
+ */
+export function getGradientContrastTextColor(startHex: string, endHex: string): 'white' | 'black' {
+  const avgLuminance = (calculateLuminance(startHex) + calculateLuminance(endHex)) / 2;
+  return avgLuminance > 0.5 ? 'black' : 'white';
+}
+
+/**
+ * Compute a gradient from a user's avatar color (used as centroid).
+ * Start: hue − 30°, lightness − 12% (darker, cooler).
+ * End: hue + 30°, lightness + 12% (lighter, warmer).
+ * Falls back to a solid color (start === end === input) if the input is invalid.
+ */
+export function computeAvatarGradient(hex: string): {
+  start: string;
+  end: string;
+  textColor: 'white' | 'black';
+} {
+  const hsl = hexToHsl(hex);
+  if (!hsl) {
+    // Invalid input — return a solid fallback using the raw hex
+    return { start: hex, end: hex, textColor: getContrastTextColor(hex) };
+  }
+  const [h, s, l] = hsl;
+  const start = hslToHex(h - 30, s, l - 12);
+  const end = hslToHex(h + 30, s, l + 12);
+  const textColor = getGradientContrastTextColor(start, end);
+  return { start, end, textColor };
+}
+
+/**
+ * Build the CSS background declaration for an avatar gradient.
+ * Returns a string like `linear-gradient(135deg, #abc, #def)` ready for inline style.
+ */
+export function avatarGradientCss(hex: string): string {
+  const { start, end } = computeAvatarGradient(hex);
+  return `linear-gradient(135deg, ${start}, ${end})`;
+}

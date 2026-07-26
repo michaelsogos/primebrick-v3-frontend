@@ -10,4 +10,4 @@ Edit the checkboxes below to tell agents **which skills are in scope** for this 
 
 | Enabled | Notes |
 |:-------:|--------|
-| [x] | Core frontend repo — SvelteKit + Svelte 5 + TypeScript; follow `AGENTS.md` |
+| [x] | Core frontend repo — SvelteKit™ + Svelte™ 5 + TypeScript®; follow `AGENTS.md` |

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,hover-border-primary-gradient-soft}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -134,16 +134,55 @@
 }
 
 /**
- * Readonly/disabled gradient border: grey gradient (gray-400 → gray-500),
- * matching the Primebrick Docs logo palette. Used by readonly inputs to
- * visually distinguish them from active inputs (which use border-primary-gradient).
+ * Soft primary gradient background ONLY (no border trick).
+ * Same sky→indigo tenue gradient fill as border-primary-gradient-soft, but
+ * without the double-background border painting. Use on elements that already
+ * sit inside a bordered container (e.g. a button flush against an input) where
+ * an extra border would double up.
+ */
+@utility bg-primary-gradient-soft {
+  background: linear-gradient(to bottom right, #bae6fd, #c7d2fe);
+}
+
+/**
+ * Soft primary gradient background + LEFT-ONLY gradient border.
+ * Same double-background trick as border-primary-gradient-soft, but the border
+ * is applied only on the left edge (border-right/top/bottom = 0). Used on
+ * elements flush inside a bordered container (e.g. a button sitting against an
+ * input) where we want the soft fill plus a left separator that matches the
+ * container's gradient border, without doubling borders on the other sides.
+ */
+@utility border-left-primary-gradient-soft {
+  border: 0 solid transparent;
+  border-left-width: 1px;
+  background:
+    linear-gradient(to bottom right, #bae6fd, #c7d2fe) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Vertical gradient divider (sky-400 → indigo-400 at 50% opacity, top → bottom).
+ * Branded replacement for `bg-border/60` on 1px-wide vertical separators in
+ * toolbars/footers. Same visual weight as the old grey divider but with the
+ * Primebrick gradient identity. Use on elements with `w-px` and a fixed height.
+ */
+@utility divider-primary-gradient {
+  background: linear-gradient(to bottom, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5));
+}
+
+/**
+ * Readonly/disabled gradient border: same sky→indigo gradient as
+ * border-primary-gradient but at 50% opacity, matching the disabled checkbox
+ * appearance (from-sky-400 to-indigo-400 + disabled:opacity-50).
+ * Used by readonly/disabled inputs to visually distinguish them from active
+ * inputs (which use border-primary-gradient at full opacity).
  * Defined AFTER border-primary-gradient so it wins when both classes are present.
  */
 @utility border-readonly-gradient {
   border: 1px solid transparent;
   background:
     linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
-    linear-gradient(to bottom right, #9ca3af, #6b7280) border-box;
+    linear-gradient(to bottom right, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5)) border-box;
 }
 
 /**
@@ -156,6 +195,149 @@
   background:
     linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
     linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Warning gradient border: yellow-300 → yellow-500 (matches the warning button
+ * variant). Used by inputs/surfaces that need a yellow gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-warning-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
+}
+
+/**
+ * Success gradient border: emerald-400 → emerald-600 (matches the success button
+ * variant). Used by inputs/surfaces that need a green gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-success-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Info gradient border: sky-400 → blue-600 (matches the info button variant).
+ * Used by inputs/surfaces that need a blue gradient border.
+ * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ */
+@utility border-info-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Soft variant of the success gradient border: same gradient border, but with a
+ * tenue emerald gradient background instead of a solid fill.
+ * Used by soft-success buttons.
+ */
+@utility border-success-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #a7f3d0, #34d399) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Soft variant of the info gradient border: same gradient border, but with a
+ * tenue sky→blue gradient background instead of a solid fill.
+ * Used by soft-info buttons.
+ */
+@utility border-info-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #bae6fd, #60a5fa) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Soft variant of the destructive gradient border: same gradient border, but
+ * with a tenue rose/red gradient background instead of a solid fill.
+ * Used by soft-destructive buttons.
+ */
+@utility border-destructive-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #ffe4e6, #fca5a5) padding-box,
+    linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Soft variant of the warning gradient border: same gradient border, but with a
+ * tenue yellow gradient background instead of a solid fill.
+ * Used by soft-warning buttons.
+ */
+@utility border-warning-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #fef9c3, #fde047) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
+}
+
+/**
+ * Dialog variant of border-info-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="info" tone="soft".
+ */
+@utility border-info-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #2563eb) border-box;
+}
+
+/**
+ * Dialog variant of border-success-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="success" tone="soft".
+ */
+@utility border-success-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #34d399, #059669) border-box;
+}
+
+/**
+ * Dialog variant of a warning gradient border: uses --popover as the fill color.
+ * Used by BorderedDialog with severity="warning" tone="soft".
+ */
+@utility border-warning-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #fde047, #eab308) border-box;
+}
+
+/**
+ * Dialog variant of border-destructive-gradient: uses --popover as the fill color
+ * instead of --background, since dialog content uses bg-popover.
+ * Used by BorderedDialog with severity="destructive" tone="soft"
+ * (e.g. SessionExpiredDialog).
+ */
+@utility border-destructive-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #fb7185, #dc2626) border-box;
+}
+
+/**
+ * Dialog variant of a neutral (grey) gradient border: uses --popover as the fill
+ * color. Used by BorderedDialog with severity="neutral" tone="soft".
+ */
+@utility border-neutral-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #9ca3af, #6b7280) border-box;
 }
 
 /**
@@ -666,4 +848,90 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
 
 .dark .pb-shell-error-card--info [data-slot='alert-description'] {
   color: hsl(216 87% 65% / 0.88) !important;
+}
+
+/**
+ * Big watermark icon animations (size-20 / 80px+ tier).
+ * Global utilities — consumed by EntityListTable children (TableBody,
+ * CardViewRenderer, EntityListTableLoading), MetadataLoading, VersionHistoryPanel,
+ * ErrorsPanel, and standalone pages (e.g. settings/modules). Defined here (not in
+ * a scoped Svelte <style>) so every consumer receives the effect regardless of
+ * component boundaries.
+ *
+ * Effect taxonomy (per icon semantic):
+ *  - pb-watermark-loading : Hourglass — rotate 180° + zoom (loading in progress)
+ *  - pb-watermark-error   : CircleX   — error pulse (opacity + scale)
+ *  - pb-watermark-empty   : TriangleAlert / Info / ThumbsUp — bounce (opacity + translateY + scale)
+ *  - pb-watermark-fade    : Cloud     — opacity fade (static metadata loading)
+ */
+@keyframes pb-watermark-pulse {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.22;
+    transform: translateY(-6px) scale(1.06);
+  }
+}
+
+@keyframes pb-watermark-hourglass {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.12;
+  }
+  45% {
+    transform: rotate(0deg) scale(1.06);
+    opacity: 0.22;
+  }
+  55% {
+    transform: rotate(180deg) scale(1.06);
+    opacity: 0.22;
+  }
+  100% {
+    transform: rotate(180deg) scale(1);
+    opacity: 0.12;
+  }
+}
+
+@keyframes pb-watermark-error {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.18;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pb-watermark-fade {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.pb-watermark-empty {
+  transform-origin: center;
+  animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+}
+
+.pb-watermark-loading {
+  transform-origin: center;
+  animation: pb-watermark-hourglass 1.8s ease-in-out infinite alternate;
+}
+
+.pb-watermark-error {
+  transform-origin: center;
+  animation: pb-watermark-error 2.2s ease-in-out infinite;
+}
+
+.pb-watermark-fade {
+  animation: pb-watermark-fade 2.6s ease-in-out infinite;
 }

@@ -1,15 +1,15 @@
 ---
 title: Overview
-description: Primebrick frontend — a SvelteKit + Svelte 5 + TypeScript application providing the admin shell, entity management UI, and settings for the Primebrick platform.
+description: Primebrick frontend — a SvelteKit™ + Svelte™ 5 + TypeScript® application providing the admin shell, entity management UI, and settings for the Primebrick platform.
 ---
 
 # Overview
 
 The Primebrick frontend (`primebrick-fe-v3`) is the web administration
-application for the Primebrick platform. It is built with **SvelteKit**,
-**Svelte 5 (runes mode)**, and **TypeScript**, and uses a layered UI stack:
-**Tailwind CSS** → **BITS UI** → **shadcn-svelte** → **more-shadcn-svelte** and
-**shadcn-svelte-extras** → Primebrick's own custom and wrapped components. See
+application for the Primebrick platform. It is built with **SvelteKit™**,
+**Svelte™ 5 (runes mode)**, and **TypeScript®**, and uses a layered UI stack:
+**Tailwind CSS™** → **BITS UI™** → **shadcn-svelte™** → **more-shadcn-svelte™** and
+**shadcn-svelte-extras™** → Primebrick's own custom and wrapped components. See
 [UI stack](/docs/user-guide/ui-stack) for the full layering and official links.
 
 ## What the frontend does
@@ -47,13 +47,34 @@ deployment follows GitFlow: a release branch is closed, merged to `main`, and
 tagged. The docs site (`docs.primebrick.dev`) is a separate repo that pulls
 these `docs/user-guide/` MDX files in its own CI pipeline.
 
-## Where to go next
+## Quick start
+
+```bash
+pnpm install
+pnpm run dev          # starts Vite on http://localhost:5173
+```
+
+Open `http://localhost:5173` in your browser. The login page renders
+`<LoginForm>` which POSTs to the backend at `http://localhost:3001/api/v1/auth/login`.
+If the backend is not running, the health badge in the sidebar will show
+"backend offline" and re-probe every 5 seconds until it recovers.
+
+To verify the production build:
+
+```bash
+pnpm run check        # typecheck (svelte-check + tsc)
+pnpm run build        # SvelteKit production build
+pnpm run preview      # preview the production build locally
+```
+
+## Next steps
 
 - [UI stack](/docs/user-guide/ui-stack) — the five layered UI technologies and official links
 - [Getting started](/docs/user-guide/getting-started) — stack, commands, project layout
 - [App shell & sidebar](/docs/user-guide/app-shell) — layout, navigation, modules
 - [Authentication & sessions](/docs/user-guide/authentication) — login, session expiry, password policy
-- [Entity list table](/docs/user-guide/entity-list-table) — the reusable list/table/card system
+- [Entity list table](/docs/user-guide/components/entity-list-table) — the reusable list/table/card system
 - [System settings](/docs/user-guide/settings) — modules, orgs, users, profile, email providers
-- [UI components](/docs/user-guide/ui-components) — custom components on top of Shadcn-Svelte
-- [API reference](/docs/user-guide/api-reference) — every exported Svelte component
+- [UI components](/docs/user-guide/ui-components) — custom components on top of Shadcn-Svelte™
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component, grouped by origin
+- [API reference](/docs/user-guide/api-reference) — every exported Svelte™ component

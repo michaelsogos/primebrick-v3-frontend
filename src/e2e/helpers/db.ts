@@ -148,6 +148,42 @@ export async function deleteInvitationByEmail(email: string): Promise<void> {
   );
 }
 
+/**
+ * Delete all MFA factors for a user by their idp_username (e.g. "admin").
+ * Used by MFA E2E tests to reset the admin's MFA state before enrollment.
+ */
+export async function deleteMfaFactorsByUsername(username: string): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    `DELETE FROM public.user_mfa_factors
+     WHERE user_profile_id IN (
+       SELECT id FROM public.user_profiles WHERE idp_username = $1
+     )`,
+    [username],
+  );
+}
+
+/**
+ * Set the `auth_method_enforcer_dismissed` flag on a user profile.
+ * Used by E2E tests to dismiss the unified auth method enforcer dialog
+ * (passkey/MFA prompt) without going through the UI.
+ *
+ * @param username The idp_username of the user (e.g. "admin")
+ * @param dismissed true to dismiss the dialog permanently, false to re-enable it
+ */
+export async function setAuthMethodEnforcerDismissed(
+  username: string,
+  dismissed: boolean,
+): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    `UPDATE public.user_profiles
+     SET auth_method_enforcer_dismissed = $2, updated_at = now()
+     WHERE idp_username = $1`,
+    [username, dismissed],
+  );
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function sleep(ms: number): Promise<void> {
