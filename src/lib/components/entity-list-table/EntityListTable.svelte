@@ -340,8 +340,7 @@
   const rowRangeSelection = useRowRangeSelection({
     rowSelectionEnabled: () => rowSelectionEnabled,
     selectedKeys: () => selectedKeys,
-    // svelte-ignore state_referenced_locally
-    onSelectedKeysChange,
+    onSelectedKeysChange: () => onSelectedKeysChange,
     viewRows: () => viewRows,
     pageKeys: () => pageKeys,
     rowKey,
@@ -354,12 +353,9 @@
   // Filter persistence
   const filterPersistence = useFilterPersistence({
     uid: () => uid,
-    // svelte-ignore state_referenced_locally
-    filterValuesStorageKey,
-    // svelte-ignore state_referenced_locally
-    advancedFiltersStorageKey,
-    // svelte-ignore state_referenced_locally
-    columnOrderStorageKey
+    filterValuesStorageKey: () => filterValuesStorageKey,
+    advancedFiltersStorageKey: () => advancedFiltersStorageKey,
+    columnOrderStorageKey: () => columnOrderStorageKey
   });
 
   // Toolbar mode

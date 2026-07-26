@@ -110,7 +110,19 @@
       "enrollmentSuccess": "Passkey aggiunta",
       "enrollmentError": "Impossibile aggiungere la passkey",
       "alreadyEnrolled": "Hai gia una passkey su questo dispositivo",
-      "deleteError": "Impossibile rimuovere la passkey"
+      "deleteError": "Impossibile rimuovere la passkey",
+      "unknownPasskey": "Passkey",
+      "neverUsed": "Mai usata",
+      "unknownDevice": "Dispositivo sconosciuto",
+      "enrolledOn": "Registrata il {date}",
+      "lastUsed": "Ultimo uso {date}",
+      "transport": {
+        "internal": "Interno",
+        "hybrid": "Ibrido",
+        "usb": "USB",
+        "nfc": "NFC",
+        "ble": "Bluetooth"
+      }
     },
     "mfa": {
       "title": "Autenticazione a due fattori (2FA)",

@@ -99,7 +99,19 @@
       "enrollmentSuccess": "Passkey ajoutée",
       "enrollmentError": "Échec de l'ajout de la passkey",
       "alreadyEnrolled": "Vous avez déjà une passkey sur cet appareil",
-      "deleteError": "Échec de la suppression de la passkey"
+      "deleteError": "Échec de la suppression de la passkey",
+      "unknownPasskey": "Passkey",
+      "neverUsed": "Jamais utilisée",
+      "unknownDevice": "Appareil inconnu",
+      "enrolledOn": "Enregistrée le {date}",
+      "lastUsed": "Dernière utilisation {date}",
+      "transport": {
+        "internal": "Interne",
+        "hybrid": "Hybride",
+        "usb": "USB",
+        "nfc": "NFC",
+        "ble": "Bluetooth"
+      }
     },
     "mfa": {
       "title": "Authentification à deux facteurs (2FA)",

@@ -4,7 +4,7 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export function useRowRangeSelection<T>(options: {
   rowSelectionEnabled: () => boolean;
   selectedKeys: () => string[];
-  onSelectedKeysChange: (keys: string[]) => void;
+  onSelectedKeysChange: () => (keys: string[]) => void;
   viewRows: () => T[];
   pageKeys: () => string[];
   rowKey: (row: T) => string;
@@ -86,7 +86,7 @@ export function useRowRangeSelection<T>(options: {
     for (const k of rangeKeys) {
       if (!snap.has(k)) next.add(k);
     }
-    options.onSelectedKeysChange([...next]);
+    options.onSelectedKeysChange()([...next]);
   }
 
   function resetRowRangeSelect() {

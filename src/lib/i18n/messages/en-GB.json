@@ -110,7 +110,19 @@
       "enrollmentSuccess": "Passkey added",
       "enrollmentError": "Failed to add passkey",
       "alreadyEnrolled": "You already have a passkey on this device",
-      "deleteError": "Failed to remove passkey"
+      "deleteError": "Failed to remove passkey",
+      "unknownPasskey": "Passkey",
+      "neverUsed": "Never used",
+      "unknownDevice": "Unknown device",
+      "enrolledOn": "Enrolled {date}",
+      "lastUsed": "Last used {date}",
+      "transport": {
+        "internal": "Internal",
+        "hybrid": "Hybrid",
+        "usb": "USB",
+        "nfc": "NFC",
+        "ble": "Bluetooth"
+      }
     },
     "mfa": {
       "title": "Two-Factor Authentication (2FA)",
