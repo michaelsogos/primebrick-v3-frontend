@@ -96,6 +96,8 @@
       "add": "Añadir passkey",
       "remove": "Eliminar",
       "empty": "No hay passkeys registrados",
+      "emptyTitle": "Ninguna passkey encontrada",
+      "emptyHint": "Añade una passkey para iniciar sesión más rápido sin contraseña.",
       "enrollmentSuccess": "Passkey añadido",
       "enrollmentError": "Error al añadir passkey",
       "alreadyEnrolled": "Ya tienes una passkey en este dispositivo",
@@ -115,8 +117,10 @@
     },
     "mfa": {
       "title": "Autenticación de dos factores (2FA)",
-      "description": "Añade una app OTP como segunda capa de seguridad para proteger tu cuenta, aunque tu contraseña se vea comprometida.",
+      "description": "Añade una app de autenticación como segunda capa de seguridad. Aunque se filtre tu contraseña, tu cuenta permanece protegida.",
       "empty": "No hay factores 2FA registrados. Añade uno para proteger tu cuenta.",
+      "emptyTitle": "Ningún factor MFA encontrado",
+      "emptyHint": "Añade una app de autenticador para proteger tu cuenta con un segundo factor.",
       "enrollButton": "Añadir factor 2FA",
       "enrollAnother": "Añadir otro factor",
       "defaultLabel": "App OTP",
@@ -330,6 +334,7 @@
       "breadcrumbMenu": "Pestañas de ajustes",
       "tabs": {
         "profile": "Perfil",
+        "credentials": "Credenciales",
         "organizations": "Organizaciones",
         "users": "Usuarios",
         "roles": "Roles",
@@ -527,6 +532,15 @@
           "isVerified": "Identidad verificada",
           "emailVerified": "Email verificado",
           "unsavedChanges": "Tiene cambios sin guardar. ¿Está seguro de que desea salir?"
+        }
+      },
+      "credentials": {
+        "title": "Credenciales",
+        "description": "Gestiona tus credenciales de inicio de sesión: contraseña, passkeys y autenticación de dos factores.",
+        "changePassword": {
+          "title": "Cambiar contraseña",
+          "description": "Actualiza la contraseña que usas para iniciar sesión. Recibirás un correo de notificación tras un cambio exitoso.",
+          "button": "Cambiar contraseña"
         }
       },
       "security": {

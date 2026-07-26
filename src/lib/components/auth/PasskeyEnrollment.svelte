@@ -9,6 +9,7 @@
   import { t } from "$lib/i18n";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
+  import Fingerprint from "@lucide/svelte/icons/fingerprint";
   import {
     decodeCredentialCreationOptions,
     encodeAuthenticatorAttestation,
@@ -203,6 +204,7 @@
   <Card>
     <CardHeader>
       <CardTitle class="flex items-center gap-2">
+        <Fingerprint class="size-5" />
         {$t("auth.passkeys.title")}
       </CardTitle>
       <CardDescription>{$t("auth.passkeys.description")}</CardDescription>
@@ -214,7 +216,19 @@
           <Spinner />
         </div>
       {:else if credentials.length === 0}
-        <p class="text-sm text-muted-foreground py-2" data-testid="passkey-enrollment-empty">{$t("auth.passkeys.empty")}</p>
+        <div class="grid min-h-56 place-items-center p-3" data-testid="passkey-enrollment-empty">
+          <div class="relative flex flex-col items-center gap-2 text-center">
+            <div class="pb-watermark-empty">
+              <Fingerprint class="size-20 text-muted-foreground" />
+            </div>
+            <div class="text-sm font-medium text-muted-foreground">
+              {$t("auth.passkeys.emptyTitle")}
+            </div>
+            <div class="text-xs text-muted-foreground">
+              {$t("auth.passkeys.emptyHint")}
+            </div>
+          </div>
+        </div>
       {:else}
         <ul class="space-y-2" data-testid="passkey-enrollment-list">
           {#each credentials as cred (cred.id)}
@@ -282,8 +296,6 @@
 
       <!-- Add passkey button -->
       <Button
-        variant="soft"
-        tone="primary"
         data-testid="passkey-enrollment-add-button"
         onclick={addPasskey}
         disabled={enrolling}

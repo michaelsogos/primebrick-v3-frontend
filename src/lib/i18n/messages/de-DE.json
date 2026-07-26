@@ -96,6 +96,8 @@
       "add": "Passkey hinzufügen",
       "remove": "Entfernen",
       "empty": "Keine Passkeys registriert",
+      "emptyTitle": "Kein Passkey gefunden",
+      "emptyHint": "Füge einen Passkey hinzu, um dich schneller ohne Passwort anzumelden.",
       "enrollmentSuccess": "Passkey hinzugefügt",
       "enrollmentError": "Passkey konnte nicht hinzugefügt werden",
       "alreadyEnrolled": "Sie haben bereits einen Passkey auf diesem Gerät",
@@ -115,8 +117,10 @@
     },
     "mfa": {
       "title": "Zwei-Faktor-Authentifizierung (2FA)",
-      "description": "Fügen Sie eine OTP-App als zweite Sicherheitsebene hinzu, um Ihr Konto zu schützen, auch wenn Ihr Passwort kompromittiert wird.",
+      "description": "Füge eine Authenticator-App als zweite Sicherheitsebene hinzu. Selbst wenn dein Passwort geleakt wird, bleibt dein Konto geschützt.",
       "empty": "Keine 2FA-Faktoren registriert. Fügen Sie einen hinzu, um Ihr Konto zu sichern.",
+      "emptyTitle": "Kein MFA-Faktor gefunden",
+      "emptyHint": "Füge eine Authenticator-App hinzu, um dein Konto mit einem zweiten Faktor zu schützen.",
       "enrollButton": "2FA-Faktor hinzufügen",
       "enrollAnother": "Weiteren Faktor hinzufügen",
       "defaultLabel": "OTP-App",
@@ -330,6 +334,7 @@
       "breadcrumbMenu": "Einstellungsregisterkarten",
       "tabs": {
         "profile": "Profil",
+        "credentials": "Anmeldedaten",
         "organizations": "Organisationen",
         "users": "Benutzer",
         "roles": "Rollen",
@@ -527,6 +532,15 @@
           "isVerified": "Identität verifiziert",
           "emailVerified": "E-Mail verifiziert",
           "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie verlassen möchten?"
+        }
+      },
+      "credentials": {
+        "title": "Anmeldedaten",
+        "description": "Verwalte deine Anmeldedaten: Passwort, Passkeys und Zwei-Faktor-Authentifizierung.",
+        "changePassword": {
+          "title": "Passwort ändern",
+          "description": "Aktualisiere das Passwort, mit dem du dich anmeldest. Du erhältst nach einer erfolgreichen Änderung eine Benachrichtigungs-E-Mail.",
+          "button": "Passwort ändern"
         }
       },
       "security": {

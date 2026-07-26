@@ -107,6 +107,8 @@
       "add": "Aggiungi passkey",
       "remove": "Rimuovi",
       "empty": "Nessuna passkey registrata",
+      "emptyTitle": "Nessuna passkey trovata",
+      "emptyHint": "Aggiungi una passkey per accedere più velocemente senza password.",
       "enrollmentSuccess": "Passkey aggiunta",
       "enrollmentError": "Impossibile aggiungere la passkey",
       "alreadyEnrolled": "Hai gia una passkey su questo dispositivo",
@@ -126,8 +128,10 @@
     },
     "mfa": {
       "title": "Autenticazione a due fattori (2FA)",
-      "description": "Aggiungi un'app OTP come secondo livello di sicurezza per proteggere il tuo account, anche se la password viene compromessa.",
+      "description": "Aggiungi un'app di autenticazione come secondo livello di sicurezza. Anche se la tua password viene compromessa, il tuo account resta protetto.",
       "empty": "Nessun fattore 2FA registrato. Aggiungine uno per proteggere l'account.",
+      "emptyTitle": "Nessun fattore MFA trovato",
+      "emptyHint": "Aggiungi un'app di autenticazione per proteggere il tuo account con un secondo fattore.",
       "enrollButton": "Aggiungi fattore 2FA",
       "enrollAnother": "Aggiungi un altro fattore",
       "defaultLabel": "App OTP",
@@ -341,6 +345,7 @@
       "breadcrumbMenu": "Schede impostazioni",
       "tabs": {
         "profile": "Profilo",
+        "credentials": "Credenziali",
         "organizations": "Organizzazioni",
         "users": "Utenti",
         "roles": "Ruoli",
@@ -538,6 +543,15 @@
           "isVerified": "Identità Verificata",
           "emailVerified": "Email Verificata",
           "unsavedChanges": "Hai modifiche non salvate. Sei sicuro di voler uscire?"
+        }
+      },
+      "credentials": {
+        "title": "Credenziali",
+        "description": "Gestisci le tue credenziali di accesso: password, passkey e autenticazione a due fattori.",
+        "changePassword": {
+          "title": "Cambia password",
+          "description": "Aggiorna la password che usi per accedere. Riceverai un'email di notifica dopo una modifica riuscita.",
+          "button": "Cambia password"
         }
       },
       "security": {

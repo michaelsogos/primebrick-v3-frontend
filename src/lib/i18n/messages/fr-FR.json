@@ -96,6 +96,8 @@
       "add": "Ajouter une passkey",
       "remove": "Supprimer",
       "empty": "Aucune passkey enregistrée",
+      "emptyTitle": "Aucune passkey trouvée",
+      "emptyHint": "Ajoutez une passkey pour vous connecter plus rapidement sans mot de passe.",
       "enrollmentSuccess": "Passkey ajoutée",
       "enrollmentError": "Échec de l'ajout de la passkey",
       "alreadyEnrolled": "Vous avez déjà une passkey sur cet appareil",
@@ -115,8 +117,10 @@
     },
     "mfa": {
       "title": "Authentification à deux facteurs (2FA)",
-      "description": "Ajoutez une application OTP comme deuxième couche de sécurité pour protéger votre compte, même si votre mot de passe est compromis.",
+      "description": "Ajoutez une application d'authentification comme deuxième couche de sécurité. Même si votre mot de passe fuit, votre compte reste protégé.",
       "empty": "Aucun facteur 2FA enregistré. Ajoutez-en un pour sécuriser votre compte.",
+      "emptyTitle": "Aucun facteur MFA trouvé",
+      "emptyHint": "Ajoutez une application d'authentification pour protéger votre compte avec un deuxième facteur.",
       "enrollButton": "Ajouter un facteur 2FA",
       "enrollAnother": "Ajouter un autre facteur",
       "defaultLabel": "Application OTP",
@@ -330,6 +334,7 @@
       "breadcrumbMenu": "Onglets de paramètres",
       "tabs": {
         "profile": "Profil",
+        "credentials": "Identifiants",
         "organizations": "Organisations",
         "users": "Utilisateurs",
         "roles": "Rôles",
@@ -527,6 +532,15 @@
           "isVerified": "Identité vérifiée",
           "emailVerified": "E-mail vérifiée",
           "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter?"
+        }
+      },
+      "credentials": {
+        "title": "Identifiants",
+        "description": "Gérez vos identifiants de connexion : mot de passe, passkeys et authentification à deux facteurs.",
+        "changePassword": {
+          "title": "Modifier le mot de passe",
+          "description": "Mettez à jour le mot de passe que vous utilisez pour vous connecter. Vous recevrez un e-mail de notification après une modification réussie.",
+          "button": "Modifier le mot de passe"
         }
       },
       "security": {

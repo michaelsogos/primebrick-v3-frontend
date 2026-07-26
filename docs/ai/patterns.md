@@ -39,6 +39,38 @@ Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 
 Prefer shared form building blocks (e.g. `FormField`, `MoneyInput`, `DateInput` under `src/lib/components/forms/` when present). Validation UX (errors, spacing, disabled) should stay consistent; promote to wrapper only after repetition.
 
+#### Detail-page primary CTA placement
+
+A "detail page" is any non-table page (form page, settings sub-page, entity
+edit/create page, etc.). Two layouts are allowed:
+
+1. **Pure form (TUTTO FORM)** — the entire content is a single 2-column form
+   (`grid grid-cols-2 gap-6`) with no other sections.
+   - Use `FormPageLayout` (provides the card wrapper + audit footer).
+   - The **DEFAULT primary button lives in the footer** via `footerActions`.
+   - No other primary button inside the content.
+   - The footer MAY hold multiple CTAs (primary + secondary).
+   - The form is NOT wrapped in an extra `<Card>` — `FormPageLayout` already
+     provides the wrapper.
+   - Example: `/system/settings/profile`.
+
+2. **Mixed content (UN PO' FORM + UN PO' ALTRO)** — the page mixes a form with
+   other content (in-card lists, info boxes, multiple cards).
+   - Use `AppPageScaffold` (NOT `FormPageLayout`) — no single footer primary.
+   - **No primary button in the footer.**
+   - Each card that needs an action puts its own **DEFAULT primary button
+     inside the card content** (`variant="default"`, default `tone="primary"`).
+   - The form keeps all its characteristics (2-col grid, validation,
+     `use:enhance`, `FormField` blocks) and **MUST be wrapped in a `<Card>`**.
+   - Example: `/system/settings/credentials` — 3 cards (Change Password,
+     Passkeys, MFA), each with its own DEFAULT primary CTA inside.
+
+**Soft primary** (`variant="soft" tone="primary"`) is used for in-card CTAs
+**only when** a DEFAULT primary already exists in the footer (Layout 1 with
+extra in-card actions). In Layout 2, in-card CTAs are **DEFAULT primary**.
+
+See `.devin/rules/detail-page-cta-placement.md` for the enforcing rule.
+
 ### Tables / lists
 
 Prefer one table pattern: headers, row hover, empty/loading, pagination/filters consistent across modules. Reusable abstractions should be **app components** composing primitives, not forks of primitives.

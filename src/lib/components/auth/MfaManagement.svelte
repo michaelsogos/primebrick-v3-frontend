@@ -204,23 +204,29 @@
           <Spinner />
         </div>
       {:else if factors.length === 0}
-        <div class="space-y-3" data-testid="mfa-management-empty">
-          <p class="text-sm text-muted-foreground">{$t("auth.mfa.empty")}</p>
-          <Button onclick={startEnrollment} disabled={enrolling} data-testid="mfa-enroll-button">
-            <Plus class="size-4 mr-1" />
-            {$t("auth.mfa.enrollButton")}
-          </Button>
+        <div class="grid min-h-56 place-items-center p-3" data-testid="mfa-management-empty">
+          <div class="relative flex flex-col items-center gap-2 text-center">
+            <div class="pb-watermark-empty">
+              <ShieldCheck class="size-20 text-muted-foreground" />
+            </div>
+            <div class="text-sm font-medium text-muted-foreground">
+              {$t("auth.mfa.emptyTitle")}
+            </div>
+            <div class="text-xs text-muted-foreground">
+              {$t("auth.mfa.emptyHint")}
+            </div>
+          </div>
         </div>
       {:else}
         <ul class="space-y-2" data-testid="mfa-management-list">
           {#each factors as factor (factor.uuid)}
             <li
-              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
+              class="flex items-start justify-between rounded-md border-primary-gradient px-3 py-2"
               data-testid="mfa-management-item"
               data-factor-uuid={factor.uuid}
             >
-              <div class="flex items-center gap-2 min-w-0">
-                <Smartphone class="size-4 text-muted-foreground shrink-0" />
+              <div class="flex items-start gap-2 min-w-0">
+                <Smartphone class="size-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div class="flex flex-col min-w-0">
                   <span class="text-sm font-medium truncate">
                     {factor.label || $t("auth.mfa.defaultLabel")}
@@ -240,7 +246,7 @@
               </div>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onclick={() => confirmDelete(factor.uuid)}
                 disabled={deletingUuid === factor.uuid}
                 data-testid="mfa-delete-button"
@@ -251,15 +257,24 @@
                 {:else}
                   <Trash2 class="size-4" />
                 {/if}
+                <span class="sr-only">{$t("auth.mfa.delete")}</span>
               </Button>
             </li>
           {/each}
         </ul>
-        <Button onclick={startEnrollment} disabled={enrolling} variant="outline" data-testid="mfa-enroll-another-button">
-          <Plus class="size-4 mr-1" />
-          {$t("auth.mfa.enrollAnother")}
-        </Button>
       {/if}
+
+      <!-- Card-level CTA: DEFAULT primary (no footer primary on the credentials page).
+           Renders both when the list is empty and when factors are present.
+           Uses the mfa-enroll-button testid (kept stable for E2E). -->
+      <Button onclick={startEnrollment} disabled={enrolling} data-testid="mfa-enroll-button">
+        {#if enrolling}
+          <Spinner class="mr-2" />
+        {:else}
+          <Plus class="size-4 mr-2" />
+        {/if}
+        {$t("auth.mfa.enrollButton")}
+      </Button>
     </CardContent>
   </Card>
 
