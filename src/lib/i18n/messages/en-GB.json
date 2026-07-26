@@ -107,6 +107,8 @@
       "add": "Add passkey",
       "remove": "Remove",
       "empty": "No passkeys enrolled",
+      "emptyTitle": "No passkey found",
+      "emptyHint": "Add a passkey to sign in faster without a password.",
       "enrollmentSuccess": "Passkey added",
       "enrollmentError": "Failed to add passkey",
       "alreadyEnrolled": "You already have a passkey on this device",
@@ -126,8 +128,10 @@
     },
     "mfa": {
       "title": "Two-Factor Authentication (2FA)",
-      "description": "Add an OTP app as a second layer of security to protect your account, even if your password is compromised.",
+      "description": "Add an authenticator app as a second layer of security. Even if your password is leaked, your account stays protected.",
       "empty": "No 2FA factors enrolled. Add one to secure your account.",
+      "emptyTitle": "No MFA factor found",
+      "emptyHint": "Add an authenticator app to protect your account with a second factor.",
       "enrollButton": "Add 2FA factor",
       "enrollAnother": "Add another factor",
       "defaultLabel": "OTP app",
@@ -341,6 +345,7 @@
       "breadcrumbMenu": "Settings tabs",
       "tabs": {
         "profile": "Profile",
+        "credentials": "Credentials",
         "organizations": "Organizations",
         "users": "Users",
         "roles": "Roles",
@@ -538,6 +543,15 @@
           "isVerified": "Identity Verified",
           "emailVerified": "Email Verified",
           "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+        }
+      },
+      "credentials": {
+        "title": "Credentials",
+        "description": "Manage your sign-in credentials: password, passkeys, and two-factor authentication.",
+        "changePassword": {
+          "title": "Change Password",
+          "description": "Update the password you use to sign in. You will receive a notification email after a successful change.",
+          "button": "Change password"
         }
       },
       "security": {

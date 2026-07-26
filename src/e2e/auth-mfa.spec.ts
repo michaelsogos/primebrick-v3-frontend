@@ -3,7 +3,7 @@
  *
  * Flow:
  *   1. Admin logs in (may or may not have MFA — we handle both cases).
- *   2. Admin navigates to profile page → MFA management section.
+ *   2. Admin navigates to credentials page → MFA management section.
  *   3. Admin enrolls a new MFA factor (TOTP) via the UI.
  *      - Extracts the TOTP secret from the enrollment dialog.
  *      - Generates a TOTP code using the helper.
@@ -64,10 +64,10 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await adminPage?.close();
   });
 
-  test("Step 1: navigate to profile page and find MFA section", async () => {
+  test("Step 1: navigate to credentials page and find MFA section", async () => {
     // The auth method enforcer dialog was dismissed via DB in beforeAll.
     // No sessionStorage hack needed — the dialog is DB-persisted now.
-    await adminPage.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
+    await adminPage.goto("/system/settings/credentials", { waitUntil: "domcontentloaded" });
 
     // Wait for the MFA management section to appear.
     // It only renders if MFA is enabled in auth config.

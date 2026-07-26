@@ -14,8 +14,8 @@ function getBranchName() {
 }
 
 function parseTag(tag) {
-  // 0.1.2 (no v prefix)
-  const m = /^(0)\.(\d+)\.(\d+)$/.exec(tag);
+  // 0.1.2 or v0.1.2 (tolerate legacy 'v' prefix)
+  const m = /^v?(0)\.(\d+)\.(\d+)$/.exec(tag);
   if (!m) return null;
   return { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) };
 }
@@ -33,7 +33,8 @@ function format(v) {
 function latestTagVersion() {
   let tags = [];
   try {
-    const out = sh('git tag --list "0.*.*"');
+    // List both "0.*.*" (current convention) and "v0.*.*" (legacy tags).
+    const out = sh('git tag --list "0.*.*" "v0.*.*"');
     tags = out ? out.split(/\r?\n/).filter(Boolean) : [];
   } catch {
     tags = [];
@@ -43,6 +44,18 @@ function latestTagVersion() {
   if (versions.length === 0) return { major: 0, minor: 0, patch: 0 };
   versions.sort(cmp);
   return versions[versions.length - 1];
+}
+
+/**
+ * The effective base version is the max of the latest git tag and the
+ * package.json version. This handles the case where tags are stale (e.g.
+ * legacy 'v'-prefixed tags that were not maintained) but package.json has
+ * been kept up to date manually.
+ */
+function effectiveBaseVersion(latestTag, pkgVersion) {
+  const pkg = parseTag(pkgVersion);
+  if (!pkg) return latestTag;
+  return cmp(latestTag, pkg) >= 0 ? latestTag : pkg;
 }
 
 function nextVersion(kind, latest) {
@@ -74,8 +87,11 @@ const kind = branch.startsWith("release/")
 
 if (!kind) process.exit(0);
 
+const pkgPath = "package.json";
 const latest = latestTagVersion();
-const expected = nextVersion(kind, latest);
+const pkg = readJson(pkgPath);
+const base = effectiveBaseVersion(latest, pkg.version ?? "0.0.0");
+const expected = nextVersion(kind, base);
 const expectedBranch = `${kind}/${format(expected)}`;
 
 if (branch !== expectedBranch) {
@@ -83,6 +99,7 @@ if (branch !== expectedBranch) {
     [
       `Branch name must match the next ${kind} version.`,
       `- Latest tag: ${format(latest)}`,
+      `- Effective base: ${format(base)}`,
       `- Expected branch: ${expectedBranch}`,
       `- Current branch:  ${branch}`,
     ].join("\n"),
@@ -90,8 +107,6 @@ if (branch !== expectedBranch) {
   process.exit(1);
 }
 
-const pkgPath = "package.json";
-const pkg = readJson(pkgPath);
 const expectedVersion = format(expected);
 
 if (pkg.version !== expectedVersion) {
