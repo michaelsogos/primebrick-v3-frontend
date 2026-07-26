@@ -32,7 +32,7 @@
     scrollToTab: (v: string) => void;
   }>("anchor-tabs");
 
-  const section_id = `anchor-tab-${value}`;
+  const section_id = $derived(`anchor-tab-${value}`);
   let section_el: HTMLElement | null = $state(null);
   const is_active = $derived(ctx.active_value === value);
 

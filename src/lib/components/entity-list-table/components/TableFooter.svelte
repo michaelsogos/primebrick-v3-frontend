@@ -111,7 +111,7 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
-    <div class="mx-1 h-6 w-px bg-border/60" aria-hidden="true"></div>
+    <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
     <div class="flex items-center gap-2">
       <Button

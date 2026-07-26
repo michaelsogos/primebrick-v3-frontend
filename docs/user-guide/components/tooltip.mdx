@@ -1,6 +1,6 @@
 ---
 title: Tooltip
-description: shadcn-svelte Tooltip extended with PriorityContent (semaphoric icon + title) and a Portal wrapper.
+description: shadcn-svelte™ Tooltip extended with PriorityContent (semaphoric icon + title) and a Portal wrapper.
 ---
 
 # Tooltip
@@ -13,14 +13,14 @@ Tooltip primitives. The barrel re-exports `Root`, `Trigger`, `Provider` from
 `bits-ui` (via `$lib/vendor/bits-ui-tooltip-exports` to dodge a Vite 8 SSR
 namespace issue) and adds two Primebrick extensions:
 
-- **`Content`** (`tooltip-content.svelte`) — the standard shadcn-svelte tooltip content with Primebrick styling.
+- **`Content`** (`tooltip-content.svelte`) — the standard shadcn-svelte™ tooltip content with Primebrick styling.
 - **`PriorityContent`** (`priority-tooltip-content.svelte`) — tooltip content with a semaphoric icon and optional title. `priority` (`INFORMATION | WARNING | ERROR | QUESTION | HINT | SUCCESS`) selects the icon and color (`text-info`, `text-warning`, `text-destructive`, `text-success`).
 - **`TooltipPortal`** (`tooltip-portal.svelte`) — portal wrapper used by `PriorityContent`.
 
 ## Origin
 
-**shadcn-svelte (extended)** — base primitives come from `bits-ui` /
-shadcn-svelte. `PriorityContent` and the project-specific `Content` styling
+**shadcn-svelte™ (extended)** — base primitives come from `bits-ui` /
+shadcn-svelte™. `PriorityContent` and the project-specific `Content` styling
 are Primebrick additions.
 
 ## Usage

@@ -14,14 +14,11 @@
  * If any precondition fails, the setup throws and the test run aborts —
  * no point running E2E tests against a half-up stack.
  */
-import { startFakeBrevoServer, type FakeBrevoServer } from "./helpers/fake-brevo";
+import { startFakeBrevoServer } from "./helpers/fake-brevo";
 import { upsertFakeBrevoProvider, getPool } from "./helpers/db";
+import { setFakeBrevo } from "./helpers/global-state";
 
-// Held in module scope so teardown can close it. Playwright runs setup and
-// teardown in the same Node process.
-let fakeBrevo: FakeBrevoServer | null = null;
-
-export async function globalSetup(): Promise<void> {
+export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
 
   // 1. Precondition: FE dev server reachable.
@@ -44,7 +41,8 @@ export async function globalSetup(): Promise<void> {
   }
 
   // 4. Start the fake Brevo server.
-  fakeBrevo = await startFakeBrevoServer();
+  const fakeBrevo = await startFakeBrevoServer();
+  setFakeBrevo(fakeBrevo);
   console.log(`[globalSetup] Fake Brevo listening on ${fakeBrevo.url}`);
 
   // 5. Upsert the providers row so emailsender points at the fake Brevo.
@@ -73,9 +71,4 @@ async function assertReachable(url: string, label: string): Promise<void> {
       `[globalSetup] ${label} not reachable at ${url}: ${err}. Per AGENTS.md dev-server rule, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
     );
   }
-}
-
-// Exported for teardown.
-export function getFakeBrevo(): FakeBrevoServer | null {
-  return fakeBrevo;
 }

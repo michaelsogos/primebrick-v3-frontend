@@ -8,10 +8,10 @@
  * Cleanup of test data (users, invitations, sender_log rows) is handled by
  * each suite's `afterAll` hook, not here — suites own their own data.
  */
-import { getFakeBrevo } from "./global.setup";
+import { getFakeBrevo } from "./helpers/global-state";
 import { closePool } from "./helpers/db";
 
-export async function globalTeardown(): Promise<void> {
+export default async function globalTeardown(): Promise<void> {
   console.log("[globalTeardown] Cleaning up E2E resources...");
 
   const fakeBrevo = getFakeBrevo();

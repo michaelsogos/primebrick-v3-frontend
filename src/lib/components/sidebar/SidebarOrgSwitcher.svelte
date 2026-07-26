@@ -61,7 +61,6 @@
             {#if !collapsed}
               <div class="grid min-w-0 flex-1 text-left leading-tight">
                 <span class="truncate text-sm font-semibold">{selectedOrgLabel}</span>
-                <span class="truncate text-xs text-muted-foreground">{$t('shell.org.subtitle')}</span>
               </div>
               <ChevronsUpDown class="ms-auto size-4 shrink-0 opacity-70" aria-hidden="true" />
             {/if}
@@ -73,10 +72,6 @@
         side="right"
         align="end"
       >
-        <DropdownMenu.Label class="px-2 text-xs font-medium text-muted-foreground">
-          {$t('shell.org.subtitle')}
-        </DropdownMenu.Label>
-        <DropdownMenu.Separator />
         {#each activeOrgs as org (org.idp_code)}
           <DropdownMenu.Item
             class={cn('gap-2', dropdownMenuSelectedItemClass(selectedOrgId === org.idp_code))}

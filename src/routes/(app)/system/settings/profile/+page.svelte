@@ -40,6 +40,7 @@
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
   import { displayNameSchema } from "$lib/validation/display-name";
   import PasskeyEnrollment from "$lib/components/auth/PasskeyEnrollment.svelte";
+  import MfaManagement from "$lib/components/auth/MfaManagement.svelte";
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -550,6 +551,9 @@
 
         <!-- Passkey / WebAuthn enrollment section -->
         <PasskeyEnrollment />
+
+        <!-- MFA / 2FA management section -->
+        <MfaManagement />
       </div>
     </div>
   {/snippet}

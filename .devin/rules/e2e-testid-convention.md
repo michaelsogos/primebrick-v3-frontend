@@ -3,7 +3,7 @@
 ## Trigger
 - Applies whenever an AI agent creates, modifies, or removes an interactive
   DOM element (input, button, toggle, link, dialog action, list item, etc.)
-  in a Svelte component or route that could be targeted by E2E tests.
+  in a Svelte™ component or route that could be targeted by E2E tests.
 - Also applies when creating new E2E test specs that need to locate elements.
 
 ## Philosophy: brittle-on-purpose
@@ -23,7 +23,7 @@ feature contract) needs review.
 Format: `<component-scope>-<element-purpose>` in `kebab-case`.
 
 Rules:
-1. **`<component-scope>`** = the Svelte component or route that owns the element
+1. **`<component-scope>`** = the Svelte™ component or route that owns the element
    (e.g. `login`, `welcome`, `passkey-enrollment`, `passkey-prompt`). Stable
    across refactors as long as the component's responsibility stays the same.
 2. **`<element-purpose>`** = what the element IS or DOES, in semantic terms
@@ -44,7 +44,7 @@ Rules:
 ## Mandatory actions
 
 - AI agent MUST add a `data-testid` to every new interactive element it creates
-  in a Svelte component or route.
+  in a Svelte™ component or route.
 - AI agent MUST flag (in the chat, not silently) any existing interactive
   element that is missing a `data-testid` when editing a component.
 - AI agent MUST NOT remove an existing `data-testid` without updating the E2E
@@ -57,7 +57,7 @@ Rules:
 
 ## When a component wraps a typed-input sub-component
 
-If an interactive element is rendered through a typed Svelte sub-component
+If an interactive element is rendered through a typed Svelte™ sub-component
 (e.g. `AsyncValidatedInput`, `TextInput`, `PasswordInput`, `Checkbox`) that
 declares a `Props` type, the `data-testid` attribute MUST be:
 1. Added to the sub-component's `Props` type as `"data-testid"?: string`.
@@ -65,7 +65,7 @@ declares a `Props` type, the `data-testid` attribute MUST be:
 3. Forwarded to the underlying native HTML element (or the next sub-component
    in the chain).
 
-This ensures `data-testid` passes through TypeScript's prop checking.
+This ensures `data-testid` passes through TypeScript®'s prop checking.
 
 ## Reference
 

@@ -34,7 +34,13 @@ export default defineConfig(({ mode }) => {
 			proxy: {
 				'/api': {
 					target: apiOrigin,
-					changeOrigin: true
+					changeOrigin: true,
+					// SSE endpoints need long-lived connections without proxy timeout.
+					// The http-proxy `proxyTimeout` defaults to 0 (no timeout) which is
+					// correct for SSE. We set `timeout: 0` explicitly to prevent the
+					// proxy from closing idle SSE connections.
+					timeout: 0,
+					proxyTimeout: 0
 				},
 				// Microservice proxy: BE mounts /ws/:serviceCode/* and forwards
 				// to the registered microservices. Without this rule, Vite

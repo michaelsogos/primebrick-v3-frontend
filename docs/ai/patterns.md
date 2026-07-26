@@ -8,9 +8,9 @@ In-app routes under the shell should **fill the main content area** (full width,
 
 Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer padding `p-2 sm:p-3`, column `gap-4`, `min-h-0` so flex children (tables, cards) can use remaining height. Put breadcrumb + `h1` (and optional toolbar) in `{#snippet header()}`; put the main block (e.g. entity list table) as default children.
 
-## UI architecture (Shadcn-Svelte)
+## UI architecture (Shadcn-Svelte™)
 
-Primebrick uses **Shadcn-Svelte** as vendored UI source + Tailwind.
+Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 
 ### Customization (keep updates easy)
 
@@ -26,7 +26,7 @@ Primebrick uses **Shadcn-Svelte** as vendored UI source + Tailwind.
 
 **Naming (non-strict):** `src/lib/components/<DomainThing>.svelte` for domain; optional `src/lib/components/forms/` for form controls. Keep `src/lib/components/ui/*` for vendored primitives.
 
-## Updating Shadcn-Svelte components (vendor workflow)
+## Updating Shadcn-Svelte™ components (vendor workflow)
 
 1. Branch: `chore/ui-vendor-update-YYYY-MM` — do not mix with feature work.
 2. Update one component at a time: `pnpm dlx shadcn-svelte@<version> add <component> -o` (prefer explicit CLI version).
@@ -58,7 +58,7 @@ The **right-hand “sidebar” sheet** is not route-owned UI: it is a **single r
 | `$lib/shell/sheets/panels/*` | Shell panels (e.g. errors, versions). |
 | `$lib/entity-list/sheets/panels/*` | Entity-list panels (search-in, columns, filters). |
 
-**How to add a panel:** register the Svelte panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions.
+**How to add a panel:** register the Svelte™ panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions.
 
 **Do not** drive `openSheet` from an `$effect` that also depends on a **bindable boolean** mirroring sheet open state (e.g. “open when flag is true and sheet looks closed”). While the sheet is closing, the flag can still be `true` for a tick and the effect will **re-open** the sheet → infinite loop. Prefer **opening from the click handler** (or another discrete event) and use small, one-way sync effects only for “parent set flag false → `closeSheet`” / “sheet dismissed → clear flag”.
 
@@ -78,4 +78,4 @@ The **right-hand “sidebar” sheet** is not route-owned UI: it is a **single r
 
 ## Icons & images
 
-No raster assets for UI icons/illustrations; prefer SVG, Lucide, or CSS. If a bitmap is a hard business requirement, confirm with the user first.
+No raster assets for UI icons/illustrations; prefer SVG, Lucide™, or CSS. If a bitmap is a hard business requirement, confirm with the user first.

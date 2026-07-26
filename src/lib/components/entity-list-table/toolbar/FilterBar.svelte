@@ -58,14 +58,14 @@
   <div class="flex flex-wrap items-center gap-2">
     <Button
       variant="soft"
+      tone="primary"
       size="xs"
-      class="h-6 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
       onclick={onResetFilters}
     >
       <XIcon class="size-3.5" />
       {$t('common.clearAll')}
     </Button>
-    <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+    <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
       {#each Object.entries(filterValues) as [key, value]}
         {@const col = filterableColumns.find((c) => c.key === key)}
@@ -81,7 +81,7 @@
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
-              class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+              class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
               onclick={() => {
                 const next = { ...filterValues };
                 delete next[key];
@@ -121,7 +121,7 @@
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
-              class="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-muted-foreground/20"
+              class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
               onclick={() => {
                 const next = advancedFilters.filter((f) => f.id !== filter.id);
                 onAdvancedFiltersChange?.(next);

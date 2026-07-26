@@ -7,6 +7,8 @@
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import Database from '@lucide/svelte/icons/database';
+  import DatabaseZap from '@lucide/svelte/icons/database-zap';
+  import Radio from '@lucide/svelte/icons/radio';
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
   let { collapsed }: { collapsed: boolean } = $props();
@@ -37,6 +39,10 @@
       <CloudOff class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
     {:else if healthChip === 'db_offline'}
       <Database class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
+    {:else if healthChip === 'redis_offline'}
+      <DatabaseZap class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
+    {:else if healthChip === 'nats_offline'}
+      <Radio class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
     {:else if healthChip === 'idp_offline'}
       <ShieldAlert class="size-3.5 opacity-90 group-data-[collapsible=icon]:size-4" />
     {:else}

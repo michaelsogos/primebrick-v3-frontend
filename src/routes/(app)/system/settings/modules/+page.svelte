@@ -181,7 +181,7 @@
           {#if loading}
             <div class="grid min-h-56 place-items-center p-3">
               <div class="relative flex flex-col items-center gap-2 text-center">
-                <div class="pb-watermark-empty">
+                <div class="pb-watermark-loading">
                   <Hourglass class="size-20 text-info" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">

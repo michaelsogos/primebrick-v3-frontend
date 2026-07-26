@@ -5,7 +5,6 @@
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import { DateFormatter, getLocalTimeZone, today, now, CalendarDate, CalendarDateTime } from "@internationalized/date";
 	import { cn } from "$lib/utils";
-	import { inputControlHoverClasses } from "$lib/components/ui/input/input-chrome";
 	import WheelPicker from "$lib/components/ui/wheel-picker/wheel-picker.svelte";
 	import WheelPickerItem from "$lib/components/ui/wheel-picker/wheel-picker-item.svelte";
 	import WheelPickerGroup from "$lib/components/ui/wheel-picker/wheel-picker-group.svelte";
@@ -226,7 +225,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				class="w-full justify-between font-normal border-input bg-background dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] {inputControlHoverClasses}"
+				class="w-full justify-between font-normal"
 			>
 				<span class={cn(!value && "text-muted-foreground/70 text-xs")}>
 					{value ? df.format(value.toDate(getLocalTimeZone())) : placeholder}

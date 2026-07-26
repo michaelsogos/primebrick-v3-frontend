@@ -31,6 +31,8 @@
     scrollToTab: (v: string) => void;
   }>("anchor-tabs");
 
+  // svelte-ignore state_referenced_locally
+  // value is a static tab identifier — registerTab is a one-time registration call
   const section_id = ctx.registerTab(value);
   const is_active = $derived(ctx.active_value === value);
 

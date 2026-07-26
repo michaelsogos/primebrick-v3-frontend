@@ -48,7 +48,7 @@
   }: ExportPreviewDialogProps = $props();
 </script>
 
-<DialogBordered bind:open={open} color="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+<DialogBordered bind:open={open} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>

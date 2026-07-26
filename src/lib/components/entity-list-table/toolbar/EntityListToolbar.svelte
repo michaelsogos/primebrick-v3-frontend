@@ -115,7 +115,7 @@
     {/if}
 
     {#if onCreateAction}
-      <div class="h-6 w-px bg-border/60" aria-hidden="true"></div>
+      <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
       <Button
         variant="default"
         size="sm"

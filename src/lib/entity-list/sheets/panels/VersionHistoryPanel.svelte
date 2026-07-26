@@ -37,7 +37,8 @@
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
   // Falls back to entity (snake_case plural) when not provided — back-compat.
-  const i18nEntity = translationKey ?? entity;
+  // $derived: keep reactive link to props (avoids state_referenced_locally).
+  const i18nEntity = $derived(translationKey ?? entity);
 
   let versionHistoryData = $state<any[]>([]);
   let versionHistoryLoading = $state<boolean>(false);
@@ -360,8 +361,8 @@
     {#if versionHistoryLoading && versionHistoryData.length === 0}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
-          <div class="pb-watermark-empty">
-            <Hourglass class="size-20 text-info animate-spin" />
+          <div class="pb-watermark-loading">
+            <Hourglass class="size-20 text-info" />
           </div>
           <div class="text-sm font-medium text-muted-foreground">{$t('entities.versionHistory.loading')}</div>
         </div>
@@ -369,7 +370,7 @@
     {:else if versionHistoryError}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
-          <div class="pb-watermark-empty">
+          <div class="pb-watermark-error">
             <CircleX class="size-20 text-destructive" />
           </div>
           <div class="text-sm font-medium text-destructive">{versionHistoryError}</div>
@@ -530,21 +531,3 @@
   </div>
 </div>
 
-<style>
-  @keyframes pb-watermark-pulse {
-    0%,
-    100% {
-      opacity: 0.12;
-      transform: translateY(0) scale(1);
-    }
-    50% {
-      opacity: 0.22;
-      transform: translateY(-6px) scale(1.06);
-    }
-  }
-
-  .pb-watermark-empty {
-    transform-origin: center;
-    animation: pb-watermark-pulse 2.6s ease-in-out infinite;
-  }
-</style>

@@ -1,4 +1,4 @@
-# GitHub Copilot — Primebrick frontend
+# GitHub™ Copilot — Primebrick frontend
 
 Follow `AGENTS.md` in this repository for project structure, commands, and conventions.
 

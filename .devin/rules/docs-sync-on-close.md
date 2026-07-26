@@ -44,7 +44,7 @@ feature closes. Proceed to step 6.
 
 **For feature/hotfix branches**: check if the changed files affect
 user-facing behavior. For this repo (frontend), user-facing changes include:
-- New or modified Svelte components (src/lib/components/**.svelte)
+- New or modified Svelte™ components (src/lib/components/**.svelte)
 - New or modified layouts (src/routes/**/+layout.svelte)
 - New or modified pages (src/routes/**/+page.svelte)
 - Component prop changes ($props() signature changes)
@@ -58,7 +58,7 @@ If NO user-facing files changed, skip to step 6 (proceed with normal close).
 
 ### 3. Run extraction (refresh component docs data)
 Run `pnpm extract-docs` to regenerate `docs/user-guide/_extracted/components.json`
-from the current Svelte components. This ensures the extraction JSON reflects
+from the current Svelte™ components. This ensures the extraction JSON reflects
 the latest prop types, snippets, and bindable flags.
 
 ### 4. Anti-rewrite check (MANDATORY)

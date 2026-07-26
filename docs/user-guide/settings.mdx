@@ -43,6 +43,25 @@ Actions per module:
 The page also reflects the backend health chip from `backendState.healthChip`
 via `useHealthChip()` (`chipLabel`, `chipClass`).
 
+```svelte
+<script lang="ts">
+  import { servicesStore, toggleModule, deleteModule } from "$lib/services-store.svelte.ts";
+  import { useHealthChip } from "$lib/composables/use-health-chip.svelte.ts";
+
+  const health = useHealthChip();
+  const services = $derived(servicesStore.services);
+  const grouped = $derived(groupByCode(services));
+</script>
+
+{#each grouped as [code, instances]}
+  <div class="module-card">
+    <span class="status-badge">{$derived(aggregateStatus(instances))}</span>
+    <Switch checked={instances[0].enabled} onchange={() => toggleModule(code)} />
+    <button onclick={() => goto(`/system/settings/modules/${code}`)}>Configure</button>
+  </div>
+{/each}
+```
+
 ### Module detail
 
 `/system/settings/modules/[code]` has two tabs:
@@ -65,6 +84,23 @@ page (`/system/settings/organizations/create`) and edit page
 (`/system/settings/organizations/[uuid]`) use `FormPageLayout` and
 SuperForms with the form guards described in
 [Authentication & sessions](/docs/user-guide/authentication#form-guards).
+
+```svelte
+<script lang="ts">
+  import { superForm } from "sveltekit-superforms";
+  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/use-form-guard.svelte.ts";
+
+  const { form, $tainted, $errors, isTainted } = superForm(data.form);
+  const formGuard = useFormGuard(() => $tainted, () => $errors, (p) => isTainted(p));
+  const navGuard = useUnsavedChangesGuard(() => formGuard.hasChanges, "settings.unsavedChangesConfirm");
+</script>
+
+<svelte:window onbeforeunload={navGuard.handleBeforeUnload} />
+
+<FormPageLayout title={$t("settings.organizationEdit")}>
+  <!-- form fields -->
+</FormPageLayout>
+```
 
 ## Users
 
@@ -103,4 +139,6 @@ page suppresses duplicate notifications.
 
 - [App shell & sidebar](/docs/user-guide/app-shell)
 - [Authentication & sessions](/docs/user-guide/authentication)
+- [Entity list table](/docs/user-guide/components/entity-list-table) — used by the users list
+- [Component catalog](/docs/user-guide/components) — every custom/wrapped component
 - [API reference](/docs/user-guide/api-reference)

@@ -7,12 +7,15 @@
   import { Spinner } from '$lib/components/ui/spinner';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
+  import { chipLabel as healthChipLabelFn, chipClass as healthChipClassFn } from '$lib/composables/useHealthChip';
   import { APP_VERSION } from '$lib/version';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import Cloud from '@lucide/svelte/icons/cloud'
   import CloudOff from '@lucide/svelte/icons/cloud-off'
   import Database from '@lucide/svelte/icons/database'
+  import DatabaseZap from '@lucide/svelte/icons/database-zap'
+  import Radio from '@lucide/svelte/icons/radio'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
@@ -24,29 +27,8 @@
   const healthOffline = $derived(backendState.offline);
   const healthChip = $derived(backendState.healthChip);
 
-  const healthChipLabel = $derived(
-    healthChip === 'backend_offline'
-      ? $t('shell.health.beOffline')
-      : healthChip === 'db_offline'
-        ? $t('shell.health.dbOffline')
-        : healthChip === 'idp_offline'
-          ? $t('shell.health.idpOffline')
-          : healthChip === 'ok'
-            ? $t('shell.health.beOnline')
-            : $t('common.loading')
-  );
-
-  const healthChipClass = $derived(
-    healthChip === 'backend_offline'
-      ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-      : healthChip === 'db_offline'
-        ? 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300'
-        : healthChip === 'idp_offline'
-          ? 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300'
-          : healthChip === 'ok'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-            : 'border-border/60 bg-muted/30 text-muted-foreground'
-  );
+  const healthChipLabel = $derived(healthChipLabelFn(healthChip));
+  const healthChipClass = $derived(healthChipClassFn(healthChip));
 
   // Dynamic hero system
   const heroes = $derived([
@@ -155,6 +137,10 @@
           <CloudOff class="size-3.5 opacity-90" />
         {:else if healthChip === 'db_offline'}
           <Database class="size-3.5 opacity-90" />
+        {:else if healthChip === 'redis_offline'}
+          <DatabaseZap class="size-3.5 opacity-90" />
+        {:else if healthChip === 'nats_offline'}
+          <Radio class="size-3.5 opacity-90" />
         {:else if healthChip === 'idp_offline'}
           <ShieldAlert class="size-3.5 opacity-90" />
         {:else if healthChip === 'ok'}

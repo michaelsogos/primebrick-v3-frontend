@@ -8,7 +8,14 @@ import { dispatchConnectivityRestored } from '$lib/app-connectivity-events';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 
 /** Sidebar / shell: single source of truth so offline vs DB is never inconsistent. */
-export type HealthChipState = 'backend_offline' | 'db_offline' | 'idp_offline' | 'ok' | 'loading';
+export type HealthChipState =
+  | 'backend_offline'
+  | 'db_offline'
+  | 'redis_offline'
+  | 'nats_offline'
+  | 'idp_offline'
+  | 'ok'
+  | 'loading';
 
 type HealthResult = { ok: true; payload: HealthPayload } | { ok: false; status: number | null };
 
@@ -42,8 +49,11 @@ function inflight(): Inflight {
 function computeHealthChip(): HealthChipState {
   if (backendState.offline) return 'backend_offline';
   if (backendState.health === null) return 'loading';
-  if (!backendState.health.db.ok) return 'db_offline';
-  if (!backendState.health.idp.ok) return 'idp_offline';
+  const checks = backendState.health.checks;
+  if (!checks.db?.ok) return 'db_offline';
+  if (!checks.redis?.ok) return 'redis_offline';
+  if (!checks.nats?.ok) return 'nats_offline';
+  if (!checks.idp?.ok) return 'idp_offline';
   return 'ok';
 }
 
@@ -139,14 +149,16 @@ export async function probeHealth(opts?: { force?: boolean }): Promise<HealthRes
     }
     if (r.ok) {
       backendState.health = r.payload;
-      backendState.dbOk = !!r.payload.db?.ok;
-      backendState.idpOk = !!r.payload.idp?.ok;
+      backendState.dbOk = !!r.payload.checks?.db?.ok;
+      backendState.idpOk = !!r.payload.checks?.idp?.ok;
       setBackendOffline(false);
       flushHealthChip();
-      // Only dispatch connectivity-restored when transitioning from offline/db_offline/idp_offline to truly OK
-      // This prevents loop when health check runs every 5 seconds while DB is down
+      // Only dispatch connectivity-restored when transitioning from any offline state to truly OK
+      // This prevents loop when health check runs every 5 seconds while a component is down
       if (
-        (previousChip === 'backend_offline' || previousChip === 'db_offline' || previousChip === 'idp_offline') &&
+        (previousChip === 'backend_offline' || previousChip === 'db_offline' ||
+         previousChip === 'redis_offline' || previousChip === 'nats_offline' ||
+         previousChip === 'idp_offline') &&
         backendState.healthChip === 'ok'
       ) {
         dispatchConnectivityRestored({ previous: previousChip });
