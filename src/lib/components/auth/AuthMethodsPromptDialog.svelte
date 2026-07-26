@@ -9,6 +9,7 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { authConfigState } from '$lib/auth-config-store.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
+  import { enforcerStore, hideEnforcer } from '$lib/auth-enforcer-store.svelte';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Fingerprint from '@lucide/svelte/icons/fingerprint';
   import Smartphone from '@lucide/svelte/icons/smartphone';
@@ -16,12 +17,28 @@
   import MfaEnrollmentSection from './MfaEnrollmentSection.svelte';
 
   // ─── State ──────────────────────────────────────────────────────────────────
-  let open = $state(false);
+  // `open` is bound to the dialog component. It mirrors `enforcerStore.visible`
+  // — the dialog is shown/hidden by the store flag, NOT by reactive derived
+  // values from the profile store. The decision to show was made once, in
+  // +layout.svelte onMount, right after /auth/me returned 200 with confirmed
+  // data. See auth-enforcer-store.svelte.ts for the rationale.
+  let open = $state(enforcerStore.visible);
   let dismissing = $state(false);
   let dontAskAgain = $state(false);
   let bump = $state(false);
   // Selected method: 'passkey' | 'mfa' | null (null = method selector visible)
   let selectedMethod = $state<'passkey' | 'mfa' | null>(null);
+
+  // Sync `open` with the store flag. The store is the single source of truth
+  // for visibility — set once by the layout, cleared by enrollment/dismiss.
+  $effect(() => {
+    open = enforcerStore.visible;
+    if (open) {
+      // Reset method selection when dialog opens.
+      // If passkey_required=true, auto-select passkey (no method selector shown).
+      selectedMethod = passkeyRequired ? 'passkey' : null;
+    }
+  });
 
   function handleInteractOutside(event: PointerEvent) {
     event.preventDefault();
@@ -29,41 +46,25 @@
     setTimeout(() => (bump = false), 400);
   }
 
-  // ─── Derived ────────────────────────────────────────────────────────────────
-  const profile = $derived(userProfileStore.current);
-  const webauthnEnabled = $derived(authConfigState.config?.enable_webauthn ?? false);
-  const webauthnSupported = $derived(isWebauthnSupported());
-  const mfaEnabled = $derived(authConfigState.config?.enable_mfa ?? false);
+  // ─── Config-derived UI flags ────────────────────────────────────────────────
+  // These come from authConfigState (loaded once from /auth/config, stable for
+  // the session). They drive which choicebox items / buttons to render — NOT
+  // whether the dialog should show (that's the store's job).
   const passkeyRequired = $derived(authConfigState.config?.passkey_required ?? false);
+  const webauthnEnabled = $derived(authConfigState.config?.enable_webauthn ?? false);
+  const mfaEnabled = $derived(authConfigState.config?.enable_mfa ?? false);
+  const webauthnSupported = $derived(isWebauthnSupported());
 
-  // Whether the user needs each method
-  const needsPasskey = $derived(webauthnEnabled && webauthnSupported && profile?.has_passkey === false);
-  const needsMfa = $derived(mfaEnabled && profile?.has_mfa === false);
-
-  // Show the dialog when:
-  // - passkey_required=true: show if user has no passkey (passkey only, mandatory, no dismiss)
-  // - passkey_required=false: show if (user needs passkey OR MFA) AND not dismissed
-  const shouldShow = $derived(
-    !!profile?.uuid &&
-    (passkeyRequired
-      ? needsPasskey
-      : (needsPasskey || needsMfa) && !profile?.auth_method_enforcer_dismissed
-    )
-  );
-
-  // Auto-open when shouldShow becomes true
-  $effect(() => {
-    open = shouldShow;
-    if (open) {
-      // Reset method selection when dialog opens
-      // If passkey_required=true, auto-select passkey (no method selector shown)
-      selectedMethod = passkeyRequired ? 'passkey' : null;
-    }
-  });
+  // Which methods can the user enroll? (config + browser capability)
+  // Used to decide which choicebox items to render. The dialog is only visible
+  // when the user has NEITHER method, so both of these being true means both
+  // items show; if only one is available, only that item shows.
+  const canEnrollPasskey = $derived(webauthnEnabled && webauthnSupported);
+  const canEnrollMfa = $derived(mfaEnabled);
 
   // ─── Actions ────────────────────────────────────────────────────────────────
   function handleEnrollmentComplete() {
-    open = false;
+    hideEnforcer();
     selectedMethod = null;
   }
 
@@ -78,7 +79,9 @@
         });
 
         if (resp.ok) {
-          // Update the store — prompt is dismissed permanently
+          // Update the profile store so the dismissed flag is persisted
+          // for the current session (the BE already stored it).
+          const profile = userProfileStore.current;
           if (profile) {
             userProfileStore.set({
               ...profile,
@@ -92,7 +95,7 @@
     } finally {
       dismissing = false;
       dontAskAgain = false;
-      open = false;
+      hideEnforcer();
     }
   }
 </script>
@@ -123,7 +126,7 @@
     {:else if selectedMethod === null}
       <!-- Method selector: user picks passkey or MFA -->
       <Choicebox.Root value="" onValueChange={(v) => (selectedMethod = v as 'passkey' | 'mfa')}>
-        {#if needsPasskey}
+        {#if canEnrollPasskey}
           <Choicebox.Item value="passkey">
             <Choicebox.Title class="flex items-center gap-2">
               <Fingerprint class="size-4 text-primary" />
@@ -134,7 +137,7 @@
             </Choicebox.Description>
           </Choicebox.Item>
         {/if}
-        {#if needsMfa}
+        {#if canEnrollMfa}
           <Choicebox.Item value="mfa">
             <Choicebox.Title class="flex items-center gap-2">
               <Smartphone class="size-4 text-primary" />

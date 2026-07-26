@@ -5,6 +5,8 @@
   import AuthMethodsPromptDialog from '$lib/components/auth/AuthMethodsPromptDialog.svelte';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
+  import { shouldShowEnforcer, showEnforcer } from '$lib/auth-enforcer-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -12,6 +14,11 @@
   let { children }: { children: Snippet } = $props();
 
   onMount(async () => {
+    // Ensure auth config is loaded — shouldShowEnforcer needs it to know
+    // which methods are enabled. If config isn't loaded, the enforcer stays
+    // hidden (can't decide → don't show).
+    await loadAuthConfig();
+
     try {
       const res = await apiFetch('/api/v1/auth/me');
       if (res.ok) {
@@ -37,11 +44,29 @@
             updated_by: data.profile.updated_by,
             updated_by_name: data.profile.updated_by_name,
             version: data.profile.version,
-            // Auth method enforcer dialog fields
-            has_passkey: data.has_passkey ?? false,
-            auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed ?? false,
-            has_mfa: data.has_mfa ?? false,
+            // Auth method enforcer dialog fields.
+            // NO `?? false` fallbacks — we pass the actual response values to
+            // shouldShowEnforcer. If the BE omits a field, it stays undefined
+            // and the enforcer stays hidden (can't decide → don't show).
+            has_passkey: data.has_passkey,
+            auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed,
+            has_mfa: data.has_mfa,
           });
+
+          // ONE-TIME enforcer decision — made right here, with confirmed
+          // /auth/me data in hand. Not reactive, not derived from stale
+          // sessionStorage. If this block doesn't run (401, network error),
+          // the enforcer stays hidden by default.
+          if (
+            shouldShowEnforcer({
+              has_passkey: data.has_passkey,
+              has_mfa: data.has_mfa,
+              dismissed: data.auth_method_enforcer_dismissed,
+              config: authConfigState.config,
+            })
+          ) {
+            showEnforcer();
+          }
         }
       } else if (res.status === 401) {
         // Session is invalid — clear stale profile so the passkey dialog
