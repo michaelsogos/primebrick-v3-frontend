@@ -46,18 +46,6 @@ function latestTagVersion() {
   return versions[versions.length - 1];
 }
 
-/**
- * The effective base version is the max of the latest git tag and the
- * package.json version. This handles the case where tags are stale (e.g.
- * legacy 'v'-prefixed tags that were not maintained) but package.json has
- * been kept up to date manually.
- */
-function effectiveBaseVersion(latestTag, pkgVersion) {
-  const pkg = parseTag(pkgVersion);
-  if (!pkg) return latestTag;
-  return cmp(latestTag, pkg) >= 0 ? latestTag : pkg;
-}
-
 function nextVersion(kind, latest) {
   if (kind === "release") return { major: 0, minor: latest.minor + 1, patch: 0 };
   if (kind === "hotfix") return { major: 0, minor: latest.minor, patch: latest.patch + 1 };
@@ -89,9 +77,7 @@ if (!kind) process.exit(0);
 
 const pkgPath = "package.json";
 const latest = latestTagVersion();
-const pkg = readJson(pkgPath);
-const base = effectiveBaseVersion(latest, pkg.version ?? "0.0.0");
-const expected = nextVersion(kind, base);
+const expected = nextVersion(kind, latest);
 const expectedBranch = `${kind}/${format(expected)}`;
 
 if (branch !== expectedBranch) {
@@ -99,7 +85,6 @@ if (branch !== expectedBranch) {
     [
       `Branch name must match the next ${kind} version.`,
       `- Latest tag: ${format(latest)}`,
-      `- Effective base: ${format(base)}`,
       `- Expected branch: ${expectedBranch}`,
       `- Current branch:  ${branch}`,
     ].join("\n"),
@@ -107,6 +92,7 @@ if (branch !== expectedBranch) {
   process.exit(1);
 }
 
+const pkg = readJson(pkgPath);
 const expectedVersion = format(expected);
 
 if (pkg.version !== expectedVersion) {
