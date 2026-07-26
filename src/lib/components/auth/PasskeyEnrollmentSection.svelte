@@ -6,6 +6,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { isWebauthnSupported, decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
+  import { getPlatformVersion } from '$lib/webauthn/platform-info';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import Fingerprint from '@lucide/svelte/icons/fingerprint';
@@ -48,12 +49,15 @@
       }
 
       // Step 3: finish — send the attestation to the BE
+      // Capture platformVersion (Chromium Client Hints) for Win10/11 detection
+      const platformVersion = await getPlatformVersion();
       const finishResp = await apiFetch('/api/v1/auth/webauthn/signup/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nonce,
           credential: encodeAuthenticatorAttestation(credential as PublicKeyCredential),
+          ...(platformVersion ? { platform_version: platformVersion } : {}),
         }),
       });
 
