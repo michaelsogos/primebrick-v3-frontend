@@ -26,6 +26,7 @@
   import KeyRound from '@lucide/svelte/icons/key-round';
   import DatabaseZap from '@lucide/svelte/icons/database-zap';
   import Radio from '@lucide/svelte/icons/radio';
+  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
 
   const healthChip = $derived(backendState.healthChip as HealthChip);
   const healthChipLabel = $derived(chipLabel(healthChip));
@@ -183,6 +184,35 @@
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {backendState.health.checks.nats.version || 'unknown'}
                   </Badge>
+                {:else}
+                  <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+                    Offline
+                  </Badge>
+                {/if}
+              </div>
+            </div>
+
+            <!-- AI LLM — optional infra, does not affect overall health badge -->
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <div class="flex items-center gap-2 text-muted-foreground">
+                <BrainCircuit class="size-4 shrink-0 text-primary" />
+                <span>{$t('shell.health.aiLlm')}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                {#if backendState.health?.checks?.llm?.ok}
+                  <Badge variant="outline" class="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-medium">
+                    Online
+                  </Badge>
+                  {#if backendState.health.checks.llm.model}
+                    <Badge variant="outline" class="font-mono text-[11px] font-medium" title={$t('shell.health.aiLlm')}>
+                      {backendState.health.checks.llm.model}
+                    </Badge>
+                  {/if}
+                  {#if backendState.health.checks.llm.version}
+                    <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
+                      {backendState.health.checks.llm.version}
+                    </Badge>
+                  {/if}
                 {:else}
                   <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
                     Offline
