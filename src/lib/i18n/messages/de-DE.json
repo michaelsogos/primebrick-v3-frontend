@@ -305,6 +305,24 @@
     "notifications": {
       "aria": "Benachrichtigungen"
     },
+    "aiChat": {
+      "aria": "KI-Assistent",
+      "title": "KI-Assistent",
+      "placeholder": "Fragen Sie alles über Ihre Daten…",
+      "send": "Senden",
+      "newConversation": "Neue Konversation",
+      "conversations": "Konversationen",
+      "loading": "Nachdenken…",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "rateLimited": "Zu viele Anfragen. Bitte warten Sie einen Moment.",
+      "stop": "Stopp",
+      "toolCall": "Tool-Aufruf: {tool}",
+      "navigateConfirm": "Seite {route} öffnen?",
+      "yes": "Ja",
+      "no": "Nein",
+      "empty": "Noch keine Konversationen. Stellen Sie eine Frage, um zu beginnen.",
+      "welcome": "Hallo! Ich bin Ihr KI-Assistent. Ich kann Ihre Daten durchsuchen, Fragen beantworten und in der App für Sie navigieren. Wie kann ich helfen?"
+    },
     "userMenu": {
       "aria": "Benutzermenü",
       "title": "Profil",

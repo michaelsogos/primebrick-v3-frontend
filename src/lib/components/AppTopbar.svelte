@@ -17,6 +17,7 @@
   import Info from '@lucide/svelte/icons/info'
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import XIcon from '@lucide/svelte/icons/x';
+  import MessageSquare from '@lucide/svelte/icons/message-square';
   import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -172,6 +173,18 @@
             {unreadNotifications > 99 ? '99+' : unreadNotifications}
           </Badge>
         {/if}
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="relative"
+        aria-label={$t('shell.aiChat.aria')}
+        title={$t('shell.aiChat.aria')}
+        onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
+      >
+        <MessageSquare class="size-4" />
       </Button>
 
       <ThemeToggle />

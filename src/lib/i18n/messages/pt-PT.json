@@ -305,6 +305,24 @@
     "notifications": {
       "aria": "Notificações"
     },
+    "aiChat": {
+      "aria": "Assistente IA",
+      "title": "Assistente IA",
+      "placeholder": "Pergunte qualquer coisa sobre os seus dados…",
+      "send": "Enviar",
+      "newConversation": "Nova conversa",
+      "conversations": "Conversas",
+      "loading": "A pensar…",
+      "error": "Algo correu mal. Tente novamente.",
+      "rateLimited": "Demasiados pedidos. Aguarde um momento.",
+      "stop": "Parar",
+      "toolCall": "A chamar ferramenta: {tool}",
+      "navigateConfirm": "Abrir página {route}?",
+      "yes": "Sim",
+      "no": "Não",
+      "empty": "Ainda não há conversas. Comece por fazer uma pergunta.",
+      "welcome": "Olá! Sou o seu assistente de IA. Posso pesquisar os seus dados, responder a perguntas e navegar na aplicação por si. Como posso ajudar?"
+    },
     "userMenu": {
       "aria": "Menu do utilizador",
       "title": "Perfil",

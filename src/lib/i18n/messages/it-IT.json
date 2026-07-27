@@ -316,6 +316,24 @@
     "notifications": {
       "aria": "Notifiche"
     },
+    "aiChat": {
+      "aria": "Assistente AI",
+      "title": "Assistente AI",
+      "placeholder": "Chiedi qualsiasi cosa sui tuoi dati…",
+      "send": "Invia",
+      "newConversation": "Nuova conversazione",
+      "conversations": "Conversazioni",
+      "loading": "Sto pensando…",
+      "error": "Qualcosa è andato storto. Riprova.",
+      "rateLimited": "Troppe richieste. Attendi un momento.",
+      "stop": "Ferma",
+      "toolCall": "Chiamata tool: {tool}",
+      "navigateConfirm": "Aprire la pagina {route}?",
+      "yes": "Sì",
+      "no": "No",
+      "empty": "Nessuna conversazione ancora. Inizia facendo una domanda.",
+      "welcome": "Ciao! Sono il tuo assistente AI. Posso cercare i tuoi dati, rispondere a domande e navigare l'app per te. Come posso aiutarti?"
+    },
     "userMenu": {
       "aria": "Menu utente",
       "title": "Profilo",

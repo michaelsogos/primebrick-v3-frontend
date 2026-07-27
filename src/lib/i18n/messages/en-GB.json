@@ -316,6 +316,24 @@
     "notifications": {
       "aria": "Notifications"
     },
+    "aiChat": {
+      "aria": "AI Assistant",
+      "title": "AI Assistant",
+      "placeholder": "Ask anything about your data…",
+      "send": "Send",
+      "newConversation": "New conversation",
+      "conversations": "Conversations",
+      "loading": "Thinking…",
+      "error": "Something went wrong. Please try again.",
+      "rateLimited": "Too many requests. Please wait a moment.",
+      "stop": "Stop",
+      "toolCall": "Calling tool: {tool}",
+      "navigateConfirm": "Open page {route}?",
+      "yes": "Yes",
+      "no": "No",
+      "empty": "No conversations yet. Start by asking a question.",
+      "welcome": "Hi! I'm your AI assistant. I can search your data, answer questions, and navigate the app for you. How can I help?"
+    },
     "userMenu": {
       "aria": "User menu",
       "title": "Profile",
