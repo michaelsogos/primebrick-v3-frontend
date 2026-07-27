@@ -665,6 +665,7 @@
       "identityProvider": "Identitätsanbieter",
       "redis": "Redis",
       "nats": "NATS",
+      "aiLlm": "KI-LLM",
       "versionsTitle": "Versionen",
       "coreModulesTitle": "Kernmodule",
       "installedModulesTitle": "Installierte Module",

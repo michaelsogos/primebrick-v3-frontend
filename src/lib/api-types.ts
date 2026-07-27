@@ -28,6 +28,8 @@ export type HealthCheckEntry = {
   ok: boolean;
   version?: string;
   type?: string;
+  /** Active model id — only populated by the LLM check (e.g. "Qwen3-4B-Instruct-2507-Q4_K_M"). */
+  model?: string;
   error?: string;
 };
 

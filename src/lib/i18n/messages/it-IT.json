@@ -681,6 +681,7 @@
       "identityProvider": "Identity Provider",
       "redis": "Redis",
       "nats": "NATS",
+      "aiLlm": "AI LLM",
       "versionsTitle": "Versioni",
       "coreModulesTitle": "Moduli Core",
       "installedModulesTitle": "Moduli Installati",

@@ -666,6 +666,7 @@
       "identityProvider": "Proveedor de identidad",
       "redis": "Redis",
       "nats": "NATS",
+      "aiLlm": "IA-LLM",
       "versionsTitle": "Versiones",
       "coreModulesTitle": "Módulos Core",
       "installedModulesTitle": "Módulos Instalados",
