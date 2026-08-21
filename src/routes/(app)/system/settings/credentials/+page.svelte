@@ -1,6 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
+  import { enhance } from '$app/forms';
+  import type { SubmitFunction } from '@sveltejs/kit';
   import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
   import { apiFetch } from '$lib/api';
@@ -42,44 +44,48 @@
       !changingPassword,
   );
 
-  async function handleChangePassword(event: SubmitEvent) {
-    event.preventDefault();
-    if (!canChangePassword) return;
-    changingPassword = true;
-    try {
-      const resp = await apiFetch('/api/v1/auth/me/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          current_password: currentPassword,
-          newPassword,
-        }),
-      });
+  const handleChangePassword: SubmitFunction = ({ cancel }) => {
+    cancel();
 
-      if (resp.ok) {
+    if (!canChangePassword) return;
+
+    changingPassword = true;
+    (async () => {
+      try {
+        const resp = await apiFetch('/api/v1/auth/me/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            current_password: currentPassword,
+            newPassword,
+          }),
+        });
+
+        if (resp.ok) {
+          pushNotification({
+            impact: 'NONE',
+            message: $t('shell.settings.security.passwordChangedSuccess'),
+            scope: 'auth',
+          });
+          currentPassword = '';
+          newPassword = '';
+          confirmPassword = '';
+        } else {
+          const err = await resp.json();
+          pushNotification({ ...err, toast: false });
+        }
+      } catch (error) {
+        console.error('Failed to change password:', error);
         pushNotification({
-          impact: 'NONE',
-          message: $t('shell.settings.security.passwordChangedSuccess'),
+          impact: 'HIGH',
+          message: $t('shell.settings.security.passwordChangedError'),
           scope: 'auth',
         });
-        currentPassword = '';
-        newPassword = '';
-        confirmPassword = '';
-      } else {
-        const err = await resp.json();
-        pushNotification({ ...err, toast: false });
+      } finally {
+        changingPassword = false;
       }
-    } catch (error) {
-      console.error('Failed to change password:', error);
-      pushNotification({
-        impact: 'HIGH',
-        message: $t('shell.settings.security.passwordChangedError'),
-        scope: 'auth',
-      });
-    } finally {
-      changingPassword = false;
-    }
-  }
+    })();
+  };
 
   onMount(() => {
     void passwordPolicy.load();
@@ -126,7 +132,7 @@
           <CardContent class="space-y-4">
             <form
               id="change-password-form"
-              onsubmit={handleChangePassword}
+              use:enhance={handleChangePassword}
               class="grid grid-cols-2 gap-6"
               data-testid="credentials-change-password-form"
             >
