@@ -132,6 +132,7 @@
           <CardContent class="space-y-4">
             <form
               id="change-password-form"
+              method="POST"
               use:enhance={handleChangePassword}
               class="grid grid-cols-2 gap-6"
               data-testid="credentials-change-password-form"
