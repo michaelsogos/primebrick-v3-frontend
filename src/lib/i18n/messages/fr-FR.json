@@ -220,6 +220,10 @@
     "saving": "Enregistrement…",
     "saveSuccess": "Enregistré avec succès",
     "saveFailed": "Échec de l'enregistrement",
+    "selectValue": "Sélectionner une valeur",
+    "enterValue": "Saisir une valeur",
+    "deleteSuccess": "Supprimé avec succès",
+    "deleteFailed": "Échec de la suppression",
     "deleteConfirmTitle": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
     "deleteConfirm": "Cette action ne peut pas être annulée.",
     "restore": "Restaurer",
@@ -277,6 +281,107 @@
     "ops": "Opérations",
     "systemAdministrator": "Administrateur système",
     "notValidRole": "Rôle non valide"
+  },
+  "config": {
+    "auth": {
+      "casdoor_endpoint": {
+        "label": "Point de terminaison Casdoor",
+        "description": "L'URL de base de l'instance du fournisseur d'identité Casdoor."
+      },
+      "casdoor_organization": {
+        "label": "Organisation Casdoor",
+        "description": "Le nom de l'organisation dans Casdoor à laquelle appartiennent les utilisateurs Primebrick."
+      },
+      "casdoor_client_id": {
+        "label": "ID client Casdoor",
+        "description": "L'ID client OAuth enregistré dans Casdoor pour l'API Primebrick."
+      },
+      "casdoor_admin_username": {
+        "label": "Nom d'utilisateur administrateur Casdoor",
+        "description": "Le nom d'utilisateur de l'administrateur Casdoor utilisé pour les appels API du compte de service."
+      },
+      "casdoor_admin_role": {
+        "label": "Rôle administrateur Casdoor",
+        "description": "Le nom du rôle Casdoor qui accorde l'accès administrateur dans Primebrick."
+      },
+      "oidc_issuer_url": {
+        "label": "URL de l'émetteur OIDC",
+        "description": "L'URL de l'émetteur OpenID Connect (base du point de terminaison well-known)."
+      },
+      "oidc_issuer_type": {
+        "label": "Type d'émetteur OIDC",
+        "description": "Le type de fournisseur d'identité OpenID Connect utilisé.",
+        "casdoor": "Casdoor",
+        "keycloak": "Keycloak",
+        "auth0": "Auth0"
+      },
+      "oidc_client_id": {
+        "label": "ID client OIDC",
+        "description": "L'ID client OAuth/OIDC pour l'API Primebrick."
+      },
+      "enable_email_verification_check": {
+        "label": "Exiger la vérification de l'e-mail",
+        "description": "Si activé, les utilisateurs doivent vérifier leur adresse e-mail avant de pouvoir se connecter."
+      },
+      "enable_webauthn": {
+        "label": "Activer WebAuthn",
+        "description": "Si activé, les utilisateurs peuvent s'inscrire et se connecter avec des passkeys (WebAuthn)."
+      },
+      "passkey_required": {
+        "label": "Passkey requise",
+        "description": "Si activé, chaque utilisateur doit enregistrer au moins une passkey."
+      },
+      "enable_mfa": {
+        "label": "Activer la MFA",
+        "description": "Si activé, les utilisateurs peuvent configurer des applications d'authentification TOTP comme second facteur."
+      },
+      "password_policy": {
+        "label": "Politique de mot de passe",
+        "description": "La politique de complexité du mot de passe appliquée pour l'authentification par formulaire.",
+        "alpha_numeric": "Alphanumérique",
+        "letter_and_number": "Lettres et chiffres",
+        "letter_number_special": "Lettres, chiffres et caractères spéciaux",
+        "mixed_case_special": "Majuscules/minusculs avec caractères spéciaux"
+      },
+      "auth_mode": {
+        "label": "Mode d'authentification",
+        "description": "Le mode d'authentification : standalone (IDP direct) ou gateway (via la passerelle API).",
+        "standalone": "Standalone",
+        "gateway": "Gateway"
+      },
+      "auth_roles_path": {
+        "label": "Chemin des rôles d'authentification",
+        "description": "Le chemin du claim JWT (séparé par des points) où sont stockés les rôles de l'utilisateur."
+      },
+      "invitation_expiry_days": {
+        "label": "Expiration de l'invitation (jours)",
+        "description": "Nombre de jours avant l'expiration d'une invitation utilisateur en attente."
+      },
+      "admin_contact_email": {
+        "label": "E-mail de contact administrateur",
+        "description": "E-mail de contact affiché aux utilisateurs pour les demandes de support/administration."
+      },
+      "notification_alert_secret": {
+        "label": "Secret d'alerte de notification",
+        "description": "Secret partagé utilisé pour signer les payloads internes d'alerte de notification."
+      },
+      "frontend_url": {
+        "label": "URL du frontend",
+        "description": "L'URL de base publique du frontend Primebrick (utilisée dans les e-mails et les liens)."
+      },
+      "redis_url": {
+        "label": "URL Redis",
+        "description": "L'URL de connexion Redis utilisée pour le cache, les sessions et la présence."
+      },
+      "mfa_challenge_token_ttl_seconds": {
+        "label": "TTL du jeton de challenge MFA (secondes)",
+        "description": "Durée de vie en secondes des jetons de challenge MFA step-up."
+      },
+      "mfa_challenge_signing_secret": {
+        "label": "Secret de signature du challenge MFA",
+        "description": "Clé secrète utilisée pour signer les jetons de challenge MFA step-up."
+      }
+    }
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -570,6 +675,11 @@
       },
       "security": {
         "title": "Sécurité",
+        "description": "Gérer les paramètres d'authentification et de sécurité.",
+        "reservedBadge": "Réservé",
+        "selected": "sélectionnés",
+        "bulkDelete": "Supprimer la sélection",
+        "noEntries": "Aucune entrée de configuration trouvée",
         "changePassword": "Changer le mot de passe",
         "currentPassword": "Mot de passe actuel",
         "currentPasswordPlaceholder": "Entrez le mot de passe actuel",
