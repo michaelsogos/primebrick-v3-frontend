@@ -108,10 +108,12 @@ export type ConfigEntry = {
   type_config?: string | null;
   label_key?: string | null;
   description_key?: string | null;
+  group_key?: string | null;
   reserved: boolean;
   version: number;
   updated_at?: string;
   updated_by?: string;
+  updated_by_name?: string | null;
 };
 
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */

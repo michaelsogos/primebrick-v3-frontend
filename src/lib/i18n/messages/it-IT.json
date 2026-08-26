@@ -295,40 +295,48 @@
   },
   "config": {
     "auth": {
-      "casdoor_endpoint": {
-        "label": "Endpoint Casdoor",
-        "description": "L'URL di base dell'istanza del provider di identità Casdoor."
+      "idp_endpoint": {
+        "label": "Endpoint IDP",
+        "description": "L'URL di base dell'istanza del provider di identità."
       },
-      "casdoor_organization": {
-        "label": "Organizzazione Casdoor",
-        "description": "Il nome dell'organizzazione in Casdoor a cui appartengono gli utenti Primebrick."
+      "idp_organization": {
+        "label": "Organizzazione IDP",
+        "description": "Il nome dell'organizzazione nel provider di identità a cui appartengono gli utenti Primebrick."
       },
-      "casdoor_client_id": {
-        "label": "Client ID Casdoor",
-        "description": "L'ID client OAuth registrato in Casdoor per l'API Primebrick."
+      "idp_client_id": {
+        "label": "IDP Client ID",
+        "description": "L'ID client API di amministrazione usato da Primebrick per gestire utenti e ruoli nel provider di identità."
       },
-      "casdoor_admin_username": {
-        "label": "Nome utente amministratore Casdoor",
-        "description": "Il nome utente dell'amministratore Casdoor utilizzato per le chiamate API dell'account di servizio."
-      },
-      "casdoor_admin_role": {
-        "label": "Ruolo amministratore Casdoor",
-        "description": "Il nome del ruolo Casdoor che concede l'accesso amministratore in Primebrick."
+      "idp_client_secret": {
+        "label": "IDP Client Secret",
+        "description": "Il secret client API di amministrazione usato da Primebrick per gestire utenti e ruoli nel provider di identità. Lasciare vuoto per mantenere il valore corrente."
       },
       "oidc_issuer_url": {
         "label": "URL issuer OIDC",
         "description": "L'URL dell'issuer OpenID Connect (base dell'endpoint well-known)."
       },
-      "oidc_issuer_type": {
-        "label": "Tipo issuer OIDC",
-        "description": "Il tipo di provider di identità OpenID Connect in uso.",
+      "idp_type": {
+        "label": "Tipo IDP",
+        "description": "Il tipo di provider di identità (Casdoor, Keycloak, Entra ID, Okta, ecc.).",
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
-        "auth0": "Auth0"
+        "entra": "Entra ID",
+        "okta": "Okta"
+      },
+      "group": {
+        "idp_parameters": "Parametri IDP",
+        "oidc_parameters": "Parametri OIDC",
+        "security_parameters": "Parametri di Sicurezza",
+        "advanced_features": "Funzionalità Avanzate",
+        "system_settings": "Impostazioni di Sistema"
       },
       "oidc_client_id": {
         "label": "Client ID OIDC",
         "description": "L'ID client OAuth/OIDC per l'API Primebrick."
+      },
+      "oidc_client_secret": {
+        "label": "Client Secret OIDC",
+        "description": "Il secret client OAuth/OIDC per l'API Primebrick. Lasciare vuoto per mantenere il valore corrente."
       },
       "enable_email_verification_check": {
         "label": "Richiedi verifica email",
@@ -512,7 +520,7 @@
         "fieldIdpRoleHint": "Il nome esatto del ruolo come emesso dall'IDP nel JWT (sensibile alle maiuscole).",
         "fieldIdpRoleImmutable": "Il nome del ruolo IDP è immutabile dopo la creazione.",
         "fieldIdpOrg": "Organizzazione IDP",
-        "fieldIdpOrgHint": "L'organizzazione/proprietario Casdoor a cui appartiene il ruolo.",
+        "fieldIdpOrgHint": "L'organizzazione/proprietario IDP a cui appartiene il ruolo.",
         "fieldIdpOrgPlaceholder": "Seleziona organizzazione",
         "fieldIdpOrgImmutable": "L'organizzazione IDP è immutabile dopo la creazione.",
         "fieldLabelKey": "Chiave etichetta di visualizzazione",
@@ -688,6 +696,8 @@
         "title": "Sicurezza",
         "description": "Gestisci le impostazioni di autenticazione e sicurezza.",
         "reservedBadge": "Riservato",
+        "lastUpdatedPrefix": "Ultimo aggiornamento",
+        "lastUpdatedByMid": "da",
         "selected": "selezionati",
         "bulkDelete": "Elimina selezionati",
         "noEntries": "Nessuna voce di configurazione trovata",

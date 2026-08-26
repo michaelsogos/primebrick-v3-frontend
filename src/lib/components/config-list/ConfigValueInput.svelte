@@ -6,6 +6,7 @@
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
   import { Button } from '$lib/components/ui/button';
+  import * as Password from '$lib/components/ui/password';
   import type { ConfigEntry } from '$lib/api-types';
 
   let {
@@ -223,28 +224,17 @@
     data-testid={`config-input-time-${entry.key}`}
   />
 {:else if entry.type === 'secret'}
-  <div class="flex items-center gap-2">
-    <Input
-      type="password"
-      value={localValue}
-      oninput={(e: Event) => {
-        const target = e.target as HTMLInputElement;
-        localValue = target.value;
-      }}
-      placeholder={entry.value ? '••••••••' : $t('common.enterValue')}
+  <Password.Root class="w-full">
+    <Password.Input
+      bind:value={localValue}
+      onblur={handleBlur}
       disabled={isSaving}
-      class="flex-1"
+      class="w-full"
       data-testid={`config-input-secret-${entry.key}`}
-    />
-    <Button
-      variant="default"
-      size="sm"
-      onclick={handleSecretSave}
-      disabled={isSaving || !localValue}
     >
-      {$t('common.save')}
-    </Button>
-  </div>
+      <Password.ToggleVisibility />
+    </Password.Input>
+  </Password.Root>
 {:else if entry.type === 'url'}
   <Input
     type="url"

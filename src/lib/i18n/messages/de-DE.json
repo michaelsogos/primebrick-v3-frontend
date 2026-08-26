@@ -284,40 +284,48 @@
   },
   "config": {
     "auth": {
-      "casdoor_endpoint": {
-        "label": "Casdoor-Endpunkt",
-        "description": "Die Basis-URL der Casdoor-Identitätsanbieter-Instanz."
+      "idp_endpoint": {
+        "label": "IDP-Endpunkt",
+        "description": "Die Basis-URL der Identitätsanbieter-Instanz."
       },
-      "casdoor_organization": {
-        "label": "Casdoor-Organisation",
-        "description": "Der Organisationsname in Casdoor, zu dem die Primebrick-Benutzer gehören."
+      "idp_organization": {
+        "label": "IDP-Organisation",
+        "description": "Der Organisationsname im Identitätsanbieter, zu dem die Primebrick-Benutzer gehören."
       },
-      "casdoor_client_id": {
-        "label": "Casdoor-Client-ID",
-        "description": "Die in Casdoor registrierte OAuth-Client-ID für die Primebrick-API."
+      "idp_client_id": {
+        "label": "IDP-Client-ID",
+        "description": "Die Admin-API-Client-ID, die von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten."
       },
-      "casdoor_admin_username": {
-        "label": "Casdoor-Administrator-Benutzername",
-        "description": "Der Casdoor-Administrator-Benutzername, der für Service-Account-API-Aufrufe verwendet wird."
-      },
-      "casdoor_admin_role": {
-        "label": "Casdoor-Administratorrolle",
-        "description": "Der Casdoor-Rollenname, der Administratorzugriff in Primebrick gewährt."
+      "idp_client_secret": {
+        "label": "IDP-Client-Secret",
+        "description": "Das Admin-API-Client-Secret, das von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten. Leer lassen, um den aktuellen Wert beizubehalten."
       },
       "oidc_issuer_url": {
         "label": "OIDC-Aussteller-URL",
         "description": "Die OpenID-Connect-Aussteller-URL (Basis des Well-Known-Endpunkts)."
       },
-      "oidc_issuer_type": {
-        "label": "OIDC-Ausstellertyp",
-        "description": "Der Typ des verwendeten OpenID-Connect-Identitätsanbieters.",
+      "idp_type": {
+        "label": "IDP-Typ",
+        "description": "Der Typ des Identitätsanbieters (Casdoor, Keycloak, Entra ID, Okta, etc.).",
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
-        "auth0": "Auth0"
+        "entra": "Entra ID",
+        "okta": "Okta"
+      },
+      "group": {
+        "idp_parameters": "IDP-Parameter",
+        "oidc_parameters": "OIDC-Parameter",
+        "security_parameters": "Sicherheitsparameter",
+        "advanced_features": "Erweiterte Funktionen",
+        "system_settings": "Systemeinstellungen"
       },
       "oidc_client_id": {
         "label": "OIDC-Client-ID",
         "description": "Die OAuth/OIDC-Client-ID für die Primebrick-API."
+      },
+      "oidc_client_secret": {
+        "label": "OIDC-Client-Secret",
+        "description": "Das OAuth/OIDC-Client-Secret für die Primebrick-API. Leer lassen, um den aktuellen Wert beizubehalten."
       },
       "enable_email_verification_check": {
         "label": "E-Mail-Verifizierung erforderlich",
@@ -501,7 +509,7 @@
         "fieldIdpRoleHint": "Der genaue Rollenname, wie vom IDP im JWT ausgegeben (Groß-/Kleinschreibung beachten).",
         "fieldIdpRoleImmutable": "Der IDP-Rollenname ist nach der Erstellung unveränderlich.",
         "fieldIdpOrg": "IDP-Organisation",
-        "fieldIdpOrgHint": "Die Casdoor-Organisation/Eigentümer, zu der die Rolle gehört.",
+        "fieldIdpOrgHint": "Die IDP-Organisation/Eigentümer, zu der die Rolle gehört.",
         "fieldIdpOrgPlaceholder": "Organisation auswählen",
         "fieldIdpOrgImmutable": "Die IDP-Organisation ist nach der Erstellung unveränderlich.",
         "fieldLabelKey": "Beschriftungsschlüssel",
@@ -677,6 +685,8 @@
         "title": "Sicherheit",
         "description": "Authentifizierungs- und Sicherheitskonfiguration verwalten.",
         "reservedBadge": "Reserviert",
+        "lastUpdatedPrefix": "Zuletzt aktualisiert",
+        "lastUpdatedByMid": "von",
         "selected": "ausgewählt",
         "bulkDelete": "Auswahl löschen",
         "noEntries": "Keine Konfigurationseinträge gefunden",

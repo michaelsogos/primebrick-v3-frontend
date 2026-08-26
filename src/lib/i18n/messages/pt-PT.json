@@ -284,40 +284,48 @@
   },
   "config": {
     "auth": {
-      "casdoor_endpoint": {
-        "label": "Endpoint do Casdoor",
-        "description": "O URL base da instância do fornecedor de identidade Casdoor."
+      "idp_endpoint": {
+        "label": "Endpoint do IDP",
+        "description": "O URL base da instância do fornecedor de identidade."
       },
-      "casdoor_organization": {
-        "label": "Organização do Casdoor",
-        "description": "O nome da organização no Casdoor à qual pertencem os utilizadores do Primebrick."
+      "idp_organization": {
+        "label": "Organização do IDP",
+        "description": "O nome da organização no fornecedor de identidade à qual pertencem os utilizadores do Primebrick."
       },
-      "casdoor_client_id": {
-        "label": "ID de cliente do Casdoor",
-        "description": "O ID de cliente OAuth registado no Casdoor para a API do Primebrick."
+      "idp_client_id": {
+        "label": "IDP Client ID",
+        "description": "O ID de cliente API de administração utilizado pelo Primebrick para gerir utilizadores e funções no fornecedor de identidade."
       },
-      "casdoor_admin_username": {
-        "label": "Nome de utilizador do administrador do Casdoor",
-        "description": "O nome de utilizador do administrador do Casdoor utilizado para chamadas API da conta de serviço."
-      },
-      "casdoor_admin_role": {
-        "label": "Função de administrador do Casdoor",
-        "description": "O nome da função no Casdoor que concede acesso de administrador no Primebrick."
+      "idp_client_secret": {
+        "label": "IDP Client Secret",
+        "description": "O secret de cliente API de administração utilizado pelo Primebrick para gerir utilizadores e funções no fornecedor de identidade. Deixar vazio para manter o valor atual."
       },
       "oidc_issuer_url": {
         "label": "URL do emissor OIDC",
         "description": "O URL do emissor OpenID Connect (base do endpoint well-known)."
       },
-      "oidc_issuer_type": {
-        "label": "Tipo de emissor OIDC",
-        "description": "O tipo de fornecedor de identidade OpenID Connect em uso.",
+      "idp_type": {
+        "label": "Tipo de IDP",
+        "description": "O tipo de fornecedor de identidade (Casdoor, Keycloak, Entra ID, Okta, etc.).",
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
-        "auth0": "Auth0"
+        "entra": "Entra ID",
+        "okta": "Okta"
+      },
+      "group": {
+        "idp_parameters": "Parâmetros IDP",
+        "oidc_parameters": "Parâmetros OIDC",
+        "security_parameters": "Parâmetros de Segurança",
+        "advanced_features": "Funcionalidades Avançadas",
+        "system_settings": "Configurações do Sistema"
       },
       "oidc_client_id": {
         "label": "ID de cliente OIDC",
         "description": "O ID de cliente OAuth/OIDC para a API do Primebrick."
+      },
+      "oidc_client_secret": {
+        "label": "Secret de cliente OIDC",
+        "description": "O secret de cliente OAuth/OIDC para a API do Primebrick. Deixar vazio para manter o valor atual."
       },
       "enable_email_verification_check": {
         "label": "Exigir verificação de email",
@@ -501,7 +509,7 @@
         "fieldIdpRoleHint": "O nome exato da função conforme emitido pelo IDP no JWT (sensível a maiúsculas).",
         "fieldIdpRoleImmutable": "O nome da função IDP é imutável após a criação.",
         "fieldIdpOrg": "Organização IDP",
-        "fieldIdpOrgHint": "A organização/proprietário Casdoor à qual a função pertence.",
+        "fieldIdpOrgHint": "A organização/proprietário IDP à qual a função pertence.",
         "fieldIdpOrgPlaceholder": "Selecionar organização",
         "fieldIdpOrgImmutable": "A organização IDP é imutável após a criação.",
         "fieldLabelKey": "Chave da etiqueta de exibição",
@@ -677,6 +685,8 @@
         "title": "Segurança",
         "description": "Gerir as definições de autenticação e segurança.",
         "reservedBadge": "Reservado",
+        "lastUpdatedPrefix": "Última atualização",
+        "lastUpdatedByMid": "por",
         "selected": "selecionados",
         "bulkDelete": "Eliminar selecionados",
         "noEntries": "Nenhuma entrada de configuração encontrada",

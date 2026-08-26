@@ -57,6 +57,41 @@
       lastEntryCount = entries.length;
     }
   });
+
+  // Entries with null/empty/whitespace group_key → ungrouped (rendered first, no header)
+  let ungroupedEntries = $derived(
+    entries.filter((e) => !e.group_key || e.group_key.trim() === ''),
+  );
+
+  // Entries with a group_key → grouped, preserving DAL sort order (group_key ASC, key ASC)
+  let groupedEntries = $derived(
+    entries.filter((e) => e.group_key && e.group_key.trim() !== ''),
+  );
+
+  // Build ordered list of unique group keys (preserving sort order from DAL)
+  let groupKeys = $derived.by<string[]>(() => {
+    const seen = new Set<string>();
+    const keys: string[] = [];
+    for (const e of groupedEntries) {
+      const gk = e.group_key!;
+      if (!seen.has(gk)) {
+        seen.add(gk);
+        keys.push(gk);
+      }
+    }
+    return keys;
+  });
+
+  // Map group_key → entries (preserving sort order)
+  let entriesByGroup = $derived.by<Map<string, ConfigEntry[]>>(() => {
+    const map = new Map<string, ConfigEntry[]>();
+    for (const e of groupedEntries) {
+      const gk = e.group_key!;
+      if (!map.has(gk)) map.set(gk, []);
+      map.get(gk)!.push(e);
+    }
+    return map;
+  });
 </script>
 
 {#if loading}
@@ -78,7 +113,7 @@
   />
 
   <div class="space-y-3">
-    {#each entries as entry (entry.uuid)}
+    {#each ungroupedEntries as entry (entry.uuid)}
       <ConfigListRow
         {entry}
         selected={selectedUuids.has(entry.uuid)}
@@ -88,4 +123,23 @@
       />
     {/each}
   </div>
+
+  {#each groupKeys as groupKey (groupKey)}
+    <div class="pt-4 first:pt-0">
+      <h3 class="self-start text-xs font-semibold uppercase tracking-wide bg-linear-to-br from-sky-400 to-indigo-400 text-white px-3 pt-1 pb-1 rounded-t-md relative z-10 w-fit ml-3">
+        {$t(`config.auth.group.${groupKey}`)}
+      </h3>
+      <div class="border-primary-gradient rounded-lg px-3 pt-3 pb-3 space-y-3">
+        {#each entriesByGroup.get(groupKey) ?? [] as entry (entry.uuid)}
+          <ConfigListRow
+            {entry}
+            selected={selectedUuids.has(entry.uuid)}
+            onSave={(value) => onSave(entry, value)}
+            {onDelete}
+            onToggleSelect={handleToggleSelect}
+          />
+        {/each}
+      </div>
+    </div>
+  {/each}
 {/if}

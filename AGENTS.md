@@ -98,7 +98,7 @@ the center, and a delete CTA on the right.
 
 | Component | Purpose |
 |-----------|---------|
-| `ConfigList.svelte` | Top-level list — handles selection state, bulk action bar, loading/error/empty states |
+| `ConfigList.svelte` | Top-level list — handles selection state, bulk action bar, loading/error/empty states, and **grouped rendering** by `group_key` (ungrouped entries first, then groups with translated section headers) |
 | `ConfigListRow.svelte` | Single row — checkbox (non-reserved), title, description, dynamic input, delete CTA |
 | `ConfigValueInput.svelte` | Dynamic input renderer — selects widget based on `entry.type` (switch, ComboSelect, DateWheelPicker, password, text, etc.) |
 | `ConfigBulkActionBar.svelte` | Bulk action bar — shows selected count + bulk delete button |

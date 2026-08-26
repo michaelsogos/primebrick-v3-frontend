@@ -295,40 +295,48 @@
   },
   "config": {
     "auth": {
-      "casdoor_endpoint": {
-        "label": "Casdoor Endpoint",
-        "description": "The base URL of the Casdoor identity provider instance."
+      "idp_endpoint": {
+        "label": "IDP Endpoint",
+        "description": "The base URL of the identity provider instance."
       },
-      "casdoor_organization": {
-        "label": "Casdoor Organization",
-        "description": "The organization name in Casdoor that Primebrick users belong to."
+      "idp_organization": {
+        "label": "IDP Organization",
+        "description": "The organization name in the identity provider that Primebrick users belong to."
       },
-      "casdoor_client_id": {
-        "label": "Casdoor Client ID",
-        "description": "The OAuth client ID registered in Casdoor for the Primebrick API."
+      "idp_client_id": {
+        "label": "IDP Client ID",
+        "description": "The admin API client ID used by Primebrick to manage users and roles in the identity provider."
       },
-      "casdoor_admin_username": {
-        "label": "Casdoor Admin Username",
-        "description": "The Casdoor administrator username used for service-account API calls."
-      },
-      "casdoor_admin_role": {
-        "label": "Casdoor Admin Role",
-        "description": "The Casdoor role name that grants admin access in Primebrick."
+      "idp_client_secret": {
+        "label": "IDP Client Secret",
+        "description": "The admin API client secret used by Primebrick to manage users and roles in the identity provider. Leave empty to keep the current value."
       },
       "oidc_issuer_url": {
         "label": "OIDC Issuer URL",
         "description": "The OpenID Connect issuer URL (well-known endpoint base)."
       },
-      "oidc_issuer_type": {
-        "label": "OIDC Issuer Type",
-        "description": "The type of OpenID Connect identity provider in use.",
+      "idp_type": {
+        "label": "IDP Type",
+        "description": "The identity provider type (Casdoor, Keycloak, Entra ID, Okta, etc.).",
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
-        "auth0": "Auth0"
+        "entra": "Entra ID",
+        "okta": "Okta"
+      },
+      "group": {
+        "idp_parameters": "IDP Parameters",
+        "oidc_parameters": "OIDC Parameters",
+        "security_parameters": "Security Parameters",
+        "advanced_features": "Advanced Features",
+        "system_settings": "System Settings"
       },
       "oidc_client_id": {
         "label": "OIDC Client ID",
         "description": "The OAuth/OIDC client ID for the Primebrick API."
+      },
+      "oidc_client_secret": {
+        "label": "OIDC Client Secret",
+        "description": "The OAuth/OIDC client secret for the Primebrick API. Leave empty to keep the current value."
       },
       "enable_email_verification_check": {
         "label": "Require Email Verification",
@@ -512,7 +520,7 @@
         "fieldIdpRoleHint": "The exact role name as emitted by the IDP in the JWT (case-sensitive).",
         "fieldIdpRoleImmutable": "The IDP role name is immutable after creation.",
         "fieldIdpOrg": "IDP Organization",
-        "fieldIdpOrgHint": "The Casdoor organization/owner the role belongs to.",
+        "fieldIdpOrgHint": "The IDP organization/owner the role belongs to.",
         "fieldIdpOrgPlaceholder": "Select organization",
         "fieldIdpOrgImmutable": "The IDP organization is immutable after creation.",
         "fieldLabelKey": "Display Label Key",
@@ -688,6 +696,8 @@
         "title": "Security",
         "description": "Manage authentication and security configuration settings.",
         "reservedBadge": "Reserved",
+        "lastUpdatedPrefix": "Last updated",
+        "lastUpdatedByMid": "by",
         "selected": "selected",
         "bulkDelete": "Delete selected",
         "noEntries": "No configuration entries found",

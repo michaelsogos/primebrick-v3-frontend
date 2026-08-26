@@ -284,40 +284,48 @@
   },
   "config": {
     "auth": {
-      "casdoor_endpoint": {
-        "label": "Endpoint de Casdoor",
-        "description": "La URL base de la instancia del proveedor de identidad Casdoor."
+      "idp_endpoint": {
+        "label": "Endpoint de IDP",
+        "description": "La URL base de la instancia del proveedor de identidad."
       },
-      "casdoor_organization": {
-        "label": "Organización de Casdoor",
-        "description": "El nombre de la organización en Casdoor a la que pertenecen los usuarios de Primebrick."
+      "idp_organization": {
+        "label": "Organización de IDP",
+        "description": "El nombre de la organización en el proveedor de identidad a la que pertenecen los usuarios de Primebrick."
       },
-      "casdoor_client_id": {
-        "label": "ID de cliente de Casdoor",
-        "description": "El ID de cliente OAuth registrado en Casdoor para la API de Primebrick."
+      "idp_client_id": {
+        "label": "IDP Client ID",
+        "description": "El ID de cliente API de administración utilizado por Primebrick para gestionar usuarios y roles en el proveedor de identidad."
       },
-      "casdoor_admin_username": {
-        "label": "Nombre de usuario administrador de Casdoor",
-        "description": "El nombre de usuario del administrador de Casdoor utilizado para llamadas API de la cuenta de servicio."
-      },
-      "casdoor_admin_role": {
-        "label": "Rol de administrador de Casdoor",
-        "description": "El nombre del rol de Casdoor que concede acceso de administrador en Primebrick."
+      "idp_client_secret": {
+        "label": "IDP Client Secret",
+        "description": "El secret de cliente API de administración utilizado por Primebrick para gestionar usuarios y roles en el proveedor de identidad. Dejar vacío para mantener el valor actual."
       },
       "oidc_issuer_url": {
         "label": "URL del emisor OIDC",
         "description": "La URL del emisor de OpenID Connect (base del endpoint well-known)."
       },
-      "oidc_issuer_type": {
-        "label": "Tipo de emisor OIDC",
-        "description": "El tipo de proveedor de identidad OpenID Connect en uso.",
+      "idp_type": {
+        "label": "Tipo de IDP",
+        "description": "El tipo de proveedor de identidad (Casdoor, Keycloak, Entra ID, Okta, etc.).",
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
-        "auth0": "Auth0"
+        "entra": "Entra ID",
+        "okta": "Okta"
+      },
+      "group": {
+        "idp_parameters": "Parámetros IDP",
+        "oidc_parameters": "Parámetros OIDC",
+        "security_parameters": "Parámetros de Seguridad",
+        "advanced_features": "Funciones Avanzadas",
+        "system_settings": "Configuración del Sistema"
       },
       "oidc_client_id": {
         "label": "ID de cliente OIDC",
         "description": "El ID de cliente OAuth/OIDC para la API de Primebrick."
+      },
+      "oidc_client_secret": {
+        "label": "Secret de cliente OIDC",
+        "description": "El secret de cliente OAuth/OIDC para la API de Primebrick. Dejar vacío para mantener el valor actual."
       },
       "enable_email_verification_check": {
         "label": "Requerir verificación de correo electrónico",
@@ -501,7 +509,7 @@
         "fieldIdpRoleHint": "El nombre exacto del rol tal como lo emite el IDP en el JWT (sensible a mayúsculas).",
         "fieldIdpRoleImmutable": "El nombre del rol IDP es inmutable después de la creación.",
         "fieldIdpOrg": "Organización IDP",
-        "fieldIdpOrgHint": "La organización/propietario Casdoor al que pertenece el rol.",
+        "fieldIdpOrgHint": "La organización/propietario IDP al que pertenece el rol.",
         "fieldIdpOrgPlaceholder": "Seleccionar organización",
         "fieldIdpOrgImmutable": "La organización IDP es inmutable después de la creación.",
         "fieldLabelKey": "Clave de etiqueta de visualización",
@@ -677,6 +685,8 @@
         "title": "Seguridad",
         "description": "Gestionar la configuración de autenticación y seguridad.",
         "reservedBadge": "Reservado",
+        "lastUpdatedPrefix": "Última actualización",
+        "lastUpdatedByMid": "por",
         "selected": "seleccionados",
         "bulkDelete": "Eliminar seleccionados",
         "noEntries": "No se encontraron entradas de configuración",
