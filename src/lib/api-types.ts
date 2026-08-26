@@ -75,6 +75,45 @@ export type ModuleConfigEntry = {
   description_key?: string;
 };
 
+/**
+ * Config value type vocabulary — drives FE widget selection.
+ * Mirrors the SDK `ConfigType` and the BE `type` column.
+ */
+export type ConfigEntryType =
+  | 'string'
+  | 'text'
+  | 'boolean'
+  | 'integer'
+  | 'number'
+  | 'badge'
+  | 'list'
+  | 'url'
+  | 'secret'
+  | 'json'
+  | 'date'
+  | 'datetime'
+  | 'time';
+
+/**
+ * Standard Config Table entry — returned by `GET /api/v1/entities/config_entries/*`.
+ * The `value` is always a string (or null) at the DB level; the FE coerces
+ * to the appropriate type for display and back to string before saving.
+ * Secret values are masked to `null` by the BE.
+ */
+export type ConfigEntry = {
+  uuid: string;
+  key: string;
+  value: string | null;
+  type: ConfigEntryType;
+  type_config?: string | null;
+  label_key?: string | null;
+  description_key?: string | null;
+  reserved: boolean;
+  version: number;
+  updated_at?: string;
+  updated_by?: string;
+};
+
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */
 export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (!x || typeof x !== 'object') return false;

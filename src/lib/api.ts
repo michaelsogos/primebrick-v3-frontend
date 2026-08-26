@@ -12,12 +12,13 @@ import {
   type ModuleInfo,
   type ModuleNav,
   type ModuleConfigEntry,
+  type ConfigEntry,
   type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
 
-export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
@@ -377,4 +378,47 @@ export async function updateModuleConfigKey(code: string, uuid: string, value: s
     body: JSON.stringify({ value }),
   });
   if (!res.ok) throw new Error(`Config update failed (${res.status})`);
+}
+
+// === Config entries (BE auth_configurations — Config Table standard) ===
+
+export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
+  const res = await apiFetch('/api/v1/entities/config_entries/list');
+  if (!res.ok) throw new Error(`Config entries fetch failed (${res.status})`);
+  const data = (await res.json()) as { rows: ConfigEntry[] };
+  return data.rows;
+}
+
+export async function updateConfigEntry(uuid: string, value: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value, version }),
+  });
+  if (!res.ok) throw new Error(`Config entry update failed (${res.status})`);
+}
+
+export async function deleteConfigEntry(uuid: string, mfaActionAuthorization: string | null): Promise<Response> {
+  return apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+    method: 'DELETE',
+    headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
+  });
+}
+
+export async function bulkDeleteConfigEntries(uuids: string[], mfaActionAuthorization: string | null): Promise<Response> {
+  return apiFetch('/api/v1/entities/config_entries/bulk-delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {}),
+    },
+    body: JSON.stringify({ uuids }),
+  });
+}
+
+export async function restoreConfigEntry(uuid: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}/restore`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Config entry restore failed (${res.status})`);
 }

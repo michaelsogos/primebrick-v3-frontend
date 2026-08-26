@@ -86,6 +86,60 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 
 Any settings or module page that lists entity rows MUST use `EntityListTable` from `$lib/components/entity-list-table`. See `.devin/rules/entity-list-pages.md` for the full rule and the canonical pattern (mirror `users/+page.svelte`).
 
+## Config List pages
+
+Configuration pages (settings that are key/value rows with metadata-driven
+inputs, NOT entity tables) MUST use the reusable `ConfigList` components from
+`$lib/components/config-list`. These are NOT `EntityListTable` pages — they
+render a list of rows with title/description on the left, a dynamic input in
+the center, and a delete CTA on the right.
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `ConfigList.svelte` | Top-level list — handles selection state, bulk action bar, loading/error/empty states |
+| `ConfigListRow.svelte` | Single row — checkbox (non-reserved), title, description, dynamic input, delete CTA |
+| `ConfigValueInput.svelte` | Dynamic input renderer — selects widget based on `entry.type` (switch, ComboSelect, DateWheelPicker, password, text, etc.) |
+| `ConfigBulkActionBar.svelte` | Bulk action bar — shows selected count + bulk delete button |
+
+### Usage
+
+```svelte
+import { ConfigList } from '$lib/components/config-list';
+import { fetchConfigEntries, updateConfigEntry, deleteConfigEntry, bulkDeleteConfigEntries } from '$lib/api';
+import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+
+const stepUp = useMfaStepUp();
+
+<ConfigList
+  {entries}
+  {loading}
+  {error}
+  onSave={handleSave}
+  onDelete={handleDelete}
+  onBulkDelete={handleBulkDelete}
+/>
+```
+
+### Config types
+
+The `ConfigEntry.type` field drives widget selection. See the BE AGENTS.md
+"Config Table Standard" section for the full type vocabulary and `type_config`
+JSON shapes.
+
+### MFA integration
+
+Delete and bulk-delete operations require step-up MFA. Use the `useMfaStepUp`
+composable with `executeWithToken` — it automatically shows the MFA step-up
+dialog when the BE returns 403 with `mfa_step_up_required: true`.
+
+### Canonical example
+
+The Security settings page (`src/routes/(app)/system/settings/security/+page.svelte`)
+is the canonical example of a Config List page. Mirror it for future Config
+Table pages.
+
 ## GitFlow rules
 
 This repository follows GitFlow. AI agents MUST follow these rules.
