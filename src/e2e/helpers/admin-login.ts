@@ -25,8 +25,8 @@ export const ADMIN_PASSWORD = process.env.CASDOOR_ADMIN_PASSWORD ?? "admin";
 export async function loginAsAdmin(page: Page): Promise<Page> {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
 
-  // Wait for the LoginForm to hydrate — the username input appears only when
-  // `enable_formauth` is true (fetched from /api/v1/auth/config).
+  // Wait for the LoginForm to hydrate — the username input is always visible
+  // (form auth is an invariant, not gated by any config flag).
   await page.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
 
   await page.getByTestId("login-username-input").fill(ADMIN_USERNAME);
