@@ -41,8 +41,8 @@
   class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4"
   data-testid={`config-row-${entry.key}`}
 >
-  <!-- Left (4/12): checkbox (disabled if reserved) + title + description -->
-  <div class="col-span-4 flex items-start gap-3 min-w-0">
+  <!-- Left (6/12): checkbox (disabled if reserved) + title + description -->
+  <div class="col-span-6 flex items-start gap-3 min-w-0">
     <Checkbox
       checked={selected}
       disabled={entry.reserved}
@@ -54,6 +54,13 @@
       <div class="flex items-center gap-2">
         <p class="font-medium truncate">{title}</p>
         {#if entry.reserved}
+          <Badge
+            variant="outline"
+            class="shrink-0 text-xs font-mono border-muted-foreground/30 bg-muted/50 text-muted-foreground"
+            title={entry.key}
+          >
+            {entry.key}
+          </Badge>
           <Badge
             variant="outline"
             class="shrink-0 text-xs border-info/40 bg-info/10 text-info"
@@ -88,8 +95,8 @@
     <ConfigValueInput {entry} {onSave} />
   </div>
 
-  <!-- Right (4/12): delete CTA (non-reserved only) -->
-  <div class="col-span-4 flex items-center justify-end gap-2">
+  <!-- Right (2/12): delete CTA (non-reserved only) -->
+  <div class="col-span-2 flex items-center justify-end gap-2">
     {#if !entry.reserved}
       <Button
         variant="ghost"
