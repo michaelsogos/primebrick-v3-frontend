@@ -23,7 +23,6 @@
   void loadAuthConfig();
 
   // Read $state directly — same pattern as userProfileState in the profile page.
-  const enableFormauth = $derived(authConfigState.config?.enable_formauth ?? false);
   const enableWebauthn = $derived(authConfigState.config?.enable_webauthn ?? false);
 
   // MFA challenge state — when login returns mfa_required, swap the form for
@@ -139,7 +138,7 @@
         {onsuccess}
         oncancel={clearMfaChallenge}
       />
-    {:else if enableFormauth}
+    {:else}
     <FormField form={superFormObj} name="username">
       <FormControl>
         {#snippet children({ props })}
@@ -184,7 +183,6 @@
     {/if}
 
     {#if !mfaChallenge && enableWebauthn && isWebauthnSupported()}
-      {#if enableFormauth}
       <div class="relative my-2">
         <div class="absolute inset-0 flex items-center">
           <span class="w-full border-t border-border"></span>
@@ -193,7 +191,6 @@
           <span class="bg-card px-2 text-muted-foreground">{$t('login.or')}</span>
         </div>
       </div>
-      {/if}
       <PasskeyButton {onsuccess} {onerror} />
     {/if}
 
