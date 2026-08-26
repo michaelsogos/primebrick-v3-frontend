@@ -1,6 +1,6 @@
 ---
 title: UI patterns
-description: Primebrick detail-page layout conventions — the two allowed layouts for non-table pages, the primary CTA placement rule, and when to use FormPageLayout vs AppPageScaffold.
+description: Primebrick detail-page layout conventions — the two allowed layouts for non-table pages, the primary CTA placement rule, the Card Content Layout Standard, and when to use FormPageLayout vs AppPageScaffold.
 ---
 
 # UI patterns
@@ -29,7 +29,7 @@ only covers detail pages.
   Start["Detail page (non-table)"]
   Q{"Entire content is a single<br/>2-col form, no other sections?"}
   L1["Layout 1 — Pure form (TUTTO FORM)<br/>FormPageLayout<br/>DEFAULT primary in footer<br/>No extra Card around form<br/>No other primary in content"]
-  L2["Layout 2 — Mixed content<br/>(UN PO' FORM + UN PO' ALTRO)<br/>AppPageScaffold<br/>No primary in footer<br/>Each card: DEFAULT primary inside<br/>Form wrapped in Card, keeps 2-col"]
+  L2["Layout 2 — Mixed content<br/>(UN PO' FORM + UN PO' ALTRO)<br/>AppPageScaffold<br/>No primary in page footer<br/>Each card: DEFAULT primary in CardFooter<br/>Form wrapped in Card, keeps 2-col"]
   Start --> Q
   Q -->|Yes| L1
   Q -->|No| L2
@@ -106,11 +106,10 @@ Rules:
 
 - Use **`AppPageScaffold`** (NOT `FormPageLayout`) — there is no single
   footer primary to render.
-- **No primary button in the footer.** The footer (if any) may hold only
-  secondary/tertiary actions.
+- **No primary button in the page footer.**
 - Each card that needs an action puts its own **DEFAULT primary button
-  inside the card content** (`variant="default"` with default
-  `tone="primary"` — the full sky-to-indigo gradient, white text).
+  in `CardFooter`** (`variant="default"` with default `tone="primary"` —
+  the full sky-to-indigo gradient, white text).
 - The form keeps ALL its characteristics: 2-column grid, validation,
   `use:enhance`, `FormField`/`FormLabel`/`FormControl` blocks, etc.
 - The form **MUST be wrapped in a `<Card>`** — `AppPageScaffold` does not
@@ -131,34 +130,8 @@ MFA):
   {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <div class="space-y-6">
-        <!-- Card 1: Change password (form, wrapped in Card per mixed-page rule) -->
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2">
-              <KeyRound class="size-5" />
-              {$t('shell.settings.credentials.changePassword.title')}
-            </CardTitle>
-            <CardDescription>
-              {$t('shell.settings.credentials.changePassword.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <form id="change-password-form" onsubmit={handleChangePassword} class="grid grid-cols-2 gap-6">
-              <div class="space-y-4">
-                <!-- Column 1: current + new password -->
-              </div>
-              <div class="space-y-4">
-                <!-- Column 2: confirm + CTA -->
-                <div class="flex justify-end">
-                  <!-- DEFAULT primary CTA inside the card (no footer primary) -->
-                  <Button type="submit" form="change-password-form" disabled={!canChangePassword}>
-                    {$t('shell.settings.credentials.changePassword.button')}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        <!-- Card 1: Change password (self-contained component) -->
+        <ChangePasswordCard />
 
         <!-- Card 2: Passkeys (in-card list) -->
         <PasskeyEnrollment />
@@ -170,6 +143,9 @@ MFA):
   {/snippet}
 </AppPageScaffold>
 ```
+
+Each card component encapsulates its own `CardHeader`, `CardContent`,
+and `CardFooter`. The page itself stays under 50 lines.
 
 ## Button variants recap
 
@@ -191,6 +167,150 @@ is used for in-card CTAs **only when** a DEFAULT primary already exists in the
 footer (Layout 1 with extra in-card actions). When there is no footer primary
 (Layout 2), in-card CTAs are **DEFAULT primary** — never soft primary.
 
+## Card Content Layout Standard
+
+Every `<Card>` with interactive content follows a **3-zone vertical
+structure**:
+
+<Mermaid chart={`flowchart TB
+  H["CardHeader — icon + title + description"]
+  C["CardContent — form / list / table / empty state<br/>(NO CTAs here)"]
+  F["CardFooter — action buttons (CTAs)"]
+  H --> C --> F
+`} />
+
+### The 4 CardContent types
+
+| Type | Internal layout | Column management |
+|------|----------------|-------------------|
+| **FORM** | At least 2 columns (`grid grid-cols-2 gap-6`) | Managed by the form grid |
+| **LIST** | Single column | Managed by each list item |
+| **TABLE** | Single column | Managed by the table component |
+| **KANBAN** | Single column | Managed by the kanban component |
+
+### CTA placement in CardFooter
+
+- **All CTAs go in `CardFooter`**, never in `CardContent`.
+- All CTAs are **right-aligned** (`justify-end`), grouped together.
+  Secondary first (leftmost in group), primary last (rightmost).
+- Cards do NOT use `justify-between` — that is dialog-only for strong
+  secondary/primary separation.
+- CardFooter standard class:
+  `bg-muted/50 border-t p-4 -mb-6 flex justify-end gap-2 rounded-b-xl`.
+  The `-mb-6` cancels the card root's `py-6` bottom padding so the footer
+  bleeds to the card's bottom edge. `rounded-b-xl` matches the card's
+  `rounded-xl`. This mirrors `DialogFooter`'s `-mb-4` pattern.
+- If a card has no action, `CardFooter` is omitted entirely.
+
+### When NOT to use CardFooter
+
+CardFooter is the correct footer for **cards** only. Other contexts have
+their own footer components:
+
+- **`BorderedDialog`** → use `DialogFooter` (needs `-mx-4 -mb-4
+  rounded-b-xl` to bleed to dialog content edges).
+- **`FormPageLayout`** → use the built-in 50/50 grid footer (audit box
+  left, actions right).
+
+### FORM type — field ordering
+
+When `CardContent` is a FORM:
+
+- The form uses `grid grid-cols-2 gap-6`.
+- Fields are distributed across the 2 columns following reading flow
+  (top-to-bottom, col 1 before col 2).
+- Validation feedback (e.g. `PasswordChecklist`) is placed in the column
+  **opposite** to its related input, aligned via CSS grid `row-start` /
+  `row-span` placement — not fixed-height spacers.
+
+Example — the change-password card form layout:
+
+```
+┌──────────────┐  ┌──────────────┐
+│ Current      │  │              │
+│ Password     │  │ (empty)      │
+│              │  │              │
+│ New Password │  │ Checklist:   │
+│              │  │ ✓ 8+ chars   │
+│ Confirm      │  │ ✓ 1 letter   │
+│ Password     │  │ ✓ 1 number   │
+└──────────────┘  └──────────────┘
+```
+
+- Col 1: current password (row 1), new password (row 2), confirm
+  password (row 3).
+- Col 2: `PasswordChecklist` aligned with new password row, spanning
+  rows 2-3 via `row-start-2 row-span-2`.
+
+### FORM type — validation scoping
+
+Each card that contains a form uses its own `superForm()` instance with
+`SPA: true` mode — completely independent from the page and from other
+cards. This ensures:
+
+- Zod schemas are defined inside the card component, not at page level.
+- Validation triggers only on user interaction (tainted fields) — errors
+  do NOT appear on page load or when interacting with other cards.
+- The `onUpdate` callback handles the API call and error mapping locally.
+
+### Password input categories
+
+All password-type inputs use `Password.PasswordInput` (which includes an
+eye/eye-off visibility toggle). But there are **three categories** with
+different validation requirements:
+
+<Mermaid chart={`flowchart TB
+  Start["Password input"]
+  Q1{"Is the password saved<br/>to the BE?"}
+  Q2{"Is it a user password<br/>subject to a policy?"}
+  C1["Category 1 — Access (login)<br/>Password.PasswordInput only<br/>No checklist, no policy refine"]
+  C2["Category 2 — Data-entry (save)<br/>Password.PasswordInput<br/>+ PasswordChecklist<br/>+ async refine with policy regex"]
+  C3["Category 3 — Secrets / API keys<br/>Password.PasswordInput only<br/>No checklist, no policy refine"]
+  Start --> Q1
+  Q1 -->|No — sent for verification| C1
+  Q1 -->|Yes — saved to BE| Q2
+  Q2 -->|Yes — user password| C2
+  Q2 -->|No — API key, token, secret| C3
+`} />
+
+**Category 1 — Access password (login/auth):** The user types a password
+to authenticate. The password is NOT saved, it is sent for verification
+only.
+
+- `Password.PasswordInput` (eye toggle).
+- No `PasswordChecklist`, no policy `.refine()`.
+- Validation: `required` only.
+- Example: login dialog (`LoginForm.svelte`).
+
+**Category 2 — Data-entry password (save):** The user types a password
+that will be saved to the BE (create account, change password, set
+password on first login, admin setting a user's password).
+
+- `Password.PasswordInput` (eye toggle).
+- **MANDATORY:** `PasswordChecklist` in the opposite column of the form
+  grid, aligned via `row-start` / `row-span`.
+- **MANDATORY:** Async `.refine()` on the `new_password` Zod field that
+  checks `passwordPolicy.regex` and uses
+  `passwordPolicy.state.errorLabelKey` as the error message.
+- The refine MUST be async — it reads `passwordPolicy.state` at
+  validation time (when the user types), not at schema creation time.
+- Load the policy via `onMount(() => { void passwordPolicy.load(); })`.
+- Examples: `ChangePasswordCard.svelte`,
+  `ChangePasswordDialog.svelte`, `users/create/+page.svelte`,
+  `welcome/+page.svelte`.
+
+**Category 3 — Secrets / API keys:** API keys, client secrets, tokens —
+NOT user passwords, NOT subject to the password policy.
+
+- `Password.PasswordInput` (eye toggle).
+- No `PasswordChecklist`, no policy `.refine()`.
+- Validation: `required` or format-specific as needed.
+- Examples: `security/+page.svelte` (OIDC client secret),
+  `email-providers/+page.svelte` (API key).
+
+OTP/code inputs (6-digit verification codes) are NOT password fields —
+use plain `Input` with `inputmode="numeric" autocomplete="one-time-code"`.
+
 ## In-card list pattern
 
 When a card contains a list of records (e.g. enrolled passkeys, MFA factors),
@@ -207,7 +327,7 @@ use this shared structure so all in-card lists look consistent:
 - **Delete button** at `variant="ghost" size="sm"` with a `Trash2` icon at
   `size-4` and an `sr-only` label for accessibility.
 - **Empty state** using the huge-icon pattern (see below).
-- **Card-level CTA** as a DEFAULT primary button rendered after the list
+- **Card-level CTA** as a DEFAULT primary button in `CardFooter`
   (works both when the list is empty and when it has items).
 
 ### Empty state (huge icon)
@@ -237,9 +357,9 @@ a primary line (`emptyTitle`, e.g. "No passkey found") and a hint line
 (`emptyHint`, e.g. "Add a passkey to sign in faster without a password.").
 Both are distinct in weight and size from the card subtitle.
 
-The card-level CTA renders **below** the empty state, so the user sees the
-"no record found" message and the primary action to add one in the same
-card.
+The card-level CTA in `CardFooter` renders **below** the empty state, so
+the user sees the "no record found" message and the primary action to add
+one in the same card.
 
 ## Decision checklist
 
@@ -249,13 +369,13 @@ Before adding any button to a detail page, answer these questions:
    - Yes → Layout 1. Put the DEFAULT primary in `footerActions`. Do not add
      any other primary inside the content. Do not wrap the form in a `<Card>`.
    - No → Layout 2. Use `AppPageScaffold`. Do not put a primary in the
-     footer. Put a DEFAULT primary inside each card that needs an action.
-     Wrap any form in a `<Card>`.
+     page footer. Put a DEFAULT primary in `CardFooter` of each card that
+     needs an action. Wrap any form in a `<Card>`.
 
 2. **Do I need a secondary action (Cancel, Delete) alongside the primary?**
    - Layout 1 → put both in `footerActions` (primary + secondary).
-   - Layout 2 → put the secondary inside its own card or next to the
-     primary inside the relevant card.
+   - Layout 2 → put both in the card's `CardFooter`, grouped right
+     (`justify-end`), secondary first, primary last.
 
 3. **Is the in-card action in a Layout 1 page (extra action inside a card
    while the footer already has the primary)?**
@@ -271,7 +391,7 @@ Before adding any button to a detail page, answer these questions:
 | Page | Layout | Scaffold | Primary CTA location |
 |------|--------|----------|----------------------|
 | `/system/settings/profile` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
-| `/system/settings/credentials` | 2 (mixed) | `AppPageScaffold` | Inside each of the 3 cards |
+| `/system/settings/credentials` | 2 (mixed) | `AppPageScaffold` | `CardFooter` of each of the 3 cards |
 | `/system/settings/organizations/create` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
 | `/system/settings/organizations/{uuid}` | 1 (pure form) | `FormPageLayout` | Footer (`Save`) |
 | `/system/settings/security` | 2 (mixed) | `AppPageScaffold` | Footer (Save OIDC) + Delete Account |

@@ -18,6 +18,7 @@
 	bind:pressed={state.root.opts.hidden.current}
 	class={cn(
 		inputTrailingIconButtonClasses,
+		'z-10',
 		'data-[state=on]:bg-transparent',
 		{
 			'right-9 max-w-6': state.root.passwordState.copyMounted

@@ -4,6 +4,7 @@
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import * as Password from '$lib/components/ui/password';
   import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
   import { apiFetchExt } from '$lib/api-ext';
@@ -269,7 +270,7 @@
 
         <div class="space-y-2">
           <Label for="api_key">{$t('shell.settings.emailProviders.apiKey')}</Label>
-          <Input id="api_key" type="password" bind:value={formData.api_key}
+          <Password.PasswordInput id="api_key" bind:value={formData.api_key}
             placeholder={editingUuid ? $t('shell.settings.emailProviders.apiKeyLeaveBlank') : ''} />
           {#if errors.api_key}
             <p class="text-sm text-destructive">{errors.api_key}</p>

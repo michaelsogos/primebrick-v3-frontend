@@ -6,7 +6,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import { Spinner } from "$lib/components/ui/spinner";
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "$lib/components/ui/card";
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
   import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "$lib/components/ui/dialog";
   import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
   import { t } from "$lib/i18n";
@@ -16,6 +16,7 @@
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import QrCode from "@lucide/svelte/icons/qr-code";
   import ShieldCheck from "@lucide/svelte/icons/shield-check";
+  import LoadingWatermark from "./LoadingWatermark.svelte";
 
   // Trigger the auth config fetch to check if MFA is enabled.
   void loadAuthConfig();
@@ -177,6 +178,8 @@
     if (mfaEnabled) {
       factorsLoaded = true;
       void loadFactors();
+    } else {
+      loading = false;
     }
   });
 
@@ -189,94 +192,107 @@
   });
 </script>
 
-{#if mfaEnabled}
-  <Card>
-    <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <ShieldCheck class="size-5" />
-        {$t("auth.mfa.title")}
-      </CardTitle>
-      <CardDescription>{$t("auth.mfa.description")}</CardDescription>
-    </CardHeader>
-    <CardContent class="space-y-4">
-      {#if loading}
-        <div class="flex items-center justify-center py-4">
-          <Spinner />
-        </div>
-      {:else if factors.length === 0}
-        <div class="grid min-h-56 place-items-center p-3" data-testid="mfa-management-empty">
-          <div class="relative flex flex-col items-center gap-2 text-center">
-            <div class="pb-watermark-empty">
-              <ShieldCheck class="size-20 text-muted-foreground" />
-            </div>
-            <div class="text-sm font-medium text-muted-foreground">
-              {$t("auth.mfa.emptyTitle")}
-            </div>
-            <div class="text-xs text-muted-foreground">
-              {$t("auth.mfa.emptyHint")}
-            </div>
+<Card>
+  <CardHeader>
+    <CardTitle class="flex items-center gap-2">
+      <ShieldCheck class="size-5" />
+      {$t("auth.mfa.title")}
+    </CardTitle>
+    <CardDescription>{$t("auth.mfa.description")}</CardDescription>
+  </CardHeader>
+  <CardContent class="space-y-4">
+    {#if !authConfigState.loaded || loading || (mfaEnabled && !factorsLoaded)}
+      <LoadingWatermark
+        icon={ShieldCheck}
+        titleKey="auth.mfa.loadingTitle"
+        hintKey="auth.mfa.loadingHint"
+      />
+    {:else if !mfaEnabled}
+      <div class="grid min-h-56 place-items-center p-3" data-testid="mfa-management-disabled">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <ShieldCheck class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t("auth.mfa.disabledTitle")}
+          </div>
+          <div class="text-xs text-muted-foreground">
+            {$t("auth.mfa.disabledHint")}
           </div>
         </div>
-      {:else}
-        <ul class="space-y-2" data-testid="mfa-management-list">
-          {#each factors as factor (factor.uuid)}
-            <li
-              class="flex items-start justify-between rounded-md border-primary-gradient px-3 py-2"
-              data-testid="mfa-management-item"
-              data-factor-uuid={factor.uuid}
-            >
-              <div class="flex items-start gap-2 min-w-0">
-                <Smartphone class="size-5 text-muted-foreground shrink-0 mt-0.5" />
-                <div class="flex flex-col min-w-0">
-                  <span class="text-sm font-medium truncate">
-                    {factor.label || $t("auth.mfa.defaultLabel")}
-                  </span>
-                  <span class="text-xs text-muted-foreground">
-                    {$t("auth.mfa.factorType")}: {factor.factor_type.toUpperCase()}
-                    {#if factor.is_preferred}
-                      <span class="ml-1 text-primary">• {$t("auth.mfa.preferred")}</span>
-                    {/if}
-                  </span>
-                  {#if factor.last_used_at}
-                    <span class="text-xs text-muted-foreground">
-                      {$t("auth.mfa.lastUsed")}: {new Date(factor.last_used_at).toLocaleDateString()}
-                    </span>
+      </div>
+    {:else if factors.length === 0}
+      <div class="grid min-h-56 place-items-center p-3" data-testid="mfa-management-empty">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <ShieldCheck class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t("auth.mfa.emptyTitle")}
+          </div>
+          <div class="text-xs text-muted-foreground">
+            {$t("auth.mfa.emptyHint")}
+          </div>
+        </div>
+      </div>
+    {:else}
+      <ul class="space-y-2" data-testid="mfa-management-list">
+        {#each factors as factor (factor.uuid)}
+          <li
+            class="flex items-start justify-between rounded-md border-primary-gradient px-3 py-2"
+            data-testid="mfa-management-item"
+            data-factor-uuid={factor.uuid}
+          >
+            <div class="flex items-start gap-2 min-w-0">
+              <Smartphone class="size-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-medium truncate">
+                  {factor.label || $t("auth.mfa.defaultLabel")}
+                </span>
+                <span class="text-xs text-muted-foreground">
+                  {$t("auth.mfa.factorType")}: {factor.factor_type.toUpperCase()}
+                  {#if factor.is_preferred}
+                    <span class="ml-1 text-primary">• {$t("auth.mfa.preferred")}</span>
                   {/if}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onclick={() => confirmDelete(factor.uuid)}
-                disabled={deletingUuid === factor.uuid}
-                data-testid="mfa-delete-button"
-                aria-label={$t("auth.mfa.delete")}
-              >
-                {#if deletingUuid === factor.uuid}
-                  <Spinner class="size-4" />
-                {:else}
-                  <Trash2 class="size-4" />
+                </span>
+                {#if factor.last_used_at}
+                  <span class="text-xs text-muted-foreground">
+                    {$t("auth.mfa.lastUsed")}: {new Date(factor.last_used_at).toLocaleDateString()}
+                  </span>
                 {/if}
-                <span class="sr-only">{$t("auth.mfa.delete")}</span>
-              </Button>
-            </li>
-          {/each}
-        </ul>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onclick={() => confirmDelete(factor.uuid)}
+              disabled={deletingUuid === factor.uuid}
+              data-testid="mfa-delete-button"
+              aria-label={$t("auth.mfa.delete")}
+            >
+              {#if deletingUuid === factor.uuid}
+                <Spinner class="size-4" />
+              {:else}
+                <Trash2 class="size-4" />
+              {/if}
+              <span class="sr-only">{$t("auth.mfa.delete")}</span>
+            </Button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </CardContent>
+  <CardFooter class="bg-muted/50 border-t p-4 -mb-6 justify-end gap-2 rounded-b-xl">
+    <Button onclick={startEnrollment} disabled={enrolling || !mfaEnabled} data-testid="mfa-enroll-button">
+      {#if enrolling}
+        <Spinner class="mr-2" />
+      {:else}
+        <Plus class="size-4 mr-2" />
       {/if}
-
-      <!-- Card-level CTA: DEFAULT primary (no footer primary on the credentials page).
-           Renders both when the list is empty and when factors are present.
-           Uses the mfa-enroll-button testid (kept stable for E2E). -->
-      <Button onclick={startEnrollment} disabled={enrolling} data-testid="mfa-enroll-button">
-        {#if enrolling}
-          <Spinner class="mr-2" />
-        {:else}
-          <Plus class="size-4 mr-2" />
-        {/if}
-        {$t("auth.mfa.enrollButton")}
-      </Button>
-    </CardContent>
-  </Card>
+      {$t("auth.mfa.enrollButton")}
+    </Button>
+  </CardFooter>
+</Card>
 
   <!-- Enrollment Dialog -->
   <BorderedDialog bind:open={enrollDialogOpen} severity="primary" tone="soft" class="sm:max-w-md">
@@ -380,4 +396,3 @@
         </Button>
       </DialogFooter>
   </BorderedDialog>
-{/if}
