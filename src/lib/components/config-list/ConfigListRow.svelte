@@ -52,14 +52,30 @@
 </script>
 
 <div
-  class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4 border-l-[5px] {tainted ? 'border-l-warning' : 'border-l-border'}"
+  class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4 border-l-[5px] cursor-pointer select-none {tainted ? 'border-l-warning' : selected ? 'border-l-primary' : 'border-l-border'}"
+  role="button"
+  tabindex="0"
+  aria-pressed={selected}
   data-testid={`config-row-${entry.key}`}
+  onclick={(e) => {
+    // Don't toggle when clicking on interactive elements (inputs, buttons, links, combo)
+    // NOTE: the row div itself has role="button" — exclude it from the closest() check
+    const target = e.target as HTMLElement;
+    const interactive = target.closest('input, button, a, [role="combobox"], [role="listbox"], [role="option"], textarea, select, [data-no-row-toggle]');
+    if (interactive && interactive !== e.currentTarget) return;
+    onToggleSelect(entry, !selected);
+  }}
+  onkeydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggleSelect(entry, !selected);
+    }
+  }}
 >
   <!-- Left (6/12): checkbox (disabled if reserved) + title + description -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
     <Checkbox
       checked={selected}
-      disabled={entry.reserved}
       onCheckedChange={(checked) => onToggleSelect(entry, checked)}
       class="mt-1"
       data-testid={`config-row-select-${entry.key}`}

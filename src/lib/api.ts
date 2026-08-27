@@ -389,6 +389,26 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
   return data.rows;
 }
 
+export async function createConfigEntry(params: {
+  key: string;
+  value: string;
+  type: string;
+  type_config?: string | null;
+  label_key?: string | null;
+  description_key?: string | null;
+  group_key?: string | null;
+  reserved?: boolean;
+}): Promise<ConfigEntry> {
+  const res = await apiFetch('/api/v1/entities/config_entries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Config entry create failed (${res.status})`);
+  const data = (await res.json()) as ConfigEntry;
+  return data;
+}
+
 export async function updateConfigEntry(uuid: string, value: string, version: number): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
     method: 'PUT',

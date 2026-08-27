@@ -12,6 +12,7 @@
     bulkDeleteConfigEntries,
   } from '$lib/api';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
@@ -33,7 +34,22 @@
 
   const stepUp = useMfaStepUp();
 
+  // Listen for refresh notifications from the create page (opened in _blank tab)
+  useSyncChannel('primebrick_config_sync', {
+    mode: 'receiver',
+    onRefresh: () => void loadEntries(),
+  });
+
   onMount(loadEntries);
+
+  // Open the create config page in a new tab (same pattern as users/orgs create)
+  function openNewConfig() {
+    const url = '/system/settings/security/create';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    }
+  }
 
   async function loadEntries() {
     loading = true;
@@ -171,6 +187,7 @@
     onSave={handleSave}
     onDelete={handleDelete}
     onBulkDelete={handleBulkDelete}
+    onCreateAction={openNewConfig}
   />
 </AppPageScaffold>
 
