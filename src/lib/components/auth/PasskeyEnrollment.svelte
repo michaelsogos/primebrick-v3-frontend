@@ -4,12 +4,13 @@
   import { pushNotification } from "$lib/errors/app-errors";
   import { Button } from "$lib/components/ui/button";
   import { Spinner } from "$lib/components/ui/spinner";
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "$lib/components/ui/card";
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
   import { t } from "$lib/i18n";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import Fingerprint from "@lucide/svelte/icons/fingerprint";
+  import LoadingWatermark from "./LoadingWatermark.svelte";
   import {
     decodeCredentialCreationOptions,
     encodeAuthenticatorAttestation,
@@ -33,14 +34,13 @@
   }
 
   let credentials = $state<WebauthnCredentialInfo[]>([]);
-  let loading = $state(false);
+  let loading = $state(true);
   let enrolling = $state(false);
   let deletingId = $state<string | null>(null);
 
-  const supported = $derived(isWebauthnSupported());
+  let supported = $state<boolean | undefined>(undefined);
 
   async function loadCredentials() {
-    loading = true;
     try {
       const resp = await apiFetch("/api/v1/auth/webauthn/credentials");
       if (resp.ok) {
@@ -194,119 +194,133 @@
   }
 
   onMount(() => {
-    if (supported) {
+    const webauthnSupported = isWebauthnSupported();
+    supported = webauthnSupported;
+    if (webauthnSupported) {
       void loadCredentials();
+    } else {
+      loading = false;
     }
   });
 </script>
 
-{#if supported}
-  <Card>
-    <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <Fingerprint class="size-5" />
-        {$t("auth.passkeys.title")}
-      </CardTitle>
-      <CardDescription>{$t("auth.passkeys.description")}</CardDescription>
-    </CardHeader>
-    <CardContent class="space-y-4">
-      <!-- Enrolled passkeys list -->
-      {#if loading}
-        <div class="flex items-center justify-center py-4">
-          <Spinner />
-        </div>
-      {:else if credentials.length === 0}
-        <div class="grid min-h-56 place-items-center p-3" data-testid="passkey-enrollment-empty">
-          <div class="relative flex flex-col items-center gap-2 text-center">
-            <div class="pb-watermark-empty">
-              <Fingerprint class="size-20 text-muted-foreground" />
-            </div>
-            <div class="text-sm font-medium text-muted-foreground">
-              {$t("auth.passkeys.emptyTitle")}
-            </div>
-            <div class="text-xs text-muted-foreground">
-              {$t("auth.passkeys.emptyHint")}
-            </div>
+<Card>
+  <CardHeader>
+    <CardTitle class="flex items-center gap-2">
+      <Fingerprint class="size-5" />
+      {$t("auth.passkeys.title")}
+    </CardTitle>
+    <CardDescription>{$t("auth.passkeys.description")}</CardDescription>
+  </CardHeader>
+  <CardContent class="space-y-4">
+    {#if supported === false}
+      <div class="grid min-h-56 place-items-center p-3" data-testid="passkey-enrollment-unsupported">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <Fingerprint class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t("auth.passkeys.notSupported")}
           </div>
         </div>
-      {:else}
-        <ul class="space-y-2" data-testid="passkey-enrollment-list">
-          {#each credentials as cred (cred.id)}
-            {@const aaguidInfo = lookupAaguid(cred.aaguid)}
-            {@const Icon = aaguidInfo.icon}
-            {@const created = formatDateTime(cred.created_at)}
-            {@const lastUsed = formatDateTime(cred.last_used_at)}
-            {@const device = deviceLine(cred)}
-            <li
-              class="flex items-start justify-between rounded-md border-primary-gradient px-3 py-2"
-              data-testid="passkey-enrollment-item"
-              data-credential-id={cred.id}
-            >
-              <div class="flex items-start gap-2 min-w-0">
-                <Icon class="size-5 text-muted-foreground shrink-0 mt-0.5" />
-                <div class="flex flex-col min-w-0 gap-0.5">
-                  <span class="text-sm font-medium truncate">{displayName(cred)}</span>
-                  {#if created}
-                    <span class="text-xs text-muted-foreground">{$t("auth.passkeys.enrolledOn", { date: created })}</span>
-                  {/if}
-                  <span class="text-xs text-muted-foreground">
-                    {#if lastUsed}
-                      {$t("auth.passkeys.lastUsed", { date: lastUsed })}
-                    {:else}
-                      {$t("auth.passkeys.neverUsed")}
-                    {/if}
-                  </span>
-                  {#if cred.transports && cred.transports.length > 0}
-                    <div class="flex flex-wrap gap-1 mt-1">
-                      {#each cred.transports as transport (transport)}
-                        {@const suffix = transportKeySuffix(transport)}
-                        {#if suffix}
-                          <Badge variant="secondary" class="text-xs">{$t(`auth.passkeys.transport.${suffix}`)}</Badge>
-                        {/if}
-                      {/each}
-                    </div>
-                  {/if}
-                  <span class="text-xs text-muted-foreground">
-                    {#if device}
-                      {device}
-                    {:else}
-                      {$t("auth.passkeys.unknownDevice")}
-                    {/if}
-                  </span>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                data-testid="passkey-enrollment-delete-button"
-                onclick={() => deletePasskey(cred.id)}
-                disabled={deletingId === cred.id}
-              >
-                {#if deletingId === cred.id}
-                  <Spinner class="size-4" />
-                {:else}
-                  <Trash2 class="size-4" />
+      </div>
+    {:else if loading}
+      <LoadingWatermark
+        icon={Fingerprint}
+        titleKey="auth.passkeys.loadingTitle"
+        hintKey="auth.passkeys.loadingHint"
+      />
+    {:else if credentials.length === 0}
+      <div class="grid min-h-56 place-items-center p-3" data-testid="passkey-enrollment-empty">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <Fingerprint class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t("auth.passkeys.emptyTitle")}
+          </div>
+          <div class="text-xs text-muted-foreground">
+            {$t("auth.passkeys.emptyHint")}
+          </div>
+        </div>
+      </div>
+    {:else}
+      <ul class="space-y-2" data-testid="passkey-enrollment-list">
+        {#each credentials as cred (cred.id)}
+          {@const aaguidInfo = lookupAaguid(cred.aaguid)}
+          {@const Icon = aaguidInfo.icon}
+          {@const created = formatDateTime(cred.created_at)}
+          {@const lastUsed = formatDateTime(cred.last_used_at)}
+          {@const device = deviceLine(cred)}
+          <li
+            class="flex items-start justify-between rounded-md border-primary-gradient px-3 py-2"
+            data-testid="passkey-enrollment-item"
+            data-credential-id={cred.id}
+          >
+            <div class="flex items-start gap-2 min-w-0">
+              <Icon class="size-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div class="flex flex-col min-w-0 gap-0.5">
+                <span class="text-sm font-medium truncate">{displayName(cred)}</span>
+                {#if created}
+                  <span class="text-xs text-muted-foreground">{$t("auth.passkeys.enrolledOn", { date: created })}</span>
                 {/if}
-                <span class="sr-only">{$t("auth.passkeys.remove")}</span>
-              </Button>
-            </li>
-          {/each}
-        </ul>
+                <span class="text-xs text-muted-foreground">
+                  {#if lastUsed}
+                    {$t("auth.passkeys.lastUsed", { date: lastUsed })}
+                  {:else}
+                    {$t("auth.passkeys.neverUsed")}
+                  {/if}
+                </span>
+                {#if cred.transports && cred.transports.length > 0}
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    {#each cred.transports as transport (transport)}
+                      {@const suffix = transportKeySuffix(transport)}
+                      {#if suffix}
+                        <Badge variant="secondary" class="text-xs">{$t(`auth.passkeys.transport.${suffix}`)}</Badge>
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
+                <span class="text-xs text-muted-foreground">
+                  {#if device}
+                    {device}
+                  {:else}
+                    {$t("auth.passkeys.unknownDevice")}
+                  {/if}
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="passkey-enrollment-delete-button"
+              onclick={() => deletePasskey(cred.id)}
+              disabled={deletingId === cred.id}
+            >
+              {#if deletingId === cred.id}
+                <Spinner class="size-4" />
+              {:else}
+                <Trash2 class="size-4" />
+              {/if}
+              <span class="sr-only">{$t("auth.passkeys.remove")}</span>
+            </Button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </CardContent>
+  <CardFooter class="bg-muted/50 border-t p-4 -mb-6 justify-end gap-2 rounded-b-xl">
+    <Button
+      data-testid="passkey-enrollment-add-button"
+      onclick={addPasskey}
+      disabled={enrolling || !supported}
+    >
+      {#if enrolling}
+        <Spinner class="mr-2" />
+      {:else}
+        <Plus class="size-4 mr-2" />
       {/if}
-
-      <!-- Add passkey button -->
-      <Button
-        data-testid="passkey-enrollment-add-button"
-        onclick={addPasskey}
-        disabled={enrolling}
-      >
-        {#if enrolling}
-          <Spinner class="mr-2" />
-        {:else}
-          <Plus class="size-4 mr-2" />
-        {/if}
-        {$t("auth.passkeys.add")}
-      </Button>
-    </CardContent>
-  </Card>
-{/if}
+      {$t("auth.passkeys.add")}
+    </Button>
+  </CardFooter>
+</Card>

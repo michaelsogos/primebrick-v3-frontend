@@ -103,18 +103,21 @@
     },
     "passkeys": {
       "title": "Passkeys",
-      "description": "Aggiungi una passkey per accedere senza password usando Face ID\u2122, Touch ID\u2122 o una chiave di sicurezza.",
+      "description": "Aggiungi una passkey per accedere senza password usando Face ID\u2122, Touch ID\u2122, Windows Hello\u2122 o una chiave di sicurezza.",
       "add": "Aggiungi passkey",
       "remove": "Rimuovi",
       "empty": "Nessuna passkey registrata",
       "emptyTitle": "Nessuna passkey trovata",
       "emptyHint": "Aggiungi una passkey per accedere più velocemente senza password.",
+      "loadingTitle": "Caricamento passkey",
+      "loadingHint": "Attendi mentre recuperiamo le tue passkey registrate.",
       "enrollmentSuccess": "Passkey aggiunta",
       "enrollmentError": "Impossibile aggiungere la passkey",
       "alreadyEnrolled": "Hai gia una passkey su questo dispositivo",
       "deleteError": "Impossibile rimuovere la passkey",
       "unknownPasskey": "Passkey",
       "neverUsed": "Mai usata",
+      "notSupported": "Le passkey non sono supportate da questo browser",
       "unknownDevice": "Dispositivo sconosciuto",
       "enrolledOn": "Registrata il {date}",
       "lastUsed": "Ultimo uso {date}",
@@ -132,6 +135,10 @@
       "empty": "Nessun fattore 2FA registrato. Aggiungine uno per proteggere l'account.",
       "emptyTitle": "Nessun fattore MFA trovato",
       "emptyHint": "Aggiungi un'app di autenticazione per proteggere il tuo account con un secondo fattore.",
+      "loadingTitle": "Caricamento fattori 2FA",
+      "loadingHint": "Attendi mentre recuperiamo i fattori 2FA registrati.",
+      "disabledTitle": "Il 2FA non è attivo",
+      "disabledHint": "Contatta l'amministratore per abilitare l'autenticazione a due fattori.",
       "enrollButton": "Aggiungi fattore 2FA",
       "enrollAnother": "Aggiungi un altro fattore",
       "defaultLabel": "App OTP",
@@ -220,10 +227,21 @@
     "clearAll": "Annulla tutti i filtri",
     "clearSelection": "Cancella selezione",
     "delete": "Elimina",
+    "revertChanges": "Annulla modifiche",
+    "selectAll": "Seleziona tutto",
+    "deselectAll": "Deseleziona tutto",
+    "bulkRevert": "Ripristina selezionati",
     "deleting": "Eliminazione in corso…",
     "saving": "Salvataggio…",
     "saveSuccess": "Salvato con successo",
+    "saveChanges": "Salva Modifiche",
+    "noChanges": "Nessuna modifica non salvata",
+    "changesPending": "{count} {count === 1 ? 'modifica non salvata' : 'modifiche non salvate'}",
     "saveFailed": "Salvataggio fallito",
+    "selectValue": "Seleziona valore",
+    "enterValue": "Inserisci valore",
+    "deleteSuccess": "Eliminato con successo",
+    "deleteFailed": "Eliminazione fallita",
     "deleteConfirmTitle": "Sei sicuro di voler cancellare il record?",
     "deleteConfirm": "Questa azione non può essere annullata.",
     "restore": "Ripristina",
@@ -271,7 +289,11 @@
     "passwordPolicyAlphaNumeric": "La password deve avere 8-64 caratteri alfanumerici (lettere e/o numeri, senza caratteri speciali)",
     "passwordPolicyLetterAndNumber": "La password deve avere 8-64 caratteri con almeno una lettera e un numero (senza caratteri speciali)",
     "passwordPolicyLetterNumberSpecial": "La password deve avere 8-64 caratteri con almeno una lettera, un numero e un carattere speciale (* - _ . # @ ! | ? ^ :)",
-    "passwordPolicyMixedCaseSpecial": "La password deve avere 8-64 caratteri con almeno una minuscola, una maiuscola, un numero e un carattere speciale (* - _ . # @ ! | ? ^ :)"
+    "passwordPolicyMixedCaseSpecial": "La password deve avere 8-64 caratteri con almeno una minuscola, una maiuscola, un numero e un carattere speciale (* - _ . # @ ! | ? ^ :)",
+    "invalidInteger": "Deve essere un numero intero valido",
+    "invalidNumber": "Deve essere un numero valido",
+    "invalidBoolean": "Deve essere true o false",
+    "invalidJson": "Deve essere un JSON valido"
   },
   "roles": {
     "administrators": "Amministratore",
@@ -281,6 +303,208 @@
     "ops": "Operazioni",
     "systemAdministrator": "Amministratore di sistema",
     "notValidRole": "Ruolo non valido"
+  },
+  "config": {
+    "auth": {
+      "idp_endpoint": {
+        "label": "Endpoint IDP",
+        "description": "L'URL di base dell'istanza del provider di identità.",
+        "errors": {
+          "invalidUrl": "Deve essere un URL valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "idp_organization": {
+        "label": "Organizzazione IDP",
+        "description": "Il nome dell'organizzazione nel provider di identità a cui appartengono gli utenti Primebrick.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "idp_client_id": {
+        "label": "IDP Client ID",
+        "description": "L'ID client API di amministrazione usato da Primebrick per gestire utenti e ruoli nel provider di identità.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "idp_client_secret": {
+        "label": "IDP Client Secret",
+        "description": "Il secret client API di amministrazione usato da Primebrick per gestire utenti e ruoli nel provider di identità. Lasciare vuoto per mantenere il valore corrente.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "oidc_issuer_url": {
+        "label": "URL issuer OIDC",
+        "description": "L'URL dell'issuer OpenID Connect (base dell'endpoint well-known).",
+        "errors": {
+          "invalidUrl": "Deve essere un URL valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "idp_type": {
+        "label": "Tipo IDP",
+        "description": "Il tipo di provider di identità (Casdoor, Keycloak, Entra ID, Okta, ecc.).",
+        "casdoor": "Casdoor",
+        "keycloak": "Keycloak",
+        "entra": "Entra ID",
+        "okta": "Okta",
+        "errors": {
+          "required": "Il tipo IDP è obbligatorio"
+        }
+      },
+      "group": {
+        "idp_parameters": "Parametri IDP",
+        "oidc_parameters": "Parametri OIDC",
+        "security_parameters": "Parametri di Sicurezza",
+        "advanced_features": "Funzionalità Avanzate",
+        "system_settings": "Impostazioni di Sistema"
+      },
+      "oidc_client_id": {
+        "label": "Client ID OIDC",
+        "description": "L'ID client OAuth/OIDC per l'API Primebrick.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "invalidFormat": "Solo lettere, numeri, trattini e underscore sono ammessi (deve iniziare e finire con una lettera o numero)",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "oidc_client_secret": {
+        "label": "Client Secret OIDC",
+        "description": "Il secret client OAuth/OIDC per l'API Primebrick. Lasciare vuoto per mantenere il valore corrente.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "enable_email_verification_check": {
+        "label": "Richiedi verifica email",
+        "description": "Se abilitato, gli utenti devono verificare il proprio indirizzo email prima di poter accedere.",
+        "errors": {
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "enable_webauthn": {
+        "label": "Abilita WebAuthn",
+        "description": "Se abilitato, gli utenti possono registrarsi e accedere con passkey (WebAuthn).",
+        "errors": {
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "passkey_required": {
+        "label": "Passkey obbligatoria",
+        "description": "Se abilitato, ogni utente deve registrare almeno una passkey.",
+        "errors": {
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "enable_mfa": {
+        "label": "Abilita MFA",
+        "description": "Se abilitato, gli utenti possono registrare app di autenticazione TOTP come secondo fattore.",
+        "errors": {
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "password_policy": {
+        "label": "Criterio password",
+        "description": "Il criterio di complessità della password applicato per l'autenticazione tramite form.",
+        "alpha_numeric": "Alfanumerico",
+        "letter_and_number": "Lettere e numeri",
+        "letter_number_special": "Lettere, numeri e caratteri speciali",
+        "mixed_case_special": "Maiuscole/minuscole con caratteri speciali",
+        "errors": {
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "auth_mode": {
+        "label": "Modalità di autenticazione",
+        "description": "La modalità di autenticazione: standalone (IDP diretto) o gateway (tramite API gateway).",
+        "standalone": "Standalone",
+        "gateway": "Gateway",
+        "errors": {
+          "required": "La modalità di autenticazione è obbligatoria"
+        }
+      },
+      "auth_roles_path": {
+        "label": "Percorso ruoli di autenticazione",
+        "description": "Il percorso del claim JWT (separato da punti) in cui sono memorizzati i ruoli dell'utente.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "invalidFormat": "Formato non valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "invitation_expiry_days": {
+        "label": "Scadenza invito (giorni)",
+        "description": "Numero di giorni prima della scadenza di un invito utente in sospeso.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "admin_contact_email": {
+        "label": "Email di contatto amministratore",
+        "description": "Email di contatto mostrata agli utenti per richieste di supporto/amministrazione.",
+        "errors": {
+          "invalidEmail": "Deve essere un indirizzo email valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "notification_alert_secret": {
+        "label": "Secret avvisi di notifica",
+        "description": "Secret condiviso utilizzato per firmare i payload interni degli avvisi di notifica.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "frontend_url": {
+        "label": "URL frontend",
+        "description": "L'URL di base pubblico del frontend Primebrick (utilizzato nelle email e nei link).",
+        "errors": {
+          "invalidUrl": "Deve essere un URL valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "redis_url": {
+        "label": "URL Redis",
+        "description": "L'URL di connessione Redis utilizzato per cache, sessioni e presenza.",
+        "errors": {
+          "invalidUrl": "Deve essere un URL valido",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "mfa_challenge_token_ttl_seconds": {
+        "label": "TTL token challenge MFA (secondi)",
+        "description": "Tempo di vita in secondi per i token di challenge MFA step-up.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      },
+      "mfa_challenge_signing_secret": {
+        "label": "Secret firma challenge MFA",
+        "description": "Chiave segreta utilizzata per firmare i token di challenge MFA step-up.",
+        "errors": {
+          "min": "Deve essere almeno {min}",
+          "max": "Deve essere al massimo {max}",
+          "required": "Questo campo è obbligatorio"
+        }
+      }
+    }
   },
   "shell": {
     "subtitle": "Backoffice",
@@ -316,6 +540,24 @@
     "notifications": {
       "aria": "Notifiche"
     },
+    "aiChat": {
+      "aria": "Assistente AI",
+      "title": "Assistente AI",
+      "placeholder": "Chiedi qualsiasi cosa sui tuoi dati…",
+      "send": "Invia",
+      "newConversation": "Nuova conversazione",
+      "conversations": "Conversazioni",
+      "loading": "Sto pensando…",
+      "error": "Qualcosa è andato storto. Riprova.",
+      "rateLimited": "Troppe richieste. Attendi un momento.",
+      "stop": "Ferma",
+      "toolCall": "Chiamata tool: {tool}",
+      "navigateConfirm": "Aprire la pagina {route}?",
+      "yes": "Sì",
+      "no": "No",
+      "empty": "Nessuna conversazione ancora. Inizia facendo una domanda.",
+      "welcome": "Ciao! Sono il tuo assistente AI. Posso cercare i tuoi dati, rispondere a domande e navigare l'app per te. Come posso aiutarti?"
+    },
     "userMenu": {
       "aria": "Menu utente",
       "title": "Profilo",
@@ -349,7 +591,7 @@
         "organizations": "Organizzazioni",
         "users": "Utenti",
         "roles": "Ruoli",
-        "security": "Sicurezza",
+        "security": "Configurazioni",
         "modules": "Moduli",
         "templates": "Template",
         "emailProviders": "Provider email"
@@ -382,7 +624,7 @@
         "fieldIdpRoleHint": "Il nome esatto del ruolo come emesso dall'IDP nel JWT (sensibile alle maiuscole).",
         "fieldIdpRoleImmutable": "Il nome del ruolo IDP è immutabile dopo la creazione.",
         "fieldIdpOrg": "Organizzazione IDP",
-        "fieldIdpOrgHint": "L'organizzazione/proprietario Casdoor a cui appartiene il ruolo.",
+        "fieldIdpOrgHint": "L'organizzazione/proprietario IDP a cui appartiene il ruolo.",
         "fieldIdpOrgPlaceholder": "Seleziona organizzazione",
         "fieldIdpOrgImmutable": "L'organizzazione IDP è immutabile dopo la creazione.",
         "fieldLabelKey": "Chiave etichetta di visualizzazione",
@@ -556,6 +798,16 @@
       },
       "security": {
         "title": "Sicurezza",
+        "description": "Gestisci le impostazioni di autenticazione e sicurezza.",
+        "reservedBadge": "Riservato",
+        "lastUpdatedPrefix": "Ultimo aggiornamento",
+        "lastUpdatedByMid": "da",
+        "selected": "selezionati",
+        "bulkDelete": "Elimina selezionati",
+        "noEntries": "Nessuna voce di configurazione trovata",
+        "changesPendingFields": "Modifiche non salvate in:",
+        "changesPendingCount": "campi",
+        "noChanges": "Nessuna modifica non salvata",
         "changePassword": "Cambia Password",
         "currentPassword": "Password Attuale",
         "currentPasswordPlaceholder": "Inserisci password attuale",
@@ -572,7 +824,33 @@
         "deleteAccount": "Elimina Account",
         "deleteAccountButton": "Elimina Account",
         "deleteAccountWarning": "Questa azione è irreversibile. Tutti i tuoi dati verranno eliminati definitivamente.",
-        "confirmDeleteAccount": "Conferma Eliminazione"
+        "confirmDeleteAccount": "Conferma Eliminazione",
+        "addConfigKey": "Aggiungi chiave",
+        "create": {
+          "title": "Crea voce",
+          "description": "Crea una nuova voce.",
+          "key": "Chiave",
+          "keyPlaceholder": "es. my_custom_setting",
+          "keyHelp": "Identificatore univoco per questa voce di configurazione (snake_case, max 100 caratteri).",
+          "type": "Tipo",
+          "typeHelp": "Determina il widget di input e le regole di validazione.",
+          "value": "Valore",
+          "valuePlaceholder": "Valore predefinito",
+          "typeConfig": "Config Tipo (JSON)",
+          "typeConfigPlaceholder": "{\"validation\":{\"required\":true,\"rules\":{}}}",
+          "typeConfigHelp": "Metadata JSON per validazione, valori badge, URL API lista, ecc.",
+          "labelKey": "Chiave Etichetta",
+          "labelKeyPlaceholder": "es. config.auth.my_setting.label",
+          "descriptionKey": "Chiave Descrizione",
+          "descriptionKeyPlaceholder": "es. config.auth.my_setting.description",
+          "groupKey": "Chiave Gruppo",
+          "groupKeyPlaceholder": "es. security_parameters",
+          "reserved": "Riservato",
+          "reservedHelp": "Se vero, la riga è di sistema: modificabile ma non eliminabile.",
+          "keyExists": "Esiste già una chiave con questo nome.",
+          "createSuccess": "Voce creata con successo.",
+          "unsavedChanges": "Ci sono modifiche non salvate. Sei sicuro di voler uscire?"
+        }
       },
       "modules": {
         "title": "Moduli",
@@ -751,6 +1029,7 @@
         "RESTORE": "Ripristino"
       },
       "field": {
+        "id": "ID",
         "uuid": "UUID",
         "idp_code": "Codice IDP",
         "idp_owner": "Proprietario IDP",
@@ -765,7 +1044,15 @@
         "last_synced_at": "Ultima sincronizzazione",
         "version": "Versione",
         "deleted_at": "Eliminato il",
-        "deleted_by": "Eliminato da"
+        "deleted_by": "Eliminato da",
+        "key": "Chiave",
+        "value": "Valore",
+        "type": "Tipo",
+        "type_config": "Configurazione Tipo",
+        "reserved": "Riservato",
+        "group_key": "Gruppo",
+        "label_key": "Chiave Etichetta",
+        "description_key": "Chiave Descrizione"
       },
       "fieldModified": "Campo {field} modificato da {from} a {to}",
       "notSet": "non impostato",
@@ -780,6 +1067,30 @@
       "recordHardDeleted": "Record eliminato definitivamente",
       "recordSoftDeleted": "Record eliminato",
       "recordRestored": "Record ripristinato"
+    },
+    "config_entry": {
+      "title": "Voce di Configurazione",
+      "singular": "Voce di Configurazione",
+      "plural": "Voci di Configurazione",
+      "fields": {
+        "id": "ID",
+        "uuid": "UUID",
+        "key": "Chiave",
+        "value": "Valore",
+        "type": "Tipo",
+        "type_config": "Configurazione Tipo",
+        "reserved": "Riservato",
+        "group_key": "Gruppo",
+        "label_key": "Chiave Etichetta",
+        "description_key": "Chiave Descrizione",
+        "created_at": "Creato il",
+        "updated_at": "Aggiornato il",
+        "created_by": "Creato da",
+        "updated_by": "Aggiornato da",
+        "version": "Versione",
+        "deleted_at": "Eliminato il",
+        "deleted_by": "Eliminato da"
+      }
     },
     "user_profile": {
       "title": "Utenti",

@@ -24,8 +24,8 @@
   } = $props();
 </script>
 
-<div class="h-full p-2 sm:p-3">
-  <div class="flex h-full w-full flex-col gap-4 min-h-0">
+<div class="h-full p-2 sm:p-3 contain-layout">
+  <div class="flex h-full w-full flex-col gap-4 min-h-0 overflow-hidden">
     {#if header}
       <header class="shrink-0">{@render header()}</header>
     {:else if title || headerExtras}

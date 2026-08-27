@@ -10,6 +10,7 @@
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
   import VersionsPanel from '$lib/shell/sheets/panels/VersionsPanel.svelte';
+  import AiChatPanel from '$lib/shell/sheets/panels/AiChatPanel.svelte';
   import SearchInPanel from '$lib/entity-list/sheets/panels/SearchInPanel.svelte';
   import ColumnsPanel from '$lib/entity-list/sheets/panels/ColumnsPanel.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
@@ -18,6 +19,7 @@
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
     'shell.versions': VersionsPanel,
+    'shell.aiChat': AiChatPanel,
     'entity.searchIn': SearchInPanel,
     'entity.columns': ColumnsPanel,
     'entity.filters': FiltersPanel,

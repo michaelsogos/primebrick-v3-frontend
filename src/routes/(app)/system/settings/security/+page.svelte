@@ -1,64 +1,160 @@
 <script lang="ts">
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import * as Password from '$lib/components/ui/password';
-  import { Badge } from '$lib/components/ui/badge';
-  import { cn } from '$lib/utils';
-  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { onMount } from 'svelte';
-  import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { ConfigList } from '$lib/components/config-list';
+  import {
+    fetchConfigEntries,
+    deleteConfigEntry,
+    bulkDeleteConfigEntries,
+  } from '$lib/api';
+  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { pushNotification } from '$lib/errors/app-errors';
+  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+  import type { ConfigEntry } from '$lib/api-types';
 
-  let oidcIssuer = $state('');
-  let oidcClientId = $state('');
-  let oidcClientSecret = $state('');
+  let entries = $state<ConfigEntry[]>([]);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
 
-  let showDeleteWarning = $state(false);
+  // Single delete state
+  let deleteTarget = $state<ConfigEntry | null>(null);
+  let deleteDialogOpen = $state(false);
+  let isDeleting = $state(false);
 
-  const metadata = useEntityMetadata({
-    endpoint: '/api/v1/entities/security_settings/meta',
-    entityName: 'security_settings'
+  // Bulk delete state
+  let bulkTargets = $state<ConfigEntry[]>([]);
+  let bulkDeleteDialogOpen = $state(false);
+  let isBulkDeleting = $state(false);
+
+  const stepUp = useMfaStepUp();
+
+  // Listen for refresh notifications from the create page (opened in _blank tab)
+  useSyncChannel('primebrick_config_sync', {
+    mode: 'receiver',
+    onRefresh: () => void loadEntries(),
   });
 
-  // Audit state
-  let auditInfo = $state({
-    uuid: 'current', // Security settings use 'current' as UUID
-    version: 0,
-    createdAt: '',
-    createdBy: '',
-    createdByName: '',
-    updatedAt: '',
-    updatedBy: '',
-    updatedByName: '',
-    lastSyncedAt: ''
-  });
+  onMount(loadEntries);
 
-  const hasAudit = $derived(!!metadata.state.meta?.list?.auditingColumns?.length);
-
-  let hasChanges = $state(false);
-
-  function openVersionHistory() {
-    openSheet('entity.versionHistory', { entity: 'security_settings', rowUuid: 'current' });
+  // Open the create config page in a new tab (same pattern as users/orgs create)
+  function openNewConfig() {
+    const url = '/system/settings/security/create';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    }
   }
 
-  function handleSubmit() {
-    // TODO: Implement unified submit for OIDC
-    console.log('Submitting security settings');
+  async function loadEntries() {
+    loading = true;
+    error = null;
+    try {
+      entries = await fetchConfigEntries();
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Failed to load config entries';
+    } finally {
+      loading = false;
+    }
   }
 
-  function handleDeleteAccount() {
-    // TODO: Implement account deletion (oblio) logic
-    console.log('Deleting account');
+  // handleSave is now a trigger to reload entries after bulk save in ConfigList
+  async function handleSave(_entry: ConfigEntry, _value: string) {
+    await loadEntries();
   }
 
-  onMount(() => {
-    void metadata.loadMetadata();
-  });
+  function handleDelete(entry: ConfigEntry) {
+    deleteTarget = entry;
+    deleteDialogOpen = true;
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    isDeleting = true;
+    try {
+      const resp = await stepUp.executeWithToken(
+        (token) => deleteConfigEntry(deleteTarget!.uuid, token),
+        { action: 'delete', target_resource: 'config_entries' },
+      );
+      if (resp.ok) {
+        entries = entries.filter((e) => e.uuid !== deleteTarget!.uuid);
+        pushNotification({
+          impact: 'NONE',
+          messageKey: 'common.deleteSuccess',
+          scope: $t('shell.settings.security.title'),
+        });
+        deleteDialogOpen = false;
+        deleteTarget = null;
+      } else {
+        const errorData = await resp.json().catch(() => null);
+        pushNotification({
+          impact: 'HIGH',
+          messageKey: 'common.deleteFailed',
+          scope: $t('shell.settings.security.title'),
+          detail: errorData?.detail ?? `HTTP ${resp.status}`,
+        });
+      }
+    } catch (err) {
+      pushNotification({
+        impact: 'HIGH',
+        messageKey: 'common.deleteFailed',
+        scope: $t('shell.settings.security.title'),
+        detail: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  function handleBulkDelete(selected: ConfigEntry[]) {
+    bulkTargets = selected;
+    bulkDeleteDialogOpen = true;
+  }
+
+  async function confirmBulkDelete() {
+    if (bulkTargets.length === 0) return;
+    isBulkDeleting = true;
+    try {
+      const uuids = bulkTargets.map((e) => e.uuid);
+      const resp = await stepUp.executeWithToken(
+        (token) => bulkDeleteConfigEntries(uuids, token),
+        { action: 'bulk_delete', target_resource: 'config_entries' },
+      );
+      if (resp.ok) {
+        const deletedUuids = new Set(uuids);
+        entries = entries.filter((e) => !deletedUuids.has(e.uuid));
+        pushNotification({
+          impact: 'NONE',
+          messageKey: 'common.deleteSuccess',
+          scope: $t('shell.settings.security.title'),
+        });
+        bulkDeleteDialogOpen = false;
+        bulkTargets = [];
+      } else {
+        const errorData = await resp.json().catch(() => null);
+        pushNotification({
+          impact: 'HIGH',
+          messageKey: 'common.deleteFailed',
+          scope: $t('shell.settings.security.title'),
+          detail: errorData?.detail ?? `HTTP ${resp.status}`,
+        });
+      }
+    } catch (err) {
+      pushNotification({
+        impact: 'HIGH',
+        messageKey: 'common.deleteFailed',
+        scope: $t('shell.settings.security.title'),
+        detail: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      isBulkDeleting = false;
+    }
+  }
 </script>
 
 <AppPageScaffold>
@@ -71,126 +167,61 @@
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          })
+            t: (key) => $t(key),
+          }),
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.security.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">
+        {$t('shell.settings.security.title')}
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        {$t('shell.settings.security.description')}
+      </p>
     </div>
   {/snippet}
 
-  <!-- FORM CONTENT -->
-  <div class="flex-1 overflow-auto">
-    <form id="security-form" onsubmit={handleSubmit}>
-      <div class="space-y-6">
-      <!-- OIDC Parameters -->
-      <div class="space-y-4 rounded-lg border p-4">
-        <h3 class="text-lg font-medium">{$t('shell.settings.security.oidcParams')}</h3>
-        
-        <div>
-          <label for="oidcIssuer" class="text-sm font-medium leading-none">{$t('shell.settings.security.oidcIssuer')}</label>
-          <Input
-            id="oidcIssuer"
-            type="url"
-            bind:value={oidcIssuer}
-            placeholder="https://your-idp.example.com"
-            class="mt-2"
-          />
-        </div>
-
-        <div>
-          <label for="oidcClientId" class="text-sm font-medium leading-none">{$t('shell.settings.security.oidcClientId')}</label>
-          <Input
-            id="oidcClientId"
-            type="text"
-            bind:value={oidcClientId}
-            placeholder="your-client-id"
-            class="mt-2"
-          />
-        </div>
-
-        <div>
-          <label for="oidcClientSecret" class="text-sm font-medium leading-none">{$t('shell.settings.security.oidcClientSecret')}</label>
-          <Password.PasswordInput
-            id="oidcClientSecret"
-            bind:value={oidcClientSecret}
-            placeholder="your-client-secret"
-            class="mt-2"
-          />
-        </div>
-      </div>
-    </div>
-  </form>
-</div>
-
-<!-- COMBINED FOOTER BAR -->
-<div class="bg-muted/50 shrink-0 border-t p-4">
-  <div class="flex items-center justify-between gap-4">
-    <!-- Left: Audit info (60%) -->
-    <div class="flex-1">
-      <div class="text-xs">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {#if auditInfo.version && hasAudit}
-            <Badge
-              class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
-              variant="outline"
-              onclick={openVersionHistory}
-            >
-              v{auditInfo.version}
-            </Badge>
-          {:else if auditInfo.version}
-            <Badge class="text-xs font-semibold border border-primary" variant="outline">
-              v{auditInfo.version}
-            </Badge>
-          {/if}
-          {#if auditInfo.uuid}
-            <div class="flex items-center gap-x-2">
-              <span class="text-primary">{$t('shell.settings.audit.id')}:</span>
-              <span class="italic text-muted-foreground">{auditInfo.uuid}</span>
-            </div>
-          {/if}
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.createdAt')}:</span>
-            <span class="italic text-muted-foreground">{auditInfo.createdAt || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.createdBy')}:</span>
-            <span class="italic text-muted-foreground">{auditInfo.createdByName || auditInfo.createdBy || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.updatedAt')}:</span>
-            <span class="italic text-muted-foreground">{auditInfo.updatedAt || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.updatedBy')}:</span>
-            <span class="italic text-muted-foreground">{auditInfo.updatedByName || auditInfo.updatedBy || '-'}</span>
-          </div>
-          <div class="flex items-center gap-x-2">
-            <span class="text-primary">{$t('shell.settings.audit.lastSyncedAt')}:</span>
-            <span class="italic text-muted-foreground">{auditInfo.lastSyncedAt || '-'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: CTA (40%) -->
-    <div class="shrink-0 flex items-center gap-2">
-      {#if !showDeleteWarning}
-        <Button variant="destructive" onclick={() => showDeleteWarning = true}>
-          {$t('shell.settings.security.deleteAccountButton')}
-        </Button>
-      {:else}
-        <Button variant="outline" onclick={() => showDeleteWarning = false}>
-          {$t('common.cancel')}
-        </Button>
-        <Button variant="destructive" onclick={handleDeleteAccount}>
-          {$t('shell.settings.security.confirmDeleteAccount')}
-            </Button>
-      {/if}
-      <Button type="submit" form="security-form" disabled={!hasChanges}>
-        {$t('common.save')}
-      </Button>
-    </div>
-  </div>
-</div>
+  <ConfigList
+    {entries}
+    {loading}
+    {error}
+    onSave={handleSave}
+    onDelete={handleDelete}
+    onBulkDelete={handleBulkDelete}
+    onCreateAction={openNewConfig}
+  />
 </AppPageScaffold>
+
+<DeleteDialog
+  bind:open={deleteDialogOpen}
+  onOpenChange={(open) => {
+    deleteDialogOpen = open;
+    if (!open) deleteTarget = null;
+  }}
+  isDeleting={isDeleting}
+  onConfirm={confirmDelete}
+  onCancel={() => {
+    deleteDialogOpen = false;
+    deleteTarget = null;
+  }}
+/>
+
+<DeleteDialog
+  bind:open={bulkDeleteDialogOpen}
+  onOpenChange={(open) => {
+    bulkDeleteDialogOpen = open;
+    if (!open) bulkTargets = [];
+  }}
+  isDeleting={isBulkDeleting}
+  onConfirm={confirmBulkDelete}
+  onCancel={() => {
+    bulkDeleteDialogOpen = false;
+    bulkTargets = [];
+  }}
+/>
+
+<MfaStepUpDialog
+  bind:open={stepUp.dialogOpen}
+  action={stepUp.pendingAction}
+  target_resource={stepUp.pendingTargetResource}
+  onauthorized={stepUp.handleAuthorized}
+/>

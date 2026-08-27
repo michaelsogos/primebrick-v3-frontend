@@ -14,7 +14,6 @@
 import { apiFetch } from "$lib/api";
 
 export interface AuthConfigPublic {
-  enable_formauth: boolean;
   enable_webauthn: boolean;
   passkey_required: boolean;
   enable_mfa: boolean;
@@ -47,9 +46,6 @@ export async function loadAuthConfig(): Promise<void> {
 }
 
 export const authConfigStore = {
-  get enable_formauth(): boolean {
-    return authConfigState.config?.enable_formauth ?? false;
-  },
   get enable_webauthn(): boolean {
     return authConfigState.config?.enable_webauthn ?? false;
   },

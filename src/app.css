@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -168,6 +168,42 @@
  */
 @utility divider-primary-gradient {
   background: linear-gradient(to bottom, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5));
+}
+
+/**
+ * Horizontal gradient line (sky-400 → indigo-400, left → right),
+ * matching the PB logo gradient. Use on 1px-tall full-width elements
+ * as a branded replacement for `border-b` / `<hr>`.
+ */
+@utility hr-primary-gradient {
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+}
+
+/**
+ * Card container for grouped config items: gradient border on top and left
+ * only. Used with a tab header that covers the top edge seamlessly.
+ */
+@utility border-primary-gradient-tl {
+  border: 0 solid transparent;
+  border-top-width: 1px;
+  border-left-width: 1px;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Primary gradient TEXT (sky-400 → indigo-400, matching the PB logo gradient).
+ * Uses background-clip: text so the gradient fills the text glyphs; the text
+ * color is set to transparent so only the gradient shows through.
+ *
+ * Usage: replace `text-muted-foreground` (or similar) with `text-primary-gradient`.
+ */
+@utility text-primary-gradient {
+  background: linear-gradient(to bottom right, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /**
