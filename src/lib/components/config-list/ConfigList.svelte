@@ -2,9 +2,12 @@
   import { t } from '$lib/i18n';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigListRow from './ConfigListRow.svelte';
-  import ConfigBulkActionBar from './ConfigBulkActionBar.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
+  import { Checkbox } from '$lib/components/ui/checkbox';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Undo2 from '@lucide/svelte/icons/undo-2';
+  import Plus from '@lucide/svelte/icons/plus';
   import { buildConfigFormSchema } from '$lib/validation/config-validation';
   import { pushNotification } from '$lib/errors/app-errors';
   import { bulkUpdateConfigEntries } from '$lib/api';
@@ -16,6 +19,7 @@
     onSave,
     onDelete,
     onBulkDelete,
+    onCreateAction,
   }: {
     entries: ConfigEntry[];
     loading?: boolean;
@@ -23,6 +27,7 @@
     onSave: (entry: ConfigEntry, value: string) => Promise<void>;
     onDelete: (entry: ConfigEntry) => void;
     onBulkDelete: (entries: ConfigEntry[]) => void;
+    onCreateAction?: () => void;
   } = $props();
 
   // ─── Form state with taint tracking ──────────────────────────────────────
@@ -162,9 +167,46 @@
   }
 
   function handleBulkDelete() {
-    onBulkDelete(selectedEntries);
+    if (deletableSelectedEntries.length === 0) return;
+    onBulkDelete(deletableSelectedEntries);
     selectedUuids = new Set();
   }
+
+  // ─── Select-all ──────────────────────────────────────────────────────────
+  // All entries are selectable (including reserved). Reserved entries cannot be
+  // deleted, but they CAN be selected (e.g. for bulk revert).
+  let allSelected = $derived(
+    entries.length > 0 && entries.every((e) => selectedUuids.has(e.uuid)),
+  );
+  let someSelected = $derived(selectedUuids.size > 0 && !allSelected);
+
+  function handleToggleSelectAll(checked: boolean) {
+    if (checked) {
+      selectedUuids = new Set(entries.map((e) => e.uuid));
+    } else {
+      selectedUuids = new Set();
+    }
+  }
+
+  // ─── Bulk revert ─────────────────────────────────────────────────────────
+  // Reverts all selected entries that have unsaved changes to their original values
+  let selectedTaintedCount = $derived(
+    [...selectedUuids].filter((uuid) => taintedUuids.has(uuid)).length,
+  );
+
+  function handleBulkRevert() {
+    for (const uuid of selectedUuids) {
+      if (taintedUuids.has(uuid)) {
+        handleRevert(uuid);
+      }
+    }
+  }
+
+  // ─── Bulk delete ─────────────────────────────────────────────────────────
+  // Reserved entries cannot be deleted — filter them out from the bulk delete payload.
+  let deletableSelectedEntries = $derived(
+    selectedEntries.filter((e) => !e.reserved),
+  );
 
   // Clear selection when entries change (e.g. after delete)
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
@@ -224,13 +266,71 @@
   </div>
 {:else}
   <div class="flex h-full flex-col min-h-0">
+    <!-- Sticky toolbar: select-all + bulk actions (left) + create CTA (right) -->
+    <div class="shrink-0 border-b bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70 px-4 py-2">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Left: select-all checkbox + bulk action CTAs -->
+        <div class="flex items-center gap-2">
+          <Checkbox
+            checked={allSelected}
+            indeterminate={someSelected}
+            onCheckedChange={() => handleToggleSelectAll(!allSelected)}
+            data-testid="config-toolbar-select-all"
+          />
+          <span class="text-sm text-muted-foreground select-none mr-1">
+            {#if allSelected}
+              {$t('common.deselectAll')}
+            {:else}
+              {$t('common.selectAll')}
+            {/if}
+          </span>
+          {#if selectedEntries.length > 0}
+            <div class="h-5 w-px bg-border mx-1" aria-hidden="true"></div>
+            {#if selectedTaintedCount > 0}
+              <Button
+                variant="soft"
+                tone="warning"
+                size="sm"
+                onclick={handleBulkRevert}
+                data-testid="config-toolbar-bulk-revert"
+              >
+                <Undo2 class="size-4" />
+                {$t('common.bulkRevert')}
+                <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
+              </Button>
+            {/if}
+            <Button
+              variant="soft"
+              tone="destructive"
+              size="sm"
+              onclick={handleBulkDelete}
+              disabled={deletableSelectedEntries.length === 0}
+              data-testid="config-toolbar-bulk-delete"
+            >
+              <Trash2 class="size-4" />
+              {$t('common.delete')}
+              <span class="ml-1 text-xs opacity-70">({selectedEntries.length})</span>
+            </Button>
+          {/if}
+        </div>
+
+        <!-- Right: create CTA (primary) -->
+        {#if onCreateAction}
+          <Button
+            variant="default"
+            size="sm"
+            onclick={onCreateAction}
+            data-testid="config-toolbar-create"
+          >
+            <Plus class="size-4" />
+            {$t('shell.settings.security.addConfigKey')}
+          </Button>
+        {/if}
+      </div>
+    </div>
+
     <!-- Scrollable content area -->
     <div class="flex-1 overflow-auto p-4">
-      <ConfigBulkActionBar
-        selectedCount={selectedEntries.length}
-        onBulkDelete={handleBulkDelete}
-      />
-
       <div class="space-y-3">
         {#each ungroupedEntries as entry (entry.uuid)}
           <ConfigListRow
