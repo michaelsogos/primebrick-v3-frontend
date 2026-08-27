@@ -227,9 +227,13 @@
     "clearAll": "Clear all filters",
     "clearSelection": "Clear selection",
     "delete": "Delete",
+    "revertChanges": "Revert changes",
     "deleting": "Deleting…",
     "saving": "Saving…",
     "saveSuccess": "Saved successfully",
+    "saveChanges": "Save Changes",
+    "noChanges": "No unsaved changes",
+    "changesPending": "{count} unsaved {count === 1 ? 'change' : 'changes'}",
     "saveFailed": "Failed to save",
     "selectValue": "Select value",
     "enterValue": "Enter value",
@@ -282,7 +286,11 @@
     "passwordPolicyAlphaNumeric": "Password must be 8-64 alphanumeric characters (letters and/or numbers, no special characters)",
     "passwordPolicyLetterAndNumber": "Password must be 8-64 characters with at least one letter and one number (no special characters)",
     "passwordPolicyLetterNumberSpecial": "Password must be 8-64 characters with at least one letter, one number, and one special character (* - _ . # @ ! | ? ^ :)",
-    "passwordPolicyMixedCaseSpecial": "Password must be 8-64 characters with at least one lowercase, one uppercase, one number, and one special character (* - _ . # @ ! | ? ^ :)"
+    "passwordPolicyMixedCaseSpecial": "Password must be 8-64 characters with at least one lowercase, one uppercase, one number, and one special character (* - _ . # @ ! | ? ^ :)",
+    "invalidInteger": "Must be a valid integer",
+    "invalidNumber": "Must be a valid number",
+    "invalidBoolean": "Must be true or false",
+    "invalidJson": "Must be valid JSON"
   },
   "roles": {
     "administrators": "Administrator",
@@ -297,23 +305,46 @@
     "auth": {
       "idp_endpoint": {
         "label": "IDP Endpoint",
-        "description": "The base URL of the identity provider instance."
+        "description": "The base URL of the identity provider instance.",
+        "errors": {
+          "invalidUrl": "Must be a valid URL",
+          "required": "This field is required"
+        }
       },
       "idp_organization": {
         "label": "IDP Organization",
-        "description": "The organization name in the identity provider that Primebrick users belong to."
+        "description": "The organization name in the identity provider that Primebrick users belong to.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "idp_client_id": {
         "label": "IDP Client ID",
-        "description": "The admin API client ID used by Primebrick to manage users and roles in the identity provider."
+        "description": "The admin API client ID used by Primebrick to manage users and roles in the identity provider.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "idp_client_secret": {
         "label": "IDP Client Secret",
-        "description": "The admin API client secret used by Primebrick to manage users and roles in the identity provider. Leave empty to keep the current value."
+        "description": "The admin API client secret used by Primebrick to manage users and roles in the identity provider. Leave empty to keep the current value.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "oidc_issuer_url": {
         "label": "OIDC Issuer URL",
-        "description": "The OpenID Connect issuer URL (well-known endpoint base)."
+        "description": "The OpenID Connect issuer URL (well-known endpoint base).",
+        "errors": {
+          "invalidUrl": "Must be a valid URL",
+          "required": "This field is required"
+        }
       },
       "idp_type": {
         "label": "IDP Type",
@@ -321,7 +352,10 @@
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
         "entra": "Entra ID",
-        "okta": "Okta"
+        "okta": "Okta",
+        "errors": {
+          "required": "IDP type is required"
+        }
       },
       "group": {
         "idp_parameters": "IDP Parameters",
@@ -332,27 +366,50 @@
       },
       "oidc_client_id": {
         "label": "OIDC Client ID",
-        "description": "The OAuth/OIDC client ID for the Primebrick API."
+        "description": "The OAuth/OIDC client ID for the Primebrick API.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "invalidFormat": "Only letters, numbers, hyphens and underscores are allowed (must start and end with a letter or number)",
+          "required": "This field is required"
+        }
       },
       "oidc_client_secret": {
         "label": "OIDC Client Secret",
-        "description": "The OAuth/OIDC client secret for the Primebrick API. Leave empty to keep the current value."
+        "description": "The OAuth/OIDC client secret for the Primebrick API. Leave empty to keep the current value.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "enable_email_verification_check": {
         "label": "Require Email Verification",
-        "description": "If enabled, users must verify their email address before they can log in."
+        "description": "If enabled, users must verify their email address before they can log in.",
+        "errors": {
+          "required": "This field is required"
+        }
       },
       "enable_webauthn": {
         "label": "Enable WebAuthn",
-        "description": "If enabled, users can register and sign in with passkeys (WebAuthn)."
+        "description": "If enabled, users can register and sign in with passkeys (WebAuthn).",
+        "errors": {
+          "required": "This field is required"
+        }
       },
       "passkey_required": {
         "label": "Passkey Required",
-        "description": "If enabled, every user must register at least one passkey."
+        "description": "If enabled, every user must register at least one passkey.",
+        "errors": {
+          "required": "This field is required"
+        }
       },
       "enable_mfa": {
         "label": "Enable MFA",
-        "description": "If enabled, users can enroll TOTP authenticator apps as a second factor."
+        "description": "If enabled, users can enroll TOTP authenticator apps as a second factor.",
+        "errors": {
+          "required": "This field is required"
+        }
       },
       "password_policy": {
         "label": "Password Policy",
@@ -360,45 +417,89 @@
         "alpha_numeric": "Alphanumeric",
         "letter_and_number": "Letters and Numbers",
         "letter_number_special": "Letters, Numbers, and Special Characters",
-        "mixed_case_special": "Mixed Case with Special Characters"
+        "mixed_case_special": "Mixed Case with Special Characters",
+        "errors": {
+          "required": "This field is required"
+        }
       },
       "auth_mode": {
         "label": "Auth Mode",
         "description": "The authentication mode: standalone (direct IDP) or gateway (through API gateway).",
         "standalone": "Standalone",
-        "gateway": "Gateway"
+        "gateway": "Gateway",
+        "errors": {
+          "required": "Auth mode is required"
+        }
       },
       "auth_roles_path": {
         "label": "Auth Roles Path",
-        "description": "The JWT claim path (dot-separated) where the user's roles are stored."
+        "description": "The JWT claim path (dot-separated) where the user's roles are stored.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "invalidFormat": "Invalid format",
+          "required": "This field is required"
+        }
       },
       "invitation_expiry_days": {
         "label": "Invitation Expiry (days)",
-        "description": "Number of days before a pending user invitation expires."
+        "description": "Number of days before a pending user invitation expires.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "admin_contact_email": {
         "label": "Admin Contact Email",
-        "description": "Contact email shown to users for support/admin inquiries."
+        "description": "Contact email shown to users for support/admin inquiries.",
+        "errors": {
+          "invalidEmail": "Must be a valid email address",
+          "required": "This field is required"
+        }
       },
       "notification_alert_secret": {
         "label": "Notification Alert Secret",
-        "description": "Shared secret used to sign internal notification alert payloads."
+        "description": "Shared secret used to sign internal notification alert payloads.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "frontend_url": {
         "label": "Frontend URL",
-        "description": "The public base URL of the Primebrick frontend (used in emails and links)."
+        "description": "The public base URL of the Primebrick frontend (used in emails and links).",
+        "errors": {
+          "invalidUrl": "Must be a valid URL",
+          "required": "This field is required"
+        }
       },
       "redis_url": {
         "label": "Redis URL",
-        "description": "The Redis connection URL used for caching, sessions, and presence."
+        "description": "The Redis connection URL used for caching, sessions, and presence.",
+        "errors": {
+          "invalidUrl": "Must be a valid URL",
+          "required": "This field is required"
+        }
       },
       "mfa_challenge_token_ttl_seconds": {
         "label": "MFA Challenge Token TTL (seconds)",
-        "description": "Time-to-live in seconds for step-up MFA challenge tokens."
+        "description": "Time-to-live in seconds for step-up MFA challenge tokens.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       },
       "mfa_challenge_signing_secret": {
         "label": "MFA Challenge Signing Secret",
-        "description": "Secret key used to sign step-up MFA challenge tokens."
+        "description": "Secret key used to sign step-up MFA challenge tokens.",
+        "errors": {
+          "min": "Must be at least {min}",
+          "max": "Must be at most {max}",
+          "required": "This field is required"
+        }
       }
     }
   },
@@ -487,7 +588,7 @@
         "organizations": "Organizations",
         "users": "Users",
         "roles": "Roles",
-        "security": "Security",
+        "security": "Configurations",
         "modules": "Modules",
         "templates": "Templates",
         "emailProviders": "Email Providers"
@@ -701,6 +802,9 @@
         "selected": "selected",
         "bulkDelete": "Delete selected",
         "noEntries": "No configuration entries found",
+        "changesPendingFields": "Unsaved changes in:",
+        "changesPendingCount": "fields",
+        "noChanges": "No unsaved changes",
         "changePassword": "Change Password",
         "currentPassword": "Current Password",
         "currentPasswordPlaceholder": "Enter current password",
@@ -900,6 +1004,7 @@
         "RESTORE": "Restore"
       },
       "field": {
+        "id": "ID",
         "uuid": "UUID",
         "idp_code": "IDP Code",
         "idp_owner": "IDP Owner",
@@ -914,7 +1019,15 @@
         "last_synced_at": "Last synced at",
         "version": "Version",
         "deleted_at": "Deleted at",
-        "deleted_by": "Deleted by"
+        "deleted_by": "Deleted by",
+        "key": "Key",
+        "value": "Value",
+        "type": "Type",
+        "type_config": "Type Configuration",
+        "reserved": "Reserved",
+        "group_key": "Group",
+        "label_key": "Label Key",
+        "description_key": "Description Key"
       },
       "fieldModified": "Field {field} changed from {from} to {to}",
       "notSet": "not set",
@@ -929,6 +1042,30 @@
       "recordHardDeleted": "Record hard deleted",
       "recordSoftDeleted": "Record deleted",
       "recordRestored": "Record restored"
+    },
+    "config_entry": {
+      "title": "Configuration Entry",
+      "singular": "Configuration Entry",
+      "plural": "Configuration Entries",
+      "fields": {
+        "id": "ID",
+        "uuid": "UUID",
+        "key": "Key",
+        "value": "Value",
+        "type": "Type",
+        "type_config": "Type Configuration",
+        "reserved": "Reserved",
+        "group_key": "Group",
+        "label_key": "Label Key",
+        "description_key": "Description Key",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "created_by": "Created by",
+        "updated_by": "Updated by",
+        "version": "Version",
+        "deleted_at": "Deleted at",
+        "deleted_by": "Deleted by"
+      }
     },
     "user_profile": {
       "title": "Users",

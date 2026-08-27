@@ -398,6 +398,19 @@ export async function updateConfigEntry(uuid: string, value: string, version: nu
   if (!res.ok) throw new Error(`Config entry update failed (${res.status})`);
 }
 
+export async function bulkUpdateConfigEntries(
+  updates: Array<{ uuid: string; value: string; version: number }>,
+): Promise<number> {
+  const res = await apiFetch('/api/v1/entities/config_entries/bulk-update', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ updates }),
+  });
+  if (!res.ok) throw new Error(`Config entries bulk update failed (${res.status})`);
+  const data = (await res.json()) as { success: boolean; updated: number };
+  return data.updated;
+}
+
 export async function deleteConfigEntry(uuid: string, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
     method: 'DELETE',

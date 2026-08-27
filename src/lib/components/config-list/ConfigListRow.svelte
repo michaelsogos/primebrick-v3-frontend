@@ -4,21 +4,31 @@
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Badge } from '$lib/components/ui/badge';
   import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Undo2 from '@lucide/svelte/icons/undo-2';
   import Info from '@lucide/svelte/icons/info';
   import { Button } from '$lib/components/ui/button';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigValueInput from './ConfigValueInput.svelte';
 
   let {
     entry,
     selected = false,
-    onSave,
+    tainted = false,
+    value,
+    errors = [],
+    onChange,
+    onRevert,
     onDelete,
     onToggleSelect,
   }: {
     entry: ConfigEntry;
     selected?: boolean;
-    onSave: (value: string) => Promise<void>;
+    tainted?: boolean;
+    value: string;
+    errors?: string[];
+    onChange: (value: string) => void;
+    onRevert: () => void;
     onDelete: (entry: ConfigEntry) => void;
     onToggleSelect: (entry: ConfigEntry, selected: boolean) => void;
   } = $props();
@@ -35,10 +45,14 @@
         ? entry.updated_by
         : ''
   );
+
+  function openVersionHistory() {
+    openSheet('entity.versionHistory', { entity: 'config_entries', rowUuid: entry.uuid });
+  }
 </script>
 
 <div
-  class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4"
+  class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4 border-l-[5px] {tainted ? 'border-l-warning' : 'border-l-border'}"
   data-testid={`config-row-${entry.key}`}
 >
   <!-- Left (6/12): checkbox (disabled if reserved) + title + description -->
@@ -74,39 +88,77 @@
       {#if description}
         <p class="text-sm text-muted-foreground">{description}</p>
       {/if}
-      {#if updatedAt && updatedByName}
-        <p class="text-xs text-muted-foreground/60 mt-0.5">
-          <span>{$t('shell.settings.security.lastUpdatedPrefix')}</span>
-          <span class="font-medium text-muted-foreground/70">{updatedAt}</span>
-          <span>{$t('shell.settings.security.lastUpdatedByMid')}</span>
-          <span class="font-medium text-muted-foreground/70">{updatedByName}</span>
-        </p>
+      <!-- Version badge + audit metadata -->
+      {#if entry.version}
+        <div class="flex items-center gap-2 mt-0.5">
+          <button
+            type="button"
+            onclick={openVersionHistory}
+            class="inline-flex"
+            title={$t('entities.versionHistory.title')}
+            data-testid={`config-row-version-${entry.key}`}
+          >
+            <Badge class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10" variant="outline">
+              v{entry.version}
+            </Badge>
+          </button>
+          {#if updatedAt && updatedByName}
+            <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
+              <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+              <span class="italic text-muted-foreground">{updatedAt}</span>
+              <span class="text-primary">{$t('shell.settings.security.lastUpdatedByMid')}</span>
+              <span class="italic text-muted-foreground">{updatedByName}</span>
+            </div>
+          {:else if updatedAt}
+            <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
+              <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+              <span class="italic text-muted-foreground">{updatedAt}</span>
+            </div>
+          {/if}
+        </div>
+      {:else if updatedAt && updatedByName}
+        <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
+          <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+          <span class="italic text-muted-foreground">{updatedAt}</span>
+          <span class="text-primary">{$t('shell.settings.security.lastUpdatedByMid')}</span>
+          <span class="italic text-muted-foreground">{updatedByName}</span>
+        </div>
       {:else if updatedAt}
-        <p class="text-xs text-muted-foreground/60 mt-0.5">
-          <span>{$t('shell.settings.security.lastUpdatedPrefix')}</span>
-          <span class="font-medium text-muted-foreground/70">{updatedAt}</span>
-        </p>
+        <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
+          <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+          <span class="italic text-muted-foreground">{updatedAt}</span>
+        </div>
       {/if}
     </div>
   </div>
 
   <!-- Center (4/12): dynamic input -->
   <div class="col-span-4 flex items-center justify-center">
-    <ConfigValueInput {entry} {onSave} />
+    <ConfigValueInput {entry} {value} {errors} {onChange} />
   </div>
 
-  <!-- Right (2/12): delete CTA (non-reserved only) -->
+  <!-- Right (2/12): undo (if tainted) + delete (always, disabled if reserved) -->
   <div class="col-span-2 flex items-center justify-end gap-2">
-    {#if !entry.reserved}
+    {#if tainted}
       <Button
         variant="ghost"
         size="icon"
-        onclick={() => onDelete(entry)}
-        data-testid={`config-row-delete-${entry.key}`}
-        title={$t('common.delete')}
+        onclick={onRevert}
+        data-testid={`config-row-revert-${entry.key}`}
+        title={$t('common.revertChanges')}
       >
-        <Trash2 class="size-4 text-destructive" />
+        <Undo2 class="size-4 text-warning" />
       </Button>
     {/if}
+    <Button
+      variant="ghost"
+      size="icon"
+      onclick={() => onDelete(entry)}
+      disabled={entry.reserved}
+      data-testid={`config-row-delete-${entry.key}`}
+      title={$t('common.delete')}
+    >
+      <Trash2 class="size-4 text-destructive" />
+    </Button>
   </div>
 </div>

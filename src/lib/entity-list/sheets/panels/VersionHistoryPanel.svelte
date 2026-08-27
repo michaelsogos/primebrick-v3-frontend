@@ -20,6 +20,7 @@
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
   import * as Tooltip from "$lib/components/ui/tooltip";
+  import { createHighlighter } from 'shiki';
 
   interface $$Props {
     entity: string;
@@ -48,6 +49,37 @@
   let versionHistoryTotal = $state<bigint>(0n);
   let versionHistoryHasMore = $state<boolean>(false);
   let expandedEntries = $state<Set<number>>(new Set());
+
+  // Shiki highlighter for JSONB values — lazily initialized, reused across renders.
+  // Same pattern as rfc-error-dialog.svelte.
+  let shikiHighlighter: any = $state(null);
+  const jsonHighlightCache = new Map<string, string>();
+
+  async function getShikiHighlighter() {
+    if (!shikiHighlighter) {
+      shikiHighlighter = await createHighlighter({
+        themes: ['light-plus'],
+        langs: ['json'],
+      });
+    }
+    return shikiHighlighter;
+  }
+
+  async function highlightJson(value: any): Promise<string> {
+    const jsonString = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    if (jsonHighlightCache.has(jsonString)) return jsonHighlightCache.get(jsonString)!;
+    try {
+      const hl = await getShikiHighlighter();
+      const html = hl.codeToHtml(jsonString, { lang: 'json', theme: 'light-plus' });
+      jsonHighlightCache.set(jsonString, html);
+      return html;
+    } catch {
+      return `<pre class="text-xs font-mono whitespace-pre-wrap">${jsonString}</pre>`;
+    }
+  }
+
+  // Track highlighted HTML per delta entry — keyed by entry.id + field name + old/new
+  let jsonHtmlCache = $state<Record<string, string>>({});
 
   function toggleEntryExpanded(entryId: number) {
     if (expandedEntries.has(entryId)) {
@@ -182,7 +214,13 @@
     badgeLabelKey?: string,
     oldBadgeColor?: string,
     oldBadgeLabelText?: string,
-    oldBadgeLabelKey?: string
+    oldBadgeLabelKey?: string,
+    isColor?: boolean,
+    colorValue?: string,
+    oldColorValue?: string,
+    isJson?: boolean,
+    jsonValue?: any,
+    oldJsonValue?: any
   }> {
     const descriptions: Array<{
       field: string,
@@ -199,7 +237,10 @@
       oldBadgeLabelKey?: string,
       isColor?: boolean,
       colorValue?: string,
-      oldColorValue?: string
+      oldColorValue?: string,
+      isJson?: boolean,
+      jsonValue?: any,
+      oldJsonValue?: any
     }> = [];
 
     for (const [field, change] of Object.entries(delta)) {
@@ -219,15 +260,43 @@
       const isBadge = column?.type === 'badge' && column?.badge?.values;
       const isColor = column?.type === 'color';
 
+      // Detect JSONB/JSON fields: column type is 'json'/'jsonb', or the value
+      // is a string that parses as a JSON object (not a scalar or array-only).
+      // Arrays are handled by the existing formatValue (emptyList / String).
+      function tryParseJson(val: any): any | undefined {
+        if (val === null || val === undefined) return undefined;
+        // Already an object (from pg jsonb parser) — return as-is
+        if (typeof val === 'object' && !Array.isArray(val)) return val;
+        if (typeof val !== 'string') return undefined;
+        const trimmed = val.trim();
+        if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return undefined;
+        try {
+          const parsed = JSON.parse(trimmed);
+          return (typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
+        } catch { return undefined; }
+      }
+
+      const isJsonColumn = column?.type === 'json' || column?.type === 'jsonb';
+      const parsedNewJson = tryParseJson(newValue);
+      const parsedOldJson = tryParseJson(oldValue);
+      // Detect JSONB/JSON values: if either old or new parses as a JSON object,
+      // render with JsonTableViewer. This covers INSERT (old=null, new=object)
+      // and UPDATE (both present, one may be null if cleared).
+      const isJson = parsedNewJson !== undefined || parsedOldJson !== undefined;
+
       // Format value based on column type (date/datetime)
+      // Falls back to field name detection for audit fields (created_at, updated_at, etc.)
+      // which don't have column metadata in the entity columns array.
+      const isDateField = column?.type === 'date' || (!column && /_at$/.test(field));
+      const isDateTimeField = column?.type === 'datetime' || (!column && /(_at|changed_at|last_synced_at)$/.test(field));
       function formatValue(value: any): string {
         if (value === null || value === undefined) return $t('entities.versionHistory.null');
         if (Array.isArray(value) && value.length === 0) return $t('entities.versionHistory.emptyList');
         if (value === '') return $t('entities.versionHistory.null');
-        if (column?.type === 'date') {
+        if (column?.type === 'date' || isDateField) {
           return formatUiDate(value, $uiLang);
         }
-        if (column?.type === 'datetime') {
+        if (column?.type === 'datetime' || isDateTimeField) {
           return formatUiDateTime(value, $uiLang);
         }
         return String(value);
@@ -272,20 +341,22 @@
           operator: isCreateOrInsert ? $t('entities.versionHistory.set') : $t('entities.versionHistory.changedFrom'),
           toOperator: isCreateOrInsert ? undefined : $t('entities.versionHistory.to'),
           oldValue: isCreateOrInsert ? undefined : $t('entities.versionHistory.null'),
-          newValue: formatValue(newValue),
+          newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
           badgeLabelKey,
           isColor,
-          colorValue
+          colorValue,
+          isJson,
+          jsonValue: isJson ? parsedNewJson : undefined
         });
       } else if (oldValue != null && newValue == null) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.versionHistory.changedFrom'),
           toOperator: $t('entities.versionHistory.to'),
-          oldValue: formatValue(oldValue),
+          oldValue: isJson ? undefined : formatValue(oldValue),
           newValue: $t('entities.versionHistory.null'),
           isBadge,
           badgeColor,
@@ -295,15 +366,17 @@
           oldBadgeLabelText,
           oldBadgeLabelKey,
           isColor,
-          oldColorValue
+          oldColorValue,
+          isJson,
+          oldJsonValue: isJson ? parsedOldJson : undefined
         });
       } else if (oldValue != newValue) {
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.versionHistory.changedFrom'),
           toOperator: $t('entities.versionHistory.to'),
-          oldValue: formatValue(oldValue),
-          newValue: formatValue(newValue),
+          oldValue: isJson ? undefined : formatValue(oldValue),
+          newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -313,20 +386,25 @@
           oldBadgeLabelKey,
           isColor,
           colorValue,
-          oldColorValue
+          oldColorValue,
+          isJson,
+          jsonValue: isJson ? parsedNewJson : undefined,
+          oldJsonValue: isJson ? parsedOldJson : undefined
         });
       } else {
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
         descriptions.push({
           field: fieldLabel,
           operator: $t('entities.versionHistory.unchanged'),
-          newValue: newValue == null ? $t('entities.versionHistory.null') : formatValue(newValue),
+          newValue: newValue == null ? $t('entities.versionHistory.null') : (isJson ? undefined : formatValue(newValue)),
           isBadge,
           badgeColor,
           badgeLabelText,
           badgeLabelKey,
           isColor,
-          colorValue
+          colorValue,
+          isJson,
+          jsonValue: isJson ? parsedNewJson : undefined
         });
       }
     }
@@ -337,6 +415,36 @@
   // Load data on mount
   $effect(() => {
     loadVersionHistory();
+  });
+
+  // Highlight JSONB values with shiki when version history data changes.
+  // Populates jsonHtmlCache with highlighted HTML for each JSON field in each entry.
+  $effect(() => {
+    if (versionHistoryData.length === 0) return;
+    for (const entry of versionHistoryData) {
+      if (entry.action === 'HARD_DELETE') continue;
+      const descs = formatAuditDelta(entry.delta, entry.action);
+      for (let i = 0; i < descs.length; i++) {
+        const d = descs[i] as any;
+        if (!d.isJson) continue;
+        if (d.jsonValue !== undefined) {
+          const key = `${entry.id}:${i}:new`;
+          if (!jsonHtmlCache[key]) {
+            highlightJson(d.jsonValue).then((html) => {
+              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
+            });
+          }
+        }
+        if (d.oldJsonValue !== undefined) {
+          const key = `${entry.id}:${i}:old`;
+          if (!jsonHtmlCache[key]) {
+            highlightJson(d.oldJsonValue).then((html) => {
+              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
+            });
+          }
+        }
+      }
+    }
   });
 </script>
 
@@ -427,69 +535,87 @@
                   {#if isUpdate}
                     {#if expandedEntries.has(entry.id)}
                       <div class="space-y-2">
-                        {#each descriptions as desc}
-                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string}}
-                          <div class="flex items-center gap-2 p-2 bg-muted/30 rounded-md border">
-                            <div class="flex-1 min-w-0">
-                              <div class="text-xs flex flex-wrap items-center gap-1">
-                                <span class="font-bold text-foreground">{delta.field}</span>
-                                {#if delta.operator}
-                                  <span class="text-primary">{delta.operator}</span>
+                        {#each descriptions as desc, i}
+                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: any, oldJsonValue?: any}}
+                          <div class="p-2 bg-muted/30 rounded-md border">
+                            <div class="text-xs flex flex-wrap items-center gap-1">
+                              <span class="font-bold text-foreground">{delta.field}</span>
+                              {#if delta.operator}
+                                <span class="text-primary">{delta.operator}</span>
+                              {/if}
+                              {#if delta.oldValue !== undefined}
+                                {#if delta.isBadge && delta.oldBadgeColor}
+                                  {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
+                                  <Badge
+                                    class="shadow-none text-xs"
+                                    style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
+                                  >
+                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
+                                  </Badge>
+                                {:else if delta.isColor && delta.oldColorValue}
+                                  <Tooltip.Root>
+                                    <Tooltip.Trigger>
+                                      <div
+                                        class="w-5 h-5 rounded-full border shadow-sm inline-block"
+                                        style="background-color: {delta.oldColorValue};"
+                                      ></div>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <p>{delta.oldColorValue}</p>
+                                    </Tooltip.Content>
+                                  </Tooltip.Root>
+                                {:else}
+                                  <span class="italic text-muted-foreground">{delta.oldValue}</span>
                                 {/if}
-                                {#if delta.oldValue !== undefined}
-                                  {#if delta.isBadge && delta.oldBadgeColor}
-                                    {@const oldBadgeColors = badgeClassesFromToken(delta.oldBadgeColor)}
-                                    <Badge
-                                      class="shadow-none text-xs"
-                                      style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
-                                    >
-                                      {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
-                                    </Badge>
-                                  {:else if delta.isColor && delta.oldColorValue}
-                                    <Tooltip.Root>
-                                      <Tooltip.Trigger>
-                                        <div
-                                          class="w-5 h-5 rounded-full border shadow-sm inline-block"
-                                          style="background-color: {delta.oldColorValue};"
-                                        ></div>
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content>
-                                        <p>{delta.oldColorValue}</p>
-                                      </Tooltip.Content>
-                                    </Tooltip.Root>
-                                  {:else}
-                                    <span class="italic text-muted-foreground">{delta.oldValue}</span>
-                                  {/if}
+                              {/if}
+                              {#if delta.isJson && delta.oldJsonValue !== undefined}
+                                {@const cacheKey = `${entry.id}:${i}:old`}
+                                {#if jsonHtmlCache[cacheKey]}
+                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
+                                    {@html jsonHtmlCache[cacheKey]}
+                                  </div>
+                                {:else}
+                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
                                 {/if}
-                                {#if delta.toOperator}
-                                  <span class="text-primary">{delta.toOperator}</span>
+                              {/if}
+                              {#if delta.toOperator}
+                                <span class="text-primary">{delta.toOperator}</span>
+                              {/if}
+                              {#if delta.newValue !== undefined}
+                                {#if delta.isBadge && delta.badgeColor}
+                                  {@const newBadgeColors = badgeClassesFromToken(delta.badgeColor)}
+                                  <Badge
+                                    class="shadow-none text-xs"
+                                    style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
+                                  >
+                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
+                                  </Badge>
+                                {:else if delta.isColor && delta.colorValue}
+                                  <Tooltip.Root>
+                                    <Tooltip.Trigger>
+                                      <div
+                                        class="w-5 h-5 rounded-full border shadow-sm inline-block"
+                                        style="background-color: {delta.colorValue};"
+                                      ></div>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <p>{delta.colorValue}</p>
+                                    </Tooltip.Content>
+                                  </Tooltip.Root>
+                                {:else}
+                                  <span class="italic text-muted-foreground">{delta.newValue}</span>
                                 {/if}
-                                {#if delta.newValue !== undefined}
-                                  {#if delta.isBadge && delta.badgeColor}
-                                    {@const newBadgeColors = badgeClassesFromToken(delta.badgeColor)}
-                                    <Badge
-                                      class="shadow-none text-xs"
-                                      style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
-                                    >
-                                      {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
-                                    </Badge>
-                                  {:else if delta.isColor && delta.colorValue}
-                                    <Tooltip.Root>
-                                      <Tooltip.Trigger>
-                                        <div
-                                          class="w-5 h-5 rounded-full border shadow-sm inline-block"
-                                          style="background-color: {delta.colorValue};"
-                                        ></div>
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content>
-                                        <p>{delta.colorValue}</p>
-                                      </Tooltip.Content>
-                                    </Tooltip.Root>
-                                  {:else}
-                                    <span class="italic text-muted-foreground">{delta.newValue}</span>
-                                  {/if}
+                              {/if}
+                              {#if delta.isJson && delta.jsonValue !== undefined}
+                                {@const cacheKey = `${entry.id}:${i}:new`}
+                                {#if jsonHtmlCache[cacheKey]}
+                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
+                                    {@html jsonHtmlCache[cacheKey]}
+                                  </div>
+                                {:else}
+                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
                                 {/if}
-                              </div>
+                              {/if}
                             </div>
                           </div>
                         {/each}

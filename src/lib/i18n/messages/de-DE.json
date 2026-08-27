@@ -216,9 +216,13 @@
     "clearAll": "Alle Filter löschen",
     "clearSelection": "Auswahl löschen",
     "delete": "Löschen",
+    "revertChanges": "Änderungen zurücksetzen",
     "deleting": "Löschen…",
     "saving": "Speichern…",
     "saveSuccess": "Erfolgreich gespeichert",
+    "saveChanges": "Änderungen speichern",
+    "noChanges": "Keine ungespeicherten Änderungen",
+    "changesPending": "{count} ungespeicherte {count === 1 ? 'Änderung' : 'Änderungen'}",
     "saveFailed": "Speichern fehlgeschlagen",
     "selectValue": "Wert auswählen",
     "enterValue": "Wert eingeben",
@@ -271,7 +275,11 @@
     "passwordPolicyAlphaNumeric": "Passwort muss 8-64 alphanumerische Zeichen enthalten (Buchstaben und/oder Zahlen, keine Sonderzeichen)",
     "passwordPolicyLetterAndNumber": "Passwort muss 8-64 Zeichen mit mindestens einem Buchstaben und einer Zahl enthalten (keine Sonderzeichen)",
     "passwordPolicyLetterNumberSpecial": "Passwort muss 8-64 Zeichen mit mindestens einem Buchstaben, einer Zahl und einem Sonderzeichen enthalten (* - _ . # @ ! | ? ^ :)",
-    "passwordPolicyMixedCaseSpecial": "Passwort muss 8-64 Zeichen mit mindestens einem Kleinbuchstaben, einem Großbuchstaben, einer Zahl und einem Sonderzeichen enthalten (* - _ . # @ ! | ? ^ :)"
+    "passwordPolicyMixedCaseSpecial": "Passwort muss 8-64 Zeichen mit mindestens einem Kleinbuchstaben, einem Großbuchstaben, einer Zahl und einem Sonderzeichen enthalten (* - _ . # @ ! | ? ^ :)",
+    "invalidInteger": "Muss eine gültige Ganzzahl sein",
+    "invalidNumber": "Muss eine gültige Zahl sein",
+    "invalidBoolean": "Muss true oder false sein",
+    "invalidJson": "Muss gültiges JSON sein"
   },
   "roles": {
     "administrators": "Administrator",
@@ -286,23 +294,46 @@
     "auth": {
       "idp_endpoint": {
         "label": "IDP-Endpunkt",
-        "description": "Die Basis-URL der Identitätsanbieter-Instanz."
+        "description": "Die Basis-URL der Identitätsanbieter-Instanz.",
+        "errors": {
+          "invalidUrl": "Muss eine gültige URL sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "idp_organization": {
         "label": "IDP-Organisation",
-        "description": "Der Organisationsname im Identitätsanbieter, zu dem die Primebrick-Benutzer gehören."
+        "description": "Der Organisationsname im Identitätsanbieter, zu dem die Primebrick-Benutzer gehören.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "idp_client_id": {
         "label": "IDP-Client-ID",
-        "description": "Die Admin-API-Client-ID, die von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten."
+        "description": "Die Admin-API-Client-ID, die von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "idp_client_secret": {
         "label": "IDP-Client-Secret",
-        "description": "Das Admin-API-Client-Secret, das von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten. Leer lassen, um den aktuellen Wert beizubehalten."
+        "description": "Das Admin-API-Client-Secret, das von Primebrick verwendet wird, um Benutzer und Rollen im Identitätsanbieter zu verwalten. Leer lassen, um den aktuellen Wert beizubehalten.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "oidc_issuer_url": {
         "label": "OIDC-Aussteller-URL",
-        "description": "Die OpenID-Connect-Aussteller-URL (Basis des Well-Known-Endpunkts)."
+        "description": "Die OpenID-Connect-Aussteller-URL (Basis des Well-Known-Endpunkts).",
+        "errors": {
+          "invalidUrl": "Muss eine gültige URL sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "idp_type": {
         "label": "IDP-Typ",
@@ -310,7 +341,10 @@
         "casdoor": "Casdoor",
         "keycloak": "Keycloak",
         "entra": "Entra ID",
-        "okta": "Okta"
+        "okta": "Okta",
+        "errors": {
+          "required": "IDP-Typ ist erforderlich"
+        }
       },
       "group": {
         "idp_parameters": "IDP-Parameter",
@@ -321,27 +355,50 @@
       },
       "oidc_client_id": {
         "label": "OIDC-Client-ID",
-        "description": "Die OAuth/OIDC-Client-ID für die Primebrick-API."
+        "description": "Die OAuth/OIDC-Client-ID für die Primebrick-API.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "invalidFormat": "Nur Buchstaben, Zahlen, Bindestriche und Unterstriche sind erlaubt (muss mit einem Buchstaben oder einer Zahl beginnen und enden)",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "oidc_client_secret": {
         "label": "OIDC-Client-Secret",
-        "description": "Das OAuth/OIDC-Client-Secret für die Primebrick-API. Leer lassen, um den aktuellen Wert beizubehalten."
+        "description": "Das OAuth/OIDC-Client-Secret für die Primebrick-API. Leer lassen, um den aktuellen Wert beizubehalten.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "enable_email_verification_check": {
         "label": "E-Mail-Verifizierung erforderlich",
-        "description": "Wenn aktiviert, müssen Benutzer ihre E-Mail-Adresse verifizieren, bevor sie sich anmelden können."
+        "description": "Wenn aktiviert, müssen Benutzer ihre E-Mail-Adresse verifizieren, bevor sie sich anmelden können.",
+        "errors": {
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "enable_webauthn": {
         "label": "WebAuthn aktivieren",
-        "description": "Wenn aktiviert, können Benutzer sich mit Passkeys (WebAuthn) registrieren und anmelden."
+        "description": "Wenn aktiviert, können Benutzer sich mit Passkeys (WebAuthn) registrieren und anmelden.",
+        "errors": {
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "passkey_required": {
         "label": "Passkey erforderlich",
-        "description": "Wenn aktiviert, muss jeder Benutzer mindestens einen Passkey registrieren."
+        "description": "Wenn aktiviert, muss jeder Benutzer mindestens einen Passkey registrieren.",
+        "errors": {
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "enable_mfa": {
         "label": "MFA aktivieren",
-        "description": "Wenn aktiviert, können Benutzer TOTP-Authenticator-Apps als zweiten Faktor einrichten."
+        "description": "Wenn aktiviert, können Benutzer TOTP-Authenticator-Apps als zweiten Faktor einrichten.",
+        "errors": {
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "password_policy": {
         "label": "Passwortrichtlinie",
@@ -349,45 +406,89 @@
         "alpha_numeric": "Alphanumerisch",
         "letter_and_number": "Buchstaben und Zahlen",
         "letter_number_special": "Buchstaben, Zahlen und Sonderzeichen",
-        "mixed_case_special": "Groß-/Kleinschreibung mit Sonderzeichen"
+        "mixed_case_special": "Groß-/Kleinschreibung mit Sonderzeichen",
+        "errors": {
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "auth_mode": {
         "label": "Authentifizierungsmodus",
         "description": "Der Authentifizierungsmodus: standalone (direkter IDP) oder gateway (über das API-Gateway).",
         "standalone": "Standalone",
-        "gateway": "Gateway"
+        "gateway": "Gateway",
+        "errors": {
+          "required": "Authentifizierungsmodus ist erforderlich"
+        }
       },
       "auth_roles_path": {
         "label": "Auth-Rollen-Pfad",
-        "description": "Der JWT-Claim-Pfad (punktgetrennt), in dem die Rollen des Benutzers gespeichert sind."
+        "description": "Der JWT-Claim-Pfad (punktgetrennt), in dem die Rollen des Benutzers gespeichert sind.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "invalidFormat": "Ungültiges Format",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "invitation_expiry_days": {
         "label": "Einladungsablauf (Tage)",
-        "description": "Anzahl der Tage, bevor eine ausstehende Benutzereinladung abläuft."
+        "description": "Anzahl der Tage, bevor eine ausstehende Benutzereinladung abläuft.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "admin_contact_email": {
         "label": "Administrator-Kontakt-E-Mail",
-        "description": "Kontakt-E-Mail, die Benutzern für Support-/Admin-Anfragen angezeigt wird."
+        "description": "Kontakt-E-Mail, die Benutzern für Support-/Admin-Anfragen angezeigt wird.",
+        "errors": {
+          "invalidEmail": "Muss eine gültige E-Mail-Adresse sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "notification_alert_secret": {
         "label": "Benachrichtigungs-Alert-Secret",
-        "description": "Geteiltes Secret, das zum Signieren interner Benachrichtigungs-Alert-Payloads verwendet wird."
+        "description": "Geteiltes Secret, das zum Signieren interner Benachrichtigungs-Alert-Payloads verwendet wird.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "frontend_url": {
         "label": "Frontend-URL",
-        "description": "Die öffentliche Basis-URL des Primebrick-Frontends (in E-Mails und Links verwendet)."
+        "description": "Die öffentliche Basis-URL des Primebrick-Frontends (in E-Mails und Links verwendet).",
+        "errors": {
+          "invalidUrl": "Muss eine gültige URL sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "redis_url": {
         "label": "Redis-URL",
-        "description": "Die Redis-Verbindungs-URL, die für Caching, Sitzungen und Präsenz verwendet wird."
+        "description": "Die Redis-Verbindungs-URL, die für Caching, Sitzungen und Präsenz verwendet wird.",
+        "errors": {
+          "invalidUrl": "Muss eine gültige URL sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "mfa_challenge_token_ttl_seconds": {
         "label": "MFA-Challenge-Token-TTL (Sekunden)",
-        "description": "Gültigkeitsdauer in Sekunden für Step-up-MFA-Challenge-Token."
+        "description": "Gültigkeitsdauer in Sekunden für Step-up-MFA-Challenge-Token.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       },
       "mfa_challenge_signing_secret": {
         "label": "MFA-Challenge-Signatur-Secret",
-        "description": "Geheimer Schlüssel zum Signieren von Step-up-MFA-Challenge-Token."
+        "description": "Geheimer Schlüssel zum Signieren von Step-up-MFA-Challenge-Token.",
+        "errors": {
+          "min": "Muss mindestens {min} sein",
+          "max": "Darf höchstens {max} sein",
+          "required": "Dieses Feld ist erforderlich"
+        }
       }
     }
   },
@@ -476,7 +577,7 @@
         "organizations": "Organisationen",
         "users": "Benutzer",
         "roles": "Rollen",
-        "security": "Sicherheit",
+        "security": "Konfigurationen",
         "modules": "Module",
         "templates": "Vorlagen",
         "emailProviders": "E-Mail-Anbieter"
@@ -690,6 +791,9 @@
         "selected": "ausgewählt",
         "bulkDelete": "Auswahl löschen",
         "noEntries": "Keine Konfigurationseinträge gefunden",
+        "changesPendingFields": "Ungespeicherte Änderungen in:",
+        "changesPendingCount": "Felder",
+        "noChanges": "Keine ungespeicherten Änderungen",
         "changePassword": "Passwort ändern",
         "currentPassword": "Aktuelles Passwort",
         "currentPasswordPlaceholder": "Aktuelles Passwort eingeben",
@@ -872,6 +976,7 @@
         "RESTORE": "Wiederherstellung"
       },
       "field": {
+        "id": "ID",
         "uuid": "UUID",
         "idp_code": "IDP-Code",
         "idp_owner": "IDP-Eigentümer",
@@ -886,7 +991,15 @@
         "last_synced_at": "Zuletzt synchronisiert am",
         "version": "Version",
         "deleted_at": "Gelöscht am",
-        "deleted_by": "Gelöscht von"
+        "deleted_by": "Gelöscht von",
+        "key": "Schlüssel",
+        "value": "Wert",
+        "type": "Typ",
+        "type_config": "Typkonfiguration",
+        "reserved": "Reserviert",
+        "group_key": "Gruppe",
+        "label_key": "Beschriftungsschlüssel",
+        "description_key": "Beschreibungsschlüssel"
       },
       "fieldModified": "Feld {field} geändert von {from} zu {to}",
       "notSet": "nicht gesetzt",
@@ -901,6 +1014,30 @@
       "recordHardDeleted": "Datensatz hart gelöscht",
       "recordSoftDeleted": "Datensatz gelöscht",
       "recordRestored": "Datensatz wiederhergestellt"
+    },
+    "config_entry": {
+      "title": "Konfigurationseintrag",
+      "singular": "Konfigurationseintrag",
+      "plural": "Konfigurationseinträge",
+      "fields": {
+        "id": "ID",
+        "uuid": "UUID",
+        "key": "Schlüssel",
+        "value": "Wert",
+        "type": "Typ",
+        "type_config": "Typkonfiguration",
+        "reserved": "Reserviert",
+        "group_key": "Gruppe",
+        "label_key": "Beschriftungsschlüssel",
+        "description_key": "Beschreibungsschlüssel",
+        "created_at": "Erstellt am",
+        "updated_at": "Aktualisiert am",
+        "created_by": "Erstellt von",
+        "updated_by": "Aktualisiert von",
+        "version": "Version",
+        "deleted_at": "Gelöscht am",
+        "deleted_by": "Gelöscht von"
+      }
     },
     "user_profile": {
       "title": "Benutzer",

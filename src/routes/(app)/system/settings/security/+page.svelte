@@ -8,7 +8,6 @@
   import { ConfigList } from '$lib/components/config-list';
   import {
     fetchConfigEntries,
-    updateConfigEntry,
     deleteConfigEntry,
     bulkDeleteConfigEntries,
   } from '$lib/api';
@@ -48,25 +47,9 @@
     }
   }
 
-  async function handleSave(entry: ConfigEntry, value: string) {
-    try {
-      await updateConfigEntry(entry.uuid, value, entry.version);
-      entries = entries.map((e) =>
-        e.uuid === entry.uuid ? { ...e, value } : e,
-      );
-      pushNotification({
-        impact: 'NONE',
-        messageKey: 'common.saveSuccess',
-        scope: $t('shell.settings.security.title'),
-      });
-    } catch (err) {
-      pushNotification({
-        impact: 'HIGH',
-        messageKey: 'common.saveFailed',
-        scope: $t('shell.settings.security.title'),
-        detail: err instanceof Error ? err.message : undefined,
-      });
-    }
+  // handleSave is now a trigger to reload entries after bulk save in ConfigList
+  async function handleSave(_entry: ConfigEntry, _value: string) {
+    await loadEntries();
   }
 
   function handleDelete(entry: ConfigEntry) {
@@ -181,16 +164,14 @@
     </div>
   {/snippet}
 
-  <div class="flex-1 overflow-auto p-4">
-    <ConfigList
-      {entries}
-      {loading}
-      {error}
-      onSave={handleSave}
-      onDelete={handleDelete}
-      onBulkDelete={handleBulkDelete}
-    />
-  </div>
+  <ConfigList
+    {entries}
+    {loading}
+    {error}
+    onSave={handleSave}
+    onDelete={handleDelete}
+    onBulkDelete={handleBulkDelete}
+  />
 </AppPageScaffold>
 
 <DeleteDialog
