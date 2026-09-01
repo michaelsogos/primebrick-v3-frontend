@@ -7,26 +7,32 @@
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
-  import type { ConfigEntry } from '$lib/api-types';
+  import type { ConfigEntryType } from '$lib/api-types';
 
   let {
-    entry,
-    value,
+    type,
+    type_config = null,
+    fieldKey = 'field',
+    value = $bindable(''),
     errors = [],
     onChange,
   }: {
-    entry: ConfigEntry;
+    type: ConfigEntryType;
+    type_config?: string | null;
+    fieldKey?: string;
     value: string;
     errors?: string[];
-    onChange: (value: string) => void;
+    onChange?: (value: string) => void;
   } = $props();
 
   // Local editing state — synced from prop, used for bind:value in inputs.
-  // The parent (ConfigList) owns the authoritative form state via taint tracking.
+  // The parent owns the authoritative form state (ConfigList via taint tracking,
+  // or SuperForms via $form.value in the create page).
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
   let localValue = $state(value);
 
-  // Sync local value when the prop changes (e.g. after bulk save reset)
+  // Sync local value when the prop changes (e.g. after bulk save reset, or
+  // when SuperForms resets the form). Supports both bind:value and value+onChange modes.
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
   let lastValue = $state(value);
   $effect(() => {
@@ -38,9 +44,9 @@
 
   // Parse type_config for badge type
   let badgeOptions = $derived.by<Record<string, { label_key?: string; color?: string }>>(() => {
-    if (entry.type !== 'badge' || !entry.type_config) return {};
+    if (type !== 'badge' || !type_config) return {};
     try {
-      const config = JSON.parse(entry.type_config);
+      const config = JSON.parse(type_config);
       return config.values ?? {};
     } catch {
       return {};
@@ -63,9 +69,9 @@
     value_field?: string;
     label_field?: string;
   } | null>(() => {
-    if (entry.type !== 'list' || !entry.type_config) return null;
+    if (type !== 'list' || !type_config) return null;
     try {
-      return JSON.parse(entry.type_config);
+      return JSON.parse(type_config);
     } catch {
       return null;
     }
@@ -77,7 +83,7 @@
 
   // Load list options when the entry is a list type
   $effect(() => {
-    if (entry.type !== 'list' || !listConfig?.api_url) return;
+    if (type !== 'list' || !listConfig?.api_url) return;
     listLoading = true;
     fetch(listConfig.api_url, { method: listConfig.api_verb ?? 'GET' })
       .then((res) => res.json())
@@ -95,11 +101,14 @@
       });
   });
 
-  // Notify parent of value changes
+  // Notify parent of value changes — works for both bind:value and onChange modes.
+  // Writes to `value` (the bindable) for bind:value mode, and calls `onChange`
+  // if provided for the value+onChange mode.
   function notifyChange(newValue: string) {
     if (newValue !== lastValue) {
       lastValue = newValue;
-      onChange(newValue);
+      value = newValue;
+      onChange?.(newValue);
     }
   }
 
@@ -132,12 +141,6 @@
     notifyChange(v);
   }
 
-  // For inputs that update localValue on input
-  function handleInput() {
-    // Don't notify on every keystroke — wait for blur
-    // But do update localValue via bind:value
-  }
-
   // First error message for this field — uses the same `key|jsonParams` format
   // as TranslatedFormFieldErrors (translated-field-errors.svelte).
   let firstError = $derived(errors.length > 0 ? errors[0] : '');
@@ -158,13 +161,13 @@
   let translatedError = $derived(firstError ? translateError(firstError) : '');
 </script>
 
-{#if entry.type === 'boolean'}
+{#if type === 'boolean'}
   <Switch
     checked={value === 'true'}
     onCheckedChange={handleBooleanChange}
-    data-testid={`config-input-boolean-${entry.key}`}
+    data-testid={`config-input-boolean-${fieldKey}`}
   />
-{:else if entry.type === 'badge'}
+{:else if type === 'badge'}
   <div class="w-full">
     <ComboSelect
       mode="single"
@@ -176,13 +179,13 @@
       isLabelTranslated
       aria-invalid={ariaInvalid}
       placeholder={$t('common.selectValue')}
-      data-testid={`config-input-badge-${entry.key}`}
+      data-testid={`config-input-badge-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'list'}
+{:else if type === 'list'}
   <div class="w-full">
     <ComboSelect
       mode="single"
@@ -196,13 +199,13 @@
       placeholder={$t('common.selectValue')}
       disabled={listLoading}
       loading={listLoading}
-      data-testid={`config-input-list-${entry.key}`}
+      data-testid={`config-input-list-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'integer' || entry.type === 'number'}
+{:else if type === 'integer' || type === 'number'}
   <div class="w-full">
     <Input
       type="number"
@@ -210,13 +213,13 @@
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
-      data-testid={`config-input-number-${entry.key}`}
+      data-testid={`config-input-number-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'date'}
+{:else if type === 'date'}
   <div class="w-full">
     <DateWheelPicker
       bind:value={localValue}
@@ -237,7 +240,7 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'datetime'}
+{:else if type === 'datetime'}
   <div class="w-full">
     <DateWheelPicker
       bind:value={localValue}
@@ -258,7 +261,7 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'time'}
+{:else if type === 'time'}
   <div class="w-full">
     <Input
       type="time"
@@ -266,20 +269,20 @@
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
-      data-testid={`config-input-time-${entry.key}`}
+      data-testid={`config-input-time-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'secret'}
+{:else if type === 'secret'}
   <div class="w-full">
     <Password.Root class="w-full">
       <Password.Input
         bind:value={localValue}
         onblur={handleBlur}
         class="w-full"
-        data-testid={`config-input-secret-${entry.key}`}
+        data-testid={`config-input-secret-${fieldKey}`}
       >
         <Password.ToggleVisibility />
       </Password.Input>
@@ -288,7 +291,7 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'url'}
+{:else if type === 'url'}
   <div class="w-full">
     <Input
       type="url"
@@ -296,20 +299,20 @@
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
-      data-testid={`config-input-url-${entry.key}`}
+      data-testid={`config-input-url-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'text' || entry.type === 'json'}
+{:else if type === 'text' || type === 'json'}
   <div class="w-full">
     <Textarea
       bind:value={localValue}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full min-h-[80px]"
-      data-testid={`config-input-text-${entry.key}`}
+      data-testid={`config-input-text-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
@@ -323,7 +326,7 @@
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
-      data-testid={`config-input-string-${entry.key}`}
+      data-testid={`config-input-string-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>

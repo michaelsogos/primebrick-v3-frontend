@@ -675,11 +675,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             checked={globalConnector === 'OR'}
             onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
             aria-label={$t('entities.list.connector')}
-          >
-            {#snippet thumbIcons({ checked })}
-              <span class="size-4 flex items-center justify-center rounded-full {checked ? 'bg-amber-200/85 dark:bg-amber-900/55' : 'bg-sky-200/80 dark:bg-sky-900/55'}"></span>
-            {/snippet}
-          </Switch>
+          />
           <span class="text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
             {$t('entities.list.atLeastOneCriteria')}
           </span>

@@ -150,7 +150,7 @@
 
   <!-- Center (4/12): dynamic input -->
   <div class="col-span-4 flex items-center justify-center">
-    <ConfigValueInput {entry} {value} {errors} {onChange} />
+    <ConfigValueInput type={entry.type} type_config={entry.type_config} fieldKey={entry.key} {value} {errors} {onChange} />
   </div>
 
   <!-- Right (2/12): undo (if tainted) + delete (always, disabled if reserved) -->

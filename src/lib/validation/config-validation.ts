@@ -46,13 +46,19 @@ function extractValidation(type_config?: string | null): ConfigValidation | null
 }
 
 /**
- * Build a Zod schema for a single config entry based on its type and validation rules.
+ * Build a Zod schema for a config value based on its type and validation rules.
+ *
+ * Extracted from buildEntrySchema for reuse in the create page's superRefine,
+ * where only `type` and `type_config` are known (no full ConfigEntry object).
  *
  * For `secret` type: empty string is valid (means "leave unchanged").
  * For other types: if `required: true`, empty string is invalid.
  */
-function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
-  const validation = extractValidation(entry.type_config);
+export function buildConfigValueSchema(
+  type: ConfigEntryType,
+  type_config?: string | null,
+): z.ZodTypeAny {
+  const validation = extractValidation(type_config);
 
   // Base schema: all config values are strings (DB stores everything as text)
   let schema: z.ZodString = z.string();
@@ -64,13 +70,13 @@ function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
   }
 
   // Type-specific base validation
-  if (entry.type === 'integer') {
+  if (type === 'integer') {
     schema = schema.regex(/^-?\d+$/, { message: 'validation.invalidInteger' });
-  } else if (entry.type === 'number') {
+  } else if (type === 'number') {
     schema = schema.regex(/^-?\d*\.?\d+$/, { message: 'validation.invalidNumber' });
-  } else if (entry.type === 'boolean') {
+  } else if (type === 'boolean') {
     schema = schema.regex(/^(true|false)$/, { message: 'validation.invalidBoolean' });
-  } else if (entry.type === 'url') {
+  } else if (type === 'url') {
     schema = schema.refine((val) => {
       if (!val) return true; // required handled above
       try {
@@ -80,7 +86,7 @@ function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
         return false;
       }
     }, { message: 'validation.invalidUrl' });
-  } else if (entry.type === 'json') {
+  } else if (type === 'json') {
     schema = schema.refine((val) => {
       if (!val) return true;
       try {
@@ -101,7 +107,7 @@ function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
       const minVal = rules.min.value;
       const minKey = rules.min.error_label_key;
       const minMsg = `${minKey}|{"min": ${minVal}}`;
-      if (entry.type === 'integer' || entry.type === 'number') {
+      if (type === 'integer' || type === 'number') {
         schema = schema.refine((val) => {
           if (!val) return true;
           return Number(val) >= minVal;
@@ -116,7 +122,7 @@ function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
       const maxVal = rules.max.value;
       const maxKey = rules.max.error_label_key;
       const maxMsg = `${maxKey}|{"max": ${maxVal}}`;
-      if (entry.type === 'integer' || entry.type === 'number') {
+      if (type === 'integer' || type === 'number') {
         schema = schema.refine((val) => {
           if (!val) return true;
           return Number(val) <= maxVal;
@@ -170,6 +176,14 @@ function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
   }
 
   return schema;
+}
+
+/**
+ * Build a Zod schema for a single config entry based on its type and validation rules.
+ * Delegates to buildConfigValueSchema with the entry's type and type_config.
+ */
+function buildEntrySchema(entry: ConfigEntry): z.ZodTypeAny {
+  return buildConfigValueSchema(entry.type, entry.type_config);
 }
 
 /**

@@ -25,8 +25,10 @@
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { buildConfigValueSchema } from '$lib/validation/config-validation';
   import type { ConfigEntryType } from '$lib/api-types';
   import { pushNotification } from '$lib/errors/app-errors';
+  import ConfigValueInput from '$lib/components/config-list/ConfigValueInput.svelte';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
@@ -72,6 +74,24 @@
       .default(''),
     reserved: z.boolean()
       .default(false),
+  }).superRefine((data, ctx) => {
+    // Dynamic validation: validate value based on type and type_config.
+    // Same pattern as users/create superRefine for password policy.
+    // buildConfigValueSchema reads type_config.validation at validation time.
+    const valueSchema = buildConfigValueSchema(
+      data.type as ConfigEntryType,
+      data.type_config || null,
+    );
+    const result = valueSchema.safeParse(data.value);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['value'],
+          message: issue.message,
+        });
+      }
+    }
   });
 
   type CreateForm = z.infer<typeof createSchema>;
@@ -164,6 +184,15 @@
     $form.type = Array.isArray(value) ? value[0] ?? '' : value;
   }
 
+  // Extract SuperForms errors for the value field — ConfigValueInput expects string[]
+  let valueErrors = $derived(
+    $errors?.value
+      ? Array.isArray($errors.value)
+        ? $errors.value.map(String)
+        : [String($errors.value)]
+      : [],
+  );
+
   let effectiveCanSave = $derived(canSave && !keyExistsError && !keyChecking);
 </script>
 
@@ -253,11 +282,12 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>{$t('shell.settings.security.create.value')}</FormLabel>
-                    <TextInput
-                      {...props}
+                    <ConfigValueInput
+                      type={$form.type as ConfigEntryType}
+                      type_config={$form.type_config || null}
+                      fieldKey="create"
                       bind:value={$form.value}
-                      placeholder={$t('shell.settings.security.create.valuePlaceholder')}
-                      data-testid="config-create-value"
+                      errors={valueErrors}
                     />
                     <TranslatedFormFieldErrors />
                   </div>
