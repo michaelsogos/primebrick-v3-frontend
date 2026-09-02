@@ -80,6 +80,7 @@
     "@fontsource-variable/inter": "5.2.8",
     "@microsoft/fetch-event-source": "2.0.1",
     "class-variance-authority": "0.7.1",
+    "countries-list": "3.4.1",
     "dompurify": "3.4.12",
     "flag-icons": "7.5.0",
     "formsnap": "2.0.1",

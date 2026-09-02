@@ -7,7 +7,9 @@
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import type { ConfigEntryType } from '$lib/api-types';
+  import { currencySymbol } from '$lib/currency';
 
   let {
     type,
@@ -16,28 +18,33 @@
     value = $bindable(''),
     errors = [],
     onChange,
+    onTypeConfigChange,
   }: {
     type: ConfigEntryType;
     type_config?: string | null;
     fieldKey?: string;
-    value: string;
+    value: string | bigint | number;
     errors?: string[];
-    onChange?: (value: string) => void;
+    onChange?: (value: string | bigint | number) => void;
+    /** Called when the user changes the currency via the currency selection sheet. */
+    onTypeConfigChange?: (typeConfig: string) => void;
   } = $props();
 
   // Local editing state — synced from prop, used for bind:value in inputs.
   // The parent owns the authoritative form state (ConfigList via taint tracking,
   // or SuperForms via $form.value in the create page).
+  // For bigint/number types, the BE sends native types; we convert to string
+  // for display in text inputs, and convert back to native on change.
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
-  let localValue = $state(value);
+  let localValue = $state<string>(String(value));
 
   // Sync local value when the prop changes (e.g. after bulk save reset, or
   // when SuperForms resets the form). Supports both bind:value and value+onChange modes.
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
-  let lastValue = $state(value);
+  let lastValue = $state<string | bigint | number>(value);
   $effect(() => {
     if (value !== lastValue) {
-      localValue = value;
+      localValue = String(value);
       lastValue = value;
     }
   });
@@ -81,6 +88,38 @@
   let listOptions = $state<Record<string, string>[]>([]);
   let listLoading = $state(false);
 
+  // Money: extract currency from type_config and derive symbol
+  let moneyCurrency = $derived.by<string>(() => {
+    if (type !== 'money' || !type_config) return 'EUR';
+    try {
+      const config = JSON.parse(type_config) as { currency?: string };
+      return config.currency ?? 'EUR';
+    } catch {
+      return 'EUR';
+    }
+  });
+
+  let moneyCurrencySymbol = $derived.by<string>(() => {
+    if (type !== 'money') return '';
+    return currencySymbol(moneyCurrency);
+  });
+
+  // Handle currency change from the currency selection sheet.
+  // Updates type_config JSON with the new currency code and notifies the parent.
+  function handleCurrencyChange(code: string) {
+    if (!onTypeConfigChange) return;
+    let config: Record<string, unknown> = {};
+    if (type_config) {
+      try { config = JSON.parse(type_config) as Record<string, unknown>; } catch { /* start fresh */ }
+    }
+    config.currency = code;
+    onTypeConfigChange(JSON.stringify(config));
+  }
+
+  // String representation of value for display in select/input components
+  // that expect string (ComboSelect, Switch, etc.)
+  let stringValue = $derived(String(value ?? ''));
+
   // Load list options when the entry is a list type
   $effect(() => {
     if (type !== 'list' || !listConfig?.api_url) return;
@@ -104,11 +143,20 @@
   // Notify parent of value changes — works for both bind:value and onChange modes.
   // Writes to `value` (the bindable) for bind:value mode, and calls `onChange`
   // if provided for the value+onChange mode.
+  // For bigint/number/money types, converts the string display value to the
+  // native JS type before notifying the parent.
   function notifyChange(newValue: string) {
-    if (newValue !== lastValue) {
-      lastValue = newValue;
-      value = newValue;
-      onChange?.(newValue);
+    let nativeValue: string | bigint | number = newValue;
+    if (type === 'bigint' && newValue !== '') {
+      try { nativeValue = BigInt(newValue); } catch { /* keep as string */ }
+    } else if ((type === 'number' || type === 'money') && newValue !== '') {
+      const n = Number(newValue);
+      if (!isNaN(n)) nativeValue = n;
+    }
+    if (nativeValue !== lastValue) {
+      lastValue = nativeValue;
+      value = nativeValue;
+      onChange?.(nativeValue);
     }
   }
 
@@ -133,12 +181,17 @@
     notifyChange(v);
   }
 
-  // Text/number/url/date: notify on blur
+  // Text-like inputs: notify on every keystroke so SuperForms validates
+  // in real-time (matching how the KEY field works with bind:value={$form.key}).
+  // Without this, $form.value only updates on blur, and SuperForms' onChange
+  // callback never fires during typing — validation appears broken.
+  function handleInput() {
+    notifyChange(localValue);
+  }
+
+  // Also notify on blur (catches programmatic changes, DateWheelPicker button, etc.)
   function handleBlur() {
-    // Ensure string — Svelte's bind:value with type="number" converts to number,
-    // but the DAL stores everything as string and validation expects string.
-    const v = typeof localValue === 'number' ? String(localValue) : localValue;
-    notifyChange(v);
+    notifyChange(localValue);
   }
 
   // First error message for this field — uses the same `key|jsonParams` format
@@ -163,7 +216,7 @@
 
 {#if type === 'boolean'}
   <Switch
-    checked={value === 'true'}
+    checked={stringValue === 'true'}
     onCheckedChange={handleBooleanChange}
     data-testid={`config-input-boolean-${fieldKey}`}
   />
@@ -171,7 +224,7 @@
   <div class="w-full">
     <ComboSelect
       mode="single"
-      value={value}
+      value={stringValue}
       onChange={handleBadgeChange}
       options={badgeComboOptions}
       valueField="value"
@@ -189,7 +242,7 @@
   <div class="w-full">
     <ComboSelect
       mode="single"
-      value={value}
+      value={stringValue}
       onChange={handleListChange}
       options={listOptions}
       valueField={listConfig?.value_field ?? 'value'}
@@ -205,20 +258,27 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if type === 'integer' || type === 'number'}
-  <div class="w-full">
-    <Input
-      type="number"
-      bind:value={localValue}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-number-${fieldKey}`}
-    />
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
+{:else if type === 'bigint' || type === 'number'}
+  <NumericInput
+    type={type as 'bigint' | 'number' | 'money'}
+    {type_config}
+    bind:value
+    errors={errors}
+    {onChange}
+    data-testid={`config-input-number-${fieldKey}`}
+  />
+{:else if type === 'money'}
+  <NumericInput
+    type="money"
+    {type_config}
+    bind:value
+    errors={errors}
+    {onChange}
+    currencySymbol={moneyCurrencySymbol}
+    currencyCode={moneyCurrency}
+    onCurrencyChange={onTypeConfigChange ? handleCurrencyChange : undefined}
+    data-testid={`config-input-money-${fieldKey}`}
+  />
 {:else if type === 'date'}
   <div class="w-full">
     <DateWheelPicker
@@ -266,6 +326,7 @@
     <Input
       type="time"
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
@@ -280,6 +341,7 @@
     <Password.Root class="w-full">
       <Password.Input
         bind:value={localValue}
+        oninput={handleInput}
         onblur={handleBlur}
         class="w-full"
         data-testid={`config-input-secret-${fieldKey}`}
@@ -296,6 +358,7 @@
     <Input
       type="url"
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
@@ -309,6 +372,7 @@
   <div class="w-full">
     <Textarea
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full min-h-[80px]"
@@ -323,6 +387,7 @@
     <Input
       type="text"
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"

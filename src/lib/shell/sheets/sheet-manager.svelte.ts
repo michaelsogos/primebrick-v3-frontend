@@ -7,7 +7,8 @@ export type SheetPanelId =
   | 'entity.searchIn'
   | 'entity.columns'
   | 'entity.filters'
-  | 'entity.versionHistory';
+  | 'entity.versionHistory'
+  | 'config.currencySelect';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -38,6 +39,10 @@ export type SheetPanelPropsMap = {
     translationKey?: string;
     rowUuid: string;
     columns?: any[];
+  };
+  'config.currencySelect': {
+    currentCurrency: string;
+    onCurrencyChange: (code: string) => void;
   };
 };
 

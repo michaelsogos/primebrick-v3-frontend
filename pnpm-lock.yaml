@@ -17,6 +17,9 @@ importers:
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
+      countries-list:
+        specifier: 3.4.1
+        version: 3.4.1
       dompurify:
         specifier: 3.4.12
         version: 3.4.12
@@ -1093,6 +1096,9 @@ packages:
 
   core-js@3.49.0:
     resolution: {integrity: sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg==}
+
+  countries-list@3.4.1:
+    resolution: {integrity: sha512-sKLGAZD5EAdzQwQ19vOp/9u33MTjmZ0CkdXPYtp/An6cyIlJ/E8TwGf2FcPe1AnzHO+h7nbTfoHyXIi58Hpa+Q==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -3606,6 +3612,8 @@ snapshots:
 
   core-js@3.49.0:
     optional: true
+
+  countries-list@3.4.1: {}
 
   cross-spawn@7.0.6:
     dependencies:

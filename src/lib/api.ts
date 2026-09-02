@@ -17,6 +17,7 @@ import {
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building } from '$app/environment';
+import { extJsonStringify } from '$lib/api-ext';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
@@ -371,11 +372,11 @@ export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry
   return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, uuid: string, value: string): Promise<void> {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number): Promise<void> {
   const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value }),
+    body: extJsonStringify({ value }),
   });
   if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }
@@ -391,7 +392,7 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
 
 export async function createConfigEntry(params: {
   key: string;
-  value: string;
+  value: string | bigint | number;
   type: string;
   type_config?: string | null;
   label_key?: string | null;
@@ -402,29 +403,39 @@ export async function createConfigEntry(params: {
   const res = await apiFetch('/api/v1/entities/config_entries', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: extJsonStringify(params),
   });
   if (!res.ok) throw new Error(`Config entry create failed (${res.status})`);
   const data = (await res.json()) as ConfigEntry;
   return data;
 }
 
-export async function updateConfigEntry(uuid: string, value: string, version: number): Promise<void> {
+export async function updateConfigEntry(
+  uuid: string,
+  patch: { value?: string | bigint | number; type?: string; type_config?: string | null },
+  version: number,
+): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value, version }),
+    body: extJsonStringify({ ...patch, version }),
   });
   if (!res.ok) throw new Error(`Config entry update failed (${res.status})`);
 }
 
 export async function bulkUpdateConfigEntries(
-  updates: Array<{ uuid: string; value: string; version: number }>,
+  updates: Array<{
+    uuid: string;
+    value?: string | bigint | number;
+    type?: string;
+    type_config?: string | null;
+    version: number;
+  }>,
 ): Promise<number> {
   const res = await apiFetch('/api/v1/entities/config_entries/bulk-update', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ updates }),
+    body: extJsonStringify({ updates }),
   });
   if (!res.ok) throw new Error(`Config entries bulk update failed (${res.status})`);
   const data = (await res.json()) as { success: boolean; updated: number };

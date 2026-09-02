@@ -291,9 +291,13 @@
     "passwordPolicyLetterNumberSpecial": "Password must be 8-64 characters with at least one letter, one number, and one special character (* - _ . # @ ! | ? ^ :)",
     "passwordPolicyMixedCaseSpecial": "Password must be 8-64 characters with at least one lowercase, one uppercase, one number, and one special character (* - _ . # @ ! | ? ^ :)",
     "invalidInteger": "Must be a valid integer",
+    "invalidBigint": "Must be a valid integer",
+    "invalidBigintUnsigned": "Must be a positive integer (no sign)",
     "invalidNumber": "Must be a valid number",
+    "invalidNumberUnsigned": "Must be a positive number (no sign)",
     "invalidBoolean": "Must be true or false",
-    "invalidJson": "Must be valid JSON"
+    "invalidJson": "Must be valid JSON",
+    "unsigned": "Value must be zero or positive"
   },
   "roles": {
     "administrators": "Administrator",
@@ -305,6 +309,11 @@
     "notValidRole": "Not valid role"
   },
   "config": {
+    "currencySelect": {
+      "title": "Select Currency",
+      "searchPlaceholder": "Search currency...",
+      "noResults": "No currencies found"
+    },
     "auth": {
       "idp_endpoint": {
         "label": "IDP Endpoint",

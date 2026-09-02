@@ -25,9 +25,9 @@
     entry: ConfigEntry;
     selected?: boolean;
     tainted?: boolean;
-    value: string;
+    value: string | bigint | number;
     errors?: string[];
-    onChange: (value: string) => void;
+    onChange: (value: string | bigint | number) => void;
     onRevert: () => void;
     onDelete: (entry: ConfigEntry) => void;
     onToggleSelect: (entry: ConfigEntry, selected: boolean) => void;

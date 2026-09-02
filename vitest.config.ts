@@ -4,6 +4,15 @@ import { svelteTesting } from "@testing-library/svelte/vite";
 
 export default defineConfig({
   plugins: [sveltekit(), svelteTesting()],
+  server: {
+    fs: {
+      // Allow Vite to serve files from the workspace root (pnpm hoists
+      // @testing-library/svelte to the workspace node_modules, which is
+      // outside the project root). Without this, the svelteTesting() plugin's
+      // auto-cleanup setup file fails with "Cannot find module '/@fs/...'".
+      allow: ['..'],
+    },
+  },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.ts"],

@@ -32,9 +32,9 @@
 
   // ─── Form state with taint tracking ──────────────────────────────────────
   // Current form values keyed by entry UUID
-  let formValues = $state<Record<string, string>>({});
+  let formValues = $state<Record<string, string | number | bigint>>({});
   // Snapshot of original values for taint comparison
-  let originalValues = $state<Record<string, string>>({});
+  let originalValues = $state<Record<string, string | number | bigint>>({});
   // Validation errors keyed by entry UUID
   let formErrors = $state<Record<string, string[]>>({});
   // Dynamic Zod schema built from entries' type_config.validation
@@ -61,7 +61,8 @@
     for (const entry of entries) {
       const orig = originalValues[entry.uuid] ?? '';
       const curr = formValues[entry.uuid] ?? '';
-      if (orig !== curr) {
+      // Use String() comparison to handle bigint/number/string equality
+      if (String(orig) !== String(curr)) {
         tainted.add(entry.uuid);
       }
     }
@@ -98,7 +99,7 @@
   }
 
   // Called by ConfigValueInput when the user edits a field
-  function handleFieldChange(uuid: string, value: string) {
+  function handleFieldChange(uuid: string, value: string | bigint | number) {
     formValues = { ...formValues, [uuid]: value };
     validateField(uuid);
   }

@@ -291,9 +291,13 @@
     "passwordPolicyLetterNumberSpecial": "La password deve avere 8-64 caratteri con almeno una lettera, un numero e un carattere speciale (* - _ . # @ ! | ? ^ :)",
     "passwordPolicyMixedCaseSpecial": "La password deve avere 8-64 caratteri con almeno una minuscola, una maiuscola, un numero e un carattere speciale (* - _ . # @ ! | ? ^ :)",
     "invalidInteger": "Deve essere un numero intero valido",
+    "invalidBigint": "Deve essere un numero intero valido",
+    "invalidBigintUnsigned": "Deve essere un numero intero positivo (senza segno)",
     "invalidNumber": "Deve essere un numero valido",
+    "invalidNumberUnsigned": "Deve essere un numero positivo (senza segno)",
     "invalidBoolean": "Deve essere true o false",
-    "invalidJson": "Deve essere un JSON valido"
+    "invalidJson": "Deve essere un JSON valido",
+    "unsigned": "Il valore deve essere zero o positivo"
   },
   "roles": {
     "administrators": "Amministratore",
@@ -305,6 +309,11 @@
     "notValidRole": "Ruolo non valido"
   },
   "config": {
+    "currencySelect": {
+      "title": "Seleziona Valuta",
+      "searchPlaceholder": "Cerca valuta...",
+      "noResults": "Nessuna valuta trovata"
+    },
     "auth": {
       "idp_endpoint": {
         "label": "Endpoint IDP",

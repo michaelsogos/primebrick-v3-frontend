@@ -36,6 +36,19 @@ export function extJsonParse<T = unknown>(text: string): T {
 }
 
 /**
+ * Serialize a value to an Ext-JSON string.
+ * BigInt values are serialized as JSON numbers (e.g. 42n → "42").
+ * Floats are serialized as JSON numbers (e.g. 3.14 → "3.14").
+ *
+ * Use this for request bodies that contain bigint values (e.g. config
+ * values for the `bigint` config type). The BE's ext-json body parser
+ * will parse them back to native `bigint`.
+ */
+export function extJsonStringify(data: unknown): string {
+  return jsonBigInstance.stringify(data);
+}
+
+/**
  * Fetch with Ext-JSON parsing.
  * Same as `apiFetch` but parses the response body with `extJsonParse` instead of
  * `res.json()`. Use this when the response contains bigint values (id, total, etc.).

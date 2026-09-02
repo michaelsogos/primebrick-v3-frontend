@@ -21,6 +21,8 @@ import type { ConfigEntry, ConfigEntryType } from '$lib/api-types';
 interface ConfigValidation {
   required: boolean;
   required_error_label_key?: string;
+  /** If true, numeric values are unsigned (no sign chars, default min=0). */
+  unsigned?: boolean;
   rules: {
     min?: { value: number; error_label_key: string };
     max?: { value: number; error_label_key: string };
@@ -70,12 +72,20 @@ export function buildConfigValueSchema(
   }
 
   // Type-specific base validation
-  if (type === 'integer') {
-    schema = schema.regex(/^-?\d+$/, { message: 'validation.invalidInteger' });
-  } else if (type === 'number') {
-    schema = schema.regex(/^-?\d*\.?\d+$/, { message: 'validation.invalidNumber' });
+  // IMPORTANT: type checks skip empty values — empty is handled by the
+  // required check above. This prevents double errors (required + invalidType)
+  // and ensures empty values only trigger "required", not "invalid format".
+  const isUnsigned = validation?.unsigned === true;
+  if (type === 'bigint') {
+    const bigintRegex = isUnsigned ? /^\d+$/ : /^-?\d+$/;
+    const bigintMsg = isUnsigned ? 'validation.invalidBigintUnsigned' : 'validation.invalidBigint';
+    schema = schema.refine((val) => val === '' || bigintRegex.test(val), { message: bigintMsg });
+  } else if (type === 'number' || type === 'money') {
+    const numRegex = isUnsigned ? /^\d*\.?\d+$/ : /^-?\d*\.?\d+$/;
+    const numMsg = isUnsigned ? 'validation.invalidNumberUnsigned' : 'validation.invalidNumber';
+    schema = schema.refine((val) => val === '' || numRegex.test(val), { message: numMsg });
   } else if (type === 'boolean') {
-    schema = schema.regex(/^(true|false)$/, { message: 'validation.invalidBoolean' });
+    schema = schema.refine((val) => val === '' || /^(true|false)$/.test(val), { message: 'validation.invalidBoolean' });
   } else if (type === 'url') {
     schema = schema.refine((val) => {
       if (!val) return true; // required handled above
@@ -102,12 +112,12 @@ export function buildConfigValueSchema(
   if (validation?.rules) {
     const rules = validation.rules;
 
-    // min: for strings = length, for integer/number = numeric value
+    // min: for strings = length, for bigint/number/money = numeric value
     if (rules.min) {
       const minVal = rules.min.value;
       const minKey = rules.min.error_label_key;
       const minMsg = `${minKey}|{"min": ${minVal}}`;
-      if (type === 'integer' || type === 'number') {
+      if (type === 'bigint' || type === 'number' || type === 'money') {
         schema = schema.refine((val) => {
           if (!val) return true;
           return Number(val) >= minVal;
@@ -115,14 +125,20 @@ export function buildConfigValueSchema(
       } else {
         schema = schema.min(minVal, { message: minMsg });
       }
+    } else if (isUnsigned && (type === 'bigint' || type === 'number' || type === 'money')) {
+      // No explicit min rule, but unsigned → default min=0
+      schema = schema.refine((val) => {
+        if (!val) return true;
+        return Number(val) >= 0;
+      }, { message: 'validation.unsigned' });
     }
 
-    // max: for strings = length, for integer/number = numeric value
+    // max: for strings = length, for bigint/number/money = numeric value
     if (rules.max) {
       const maxVal = rules.max.value;
       const maxKey = rules.max.error_label_key;
       const maxMsg = `${maxKey}|{"max": ${maxVal}}`;
-      if (type === 'integer' || type === 'number') {
+      if (type === 'bigint' || type === 'number' || type === 'money') {
         schema = schema.refine((val) => {
           if (!val) return true;
           return Number(val) <= maxVal;
@@ -204,8 +220,8 @@ export function buildConfigFormSchema(entries: ConfigEntry[]): z.ZodObject<Recor
  * Build initial form data from config entries.
  * Returns a record of { [uuid]: value } for superForm initialization.
  */
-export function buildConfigFormInitialValues(entries: ConfigEntry[]): Record<string, string> {
-  const data: Record<string, string> = {};
+export function buildConfigFormInitialValues(entries: ConfigEntry[]): Record<string, string | bigint | number> {
+  const data: Record<string, string | bigint | number> = {};
   for (const entry of entries) {
     data[entry.uuid] = entry.value ?? '';
   }

@@ -37,8 +37,9 @@
     { value: 'string', label: 'String' },
     { value: 'text', label: 'Text' },
     { value: 'boolean', label: 'Boolean' },
-    { value: 'integer', label: 'Integer' },
+    { value: 'bigint', label: 'BigInt' },
     { value: 'number', label: 'Number' },
+    { value: 'money', label: 'Money' },
     { value: 'badge', label: 'Badge' },
     { value: 'list', label: 'List' },
     { value: 'url', label: 'URL' },
@@ -102,6 +103,16 @@
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
+    async onChange() {
+      // Force ALL errors to display on every change, regardless of taint.
+      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
+      // bypassing all taint/event/previous-error checks.
+      // This is required because the value field's validation depends on type
+      // and type_config via root-level superRefine — field-level validation
+      // alone (z.string().default('')) won't catch required/type errors.
+      // Same pattern as users/create page.
+      await superFormObj.validateForm({ update: true, focusOnError: false });
+    },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
@@ -288,8 +299,8 @@
                       fieldKey="create"
                       bind:value={$form.value}
                       errors={valueErrors}
+                      onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
                     />
-                    <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
               </FormControl>

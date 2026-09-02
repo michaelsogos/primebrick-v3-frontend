@@ -78,13 +78,18 @@ export type ModuleConfigEntry = {
 /**
  * Config value type vocabulary — drives FE widget selection.
  * Mirrors the SDK `ConfigType` and the BE `type` column.
+ *
+ * - `bigint`: integer values backed by JS `BigInt` (renamed from `integer`)
+ * - `number`: decimal/float values backed by JS `Number`
+ * - `money`:  numeric amount with currency metadata in `type_config`
  */
 export type ConfigEntryType =
   | 'string'
   | 'text'
   | 'boolean'
-  | 'integer'
+  | 'bigint'
   | 'number'
+  | 'money'
   | 'badge'
   | 'list'
   | 'url'
@@ -95,15 +100,30 @@ export type ConfigEntryType =
   | 'time';
 
 /**
+ * Money type_config JSON shape — stored as a JSON string in `type_config`.
+ * Example: `{"currency":"EUR"}`
+ */
+export type ConfigTypeMoneyConfig = {
+  currency?: string;
+};
+
+/**
  * Standard Config Table entry — returned by `GET /api/v1/entities/config_entries/*`.
- * The `value` is always a string (or null) at the DB level; the FE coerces
- * to the appropriate type for display and back to string before saving.
- * Secret values are masked to `null` by the BE.
+ *
+ * The BE coerces `value` to its native JS type before serialization:
+ *   - `bigint` → native `bigint` (preserved by ext-json response parsing)
+ *   - `number` → native `number`
+ *   - `money`  → native `number` (amount only; currency is in `type_config`)
+ *   - `secret` → `null` (masked by BE)
+ *   - other    → `string`
+ *
+ * When sending updates back, the FE sends the native type (bigint/number/string)
+ * and the BE serializes it to the DB string form via `serializeConfigValue`.
  */
 export type ConfigEntry = {
   uuid: string;
   key: string;
-  value: string | null;
+  value: string | bigint | number | null;
   type: ConfigEntryType;
   type_config?: string | null;
   label_key?: string | null;
