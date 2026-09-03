@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
+  import { tick } from "svelte";
   import Input from "$lib/components/ui/input/input.svelte";
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
   import { useNumericInput } from "$lib/composables/useNumericInput.svelte";
@@ -23,10 +24,10 @@
       type_config?: string | null;
       /**
        * Bindable value — accepts string | bigint | number.
-       * The composable converts to/from a local string for the input element.
+       * The composable converts to/from a local canonical string for the input element.
        */
       value?: string | bigint | number;
-      /** Optional callback fired on blur with the native typed value. */
+      /** Optional callback fired on blur with the canonical string value. */
       onChange?: (value: string | bigint | number) => void;
       /** Errors array (i18n keys in `key|jsonParams` format) — renders below input. */
       errors?: string[];
@@ -47,6 +48,11 @@
        * If not provided, the CTA button is hidden (display-only symbol).
        */
       onCurrencyChange?: (code: string) => void;
+      /**
+       * BCP 47 language tag (e.g. 'it-IT', 'en-GB') — drives locale-aware
+       * thousand separators and decimal separator in the display value.
+       */
+      lang?: string;
     }
   >;
 
@@ -60,6 +66,7 @@
     currencySymbol,
     currencyCode,
     onCurrencyChange,
+    lang = 'en-GB',
     class: className,
     ...restProps
   }: Props = $props();
@@ -72,6 +79,7 @@
     type: () => type,
     type_config: () => type_config,
     value: () => value,
+    lang: () => lang,
   });
 
   // Whether to render the InputGroup (money with currency adornment) or plain Input.
@@ -90,22 +98,32 @@
     }
   });
 
-  // oninput — filter invalid characters in real-time
-  function handleInput() {
-    num.filterInput();
+  // oninput — parse display → canonical, filter invalid chars, restore cursor
+  async function handleInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const oldDisplay = input.value;
+    const cursorPos = input.selectionStart ?? 0;
+    num.filterInput(oldDisplay);
+    // Wait for Svelte to re-render displayValue, then restore cursor
+    await tick();
+    const newDisplay = num.displayValue;
+    const newPos = num.computeCursorPosition(cursorPos, oldDisplay, newDisplay);
+    if (inputRef) {
+      inputRef.setSelectionRange(newPos, newPos);
+    }
   }
 
-  // onblur — normalize leading zeros, then notify parent with the string value.
+  // onblur — normalize leading zeros, then notify parent with the canonical string value.
   // The form value stays as a string for Zod validation (z.string()).
   // Native type coercion (bigint/number) happens at the SDK/BE boundary,
   // not during form editing — the DB stores everything as text.
   function handleBlur() {
     num.normalize();
-    const str = num.localValue;
-    if (str !== lastValue) {
-      lastValue = str;
-      value = str;
-      onChange?.(str);
+    const canonical = num.rawValue;
+    if (canonical !== lastValue) {
+      lastValue = canonical;
+      value = canonical;
+      onChange?.(canonical);
     }
   }
 
@@ -156,7 +174,7 @@
         bind:ref={inputRef}
         inputmode={num.inputMode}
         min={num.effectiveMin ?? undefined}
-        bind:value={num.localValue}
+        value={num.displayValue}
         oninput={handleInput}
         onblur={handleBlur}
         aria-invalid={hasError || restProps["aria-invalid"] === "true" || restProps["aria-invalid"] === true}
@@ -185,12 +203,16 @@
       type="text"
       inputmode={num.inputMode}
       min={num.effectiveMin ?? undefined}
-      bind:value={num.localValue}
+      value={num.displayValue}
       oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={hasError || restProps["aria-invalid"] === "true" || restProps["aria-invalid"] === true}
       class={cn("w-full", className)}
-      {...restProps}
+      data-testid={restProps["data-testid"]}
+      placeholder={restProps.placeholder}
+      disabled={restProps.disabled}
+      id={restProps.id}
+      name={restProps.name}
     />
   {/if}
   {#if translatedError}

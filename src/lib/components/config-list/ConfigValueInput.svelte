@@ -10,6 +10,7 @@
   import { NumericInput } from '$lib/components/ui/numeric-input';
   import type { ConfigEntryType } from '$lib/api-types';
   import { currencySymbol } from '$lib/currency';
+  import { uiLang } from '$lib/i18n/store.svelte';
 
   let {
     type,
@@ -265,6 +266,7 @@
     bind:value
     errors={errors}
     {onChange}
+    lang={$uiLang}
     data-testid={`config-input-number-${fieldKey}`}
   />
 {:else if type === 'money'}
@@ -274,6 +276,7 @@
     bind:value
     errors={errors}
     {onChange}
+    lang={$uiLang}
     currencySymbol={moneyCurrencySymbol}
     currencyCode={moneyCurrency}
     onCurrencyChange={onTypeConfigChange ? handleCurrencyChange : undefined}
