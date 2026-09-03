@@ -294,6 +294,13 @@
     "notValidRole": "Rol no válido"
   },
   "config": {
+    "currencySelect": {
+      "title": "Seleccionar Moneda",
+      "searchPlaceholder": "Buscar moneda...",
+      "noResults": "No se encontraron monedas",
+      "favorites": "Monedas Favoritas",
+      "allCurrencies": "Todas las Monedas"
+    },
     "auth": {
       "idp_endpoint": {
         "label": "Endpoint de IDP",
@@ -492,6 +499,10 @@
           "max": "Debe ser como máximo {max}",
           "required": "Este campo es obligatorio"
         }
+      },
+      "currency_favorites": {
+        "label": "Monedas Favoritas",
+        "description": "Monedas mostradas en la parte superior del selector de moneda. Selecciona las monedas que utilizas con más frecuencia."
       }
     }
   },

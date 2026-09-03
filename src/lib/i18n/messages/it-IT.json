@@ -312,7 +312,9 @@
     "currencySelect": {
       "title": "Seleziona Valuta",
       "searchPlaceholder": "Cerca valuta...",
-      "noResults": "Nessuna valuta trovata"
+      "noResults": "Nessuna valuta trovata",
+      "favorites": "Valute Preferite",
+      "allCurrencies": "Tutte le Valute"
     },
     "auth": {
       "idp_endpoint": {
@@ -512,6 +514,10 @@
           "max": "Deve essere al massimo {max}",
           "required": "Questo campo è obbligatorio"
         }
+      },
+      "currency_favorites": {
+        "label": "Valute Preferite",
+        "description": "Valute mostrate in cima al selettore di valuta. Seleziona le valute che utilizzi più frequentemente."
       }
     }
   },

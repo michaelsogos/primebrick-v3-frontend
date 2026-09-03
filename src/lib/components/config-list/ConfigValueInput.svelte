@@ -9,7 +9,7 @@
   import * as Password from '$lib/components/ui/password';
   import { NumericInput } from '$lib/components/ui/numeric-input';
   import type { ConfigEntryType } from '$lib/api-types';
-  import { currencySymbol } from '$lib/currency';
+  import { currencySymbol, getAllCurrencies } from '$lib/currency';
   import { uiLang } from '$lib/i18n/store.svelte';
 
   let {
@@ -70,14 +70,15 @@
     })),
   );
 
-  // Parse type_config for list type
-  let listConfig = $derived.by<{
+  // Parse type_config for single_select / multi_select types
+  let selectConfig = $derived.by<{
+    values_source?: string;
     api_url?: string;
     api_verb?: string;
     value_field?: string;
     label_field?: string;
   } | null>(() => {
-    if (type !== 'list' || !type_config) return null;
+    if ((type !== 'single_select' && type !== 'multi_select') || !type_config) return null;
     try {
       return JSON.parse(type_config);
     } catch {
@@ -85,9 +86,9 @@
     }
   });
 
-  // List options loaded from BE API
-  let listOptions = $state<Record<string, string>[]>([]);
-  let listLoading = $state(false);
+  // Select options loaded from values_source, BE API, or static values
+  let selectOptions = $state<Record<string, any>[]>([]);
+  let selectLoading = $state(false);
 
   // Money: extract currency from type_config and derive symbol
   let moneyCurrency = $derived.by<string>(() => {
@@ -121,24 +122,41 @@
   // that expect string (ComboSelect, Switch, etc.)
   let stringValue = $derived(String(value ?? ''));
 
-  // Load list options when the entry is a list type
+  // Load select options when the entry is a single_select / multi_select type
   $effect(() => {
-    if (type !== 'list' || !listConfig?.api_url) return;
-    listLoading = true;
-    fetch(listConfig.api_url, { method: listConfig.api_verb ?? 'GET' })
-      .then((res) => res.json())
-      .then((data) => {
-        const arr: Record<string, string>[] = Array.isArray(data)
-          ? data
-          : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
-        listOptions = arr as Record<string, string>[];
-      })
-      .catch(() => {
-        listOptions = [];
-      })
-      .finally(() => {
-        listLoading = false;
-      });
+    if (type !== 'single_select' && type !== 'multi_select') return;
+
+    // 1. values_source: "currencies" → load directly from countries-list (no API)
+    if (selectConfig?.values_source === 'currencies') {
+      selectOptions = getAllCurrencies() as unknown as Record<string, any>[];
+      return;
+    }
+
+    // 2. api_url → fetch from BE API
+    if (selectConfig?.api_url) {
+      selectLoading = true;
+      fetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
+        .then((res) => res.json())
+        .then((data) => {
+          const arr: Record<string, string>[] = Array.isArray(data)
+            ? data
+            : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
+          selectOptions = arr as Record<string, any>[];
+        })
+        .catch(() => {
+          selectOptions = [];
+        })
+        .finally(() => {
+          selectLoading = false;
+        });
+    }
+  });
+
+  // For multi_select: convert comma-separated DB string → string[] for ComboSelect
+  let multiSelectValue = $derived.by<string[]>(() => {
+    if (type !== 'multi_select') return [];
+    const v = String(value ?? '');
+    return v.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
   });
 
   // Notify parent of value changes — works for both bind:value and onChange modes.
@@ -175,11 +193,19 @@
     notifyChange(v);
   }
 
-  // List: change immediately
-  function handleListChange(val: string | string[]) {
+  // single_select: change immediately
+  function handleSingleSelectChange(val: string | string[]) {
     const v = Array.isArray(val) ? val[0] ?? '' : val;
     localValue = v;
     notifyChange(v);
+  }
+
+  // multi_select: convert string[] → comma-separated string for DB storage
+  function handleMultiSelectChange(val: string | string[]) {
+    const arr = Array.isArray(val) ? val : [val];
+    const csv = arr.join(',');
+    localValue = csv;
+    notifyChange(csv);
   }
 
   // Text-like inputs: notify on every keystroke so SuperForms validates
@@ -239,21 +265,41 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if type === 'list'}
+{:else if type === 'single_select'}
   <div class="w-full">
     <ComboSelect
       mode="single"
       value={stringValue}
-      onChange={handleListChange}
-      options={listOptions}
-      valueField={listConfig?.value_field ?? 'value'}
-      labelField={listConfig?.label_field ?? 'label_key'}
+      onChange={handleSingleSelectChange}
+      options={selectOptions}
+      valueField={selectConfig?.value_field ?? 'value'}
+      labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
       placeholder={$t('common.selectValue')}
-      disabled={listLoading}
-      loading={listLoading}
-      data-testid={`config-input-list-${fieldKey}`}
+      disabled={selectLoading}
+      loading={selectLoading}
+      data-testid={`config-input-single-select-${fieldKey}`}
+    />
+    {#if firstError}
+      <p class="text-xs text-destructive mt-1">{translatedError}</p>
+    {/if}
+  </div>
+{:else if type === 'multi_select'}
+  <div class="w-full">
+    <ComboSelect
+      mode="multi"
+      value={multiSelectValue}
+      onChange={handleMultiSelectChange}
+      options={selectOptions}
+      valueField={selectConfig?.value_field ?? 'value'}
+      labelField={selectConfig?.label_field ?? 'label_key'}
+      isLabelTranslated
+      aria-invalid={ariaInvalid}
+      placeholder={$t('common.selectValue')}
+      disabled={selectLoading}
+      loading={selectLoading}
+      data-testid={`config-input-multi-select-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>

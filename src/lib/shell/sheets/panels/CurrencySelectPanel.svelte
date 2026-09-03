@@ -4,6 +4,8 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import { getAllCurrencies } from '$lib/currency';
+  import { fetchConfigEntries } from '$lib/api';
+  import { onMount } from 'svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import Check from '@lucide/svelte/icons/check';
   import Search from '@lucide/svelte/icons/search';
@@ -16,8 +18,18 @@
   let { currentCurrency, onCurrencyChange }: $$Props = $props();
 
   let searchQuery = $state('');
+  let favoriteCodes = $state<string[]>([]);
 
   let allCurrencies = $derived(getAllCurrencies());
+
+  // Favorite currencies — resolved from config codes against the full currency list.
+  // Unknown codes (typos, removed currencies) are silently filtered out.
+  // Preserves the configured order.
+  let favoriteCurrencies = $derived.by(() => {
+    return favoriteCodes
+      .map((code) => allCurrencies.find((c) => c.code === code))
+      .filter((c): c is NonNullable<typeof c> => c !== undefined);
+  });
 
   let filteredCurrencies = $derived.by(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -28,6 +40,29 @@
         c.name.toLowerCase().includes(q) ||
         c.symbol.toLowerCase().includes(q),
     );
+  });
+
+  // When not searching, favorites are shown in a separate section at the top.
+  // The full list below excludes favorites to avoid duplication.
+  let nonFavoriteCurrencies = $derived.by(() => {
+    if (searchQuery) return filteredCurrencies;
+    const favSet = new Set(favoriteCurrencies.map((c) => c.code));
+    return filteredCurrencies.filter((c) => !favSet.has(c.code));
+  });
+
+  onMount(async () => {
+    try {
+      const entries = await fetchConfigEntries();
+      const entry = entries.find((e) => e.key === 'currency_favorites');
+      if (entry?.value) {
+        favoriteCodes = String(entry.value)
+          .split(',')
+          .map((s) => s.trim().toUpperCase())
+          .filter((s) => s.length > 0);
+      }
+    } catch {
+      // Fail silently — no favorites shown, full list still works
+    }
   });
 
   function selectCurrency(code: string) {
@@ -69,7 +104,39 @@
 
   <!-- Currency list -->
   <div class="min-h-0 flex-1 overflow-auto">
-    {#each filteredCurrencies as currency (currency.code)}
+    {#if !searchQuery && favoriteCurrencies.length > 0}
+      <!-- Favorite currencies section -->
+      <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {$t('config.currencySelect.favorites')}
+      </div>
+      {#each favoriteCurrencies as currency (currency.code)}
+        <button
+          type="button"
+          class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+          onclick={() => selectCurrency(currency.code)}
+          data-testid={`currency-select-item-${currency.code}`}
+        >
+          <span class="w-8 text-center font-mono text-base font-semibold text-primary">
+            {currency.symbol}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">{currency.code}</span>
+            <span class="block truncate text-xs text-muted-foreground">{currency.name}</span>
+          </span>
+          {#if currency.code === currentCurrency}
+            <Check class="size-4 text-primary shrink-0" />
+          {/if}
+        </button>
+      {/each}
+      <!-- Separator -->
+      <div class="mx-3 my-2 h-px bg-border"></div>
+      <!-- All currencies section header -->
+      <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {$t('config.currencySelect.allCurrencies')}
+      </div>
+    {/if}
+
+    {#each nonFavoriteCurrencies as currency (currency.code)}
       <button
         type="button"
         class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-accent transition-colors"

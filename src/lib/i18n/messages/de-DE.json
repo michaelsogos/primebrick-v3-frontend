@@ -294,6 +294,13 @@
     "notValidRole": "Ungültige Rolle"
   },
   "config": {
+    "currencySelect": {
+      "title": "Währung Auswählen",
+      "searchPlaceholder": "Währung suchen...",
+      "noResults": "Keine Währungen gefunden",
+      "favorites": "Lieblingswährungen",
+      "allCurrencies": "Alle Währungen"
+    },
     "auth": {
       "idp_endpoint": {
         "label": "IDP-Endpunkt",
@@ -492,6 +499,10 @@
           "max": "Darf höchstens {max} sein",
           "required": "Dieses Feld ist erforderlich"
         }
+      },
+      "currency_favorites": {
+        "label": "Lieblingswährungen",
+        "description": "Währungen, die oben im Währungswähler angezeigt werden. Wählen Sie die Währungen, die Sie am häufigsten verwenden."
       }
     }
   },

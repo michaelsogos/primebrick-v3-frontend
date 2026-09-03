@@ -294,6 +294,13 @@
     "notValidRole": "Rôle non valide"
   },
   "config": {
+    "currencySelect": {
+      "title": "Sélectionner la Devise",
+      "searchPlaceholder": "Rechercher une devise...",
+      "noResults": "Aucune devise trouvée",
+      "favorites": "Devises Favorites",
+      "allCurrencies": "Toutes les Devises"
+    },
     "auth": {
       "idp_endpoint": {
         "label": "Point de terminaison IDP",
@@ -492,6 +499,10 @@
           "max": "Doit être au plus {max}",
           "required": "Ce champ est requis"
         }
+      },
+      "currency_favorites": {
+        "label": "Devises Favorites",
+        "description": "Devises affichées en haut du sélecteur de devise. Sélectionnez les devises que vous utilisez le plus fréquemment."
       }
     }
   },
