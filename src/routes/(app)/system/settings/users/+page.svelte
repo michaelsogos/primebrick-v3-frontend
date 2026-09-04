@@ -320,7 +320,7 @@
       const apiError = asApiListError(e);
       const isDbDown = apiError?.code === 'DATABASE_UNAVAILABLE';
       if (apiError && isBackendGatewayUnreachable(apiError.code, apiError.status)) {
-        error = $t('shell.apiError.unreachable');
+        error = $t('app.apiError.unreachable');
         pushNotification({
           impact: 'CRITICAL',
           messageKey: 'app.serverUnreachable',
@@ -329,7 +329,7 @@
           toast: false
         });
       } else {
-        error = $t('shell.apiError.generic');
+        error = $t('app.apiError.generic');
         const impact = isDbDown ? 'CRITICAL' : 'HIGH';
         const toneForImpact = 'danger';
         const tags: AppErrorTag[] = apiError ? [
