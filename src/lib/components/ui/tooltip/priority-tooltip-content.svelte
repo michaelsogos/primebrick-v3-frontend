@@ -4,7 +4,7 @@
 	import type { Snippet } from "svelte";
 	import { cn } from "$lib/utils.js";
 	import TooltipPortal from "./tooltip-portal.svelte";
-	import BadgeInfo from "@lucide/svelte/icons/badge-info";
+	import Info from "@lucide/svelte/icons/info";
 	import BadgeAlert from "@lucide/svelte/icons/badge-alert";
 	import BadgeX from "@lucide/svelte/icons/badge-x";
 	import BadgeQuestionMark from "@lucide/svelte/icons/badge-question-mark";
@@ -36,7 +36,7 @@
 	}: Props = $props();
 
 	const iconMap = {
-		INFORMATION: BadgeInfo,
+		INFORMATION: Info,
 		WARNING: BadgeAlert,
 		ERROR: BadgeX,
 		QUESTION: BadgeQuestionMark,

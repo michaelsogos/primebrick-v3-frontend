@@ -11,6 +11,7 @@
   import type { ConfigEntryType } from '$lib/api-types';
   import { currencySymbol, getAllCurrencies } from '$lib/currency';
   import { uiLang } from '$lib/i18n/store.svelte';
+  import { parseTypeConfig, serializeTypeConfig } from '$lib/config/type-config-schema';
 
   let {
     type,
@@ -52,13 +53,8 @@
 
   // Parse type_config for badge type
   let badgeOptions = $derived.by<Record<string, { label_key?: string; color?: string }>>(() => {
-    if (type !== 'badge' || !type_config) return {};
-    try {
-      const config = JSON.parse(type_config);
-      return config.values ?? {};
-    } catch {
-      return {};
-    }
+    if (type !== 'badge') return {};
+    return parseTypeConfig(type_config)?.values ?? {};
   });
 
   // Build ComboSelect options for badge type
@@ -78,12 +74,8 @@
     value_field?: string;
     label_field?: string;
   } | null>(() => {
-    if ((type !== 'single_select' && type !== 'multi_select') || !type_config) return null;
-    try {
-      return JSON.parse(type_config);
-    } catch {
-      return null;
-    }
+    if (type !== 'single_select' && type !== 'multi_select') return null;
+    return parseTypeConfig(type_config);
   });
 
   // Select options loaded from values_source, BE API, or static values
@@ -92,13 +84,8 @@
 
   // Money: extract currency from type_config and derive symbol
   let moneyCurrency = $derived.by<string>(() => {
-    if (type !== 'money' || !type_config) return 'EUR';
-    try {
-      const config = JSON.parse(type_config) as { currency?: string };
-      return config.currency ?? 'EUR';
-    } catch {
-      return 'EUR';
-    }
+    if (type !== 'money') return 'EUR';
+    return parseTypeConfig(type_config)?.currency ?? 'EUR';
   });
 
   let moneyCurrencySymbol = $derived.by<string>(() => {
@@ -110,12 +97,9 @@
   // Updates type_config JSON with the new currency code and notifies the parent.
   function handleCurrencyChange(code: string) {
     if (!onTypeConfigChange) return;
-    let config: Record<string, unknown> = {};
-    if (type_config) {
-      try { config = JSON.parse(type_config) as Record<string, unknown>; } catch { /* start fresh */ }
-    }
+    const config = parseTypeConfig(type_config) ?? {};
     config.currency = code;
-    onTypeConfigChange(JSON.stringify(config));
+    onTypeConfigChange(serializeTypeConfig(config));
   }
 
   // String representation of value for display in select/input components

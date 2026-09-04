@@ -44,6 +44,23 @@
       resolvedLabel: string;
       resolvedValue: string;
     }]>;
+    /**
+     * When true, shows a "Create '{search}'" item in the dropdown when the
+     * search text doesn't match any existing option. Lets users type a new
+     * value that isn't in the options list.
+     */
+    allowCreate?: boolean;
+    /**
+     * Called when the user creates a new value via the "Create" item.
+     * The parent can use this to add the new value to its options array.
+     */
+    onCreate?: (value: string) => void;
+    /**
+     * Initial search text when the popover opens. Used to pre-filter
+     * options (e.g. prefix-filter i18n keys by config.auth.{key}.).
+     * The user can clear it via the X button to see all options.
+     */
+    defaultSearch?: string;
     "aria-invalid"?: boolean | "true" | "false";
     "aria-describedby"?: string;
     "aria-required"?: boolean | "true" | "false";
@@ -69,6 +86,9 @@
     isOptionDisabled,
     getSearchKeywords,
     selectedSnippet,
+    allowCreate = false,
+    onCreate,
+    defaultSearch = '',
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
     "aria-required": ariaRequired,
@@ -79,6 +99,13 @@
 
   let open = $state(false);
   let search = $state("");
+
+  // Reset search to defaultSearch whenever the popover opens
+  $effect(() => {
+    if (open) {
+      search = defaultSearch;
+    }
+  });
 
   // --- Value & label resolution ---
 
@@ -197,6 +224,35 @@
       return kws.some((k) => k.toLowerCase().includes(lowerSearch));
     });
   });
+
+  // --- Create mode ---
+
+  // Show "Create" item when allowCreate is on, search is non-empty, and no
+  // existing option matches the search text exactly (by value or label).
+  let exactMatchExists = $derived.by(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return true;
+    return normalizedOptions.some(
+      (o) => o.value.toLowerCase() === s || o.label.toLowerCase() === s,
+    );
+  });
+
+  let showCreateItem = $derived(allowCreate && search.trim() !== '' && !exactMatchExists);
+
+  function handleCreate() {
+    const newKey = search.trim();
+    if (!newKey) return;
+    if (mode === 'single') {
+      syncChange(newKey);
+      open = false;
+      search = '';
+    } else {
+      if (!selectedValues.includes(newKey)) {
+        syncChange([...selectedValues, newKey]);
+      }
+    }
+    onCreate?.(newKey);
+  }
 </script>
 
 <Popover.Root bind:open>
@@ -232,6 +288,19 @@
               <span class="flex-1 truncate text-left">
                 {selectedNormalized.label}
               </span>
+            {/if}
+          {:else if (value as string).trim() !== ''}
+            <!-- Created value not in options list — render with "new" badge -->
+            {#if selectedSnippet}
+              {@render selectedSnippet({
+                option: { [valueField ?? 'value']: value } as Record<string, any>,
+                resolvedLabel: value as string,
+                resolvedValue: value as string,
+              })}
+            {:else}
+              <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground">
+                {value as string}
+              </Badge>
             {/if}
           {:else}
             <span class="flex-1 truncate text-left text-muted-foreground">
@@ -304,12 +373,39 @@
         <Command.Input
           bind:value={search}
           placeholder={searchPlaceholder}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && showCreateItem) {
+              e.preventDefault();
+              handleCreate();
+            }
+          }}
         />
       {/if}
       <Command.List>
-        {#if filteredOptions.length === 0}
-          <Command.Empty>No results found.</Command.Empty>
-        {:else}
+        {#if showCreateItem}
+          <Command.Item
+            value={search.trim()}
+            keywords={[search.trim()]}
+            class={cn(
+              "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
+              "data-highlighted:bg-muted data-highlighted:text-foreground",
+              "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            )}
+            onSelect={() => handleCreate()}
+          >
+            <div class="flex items-center gap-2 w-full">
+              {#if mode === "multi"}
+                <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0" />
+              {/if}
+              <span class="flex-1 truncate text-left">
+                {$t('common.create')} <span class="font-medium">"{search.trim()}"</span>
+              </span>
+            </div>
+          </Command.Item>
+        {/if}
+        {#if filteredOptions.length === 0 && !showCreateItem}
+          <Command.Empty>{$t('common.noResults')}</Command.Empty>
+        {:else if filteredOptions.length > 0}
           {#each filteredOptions as opt (opt.value)}
             {@const isDisabled = isOptionDisabled ? isOptionDisabled(opt.raw) : false}
             <Command.Item

@@ -127,10 +127,11 @@
       <!-- Chrome matches `$lib/components/ui/input` (wrapper carries border/bg/hover/focus; inner `Command.Input` is borderless). -->
       <div
         class={cn(
-          'relative flex h-8 w-full items-center rounded-md shadow-xs ring-offset-background transition-all',
+          'relative flex h-8 w-full items-center rounded-md shadow-xs transition-all',
+          'focus-within:outline-none focus-within:ring-0 focus-within:ring-offset-0 focus-within:shadow-none',
           open
             ? 'z-10 rounded-b-none border-primary-gradient-popover border-b-0 shadow-md'
-            : 'border-primary-gradient hover:brightness-105 focus-within:ring-ring/50 focus-within:ring-[3px]'
+            : 'border-primary-gradient hover:brightness-105'
         )}
       >
         <span
@@ -159,11 +160,11 @@
           bind:ref={inputRef}
           id="pb-command-palette-input"
           class={cn(
-            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm font-medium text-foreground outline-hidden',
+            'h-full min-h-0 w-full border-0 bg-transparent pl-8 pr-3 text-sm font-medium text-foreground outline-none',
             browser && 'pr-21',
             'placeholder:text-muted-foreground',
             'selection:bg-primary selection:text-primary-foreground',
-            'focus-visible:ring-0 focus-visible:ring-offset-0'
+            'focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0'
           )}
           placeholder={$t('shell.search.placeholder')}
           aria-expanded={open}

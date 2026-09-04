@@ -13,39 +13,8 @@
  */
 import { z } from 'zod';
 import type { ConfigEntry, ConfigEntryType } from '$lib/api-types';
-
-/**
- * Parsed validation rules from type_config JSON.
- * Mirrors the SDK's ConfigValidation interface.
- */
-interface ConfigValidation {
-  required: boolean;
-  required_error_label_key?: string;
-  /** If true, numeric values are unsigned (no sign chars, default min=0). */
-  unsigned?: boolean;
-  rules: {
-    min?: { value: number; error_label_key: string };
-    max?: { value: number; error_label_key: string };
-    url?: { protocols: string[]; error_label_key: string };
-    email?: { error_label_key: string };
-    regex?: { pattern: string; error_label_key: string };
-  };
-}
-
-/**
- * Parse type_config JSON and extract the validation config.
- */
-function extractValidation(type_config?: string | null): ConfigValidation | null {
-  if (!type_config) return null;
-  try {
-    const parsed = JSON.parse(type_config) as Record<string, unknown>;
-    const validation = parsed.validation;
-    if (!validation || typeof validation !== 'object') return null;
-    return validation as unknown as ConfigValidation;
-  } catch {
-    return null;
-  }
-}
+import { extractValidation } from '$lib/config/type-config-schema';
+import type { ConfigValidation } from '$lib/config/type-config-schema';
 
 /**
  * Build a Zod schema for a config value based on its type and validation rules.

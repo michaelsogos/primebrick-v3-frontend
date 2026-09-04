@@ -1,9 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { t } from '$lib/i18n';
+  import { t, dict, flattenDictKeys } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
-  import { Textarea } from '$lib/components/ui/textarea';
   import { Switch } from '$lib/components/ui/switch';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -23,12 +22,16 @@
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { useExistingGroupKeys } from '$lib/composables/useExistingGroupKeys.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { buildConfigValueSchema } from '$lib/validation/config-validation';
   import type { ConfigEntryType } from '$lib/api-types';
   import { pushNotification } from '$lib/errors/app-errors';
   import ConfigValueInput from '$lib/components/config-list/ConfigValueInput.svelte';
+  import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import Badge from '$lib/components/ui/badge/badge.svelte';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
@@ -73,6 +76,7 @@
       .default(''),
     group_key: z.string()
       .max(100, { message: maxMsg(100) })
+      .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'validation.invalidFormat' })
       .default(''),
     reserved: z.boolean()
       .default(false),
@@ -206,6 +210,70 @@
   );
 
   let effectiveCanSave = $derived(canSave && !keyExistsError && !keyChecking);
+
+  // Existing group keys for the group_key ComboSelect (selectable suggestions)
+  const { state: groupKeysState } = useExistingGroupKeys();
+  const existingGroupKeys = $derived([...groupKeysState.groupKeys]);
+  const groupKeysLoading = $derived(groupKeysState.loading);
+
+  // Build ComboSelect options: each group_key becomes an object with the
+  // raw key as value and the full i18n key as label (translated at render time)
+  const groupKeyOptions = $derived(
+    existingGroupKeys.map((gk) => ({
+      group_key: gk,
+      label_key: `config.auth.group.${gk}`,
+    })),
+  );
+
+  // Check if the current group_key value is new (not in existing options)
+  function isGroupKeyNew(val: string) {
+    return val.trim() !== '' && !existingGroupKeys.includes(val.trim());
+  }
+
+  function handleGroupKeyChange(value: string | string[]) {
+    $form.group_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
+
+  // Reactive i18n key placeholders based on the config key being typed.
+  // Uses 'my_custom_setting' as fallback when key is empty (same convention as the builder).
+  const labelKeyPlaceholder = $derived(
+    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
+  );
+  const descriptionKeyPlaceholder = $derived(
+    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
+  );
+
+  // ─── i18n key options for label_key / description_key ComboSelects ──────
+  // Flatten the current locale's dict into dot-path keys, then filter to
+  // config.auth.*.label / .description leaves. These are the selectable
+  // options; the user can also type a new key (allowCreate).
+  const allI18nKeys = $derived(flattenDictKeys($dict as Record<string, unknown>));
+  const labelKeyOptions = $derived(
+    allI18nKeys
+      .filter((k) => k.startsWith('config.auth.') && k.endsWith('.label'))
+      .map((k) => ({ key: k })),
+  );
+  const descriptionKeyOptions = $derived(
+    allI18nKeys
+      .filter((k) => k.startsWith('config.auth.') && k.endsWith('.description'))
+      .map((k) => ({ key: k })),
+  );
+
+  // Pre-filter prefix: when the popover opens, only show keys matching the
+  // current config key. User can clear the search (X button) to see all.
+  const labelKeyDefaultSearch = $derived(
+    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+  );
+  const descriptionKeyDefaultSearch = $derived(
+    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+  );
+
+  function handleLabelKeyChange(value: string | string[]) {
+    $form.label_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
+  function handleDescriptionKeyChange(value: string | string[]) {
+    $form.description_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
 </script>
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
@@ -306,41 +374,42 @@
                 {/snippet}
               </FormControl>
             </FormField>
-          </div>
-
-          <!-- Column 2 -->
-          <div class="space-y-4">
-            <FormField form={superFormObj} name="type_config">
-              <FormControl>
-                {#snippet children({ props })}
-                  <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.typeConfig')}</FormLabel>
-                    <Textarea
-                      {...props}
-                      bind:value={$form.type_config}
-                      placeholder={$t('shell.settings.security.create.typeConfigPlaceholder')}
-                      rows={5}
-                      class="font-mono text-xs"
-                      data-testid="config-create-type-config"
-                    />
-                    <TranslatedFormFieldErrors />
-                    <p class="text-xs text-muted-foreground">{$t('shell.settings.security.create.typeConfigHelp')}</p>
-                  </div>
-                {/snippet}
-              </FormControl>
-            </FormField>
 
             <FormField form={superFormObj} name="label_key">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.labelKey')}</FormLabel>
-                    <TextInput
+                    <FormLabel for={props.id}>
+                      {$t('shell.settings.security.create.labelKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('common.optionalTooltipText')}
+                        priority="INFORMATION"
+                        title={$t('common.optionalTooltipTitle')}
+                        labelKey="common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
                       {...props}
-                      bind:value={$form.label_key}
-                      placeholder={$t('shell.settings.security.create.labelKeyPlaceholder')}
+                      mode="single"
+                      value={$form.label_key}
+                      onChange={handleLabelKeyChange}
+                      options={labelKeyOptions}
+                      valueField="key"
+                      labelField="key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      defaultSearch={labelKeyDefaultSearch}
+                      placeholder={labelKeyPlaceholder}
+                      searchPlaceholder={labelKeyPlaceholder}
                       data-testid="config-create-label-key"
-                    />
+                    >
+                      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+                          <span class="font-medium truncate">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+                        </div>
+                      {/snippet}
+                    </ComboSelect>
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -351,13 +420,37 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.descriptionKey')}</FormLabel>
-                    <TextInput
+                    <FormLabel for={props.id}>
+                      {$t('shell.settings.security.create.descriptionKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('common.optionalTooltipText')}
+                        priority="INFORMATION"
+                        title={$t('common.optionalTooltipTitle')}
+                        labelKey="common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
                       {...props}
-                      bind:value={$form.description_key}
-                      placeholder={$t('shell.settings.security.create.descriptionKeyPlaceholder')}
+                      mode="single"
+                      value={$form.description_key}
+                      onChange={handleDescriptionKeyChange}
+                      options={descriptionKeyOptions}
+                      valueField="key"
+                      labelField="key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      defaultSearch={descriptionKeyDefaultSearch}
+                      placeholder={descriptionKeyPlaceholder}
+                      searchPlaceholder={descriptionKeyPlaceholder}
                       data-testid="config-create-description-key"
-                    />
+                    >
+                      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+                          <span class="font-medium truncate">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+                        </div>
+                      {/snippet}
+                    </ComboSelect>
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -368,13 +461,53 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.groupKey')}</FormLabel>
-                    <TextInput
+                    <FormLabel for={props.id}>
+                      {$t('shell.settings.security.create.groupKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('common.optionalTooltipText')}
+                        priority="INFORMATION"
+                        title={$t('common.optionalTooltipTitle')}
+                        labelKey="common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
                       {...props}
-                      bind:value={$form.group_key}
+                      mode="single"
+                      value={$form.group_key}
+                      onChange={handleGroupKeyChange}
+                      options={groupKeyOptions}
+                      valueField="group_key"
+                      labelField="label_key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      loading={groupKeysLoading}
+                      getSearchKeywords={(opt) => {
+                        const gk = (opt as Record<string, any>).group_key;
+                        return gk ? [$t(`config.auth.group.${gk}`)] : [];
+                      }}
                       placeholder={$t('shell.settings.security.create.groupKeyPlaceholder')}
+                      searchPlaceholder={$t('shell.settings.security.create.groupKeySearch')}
                       data-testid="config-create-group-key"
-                    />
+                    >
+                      {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
+                        {@const gk = (option as Record<string, any>).group_key ?? resolvedValue}
+                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+                          <span class="font-medium truncate">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate font-mono">{gk}</span>
+                        </div>
+                      {/snippet}
+                      {#snippet selectedSnippet({ resolvedLabel, resolvedValue })}
+                        {#if isGroupKeyNew(resolvedValue)}
+                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground">
+                            {resolvedLabel}
+                          </Badge>
+                        {:else}
+                          <span class="flex-1 truncate text-left">
+                            {resolvedLabel}
+                          </span>
+                        {/if}
+                      {/snippet}
+                    </ComboSelect>
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -394,6 +527,26 @@
               </div>
               <p class="text-xs text-muted-foreground">{$t('shell.settings.security.create.reservedHelp')}</p>
             </div>
+          </div>
+
+          <!-- Column 2: Type Config Builder -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="type_config">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('shell.settings.security.create.typeConfig')}</FormLabel>
+                    <TypeConfigBuilder
+                      type={$form.type as ConfigEntryType}
+                      configKey={$form.key ?? ''}
+                      type_config={$form.type_config || null}
+                      onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
           </div>
         </div>
       </form>

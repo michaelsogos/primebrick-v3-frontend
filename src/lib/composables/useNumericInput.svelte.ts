@@ -37,27 +37,8 @@ interface UseNumericInputOptions {
   lang: () => string;
 }
 
-interface ParsedTypeConfig {
-  validation?: {
-    unsigned?: boolean;
-    rules?: {
-      min?: { value: number };
-    };
-  };
-  currency?: string;
-}
-
-/**
- * Parse type_config JSON string, returning null if invalid or empty.
- */
-function parseTypeConfig(type_config: string | null): ParsedTypeConfig | null {
-  if (!type_config) return null;
-  try {
-    return JSON.parse(type_config) as ParsedTypeConfig;
-  } catch {
-    return null;
-  }
-}
+import { parseTypeConfig } from '$lib/config/type-config-schema';
+import type { ParsedTypeConfig } from '$lib/config/type-config-schema';
 
 /**
  * Normalize leading zeros in the integer part of a canonical numeric string.

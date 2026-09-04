@@ -40,6 +40,24 @@ function interpolate(template: string, params: Record<string, any>): string {
 
 export const dict = derived(uiLang, ($uiLang) => DICTS[$uiLang]);
 
+/**
+ * Recursively walks a dictionary object and returns all dot-path keys
+ * that point to string leaf values. Used to enumerate i18n keys for
+ * ComboSelect selectors (e.g. label_key, description_key fields).
+ */
+export function flattenDictKeys(obj: Dict, prefix = ''): string[] {
+  const keys: string[] = [];
+  for (const [k, v] of Object.entries(obj)) {
+    const path = prefix ? `${prefix}.${k}` : k;
+    if (typeof v === 'string') {
+      keys.push(path);
+    } else if (v && typeof v === 'object') {
+      keys.push(...flattenDictKeys(v as Dict, path));
+    }
+  }
+  return keys;
+}
+
 export const t: Readable<(key: string, params?: Record<string, any>) => string> = derived(
   dict,
   ($dict) =>
