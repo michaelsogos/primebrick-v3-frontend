@@ -36,7 +36,7 @@ export function buildConfigValueSchema(
 
   // Required check — all types including secrets
   if (validation?.required) {
-    const requiredKey = validation.required_error_label_key ?? 'validation.required';
+    const requiredKey = validation.required_error_label_key ?? 'app.common.validation.required';
     schema = schema.min(1, { message: requiredKey });
   }
 
@@ -47,14 +47,14 @@ export function buildConfigValueSchema(
   const isUnsigned = validation?.unsigned === true;
   if (type === 'bigint') {
     const bigintRegex = isUnsigned ? /^\d+$/ : /^-?\d+$/;
-    const bigintMsg = isUnsigned ? 'validation.invalidBigintUnsigned' : 'validation.invalidBigint';
+    const bigintMsg = isUnsigned ? 'app.common.validation.invalidBigintUnsigned' : 'app.common.validation.invalidBigint';
     schema = schema.refine((val) => val === '' || bigintRegex.test(val), { message: bigintMsg });
   } else if (type === 'number' || type === 'money') {
     const numRegex = isUnsigned ? /^\d*\.?\d+$/ : /^-?\d*\.?\d+$/;
-    const numMsg = isUnsigned ? 'validation.invalidNumberUnsigned' : 'validation.invalidNumber';
+    const numMsg = isUnsigned ? 'app.common.validation.invalidNumberUnsigned' : 'app.common.validation.invalidNumber';
     schema = schema.refine((val) => val === '' || numRegex.test(val), { message: numMsg });
   } else if (type === 'boolean') {
-    schema = schema.refine((val) => val === '' || /^(true|false)$/.test(val), { message: 'validation.invalidBoolean' });
+    schema = schema.refine((val) => val === '' || /^(true|false)$/.test(val), { message: 'app.common.validation.invalidBoolean' });
   } else if (type === 'url') {
     schema = schema.refine((val) => {
       if (!val) return true; // required handled above
@@ -64,7 +64,7 @@ export function buildConfigValueSchema(
       } catch {
         return false;
       }
-    }, { message: 'validation.invalidUrl' });
+    }, { message: 'app.common.validation.invalidUrl' });
   } else if (type === 'json') {
     schema = schema.refine((val) => {
       if (!val) return true;
@@ -74,7 +74,7 @@ export function buildConfigValueSchema(
       } catch {
         return false;
       }
-    }, { message: 'validation.invalidJson' });
+    }, { message: 'app.common.validation.invalidJson' });
   }
 
   // Apply validation rules from type_config.validation
@@ -99,7 +99,7 @@ export function buildConfigValueSchema(
       schema = schema.refine((val) => {
         if (!val) return true;
         return Number(val) >= 0;
-      }, { message: 'validation.unsigned' });
+      }, { message: 'app.common.validation.unsigned' });
     }
 
     // max: for strings = length, for bigint/number/money = numeric value

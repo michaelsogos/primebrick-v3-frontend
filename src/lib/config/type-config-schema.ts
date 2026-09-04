@@ -148,5 +148,5 @@ export interface ValuesSourceDefinition {
  * Extensible: add new sources here (countries, languages, timezones, etc.).
  */
 export const BUILTIN_VALUES_SOURCES: ValuesSourceDefinition[] = [
-  { id: 'currencies', label_key: 'config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
+  { id: 'currencies', label_key: 'system.settings.config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
 ];

@@ -22,7 +22,7 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { dropdownMenuItemWithSelectedClass } from "$lib/components/ui/dropdown-menu/dropdown-menu-item-selected";
 
-	let { value = $bindable(), placeholder = $t("common.selectDate"), includeTime = false, defaultTime = undefined, timezone = $bindable() } = $props();
+	let { value = $bindable(), placeholder = $t("app.common.selectDate"), includeTime = false, defaultTime = undefined, timezone = $bindable() } = $props();
 	let isOpen = $state(false);
 	let activeTab = $derived(includeTime ? "date" : "date");
 
@@ -248,7 +248,7 @@
 								class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
 							></div>
 						{/if}
-						<span class="relative z-20">{$t("common.date")}</span>
+						<span class="relative z-20">{$t("app.common.date")}</span>
 					</TabsTrigger>
 					<TabsTrigger
 						value="time"
@@ -259,7 +259,7 @@
 								class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
 							></div>
 						{/if}
-						<span class="relative z-20">{$t("common.time")}</span>
+						<span class="relative z-20">{$t("app.common.time")}</span>
 					</TabsTrigger>
 				</TabsList>
 
@@ -392,8 +392,8 @@
 
 		<!-- Footer -->
 		<div class="p-3 border-t bg-muted/10 flex gap-2">
-			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>{$t("common.close")}</Button>
-			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => { updateValue(); isOpen = false; }}>{$t("common.done")}</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-muted-foreground" onclick={() => (isOpen = false)}>{$t("app.common.close")}</Button>
+			<Button variant="ghost" size="sm" class="flex-1 text-primary font-medium" onclick={() => { updateValue(); isOpen = false; }}>{$t("app.common.done")}</Button>
 		</div>
 	</Popover.Content>
 </Popover.Root>

@@ -111,7 +111,7 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'entities.customer.title'));
+  const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'system.entities.customer.title'));
   const columns = $derived(orderedColumnsFromListMeta(meta?.list));
   const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
   const dataColumns = $derived(
@@ -499,18 +499,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.customersList',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.customersList',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger'; // CRITICAL and HIGH both use danger
       const tags: import('$lib/errors/app-errors').AppErrorTag[] = [
@@ -528,8 +528,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.customersList',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.customersList',
         tags,
         toast: false,
       });
@@ -564,18 +564,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.customersPageInit',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.customersPageInit',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger'; // CRITICAL and HIGH both use danger
       const tags: import('$lib/errors/app-errors').AppErrorTag[] = [
@@ -593,8 +593,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.customersPageInit',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.customersPageInit',
         tags,
         toast: false,
       });
@@ -770,7 +770,7 @@
       <div class="flex shrink-0 items-center justify-end gap-2">
         <Button href="/customers/new">
           <Plus class="size-4" />
-          {$t('common.new')}
+          {$t('app.common.new')}
         </Button>
       </div>
     </div>
@@ -791,8 +791,8 @@
       defaultSort={meta?.list.defaultSort}
       pageSizeOptions={meta?.list.pageSizeOptions}
       searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-      selectionLabelSingularKey="entities.customer.singular"
-      selectionLabelKey="entities.customer.plural"
+      selectionLabelSingularKey="system.entities.customer.singular"
+      selectionLabelKey="system.entities.customer.plural"
       rows={rows}
       {total}
       {metaLoading}

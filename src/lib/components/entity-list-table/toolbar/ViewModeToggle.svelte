@@ -19,7 +19,7 @@
 <div
   class="inline-flex items-center gap-1 rounded-md border-primary-gradient-soft p-0.5 shadow-xs"
   role="group"
-  aria-label={$t('entities.list.viewMode.groupAria')}
+  aria-label={$t('system.entities.list.viewMode.groupAria')}
 >
   <Button
     variant={viewMode === 'table' ? 'default' : 'ghost'}
@@ -27,7 +27,7 @@
     type="button"
     class={cn('rounded-sm', viewMode !== 'table' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'table'}
-    title={$t('entities.list.viewMode.table')}
+    title={$t('system.entities.list.viewMode.table')}
     onclick={() => onViewModeChange('table')}
   >
     <Table2 class="size-4" />
@@ -38,7 +38,7 @@
     type="button"
     class={cn('rounded-sm', viewMode !== 'cards' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'cards'}
-    title={$t('entities.list.viewMode.cards')}
+    title={$t('system.entities.list.viewMode.cards')}
     onclick={() => onViewModeChange('cards')}
   >
     <LayoutGrid class="size-4" />
@@ -49,7 +49,7 @@
     type="button"
     class={cn('rounded-sm', viewMode !== 'cards_list' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={viewMode === 'cards_list'}
-    title={$t('entities.list.viewMode.cardsList')}
+    title={$t('system.entities.list.viewMode.cardsList')}
     onclick={() => onViewModeChange('cards_list')}
   >
     <LayoutList class="size-4" />

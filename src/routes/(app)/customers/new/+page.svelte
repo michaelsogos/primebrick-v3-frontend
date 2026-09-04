@@ -17,11 +17,11 @@
             pathname: page.url.pathname,
             t: (key) => $t(key)
           }),
-          { label: $t('entities.customer.title'), href: '/customers' }
+          { label: $t('system.entities.customer.title'), href: '/customers' }
         ]}
       />
-      <h1 class="text-xl font-semibold leading-tight">{$t('entities.customer.new.title')}</h1>
-      <p class="text-sm text-muted-foreground">{$t('common.soon')}</p>
+      <h1 class="text-xl font-semibold leading-tight">{$t('system.entities.customer.new.title')}</h1>
+      <p class="text-sm text-muted-foreground">{$t('app.common.soon')}</p>
     </div>
   {/snippet}
 </AppPageScaffold>

@@ -46,9 +46,9 @@
     idp_org: z.string().optional(),
     idp_username: z.string().optional(),
     display_name: displayNameSchema(z.string()),
-    email: z.string().email({ message: 'validation.invalidEmail' }),
-    avatar_color: z.string().min(1, { message: 'validation.required' }),
-    avatar_initials: z.string().min(1, { message: 'validation.required' }),
+    email: z.string().email({ message: 'app.common.validation.invalidEmail' }),
+    avatar_color: z.string().min(1, { message: 'app.common.validation.required' }),
+    avatar_initials: z.string().min(1, { message: 'app.common.validation.required' }),
     is_admin: z.boolean().optional(),
     is_verified: z.boolean().optional(),
     email_verified: z.boolean().optional(),
@@ -187,7 +187,7 @@
   // Block internal navigation when there are changes
   const { handleBeforeUnload } = useUnsavedChangesGuard(
     () => hasChanges,
-    'shell.settings.profile.unsavedChanges',
+    'system.settings.profile.unsavedChanges',
   );
 
   // Reactively load profile when store changes
@@ -288,8 +288,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -297,7 +297,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.profile.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.profile.title')}</h1>
     </div>
   {/snippet}
   {#snippet children()}
@@ -317,10 +317,10 @@
               <div>
                 <p class="font-medium">
                   {$form.display_name ||
-                    $t("shell.settings.profile.displayNamePlaceholder")}
+                    $t("system.settings.profile.displayNamePlaceholder")}
                 </p>
                 <p class="text-sm text-muted-foreground">
-                  {$form.email || $t("shell.settings.profile.emailPlaceholder")}
+                  {$form.email || $t("system.settings.profile.emailPlaceholder")}
                 </p>
               </div>
             </div>
@@ -328,7 +328,7 @@
             <!-- Color Picker -->
             <ColorSelector
               bind:value={$form.avatar_color}
-              labelKey="shell.settings.profile.avatarColor"
+              labelKey="system.settings.profile.avatarColor"
               triggerId="avatar-color-trigger"
             />
           </div>
@@ -347,12 +347,12 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        required>{$t("shell.settings.profile.displayName")}</FormLabel
+                        required>{$t("system.settings.profile.displayName")}</FormLabel
                       >
                       <TextInput
                         type="text"
                         placeholder={$t(
-                          "shell.settings.profile.displayNamePlaceholder",
+                          "system.settings.profile.displayNamePlaceholder",
                         )}
                         bind:value={$form.display_name}
                         {...props}
@@ -369,11 +369,11 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        required>{$t("shell.settings.profile.email")}</FormLabel
+                        required>{$t("system.settings.profile.email")}</FormLabel
                       >
                       <TextInput
                         type="email"
-                        placeholder={$t("shell.settings.profile.emailPlaceholder")}
+                        placeholder={$t("system.settings.profile.emailPlaceholder")}
                         bind:value={$form.email}
                         {...props}
                         class="mt-2"
@@ -388,14 +388,14 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t("shell.settings.profile.roles")}</FormLabel>
+                      <FormLabel for={props.id}>{$t("system.settings.profile.roles")}</FormLabel>
                       <ComboSelect
                         {...props}
                         mode="multi"
                         bind:value={$form.roles}
                         options={availableRoles}
                         disabled
-                        placeholder={$t("shell.settings.profile.rolesPlaceholder")}
+                        placeholder={$t("system.settings.profile.rolesPlaceholder")}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -411,7 +411,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        >{$t("shell.settings.profile.idpCode")}</FormLabel
+                        >{$t("system.settings.profile.idpCode")}</FormLabel
                       >
                       <TextInput
                         type="text"
@@ -419,7 +419,7 @@
                         readonly
                         class="mt-2"
                         {...props}
-                        copyTooltipLabel={$t("shell.settings.profile.copyIdpCode")}
+                        copyTooltipLabel={$t("system.settings.profile.copyIdpCode")}
                       />
                     </div>
                   {/snippet}
@@ -431,7 +431,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        >{$t("shell.settings.profile.idpOwner")}</FormLabel
+                        >{$t("system.settings.profile.idpOwner")}</FormLabel
                       >
                       <TextInput
                         type="text"
@@ -439,7 +439,7 @@
                         readonly
                         class="mt-2"
                         {...props}
-                        copyTooltipLabel={$t("shell.settings.profile.copyIdpOwner")}
+                        copyTooltipLabel={$t("system.settings.profile.copyIdpOwner")}
                       />
                     </div>
                   {/snippet}
@@ -451,7 +451,7 @@
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}
-                        >{$t("shell.settings.profile.idpName")}</FormLabel
+                        >{$t("system.settings.profile.idpName")}</FormLabel
                       >
                       <TextInput
                         type="text"
@@ -459,7 +459,7 @@
                         readonly
                         class="mt-2"
                         {...props}
-                        copyTooltipLabel={$t("shell.settings.profile.copyIdpName")}
+                        copyTooltipLabel={$t("system.settings.profile.copyIdpName")}
                       />
                     </div>
                   {/snippet}
@@ -470,14 +470,14 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t("shell.settings.profile.idpIssuer")}</FormLabel>
+                      <FormLabel for={props.id}>{$t("system.settings.profile.idpIssuer")}</FormLabel>
                       <TextInput
                         type="text"
                         bind:value={$form.issuer}
                         readonly
                         class="mt-2"
                         {...props}
-                        copyTooltipLabel={$t("shell.settings.profile.copyIdpIssuer")}
+                        copyTooltipLabel={$t("system.settings.profile.copyIdpIssuer")}
                       />
                     </div>
                   {/snippet}
@@ -490,7 +490,7 @@
                     <div class="flex items-center space-x-2">
                       <Checkbox {...props} checked={$form.is_admin === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {$t("shell.settings.profile.idpAdmin")}
+                        {$t("system.settings.profile.idpAdmin")}
                         {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('is_admin')!.tooltip!)}
@@ -510,7 +510,7 @@
                     <div class="flex items-center space-x-2">
                       <Checkbox {...props} checked={$form.is_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {$t("shell.settings.profile.idpVerified")}
+                        {$t("system.settings.profile.idpVerified")}
                         {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('is_verified')!.tooltip!)}
@@ -530,7 +530,7 @@
                     <div class="flex items-center space-x-2">
                       <Checkbox {...props} checked={$form.email_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {$t("shell.settings.profile.idpEmailVerified")}
+                        {$t("system.settings.profile.idpEmailVerified")}
                         {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('email_verified')!.tooltip!)}
@@ -552,7 +552,7 @@
 
   {#snippet footerActions()}
     <Button type="submit" form="profile-form" disabled={!canSave}>
-      {$t('common.save')}
+      {$t('app.common.save')}
     </Button>
   {/snippet}
 </FormPageLayout>

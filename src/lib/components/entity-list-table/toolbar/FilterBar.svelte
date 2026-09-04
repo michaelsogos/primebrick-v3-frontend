@@ -63,7 +63,7 @@
       onclick={onResetFilters}
     >
       <XIcon class="size-3.5" />
-      {$t('common.clearAll')}
+      {$t('app.common.clearAll')}
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
@@ -87,7 +87,7 @@
                 delete next[key];
                 onFilterValuesChange?.(next);
               }}
-              aria-label={$t('common.remove')}
+              aria-label={$t('app.common.remove')}
             >
               <XIcon class="size-3" />
             </button>
@@ -126,7 +126,7 @@
                 const next = advancedFilters.filter((f) => f.id !== filter.id);
                 onAdvancedFiltersChange?.(next);
               }}
-              aria-label={$t('common.remove')}
+              aria-label={$t('app.common.remove')}
             >
               <XIcon class="size-3" />
             </button>
@@ -136,5 +136,5 @@
     {/if}
   </div>
 {:else}
-  <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+  <span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.filterBadge.noFiltersApplied')}</span>
 {/if}

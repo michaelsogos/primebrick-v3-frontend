@@ -86,8 +86,8 @@
       size="icon-sm"
       disabled={rowsLoading || refreshDisabled}
       onclick={onRefresh}
-      aria-label={$t('entities.list.refresh')}
-      title={$t('entities.list.refresh')}
+      aria-label={$t('system.entities.list.refresh')}
+      title={$t('system.entities.list.refresh')}
     >
       <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
     </Button>
@@ -99,7 +99,7 @@
       onclick={onColumnSelectorClick}
     >
       <Columns3 class="size-4" />
-      {$t('entities.list.columns')}
+      {$t('system.entities.list.columns')}
     </Button>
 
     {#if filterableColumns.length > 0}
@@ -110,7 +110,7 @@
         onclick={() => onFiltersOpenChange(!filtersOpen)}
       >
         <SlidersHorizontal class="size-4" />
-        {$t('entities.list.filters')}
+        {$t('system.entities.list.filters')}
       </Button>
     {/if}
 
@@ -122,7 +122,7 @@
         type="button"
         onclick={onCreateAction}
       >
-        {$t('entities.list.new')}
+        {$t('system.entities.list.new')}
       </Button>
     {/if}
   </div>

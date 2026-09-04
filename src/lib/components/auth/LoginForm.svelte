@@ -143,11 +143,11 @@
       <FormControl>
         {#snippet children({ props })}
           <div class="space-y-2">
-            <FormLabel for={props.id}>{$t('login.username')}</FormLabel>
+            <FormLabel for={props.id}>{$t('app.auth.login.username')}</FormLabel>
             <Input
               type="text"
               data-testid="login-username-input"
-              placeholder={$t('login.usernamePlaceholder')}
+              placeholder={$t('app.auth.login.usernamePlaceholder')}
               bind:value={$form.username}
               {...props}
             />
@@ -161,10 +161,10 @@
       <FormControl>
         {#snippet children({ props })}
           <div class="space-y-2">
-            <FormLabel for={props.id}>{$t('login.password')}</FormLabel>
+            <FormLabel for={props.id}>{$t('app.auth.login.password')}</FormLabel>
             <Password.PasswordInput
               data-testid="login-password-input"
-              placeholder={$t('login.passwordPlaceholder')}
+              placeholder={$t('app.auth.login.passwordPlaceholder')}
               bind:value={$form.password}
               {...props}
             />
@@ -178,7 +178,7 @@
       {#if $submitting}
         <Spinner class="mr-2" />
       {/if}
-      {$submitting ? $t('login.buttonLoading') : $t('login.button')}
+      {$submitting ? $t('app.auth.login.buttonLoading') : $t('app.auth.login.button')}
     </Button>
     {/if}
 
@@ -188,7 +188,7 @@
           <span class="w-full border-t border-border"></span>
         </div>
         <div class="relative flex justify-center text-xs uppercase">
-          <span class="bg-card px-2 text-muted-foreground">{$t('login.or')}</span>
+          <span class="bg-card px-2 text-muted-foreground">{$t('app.auth.login.or')}</span>
         </div>
       </div>
       <PasskeyButton {onsuccess} {onerror} />

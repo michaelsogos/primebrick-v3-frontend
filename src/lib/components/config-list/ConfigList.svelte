@@ -133,16 +133,16 @@
       formErrors = {};
       pushNotification({
         impact: 'NONE',
-        messageKey: 'common.saveSuccess',
-        scope: $t('shell.settings.security.title'),
+        messageKey: 'app.common.saveSuccess',
+        scope: $t('system.settings.security.title'),
       });
       // Reload entries to get updated version/updated_at
       await onSave(entries[0], ''); // trigger parent reload
     } catch (err) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'common.saveFailed',
-        scope: $t('shell.settings.security.title'),
+        messageKey: 'app.common.saveFailed',
+        scope: $t('system.settings.security.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -255,7 +255,7 @@
 
 {#if loading}
   <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-    <p class="text-sm">{$t('common.loading')}</p>
+    <p class="text-sm">{$t('app.common.loading')}</p>
   </div>
 {:else if error}
   <div class="flex flex-col items-center justify-center py-8 text-center text-destructive">
@@ -263,7 +263,7 @@
   </div>
 {:else if entries.length === 0}
   <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-    <p class="text-sm">{$t('shell.settings.security.noEntries')}</p>
+    <p class="text-sm">{$t('system.settings.security.noEntries')}</p>
   </div>
 {:else}
   <div class="flex h-full flex-col min-h-0">
@@ -280,9 +280,9 @@
           />
           <span class="text-sm text-muted-foreground select-none mr-1">
             {#if allSelected}
-              {$t('common.deselectAll')}
+              {$t('app.common.deselectAll')}
             {:else}
-              {$t('common.selectAll')}
+              {$t('app.common.selectAll')}
             {/if}
           </span>
           {#if selectedEntries.length > 0}
@@ -296,7 +296,7 @@
                 data-testid="config-toolbar-bulk-revert"
               >
                 <Undo2 class="size-4" />
-                {$t('common.bulkRevert')}
+                {$t('app.common.bulkRevert')}
                 <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
               </Button>
             {/if}
@@ -309,7 +309,7 @@
               data-testid="config-toolbar-bulk-delete"
             >
               <Trash2 class="size-4" />
-              {$t('common.delete')}
+              {$t('app.common.delete')}
               <span class="ml-1 text-xs opacity-70">({selectedEntries.length})</span>
             </Button>
           {/if}
@@ -324,7 +324,7 @@
             data-testid="config-toolbar-create"
           >
             <Plus class="size-4" />
-            {$t('shell.settings.security.addConfigKey')}
+            {$t('system.settings.security.addConfigKey')}
           </Button>
         {/if}
       </div>
@@ -379,7 +379,7 @@
         <div class="flex items-center gap-2">
           {#if hasChanges}
             <span class="text-xs text-primary">
-              {$t('shell.settings.security.changesPendingFields')}
+              {$t('system.settings.security.changesPendingFields')}
             </span>
             {#if taintedKeys.length <= 5}
               {#each taintedKeys as key (key)}
@@ -391,11 +391,11 @@
               <Badge variant="outline" class="text-xs font-mono border-warning/40 bg-warning/10 text-muted-foreground">
                 {taintedKeys.length}
               </Badge>
-              <span class="text-xs text-primary">{$t('shell.settings.security.changesPendingCount')}</span>
+              <span class="text-xs text-primary">{$t('system.settings.security.changesPendingCount')}</span>
             {/if}
           {:else}
             <span class="text-xs text-muted-foreground/60">
-              {$t('shell.settings.security.noChanges')}
+              {$t('system.settings.security.noChanges')}
             </span>
           {/if}
         </div>
@@ -407,9 +407,9 @@
             data-testid="config-bulk-save"
           >
             {#if isBulkSaving}
-              {$t('common.saving')}
+              {$t('app.common.saving')}
             {:else}
-              {$t('common.saveChanges')}
+              {$t('app.common.saveChanges')}
             {/if}
           </Button>
         </div>

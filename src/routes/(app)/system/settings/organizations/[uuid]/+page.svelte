@@ -39,11 +39,11 @@
     idp_code: z.string().optional(),
     display_name: displayNameSchema(z.string()),
     website_url: z.string()
-      .url({ message: 'validation.invalidUrl' })
+      .url({ message: 'app.common.validation.invalidUrl' })
       .max(2048, { message: maxMsg(2048) })
       .optional()
       .or(z.literal('')),
-    idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
+    idp_owner: z.string().min(1, { message: 'app.common.validation.required' }).max(255, { message: maxMsg(255) }),
     idp_name: idpNameSchema(z.string()),
   });
 
@@ -184,7 +184,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => hasChanges,
-    'shell.settings.organizations.update.unsavedChanges',
+    'system.settings.organizations.update.unsavedChanges',
   );
 </script>
 
@@ -202,24 +202,24 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
+          { label: $t('app.system') },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
           }),
-          { label: $t('shell.settings.tabs.organizations'), href: '/system/settings/organizations' },
-          { label: $t('shell.settings.organizations.update.title') }
+          { label: $t('system.settings.tabs.organizations'), href: '/system/settings/organizations' },
+          { label: $t('system.settings.organizations.update.title') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('common.loading')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('app.common.loading')}</h1>
     </div>
   {/snippet}
 
   {#snippet children()}
     {#if loading}
       <div class="flex items-center justify-center p-8">
-        <div class="text-muted-foreground">{$t('common.loading')}</div>
+        <div class="text-muted-foreground">{$t('app.common.loading')}</div>
       </div>
     {:else}
       <div class="flex-1 overflow-auto p-4">
@@ -231,11 +231,11 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.displayName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.displayName')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.display_name}
-                        placeholder={$t('shell.settings.organizations.update.displayNamePlaceholder')}
+                        placeholder={$t('system.settings.organizations.update.displayNamePlaceholder')}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -247,7 +247,7 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.websiteUrl')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.websiteUrl')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.website_url}
@@ -266,12 +266,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpCode')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpCode')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_code}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpCode')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpCode')}
                       />
                     </div>
                   {/snippet}
@@ -282,12 +282,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpOwner')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpOwner')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_owner}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpOwner')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpOwner')}
                       />
                     </div>
                   {/snippet}
@@ -298,12 +298,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpName')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_name}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpName')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpName')}
                       />
                     </div>
                   {/snippet}
@@ -319,10 +319,10 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {hasChanges ? $t('common.cancel') : $t('common.exit')}
+        {hasChanges ? $t('app.common.cancel') : $t('app.common.exit')}
       </Button>
       <Button type="submit" form="org-update-form" disabled={!canSave}>
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     </div>
   {/snippet}

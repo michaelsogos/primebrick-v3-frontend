@@ -28,10 +28,10 @@
         data-testid="tcb-advanced"
       />
       <span class="text-sm font-medium leading-none">
-        {$t('config.typeConfig.advancedMode')}
+        {$t('system.settings.config.typeConfig.advancedMode')}
       </span>
     </div>
-    <p class="text-xs text-muted-foreground">{$t('config.typeConfig.advancedModeHelp')}</p>
+    <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.advancedModeHelp')}</p>
   </div>
 
   {#if builder.state.advancedMode}
@@ -58,7 +58,7 @@
         onclick={() => (previewOpen = !previewOpen)}
         data-testid="tcb-preview-toggle"
       >
-        {previewOpen ? '▼' : '▶'} {$t('config.typeConfig.jsonPreview')}
+        {previewOpen ? '▼' : '▶'} {$t('system.settings.config.typeConfig.jsonPreview')}
       </button>
       {#if previewOpen}
         <pre class="rounded-md bg-muted p-3 text-xs font-mono overflow-auto max-h-48" data-testid="tcb-json-preview">{builder.json}</pre>

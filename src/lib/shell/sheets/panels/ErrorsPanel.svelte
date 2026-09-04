@@ -81,7 +81,7 @@
 </script>
 
 {#snippet headerTitle()}
-  {$t('shell.errors.title')}
+  {$t('app.errors.title')}
 {/snippet}
 
 {#snippet headerActions()}
@@ -91,15 +91,15 @@
     class="h-8 w-8"
     disabled={$appErrors.length === 0}
     onclick={() => clearAppErrors()}
-    aria-label={$t('shell.errors.clear')}
-    title={$t('shell.errors.clear')}
+    aria-label={$t('app.errors.clear')}
+    title={$t('app.errors.clear')}
   >
     <Trash2 class="size-4" />
   </Button>
 
   <Sheet.Close
     class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('shell.errors.close')}
+    title={$t('app.errors.close')}
     onclick={() => closeSheet()}
   >
     <XIcon class="size-4" />
@@ -116,7 +116,7 @@
           <div class="pb-watermark-empty">
             <ThumbsUp class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('shell.errors.empty')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('app.errors.empty')}</div>
         </div>
       </div>
     {:else}
@@ -126,12 +126,12 @@
           {@const eventColor = impactToEventColor(imp)}
           {@const labelKey =
             imp === 'CRITICAL'
-              ? 'impact.criticalError'
+              ? 'app.common.impact.criticalError'
               : imp === 'HIGH'
-                ? 'impact.error'
+                ? 'app.common.impact.error'
                 : imp === 'MEDIUM'
-                  ? 'impact.warning'
-                  : 'impact.information'}
+                  ? 'app.common.impact.warning'
+                  : 'app.common.impact.information'}
 
           <EventCard.Root eventColor={eventColor}>
             <EventCard.Label eventColor={eventColor}>{$t(labelKey)}</EventCard.Label>
@@ -196,7 +196,7 @@
                   onclick={() => openErrorDetails(e, eventColor)}
                 >
                   <Eye class="mr-1 size-3" />
-                  {$t('shell.errors.viewDetails')}
+                  {$t('app.errors.viewDetails')}
                 </Button>
               {/if}
             </div>

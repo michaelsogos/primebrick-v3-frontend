@@ -72,7 +72,7 @@
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}
             onCheckedChange={() => toggleAllOnPage()}
-            aria-label={$t('entities.list.selectAll')}
+            aria-label={$t('system.entities.list.selectAll')}
           />
         </div>
       </Table.Head>
@@ -140,11 +140,11 @@
                 data-pb-datetime-iana-toggle
                 class="inline-flex shrink-0 rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                 title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                  ? $t('entities.list.datetimeIana.hintBrowser')
-                  : $t('entities.list.datetimeIana.hintRecord')}
+                  ? $t('system.entities.list.datetimeIana.hintBrowser')
+                  : $t('system.entities.list.datetimeIana.hintRecord')}
                 aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                  ? $t('entities.list.datetimeIana.hintBrowser')
-                  : $t('entities.list.datetimeIana.hintRecord')}
+                  ? $t('system.entities.list.datetimeIana.hintBrowser')
+                  : $t('system.entities.list.datetimeIana.hintRecord')}
                 onclick={(e) => {
                   e.stopPropagation();
                   toggleDatetimeIana(col);
@@ -191,8 +191,8 @@
                 previewPanel.openPreview(viewRows[0]);
               }
             }}
-            aria-label={$t('entities.list.togglePreviewPanel')}
-            title={$t('entities.list.togglePreviewPanel')}
+            aria-label={$t('system.entities.list.togglePreviewPanel')}
+            title={$t('system.entities.list.togglePreviewPanel')}
             class="transition-transform duration-300"
           >
             {#if previewPanel.state.previewPanelOpen}

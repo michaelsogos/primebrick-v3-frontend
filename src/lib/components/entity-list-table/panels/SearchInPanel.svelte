@@ -22,7 +22,7 @@
 </script>
 
 {#snippet headerTitle()}
-  {$t('entities.list.searchIn')}
+  {$t('system.entities.list.searchIn')}
 {/snippet}
 
 {#snippet headerActions()}
@@ -31,13 +31,13 @@
     size="sm"
     class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={() => onSearchInKeysChange(null)}
-    title={$t('common.reset')}
+    title={$t('app.common.reset')}
   >
     <RotateCcw class="size-4" />
   </Button>
   <Sheet.Close
     class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('common.done')}
+    title={$t('app.common.done')}
     onclick={() => closeSheet()}
   >
     <X class="size-4" />
@@ -56,7 +56,7 @@
       <span class="pointer-events-none shrink-0" aria-hidden="true">
         <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={checkboxVisualOnlyClass} />
       </span>
-      <span class="min-w-0 flex-1 truncate">{$t('entities.list.searchInAll')}</span>
+      <span class="min-w-0 flex-1 truncate">{$t('system.entities.list.searchInAll')}</span>
     </button>
 
     <div class="my-2">

@@ -56,7 +56,7 @@ describe("buildConfigValueSchema — bigint", () => {
     if (!result.success) {
       // Should have exactly ONE error — the required error, not invalidBigint
       expect(result.error.issues.length).toBe(1);
-      expect(result.error.issues[0].message).toBe("validation.required");
+      expect(result.error.issues[0].message).toBe("app.common.validation.required");
     }
   });
 });

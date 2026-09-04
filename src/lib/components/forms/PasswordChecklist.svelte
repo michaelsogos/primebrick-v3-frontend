@@ -17,27 +17,27 @@
   // Per-rule check functions and i18n label keys
   const ruleChecks: Record<PasswordChecklistRule, { labelKey: string; test: (pw: string) => boolean }> = {
     [PasswordChecklistRule.LENGTH]: {
-      labelKey: 'validation.passwordMinLength',
+      labelKey: 'app.common.validation.passwordMinLength',
       test: (pw) => pw.length >= 8,
     },
     [PasswordChecklistRule.LETTER]: {
-      labelKey: 'validation.passwordLetter',
+      labelKey: 'app.common.validation.passwordLetter',
       test: (pw) => /[A-Za-z]/.test(pw),
     },
     [PasswordChecklistRule.LOWERCASE]: {
-      labelKey: 'validation.passwordLowercase',
+      labelKey: 'app.common.validation.passwordLowercase',
       test: (pw) => /[a-z]/.test(pw),
     },
     [PasswordChecklistRule.UPPERCASE]: {
-      labelKey: 'validation.passwordUppercase',
+      labelKey: 'app.common.validation.passwordUppercase',
       test: (pw) => /[A-Z]/.test(pw),
     },
     [PasswordChecklistRule.NUMBER]: {
-      labelKey: 'validation.passwordNumber',
+      labelKey: 'app.common.validation.passwordNumber',
       test: (pw) => /\d/.test(pw),
     },
     [PasswordChecklistRule.SPECIAL]: {
-      labelKey: 'validation.passwordSpecial',
+      labelKey: 'app.common.validation.passwordSpecial',
       test: (pw) => {
         // Escape regex special chars from the set for safe use in a character class
         const escaped = specialChars.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');

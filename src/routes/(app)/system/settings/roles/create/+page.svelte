@@ -91,12 +91,12 @@
   function validate(): boolean {
     errors = {};
     if (!idp_role) {
-      errors.idp_role = $t('shell.settings.roles.validation.idpRoleRequired');
+      errors.idp_role = $t('system.settings.roles.validation.idpRoleRequired');
     } else if (!/^[a-z0-9_]+$/.test(idp_role)) {
-      errors.idp_role = $t('shell.settings.roles.validation.idpRoleFormat');
+      errors.idp_role = $t('system.settings.roles.validation.idpRoleFormat');
     }
     if (!idp_org) {
-      errors.idp_org = $t('shell.settings.roles.validation.idpOrgRequired');
+      errors.idp_org = $t('system.settings.roles.validation.idpOrgRequired');
     }
     return Object.keys(errors).length === 0;
   }
@@ -123,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('shell.settings.roles.createTitle')} · Primebrick</title>
+  <title>{$t('system.settings.roles.createTitle')} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -131,8 +131,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -140,28 +140,28 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.roles.createTitle')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.roles.createTitle')}</h1>
     </div>
   {/snippet}
 
-  <p class="text-sm text-muted-foreground mb-4">{$t('shell.settings.roles.createSubtitle')}</p>
+  <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.createSubtitle')}</p>
 
   <AnchorTabs value="details">
     <div class="flex items-center justify-between gap-4">
       <AnchorTabsList>
-        <AnchorTabsTrigger value="details">{$t('shell.settings.roles.tabDetails')}</AnchorTabsTrigger>
-        <AnchorTabsTrigger value="permissions">{$t('shell.settings.roles.tabPermissions')}</AnchorTabsTrigger>
+        <AnchorTabsTrigger value="details">{$t('system.settings.roles.tabDetails')}</AnchorTabsTrigger>
+        <AnchorTabsTrigger value="permissions">{$t('system.settings.roles.tabPermissions')}</AnchorTabsTrigger>
       </AnchorTabsList>
       <AnchorTabsModeSwitch
-        label_show_all={$t('shell.settings.roles.modeShowAll')}
-        label_hide={$t('shell.settings.roles.modeHide')}
+        label_show_all={$t('system.settings.roles.modeShowAll')}
+        label_hide={$t('system.settings.roles.modeHide')}
       />
     </div>
 
     <AnchorTabsContent value="details">
       <div class="space-y-6 max-w-2xl pt-6">
         <div class="space-y-2">
-          <Label for="idp_role">{$t('shell.settings.roles.fieldIdpRole')}</Label>
+          <Label for="idp_role">{$t('system.settings.roles.fieldIdpRole')}</Label>
           <Input
             id="idp_role"
             bind:value={idp_role}
@@ -173,11 +173,11 @@
           {#if errors.idp_role}
             <p class="text-sm text-destructive">{errors.idp_role}</p>
           {/if}
-          <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIdpRoleHint')}</p>
+          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpRoleHint')}</p>
         </div>
 
         <div class="space-y-2">
-          <Label for="idp_org">{$t('shell.settings.roles.fieldIdpOrg')}</Label>
+          <Label for="idp_org">{$t('system.settings.roles.fieldIdpOrg')}</Label>
           <ComboSelect
             mode="single"
             value={idp_org}
@@ -185,7 +185,7 @@
             options={orgs}
             valueField="idp_code"
             labelField="idp_code"
-            placeholder={$t('shell.settings.roles.fieldIdpOrgPlaceholder')}
+            placeholder={$t('system.settings.roles.fieldIdpOrgPlaceholder')}
             loading={orgsLoading}
             searchable
             data-testid="roles-form-idp-org"
@@ -193,11 +193,11 @@
           {#if errors.idp_org}
             <p class="text-sm text-destructive">{errors.idp_org}</p>
           {/if}
-          <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIdpOrgHint')}</p>
+          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpOrgHint')}</p>
         </div>
 
         <div class="space-y-2">
-          <Label for="label_key">{$t('shell.settings.roles.fieldLabelKey')}</Label>
+          <Label for="label_key">{$t('system.settings.roles.fieldLabelKey')}</Label>
           <Input
             id="label_key"
             bind:value={label_key}
@@ -205,7 +205,7 @@
             class="font-mono"
             data-testid="roles-form-label-key"
           />
-          <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldLabelKeyHint')}</p>
+          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldLabelKeyHint')}</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -215,9 +215,9 @@
             data-testid="roles-form-is-admin"
           />
           <Label for="is_admin" class="cursor-pointer">
-            {$t('shell.settings.roles.fieldIsAdmin')}
+            {$t('system.settings.roles.fieldIsAdmin')}
           </Label>
-          <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIsAdminHint')}</p>
+          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIsAdminHint')}</p>
         </div>
       </div>
     </AnchorTabsContent>
@@ -225,9 +225,9 @@
     <AnchorTabsContent value="permissions">
       <div class="space-y-6 pt-6">
         {#if permissionsCatalog.state.loading}
-          <p class="text-sm text-muted-foreground">{$t('shell.settings.roles.permissionsLoading')}</p>
+          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsLoading')}</p>
         {:else if permissionsCatalog.state.modules.length === 0}
-          <p class="text-sm text-muted-foreground">{$t('shell.settings.roles.permissionsEmpty')}</p>
+          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsEmpty')}</p>
         {:else}
           {#each permissionsCatalog.state.modules as module (module.code)}
             <div class="rounded-md border" data-testid={`roles-perm-module-${module.code}`}>
@@ -267,10 +267,10 @@
 
   <div class="flex items-center justify-end gap-2 pt-6 border-t mt-6">
     <Button variant="outline" onclick={handleCancel} disabled={saving} data-testid="roles-form-cancel">
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button onclick={handleSubmit} disabled={saving} data-testid="roles-form-submit">
-      {saving ? $t('common.saving') : $t('shell.settings.roles.create')}
+      {saving ? $t('app.common.saving') : $t('system.settings.roles.create')}
     </Button>
   </div>
 </AppPageScaffold>

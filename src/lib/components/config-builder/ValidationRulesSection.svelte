@@ -83,7 +83,7 @@
 </script>
 
 <div class="space-y-4">
-  <h4 class="text-sm font-semibold text-muted-foreground">{$t('config.typeConfig.validationRules')}</h4>
+  <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.validationRules')}</h4>
 
   <!-- Required -->
   <div class="space-y-2">
@@ -95,28 +95,28 @@
         data-testid="tcb-required"
       />
       <span class="text-sm font-medium leading-none">
-        {$t('config.typeConfig.required')}
+        {$t('system.settings.config.typeConfig.required')}
       </span>
     </div>
-    <p class="text-xs text-muted-foreground">{$t('config.typeConfig.requiredHelp')}</p>
+    <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.requiredHelp')}</p>
   </div>
 
   {#if builder.validation?.required}
     <div class="space-y-1">
       <Label for="tcb-required-error-key" class="text-xs text-muted-foreground">
-        {$t('config.typeConfig.requiredErrorLabelKey')}
+        {$t('system.settings.config.typeConfig.requiredErrorLabelKey')}
         <FormLabelWithPriorityHelp
-          text={$t('common.optionalTooltipText')}
+          text={$t('app.common.optionalTooltipText')}
           priority="INFORMATION"
-          title={$t('common.optionalTooltipTitle')}
-          labelKey="common.optional"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
         />
       </Label>
       <TextInput
         id="tcb-required-error-key"
         bind:value={requiredErrorKey}
         oninput={handleRequiredErrorKeyChange}
-        placeholder="validation.required"
+        placeholder="app.common.validation.required"
         class="text-xs"
         data-testid="tcb-required-error-key"
       />
@@ -134,17 +134,17 @@
           data-testid="tcb-unsigned"
         />
         <span class="text-sm font-medium leading-none">
-          {$t('config.typeConfig.unsigned')}
+          {$t('system.settings.config.typeConfig.unsigned')}
         </span>
       </div>
-      <p class="text-xs text-muted-foreground">{$t('config.typeConfig.unsignedHelp')}</p>
+      <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.unsignedHelp')}</p>
     </div>
   {/if}
 
   <!-- Min / Max -->
   <div class="grid grid-cols-2 gap-3">
     <div class="space-y-1">
-      <Label for="tcb-min">{isNumericType ? $t('config.typeConfig.minValue') : $t('config.typeConfig.minLength')}</Label>
+      <Label for="tcb-min">{isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}</Label>
       <TextInput
         id="tcb-min"
         type="number"
@@ -156,12 +156,12 @@
       />
       {#if minInput.trim() !== ''}
         <Label for="tcb-min-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.errorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
         <TextInput
@@ -175,7 +175,7 @@
       {/if}
     </div>
     <div class="space-y-1">
-      <Label for="tcb-max">{isNumericType ? $t('config.typeConfig.maxValue') : $t('config.typeConfig.maxLength')}</Label>
+      <Label for="tcb-max">{isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}</Label>
       <TextInput
         id="tcb-max"
         type="number"
@@ -187,12 +187,12 @@
       />
       {#if maxInput.trim() !== ''}
         <Label for="tcb-max-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.errorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
         <TextInput
@@ -210,7 +210,7 @@
   <!-- URL protocols (url type only) -->
   {#if isUrlType}
     <div class="space-y-1">
-      <Label for="tcb-url-protocols">{$t('config.typeConfig.urlProtocols')}</Label>
+      <Label for="tcb-url-protocols">{$t('system.settings.config.typeConfig.urlProtocols')}</Label>
       <TextInput
         id="tcb-url-protocols"
         bind:value={urlProtocols}
@@ -221,12 +221,12 @@
       />
       {#if urlProtocols.trim() !== ''}
         <Label for="tcb-url-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.errorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
         <TextInput
@@ -252,17 +252,17 @@
           data-testid="tcb-email"
         />
         <span class="text-sm font-medium leading-none">
-          {$t('config.typeConfig.emailValidation')}
+          {$t('system.settings.config.typeConfig.emailValidation')}
         </span>
       </div>
-      <p class="text-xs text-muted-foreground">{$t('config.typeConfig.emailValidationHelp')}</p>
+      <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.emailValidationHelp')}</p>
     </div>
   {/if}
 
   <!-- Regex (string/text/secret only) -->
   {#if isStringType}
     <div class="space-y-1">
-      <Label for="tcb-regex">{$t('config.typeConfig.regexPattern')}</Label>
+      <Label for="tcb-regex">{$t('system.settings.config.typeConfig.regexPattern')}</Label>
       <TextInput
         id="tcb-regex"
         bind:value={regexPattern}
@@ -273,12 +273,12 @@
       />
       {#if regexPattern.trim() !== ''}
         <Label for="tcb-regex-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.errorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
         <TextInput

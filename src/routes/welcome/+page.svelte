@@ -1,9 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { get } from 'svelte/store';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { t } from '$lib/i18n';
+  import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -105,11 +108,11 @@
         await sendOtp();
       } else {
         _state.step = 'error';
-        _state.error_message = $t('welcome.error.invalidToken');
+        _state.error_message = $t('app.auth.welcome.error.invalidToken');
       }
     } catch (err) {
       _state.step = 'error';
-      _state.error_message = $t('welcome.error.networkError');
+      _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
     }
@@ -130,10 +133,10 @@
         _state.step = 'otp-sent';
         startResendCooldown();
       } else {
-        _state.error_message = $t('welcome.error.otpSendFailed');
+        _state.error_message = $t('app.auth.welcome.error.otpSendFailed');
       }
     } catch (err) {
-      _state.error_message = $t('welcome.error.networkError');
+      _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
     }
@@ -153,10 +156,10 @@
       if (res.ok && data.verified) {
         _state.step = 'otp-verified';
       } else {
-        _state.error_message = $t('welcome.error.otpInvalid');
+        _state.error_message = $t('app.auth.welcome.error.otpInvalid');
       }
     } catch (err) {
-      _state.error_message = $t('welcome.error.networkError');
+      _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
     }
@@ -181,10 +184,10 @@
       } else {
         const errorData = await res.json();
         pushNotification({ ...errorData, toast: false });
-        _state.error_message = errorData.detail ?? $t('welcome.error.completeFailed');
+        _state.error_message = errorData.detail ?? $t('app.auth.welcome.error.completeFailed');
       }
     } catch (err) {
-      _state.error_message = $t('welcome.error.networkError');
+      _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
     }
@@ -215,6 +218,9 @@
     meta.content = 'no-referrer';
     document.head.appendChild(meta);
 
+    // Load public translations (welcome page is public — no auth)
+    void loadPublicTranslations(get(uiLang));
+
     // Load password policy
     void passwordPolicy.load();
 
@@ -222,7 +228,7 @@
     _state.token = extractTokenFromFragment();
     if (!_state.token) {
       _state.step = 'error';
-      _state.error_message = $t('welcome.error.noToken');
+      _state.error_message = $t('app.auth.welcome.error.noToken');
       return;
     }
 
@@ -253,7 +259,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('welcome.title')} — Primebrick</title>
+  <title>{$t('app.auth.welcome.title')} — Primebrick</title>
   <meta name="referrer" content="no-referrer" />
 </svelte:head>
 
@@ -278,7 +284,7 @@
         <Card data-testid="welcome-step-loading">
           <CardContent class="flex flex-col items-center justify-center py-12">
             <Spinner class="w-8 h-8" />
-            <p class="mt-4 text-sm text-muted-foreground">{$t('welcome.verifying')}</p>
+            <p class="mt-4 text-sm text-muted-foreground">{$t('app.auth.welcome.verifying')}</p>
           </CardContent>
         </Card>
       {/if}
@@ -289,14 +295,14 @@
           <CardHeader>
             <div class="flex items-center gap-2">
               <AlertCircle class="w-5 h-5 text-destructive" />
-              <CardTitle>{$t('welcome.error.title')}</CardTitle>
+              <CardTitle>{$t('app.auth.welcome.error.title')}</CardTitle>
             </div>
             <CardDescription data-testid="welcome-error-message">{_state.error_message}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onclick={handleGoToLogin} variant="outline" class="w-full">
               <ArrowLeft class="w-4 h-4 mr-2" />
-              {$t('welcome.error.backToLogin')}
+              {$t('app.auth.welcome.error.backToLogin')}
             </Button>
           </CardContent>
         </Card>
@@ -308,10 +314,10 @@
           <CardHeader>
             <div class="flex items-center gap-2">
               <MailCheck class="w-5 h-5 text-primary" />
-              <CardTitle>{$t('welcome.otp.title')}</CardTitle>
+              <CardTitle>{$t('app.auth.welcome.otp.title')}</CardTitle>
             </div>
             <CardDescription>
-              {$t('welcome.otp.description', { values: { name: _state.display_name } })}
+              {$t('app.auth.welcome.otp.description', { values: { name: _state.display_name } })}
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
@@ -322,7 +328,7 @@
             {/if}
 
             <div class="space-y-2">
-              <label for="otp" class="text-sm font-medium">{$t('welcome.otp.codeLabel')}</label>
+              <label for="otp" class="text-sm font-medium">{$t('app.auth.welcome.otp.codeLabel')}</label>
               <Input
                 id="otp"
                 type="text"
@@ -344,16 +350,16 @@
               class="w-full"
             >
               {#if _state.submitting}
-                {$t('welcome.otp.verifying')}
+                {$t('app.auth.welcome.otp.verifying')}
               {:else}
-                {$t('welcome.otp.verifyButton')}
+                {$t('app.auth.welcome.otp.verifyButton')}
                 <ArrowRight class="w-4 h-4 ml-2" />
               {/if}
             </Button>
 
             <div class="text-center text-sm text-muted-foreground">
               {#if _state.resend_cooldown > 0}
-                {$t('welcome.otp.resendIn', { values: { seconds: _state.resend_cooldown } })}
+                {$t('app.auth.welcome.otp.resendIn', { values: { seconds: _state.resend_cooldown } })}
               {:else}
                 <button
                   type="button"
@@ -361,7 +367,7 @@
                   class="text-primary hover:underline"
                   onclick={handleResendOtp}
                 >
-                  {$t('welcome.otp.resendButton')}
+                  {$t('app.auth.welcome.otp.resendButton')}
                 </button>
               {/if}
             </div>
@@ -375,9 +381,9 @@
           <CardHeader>
             <div class="flex items-center gap-2">
               <Lock class="w-5 h-5 text-primary" />
-              <CardTitle>{$t('welcome.setPassword.title')}</CardTitle>
+              <CardTitle>{$t('app.auth.welcome.setPassword.title')}</CardTitle>
             </div>
-            <CardDescription>{$t('welcome.setPassword.description')}</CardDescription>
+            <CardDescription>{$t('app.auth.welcome.setPassword.description')}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             {#if _state.error_message}
@@ -387,27 +393,27 @@
             {/if}
 
             <div class="space-y-2">
-              <label for="new_password" class="text-sm font-medium">{$t('welcome.setPassword.newPasswordLabel')}</label>
+              <label for="new_password" class="text-sm font-medium">{$t('app.auth.welcome.setPassword.newPasswordLabel')}</label>
               <Password.PasswordInput
                 id="new_password"
                 data-testid="welcome-password-input"
                 bind:value={_state.new_password}
-                placeholder={$t('welcome.setPassword.newPasswordPlaceholder')}
+                placeholder={$t('app.auth.welcome.setPassword.newPasswordPlaceholder')}
                 autocomplete="new-password"
               />
             </div>
 
             <div class="space-y-2">
-              <label for="confirm_password" class="text-sm font-medium">{$t('welcome.setPassword.confirmPasswordLabel')}</label>
+              <label for="confirm_password" class="text-sm font-medium">{$t('app.auth.welcome.setPassword.confirmPasswordLabel')}</label>
               <Password.PasswordInput
                 id="confirm_password"
                 data-testid="welcome-password-confirm-input"
                 bind:value={_state.confirm_password}
-                placeholder={$t('welcome.setPassword.confirmPasswordPlaceholder')}
+                placeholder={$t('app.auth.welcome.setPassword.confirmPasswordPlaceholder')}
                 autocomplete="new-password"
               />
               {#if _state.confirm_password.length > 0 && !passwordsMatch}
-                <p class="text-sm text-destructive">{$t('welcome.setPassword.passwordsDoNotMatch')}</p>
+                <p class="text-sm text-destructive">{$t('app.auth.welcome.setPassword.passwordsDoNotMatch')}</p>
               {/if}
             </div>
 
@@ -426,9 +432,9 @@
               class="w-full"
             >
               {#if _state.submitting}
-                {$t('welcome.setPassword.completing')}
+                {$t('app.auth.welcome.setPassword.completing')}
               {:else}
-                {$t('welcome.setPassword.completeButton')}
+                {$t('app.auth.welcome.setPassword.completeButton')}
                 <KeyRound class="w-4 h-4 ml-2" />
               {/if}
             </Button>
@@ -442,9 +448,9 @@
           <CardHeader>
             <div class="flex items-center gap-2">
               <ShieldCheck class="w-5 h-5 text-emerald-500" />
-              <CardTitle>{$t('welcome.complete.title')}</CardTitle>
+              <CardTitle>{$t('app.auth.welcome.complete.title')}</CardTitle>
             </div>
-            <CardDescription>{$t('welcome.complete.description')}</CardDescription>
+            <CardDescription>{$t('app.auth.welcome.complete.description')}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             {#if showPasskeyStep}
@@ -453,20 +459,20 @@
                   <Fingerprint class="size-5 {passkeyRequired ? 'text-destructive' : 'text-primary'}" />
                   <span class="font-medium text-sm">
                     {passkeyRequired
-                      ? $t('welcome.passkey.titleRequired')
-                      : $t('welcome.passkey.title')}
+                      ? $t('app.auth.welcome.passkey.titleRequired')
+                      : $t('app.auth.welcome.passkey.title')}
                   </span>
                 </div>
                 <p class="text-sm text-muted-foreground">
                   {passkeyRequired
-                    ? $t('welcome.passkey.descriptionRequired')
-                    : $t('welcome.passkey.description')}
+                    ? $t('app.auth.welcome.passkey.descriptionRequired')
+                    : $t('app.auth.welcome.passkey.description')}
                 </p>
               </div>
             {/if}
 
             <Button onclick={handleGoToLogin} class="w-full">
-              {$t('welcome.complete.loginButton')}
+              {$t('app.auth.welcome.complete.loginButton')}
               <ArrowRight class="w-4 h-4 ml-2" />
             </Button>
           </CardContent>

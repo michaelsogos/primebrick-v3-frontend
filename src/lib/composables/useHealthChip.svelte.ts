@@ -9,18 +9,18 @@ export type HealthChip = HealthChipState;
 export function chipLabel(chip: HealthChipState): string {
   const tt = get(t);
   return chip === 'backend_offline'
-    ? tt('shell.health.beOffline')
+    ? tt('app.health.beOffline')
     : chip === 'db_offline'
-      ? tt('shell.health.dbOffline')
+      ? tt('app.health.dbOffline')
       : chip === 'redis_offline'
-        ? tt('shell.health.redisOffline')
+        ? tt('app.health.redisOffline')
         : chip === 'nats_offline'
-          ? tt('shell.health.natsOffline')
+          ? tt('app.health.natsOffline')
           : chip === 'idp_offline'
-            ? tt('shell.health.idpOffline')
+            ? tt('app.health.idpOffline')
             : chip === 'ok'
-              ? tt('shell.health.beOnline')
-              : tt('common.loading');
+              ? tt('app.health.beOnline')
+              : tt('app.common.loading');
 }
 
 /** Pure function: maps chip state → CSS class string for the chip badge */

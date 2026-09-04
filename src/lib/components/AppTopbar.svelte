@@ -122,7 +122,7 @@
   <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
   <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
     <div class="flex min-w-0 justify-start">
-      <Sidebar.Trigger aria-label={$t('shell.nav.open')} class="shrink-0" />
+      <Sidebar.Trigger aria-label={$t('app.nav.open')} class="shrink-0" />
     </div>
 
     <div class="flex min-w-0 justify-center">
@@ -133,8 +133,8 @@
       {#if ianaTimeZone}
         <span
           class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-56"
-          title={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
-          aria-label={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
+          title={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
+          aria-label={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
         >
           <Globe class="size-4 shrink-0 text-muted-foreground opacity-80" aria-hidden="true" />
           <span class="truncate text-xs text-muted-foreground">{ianaTimeZone}</span>
@@ -147,8 +147,8 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.errors.aria')}
-        title={$t('shell.errors.aria')}
+        aria-label={$t('app.errors.aria')}
+        title={$t('app.errors.aria')}
         onclick={() => openSheet('shell.errors', {}, { contentClass: 'w-[420px] p-0' })}
       >
         <TriangleAlert class="size-4" />
@@ -165,7 +165,7 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.notifications.aria')}
+        aria-label={$t('app.notifications.aria')}
       >
         <Bell class="size-4" />
         {#if unreadNotifications > 0}
@@ -180,8 +180,8 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.aiChat.aria')}
-        title={$t('shell.aiChat.aria')}
+        aria-label={$t('app.aiChat.aria')}
+        title={$t('app.aiChat.aria')}
         onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
       >
         <MessageSquare class="size-4" />

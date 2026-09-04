@@ -177,9 +177,9 @@
             </div>
             <div class="text-sm font-medium text-muted-foreground">
               {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-                {$t('entities.list.selectedRowsNotLoadedHint')}
+                {$t('system.entities.list.selectedRowsNotLoadedHint')}
               {:else}
-                {$t('entities.list.noSelectedRowsInView')}
+                {$t('system.entities.list.noSelectedRowsInView')}
               {/if}
             </div>
           </div>

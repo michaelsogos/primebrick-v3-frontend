@@ -77,7 +77,7 @@
 
       pushNotification({
         impact: 'NONE',
-        message: $t('auth.passkeys.enrollmentSuccess'),
+        message: $t('app.auth.passkeys.enrollmentSuccess'),
         scope: 'auth',
       });
 
@@ -100,7 +100,7 @@
         }
         pushNotification({
           impact: 'NONE',
-          message: $t('auth.passkeys.alreadyEnrolled'),
+          message: $t('app.auth.passkeys.alreadyEnrolled'),
           scope: 'auth',
         });
         oncomplete();
@@ -109,7 +109,7 @@
       console.error('[PasskeyEnrollmentSection] Failed to enroll passkey:', error);
       pushNotification({
         impact: 'HIGH',
-        message: $t('auth.passkeys.enrollmentError'),
+        message: $t('app.auth.passkeys.enrollmentError'),
         scope: 'auth',
       });
     } finally {
@@ -124,20 +124,20 @@
     <ShieldCheck class="size-4 text-emerald-500 mt-0.5 shrink-0" />
     <p class="text-sm italic text-muted-foreground">
       <span class="not-italic text-foreground/80">
-        {$t('auth.authMethodEnforcer.benefitSecurity').split(' — ')[0]}
+        {$t('app.auth.authMethodEnforcer.benefitSecurity').split(' — ')[0]}
       </span>
       <br />
-      <span class="text-muted-foreground/80">— {$t('auth.authMethodEnforcer.benefitSecurity').split(' — ')[1]}</span>
+      <span class="text-muted-foreground/80">— {$t('app.auth.authMethodEnforcer.benefitSecurity').split(' — ')[1]}</span>
     </p>
   </div>
   <div class="flex items-start gap-2">
     <KeyRound class="size-4 text-primary mt-0.5 shrink-0" />
     <p class="text-sm italic text-muted-foreground">
       <span class="not-italic text-foreground/80">
-        {$t('auth.authMethodEnforcer.benefitConveniencePasskey').split(' — ')[0]}
+        {$t('app.auth.authMethodEnforcer.benefitConveniencePasskey').split(' — ')[0]}
       </span>
       <br />
-      <span class="text-muted-foreground/80">— {$t('auth.authMethodEnforcer.benefitConveniencePasskey').split(' — ')[1]}</span>
+      <span class="text-muted-foreground/80">— {$t('app.auth.authMethodEnforcer.benefitConveniencePasskey').split(' — ')[1]}</span>
     </p>
   </div>
 </div>
@@ -145,7 +145,7 @@
 {#if enrolling}
   <div class="flex items-center justify-center py-4">
     <Spinner class="size-6" />
-    <span class="ml-2 text-sm text-muted-foreground">{$t('auth.authMethodEnforcer.enrolling')}</span>
+    <span class="ml-2 text-sm text-muted-foreground">{$t('app.auth.authMethodEnforcer.enrolling')}</span>
   </div>
 {/if}
 
@@ -157,6 +157,6 @@
     disabled={enrolling}
   >
     <Fingerprint class="size-4 mr-2" />
-    {$t('auth.authMethodEnforcer.enrollPasskeyButton')}
+    {$t('app.auth.authMethodEnforcer.enrollPasskeyButton')}
   </Button>
 </div>

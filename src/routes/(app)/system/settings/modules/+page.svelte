@@ -71,8 +71,8 @@
       error = e instanceof Error ? e.message : 'Failed to load modules';
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.loadFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.loadFailed',
+        scope: $t('system.settings.modules.title'),
         detail: error,
       });
     } finally {
@@ -83,16 +83,16 @@
   function handleImportModule() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'shell.settings.modules.notImplemented',
-      scope: $t('shell.settings.modules.importModule'),
+      messageKey: 'system.settings.modules.notImplemented',
+      scope: $t('system.settings.modules.importModule'),
     });
   }
 
   function handleOpenMarketplace() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'shell.settings.modules.notImplemented',
-      scope: $t('shell.settings.modules.openMarketplace'),
+      messageKey: 'system.settings.modules.notImplemented',
+      scope: $t('system.settings.modules.openMarketplace'),
     });
   }
 
@@ -105,15 +105,15 @@
       pushNotification({
         impact: 'NONE',
         messageKey: result.is_enabled
-          ? 'shell.settings.modules.moduleEnabled'
-          : 'shell.settings.modules.moduleDisabled',
-        scope: $t('shell.settings.modules.title'),
+          ? 'system.settings.modules.moduleEnabled'
+          : 'system.settings.modules.moduleDisabled',
+        scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.toggleFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.toggleFailed',
+        scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
     }
@@ -134,14 +134,14 @@
       deleteTarget = null;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'shell.settings.modules.moduleDeleted',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.moduleDeleted',
+        scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.deleteFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.deleteFailed',
+        scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -163,8 +163,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -172,7 +172,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.modules.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>
     </div>
   {/snippet}
 
@@ -185,7 +185,7 @@
                   <Hourglass class="size-20 text-info" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('common.loading')}
+                  {$t('app.common.loading')}
                 </div>
               </div>
             </div>
@@ -196,7 +196,7 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('shell.settings.modules.loadFailed')}
+                  {$t('system.settings.modules.loadFailed')}
                 </div>
               </div>
             </div>
@@ -207,10 +207,10 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('shell.settings.modules.noModules')}
+                  {$t('system.settings.modules.noModules')}
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  {$t('shell.settings.modules.noModulesHint')}
+                  {$t('system.settings.modules.noModulesHint')}
                 </div>
               </div>
             </div>
@@ -246,7 +246,7 @@
                         {/if}
                         {#if isReserved}
                           <Badge variant="outline" class="text-[11px] font-medium">
-                            {$t('shell.settings.modules.reserved')}
+                            {$t('system.settings.modules.reserved')}
                           </Badge>
                         {/if}
                       </div>
@@ -301,9 +301,9 @@
 
                     <!-- Scaler indicator -->
                     {#if !isReserved && behindScaler}
-                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('shell.settings.modules.behindScaler')}>
+                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('system.settings.modules.behindScaler')}>
                         <Layers class="size-3.5 opacity-90" />
-                        <span>{$t('shell.settings.modules.behindScaler')}</span>
+                        <span>{$t('system.settings.modules.behindScaler')}</span>
                       </Badge>
                     {/if}
 
@@ -316,7 +316,7 @@
                         variant="ghost"
                         size="icon"
                         onclick={() => openConfigPage(module)}
-                        title={$t('shell.settings.modules.configure')}
+                        title={$t('system.settings.modules.configure')}
                       >
                         <Settings class="size-4" />
                       </Button>
@@ -324,7 +324,7 @@
                         variant="ghost"
                         size="icon"
                         onclick={() => openDeleteDialog(module)}
-                        title={$t('common.delete')}
+                        title={$t('app.common.delete')}
                       >
                         <Trash2 class="size-4 text-destructive" />
                       </Button>
@@ -342,11 +342,11 @@
         <div class="flex items-center justify-end gap-2">
           <Button variant="default" onclick={handleImportModule}>
             <Download class="size-4" />
-            {$t('shell.settings.modules.importModule')}
+            {$t('system.settings.modules.importModule')}
           </Button>
           <Button variant="outline" onclick={handleOpenMarketplace}>
             <Store class="size-4" />
-            {$t('shell.settings.modules.openMarketplace')}
+            {$t('system.settings.modules.openMarketplace')}
           </Button>
         </div>
       </div>

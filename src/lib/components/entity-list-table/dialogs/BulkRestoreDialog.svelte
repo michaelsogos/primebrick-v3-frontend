@@ -25,7 +25,7 @@
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('system.entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       Sei sicuro di voler ripristinare {selectedCount} elementi?
     </Dialog.Description>
@@ -37,7 +37,7 @@
       onclick={onCancel}
       disabled={isRestoring}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="warning"
@@ -46,9 +46,9 @@
       disabled={isRestoring}
     >
       {#if isRestoring}
-        {$t('common.restoring')}
+        {$t('app.common.restoring')}
       {:else}
-        {$t('common.restore')}
+        {$t('app.common.restore')}
       {/if}
     </Button>
   </Dialog.Footer>

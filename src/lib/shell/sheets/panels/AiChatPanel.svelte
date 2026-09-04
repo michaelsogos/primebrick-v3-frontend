@@ -113,7 +113,7 @@
     {#snippet title()}
       <div class="flex items-center gap-2">
         <MessageSquare class="size-4" />
-        <span>{$t('shell.aiChat.title')}</span>
+        <span>{$t('app.aiChat.title')}</span>
       </div>
     {/snippet}
     {#snippet actions()}
@@ -121,7 +121,7 @@
         variant="ghost"
         size="icon"
         class="size-7"
-        title={$t('shell.aiChat.newConversation')}
+        title={$t('app.aiChat.newConversation')}
         onclick={handleNewConversation}
       >
         <Plus class="size-4" />
@@ -130,7 +130,7 @@
         variant="ghost"
         size="icon"
         class="size-7"
-        title={$t('shell.aiChat.title')}
+        title={$t('app.aiChat.title')}
         onclick={() => closeSheet()}
       >
         <X class="size-4" />
@@ -144,7 +144,7 @@
     {#if aiChatStore.hasConversations}
       <div class="hidden w-48 shrink-0 border-r border-sidebar-border bg-sidebar/50 sm:block">
         <div class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-          {$t('shell.aiChat.conversations')}
+          {$t('app.aiChat.conversations')}
         </div>
         <div class="flex flex-col gap-0.5 px-1">
           {#each aiChatStore.conversations as conv (conv.uuid)}
@@ -179,7 +179,7 @@
         {#if aiChatStore.messages.length === 0 && !aiChatStore.streamingText}
           <div class="flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
             <Bot class="size-10 opacity-40" />
-            <p class="max-w-xs text-sm">{$t('shell.aiChat.welcome')}</p>
+            <p class="max-w-xs text-sm">{$t('app.aiChat.welcome')}</p>
           </div>
         {:else}
           <div class="flex flex-col gap-3">
@@ -225,7 +225,7 @@
                           msg.feedback === 'up' && 'text-success',
                           msg.feedback === 'down' && 'text-destructive',
                         )}
-                        title={$t('shell.aiChat.yes')}
+                        title={$t('app.aiChat.yes')}
                         onclick={() => handleFeedback(msg.uuid, 'up')}
                         disabled={msg.feedback === 'up'}
                       >
@@ -238,7 +238,7 @@
                           msg.feedback === 'down' && 'text-destructive',
                           msg.feedback === 'up' && 'text-success',
                         )}
-                        title={$t('shell.aiChat.no')}
+                        title={$t('app.aiChat.no')}
                         onclick={() => handleFeedback(msg.uuid, 'down')}
                         disabled={msg.feedback === 'down'}
                       >
@@ -289,7 +289,7 @@
                   <Bot class="size-4" />
                 </div>
                 <div class="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  {$t('shell.aiChat.loading')}
+                  {$t('app.aiChat.loading')}
                 </div>
               </div>
             {/if}
@@ -302,14 +302,14 @@
         <div class="border-t border-border bg-muted/30 px-4 py-2">
           <div class="flex items-center justify-between gap-2">
             <span class="text-xs text-muted-foreground">
-              {$t('shell.aiChat.navigateConfirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
+              {$t('app.aiChat.navigateConfirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
             </span>
             <div class="flex gap-1">
               <Button size="sm" variant="default" class="h-7 text-xs" onclick={handleConfirmToolCall}>
-                {$t('shell.aiChat.yes')}
+                {$t('app.aiChat.yes')}
               </Button>
               <Button size="sm" variant="ghost" class="h-7 text-xs" onclick={handleDismissToolCall}>
-                {$t('shell.aiChat.no')}
+                {$t('app.aiChat.no')}
               </Button>
             </div>
           </div>
@@ -329,16 +329,16 @@
           <Textarea
             bind:value={inputText}
             onkeydown={handleKeydown}
-            placeholder={$t('shell.aiChat.placeholder')}
+            placeholder={$t('app.aiChat.placeholder')}
             class="min-h-[40px] max-h-[120px] resize-none text-sm"
             rows={1}
           />
           {#if aiChatStore.isStreaming}
-            <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('shell.aiChat.stop')}>
+            <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('app.aiChat.stop')}>
               <Square class="size-4" />
             </Button>
           {:else}
-            <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('shell.aiChat.send')}>
+            <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('app.aiChat.send')}>
               <Send class="size-4" />
             </Button>
           {/if}

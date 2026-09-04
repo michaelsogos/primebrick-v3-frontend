@@ -97,7 +97,7 @@
       console.error("[Passkey Signin Error]", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("login.passkey.error"),
+        message: $t("app.auth.login.passkey.error"),
         scope: "auth",
       });
       onerror?.();
@@ -119,5 +119,5 @@
   {:else}
     <Fingerprint class="size-4 mr-2" />
   {/if}
-  {$t("login.passkey.button")}
+  {$t("app.auth.login.passkey.button")}
 </Button>

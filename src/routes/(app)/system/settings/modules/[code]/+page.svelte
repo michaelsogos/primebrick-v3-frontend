@@ -72,14 +72,14 @@
       service = updated;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'common.saveSuccess',
-        scope: $t('shell.settings.modules.config.serviceInfo'),
+        messageKey: 'app.common.saveSuccess',
+        scope: $t('system.settings.modules.config.serviceInfo'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'common.saveFailed',
-        scope: $t('shell.settings.modules.config.serviceInfo'),
+        messageKey: 'app.common.saveFailed',
+        scope: $t('system.settings.modules.config.serviceInfo'),
         detail: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -95,14 +95,14 @@
       );
       pushNotification({
         impact: 'NONE',
-        messageKey: 'common.saveSuccess',
-        scope: $t('shell.settings.modules.config.moduleConfig'),
+        messageKey: 'app.common.saveSuccess',
+        scope: $t('system.settings.modules.config.moduleConfig'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'common.saveFailed',
-        scope: $t('shell.settings.modules.config.moduleConfig'),
+        messageKey: 'app.common.saveFailed',
+        scope: $t('system.settings.modules.config.moduleConfig'),
         detail: e instanceof Error ? e.message : undefined,
       });
     }
@@ -121,9 +121,9 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/modules' },
-          { label: $t('shell.settings.modules.title'), href: '/system/settings/modules' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/modules' },
+          { label: $t('system.settings.modules.title'), href: '/system/settings/modules' },
           { label: service.name || service.code },
         ]}
       />
@@ -138,10 +138,10 @@
       <Tabs bind:value={activeTab}>
         <TabsList>
           <TabsTrigger value="service-info">
-            {$t('shell.settings.modules.config.serviceInfo')}
+            {$t('system.settings.modules.config.serviceInfo')}
           </TabsTrigger>
           <TabsTrigger value="module-config">
-            {$t('shell.settings.modules.config.moduleConfig')}
+            {$t('system.settings.modules.config.moduleConfig')}
           </TabsTrigger>
         </TabsList>
 
@@ -149,47 +149,47 @@
           <form id="service-info-form" onsubmit={(e) => { e.preventDefault(); handleSaveServiceInfo(); }}>
             <div class="grid grid-cols-2 gap-6">
               <div class="space-y-2">
-                <label for="name" class="text-sm font-medium">{$t('shell.settings.modules.config.name')}</label>
+                <label for="name" class="text-sm font-medium">{$t('system.settings.modules.config.name')}</label>
                 <Input id="name" bind:value={formData.name} />
               </div>
 
               <div class="space-y-2">
-                <label for="base_url" class="text-sm font-medium">{$t('shell.settings.modules.config.baseUrl')}</label>
+                <label for="base_url" class="text-sm font-medium">{$t('system.settings.modules.config.baseUrl')}</label>
                 <Input id="base_url" bind:value={formData.base_url} />
               </div>
 
               <div class="col-span-2 space-y-2">
-                <label for="description" class="text-sm font-medium">{$t('shell.settings.modules.config.description')}</label>
+                <label for="description" class="text-sm font-medium">{$t('system.settings.modules.config.description')}</label>
                 <Input id="description" bind:value={formData.description} />
               </div>
 
               <div class="space-y-2">
-                <label for="icon" class="text-sm font-medium">{$t('shell.settings.modules.config.icon')}</label>
-                <Input id="icon" bind:value={formData.icon} placeholder={$t('shell.settings.modules.config.iconPlaceholder')} />
+                <label for="icon" class="text-sm font-medium">{$t('system.settings.modules.config.icon')}</label>
+                <Input id="icon" bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
               </div>
 
               <div class="space-y-2">
-                <label for="icon_type" class="text-sm font-medium">{$t('shell.settings.modules.config.iconType')}</label>
+                <label for="icon_type" class="text-sm font-medium">{$t('system.settings.modules.config.iconType')}</label>
                 <select id="icon_type" bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
-                  <option value="icon">{$t('shell.settings.modules.config.iconTypeIcon')}</option>
-                  <option value="url">{$t('shell.settings.modules.config.iconTypeUrl')}</option>
-                  <option value="svg">{$t('shell.settings.modules.config.iconTypeSvg')}</option>
-                  <option value="base64">{$t('shell.settings.modules.config.iconTypeBase64')}</option>
+                  <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
+                  <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
+                  <option value="svg">{$t('system.settings.modules.config.iconTypeSvg')}</option>
+                  <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
                 </select>
               </div>
 
               <div class="space-y-2">
-                <label for="author" class="text-sm font-medium">{$t('shell.settings.modules.config.author')}</label>
+                <label for="author" class="text-sm font-medium">{$t('system.settings.modules.config.author')}</label>
                 <Input id="author" bind:value={formData.author} />
               </div>
 
               <div class="space-y-2">
-                <label for="github_repo_url" class="text-sm font-medium">{$t('shell.settings.modules.config.githubRepoUrl')}</label>
+                <label for="github_repo_url" class="text-sm font-medium">{$t('system.settings.modules.config.githubRepoUrl')}</label>
                 <Input id="github_repo_url" bind:value={formData.github_repo_url} />
               </div>
 
               <div class="col-span-2 space-y-2">
-                <label class="text-sm font-medium">{$t('shell.settings.modules.config.serviceVersion')}</label>
+                <label class="text-sm font-medium">{$t('system.settings.modules.config.serviceVersion')}</label>
                 <div class="flex items-center gap-2">
                   {#if service.service_version}
                     <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -198,7 +198,7 @@
                   {:else}
                     <span class="text-sm text-muted-foreground">—</span>
                   {/if}
-                  <span class="text-xs text-muted-foreground">{$t('shell.settings.modules.config.serviceVersionHint')}</span>
+                  <span class="text-xs text-muted-foreground">{$t('system.settings.modules.config.serviceVersionHint')}</span>
                 </div>
               </div>
             </div>
@@ -207,16 +207,16 @@
 
         <TabsContent value="module-config" class="flex-1 overflow-y-auto p-4">
           {#if configLoading}
-            <div class="text-sm text-muted-foreground">{$t('common.loading')}</div>
+            <div class="text-sm text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if configError}
             <div class="rounded-lg border border-warning/30 bg-warning/5 p-4">
               <p class="text-sm text-muted-foreground">
-                {$t('shell.settings.modules.config.configNotAvailable')}
+                {$t('system.settings.modules.config.configNotAvailable')}
               </p>
             </div>
           {:else if configEntries.length === 0}
             <div class="text-sm text-muted-foreground">
-              {$t('shell.settings.modules.config.noConfigEntries')}
+              {$t('system.settings.modules.config.noConfigEntries')}
             </div>
           {:else}
             <div class="space-y-4">
@@ -248,9 +248,9 @@
     {#if activeTab === 'service-info'}
       <Button type="submit" form="service-info-form" disabled={isSavingServiceInfo}>
         {#if isSavingServiceInfo}
-          {$t('common.saving')}
+          {$t('app.common.saving')}
         {:else}
-          {$t('common.save')}
+          {$t('app.common.save')}
         {/if}
       </Button>
     {/if}

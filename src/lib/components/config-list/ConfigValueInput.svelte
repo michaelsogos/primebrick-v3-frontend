@@ -242,7 +242,7 @@
       labelField="label_key"
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       data-testid={`config-input-badge-${fieldKey}`}
     />
     {#if firstError}
@@ -260,7 +260,7 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
       data-testid={`config-input-single-select-${fieldKey}`}
@@ -280,7 +280,7 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
       data-testid={`config-input-multi-select-${fieldKey}`}
@@ -317,7 +317,7 @@
     <DateWheelPicker
       bind:value={localValue}
       includeTime={false}
-      placeholder={$t('common.selectDate')}
+      placeholder={$t('app.common.selectDate')}
     />
     {#if localValue}
       <Button
@@ -326,7 +326,7 @@
         onclick={handleBlur}
         class="ml-2"
       >
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     {/if}
     {#if firstError}
@@ -338,7 +338,7 @@
     <DateWheelPicker
       bind:value={localValue}
       includeTime={true}
-      placeholder={$t('common.selectDate')}
+      placeholder={$t('app.common.selectDate')}
     />
     {#if localValue}
       <Button
@@ -347,7 +347,7 @@
         onclick={handleBlur}
         class="ml-2"
       >
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     {/if}
     {#if firstError}

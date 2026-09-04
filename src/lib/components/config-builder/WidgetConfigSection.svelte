@@ -34,9 +34,9 @@
 
 {#if isMoney}
   <div class="space-y-4">
-    <h4 class="text-sm font-semibold text-muted-foreground">{$t('config.typeConfig.moneyConfig')}</h4>
+    <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.moneyConfig')}</h4>
     <div class="space-y-1">
-      <Label for="tcb-currency">{$t('config.typeConfig.defaultCurrency')}</Label>
+      <Label for="tcb-currency">{$t('system.settings.config.typeConfig.defaultCurrency')}</Label>
       <ComboSelect
         mode="single"
         value={builder.currency ?? 'EUR'}
@@ -44,19 +44,19 @@
         options={currencyOptions}
         valueField="code"
         labelField="name"
-        placeholder={$t('config.typeConfig.selectSource')}
+        placeholder={$t('system.settings.config.typeConfig.selectSource')}
         data-testid="tcb-currency"
       />
     </div>
   </div>
 {:else if isBadge}
   <div class="space-y-4">
-    <h4 class="text-sm font-semibold text-muted-foreground">{$t('config.typeConfig.badgeValues')}</h4>
+    <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.badgeValues')}</h4>
     <BadgeValuesEditor {builder} />
   </div>
 {:else if isSelect}
   <div class="space-y-4">
-    <h4 class="text-sm font-semibold text-muted-foreground">{$t('config.typeConfig.selectConfig')}</h4>
+    <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.selectConfig')}</h4>
     <SelectSourceEditor {builder} />
   </div>
 {/if}

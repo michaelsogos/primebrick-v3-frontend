@@ -16,17 +16,17 @@ export function mapRFC7807ToMessageKey(
 			// Detail format: "Account locked due to too many failed attempts. Wait X minutes."
 			const minutesMatch = error.detail?.match(/Wait (\d+) minutes/);
 			const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-			return { key: 'login.accountLocked', minutes };
+			return { key: 'app.auth.login.accountLocked', minutes };
 		}
 
 		if (!error.internal_code || genericAuthCodes.includes(error.internal_code)) {
-			return { key: 'login.invalidCredentials' };
+			return { key: 'app.auth.login.invalidCredentials' };
 		}
 	}
 
 	if (error.status === 403) {
 		if (error.internal_code === 'user_no_permission') {
-			return { key: 'login.userNoPermission' };
+			return { key: 'app.auth.login.userNoPermission' };
 		}
 	}
 

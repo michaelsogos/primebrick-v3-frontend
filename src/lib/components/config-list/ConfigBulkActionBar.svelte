@@ -18,7 +18,7 @@
     data-testid="config-bulk-action-bar"
   >
     <span class="text-sm font-medium">
-      {selectedCount} {$t('shell.settings.security.selected')}
+      {selectedCount} {$t('system.settings.security.selected')}
     </span>
     <Button
       variant="destructive"
@@ -27,7 +27,7 @@
       data-testid="config-bulk-delete-button"
     >
       <Trash2 class="size-4 mr-2" />
-      {$t('shell.settings.security.bulkDelete')}
+      {$t('system.settings.security.bulkDelete')}
     </Button>
   </div>
 {/if}

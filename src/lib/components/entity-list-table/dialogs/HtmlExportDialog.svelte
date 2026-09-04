@@ -34,12 +34,12 @@
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.exportHtmlConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.exportHtmlConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('common.exportHtmlConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.exportHtmlConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
       {:else}
-        {$t('common.exportHtmlConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.exportHtmlConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>
@@ -50,7 +50,7 @@
       onclick={onCancel}
       disabled={isExporting}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="warning"
@@ -59,9 +59,9 @@
       disabled={isExporting}
     >
       {#if isExporting}
-        {$t('common.exporting')}
+        {$t('app.common.exporting')}
       {:else}
-        {$t('common.confirm')}
+        {$t('app.common.confirm')}
       {/if}
     </Button>
   </Dialog.Footer>

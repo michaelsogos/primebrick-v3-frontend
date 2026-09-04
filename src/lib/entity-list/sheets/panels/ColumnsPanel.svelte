@@ -34,7 +34,7 @@
 </script>
 
 {#snippet headerTitle()}
-  {$t('entities.list.columns')}
+  {$t('system.entities.list.columns')}
 {/snippet}
 
 {#snippet headerActions()}
@@ -43,13 +43,13 @@
     size="sm"
     class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={() => onResetColumnVisibility()}
-    title={$t('common.reset')}
+    title={$t('app.common.reset')}
   >
     <RotateCcw class="size-4" />
   </Button>
   <Sheet.Close
     class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('common.done')}
+    title={$t('app.common.done')}
     onclick={() => closeSheet()}
   >
     <XIcon class="size-4" />
@@ -64,7 +64,7 @@
       <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
+          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.stickyFields')}</div>
           <div class="h-px flex-1 bg-border"></div>
         </div>
       </div>
@@ -112,7 +112,7 @@
       <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
+          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.dataFields')}</div>
           <div class="h-px flex-1 bg-border"></div>
         </div>
       </div>
@@ -160,7 +160,7 @@
       <div class="my-2">
         <div class="flex items-center gap-2">
           <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
+          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.auditingFields')}</div>
           <div class="h-px flex-1 bg-border"></div>
         </div>
       </div>

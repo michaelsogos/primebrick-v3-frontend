@@ -341,8 +341,8 @@
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearSingle(); }}
               class={inputTrailingIconColorClasses}
-              aria-label={$t("common.clearSelection")}
-              title={$t("common.clearSelection")}
+              aria-label={$t("app.common.clearSelection")}
+              title={$t("app.common.clearSelection")}
             >
               <X class="h-3.5 w-3.5" />
             </button>
@@ -352,8 +352,8 @@
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearMulti(); }}
               class={inputTrailingIconColorClasses}
-              aria-label={$t("common.clearSelection")}
-              title={$t("common.clearSelection")}
+              aria-label={$t("app.common.clearSelection")}
+              title={$t("app.common.clearSelection")}
             >
               <X class="h-3.5 w-3.5" />
             </button>
@@ -398,13 +398,13 @@
                 <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0" />
               {/if}
               <span class="flex-1 truncate text-left">
-                {$t('common.create')} <span class="font-medium">"{search.trim()}"</span>
+                {$t('app.common.create')} <span class="font-medium">"{search.trim()}"</span>
               </span>
             </div>
           </Command.Item>
         {/if}
         {#if filteredOptions.length === 0 && !showCreateItem}
-          <Command.Empty>{$t('common.noResults')}</Command.Empty>
+          <Command.Empty>{$t('app.common.noResults')}</Command.Empty>
         {:else if filteredOptions.length > 0}
           {#each filteredOptions as opt (opt.value)}
             {@const isDisabled = isOptionDisabled ? isOptionDisabled(opt.raw) : false}

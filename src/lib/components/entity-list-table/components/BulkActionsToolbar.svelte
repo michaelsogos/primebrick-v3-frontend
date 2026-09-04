@@ -59,10 +59,10 @@
   >
     {#if toolbarMode === 'filters'}
       <ListCheck class="size-3.5" />
-      {$t('entities.list.bulkActions.toggleToBulk')}
+      {$t('system.entities.list.bulkActions.toggleToBulk')}
     {:else}
       <Funnel class="size-3.5" />
-      {$t('entities.list.bulkActions.toggleToFilters')}
+      {$t('system.entities.list.bulkActions.toggleToFilters')}
     {/if}
   </Button>
   <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
@@ -88,7 +88,7 @@
         onclick={onBulkExport}
       >
         <Download class="size-3.5" />
-        {$t('entities.list.bulkActions.export')}
+        {$t('system.entities.list.bulkActions.export')}
       </Button>
       <Button
         variant="soft"
@@ -97,7 +97,7 @@
         onclick={onHtmlExport}
       >
         <Download class="size-3.5" />
-        {$t('entities.list.bulkActions.exportHtml')}
+        {$t('system.entities.list.bulkActions.exportHtml')}
       </Button>
       <Button
         variant="soft"
@@ -107,7 +107,7 @@
         disabled={selectedKeys.length < 2}
       >
         <Copy class="size-3.5" />
-        {$t('entities.list.bulkActions.duplicate')}
+        {$t('system.entities.list.bulkActions.duplicate')}
       </Button>
       <Button
         variant="soft"
@@ -117,7 +117,7 @@
         disabled={selectedKeys.length < 2 || hasDeletedSelected}
       >
         <Trash2 class="size-3.5" />
-        {$t('entities.list.bulkActions.delete')}
+        {$t('system.entities.list.bulkActions.delete')}
       </Button>
       {#if hasDeletedSelected}
         <Button
@@ -131,7 +131,7 @@
             <Trash class="size-3.5" />
             <ArrowUpFromLine class="absolute bottom-px size-2" />
           </span>
-          {$t('entities.list.bulkActions.restore')}
+          {$t('system.entities.list.bulkActions.restore')}
         </Button>
       {/if}
     </div>

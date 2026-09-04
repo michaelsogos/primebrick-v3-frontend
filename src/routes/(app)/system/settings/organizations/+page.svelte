@@ -456,18 +456,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.organizationsList',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.organizationsList',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger';
       const tags: AppErrorTag[] = [
@@ -482,8 +482,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.organizationsList',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.organizationsList',
         tags,
         toast: false,
       });
@@ -517,18 +517,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.organizationsPageInit',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.organizationsPageInit',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger';
       const tags: AppErrorTag[] = [
@@ -543,8 +543,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.organizationsPageInit',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.organizationsPageInit',
         tags,
         toast: false,
       });
@@ -719,8 +719,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -728,7 +728,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.organizations')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.tabs.organizations')}</h1>
     </div>
   {/snippet}
 
@@ -749,8 +749,8 @@
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.organization.singular"
-    selectionLabelKey="entities.organization.plural"
+    selectionLabelSingularKey="system.entities.organization.singular"
+    selectionLabelKey="system.entities.organization.plural"
     rows={rows}
     {total}
     {metaLoading}

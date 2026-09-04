@@ -24,7 +24,7 @@
 <button
   type="button"
   class="inline-flex h-auto cursor-pointer rounded-full border-0 bg-transparent p-0 shadow-none ring-offset-background hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-  aria-label={$t('shell.health.versionsTitle')}
+  aria-label={$t('app.health.versionsTitle')}
   onclick={(e) => { e.preventDefault(); e.stopPropagation(); openSheet('shell.versions', {}, { contentClass: 'w-[420px] p-0' }); }}
 >
   <Badge

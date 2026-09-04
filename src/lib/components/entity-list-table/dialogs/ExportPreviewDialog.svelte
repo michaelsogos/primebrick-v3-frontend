@@ -50,7 +50,7 @@
 
 <DialogBordered bind:open={open} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
-    <Dialog.Title>{$t('common.htmlPreviewTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>
 
   <!-- Navigation dock -->
@@ -182,7 +182,7 @@
       class="hover:scale-105 transition-all"
       onclick={onClose}
     >
-      {$t('common.close')}
+      {$t('app.common.close')}
     </Button>
     {#if previewMode === 'email'}
       <Button onclick={onCopyEmailHtmlToClipboard} disabled={isEmailPreparing || !emailHtmlContent}>
@@ -198,7 +198,7 @@
       </Button>
     {:else}
       <Button onclick={onCopyHtmlToClipboard} disabled={previewMode !== 'html'}>
-        {$t('common.copyHtml')}
+        {$t('app.common.copyHtml')}
       </Button>
     {/if}
   </Dialog.Footer>

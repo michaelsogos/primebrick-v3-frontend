@@ -126,17 +126,17 @@
     send_invitation: z.boolean().default(false),
     display_name: displayNameSchema(z.string()),
     email: z.string()
-      .min(1, { message: 'validation.emailRequired' })
-      .email({ message: 'validation.invalidEmail' })
+      .min(1, { message: 'app.common.validation.emailRequired' })
+      .email({ message: 'app.common.validation.invalidEmail' })
       .max(320, { message: maxMsg(320) }),
-    roles: z.array(z.string()).min(1, { message: 'validation.rolesRequired' }).default([]),
+    roles: z.array(z.string()).min(1, { message: 'app.common.validation.rolesRequired' }).default([]),
     avatar_color: z.string()
-      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'validation.invalidFormat' })
+      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'app.common.validation.invalidFormat' })
       .optional()
       .or(z.literal(''))
       .default(getInitialAvatarColor()),
     idp_org: z.string()
-      .min(1, { message: 'validation.orgRequired' }),
+      .min(1, { message: 'app.common.validation.orgRequired' }),
     is_active: z.boolean().default(false),
     is_admin: z.boolean().default(false),
     is_verified: z.boolean().default(false),
@@ -147,7 +147,7 @@
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['password'],
-        message: 'validation.passwordRequired',
+        message: 'app.common.validation.passwordRequired',
       });
     }
   });
@@ -209,7 +209,7 @@
         if (updateForm.data.send_invitation && data.profile?.email) {
           pushNotification({
             impact: 'LOW',
-            message: $t('shell.settings.users.create.invitationSent', { values: { email: data.profile.email } }),
+            message: $t('system.settings.users.create.invitationSent', { values: { email: data.profile.email } }),
             scope: 'auth',
           });
         }
@@ -298,7 +298,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => hasChanges,
-    'shell.settings.users.create.unsavedChanges',
+    'system.settings.users.create.unsavedChanges',
   );
 </script>
 
@@ -316,13 +316,13 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
-          { label: $t('shell.settings.users.create.title') }
+          { label: $t('system.settings.users.create.title') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.users.create.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.users.create.title')}</h1>
     </div>
   {/snippet}
 
@@ -340,10 +340,10 @@
               />
               <div class="flex-1">
                 <p class="font-medium">
-                  {$form.display_name || $t('shell.settings.users.create.displayNamePlaceholder')}
+                  {$form.display_name || $t('system.settings.users.create.displayNamePlaceholder')}
                 </p>
                 <p class="text-sm text-muted-foreground">
-                  {$form.email || $t('shell.settings.users.create.emailPlaceholder')}
+                  {$form.email || $t('system.settings.users.create.emailPlaceholder')}
                 </p>
               </div>
             </div>
@@ -351,7 +351,7 @@
             <!-- Color Picker -->
             <ColorSelector
               bind:value={$form.avatar_color}
-              labelKey="shell.settings.users.create.avatarColor"
+              labelKey="system.settings.users.create.avatarColor"
               triggerId="avatar-color-trigger"
             />
           </div>
@@ -365,12 +365,12 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.displayName')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('system.settings.users.create.displayName')}</FormLabel>
                     <TextInput
                       {...props}
                       data-testid="admin-user-create-display-name-input"
                       bind:value={$form.display_name}
-                      placeholder={$t('shell.settings.users.create.displayNamePlaceholder')}
+                      placeholder={$t('system.settings.users.create.displayNamePlaceholder')}
                     />
                     <TranslatedFormFieldErrors />
                   </div>
@@ -382,13 +382,13 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.email')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('system.settings.users.create.email')}</FormLabel>
                     <TextInput
                       {...props}
                       type="email"
                       data-testid="admin-user-create-email-input"
                       bind:value={$form.email}
-                      placeholder={$t('shell.settings.users.create.emailPlaceholder')}
+                      placeholder={$t('system.settings.users.create.emailPlaceholder')}
                     />
                     <TranslatedFormFieldErrors />
                   </div>
@@ -400,7 +400,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.roles')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('system.settings.users.create.roles')}</FormLabel>
                     <ComboSelect
                       {...props}
                       mode="multi"
@@ -416,7 +416,7 @@
                       valueField="idp_role"
                       labelField="label_key"
                       isLabelTranslated={true}
-                      placeholder={$t('shell.settings.users.create.rolesPlaceholder')}
+                      placeholder={$t('system.settings.users.create.rolesPlaceholder')}
                       isOptionDisabled={(opt) => {
                         const role = opt as Record<string, any>;
                         return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
@@ -424,10 +424,10 @@
                       getSearchKeywords={(opt) => {
                         const role = opt as Record<string, any>;
                         const kws: string[] = [];
-                        if (role.is_admin) kws.push($t('roles.systemAdministrator'));
+                        if (role.is_admin) kws.push($t('app.auth.roles.systemAdministrator'));
                         if (Array.isArray(role.permissions)) kws.push(...role.permissions);
                         if (!role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0)) {
-                          kws.push($t('roles.notValidRole'));
+                          kws.push($t('app.auth.roles.notValidRole'));
                         }
                         return kws;
                       }}
@@ -439,14 +439,14 @@
                           {#if role.is_admin}
                             <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-success border-success/30">
                               <ShieldUser class="size-3" />
-                              {$t('roles.systemAdministrator')}
+                              {$t('app.auth.roles.systemAdministrator')}
                             </Badge>
                           {:else if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
                             <span class="italic text-muted-foreground text-xs truncate">{role.permissions.join(', ')}</span>
                           {:else}
                             <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-muted-foreground border-muted-foreground/30">
                               <ShieldOff class="size-3" />
-                              {$t('roles.notValidRole')}
+                              {$t('app.auth.roles.notValidRole')}
                             </Badge>
                           {/if}
                         </div>
@@ -465,7 +465,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpOrg')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('system.settings.users.create.idpOrg')}</FormLabel>
                     <ComboSelect
                       {...props}
                       mode="single"
@@ -475,9 +475,9 @@
                       valueField="idp_name"
                       labelField="display_name"
                       loading={orgsLoading}
-                      placeholder={$t('shell.settings.users.create.idpOrgPlaceholder')}
+                      placeholder={$t('system.settings.users.create.idpOrgPlaceholder')}
                       onChange={onOrgChange}
-                      searchPlaceholder={$t('shell.settings.users.create.idpOrgSearch')}
+                      searchPlaceholder={$t('system.settings.users.create.idpOrgSearch')}
                     >
                       {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
                         {@const org = option as Record<string, any>}
@@ -507,15 +507,15 @@
                 {#snippet children({ props })}
                   {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required>{$t('shell.settings.users.create.idpUsername')}</FormLabel>
+                    <FormLabel for={props.id} required>{$t('system.settings.users.create.idpUsername')}</FormLabel>
                     <AsyncValidatedInput
                       {...props}
                       data-testid="admin-user-create-username-input"
                       bind:value={$form.idpUsername}
                       validateFn={checkUsernameAvailability}
                       placeholder={isUsernameEnabled
-                        ? $t('shell.settings.users.create.usernamePlaceholder')
-                        : $t('shell.settings.users.create.usernameDisabledPlaceholder')}
+                        ? $t('system.settings.users.create.usernamePlaceholder')
+                        : $t('system.settings.users.create.usernameDisabledPlaceholder')}
                       onStatusChange={handleUsernameStatusChange}
                       externalInvalid={hasZodError}
                       disabled={!isUsernameEnabled}
@@ -523,12 +523,12 @@
                       data-fs-error={hasAsyncError ? 'true' : props['data-fs-error']}
                     />
                     {#if !isUsernameEnabled}
-                      <p class="text-info text-xs">{$t('shell.settings.users.create.usernameSelectOrgFirst')}</p>
+                      <p class="text-info text-xs">{$t('system.settings.users.create.usernameSelectOrgFirst')}</p>
                     {/if}
                     <TranslatedFormFieldErrors />
                     {#if hasAsyncError && !hasZodError}
                       <div class="text-destructive text-xs font-medium">
-                        {$t('validation.nameTaken')}
+                        {$t('app.common.validation.nameTaken')}
                       </div>
                     {/if}
                   </div>
@@ -542,11 +542,11 @@
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} data-testid="admin-user-create-send-invitation-toggle" bind:checked={$form.send_invitation} id="send_invitation" />
                     <label for="send_invitation" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('shell.settings.users.create.sendInvitation')}
+                      {$t('system.settings.users.create.sendInvitation')}
                       <FormLabelWithPriorityHelp
-                        text={$t('shell.settings.users.create.sendInvitationTooltip')}
+                        text={$t('system.settings.users.create.sendInvitationTooltip')}
                         priority="HINT"
-                        title={$t('shell.settings.users.create.sendInvitationTooltipTitle')}
+                        title={$t('system.settings.users.create.sendInvitationTooltipTitle')}
                       />
                     </label>
                   </div>
@@ -558,11 +558,11 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id} required={!$form.send_invitation}>{$t('shell.settings.users.create.idpPassword')}</FormLabel>
+                    <FormLabel for={props.id} required={!$form.send_invitation}>{$t('system.settings.users.create.idpPassword')}</FormLabel>
                     <Password.PasswordInput
                       {...props}
                       bind:value={$form.password}
-                      placeholder={$t('shell.settings.users.create.passwordPlaceholder')}
+                      placeholder={$t('system.settings.users.create.passwordPlaceholder')}
                       autocomplete="new-password"
                     />
                     <TranslatedFormFieldErrors />
@@ -584,7 +584,7 @@
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
                     <label for="is_admin" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('shell.settings.users.create.idpAdmin')}
+                      {$t('system.settings.users.create.idpAdmin')}
                       {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
                         <FormLabelWithPriorityHelp
                           text={$t(getColMeta('is_admin')!.tooltip!)}
@@ -604,7 +604,7 @@
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
                     <label for="is_active" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('shell.settings.users.create.idpActive')}
+                      {$t('system.settings.users.create.idpActive')}
                       {#if getColMeta('is_active')?.tooltip && getColMeta('is_active')?.showFormTooltip !== false}
                         <FormLabelWithPriorityHelp
                           text={$t(getColMeta('is_active')!.tooltip!)}
@@ -624,7 +624,7 @@
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
                     <label for="is_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('shell.settings.users.create.idpVerified')}
+                      {$t('system.settings.users.create.idpVerified')}
                       {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
                         <FormLabelWithPriorityHelp
                           text={$t(getColMeta('is_verified')!.tooltip!)}
@@ -644,7 +644,7 @@
                   <div class="flex items-center space-x-2">
                     <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
                     <label for="email_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('shell.settings.users.create.idpEmailVerified')}
+                      {$t('system.settings.users.create.idpEmailVerified')}
                       {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
                         <FormLabelWithPriorityHelp
                           text={$t(getColMeta('email_verified')!.tooltip!)}
@@ -666,10 +666,10 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {$t('common.cancel')}
+        {$t('app.common.cancel')}
       </Button>
       <Button type="submit" form="user-create-form" data-testid="admin-user-create-submit-button" disabled={!canSave}>
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     </div>
   {/snippet}

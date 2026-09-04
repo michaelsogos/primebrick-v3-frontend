@@ -114,16 +114,16 @@
   function validate(): boolean {
     const e: Record<string, string> = {};
     if (!formData.provider.trim()) {
-      e.provider = $t('shell.settings.emailProviders.errors.providerRequired');
+      e.provider = $t('system.settings.emailProviders.errors.providerRequired');
     }
     if (isCreating && !formData.api_key.trim()) {
-      e.api_key = $t('shell.settings.emailProviders.errors.apiKeyRequired');
+      e.api_key = $t('system.settings.emailProviders.errors.apiKeyRequired');
     }
     if (formData.from_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.from_email)) {
-      e.from_email = $t('shell.settings.emailProviders.errors.invalidEmail');
+      e.from_email = $t('system.settings.emailProviders.errors.invalidEmail');
     }
     if (formData.reply_to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.reply_to)) {
-      e.reply_to = $t('shell.settings.emailProviders.errors.invalidEmail');
+      e.reply_to = $t('system.settings.emailProviders.errors.invalidEmail');
     }
     errors = e;
     return Object.keys(e).length === 0;
@@ -154,7 +154,7 @@
         });
         pushNotification({
           impact: 'NONE',
-          message: $t('shell.settings.emailProviders.notifications.created'),
+          message: $t('system.settings.emailProviders.notifications.created'),
           scope: 'email-providers',
         });
       } else if (editingUuid) {
@@ -165,7 +165,7 @@
         });
         pushNotification({
           impact: 'NONE',
-          message: $t('shell.settings.emailProviders.notifications.updated'),
+          message: $t('system.settings.emailProviders.notifications.updated'),
           scope: 'email-providers',
         });
       }
@@ -192,7 +192,7 @@
       await apiFetchExt(`${PROXY_BASE}/${uuid}`, { method: 'DELETE' });
       pushNotification({
         impact: 'NONE',
-        message: $t('shell.settings.emailProviders.notifications.deleted'),
+        message: $t('system.settings.emailProviders.notifications.deleted'),
         scope: 'email-providers',
       });
       confirmDeleteUuid = null;
@@ -222,8 +222,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -231,7 +231,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.emailProviders.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.emailProviders.title')}</h1>
     </div>
   {/snippet}
 
@@ -241,7 +241,7 @@
         {#if !isCreating && !editingUuid}
           <Button onclick={startCreate}>
             <Plus class="size-4" />
-            {$t('shell.settings.emailProviders.addProvider')}
+            {$t('system.settings.emailProviders.addProvider')}
           </Button>
         {/if}
       </div>
@@ -255,13 +255,13 @@
     <div class="space-y-4 rounded-lg border p-6">
       <h3 class="text-lg font-medium">
         {isCreating
-          ? $t('shell.settings.emailProviders.createProvider')
-          : $t('shell.settings.emailProviders.editProvider')}
+          ? $t('system.settings.emailProviders.createProvider')
+          : $t('system.settings.emailProviders.editProvider')}
       </h3>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label for="provider">{$t('shell.settings.emailProviders.providerName')}</Label>
+          <Label for="provider">{$t('system.settings.emailProviders.providerName')}</Label>
           <Input id="provider" bind:value={formData.provider} placeholder="brevo" />
           {#if errors.provider}
             <p class="text-sm text-destructive">{errors.provider}</p>
@@ -269,22 +269,22 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="api_key">{$t('shell.settings.emailProviders.apiKey')}</Label>
+          <Label for="api_key">{$t('system.settings.emailProviders.apiKey')}</Label>
           <Password.PasswordInput id="api_key" bind:value={formData.api_key}
-            placeholder={editingUuid ? $t('shell.settings.emailProviders.apiKeyLeaveBlank') : ''} />
+            placeholder={editingUuid ? $t('system.settings.emailProviders.apiKeyLeaveBlank') : ''} />
           {#if errors.api_key}
             <p class="text-sm text-destructive">{errors.api_key}</p>
           {/if}
         </div>
 
         <div class="space-y-2">
-          <Label for="api_endpoint">{$t('shell.settings.emailProviders.apiEndpoint')}</Label>
+          <Label for="api_endpoint">{$t('system.settings.emailProviders.apiEndpoint')}</Label>
           <Input id="api_endpoint" bind:value={formData.api_endpoint}
             placeholder="https://api.brevo.com/v1" />
         </div>
 
         <div class="space-y-2">
-          <Label for="from_email">{$t('shell.settings.emailProviders.fromEmail')}</Label>
+          <Label for="from_email">{$t('system.settings.emailProviders.fromEmail')}</Label>
           <Input id="from_email" type="email" bind:value={formData.from_email}
             placeholder="noreply@example.com" />
           {#if errors.from_email}
@@ -293,13 +293,13 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="from_name">{$t('shell.settings.emailProviders.fromName')}</Label>
+          <Label for="from_name">{$t('system.settings.emailProviders.fromName')}</Label>
           <Input id="from_name" bind:value={formData.from_name}
             placeholder="My Company" />
         </div>
 
         <div class="space-y-2">
-          <Label for="reply_to">{$t('shell.settings.emailProviders.replyTo')}</Label>
+          <Label for="reply_to">{$t('system.settings.emailProviders.replyTo')}</Label>
           <Input id="reply_to" type="email" bind:value={formData.reply_to}
             placeholder="support@example.com" />
           {#if errors.reply_to}
@@ -315,18 +315,18 @@
           {:else}
             <Save class="size-4" />
           {/if}
-          {$t('shell.settings.emailProviders.save')}
+          {$t('system.settings.emailProviders.save')}
         </Button>
         <Button variant="outline" onclick={cancelForm} disabled={saving}>
           <X class="size-4" />
-          {$t('shell.settings.emailProviders.cancel')}
+          {$t('system.settings.emailProviders.cancel')}
         </Button>
       </div>
     </div>
   {:else if providers.length === 0}
     <div class="text-center py-12 text-muted-foreground">
       <Mail class="size-12 mx-auto mb-3 opacity-50" />
-      <p>{$t('shell.settings.emailProviders.noProviders')}</p>
+      <p>{$t('system.settings.emailProviders.noProviders')}</p>
     </div>
   {:else}
     <!-- Providers List -->
@@ -336,17 +336,17 @@
           {#if confirmDeleteUuid === p.uuid}
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium">
-                {$t('shell.settings.emailProviders.confirmDelete')}
+                {$t('system.settings.emailProviders.confirmDelete')}
               </p>
               <div class="flex items-center gap-2">
                 <Button variant="destructive" size="sm" onclick={() => deleteProvider(p.uuid)} disabled={saving}>
                   {#if saving}
                     <Loader2 class="size-4 animate-spin" />
                   {/if}
-                  {$t('shell.settings.emailProviders.confirm')}
+                  {$t('system.settings.emailProviders.confirm')}
                 </Button>
                 <Button variant="outline" size="sm" onclick={() => confirmDeleteUuid = null}>
-                  {$t('shell.settings.emailProviders.cancel')}
+                  {$t('system.settings.emailProviders.cancel')}
                 </Button>
               </div>
             </div>

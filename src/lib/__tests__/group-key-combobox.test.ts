@@ -1,86 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { minMsg, maxMsg } from '$lib/validation/zod-messages';
-import { flattenDictKeys } from '$lib/i18n';
 
-// ─── flattenDictKeys utility ───────────────────────────────────────────
+// ─── flattenDictKeys was deleted — dict is now flat (keys are dot-paths) ──
+// Object.keys($dict) replaces flattenDictKeys(). The tests below verify
+// the flat dict filtering pattern used by the security create page.
 
-describe('flattenDictKeys', () => {
-  it('flattens a simple flat dict', () => {
-    const dict = { a: '1', b: '2' };
-    expect(flattenDictKeys(dict).sort()).toEqual(['a', 'b']);
-  });
-
-  it('flattens nested objects into dot paths', () => {
-    const dict = {
-      config: {
-        auth: {
-          idp_endpoint: {
-            label: 'IDP Endpoint',
-            description: 'The base URL',
-          },
-        },
-      },
+describe('flat dict key filtering (replaces flattenDictKeys)', () => {
+  it('Object.keys returns flat keys directly', () => {
+    const dict: Record<string, string> = {
+      'system.settings.config.auth.idp_endpoint.label': 'IDP Endpoint',
+      'system.settings.config.auth.idp_endpoint.description': 'The base URL',
+      'system.settings.config.auth.oidc_issuer_url.label': 'OIDC Issuer URL',
     };
-    expect(flattenDictKeys(dict).sort()).toEqual([
-      'config.auth.idp_endpoint.description',
-      'config.auth.idp_endpoint.label',
-    ]);
-  });
-
-  it('skips non-string leaf values (objects, arrays, numbers)', () => {
-    const dict = {
-      a: 'string',
-      b: { c: 'nested' },
-      d: 42,
-      e: true,
-      f: [1, 2],
-    };
-    expect(flattenDictKeys(dict).sort()).toEqual(['a', 'b.c']);
-  });
-
-  it('handles empty object', () => {
-    expect(flattenDictKeys({})).toEqual([]);
-  });
-
-  it('handles deeply nested structures', () => {
-    const dict = {
-      a: { b: { c: { d: { e: 'deep' } } } },
-    };
-    expect(flattenDictKeys(dict)).toEqual(['a.b.c.d.e']);
-  });
-
-  it('uses prefix parameter correctly', () => {
-    const dict = { label: 'test' };
-    expect(flattenDictKeys(dict, 'config.auth.my_key')).toEqual([
-      'config.auth.my_key.label',
-    ]);
-  });
-
-  it('filters to config.auth.*.label keys from a realistic dict', () => {
-    const dict = {
-      config: {
-        auth: {
-          idp_endpoint: {
-            label: 'IDP Endpoint',
-            description: 'The base URL',
-            errors: { required: 'Required' },
-          },
-          oidc_issuer_url: {
-            label: 'OIDC Issuer URL',
-            description: 'The issuer URL',
-          },
-        },
-      },
-    };
-    const allKeys = flattenDictKeys(dict);
+    const allKeys = Object.keys(dict);
     const labelKeys = allKeys.filter(
-      (k) => k.startsWith('config.auth.') && k.endsWith('.label'),
+      (k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'),
     );
     expect(labelKeys.sort()).toEqual([
-      'config.auth.idp_endpoint.label',
-      'config.auth.oidc_issuer_url.label',
+      'system.settings.config.auth.idp_endpoint.label',
+      'system.settings.config.auth.oidc_issuer_url.label',
     ]);
+  });
+
+  it('handles empty dict', () => {
+    expect(Object.keys({})).toEqual([]);
   });
 });
 
@@ -89,7 +33,7 @@ describe('flattenDictKeys', () => {
 // Mirror of the schema in the create page (allows empty string — group is optional)
 const groupKeySchema = z.string()
   .max(100, { message: maxMsg(100) })
-  .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'validation.invalidFormat' })
+  .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
   .default('');
 
 describe('group_key Zod validation', () => {

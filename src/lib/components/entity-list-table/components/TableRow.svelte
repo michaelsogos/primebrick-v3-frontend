@@ -265,7 +265,7 @@
                 >
                   <div class="flex items-center gap-2">
                     <Pencil class="size-4 opacity-70" />
-                    <span>{$t('common.edit')}</span>
+                    <span>{$t('app.common.edit')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
@@ -276,7 +276,7 @@
                 >
                   <div class="flex items-center gap-2">
                     <Copy class="size-4 opacity-70" />
-                    <span>{$t('common.duplicate')}</span>
+                    <span>{$t('app.common.duplicate')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
@@ -285,14 +285,14 @@
               >
                 <div class="flex items-center gap-2">
                   <FileClock class="size-4 opacity-70" />
-                  <span>{$t('common.versionHistory')}</span>
+                  <span>{$t('app.common.versionHistory')}</span>
                 </div>
               </DropdownMenu.Item>
               {#if entityRowActions?.preview !== false}
                 <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
                   <div class="flex items-center gap-2">
                     <Eye class="size-4 opacity-70" />
-                    <span>{$t('entities.list.preview')}</span>
+                    <span>{$t('system.entities.list.preview')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
@@ -319,14 +319,14 @@
                         <Trash2 class="size-4 text-warning/70" />
                         <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
                       </span>
-                      <span>{$t('common.restore')}</span>
+                      <span>{$t('app.common.restore')}</span>
                     </div>
                   </DropdownMenu.Item>
                 {:else}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onDeleteRow(row); }} class="text-destructive">
                     <div class="flex items-center gap-2">
                       <Trash2 class="size-4 text-destructive/70" />
-                      <span>{$t('common.delete')}</span>
+                      <span>{$t('app.common.delete')}</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}

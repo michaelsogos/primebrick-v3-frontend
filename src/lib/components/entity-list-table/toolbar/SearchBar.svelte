@@ -27,13 +27,13 @@
   } = $props();
 
   const searchScopeLabel = $derived(() => {
-    if (!searchInKeys || searchInKeys.length === 0) return $t('entities.list.searchInAll');
+    if (!searchInKeys || searchInKeys.length === 0) return $t('system.entities.list.searchInAll');
     const keys = searchInKeys;
     if (keys.length === 1) {
       const col = searchableColumns.find((c) => c.key === keys[0]);
       return col ? $t(col.labelKey) : keys[0];
     }
-    return `${keys.length} ${$t('entities.list.searchInFields')}`;
+    return `${keys.length} ${$t('system.entities.list.searchInFields')}`;
   });
 </script>
 
@@ -58,7 +58,7 @@
     class="text-sm placeholder:text-muted-foreground/70"
     value={search}
     oninput={(e: Event) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
-    placeholder={$t(searchPlaceholderKey ?? 'entities.list.searchPlaceholder')}
+    placeholder={$t(searchPlaceholderKey ?? 'system.entities.list.searchPlaceholder')}
   />
 
   {#if search.trim().length > 0}
@@ -67,8 +67,8 @@
       size="icon-xs"
       class="hover:bg-sky-100/50 dark:hover:bg-white/10"
       onclick={() => onSearchInput('')}
-      aria-label={$t('common.reset')}
-      title={$t('common.reset')}
+      aria-label={$t('app.common.reset')}
+      title={$t('app.common.reset')}
     >
       <X class="size-4" />
     </InputGroupButton>

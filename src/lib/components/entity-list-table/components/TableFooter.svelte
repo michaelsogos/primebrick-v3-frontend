@@ -88,7 +88,7 @@
 
   <!-- Right side: Page size + Pagination controls -->
   <div class="flex items-center gap-2">
-    <span class="text-muted-foreground">{$t('entities.list.pageSize')}</span>
+    <span class="text-muted-foreground">{$t('system.entities.list.pageSize')}</span>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
@@ -122,8 +122,8 @@
           if (footerUsesClientPaging) clientSelectedPage = 1;
           else onPageChange(1);
         }}
-        aria-label={$t('entities.list.firstPage')}
-        title={$t('entities.list.firstPage')}
+        aria-label={$t('system.entities.list.firstPage')}
+        title={$t('system.entities.list.firstPage')}
       >
         <ChevronsLeft class="size-4" />
       </Button>
@@ -135,13 +135,13 @@
           if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
           else onPageChange(Math.max(1, page - 1));
         }}
-        aria-label={$t('entities.list.previousPage')}
-        title={$t('entities.list.previousPage')}
+        aria-label={$t('system.entities.list.previousPage')}
+        title={$t('system.entities.list.previousPage')}
       >
         <ChevronLeft class="size-4" />
       </Button>
       <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
-        {$t('entities.list.paginationStatus')
+        {$t('system.entities.list.paginationStatus')
           .replace('{page}', String(footerPage))
           .replace('{total}', String(footerTotalPages))}
       </div>
@@ -153,8 +153,8 @@
           if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
           else onPageChange(Math.min(totalPages, page + 1));
         }}
-        aria-label={$t('entities.list.nextPage')}
-        title={$t('entities.list.nextPage')}
+        aria-label={$t('system.entities.list.nextPage')}
+        title={$t('system.entities.list.nextPage')}
       >
         <ChevronRight class="size-4" />
       </Button>
@@ -166,8 +166,8 @@
           if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
           else onPageChange(totalPages);
         }}
-        aria-label={$t('entities.list.lastPage')}
-        title={$t('entities.list.lastPage')}
+        aria-label={$t('system.entities.list.lastPage')}
+        title={$t('system.entities.list.lastPage')}
       >
         <ChevronsRight class="size-4" />
       </Button>

@@ -10,8 +10,14 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { useModuleTranslations, loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
 
   let { children }: { children: Snippet } = $props();
+
+  // Route-aware translation loader — watches route + language changes
+  const moduleI18n = useModuleTranslations();
 
   onMount(async () => {
     // Ensure auth config is loaded — shouldShowEnforcer needs it to know
@@ -83,6 +89,9 @@
     if (lastRoute && lastRoute !== '/login' && lastRoute !== currentPath) {
       await goto(lastRoute);
     }
+
+    // Always load "app" module translations on app init (shell + public pages)
+    await loadModuleTranslations('app', get(uiLang));
   });
 </script>
 

@@ -39,15 +39,15 @@
   const createSchema = z.object({
     display_name: displayNameSchema(z.string()),
     website_url: z.string()
-      .url({ message: 'validation.invalidUrl' })
+      .url({ message: 'app.common.validation.invalidUrl' })
       .max(2048, { message: maxMsg(2048) })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' })
       .or(z.literal(''))
       .default(''),
     idp_owner: z.string()
-      .min(1, { message: 'validation.required' })
+      .min(1, { message: 'app.common.validation.required' })
       .max(255, { message: maxMsg(255) })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' })
       .default('admin'),
     idp_name: idpNameSchema(z.string()),
   });
@@ -159,7 +159,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => hasChanges,
-    'shell.settings.organizations.create.unsavedChanges',
+    'system.settings.organizations.create.unsavedChanges',
   );
 
   // Validation function for idp_name availability
@@ -210,17 +210,17 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
+          { label: $t('app.system') },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
           }),
-          { label: $t('shell.settings.tabs.organizations'), href: '/system/settings/organizations' },
-          { label: $t('shell.settings.organizations.create.title') }
+          { label: $t('system.settings.tabs.organizations'), href: '/system/settings/organizations' },
+          { label: $t('system.settings.organizations.create.title') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.organizations.create.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.organizations.create.title')}</h1>
     </div>
   {/snippet}
 
@@ -234,12 +234,12 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.displayName')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.displayName')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.display_name}
                       onblur={handleDisplayNameBlur}
-                      placeholder={$t('shell.settings.organizations.create.displayNamePlaceholder')}
+                      placeholder={$t('system.settings.organizations.create.displayNamePlaceholder')}
                     />
                     <TranslatedFormFieldErrors />
                   </div>
@@ -251,7 +251,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.websiteUrl')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.websiteUrl')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.website_url}
@@ -268,25 +268,25 @@
           <div class="space-y-4">
             <div class="space-y-2">
               <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {$t('shell.settings.organizations.create.idpCode')}
+                {$t('system.settings.organizations.create.idpCode')}
               </label>
               <TextInput
                 id="idp-code-display"
                 value={idpCode}
                 readonly
-                copyTooltipLabel={$t('shell.settings.organizations.create.copyIdpCode')}
+                copyTooltipLabel={$t('system.settings.organizations.create.copyIdpCode')}
               />
             </div>
 
             <div class="space-y-2">
               <label for="idp-owner-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {$t('shell.settings.organizations.create.idpOwner')}
+                {$t('system.settings.organizations.create.idpOwner')}
               </label>
               <TextInput
                 id="idp-owner-display"
                 value="admin"
                 readonly
-                copyTooltipLabel={$t('shell.settings.organizations.create.copyIdpOwner')}
+                copyTooltipLabel={$t('system.settings.organizations.create.copyIdpOwner')}
               />
             </div>
 
@@ -295,7 +295,7 @@
                 {#snippet children({ props })}
                   {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.organizations.create.idpName')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.idpName')}</FormLabel>
                     <AsyncValidatedInput
                       {...props}
                       bind:value={$form.idp_name}
@@ -310,7 +310,7 @@
                     <TranslatedFormFieldErrors />
                     {#if hasAsyncError && !hasZodError}
                       <div class="text-destructive text-xs font-medium">
-                        {$t('validation.nameTaken')}
+                        {$t('app.common.validation.nameTaken')}
                       </div>
                     {/if}
                   </div>
@@ -326,10 +326,10 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {$t('common.cancel')}
+        {$t('app.common.cancel')}
       </Button>
       <Button type="submit" form="org-create-form" disabled={!canSave}>
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     </div>
   {/snippet}

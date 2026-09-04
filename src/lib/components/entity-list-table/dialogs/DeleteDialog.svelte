@@ -23,8 +23,8 @@
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('common.deleteConfirm')}</Dialog.Description>
+    <Dialog.Title>{$t('app.common.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('app.common.deleteConfirm')}</Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
@@ -33,7 +33,7 @@
       onclick={onCancel}
       disabled={isDeleting}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="destructive"
@@ -42,9 +42,9 @@
       disabled={isDeleting}
     >
       {#if isDeleting}
-        {$t('common.deleting')}
+        {$t('app.common.deleting')}
       {:else}
-        {$t('common.delete')}
+        {$t('app.common.delete')}
       {/if}
     </Button>
   </Dialog.Footer>

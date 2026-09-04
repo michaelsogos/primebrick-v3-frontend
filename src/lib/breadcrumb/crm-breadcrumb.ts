@@ -11,16 +11,16 @@ export function crmModuleMenuSegment(args: {
   const pathname = args.pathname;
   return {
     kind: 'menu',
-    label: crm?.name ?? args.t('shell.nav.crmFallback'),
-    menuAriaLabel: args.t('shell.nav.crmBreadcrumbMenu'),
+    label: crm?.name ?? args.t('app.nav.crmFallback'),
+    menuAriaLabel: args.t('app.nav.crmBreadcrumbMenu'),
     items: [
       {
-        label: args.t('entities.customer.title'),
+        label: args.t('system.entities.customer.title'),
         href: '/customers',
         current: pathname === '/customers' || pathname.startsWith('/customers/')
       },
       {
-        label: args.t('entities.crm.pipeline.nav'),
+        label: args.t('system.entities.crm.pipeline.nav'),
         href: '/crm/pipeline',
         current: pathname === '/crm/pipeline' || pathname.startsWith('/crm/pipeline/')
       }

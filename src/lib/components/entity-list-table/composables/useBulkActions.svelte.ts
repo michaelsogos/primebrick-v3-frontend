@@ -98,8 +98,8 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkDeleteFailed',
-          scope: tFn('errors.scope.bulkDeleteApi'),
+          messageKey: 'system.entities.list.bulkDeleteFailed',
+          scope: tFn('app.common.errors.scope.bulkDeleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -176,8 +176,8 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkRestoreFailed',
-          scope: tFn('errors.scope.bulkRestoreApi'),
+          messageKey: 'system.entities.list.bulkRestoreFailed',
+          scope: tFn('app.common.errors.scope.bulkRestoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -201,8 +201,8 @@ export function useBulkActions(options: BulkActionsOptions) {
     if (selectedKeysFn().length > 50) {
       pushNotification({
         impact: 'MEDIUM',
-        messageKey: 'entities.list.duplicateMaxLimit',
-        scope: tFn('errors.scope.duplicateAction'),
+        messageKey: 'system.entities.list.duplicateMaxLimit',
+        scope: tFn('app.common.errors.scope.duplicateAction'),
         toast: true
       });
       return;
@@ -235,16 +235,16 @@ export function useBulkActions(options: BulkActionsOptions) {
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       }
 

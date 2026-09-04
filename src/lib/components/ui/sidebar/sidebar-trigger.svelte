@@ -31,5 +31,5 @@
 	{...restProps}
 >
 	<PanelLeft />
-	<span class="sr-only">{$t('common.toggleSidebar')}</span>
+	<span class="sr-only">{$t('app.common.toggleSidebar')}</span>
 </Button>

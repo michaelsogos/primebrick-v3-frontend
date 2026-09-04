@@ -67,13 +67,13 @@
               {...props}
               data-pb-card-cta
               class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground"
-              aria-label={$t('entities.list.clear')}
+              aria-label={$t('system.entities.list.clear')}
             >
               <Ban class="size-4" />
             </button>
           {/snippet}
         </Tooltip.Trigger>
-        <Tooltip.Content>{$t('entities.list.emptyField')}</Tooltip.Content>
+        <Tooltip.Content>{$t('system.entities.list.emptyField')}</Tooltip.Content>
       </Tooltip.Root>
     {:else}
       <TableCell

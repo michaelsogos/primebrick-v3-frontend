@@ -22,6 +22,9 @@
   import { apiFetch } from '$lib/api';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
+  import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -34,23 +37,23 @@
   const heroes = $derived([
     {
       image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote1'),
-      author: $t('login.hero.author1')
+      quote: $t('app.auth.login.hero.quote1'),
+      author: $t('app.auth.login.hero.author1')
     },
     {
       image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote2'),
-      author: $t('login.hero.author2')
+      quote: $t('app.auth.login.hero.quote2'),
+      author: $t('app.auth.login.hero.author2')
     },
     {
       image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote3'),
-      author: $t('login.hero.author3')
+      quote: $t('app.auth.login.hero.quote3'),
+      author: $t('app.auth.login.hero.author3')
     },
     {
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote4'),
-      author: $t('login.hero.author4')
+      quote: $t('app.auth.login.hero.quote4'),
+      author: $t('app.auth.login.hero.author4')
     }
   ]);
 
@@ -65,6 +68,9 @@
   onMount(() => {
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
+
+    // Load public translations (login page is public — no auth)
+    void loadPublicTranslations(get(uiLang));
 
     // Select random hero
     heroIndex = Math.floor(Math.random() * heroes.length);
@@ -171,7 +177,7 @@
         <Alert variant="destructive" class="border-primary-gradient">
           <ShieldAlert class="size-4" />
           <AlertDescription>
-            {$t('login.alert.description')}
+            {$t('app.auth.login.alert.description')}
           </AlertDescription>
         </Alert>
       {/if}
@@ -179,8 +185,8 @@
       <!-- Login Card -->
       <Card class="border-primary-gradient shadow-sm">
         <CardHeader class="space-y-1">
-          <CardTitle class="text-2xl font-semibold">{$t('login.title')}</CardTitle>
-          <CardDescription>{$t('login.description')}</CardDescription>
+          <CardTitle class="text-2xl font-semibold">{$t('app.auth.login.title')}</CardTitle>
+          <CardDescription>{$t('app.auth.login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <LoginForm onsuccess={() => {

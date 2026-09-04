@@ -34,14 +34,14 @@
         <Trash2 class="size-4 text-warning/70" />
         <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
       </span>
-      <span>{$t('common.restore')}</span>
+      <span>{$t('app.common.restore')}</span>
     </div>
   </DropdownMenu.Item>
 {:else}
   <DropdownMenu.Item onclick={handleDelete} class="text-destructive">
     <div class="flex items-center gap-2">
       <Trash2 class="size-4 text-destructive/70" />
-      <span>{$t('common.delete')}</span>
+      <span>{$t('app.common.delete')}</span>
     </div>
   </DropdownMenu.Item>
 {/if}

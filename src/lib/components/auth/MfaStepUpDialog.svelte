@@ -59,7 +59,7 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('auth.mfaStepUp.stepUpInitiateError');
+        error = err.detail || $t('app.auth.mfaStepUp.stepUpInitiateError');
         return;
       }
       const data = await resp.json();
@@ -68,7 +68,7 @@
       factorId = availableFactors[0]?.factor_id ?? '';
     } catch (e) {
       console.error('[MfaStepUp] Initiate failed:', e);
-      error = $t('auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connectionError');
     } finally {
       loading = false;
     }
@@ -76,7 +76,7 @@
 
   async function verify() {
     if (!code || code.length !== 6) {
-      error = $t('auth.mfa.codeRequired');
+      error = $t('app.auth.mfa.codeRequired');
       return;
     }
     verifying = true;
@@ -93,20 +93,20 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('auth.mfa.invalidCode');
+        error = err.detail || $t('app.auth.mfa.invalidCode');
         return;
       }
       const data = await resp.json();
       pushNotification({
         impact: 'NONE',
-        message: $t('auth.mfaStepUp.stepUpAuthorized'),
+        message: $t('app.auth.mfaStepUp.stepUpAuthorized'),
         scope: 'auth',
       });
       onauthorized?.(data.action_authorization_token);
       open = false;
     } catch (e) {
       console.error('[MfaStepUp] Verify failed:', e);
-      error = $t('auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connectionError');
     } finally {
       verifying = false;
     }
@@ -117,10 +117,10 @@
   <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <ShieldCheck class="size-5 text-primary" />
-        {$t('auth.mfaStepUp.stepUpTitle')}
+        {$t('app.auth.mfaStepUp.stepUpTitle')}
       </Dialog.Title>
       <Dialog.Description>
-        {$t('auth.mfaStepUp.stepUpDescription')}
+        {$t('app.auth.mfaStepUp.stepUpDescription')}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -132,7 +132,7 @@
       <div class="space-y-4 py-2">
         <p class="text-sm text-destructive">{error}</p>
         <Button onclick={initiate} class="w-full">
-          {$t('common.retry')}
+          {$t('app.common.retry')}
         </Button>
       </div>
     {:else}
@@ -140,13 +140,13 @@
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
           <KeyRound class="size-4" />
           <span>
-            {$t('auth.mfaStepUp.stepUpAction')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
+            {$t('app.auth.mfaStepUp.stepUpAction')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
           </span>
         </div>
 
         {#if availableFactors.length > 1}
           <div class="space-y-2">
-            <Label for="mfa-stepup-factor">{$t('auth.mfaStepUp.selectFactor')}</Label>
+            <Label for="mfa-stepup-factor">{$t('app.auth.mfaStepUp.selectFactor')}</Label>
             <select
               id="mfa-stepup-factor"
               class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -154,7 +154,7 @@
             >
               {#each availableFactors as factor}
                 <option value={factor.factor_id}>
-                  {factor.label || $t('auth.mfa.defaultLabel')} ({factor.factor_type})
+                  {factor.label || $t('app.auth.mfa.defaultLabel')} ({factor.factor_type})
                 </option>
               {/each}
             </select>
@@ -162,7 +162,7 @@
         {/if}
 
         <div class="space-y-2">
-          <Label for="mfa-stepup-code">{$t('auth.mfa.verifyCode')}</Label>
+          <Label for="mfa-stepup-code">{$t('app.auth.mfa.verifyCode')}</Label>
           <Input
             id="mfa-stepup-code"
             type="text"
@@ -185,7 +185,7 @@
           {#if verifying}
             <Spinner class="size-4 mr-2" />
           {/if}
-          {$t('auth.mfaStepUp.verifyAndAuthorize')}
+          {$t('app.auth.mfaStepUp.verifyAndAuthorize')}
         </Button>
       </div>
     {/if}

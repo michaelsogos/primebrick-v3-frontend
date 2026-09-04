@@ -35,7 +35,7 @@ export function displayNameSchema(base: z.ZodString) {
   return base
     .min(DISPLAY_NAME_MIN, { message: minMsg(DISPLAY_NAME_MIN) })
     .max(DISPLAY_NAME_MAX, { message: maxMsg(DISPLAY_NAME_MAX) })
-    .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' });
+    .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' });
 }
 
 /**
@@ -46,5 +46,5 @@ export function idpNameSchema(base: z.ZodString) {
   return base
     .min(IDP_NAME_MIN, { message: minMsg(IDP_NAME_MIN) })
     .max(IDP_NAME_MAX, { message: maxMsg(IDP_NAME_MAX) })
-    .refine(startsAndEndsWithAlphanumeric, { message: 'validation.invalidFormat' });
+    .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' });
 }

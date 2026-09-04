@@ -124,7 +124,7 @@
     <Dock.Root class="!absolute -top-12 left-1/2 -translate-x-1/2 z-10 !bg-destructive/10 !border-destructive/20 dark:!bg-destructive/10" magnification={70} distance={120}>
       <Dock.Icon
         onclick={() => { previewMode = 'aesthetic'; }}
-        tooltip={$t('shell.rfcError.preview')}
+        tooltip={$t('app.rfcError.preview')}
         selected={previewMode === 'aesthetic'}
         transparent={true}
         class={previewMode === 'aesthetic' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}
@@ -133,7 +133,7 @@
       </Dock.Icon>
       <Dock.Icon
         onclick={() => { previewMode = 'raw'; }}
-        tooltip={$t('shell.rfcError.source')}
+        tooltip={$t('app.rfcError.source')}
         selected={previewMode === 'raw'}
         transparent={true}
         class={previewMode === 'raw' ? 'bg-destructive text-destructive-foreground hover:bg-destructive' : 'hover:bg-destructive/20 text-destructive'}

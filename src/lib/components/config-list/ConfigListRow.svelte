@@ -94,10 +94,10 @@
           <Badge
             variant="outline"
             class="shrink-0 text-xs border-info/40 bg-info/10 text-info"
-            title={$t('shell.settings.security.reservedBadge')}
+            title={$t('system.settings.security.reservedBadge')}
           >
             <Info class="size-3" />
-            {$t('shell.settings.security.reservedBadge')}
+            {$t('system.settings.security.reservedBadge')}
           </Badge>
         {/if}
       </div>
@@ -111,7 +111,7 @@
             type="button"
             onclick={openVersionHistory}
             class="inline-flex"
-            title={$t('entities.versionHistory.title')}
+            title={$t('system.entities.versionHistory.title')}
             data-testid={`config-row-version-${entry.key}`}
           >
             <Badge class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10" variant="outline">
@@ -120,28 +120,28 @@
           </button>
           {#if updatedAt && updatedByName}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
-              <span class="text-primary">{$t('shell.settings.security.lastUpdatedByMid')}</span>
+              <span class="text-primary">{$t('system.settings.security.lastUpdatedByMid')}</span>
               <span class="italic text-muted-foreground">{updatedByName}</span>
             </div>
           {:else if updatedAt}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
             </div>
           {/if}
         </div>
       {:else if updatedAt && updatedByName}
         <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
-          <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+          <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
           <span class="italic text-muted-foreground">{updatedAt}</span>
-          <span class="text-primary">{$t('shell.settings.security.lastUpdatedByMid')}</span>
+          <span class="text-primary">{$t('system.settings.security.lastUpdatedByMid')}</span>
           <span class="italic text-muted-foreground">{updatedByName}</span>
         </div>
       {:else if updatedAt}
         <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
-          <span class="text-primary">{$t('shell.settings.security.lastUpdatedPrefix')}</span>
+          <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
           <span class="italic text-muted-foreground">{updatedAt}</span>
         </div>
       {/if}
@@ -161,7 +161,7 @@
         size="icon"
         onclick={onRevert}
         data-testid={`config-row-revert-${entry.key}`}
-        title={$t('common.revertChanges')}
+        title={$t('app.common.revertChanges')}
       >
         <Undo2 class="size-4 text-warning" />
       </Button>
@@ -172,7 +172,7 @@
       onclick={() => onDelete(entry)}
       disabled={entry.reserved}
       data-testid={`config-row-delete-${entry.key}`}
-      title={$t('common.delete')}
+      title={$t('app.common.delete')}
     >
       <Trash2 class="size-4 text-destructive" />
     </Button>

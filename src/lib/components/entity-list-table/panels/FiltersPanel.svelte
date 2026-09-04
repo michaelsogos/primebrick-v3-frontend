@@ -458,10 +458,10 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     size="sm"
     class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary gap-2"
     onclick={applyFilters}
-    title={$t("common.apply")}
+    title={$t("app.common.apply")}
   >
     <Play class="size-4" />
-    <span>{$t("common.apply")}</span>
+    <span>{$t("app.common.apply")}</span>
   </Button>
 
   <Button
@@ -469,13 +469,13 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     size="sm"
     class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
     onclick={resetAllFilters}
-    title={$t("common.reset")}
+    title={$t("app.common.reset")}
   >
     <RotateCcw class="size-4" />
   </Button>
   <Sheet.Close
     class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t("common.done")}
+    title={$t("app.common.done")}
     onclick={() => closeSheet()}
   >
     <X class="size-4" />
@@ -483,7 +483,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
 {/snippet}
 
 {#snippet headerTitle()}
-  {$t("entities.list.filters")}
+  {$t("system.entities.list.filters")}
 {/snippet}
 
 <div class="flex h-full flex-col">
@@ -504,7 +504,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
-        <span class="relative z-20">{$t("entities.list.standardFilters")}</span>
+        <span class="relative z-20">{$t("system.entities.list.standardFilters")}</span>
       </TabsTrigger>
       <TabsTrigger
         value="advanced"
@@ -517,7 +517,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
           ></div>
         {/if}
-        <span class="relative z-20">{$t("entities.list.advancedFilters")}</span>
+        <span class="relative z-20">{$t("system.entities.list.advancedFilters")}</span>
       </TabsTrigger>
     </TabsList>
 
@@ -554,7 +554,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                         : "text-muted-foreground/70 text-xs"}
                     >
                       {selectedKeys.length > 0
-                        ? `${selectedKeys.length} ${$t("entities.list.selected")}`
+                        ? `${selectedKeys.length} ${$t("system.entities.list.selected")}`
                         : placeholder}
                     </span>
                     <div class="flex items-center gap-1">
@@ -571,7 +571,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                             e.preventDefault();
                             clearTempFilter(col.key);
                           }}
-                          title={$t("common.clear")}
+                          title={$t("app.common.clear")}
                         >
                           <X class="size-3" />
                         </button>
@@ -610,7 +610,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               <DateWheelPicker
                 bind:value={dateDropperValues[col.key]}
                 bind:timezone={timezoneValues[col.key]}
-                placeholder={$t("entities.list.filterPlaceholder")}
+                placeholder={$t("system.entities.list.filterPlaceholder")}
                 includeTime={col.type === "datetime"}
               />
               {#if dateDropperValues[col.key]}
@@ -618,7 +618,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   type="button"
                   class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => clearTempFilter(col.key)}
-                  title={$t("common.clear")}
+                  title={$t("app.common.clear")}
                 >
                   <X class="size-3" />
                 </button>
@@ -645,7 +645,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   type="button"
                   class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => clearTempFilter(col.key)}
-                  title={$t("common.clear")}
+                  title={$t("app.common.clear")}
                 >
                   <X class="size-3" />
                 </button>
@@ -659,7 +659,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         <div
           class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
         >
-          <p class="text-sm">{$t("entities.list.noFilterableFields")}</p>
+          <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
         </div>
       {/if}
     </TabsContent>
@@ -668,15 +668,15 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       <div class="flex justify-center items-center mb-4">
         <div class="flex items-center gap-3">
           <span class="text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-            {$t('entities.list.allCriteria')}
+            {$t('system.entities.list.allCriteria')}
           </span>
           <Switch
             checked={globalConnector === 'OR'}
             onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
-            aria-label={$t('entities.list.connector')}
+            aria-label={$t('system.entities.list.connector')}
           />
           <span class="text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-            {$t('entities.list.atLeastOneCriteria')}
+            {$t('system.entities.list.atLeastOneCriteria')}
           </span>
         </div>
       </div>
@@ -714,7 +714,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   type="button"
                   class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => editAdvancedFilter(filter)}
-                  title={$t("common.edit")}
+                  title={$t("app.common.edit")}
                 >
                   <Pencil class="size-3" />
                 </button>
@@ -722,7 +722,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   type="button"
                   class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onclick={() => removeAdvancedFilter(filter.id)}
-                  title={$t("common.remove")}
+                  title={$t("app.common.remove")}
                 >
                   <FunnelX class="size-3" />
                 </button>
@@ -736,7 +736,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         <div class="space-y-3">
           <div>
             <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-field">
-              {$t("entities.list.field")}
+              {$t("system.entities.list.field")}
             </label>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
@@ -755,7 +755,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                         ? (filterableColumns.find((c) => c.key === newFilterField)
                             ? $t(filterableColumns.find((c) => c.key === newFilterField)!.labelKey)
                             : newFilterField)
-                        : $t("entities.list.selectField")}
+                        : $t("system.entities.list.selectField")}
                     </span>
                     <ChevronDown class="h-4 w-4 shrink-0" />
                   </Button>
@@ -793,7 +793,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               : []}
             <div>
               <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-operator">
-                {$t("entities.list.operator")}
+                {$t("system.entities.list.operator")}
               </label>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
@@ -830,7 +830,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
 
             <div>
               <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-value">
-                {$t("entities.list.value")}
+                {$t("system.entities.list.value")}
               </label>
               {#if selectedColumn?.type === "badge" && selectedColumn.badge?.values}
                 {@const selectedBadgeKeys = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : [])}
@@ -848,8 +848,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                             : "text-muted-foreground/70 text-xs"}
                         >
                           {selectedBadgeKeys.length > 0
-                            ? `${selectedBadgeKeys.length} ${$t("entities.list.selected")}`
-                            : $t("entities.list.selectValue")}
+                            ? `${selectedBadgeKeys.length} ${$t("system.entities.list.selected")}`
+                            : $t("system.entities.list.selectValue")}
                         </span>
                         <ChevronDown class="h-4 w-4 shrink-0" />
                       </Button>
@@ -879,25 +879,25 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   <div class="space-y-2">
                     <DateWheelPicker
                       bind:value={newFilterStartDate}
-                      placeholder={$t("entities.list.selectValue")}
+                      placeholder={$t("system.entities.list.selectValue")}
                       includeTime={selectedColumn?.type === "datetime"}
                     />
                     <DateWheelPicker
                       bind:value={newFilterEndDate}
-                      placeholder={$t("entities.list.selectValue")}
+                      placeholder={$t("system.entities.list.selectValue")}
                       includeTime={selectedColumn?.type === "datetime"}
                     />
                   </div>
                 {:else}
                   <DateWheelPicker
                     bind:value={newFilterValue}
-                    placeholder={$t("entities.list.selectValue")}
+                    placeholder={$t("system.entities.list.selectValue")}
                     includeTime={selectedColumn?.type === "datetime"}
                   />
                 {/if}
               {:else}
                 <Input
-                  placeholder={$t("entities.list.filterPlaceholder")}
+                  placeholder={$t("system.entities.list.filterPlaceholder")}
                   value={newFilterValue}
                   oninput={(e) => (newFilterValue = e.currentTarget.value)}
                   class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
@@ -913,7 +913,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   class="flex-1"
                   onclick={cancelEditAdvancedFilter}
                 >
-                  {$t("common.cancel")}
+                  {$t("app.common.cancel")}
                 </Button>
                 <Button
                   variant="default"
@@ -926,7 +926,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     !newFilterValue
                   )}
                 >
-                  {$t("common.edit")}
+                  {$t("app.common.edit")}
                 </Button>
               </div>
             {:else}
@@ -941,7 +941,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   !newFilterValue
                 )}
               >
-                {$t("entities.list.addFilter")}
+                {$t("system.entities.list.addFilter")}
               </Button>
             {/if}
           {/if}
@@ -952,7 +952,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         <div
           class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
         >
-          <p class="text-sm">{$t("entities.list.noFilterableFields")}</p>
+          <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
         </div>
       {/if}
     </TabsContent>

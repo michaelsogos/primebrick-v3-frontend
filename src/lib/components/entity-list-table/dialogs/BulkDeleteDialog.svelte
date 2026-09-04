@@ -25,7 +25,7 @@
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('system.entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       Sei sicuro di voler eliminare {selectedCount} elementi?
     </Dialog.Description>
@@ -37,7 +37,7 @@
       onclick={onCancel}
       disabled={isDeleting}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="destructive"
@@ -46,9 +46,9 @@
       disabled={isDeleting}
     >
       {#if isDeleting}
-        {$t('common.deleting')}
+        {$t('app.common.deleting')}
       {:else}
-        {$t('common.delete')}
+        {$t('app.common.delete')}
       {/if}
     </Button>
   </Dialog.Footer>

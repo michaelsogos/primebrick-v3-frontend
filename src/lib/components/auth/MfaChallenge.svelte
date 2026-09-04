@@ -39,7 +39,7 @@
 
   async function handleVerify() {
     if (!code || code.length !== 6) {
-      errorMsg = $t('login.mfa.codeRequired');
+      errorMsg = $t('app.auth.login.mfa.codeRequired');
       return;
     }
     submitting = true;
@@ -67,7 +67,7 @@
         if (mappedError) {
           errorMsg = $t(mappedError.key);
         } else {
-          errorMsg = errorData.detail || $t('login.mfa.invalidCode');
+          errorMsg = errorData.detail || $t('app.auth.login.mfa.invalidCode');
         }
         return;
       }
@@ -79,7 +79,7 @@
       onsuccess?.(data);
     } catch (error) {
       console.error('[MFA Verify Error]', error);
-      errorMsg = $t('login.mfa.connectionError');
+      errorMsg = $t('app.auth.login.mfa.connectionError');
     } finally {
       submitting = false;
     }
@@ -90,15 +90,15 @@
   <div class="space-y-4">
     <div class="flex items-center gap-2 text-sm text-muted-foreground">
       <KeyRound class="size-4" />
-      <span>{$t('login.mfa.description')}</span>
+      <span>{$t('app.auth.login.mfa.description')}</span>
     </div>
 
     {#if factor?.label}
-      <p class="text-xs text-muted-foreground">{$t('login.mfa.factorLabel')}: {factor.label}</p>
+      <p class="text-xs text-muted-foreground">{$t('app.auth.login.mfa.factorLabel')}: {factor.label}</p>
     {/if}
 
     <div class="space-y-2">
-      <Label for="mfa-code-input">{$t('login.mfa.code')}</Label>
+      <Label for="mfa-code-input">{$t('app.auth.login.mfa.code')}</Label>
       <Input
         id="mfa-code-input"
         type="text"
@@ -117,11 +117,11 @@
       {#if submitting}
         <Spinner class="mr-2" />
       {/if}
-      {submitting ? $t('login.mfa.verifying') : $t('login.mfa.verify')}
+      {submitting ? $t('app.auth.login.mfa.verifying') : $t('app.auth.login.mfa.verify')}
     </Button>
 
     <Button type="button" variant="ghost" class="w-full" onclick={() => oncancel?.()}>
-      {$t('login.mfa.back')}
+      {$t('app.auth.login.mfa.back')}
     </Button>
 
     {#if errorMsg}

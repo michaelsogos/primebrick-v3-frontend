@@ -167,56 +167,56 @@
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <MapPin class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.ianaTimezone')}</span>
+          <span>{$t('app.health.ianaTimezone')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.ianaTz}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Languages class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.preferredLanguages')}</span>
+          <span>{$t('app.health.preferredLanguages')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.languages}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Globe class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.resolvedLocale')}</span>
+          <span>{$t('app.health.resolvedLocale')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.resolvedLocale}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Calendar class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.calendarSystem')}</span>
+          <span>{$t('app.health.calendarSystem')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.calendar}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Hash class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.numberingSystem')}</span>
+          <span>{$t('app.health.numberingSystem')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.numberingSystem}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Clock class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.hourCycle')}</span>
+          <span>{$t('app.health.hourCycle')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.hourCycle}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Monitor class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.operatingSystem')}</span>
+          <span>{$t('app.health.operatingSystem')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.os} ({snapshot.osVersion} - {snapshot.osArch})</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <PanelTop class="size-4 shrink-0 text-primary" />
-          <span>{$t('shell.health.browser')}</span>
+          <span>{$t('app.health.browser')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.browserName} ({snapshot.browserVersion})</div>
       </div>

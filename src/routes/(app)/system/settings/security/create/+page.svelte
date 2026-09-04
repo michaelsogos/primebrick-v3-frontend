@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { t, dict, flattenDictKeys } from '$lib/i18n';
+  import { t, dict } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
   import { Switch } from '$lib/components/ui/switch';
@@ -57,12 +57,12 @@
   // Zod schema for config create form
   const createSchema = z.object({
     key: z.string()
-      .min(1, { message: 'validation.required' })
+      .min(1, { message: 'app.common.validation.required' })
       .max(100, { message: maxMsg(100) })
-      .regex(/^[a-z][a-z0-9_]*$/, { message: 'validation.invalidFormat' })
+      .regex(/^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
       .default(''),
     type: z.string()
-      .min(1, { message: 'validation.required' })
+      .min(1, { message: 'app.common.validation.required' })
       .default('string'),
     value: z.string()
       .default(''),
@@ -76,7 +76,7 @@
       .default(''),
     group_key: z.string()
       .max(100, { message: maxMsg(100) })
-      .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'validation.invalidFormat' })
+      .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
       .default(''),
     reserved: z.boolean()
       .default(false),
@@ -140,7 +140,7 @@
 
         pushNotification({
           impact: 'NONE',
-          message: $t('shell.settings.security.create.createSuccess'),
+          message: $t('system.settings.security.create.createSuccess'),
           scope: 'config_entries',
         });
 
@@ -164,7 +164,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => hasChanges,
-    'shell.settings.security.create.unsavedChanges',
+    'system.settings.security.create.unsavedChanges',
   );
 
   const isCreatePage = $derived(true);
@@ -244,13 +244,13 @@
   );
 
   // ─── i18n key options for label_key / description_key ComboSelects ──────
-  // Flatten the current locale's dict into dot-path keys, then filter to
-  // config.auth.*.label / .description leaves. These are the selectable
-  // options; the user can also type a new key (allowCreate).
-  const allI18nKeys = $derived(flattenDictKeys($dict as Record<string, unknown>));
+  // The dict is flat (keys are dot-paths), so Object.keys() gives us all keys.
+  // Filter to system.settings.config.auth.*.label / .description leaves.
+  // These are the selectable options; the user can also type a new key (allowCreate).
+  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
   const labelKeyOptions = $derived(
     allI18nKeys
-      .filter((k) => k.startsWith('config.auth.') && k.endsWith('.label'))
+      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
       .map((k) => ({ key: k })),
   );
   const descriptionKeyOptions = $derived(
@@ -289,18 +289,18 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: $t,
           }),
-          { label: $t('shell.settings.security.create.title') }
+          { label: $t('system.settings.security.create.title') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.security.create.title')}</h1>
-      <p class="text-sm text-muted-foreground">{$t('shell.settings.security.create.description')}</p>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.security.create.title')}</h1>
+      <p class="text-sm text-muted-foreground">{$t('system.settings.security.create.description')}</p>
     </div>
   {/snippet}
 
@@ -314,22 +314,22 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.key')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.security.create.key')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.key}
                       oninput={handleKeyInput}
-                      placeholder={$t('shell.settings.security.create.keyPlaceholder')}
+                      placeholder={$t('system.settings.security.create.keyPlaceholder')}
                       aria-invalid={keyExistsError || props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                       data-testid="config-create-key"
                     />
                     <TranslatedFormFieldErrors />
                     {#if keyExistsError}
                       <div class="text-destructive text-xs font-medium">
-                        {$t('shell.settings.security.create.keyExists')}
+                        {$t('system.settings.security.create.keyExists')}
                       </div>
                     {/if}
-                    <p class="text-xs text-muted-foreground">{$t('shell.settings.security.create.keyHelp')}</p>
+                    <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.keyHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -339,7 +339,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.type')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.security.create.type')}</FormLabel>
                     <ComboSelect
                       mode="single"
                       value={$form.type}
@@ -347,11 +347,11 @@
                       options={configTypeOptions}
                       valueField="value"
                       labelField="label"
-                      placeholder={$t('common.selectValue')}
+                      placeholder={$t('app.common.selectValue')}
                       data-testid="config-create-type"
                     />
                     <TranslatedFormFieldErrors />
-                    <p class="text-xs text-muted-foreground">{$t('shell.settings.security.create.typeHelp')}</p>
+                    <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.typeHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -361,7 +361,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.value')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.security.create.value')}</FormLabel>
                     <ConfigValueInput
                       type={$form.type as ConfigEntryType}
                       type_config={$form.type_config || null}
@@ -380,12 +380,12 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('shell.settings.security.create.labelKey')}
+                      {$t('system.settings.security.create.labelKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('common.optionalTooltipText')}
+                        text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
-                        title={$t('common.optionalTooltipTitle')}
-                        labelKey="common.optional"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
                       />
                     </FormLabel>
                     <ComboSelect
@@ -421,12 +421,12 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('shell.settings.security.create.descriptionKey')}
+                      {$t('system.settings.security.create.descriptionKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('common.optionalTooltipText')}
+                        text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
-                        title={$t('common.optionalTooltipTitle')}
-                        labelKey="common.optional"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
                       />
                     </FormLabel>
                     <ComboSelect
@@ -462,12 +462,12 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('shell.settings.security.create.groupKey')}
+                      {$t('system.settings.security.create.groupKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('common.optionalTooltipText')}
+                        text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
-                        title={$t('common.optionalTooltipTitle')}
-                        labelKey="common.optional"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
                       />
                     </FormLabel>
                     <ComboSelect
@@ -485,8 +485,8 @@
                         const gk = (opt as Record<string, any>).group_key;
                         return gk ? [$t(`config.auth.group.${gk}`)] : [];
                       }}
-                      placeholder={$t('shell.settings.security.create.groupKeyPlaceholder')}
-                      searchPlaceholder={$t('shell.settings.security.create.groupKeySearch')}
+                      placeholder={$t('system.settings.security.create.groupKeyPlaceholder')}
+                      searchPlaceholder={$t('system.settings.security.create.groupKeySearch')}
                       data-testid="config-create-group-key"
                     >
                       {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
@@ -522,10 +522,10 @@
                   data-testid="config-create-reserved"
                 />
                 <span class="text-sm font-medium leading-none">
-                  {$t('shell.settings.security.create.reserved')}
+                  {$t('system.settings.security.create.reserved')}
                 </span>
               </div>
-              <p class="text-xs text-muted-foreground">{$t('shell.settings.security.create.reservedHelp')}</p>
+              <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.reservedHelp')}</p>
             </div>
           </div>
 
@@ -535,7 +535,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('shell.settings.security.create.typeConfig')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.security.create.typeConfig')}</FormLabel>
                     <TypeConfigBuilder
                       type={$form.type as ConfigEntryType}
                       configKey={$form.key ?? ''}
@@ -556,10 +556,10 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {$t('common.cancel')}
+        {$t('app.common.cancel')}
       </Button>
       <Button type="submit" form="config-create-form" disabled={!effectiveCanSave}>
-        {$t('common.save')}
+        {$t('app.common.save')}
       </Button>
     </div>
   {/snippet}

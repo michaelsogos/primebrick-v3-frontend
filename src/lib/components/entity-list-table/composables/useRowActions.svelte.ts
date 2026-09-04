@@ -131,8 +131,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.deleteFailed',
-          scope: tFn('errors.scope.deleteApi'),
+          messageKey: 'system.entities.list.deleteFailed',
+          scope: tFn('app.common.errors.scope.deleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -173,8 +173,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.restoreFailed',
-          scope: tFn('errors.scope.restoreApi'),
+          messageKey: 'system.entities.list.restoreFailed',
+          scope: tFn('app.common.errors.scope.restoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -209,16 +209,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       }
 
@@ -285,9 +285,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       // toast so the user sees the action exists but isn't wired yet.
       pushNotification({
         type: '/errors/not-implemented',
-        title: tFn('errors.notImplemented.title'),
+        title: tFn('app.common.errors.notImplemented.title'),
         status: 501,
-        detail: tFn('errors.notImplemented.detail', { action: action.actionName }),
+        detail: tFn('app.common.errors.notImplemented.detail', { action: action.actionName }),
         instance: `customAction:${action.actionName}`,
         internal_code: 'CUSTOM_ACTION_NO_HANDLER',
         severity: 'LOW',

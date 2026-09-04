@@ -20,5 +20,5 @@
 	{...restProps}
 >
 	<EllipsisIcon class="size-4" />
-	<span class="sr-only">{$t('common.more')}</span>
+	<span class="sr-only">{$t('app.common.more')}</span>
 </span>

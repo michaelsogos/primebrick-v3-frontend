@@ -526,12 +526,12 @@
   );
   const { handleEditRow, handlePreviewRow, onEntityRowClick, onEntityCardClick } = clickHandlers;
 
-  const loadingText = $derived(loadingMessage ?? $t('common.loading'));
-  const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
+  const loadingText = $derived(loadingMessage ?? $t('app.common.loading'));
+  const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.noRecords'));
 
   const selectionCount = $derived(selectedKeys.length);
   const selectionPastParticipleKey = $derived(
-    selectionCount === 1 ? 'entities.list.selectedSingular' : 'entities.list.selectedPlural'
+    selectionCount === 1 ? 'system.entities.list.selectedSingular' : 'system.entities.list.selectedPlural'
   );
 </script>
 

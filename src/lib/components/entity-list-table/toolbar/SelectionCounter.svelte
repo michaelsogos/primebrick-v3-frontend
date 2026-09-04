@@ -54,8 +54,8 @@
       size="xs"
       class="shrink-0 text-info hover:bg-info/10 hover:text-info"
       aria-pressed={showSelectedOnly}
-      title={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
-      aria-label={showSelectedOnly ? $t('entities.list.viewAllRowsTitle') : $t('entities.list.viewSelectedOnlyTitle')}
+      title={showSelectedOnly ? $t('system.entities.list.viewAllRowsTitle') : $t('system.entities.list.viewSelectedOnlyTitle')}
+      aria-label={showSelectedOnly ? $t('system.entities.list.viewAllRowsTitle') : $t('system.entities.list.viewSelectedOnlyTitle')}
       onclick={() => onShowSelectedOnlyChange(!showSelectedOnly)}
     >
       {#if showSelectedOnly}

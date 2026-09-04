@@ -23,8 +23,8 @@
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.restoreConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('common.restoreConfirm')}</Dialog.Description>
+    <Dialog.Title>{$t('app.common.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Description>{$t('app.common.restoreConfirm')}</Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button
@@ -33,7 +33,7 @@
       onclick={onCancel}
       disabled={isRestoring}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="warning"
@@ -42,9 +42,9 @@
       disabled={isRestoring}
     >
       {#if isRestoring}
-        {$t('common.restoring')}
+        {$t('app.common.restoring')}
       {:else}
-        {$t('common.restore')}
+        {$t('app.common.restore')}
       {/if}
     </Button>
   </Dialog.Footer>

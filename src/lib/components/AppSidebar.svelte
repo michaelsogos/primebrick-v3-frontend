@@ -52,33 +52,33 @@
   });
 </script>
 
-<Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('shell.nav.aria')}>
+<Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('app.nav.aria')}>
   <Sidebar.Content>
     <Sidebar.Group class="pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.org.subtitle')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.org.subtitle')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarOrgSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.module')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.module')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarModuleSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.links')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.links')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           {#if moduleNavLoading}
-            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('common.loading')}</div>
+            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if moduleNavError}
             <div class="px-2 py-1.5 text-xs text-destructive">
-              {$t('shell.modulesLoadFailed')}
+              {$t('app.modulesLoadFailed')}
               <button onclick={() => shellNav.reloadModuleNav()} class="ml-2 underline">
-                {$t('shell.retry')}
+                {$t('app.retry')}
               </button>
             </div>
           {:else if navItems.length > 0}
@@ -96,7 +96,7 @@
       class="text-sidebar-foreground/70 ring-sidebar-ring flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0"
       data-sidebar="group-label"
     >
-      {$t('shell.userMenu.title')}
+      {$t('app.userMenu.title')}
     </div>
     <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 

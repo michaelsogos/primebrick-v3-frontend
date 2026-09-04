@@ -351,7 +351,7 @@
         if (isBackendGatewayUnreachable(apiErr.code, apiErr.status)) {
           pushNotification({
             impact: 'HIGH',
-            message: $t('shell.settings.roles.title') + ': ' + apiErr.code,
+            message: $t('system.settings.roles.title') + ': ' + apiErr.code,
             scope: 'role_mappings.list',
             tags: backendOfflineTags(apiErr.status),
           });
@@ -473,7 +473,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('shell.settings.roles.title')} · Primebrick</title>
+  <title>{$t('system.settings.roles.title')} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -481,8 +481,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -490,7 +490,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.roles.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.roles.title')}</h1>
     </div>
   {/snippet}
 
@@ -512,8 +512,8 @@
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.role_mapping.singular"
-    selectionLabelKey="entities.role_mapping.plural"
+    selectionLabelSingularKey="system.entities.role_mapping.singular"
+    selectionLabelKey="system.entities.role_mapping.plural"
     {rows}
     {total}
     {metaLoading}

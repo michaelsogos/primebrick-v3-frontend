@@ -57,9 +57,9 @@
 
 <div class="space-y-3">
   <div class="flex items-center justify-between">
-    <Label>{$t('config.typeConfig.badgeValues')}</Label>
+    <Label>{$t('system.settings.config.typeConfig.badgeValues')}</Label>
     <Button type="button" variant="outline" size="sm" onclick={addRow} data-testid="tcb-badge-add">
-      {$t('config.typeConfig.addValue')}
+      {$t('system.settings.config.typeConfig.addValue')}
     </Button>
   </div>
   {#each rows as row, index (index)}
@@ -74,6 +74,6 @@
     />
   {/each}
   {#if rows.length === 0}
-    <p class="text-xs text-muted-foreground">{$t('config.typeConfig.noBadgeValues')}</p>
+    <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.noBadgeValues')}</p>
   {/if}
 </div>

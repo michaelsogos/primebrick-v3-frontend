@@ -323,8 +323,8 @@
         error = $t('shell.apiError.unreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: backendOfflineTags(apiError.status),
           toast: false
         });
@@ -338,8 +338,8 @@
         ] : [];
         pushNotification({
           impact,
-          messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags,
           toast: false
         });
@@ -505,8 +505,8 @@
       if (err instanceof ApiListError) {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.deleteFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.common.deleteFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: [{ label: err.code, tone: 'danger' }],
           toast: false
         });
@@ -531,8 +531,8 @@
       if (err instanceof ApiListError) {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.restoreFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.common.restoreFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: [{ label: err.code, tone: 'danger' }],
           toast: false
         });
@@ -560,8 +560,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -569,7 +569,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.users')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.tabs.users')}</h1>
     </div>
   {/snippet}
 
@@ -597,8 +597,8 @@
     defaultSort={meta?.list.defaultSort}
     pageSizeOptions={meta?.list.pageSizeOptions}
     searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.user_profile.singular"
-    selectionLabelKey="entities.user_profile.plural"
+    selectionLabelSingularKey="system.entities.user_profile.singular"
+    selectionLabelKey="system.entities.user_profile.plural"
     rows={rows}
     {total}
     {metaLoading}

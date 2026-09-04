@@ -18,7 +18,7 @@
 <div
   class="inline-flex items-center gap-1 rounded-md border-primary-gradient-soft p-0.5 shadow-xs"
   role="group"
-  aria-label={$t('entities.list.deletionFilter.groupAria')}
+  aria-label={$t('system.entities.list.deletionFilter.groupAria')}
 >
   <Button
     variant={deletionFilterMode === 'non_deleted' ? 'default' : 'ghost'}
@@ -26,7 +26,7 @@
     type="button"
     class={cn('rounded-sm', deletionFilterMode !== 'non_deleted' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'non_deleted'}
-    title={$t('entities.list.deletionFilter.nonDeleted')}
+    title={$t('system.entities.list.deletionFilter.nonDeleted')}
     onclick={() => onDeletionFilterModeChange('non_deleted')}
   >
     <ListCheck class="size-4" />
@@ -37,7 +37,7 @@
     type="button"
     class={cn('rounded-sm', deletionFilterMode !== 'deleted' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'deleted'}
-    title={$t('entities.list.deletionFilter.deleted')}
+    title={$t('system.entities.list.deletionFilter.deleted')}
     onclick={() => onDeletionFilterModeChange('deleted')}
   >
     <ListX class="size-4" />
@@ -48,7 +48,7 @@
     type="button"
     class={cn('rounded-sm', deletionFilterMode !== 'all' && 'hover-border-primary-gradient-soft hover:brightness-105')}
     aria-pressed={deletionFilterMode === 'all'}
-    title={$t('entities.list.deletionFilter.all')}
+    title={$t('system.entities.list.deletionFilter.all')}
     onclick={() => onDeletionFilterModeChange('all')}
   >
     <TextAlignJustify class="size-4" />

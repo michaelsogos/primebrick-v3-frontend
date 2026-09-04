@@ -85,8 +85,8 @@
         entries = entries.filter((e) => e.uuid !== deleteTarget!.uuid);
         pushNotification({
           impact: 'NONE',
-          messageKey: 'common.deleteSuccess',
-          scope: $t('shell.settings.security.title'),
+          messageKey: 'app.common.deleteSuccess',
+          scope: $t('system.settings.security.title'),
         });
         deleteDialogOpen = false;
         deleteTarget = null;
@@ -94,16 +94,16 @@
         const errorData = await resp.json().catch(() => null);
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.deleteFailed',
-          scope: $t('shell.settings.security.title'),
+          messageKey: 'app.common.deleteFailed',
+          scope: $t('system.settings.security.title'),
           detail: errorData?.detail ?? `HTTP ${resp.status}`,
         });
       }
     } catch (err) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'common.deleteFailed',
-        scope: $t('shell.settings.security.title'),
+        messageKey: 'app.common.deleteFailed',
+        scope: $t('system.settings.security.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -130,8 +130,8 @@
         entries = entries.filter((e) => !deletedUuids.has(e.uuid));
         pushNotification({
           impact: 'NONE',
-          messageKey: 'common.deleteSuccess',
-          scope: $t('shell.settings.security.title'),
+          messageKey: 'app.common.deleteSuccess',
+          scope: $t('system.settings.security.title'),
         });
         bulkDeleteDialogOpen = false;
         bulkTargets = [];
@@ -139,16 +139,16 @@
         const errorData = await resp.json().catch(() => null);
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.deleteFailed',
-          scope: $t('shell.settings.security.title'),
+          messageKey: 'app.common.deleteFailed',
+          scope: $t('system.settings.security.title'),
           detail: errorData?.detail ?? `HTTP ${resp.status}`,
         });
       }
     } catch (err) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'common.deleteFailed',
-        scope: $t('shell.settings.security.title'),
+        messageKey: 'app.common.deleteFailed',
+        scope: $t('system.settings.security.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -162,8 +162,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -172,10 +172,10 @@
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">
-        {$t('shell.settings.security.title')}
+        {$t('system.settings.security.title')}
       </h1>
       <p class="text-sm text-muted-foreground">
-        {$t('shell.settings.security.description')}
+        {$t('system.settings.security.description')}
       </p>
     </div>
   {/snippet}

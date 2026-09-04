@@ -51,10 +51,10 @@
   <Dialog.Header>
     <Dialog.Title class="flex items-center gap-2 text-destructive">
       <ShieldUser class="size-5" />
-      {$t('auth.sessionExpired.title')}
+      {$t('app.auth.sessionExpired.title')}
     </Dialog.Title>
     <Dialog.Description>
-      {$t('auth.sessionExpired.description')}
+      {$t('app.auth.sessionExpired.description')}
     </Dialog.Description>
   </Dialog.Header>
 
@@ -62,7 +62,7 @@
     {#if sessionExpiredStore.hasFailedAttempt}
       <Alert variant="destructive">
         <AlertDescription>
-          {$t('auth.sessionExpired.failedAttempt')}
+          {$t('app.auth.sessionExpired.failedAttempt')}
         </AlertDescription>
       </Alert>
     {/if}
@@ -73,7 +73,7 @@
   {#if sessionExpiredStore.hasFailedAttempt}
     <Dialog.Footer class="flex justify-between gap-2">
       <Button variant="outline" onclick={handleGoToLogin}>
-        {$t('auth.sessionExpired.goToLogin')}
+        {$t('app.auth.sessionExpired.goToLogin')}
       </Button>
     </Dialog.Footer>
   {/if}

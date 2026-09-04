@@ -29,12 +29,12 @@
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('common.duplicateConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.duplicateConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if duplicateScope === 'single'}
-        {$t('common.duplicateConfirmSingle')}?
+        {$t('app.common.duplicateConfirmSingle')}?
       {:else}
-        {$t('common.duplicateConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>
@@ -45,7 +45,7 @@
       onclick={onCancel}
       disabled={isDuplicating}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="warning"
@@ -54,9 +54,9 @@
       disabled={isDuplicating}
     >
       {#if isDuplicating}
-        {$t('common.duplicating')}
+        {$t('app.common.duplicating')}
       {:else}
-        {$t('common.confirm')}
+        {$t('app.common.confirm')}
       {/if}
     </Button>
   </Dialog.Footer>

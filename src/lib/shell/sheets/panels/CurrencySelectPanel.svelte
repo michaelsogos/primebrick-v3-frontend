@@ -72,13 +72,13 @@
 </script>
 
 {#snippet headerTitle()}
-  {$t('config.currencySelect.title')}
+  {$t('system.settings.config.currencySelect.title')}
 {/snippet}
 
 {#snippet headerActions()}
   <Sheet.Close
     class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('common.done')}
+    title={$t('app.common.done')}
     onclick={() => closeSheet()}
   >
     <XIcon class="size-4" />
@@ -95,7 +95,7 @@
       <input
         type="text"
         bind:value={searchQuery}
-        placeholder={$t('config.currencySelect.searchPlaceholder')}
+        placeholder={$t('system.settings.config.currencySelect.searchPlaceholder')}
         class="w-full rounded-md border border-input bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         data-testid="currency-select-search"
       />
@@ -107,7 +107,7 @@
     {#if !searchQuery && favoriteCurrencies.length > 0}
       <!-- Favorite currencies section -->
       <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {$t('config.currencySelect.favorites')}
+        {$t('system.settings.config.currencySelect.favorites')}
       </div>
       {#each favoriteCurrencies as currency (currency.code)}
         <button
@@ -132,7 +132,7 @@
       <div class="mx-3 my-2 h-px bg-border"></div>
       <!-- All currencies section header -->
       <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {$t('config.currencySelect.allCurrencies')}
+        {$t('system.settings.config.currencySelect.allCurrencies')}
       </div>
     {/if}
 
@@ -156,7 +156,7 @@
       </button>
     {:else}
       <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-        {$t('config.currencySelect.noResults')}
+        {$t('system.settings.config.currencySelect.noResults')}
       </div>
     {/each}
   </div>
