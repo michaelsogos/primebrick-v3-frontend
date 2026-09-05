@@ -6,7 +6,7 @@
   import { type UiLang, UI_LANGS, uiLangRegionSuffix } from '$lib/i18n/languages';
   import { pushNotification } from '$lib/errors/app-errors';
   import {
-    fetchTranslationModules,
+    fetchModules,
     fetchTranslationList,
     createTranslation,
     updateTranslation,
@@ -44,9 +44,17 @@
 
   async function loadModules() {
     try {
-      modules = await fetchTranslationModules();
+      // Static translation modules (always available — not in service_registry)
+      const staticModules = ['app', 'system'];
+      // US microservice modules from the existing /api/v1/modules endpoint
+      const serviceModules = (await fetchModules())
+        .map(m => m.id.toLowerCase())
+        .filter(id => !staticModules.includes(id));
+      modules = [...staticModules, ...serviceModules];
     } catch (e) {
-      pushNotification({ impact: 'HIGH', message: 'Failed to load translation modules', scope: 'translations', detail: String(e) });
+      // Fall back to static modules only if the modules endpoint fails
+      modules = ['app', 'system'];
+      pushNotification({ impact: 'MEDIUM', message: 'Failed to load service modules, showing static modules only', scope: 'translations', detail: String(e) });
     }
   }
 
