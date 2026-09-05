@@ -483,7 +483,7 @@ export async function fetchModuleTranslations(moduleCode: string, language: stri
   return await res.json();
 }
 
-/** Admin: list translations for a module (paginated, filtered by language). */
+/** Admin: list translations (paginated, filtered by module + language). */
 export async function fetchTranslationList(moduleCode: string, query: {
   page?: number;
   page_size?: number;
@@ -492,14 +492,14 @@ export async function fetchTranslationList(moduleCode: string, query: {
   sort_dir?: string;
   deleted_records?: string;
 }): Promise<{ rows: unknown[]; total: bigint }> {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ module: moduleCode });
   if (query.page) params.set('page', String(query.page));
   if (query.page_size) params.set('page_size', String(query.page_size));
   if (query.language) params.set('language', query.language);
   if (query.sort_key) params.set('sort_key', query.sort_key);
   if (query.sort_dir) params.set('sort_dir', query.sort_dir);
   if (query.deleted_records) params.set('deleted_records', query.deleted_records);
-  const res = await apiFetch(`/api/v1/translations/admin/${encodeURIComponent(moduleCode)}/list?${params}`);
+  const res = await apiFetch(`/api/v1/entities/translations/list?${params}`);
   if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
   return await res.json();
 }
@@ -510,7 +510,7 @@ export async function createTranslation(moduleCode: string, data: {
   language: string;
   value: string;
 }): Promise<unknown> {
-  const res = await apiFetch(`/api/v1/translations/admin/${encodeURIComponent(moduleCode)}`, {
+  const res = await apiFetch(`/api/v1/entities/translations?module=${encodeURIComponent(moduleCode)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -525,7 +525,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   language?: string;
   value?: string;
 }): Promise<unknown> {
-  const res = await apiFetch(`/api/v1/translations/admin/${encodeURIComponent(moduleCode)}/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -536,7 +536,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
 
 /** Admin: soft-delete a translation row. */
 export async function deleteTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/translations/admin/${encodeURIComponent(moduleCode)}/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(`Translation delete failed (${res.status})`);
@@ -544,7 +544,7 @@ export async function deleteTranslation(moduleCode: string, uuid: string): Promi
 
 /** Admin: restore a soft-deleted translation row. */
 export async function restoreTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/translations/admin/${encodeURIComponent(moduleCode)}/${encodeURIComponent(uuid)}/restore`, {
+  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Translation restore failed (${res.status})`);
