@@ -5,7 +5,7 @@
  * module + language on route change and language change.
  *
  * - Cache-first: checks localStorage (5-minute TTL)
- * - Falls back to API: GET /api/v1/translations/:module/:language
+ * - Falls back to API: GET /api/v1/system/translations/:module/:language
  * - In-memory dedup per session (LOADED_MODULES set)
  * - Public pages use fetchPublicTranslations instead (no auth)
  */

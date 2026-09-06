@@ -471,14 +471,14 @@ export async function restoreConfigEntry(uuid: string): Promise<void> {
 
 /** Public pages (login, welcome, MCP consent) — no auth needed. */
 export async function fetchPublicTranslations(language: string): Promise<Record<string, string>> {
-  const res = await apiFetch(`/api/v1/translations/public/${encodeURIComponent(language)}`);
+  const res = await apiFetch(`/api/v1/system/translations/public/${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error(`Public translations request failed (${res.status})`);
   return await res.json();
 }
 
 /** Authenticated pages — module-aware translation dict (runtime read). */
 export async function fetchModuleTranslations(moduleCode: string, language: string): Promise<Record<string, string>> {
-  const res = await apiFetch(`/api/v1/translations/${encodeURIComponent(moduleCode)}/${encodeURIComponent(language)}`);
+  const res = await apiFetch(`/api/v1/system/translations/${encodeURIComponent(moduleCode)}/${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error(`Translations request failed (${res.status})`);
   return await res.json();
 }
@@ -499,7 +499,7 @@ export async function fetchTranslationList(moduleCode: string, query: {
   if (query.sort_key) params.set('sort_key', query.sort_key);
   if (query.sort_dir) params.set('sort_dir', query.sort_dir);
   if (query.deleted_records) params.set('deleted_records', query.deleted_records);
-  const res = await apiFetch(`/api/v1/entities/translations/list?${params}`);
+  const res = await apiFetch(`/api/v1/entities/translation/list?${params}`);
   if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
   return await res.json();
 }
@@ -510,7 +510,7 @@ export async function createTranslation(moduleCode: string, data: {
   language: string;
   value: string;
 }): Promise<unknown> {
-  const res = await apiFetch(`/api/v1/entities/translations?module=${encodeURIComponent(moduleCode)}`, {
+  const res = await apiFetch(`/api/v1/entities/translation?module=${encodeURIComponent(moduleCode)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -525,7 +525,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   language?: string;
   value?: string;
 }): Promise<unknown> {
-  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -536,7 +536,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
 
 /** Admin: soft-delete a translation row. */
 export async function deleteTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(`Translation delete failed (${res.status})`);
@@ -544,7 +544,7 @@ export async function deleteTranslation(moduleCode: string, uuid: string): Promi
 
 /** Admin: restore a soft-deleted translation row. */
 export async function restoreTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/translations/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}`, {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Translation restore failed (${res.status})`);

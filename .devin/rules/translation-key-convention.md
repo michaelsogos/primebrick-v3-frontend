@@ -35,8 +35,13 @@ export const roleMappingsMeta = {
 } as const;
 ```
 
-- `entity`: snake_case plural (API URL path, e.g. `/api/v1/entities/role_mappings`)
+- `entity`: snake_case **singular** (API URL path, e.g. `/api/v1/entities/role_mapping`)
 - `translationKey`: snake_case singular (i18n key prefix, e.g. `entities.role_mapping.*`)
+
+**Note:** The `entity` field was previously plural in some meta files
+(`role_mappings`, `user_profiles`, `config_entries`). The new standard is
+**singular** for both `entity` and `translationKey`. Existing plural meta
+files will be renamed in a separate PR.
 
 All `labelKey`, `titleKey`, `tooltip`, `tooltipTitle` values MUST use the `translationKey` as the entity segment.
 
