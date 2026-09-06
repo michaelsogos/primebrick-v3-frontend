@@ -201,7 +201,7 @@
           <Input
             id="label_key"
             bind:value={label_key}
-            placeholder="e.g. shell.roles.sales_manager"
+            placeholder="e.g. app.auth.roles.sales_manager"
             class="font-mono"
             data-testid="roles-form-label-key"
           />

@@ -288,7 +288,7 @@
                         {:else}
                           <CloudOff class="size-3.5 opacity-90" />
                         {/if}
-                        <span>{$t(`shell.health.${aggStatus}`)}</span>
+                        <span>{$t(`app.health.${aggStatus}`)}</span>
                       </Badge>
                     {/if}
 
