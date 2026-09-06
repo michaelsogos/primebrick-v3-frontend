@@ -30,7 +30,7 @@
     if (col.type === 'badge' && col.badge?.values) {
       const badgeValue = col.badge.values[value];
       if (badgeValue) {
-        return badgeValue.labelText || $t(badgeValue.labelKey || `entities.customer.status.${value}`);
+        return badgeValue.labelText || $t(badgeValue.labelKey || `system.entities.customer.status.${value}`);
       }
     }
     return String(value);
@@ -77,7 +77,7 @@
             class="gap-1.5 pr-1"
           >
             <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-            <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${operator}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
@@ -117,7 +117,7 @@
             class="gap-1.5 pr-1"
           >
             <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-            <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${filter.operator}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"

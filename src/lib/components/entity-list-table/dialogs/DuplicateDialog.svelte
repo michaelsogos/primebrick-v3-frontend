@@ -34,7 +34,7 @@
       {#if duplicateScope === 'single'}
         {$t('app.common.duplicateConfirmSingle')}?
       {:else}
-        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`system.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

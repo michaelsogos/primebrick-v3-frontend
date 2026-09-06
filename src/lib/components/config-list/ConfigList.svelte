@@ -351,7 +351,7 @@
       {#each groupKeys as groupKey (groupKey)}
         <div class="pt-4 first:pt-0">
           <h3 class="self-start text-xs font-semibold uppercase tracking-wide bg-linear-to-br from-sky-400 to-indigo-400 text-white px-3 pt-1 pb-1 rounded-t-md relative z-10 w-fit ml-3">
-            {$t(`config.auth.group.${groupKey}`)}
+            {$t(`system.settings.config.auth.group.${groupKey}`)}
           </h3>
           <div class="border-primary-gradient rounded-lg px-3 pt-3 pb-3 space-y-3">
             {#each entriesByGroup.get(groupKey) ?? [] as entry (entry.uuid)}

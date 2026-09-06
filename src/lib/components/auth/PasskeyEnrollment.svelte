@@ -276,7 +276,7 @@
                     {#each cred.transports as transport (transport)}
                       {@const suffix = transportKeySuffix(transport)}
                       {#if suffix}
-                        <Badge variant="secondary" class="text-xs">{$t(`auth.passkeys.transport.${suffix}`)}</Badge>
+                        <Badge variant="secondary" class="text-xs">{$t(`app.auth.passkeys.transport.${suffix}`)}</Badge>
                       {/if}
                     {/each}
                   </div>

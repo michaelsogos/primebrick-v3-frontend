@@ -47,9 +47,9 @@
     <Dialog.Title>{$t('app.common.exportConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('app.common.exportConfirm')} {selectedCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.exportConfirm')} {selectedCount} {$t(`system.entities.${entity}.plural`)}?
       {:else}
-        {$t('app.common.exportConfirm')} {totalCount} {$t(`entities.${entity}.plural`)}?
+        {$t('app.common.exportConfirm')} {totalCount} {$t(`system.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

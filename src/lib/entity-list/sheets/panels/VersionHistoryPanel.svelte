@@ -197,7 +197,7 @@
   }
 
   function getAuditActionLabel(action: string): string {
-    const key = `entities.versionHistory.actions.${action.toUpperCase()}`;
+    const key = `system.entities.versionHistory.actions.${action.toUpperCase()}`;
     const translated = $t(key);
     return translated === key ? action : translated;
   }
@@ -246,10 +246,10 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      let fieldLabel = $t(`entities.versionHistory.field.${field}`);
-      if (fieldLabel === `entities.versionHistory.field.${field}`) {
+      let fieldLabel = $t(`system.entities.versionHistory.field.${field}`);
+      if (fieldLabel === `system.entities.versionHistory.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
-        fieldLabel = $t(`entities.${i18nEntity}.fields.${field}`) || field;
+        fieldLabel = $t(`system.entities.${i18nEntity}.fields.${field}`) || field;
       }
       // Use display_name for audit fields if available, otherwise use raw value
       const oldValue = change.old_display_name || change.from || change.old;
@@ -550,7 +550,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
+                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `system.entities.customer.status.${delta.oldValue}`)}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -588,7 +588,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
+                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `system.entities.customer.status.${delta.newValue}`)}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>

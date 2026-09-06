@@ -221,7 +221,7 @@
   const groupKeyOptions = $derived(
     existingGroupKeys.map((gk) => ({
       group_key: gk,
-      label_key: `config.auth.group.${gk}`,
+      label_key: `system.settings.config.auth.group.${gk}`,
     })),
   );
 
@@ -483,7 +483,7 @@
                       loading={groupKeysLoading}
                       getSearchKeywords={(opt) => {
                         const gk = (opt as Record<string, any>).group_key;
-                        return gk ? [$t(`config.auth.group.${gk}`)] : [];
+                        return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
                       placeholder={$t('system.settings.security.create.groupKeyPlaceholder')}
                       searchPlaceholder={$t('system.settings.security.create.groupKeySearch')}

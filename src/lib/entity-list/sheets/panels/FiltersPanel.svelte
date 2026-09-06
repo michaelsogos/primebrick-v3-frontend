@@ -170,7 +170,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       key,
       label:
         value.labelText ||
-        $t(value.labelKey || `entities.customer.status.${key}`),
+        $t(value.labelKey || `system.entities.customer.status.${key}`),
       color: value.color,
     }));
   }
@@ -278,7 +278,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         type: "multiselect" as const,
         options,
         selectedKeys,
-        placeholder: $t(`entities.list.filterPlaceholder`),
+        placeholder: $t(`system.entities.list.filterPlaceholder`),
       };
     }
 
@@ -293,7 +293,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     return {
       type: "input" as const,
       inputType: "text",
-      placeholder: $t(`entities.list.filterPlaceholder`),
+      placeholder: $t(`system.entities.list.filterPlaceholder`),
       value: tempFilterValues[col.key] || "",
     };
   }
@@ -692,13 +692,13 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     {column ? $t(column.labelKey) : filter.field}
                   </span>
                   <span class="text-primary">
-                    {$t(`entities.list.operators.${filter.operator}`)}
+                    {$t(`system.entities.list.operators.${filter.operator}`)}
                   </span>
                   <span class="italic text-muted-foreground">
                     {Array.isArray(filter.value)
                       ? filter.value.map((v) =>
                           column?.badge?.values?.[v]?.labelText ||
-                          $t(column?.badge?.values?.[v]?.labelKey || `entities.customer.status.${v}`)
+                          $t(column?.badge?.values?.[v]?.labelKey || `system.entities.customer.status.${v}`)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
                       ? (() => {
@@ -805,7 +805,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                       {...props}
                     >
                       <span class="text-foreground">
-                        {newFilterOperator ? $t(`entities.list.operators.${newFilterOperator}`) : ''}
+                        {newFilterOperator ? $t(`system.entities.list.operators.${newFilterOperator}`) : ''}
                       </span>
                       <ChevronDown class="h-4 w-4 shrink-0" />
                     </Button>
@@ -822,7 +822,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                       closeOnSelect={true}
                       class={dropdownMenuItemWithSelectedClass('', newFilterOperator === op)}
                     >
-                      {$t(`entities.list.operators.${op}`)}
+                      {$t(`system.entities.list.operators.${op}`)}
                     </DropdownMenu.Item>
                   {/each}
                 </DropdownMenu.Content>
@@ -869,7 +869,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
                         >
                           {value.labelText ||
-                            $t(value.labelKey || `entities.customer.status.${key}`)}
+                            $t(value.labelKey || `system.entities.customer.status.${key}`)}
                         </Badge>
                       </DropdownMenuCheckboxItem>
                     {/each}
