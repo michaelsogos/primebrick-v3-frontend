@@ -237,10 +237,10 @@
   // Reactive i18n key placeholders based on the config key being typed.
   // Uses 'my_custom_setting' as fallback when key is empty (same convention as the builder).
   const labelKeyPlaceholder = $derived(
-    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
   );
   const descriptionKeyPlaceholder = $derived(
-    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
   );
 
   // ─── i18n key options for label_key / description_key ComboSelects ──────
@@ -255,17 +255,17 @@
   );
   const descriptionKeyOptions = $derived(
     allI18nKeys
-      .filter((k) => k.startsWith('config.auth.') && k.endsWith('.description'))
+      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
       .map((k) => ({ key: k })),
   );
 
   // Pre-filter prefix: when the popover opens, only show keys matching the
   // current config key. User can clear the search (X button) to see all.
   const labelKeyDefaultSearch = $derived(
-    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
   );
   const descriptionKeyDefaultSearch = $derived(
-    `config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
   );
 
   function handleLabelKeyChange(value: string | string[]) {
