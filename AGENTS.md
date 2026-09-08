@@ -78,9 +78,10 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 ## Where to look (order)
 
 1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
-2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: always add translations immediately when adding labels).
+2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: ALL translations are BE-owned; FE fallback is English-only for `app.*` keys only).
 3. **`.devin/rules/translation-key-convention.md`** — ⚠️ CRITICAL: translation keys MUST be snake_case singular (e.g. `entities.user_profile.fields.*`, NOT `userProfile` or `user_profiles`).
-4. **`docs/ai/`** — skills selection and suggested workflows.
+4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
+5. **`docs/ai/`** — skills selection and suggested workflows.
 
 ## List pages
 
@@ -187,6 +188,42 @@ that a significant refactor happened.
 - Enforcing Devin rule: `.devin/rules/e2e-testid-convention.md` (always-on)
 - E2E suites using this convention: `src/e2e/auth-password.spec.ts`,
   `src/e2e/auth-passkey.spec.ts`
+
+## Smart Components (AI-powered)
+
+Components with AI capabilities (NLP, LLM, ML inference) use the `Smart` prefix
+to distinguish them from standard UI components. This convention makes it
+immediately clear which components have AI dependencies and browser resource
+implications.
+
+### Naming convention
+
+- **Component name**: `Smart{Purpose}` — e.g. `SmartRegexInput`
+- **File name**: `smart-{purpose}.svelte` — e.g. `smart-regex-input.svelte`
+- **Directory**: `src/lib/components/ui/smart-{purpose}/`
+- **Composable**: `use-{purpose}.svelte.ts` — e.g. `use-regex-ai.svelte.ts`
+- **Panel components**: `{purpose}-panel.svelte` — e.g. `regex-flags-panel.svelte`
+
+### Current Smart components
+
+| Component | Purpose | AI Engine | Model |
+|----------|---------|-----------|-------|
+| `SmartRegexInput` | Regex pattern input with AI assistant | WebLLM (WebGPU) | Qwen2.5-0.5B-Instruct q4f16 |
+
+### Requirements for Smart components
+
+1. **Browser-only inference**: AI models run entirely in the browser via WebGPU.
+   No backend AI calls for the Smart component's core functionality.
+2. **Lazy loading**: The AI engine and model are loaded via dynamic `import()`
+   only when the user interacts with the AI feature (e.g. clicks the brain CTA).
+3. **Progress reporting**: Model download and initialization must show visible
+   progress (e.g. "Loading model 56%").
+4. **Resource cleanup**: VRAM/memory is released when the AI panel closes
+   (`engine.unload()`).
+5. **Graceful degradation**: Non-WebGPU browsers show a clear message and
+   fall back to manual input (no AI).
+6. **Service Worker**: Background model pre-download uses a Service Worker
+   and the Cache API for offline-capable, non-blocking downloads.
 
 ## Composable state exposure pattern (MANDATORY)
 

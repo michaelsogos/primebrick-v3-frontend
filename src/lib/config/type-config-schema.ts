@@ -24,7 +24,7 @@ export interface ConfigValidation {
     max?: { value: number; error_label_key?: string };
     url?: { protocols: string[]; error_label_key?: string };
     email?: { error_label_key?: string };
-    regex?: { pattern: string; error_label_key?: string };
+    regex?: { pattern: string; flags?: string; error_label_key?: string };
   };
 }
 
@@ -44,6 +44,12 @@ export interface ParsedTypeConfig {
   api_verb?: string;
   value_field?: string;
   label_field?: string;
+  // URL
+  default_protocol?: string;
+  allowed_protocols?: string[];
+  // Phone
+  country?: string;
+  allowed_countries?: string[];
 }
 
 // ─── Parse ───────────────────────────────────────────────────────
@@ -121,8 +127,13 @@ const GENERIC_ERROR_KEYS: Record<string, string> = {
   max: 'app.common.validation.tooLong',
   url: 'app.common.validation.invalidUrl',
   email: 'app.common.validation.invalidEmail',
+  phone: 'app.common.validation.invalidPhone',
+  regex: 'app.common.validation.regexMismatch',
   invalidUrl: 'app.common.validation.invalidUrl',
   invalidEmail: 'app.common.validation.invalidEmail',
+  invalidPhone: 'app.common.validation.invalidPhone',
+  invalidUrlProtocol: 'app.common.validation.invalidUrlProtocol',
+  invalidRegexPattern: 'app.common.validation.invalidRegexPattern',
 };
 
 export function autoErrorLabelKey(configKey: string, rule: string): string {

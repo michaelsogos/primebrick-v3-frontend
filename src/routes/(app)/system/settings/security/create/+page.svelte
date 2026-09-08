@@ -52,6 +52,8 @@
     { value: 'date', label: 'Date' },
     { value: 'datetime', label: 'DateTime' },
     { value: 'time', label: 'Time' },
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
   ];
 
   // Zod schema for config create form
@@ -555,10 +557,10 @@
 
   {#snippet footerActions()}
     <div class="flex gap-2">
-      <Button variant="outline" onclick={handleCancel}>
+      <Button variant="outline" onclick={handleCancel} data-testid="config-create-cancel">
         {$t('app.common.cancel')}
       </Button>
-      <Button type="submit" form="config-create-form" disabled={!effectiveCanSave}>
+      <Button type="submit" form="config-create-form" disabled={!effectiveCanSave} data-testid="config-create-submit">
         {$t('app.common.save')}
       </Button>
     </div>

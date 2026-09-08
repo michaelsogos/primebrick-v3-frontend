@@ -160,11 +160,76 @@ Devin rule (`.devin/rules/e2e-testid-convention.md`) references this doc.
 | `(app)/system/settings/users/create/+page.svelte`| send-invitation toggle | `admin-user-create-send-invitation-toggle` |
 | `(app)/system/settings/users/create/+page.svelte`| submit button          | `admin-user-create-submit-button`          |
 
+### Config create form
+
+| Component (file) | Element | `data-testid` |
+|---|---|---|
+| `security/create/+page.svelte` | key input | `config-create-key` |
+| `security/create/+page.svelte` | type select | `config-create-type` |
+| `security/create/+page.svelte` | label_key select | `config-create-label-key` |
+| `security/create/+page.svelte` | description_key select | `config-create-description-key` |
+| `security/create/+page.svelte` | group_key select | `config-create-group-key` |
+| `security/create/+page.svelte` | reserved toggle | `config-create-reserved` |
+| `security/create/+page.svelte` | submit button | `config-create-submit` |
+| `security/create/+page.svelte` | cancel button | `config-create-cancel` |
+| `ValidationRulesSection.svelte` | required toggle | `tcb-required` |
+| `ValidationRulesSection.svelte` | required error key | `tcb-required-error-key` |
+| `ValidationRulesSection.svelte` | unsigned toggle | `tcb-unsigned` |
+| `ValidationRulesSection.svelte` | min input | `tcb-min` |
+| `ValidationRulesSection.svelte` | min error key | `tcb-min-error-key` |
+| `ValidationRulesSection.svelte` | max input | `tcb-max` |
+| `ValidationRulesSection.svelte` | max error key | `tcb-max-error-key` |
+| `ValidationRulesSection.svelte` | url protocols | `tcb-url-protocols` |
+| `ValidationRulesSection.svelte` | url error key | `tcb-url-error-key` |
+| `ValidationRulesSection.svelte` | regex pattern (SmartRegexInput) | `tcb-regex` |
+| `ValidationRulesSection.svelte` | regex pattern error | `tcb-regex-error` |
+| `ValidationRulesSection.svelte` | regex error key | `tcb-regex-error-key` |
+| `WidgetConfigSection.svelte` | currency | `tcb-currency` |
+| `BadgeValuesEditor.svelte` | add button | `tcb-badge-add` |
+| `BadgeValueRow.svelte` | value input | `tcb-badge-value` |
+| `BadgeValueRow.svelte` | label input | `tcb-badge-label` |
+| `BadgeValueRow.svelte` | color input | `tcb-badge-color` |
+| `BadgeValueRow.svelte` | remove button | `tcb-badge-remove` |
+| `SelectSourceEditor.svelte` | builtin source button | `tcb-source-builtin` |
+| `SelectSourceEditor.svelte` | api source button | `tcb-source-api` |
+| `SelectSourceEditor.svelte` | builtin source select | `tcb-builtin-source` |
+| `SelectSourceEditor.svelte` | api url | `tcb-api-url` |
+| `SelectSourceEditor.svelte` | api verb | `tcb-api-verb` |
+| `SelectSourceEditor.svelte` | value field | `tcb-value-field` |
+| `SelectSourceEditor.svelte` | label field | `tcb-label-field` |
+| `JsonPreviewEditor.svelte` | advanced toggle | `tcb-advanced` |
+| `JsonPreviewEditor.svelte` | raw JSON editor | `tcb-raw-json` |
+| `JsonPreviewEditor.svelte` | raw JSON error | `tcb-raw-json-error` |
+| `JsonPreviewEditor.svelte` | preview toggle | `tcb-preview-toggle` |
+| `JsonPreviewEditor.svelte` | JSON preview | `tcb-json-preview` |
+| `SmartRegexInput.svelte` | flags CTA | `smart-regex-flags-cta` |
+| `SmartRegexInput.svelte` | flags badge | `smart-regex-flags-badge` |
+| `SmartRegexInput.svelte` | brain CTA (AI) | `smart-regex-brain-cta` |
+| `SmartRegexInput.svelte` | clear button | `smart-regex-clear` |
+| `SmartRegexInput.svelte` | input error | `smart-regex-input-error` |
+| `ConfigValueInput.svelte` | boolean widget | `config-input-boolean-{fieldKey}` |
+| `ConfigValueInput.svelte` | badge widget | `config-input-badge-{fieldKey}` |
+| `ConfigValueInput.svelte` | single_select widget | `config-input-single-select-{fieldKey}` |
+| `ConfigValueInput.svelte` | multi_select widget | `config-input-multi-select-{fieldKey}` |
+| `ConfigValueInput.svelte` | bigint/number widget | `config-input-number-{fieldKey}` |
+| `ConfigValueInput.svelte` | money widget | `config-input-money-{fieldKey}` |
+| `ConfigValueInput.svelte` | secret widget | `config-input-secret-{fieldKey}` |
+| `ConfigValueInput.svelte` | url widget | `config-input-url-{fieldKey}` |
+| `ConfigValueInput.svelte` | email widget | `config-input-email-{fieldKey}` |
+| `ConfigValueInput.svelte` | phone widget | `config-input-phone-{fieldKey}` |
+| `ConfigValueInput.svelte` | text/json widget | `config-input-text-{fieldKey}` |
+| `ConfigValueInput.svelte` | string widget | `config-input-string-{fieldKey}` |
+
 > **ComboSelect note:** the `ComboSelect` component forwards `data-testid` to
 > its trigger `<div>` (the combobox element). Dropdown options inside the
 > popover use `[role='option']` — they are located by role + text content
 > (org names and role names are data-driven, not i18n strings, so text-based
 > selection is acceptable for options).
+
+> **SmartRegexInput note:** the `SmartRegexInput` component forwards
+> `data-testid` to its inner native `<input>` element, so `getByTestId` locates
+> the input directly (`.fill()` works). The flags and AI CTAs are sibling
+> buttons with their own testids.
 
 ## Refactor protocol
 

@@ -169,13 +169,14 @@ export function useTypeConfigBuilder(
     sync();
   }
 
-  function setRegex(pattern: string, errorLabelKey?: string) {
+  function setRegex(pattern: string, flags?: string, errorLabelKey?: string) {
     const v = ensureValidation();
     if (!pattern) {
       delete v.rules.regex;
     } else {
       v.rules.regex = {
         pattern,
+        ...(flags ? { flags } : {}),
         ...(errorLabelKey ? { error_label_key: errorLabelKey } : {}),
       };
     }

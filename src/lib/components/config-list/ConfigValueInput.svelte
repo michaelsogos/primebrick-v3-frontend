@@ -8,10 +8,14 @@
   import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
   import { NumericInput } from '$lib/components/ui/numeric-input';
+  import { UrlInput } from '$lib/components/ui/url-input';
+  import { EmailInput } from '$lib/components/ui/email-input';
+  import { PhoneInput } from '$lib/components/ui/phone-input';
   import type { ConfigEntryType } from '$lib/api-types';
   import { currencySymbol, getAllCurrencies } from '$lib/currency';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { parseTypeConfig, serializeTypeConfig } from '$lib/config/type-config-schema';
+  import { apiFetch } from '$lib/api';
 
   let {
     type,
@@ -116,10 +120,10 @@
       return;
     }
 
-    // 2. api_url → fetch from BE API
+    // 2. api_url → fetch from BE API (via apiFetch for auth + ETag support)
     if (selectConfig?.api_url) {
       selectLoading = true;
-      fetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
+      apiFetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
         .then((res) => res.json())
         .then((data) => {
           const arr: Record<string, string>[] = Array.isArray(data)
@@ -356,15 +360,21 @@
   </div>
 {:else if type === 'time'}
   <div class="w-full">
-    <Input
-      type="time"
+    <DateWheelPicker
       bind:value={localValue}
-      oninput={handleInput}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-time-${fieldKey}`}
+      timeOnly={true}
+      placeholder={$t('app.common.selectTime')}
     />
+    {#if localValue}
+      <Button
+        variant="ghost"
+        size="sm"
+        onclick={handleBlur}
+        class="ml-2"
+      >
+        {$t('app.common.save')}
+      </Button>
+    {/if}
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
@@ -387,20 +397,28 @@
     {/if}
   </div>
 {:else if type === 'url'}
-  <div class="w-full">
-    <Input
-      type="url"
-      bind:value={localValue}
-      oninput={handleInput}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-url-${fieldKey}`}
-    />
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
+  <UrlInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-url-${fieldKey}`}
+  />
+{:else if type === 'email'}
+  <EmailInput
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-email-${fieldKey}`}
+  />
+{:else if type === 'phone'}
+  <PhoneInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-phone-${fieldKey}`}
+  />
 {:else if type === 'text' || type === 'json'}
   <div class="w-full">
     <Textarea

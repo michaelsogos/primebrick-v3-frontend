@@ -8,7 +8,11 @@ export type SheetPanelId =
   | 'entity.columns'
   | 'entity.filters'
   | 'entity.versionHistory'
-  | 'config.currencySelect';
+  | 'config.currencySelect'
+  | 'config.protocolSelect'
+  | 'config.phonePrefixSelect'
+  | 'config.regexFlags'
+  | 'config.regexAiChat';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -43,6 +47,25 @@ export type SheetPanelPropsMap = {
   'config.currencySelect': {
     currentCurrency: string;
     onCurrencyChange: (code: string) => void;
+  };
+  'config.protocolSelect': {
+    currentProtocol: string;
+    allowedProtocols: string[];
+    onProtocolChange: (protocol: string) => void;
+  };
+  'config.phonePrefixSelect': {
+    currentCountry: string;
+    allowedCountries?: string[];
+    onCountryChange: (country: string) => void;
+  };
+  'config.regexFlags': {
+    current_flags: string;
+    config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
+    on_flags_change: (flags: string) => void;
+  };
+  'config.regexAiChat': {
+    on_apply_regex: (pattern: string, flags: string) => void;
+    config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
   };
 };
 

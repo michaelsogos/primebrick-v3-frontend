@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+  import { t, dict, getDictKeys } from '$lib/i18n';
   import { Switch } from '$lib/components/ui/switch';
   import { TextInput } from '$lib/components/ui/input';
+  import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
+  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import { Label } from '$lib/components/ui/label';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import type { ConfigEntryType } from '$lib/api-types';
@@ -19,8 +21,15 @@
   } = $props();
 
   const isNumericType = $derived(type === 'bigint' || type === 'number' || type === 'money');
-  const isStringType = $derived(type === 'string' || type === 'text' || type === 'secret');
+  // String-derived types: support min/max (length) and regex validation
+  const isStringType = $derived(type === 'string' || type === 'text' || type === 'secret' || type === 'url' || type === 'email' || type === 'phone');
   const isUrlType = $derived(type === 'url');
+  // Types that support min/max (numeric value or string length)
+  const hasMinMax = $derived(isNumericType || isStringType);
+
+  // All i18n keys for ComboSelect error_label_key selectors
+  const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
+  const errorKeyOptions = $derived(allI18nKeys.map((k: string) => ({ key: k })));
 
   // Local state for inputs that don't map 1:1 to builder mutators
   let minInput = $state<string>('');
@@ -28,48 +37,93 @@
   let minErrorKey = $state<string>('');
   let maxErrorKey = $state<string>('');
   let regexPattern = $state<string>('');
+  let regexFlags = $state<string>('');
   let regexErrorKey = $state<string>('');
+  let regexPatternError = $state<string | null>(null);
   let urlProtocols = $state<string>('');
   let urlErrorKey = $state<string>('');
   let requiredErrorKey = $state<string>('');
 
-  // Sync from builder state — only reads custom error_label_keys (auto keys
-  // are no longer stored in state, so these stay empty unless user set one)
+  // Sync from builder state — error_label_keys fall back to auto-generated
+  // defaults (typed values, not placeholders) so the ComboSelect shows them
+  // as selected and the user can override or pick a different key.
   $effect(() => {
     const v = builder.validation;
     if (v?.rules?.min) {
       minInput = String(v.rules.min.value);
-      minErrorKey = v.rules.min.error_label_key ?? '';
+      minErrorKey = v.rules.min.error_label_key ?? autoErrorLabelKey(configKey, 'min');
     }
     if (v?.rules?.max) {
       maxInput = String(v.rules.max.value);
-      maxErrorKey = v.rules.max.error_label_key ?? '';
+      maxErrorKey = v.rules.max.error_label_key ?? autoErrorLabelKey(configKey, 'max');
     }
     if (v?.rules?.regex) {
       regexPattern = v.rules.regex.pattern;
-      regexErrorKey = v.rules.regex.error_label_key ?? '';
+      regexFlags = v.rules.regex.flags ?? '';
+      regexErrorKey = v.rules.regex.error_label_key ?? autoErrorLabelKey(configKey, 'regex');
+      // Validate existing pattern on load — use local var to avoid tracking regexPattern
+      const p = v.rules.regex.pattern;
+      const f = v.rules.regex.flags ?? '';
+      if (p && p.trim() !== '') {
+        try {
+          new RegExp(p, f);
+          regexPatternError = null;
+        } catch {
+          regexPatternError = $t('app.common.validation.invalidRegexPattern');
+        }
+      } else {
+        regexPatternError = null;
+      }
     }
     if (v?.rules?.url) {
       urlProtocols = v.rules.url.protocols.join(', ');
-      urlErrorKey = v.rules.url.error_label_key ?? '';
+      urlErrorKey = v.rules.url.error_label_key ?? autoErrorLabelKey(configKey, 'url');
     }
     if (v?.required_error_label_key) {
       requiredErrorKey = v.required_error_label_key;
+    } else if (v?.required) {
+      requiredErrorKey = autoErrorLabelKey(configKey, 'required');
     }
   });
 
   function handleMinChange() {
-    const val = minInput.trim() === '' ? null : Number(minInput);
+    const val = (minInput ?? '').trim() === '' ? null : Number(minInput);
     builder.setMin(val, minErrorKey || undefined);
   }
 
+  function handleMinErrorKeyChange(value: string | string[]) {
+    minErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleMinChange();
+  }
+
   function handleMaxChange() {
-    const val = maxInput.trim() === '' ? null : Number(maxInput);
+    const val = (maxInput ?? '').trim() === '' ? null : Number(maxInput);
     builder.setMax(val, maxErrorKey || undefined);
   }
 
+  function handleMaxErrorKeyChange(value: string | string[]) {
+    maxErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleMaxChange();
+  }
+
   function handleRegexChange() {
-    builder.setRegex(regexPattern, regexErrorKey || undefined);
+    const pattern = (regexPattern ?? '').trim();
+    if (pattern !== '') {
+      try {
+        new RegExp(pattern, regexFlags);
+        regexPatternError = null;
+      } catch {
+        regexPatternError = $t('app.common.validation.invalidRegexPattern');
+      }
+    } else {
+      regexPatternError = null;
+    }
+    builder.setRegex(regexPattern, regexFlags || undefined, regexErrorKey || undefined);
+  }
+
+  function handleRegexErrorKeyChange(value: string | string[]) {
+    regexErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleRegexChange();
   }
 
   function handleUrlProtocolsChange() {
@@ -77,8 +131,18 @@
     builder.setUrlProtocols(protocols, urlErrorKey || undefined);
   }
 
+  function handleUrlErrorKeyChange(value: string | string[]) {
+    urlErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleUrlProtocolsChange();
+  }
+
   function handleRequiredErrorKeyChange() {
     builder.setRequiredErrorLabelKey(requiredErrorKey);
+  }
+
+  function handleRequiredErrorKeyComboChange(value: string | string[]) {
+    requiredErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleRequiredErrorKeyChange();
   }
 </script>
 
@@ -112,14 +176,29 @@
           labelKey="app.common.optional"
         />
       </Label>
-      <TextInput
+      <ComboSelect
         id="tcb-required-error-key"
-        bind:value={requiredErrorKey}
-        oninput={handleRequiredErrorKeyChange}
-        placeholder="app.common.validation.required"
+        mode="single"
+        value={requiredErrorKey}
+        onChange={handleRequiredErrorKeyComboChange}
+        options={errorKeyOptions}
+        valueField="key"
+        labelField="key"
+        isLabelTranslated={true}
+        allowCreate={true}
+        defaultSearch={autoErrorLabelKey(configKey, 'required')}
+        placeholder={autoErrorLabelKey(configKey, 'required')}
+        searchPlaceholder={autoErrorLabelKey(configKey, 'required')}
         class="text-xs"
         data-testid="tcb-required-error-key"
-      />
+      >
+        {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+          <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+            <span class="font-medium truncate">{resolvedLabel}</span>
+            <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+          </div>
+        {/snippet}
+      </ComboSelect>
     </div>
   {/if}
 
@@ -141,10 +220,19 @@
     </div>
   {/if}
 
-  <!-- Min / Max -->
+  <!-- Min / Max (numeric types: value; string-derived types: length) -->
+  {#if hasMinMax}
   <div class="grid grid-cols-2 gap-3">
     <div class="space-y-1">
-      <Label for="tcb-min">{isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}</Label>
+      <Label for="tcb-min">
+        {isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
+        <FormLabelWithPriorityHelp
+          text={$t('app.common.optionalTooltipText')}
+          priority="INFORMATION"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
+        />
+      </Label>
       <TextInput
         id="tcb-min"
         type="number"
@@ -154,9 +242,9 @@
         class="text-xs"
         data-testid="tcb-min"
       />
-      {#if minInput.trim() !== ''}
+      {#if (minInput ?? '').trim() !== ''}
         <Label for="tcb-min-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.minErrorLabelKey')}
           <FormLabelWithPriorityHelp
             text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
@@ -164,18 +252,41 @@
             labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-min-error-key"
-          bind:value={minErrorKey}
-          oninput={handleMinChange}
+          mode="single"
+          value={minErrorKey}
+          onChange={handleMinErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'min')}
           placeholder={autoErrorLabelKey(configKey, 'min')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'min')}
           class="text-xs"
           data-testid="tcb-min-error-key"
-        />
+        >
+          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+              <span class="font-medium truncate">{resolvedLabel}</span>
+              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+            </div>
+          {/snippet}
+        </ComboSelect>
       {/if}
     </div>
     <div class="space-y-1">
-      <Label for="tcb-max">{isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}</Label>
+      <Label for="tcb-max">
+        {isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
+        <FormLabelWithPriorityHelp
+          text={$t('app.common.optionalTooltipText')}
+          priority="INFORMATION"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
+        />
+      </Label>
       <TextInput
         id="tcb-max"
         type="number"
@@ -185,9 +296,9 @@
         class="text-xs"
         data-testid="tcb-max"
       />
-      {#if maxInput.trim() !== ''}
+      {#if (maxInput ?? '').trim() !== ''}
         <Label for="tcb-max-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.maxErrorLabelKey')}
           <FormLabelWithPriorityHelp
             text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
@@ -195,22 +306,46 @@
             labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-max-error-key"
-          bind:value={maxErrorKey}
-          oninput={handleMaxChange}
+          mode="single"
+          value={maxErrorKey}
+          onChange={handleMaxErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'max')}
           placeholder={autoErrorLabelKey(configKey, 'max')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'max')}
           class="text-xs"
           data-testid="tcb-max-error-key"
-        />
+        >
+          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+              <span class="font-medium truncate">{resolvedLabel}</span>
+              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+            </div>
+          {/snippet}
+        </ComboSelect>
       {/if}
     </div>
   </div>
+  {/if}
 
   <!-- URL protocols (url type only) -->
   {#if isUrlType}
     <div class="space-y-1">
-      <Label for="tcb-url-protocols">{$t('system.settings.config.typeConfig.urlProtocols')}</Label>
+      <Label for="tcb-url-protocols">
+        {$t('system.settings.config.typeConfig.urlProtocols')}
+        <FormLabelWithPriorityHelp
+          text={$t('app.common.optionalTooltipText')}
+          priority="INFORMATION"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
+        />
+      </Label>
       <TextInput
         id="tcb-url-protocols"
         bind:value={urlProtocols}
@@ -221,7 +356,7 @@
       />
       {#if urlProtocols.trim() !== ''}
         <Label for="tcb-url-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.urlErrorLabelKey')}
           <FormLabelWithPriorityHelp
             text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
@@ -229,51 +364,66 @@
             labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-url-error-key"
-          bind:value={urlErrorKey}
-          oninput={handleUrlProtocolsChange}
+          mode="single"
+          value={urlErrorKey}
+          onChange={handleUrlErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'url')}
           placeholder={autoErrorLabelKey(configKey, 'url')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'url')}
           class="text-xs"
           data-testid="tcb-url-error-key"
-        />
+        >
+          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+              <span class="font-medium truncate">{resolvedLabel}</span>
+              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+            </div>
+          {/snippet}
+        </ComboSelect>
       {/if}
     </div>
   {/if}
 
-  <!-- Email (string/text only) -->
-  {#if isStringType}
-    <div class="space-y-2">
-      <div class="flex items-center gap-3">
-        <Switch
-          id="tcb-email"
-          checked={!!builder.validation?.rules?.email}
-          onCheckedChange={(checked) => builder.setEmail(checked)}
-          data-testid="tcb-email"
-        />
-        <span class="text-sm font-medium leading-none">
-          {$t('system.settings.config.typeConfig.emailValidation')}
-        </span>
-      </div>
-      <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.emailValidationHelp')}</p>
-    </div>
-  {/if}
+  <!-- Email validation rule is deprecated — email is now a TYPE with inherent validation -->
+  <!-- No email rule switch needed for string/text types -->
 
-  <!-- Regex (string/text/secret only) -->
+  <!-- Regex (string-derived types: string, text, secret, url, email, phone) -->
   {#if isStringType}
     <div class="space-y-1">
-      <Label for="tcb-regex">{$t('system.settings.config.typeConfig.regexPattern')}</Label>
-      <TextInput
+      <Label for="tcb-regex">
+        {$t('system.settings.config.typeConfig.regexPattern')}
+        <FormLabelWithPriorityHelp
+          text={$t('app.common.optionalTooltipText')}
+          priority="INFORMATION"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
+        />
+      </Label>
+      <SmartRegexInput
         id="tcb-regex"
         bind:value={regexPattern}
-        oninput={handleRegexChange}
+        bind:flags={regexFlags}
+        on_change={() => handleRegexChange()}
         placeholder="^[A-Z]{3}$"
         class="font-mono text-xs"
+        config_type={type as 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone'}
         data-testid="tcb-regex"
       />
-      {#if regexPattern.trim() !== ''}
+      {#if regexPatternError}
+        <p class="text-xs text-destructive" data-testid="tcb-regex-error">
+          {regexPatternError}
+        </p>
+      {/if}
+      {#if (regexPattern ?? '').trim() !== ''}
         <Label for="tcb-regex-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.regexErrorLabelKey')}
           <FormLabelWithPriorityHelp
             text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
@@ -281,14 +431,29 @@
             labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-regex-error-key"
-          bind:value={regexErrorKey}
-          oninput={handleRegexChange}
+          mode="single"
+          value={regexErrorKey}
+          onChange={handleRegexErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'regex')}
           placeholder={autoErrorLabelKey(configKey, 'regex')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'regex')}
           class="text-xs"
           data-testid="tcb-regex-error-key"
-        />
+        >
+          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+              <span class="font-medium truncate">{resolvedLabel}</span>
+              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+            </div>
+          {/snippet}
+        </ComboSelect>
       {/if}
     </div>
   {/if}

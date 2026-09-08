@@ -6,8 +6,9 @@
  *
  * - Cache-first: checks localStorage (5-minute TTL)
  * - Falls back to API: GET /api/v1/system/translations/:module/:language
- * - In-memory dedup per session (LOADED_MODULES set)
+ * - In-memory dedup per session with TTL (LOADED_MODULES Map)
  * - Public pages use fetchPublicTranslations instead (no auth)
+ * - ETag: apiFetch sends If-None-Match and handles 304 transparently
  */
 
 import { browser } from '$app/environment';
@@ -19,26 +20,38 @@ import type { UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
 
-const LOADED_MODULES = new Set<string>(); // in-memory dedup per session
+const LOADED_TTL_MS = 5 * 60 * 1000; // 5 min — same as i18n localStorage TTL
+const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
+
+/** Check if a module was loaded recently (within TTL). */
+function isLoadedFresh(cacheKey: string): boolean {
+  const loadedAt = LOADED_MODULES.get(cacheKey);
+  if (!loadedAt) return false;
+  if (Date.now() - loadedAt > LOADED_TTL_MS) {
+    LOADED_MODULES.delete(cacheKey); // stale → allow refetch
+    return false;
+  }
+  return true;
+}
 
 async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise<void> {
   const cacheKey = `${moduleId}:${lang}`;
-  if (LOADED_MODULES.has(cacheKey)) return;
+  if (isLoadedFresh(cacheKey)) return;
 
   // Check localStorage
   const cached = getCachedModuleDict(moduleId, lang);
   if (cached) {
     mergeModuleDict(lang, cached.dict);
-    LOADED_MODULES.add(cacheKey);
+    LOADED_MODULES.set(cacheKey, Date.now());
     return;
   }
 
-  // Fetch from API
+  // Fetch from API (apiFetch handles ETag/304 transparently)
   try {
     const dict = await fetchModuleTranslations(moduleId, lang);
     mergeModuleDict(lang, dict);
     setCachedModuleDict(moduleId, lang, dict);
-    LOADED_MODULES.add(cacheKey);
+    LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
     console.error(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
   }
@@ -47,12 +60,12 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
 /** Load public translations (for login/welcome/MCP consent pages). */
 export async function loadPublicTranslations(lang: UiLang): Promise<void> {
   const cacheKey = `app:${lang}`;
-  if (LOADED_MODULES.has(cacheKey)) return;
+  if (isLoadedFresh(cacheKey)) return;
 
   const cached = getCachedModuleDict('app', lang);
   if (cached) {
     mergeModuleDict(lang, cached.dict);
-    LOADED_MODULES.add(cacheKey);
+    LOADED_MODULES.set(cacheKey, Date.now());
     return;
   }
 
@@ -60,7 +73,7 @@ export async function loadPublicTranslations(lang: UiLang): Promise<void> {
     const dict = await fetchPublicTranslations(lang);
     mergeModuleDict(lang, dict);
     setCachedModuleDict('app', lang, dict);
-    LOADED_MODULES.add(cacheKey);
+    LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
     console.error(`[i18n] Public translations fetch failed, using fallback:`, e);
     const fallback = getFallbackDict();

@@ -2,6 +2,7 @@
 	import * as Popover from "$lib/components/ui/popover";
 	import { Button } from "$lib/components/ui/button";
 	import Calendar from '@lucide/svelte/icons/calendar'
+	import Clock from '@lucide/svelte/icons/clock'
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import { DateFormatter, getLocalTimeZone, today, now, CalendarDate, CalendarDateTime } from "@internationalized/date";
 	import { cn } from "$lib/utils";
@@ -22,11 +23,11 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { dropdownMenuItemWithSelectedClass } from "$lib/components/ui/dropdown-menu/dropdown-menu-item-selected";
 
-	let { value = $bindable(), placeholder = $t("app.common.selectDate"), includeTime = false, defaultTime = undefined, timezone = $bindable() } = $props();
+	let { value = $bindable(), placeholder = $t("app.common.selectDate"), includeTime = false, timeOnly = false, defaultTime = undefined, timezone = $bindable() } = $props();
 	let isOpen = $state(false);
 	let activeTab = $derived(includeTime ? "date" : "date");
 
-	let df = $derived(new DateFormatter($uiLang, includeTime ? { dateStyle: "long", timeStyle: "medium" } : { dateStyle: "long" }));
+	let df = $derived(new DateFormatter($uiLang, timeOnly ? { timeStyle: "medium" } : includeTime ? { dateStyle: "long", timeStyle: "medium" } : { dateStyle: "long" }));
 	let monthFormatter = $derived(new DateFormatter($uiLang, { month: "short" }));
 	let timeFormatter = $derived(new DateFormatter($uiLang, { timeStyle: "short" }));
 
@@ -134,6 +135,20 @@
 
 	// Initialize wheelers to today if no value provided, otherwise sync with value
 	$effect(() => {
+		if (timeOnly) {
+			// timeOnly mode — only sync time wheels, ignore date
+			if (value && "hour" in value) {
+				selectedHour = value.hour.toString().padStart(2, "0");
+				selectedMinute = value.minute.toString().padStart(2, "0");
+				selectedSecond = value.second.toString().padStart(2, "0");
+			} else if (!hasUserInteracted) {
+				const fresh = getInitialTime();
+				selectedHour = fresh.hour;
+				selectedMinute = fresh.minute;
+				selectedSecond = fresh.second;
+			}
+			return;
+		}
 		if (value) {
 			selectedDay = value.day.toString();
 			selectedMonth = months[value.month - 1];
@@ -168,6 +183,20 @@
 	// Update value when selections change
 	function updateValue() {
 		hasUserInteracted = true;
+		if (timeOnly) {
+			// timeOnly mode — store as Time value (no date component)
+			// Use CalendarDateTime with today's date as a carrier for the time
+			const todayDate = today(getLocalTimeZone());
+			value = new CalendarDateTime(
+				todayDate.year,
+				todayDate.month,
+				todayDate.day,
+				parseInt(selectedHour),
+				parseInt(selectedMinute),
+				parseInt(selectedSecond)
+			);
+			return;
+		}
 		if (selectedDay && selectedMonth && selectedYear) {
 			const monthIndex = months.indexOf(selectedMonth);
 			if (monthIndex !== -1) {
@@ -230,13 +259,42 @@
 				<span class={cn(!value && "text-muted-foreground/70 text-xs")}>
 					{value ? df.format(value.toDate(getLocalTimeZone())) : placeholder}
 				</span>
-				<Calendar class="ml-2 h-4 w-4 opacity-50" />
+				{#if timeOnly}
+					<Clock class="ml-2 h-4 w-4 opacity-50" />
+				{:else}
+					<Calendar class="ml-2 h-4 w-4 opacity-50" />
+				{/if}
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
 
 	<Popover.Content class="w-[320px] p-0 shadow-2xl border-border rounded-none overflow-hidden bg-popover" align="start">
-		{#if includeTime}
+		{#if timeOnly}
+			<!-- timeOnly mode: only time wheels, no date, no tabs, no timezone -->
+			<WheelPicker>
+				<WheelPickerGroup bind:value={selectedHour} onValueChange={updateValue}>
+					{#each hours as hour}
+						<WheelPickerItem value={hour}>
+							{hour}
+						</WheelPickerItem>
+					{/each}
+				</WheelPickerGroup>
+				<WheelPickerGroup bind:value={selectedMinute} onValueChange={updateValue}>
+					{#each minutes as minute}
+						<WheelPickerItem value={minute}>
+							{minute}
+						</WheelPickerItem>
+					{/each}
+				</WheelPickerGroup>
+				<WheelPickerGroup bind:value={selectedSecond} onValueChange={updateValue}>
+					{#each seconds as second}
+						<WheelPickerItem value={second}>
+							{second}
+						</WheelPickerItem>
+					{/each}
+				</WheelPickerGroup>
+			</WheelPicker>
+		{:else if includeTime}
 			<Tabs bind:value={activeTab} class="flex flex-col h-full">
 				<TabsList class="relative w-full h-10 py-1 px-4 bg-muted/50 flex-shrink-0 rounded-none border-b">
 					<TabsTrigger

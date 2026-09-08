@@ -16,8 +16,9 @@ import {
   type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
-import { building } from '$app/environment';
+import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
+import { getCachedETag, setCachedETag } from '$lib/cache/fe-cache-store';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
@@ -164,6 +165,19 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     nextInit.cache = 'no-store';
   }
 
+  // ETag: send If-None-Match for GET requests with a cached ETag
+  const isGet = (nextInit.method ?? 'GET').toUpperCase() === 'GET';
+  let cachedETag: { etag: string; body: string } | null = null;
+  if (isGet && browser) {
+    cachedETag = getCachedETag(url);
+    if (cachedETag) {
+      nextInit.headers = {
+        ...nextInit.headers as Record<string, string>,
+        'If-None-Match': cachedETag.etag,
+      };
+    }
+  }
+
   let res: Response;
   try {
     res = await fetch(url, nextInit);
@@ -175,6 +189,26 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     // Network error / no response = backend unreachable (fetch threw, not a 503 response)
     noteGatewayFailure(502);
     throw new ApiUnreachableError(null);
+  }
+
+  // ETag: handle 304 Not Modified — return synthetic Response with cached body
+  if (res.status === 304 && cachedETag) {
+    return new Response(cachedETag.body, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // ETag: store body + ETag on 200 with X-PB-Cached header
+  if (res.ok && browser && isGet) {
+    const etag = res.headers.get('ETag');
+    const pbCached = res.headers.get('X-PB-Cached');
+    if (etag && pbCached === 'true') {
+      const cloned = res.clone();
+      cloned.text().then((body) => {
+        setCachedETag(url, etag, body);
+      }).catch(() => { /* best-effort */ });
+    }
   }
 
   // 503 from backend = application-level infrastructure unavailable signal (NOT gateway failure → no loop).

@@ -16,6 +16,10 @@
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
   import CurrencySelectPanel from '$lib/shell/sheets/panels/CurrencySelectPanel.svelte';
+  import ProtocolSelectPanel from '$lib/shell/sheets/panels/ProtocolSelectPanel.svelte';
+  import PhonePrefixSelectPanel from '$lib/shell/sheets/panels/PhonePrefixSelectPanel.svelte';
+  import RegexFlagsPanel from '$lib/components/ui/smart-regex-input/regex-flags-panel.svelte';
+  import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -25,7 +29,11 @@
     'entity.columns': ColumnsPanel,
     'entity.filters': FiltersPanel,
     'entity.versionHistory': VersionHistoryPanel,
-    'config.currencySelect': CurrencySelectPanel
+    'config.currencySelect': CurrencySelectPanel,
+    'config.protocolSelect': ProtocolSelectPanel,
+    'config.phonePrefixSelect': PhonePrefixSelectPanel,
+    'config.regexFlags': RegexFlagsPanel,
+    'config.regexAiChat': RegexAiChatPanel
   };
 
   const panelId = $derived(sheetState.panelId);

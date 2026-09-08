@@ -98,7 +98,9 @@ export type ConfigEntryType =
   | 'json'
   | 'date'
   | 'datetime'
-  | 'time';
+  | 'time'
+  | 'email'
+  | 'phone';
 
 /**
  * Money type_config JSON shape — stored as a JSON string in `type_config`.

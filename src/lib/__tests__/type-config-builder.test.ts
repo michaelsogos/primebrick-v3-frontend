@@ -184,6 +184,31 @@ describe('useTypeConfigBuilder', () => {
     expect(parsed.validation.rules.regex.pattern).toBe('^[A-Z]{3}$');
   });
 
+  it('setRegex stores flags when provided', () => {
+    const { builder, getLastJson } = createBuilder('string');
+    builder.setRegex('^[a-z]+$', 'i');
+    const parsed = JSON.parse(getLastJson());
+    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation.rules.regex.flags).toBe('i');
+  });
+
+  it('setRegex omits flags field when empty string', () => {
+    const { builder, getLastJson } = createBuilder('string');
+    builder.setRegex('^[a-z]+$', '');
+    const parsed = JSON.parse(getLastJson());
+    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation.rules.regex.flags).toBeUndefined();
+  });
+
+  it('setRegex stores flags + error_label_key together', () => {
+    const { builder, getLastJson } = createBuilder('string');
+    builder.setRegex('^[a-z]+$', 'gi', 'err.regex');
+    const parsed = JSON.parse(getLastJson());
+    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation.rules.regex.flags).toBe('gi');
+    expect(parsed.validation.rules.regex.error_label_key).toBe('err.regex');
+  });
+
   it('setRegex("") removes regex rule', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setRegex('^[A-Z]+$');

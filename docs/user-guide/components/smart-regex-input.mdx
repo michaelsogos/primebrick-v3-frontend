@@ -1,0 +1,107 @@
+---
+title: SmartRegexInput
+description: AI-powered regex input component with flags selector and natural language regex generation
+---
+
+# SmartRegexInput
+
+The `SmartRegexInput` component is an AI-powered regex pattern input that extends
+the standard text input with two inner CTAs:
+
+1. **Flags CTA** — opens a right-panel sheet to toggle regex flags (`g`, `i`, `m`)
+2. **Brain CTA** — opens a right-panel AI chat that converts natural language
+   descriptions into regex patterns using a browser-only LLM
+
+## AI Engine
+
+The AI assistant uses [WebLLM](https://github.com/mlc-ai/web-llm) to run
+Qwen2.5-0.5B-Instruct entirely in the browser via WebGPU. No backend calls are
+made for the AI feature.
+
+### Requirements
+
+- **WebGPU**: Chrome 113+/Edge 113+ or other Chromium-based browser with WebGPU enabled
+- **VRAM**: ~300MB for the model (q4f16 quantization)
+- **Download**: ~278MB one-time, cached in the browser
+
+### Non-WebGPU Browsers
+
+If the browser does not support WebGPU, the AI assistant shows a message:
+"AI regex assistant requires WebGPU (Chrome 113+/Edge 113+). Please type the
+regex manually."
+
+The flags CTA works without AI — users can still toggle flags and type regex
+manually.
+
+## Flags
+
+Regex flags are stored as a separate `flags` field in `type_config.validation.rules.regex`:
+
+```json
+{
+  "validation": {
+    "rules": {
+      "regex": {
+        "pattern": "^[a-z]+$",
+        "flags": "gi",
+        "error_label_key": "app.common.validation.regexMismatch"
+      }
+    }
+  }
+}
+```
+
+### Available Flags
+
+| Flag | Name | Available For |
+|------|------|---------------|
+| `g` | Global | All string-derived types |
+| `i` | Ignore case | All string-derived types |
+| `m` | Multiline | `text` type only (textarea) |
+
+## Model Lifecycle
+
+1. **Background pre-download**: A Service Worker pre-downloads the model files
+   on app startup using the Cache API. This is non-blocking.
+2. **Lazy loading**: The model is loaded into VRAM only when the user clicks the
+   brain CTA. A progress bar shows "Loading model X%".
+3. **Ready state**: On subsequent uses, the model is already cached and a
+   "Qwen2.5-0.5B is ready!" message appears.
+4. **Resource cleanup**: VRAM is released when the AI panel closes.
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
+</script>
+
+<SmartRegexInput
+  bind:value={pattern}
+  bind:flags={flags}
+  on_change={(value, flags) => console.log(value, flags)}
+  config_type="string"
+  placeholder="^[A-Z]{3}$"
+/>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `string` | `''` | The regex pattern (bindable) |
+| `flags` | `string` | `''` | The regex flags (bindable, e.g. `'gi'`) |
+| `on_change` | `(value: string, flags: string) => void` | — | Called when pattern or flags change |
+| `config_type` | `'string' \| 'text' \| 'secret' \| 'url' \| 'email' \| 'phone'` | `'string'` | Controls which flags are available |
+| `placeholder` | `string` | — | Placeholder text |
+| `disabled` | `boolean` | `false` | Disabled state |
+| `readonly` | `boolean` | `false` | Read-only state |
+
+## Naming Convention
+
+`SmartRegexInput` establishes the `Smart` prefix convention for AI-powered
+components. Future AI-capable components should follow this pattern:
+
+- Component: `Smart{Purpose}` (PascalCase)
+- File: `smart-{purpose}.svelte` (kebab-case)
+- Directory: `src/lib/components/ui/smart-{purpose}/`

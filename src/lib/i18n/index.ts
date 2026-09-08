@@ -34,6 +34,16 @@ export const dict = derived([uiLang, _mergedDicts], ([$lang, $dicts]) =>
   $dicts[$lang] ?? $dicts[DEFAULT_LANG] ?? {}
 );
 
+/**
+ * Returns all i18n keys from the current locale's flat dict.
+ * The dict is already flat (dot-path keys → string values), so this
+ * just returns Object.keys(). Used by ComboSelect selectors for
+ * label_key, description_key, and error_label_key fields.
+ */
+export function getDictKeys(d: Record<string, unknown>): string[] {
+  return Object.keys(d);
+}
+
 export const t: Readable<(key: string, params?: Record<string, any>) => string> = derived(
   dict,
   ($dict) =>

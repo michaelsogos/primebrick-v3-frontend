@@ -77,8 +77,10 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
+    "@eslint-community/regexpp": "4.12.2",
     "@fontsource-variable/inter": "5.2.8",
     "@microsoft/fetch-event-source": "2.0.1",
+    "@mlc-ai/web-llm": "0.2.85",
     "class-variance-authority": "0.7.1",
     "countries-list": "3.4.1",
     "dompurify": "3.4.12",
@@ -87,6 +89,7 @@
     "html2pdf.js": "0.14.0",
     "inline-css": "4.0.3",
     "json-bigint": "1.0.0",
+    "libphonenumber-js": "1.13.12",
     "shiki": "4.3.1",
     "svelte-motion": "0.12.2",
     "svelte-sonner": "1.1.1",
