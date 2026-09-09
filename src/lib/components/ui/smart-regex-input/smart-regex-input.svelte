@@ -16,7 +16,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
   import Flag from '@lucide/svelte/icons/flag';
-  import Brain from '@lucide/svelte/icons/brain';
+  import { AiIcon } from '$lib/components/ui/ai-icon';
   import X from '@lucide/svelte/icons/x';
 
   interface $$Props {
@@ -180,7 +180,7 @@
       )}
       data-testid="smart-regex-brain-cta"
     >
-      <Brain class="size-4" />
+      <AiIcon size={16} />
     </button>
 
     <!-- Clear button (only when value is present and not disabled/readonly) -->

@@ -48,7 +48,13 @@ export const t: Readable<(key: string, params?: Record<string, any>) => string> 
   dict,
   ($dict) =>
     (key: string, params?: Record<string, any>) => {
-      const template = $dict[key] ?? key; // direct property access — no getPath needed
+      // 1. Try current language dict (from BE)
+      // 2. Return the raw key if nothing found — no en-GB fallback for app.* keys.
+      //    This makes missing translations visible (raw key) instead of silently
+      //    showing English, which causes "half English, half Italian" pages.
+      //    The en-GB fallback is only used when the BE is unreachable (see
+      //    use-module-translations.svelte.ts → loadPublicTranslations catch block).
+      const template = $dict[key] ?? key;
       return params ? interpolate(template, params) : template;
     }
 );

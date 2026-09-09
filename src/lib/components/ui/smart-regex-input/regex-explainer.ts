@@ -16,6 +16,8 @@ import type { RegexPart } from './use-regex-ai.svelte';
 
 /** Translation key prefix for all explainer strings. */
 const K = 'app.smart.regex.explainer';
+/** Translation key prefix for summary strings. */
+const KS = 'app.smart.regex.summary';
 
 /**
  * Parse a regex pattern + flags and return a deterministic breakdown
@@ -39,16 +41,65 @@ export function explainRegex(pattern: string, flags: string): RegexPart[] {
         // Nested quantifiers (if any) are covered by the outer one's combined entry.
         if (quantifierDepth > 1) return;
         const inner = node.element;
-        const innerDesc = describeElementKey(inner);
         const quantKey = describeQuantifierKey(node);
-        // Emit two separate parts: the element description, then the quantifier.
+        // Extract just the quantifier symbol (e.g. "+", "*", "?", "{3,5}")
+        // by stripping the element's raw from the quantifier's raw.
+        const quantSymbol = node.raw.slice(inner.raw.length);
+        // If the quantified element is a CharacterClass, expand it granularly
+        // with merged brackets [ ] as a single explanation line.
+        if (inner.type === 'CharacterClass') {
+          const cc = inner as AST.CharacterClass;
+          // Merged brackets as one line
+          parts.push({
+            fragment: cc.negate ? '[^ ]' : '[ ]',
+            meaning_key: cc.negate ? `${K}.char_class_negated_brackets` : `${K}.char_class_brackets`,
+          });
+          // One part per element
+          for (const el of cc.elements) {
+            if (el.type === 'CharacterClassRange') {
+              const minChar = String.fromCharCode(el.min.value);
+              const maxChar = String.fromCharCode(el.max.value);
+              parts.push({
+                fragment: el.raw,
+                meaning_key: `${K}.char_range`,
+                meaning_params: { min: minChar, max: maxChar },
+              });
+            } else if (el.type === 'Character') {
+              const desc = describeCharacterKey(el);
+              parts.push({
+                fragment: el.raw,
+                meaning_key: desc.key,
+                meaning_params: desc.params,
+              });
+            } else if (el.type === 'CharacterSet') {
+              const desc = describeCharacterSetKey(el);
+              if (desc.key) {
+                parts.push({
+                  fragment: el.raw,
+                  meaning_key: desc.key,
+                  meaning_params: desc.params,
+                });
+              } else {
+                parts.push({
+                  fragment: el.raw,
+                  meaning_key: `${K}.character_set`,
+                  meaning_params: { raw: el.raw },
+                });
+              }
+            }
+          }
+        } else {
+          // Non-class element: use the standard description
+          const innerDesc = describeElementKey(inner);
+          parts.push({
+            fragment: inner.raw,
+            meaning_key: innerDesc.key,
+            meaning_params: innerDesc.params,
+          });
+        }
+        // Quantifier itself — just the symbol, not the whole quantified element
         parts.push({
-          fragment: inner.raw,
-          meaning_key: innerDesc.key,
-          meaning_params: innerDesc.params,
-        });
-        parts.push({
-          fragment: node.raw,
+          fragment: quantSymbol,
           meaning_key: quantKey,
         });
       },
@@ -90,8 +141,45 @@ export function explainRegex(pattern: string, flags: string): RegexPart[] {
       },
       onCharacterClassEnter: (node: AST.CharacterClass) => {
         if (quantifierDepth > 0) return;
-        const desc = describeCharacterClassKey(node);
-        parts.push({ fragment: node.raw, meaning_key: desc.key, meaning_params: desc.params });
+        // Merged brackets as one line
+        parts.push({
+          fragment: node.negate ? '[^ ]' : '[ ]',
+          meaning_key: node.negate ? `${K}.char_class_negated_brackets` : `${K}.char_class_brackets`,
+        });
+        // Emit one part per element inside the character class
+        for (const el of node.elements) {
+          if (el.type === 'CharacterClassRange') {
+            const minChar = String.fromCharCode(el.min.value);
+            const maxChar = String.fromCharCode(el.max.value);
+            parts.push({
+              fragment: el.raw,
+              meaning_key: `${K}.char_range`,
+              meaning_params: { min: minChar, max: maxChar },
+            });
+          } else if (el.type === 'Character') {
+            const desc = describeCharacterKey(el);
+            parts.push({
+              fragment: el.raw,
+              meaning_key: desc.key,
+              meaning_params: desc.params,
+            });
+          } else if (el.type === 'CharacterSet') {
+            const desc = describeCharacterSetKey(el);
+            if (desc.key) {
+              parts.push({
+                fragment: el.raw,
+                meaning_key: desc.key,
+                meaning_params: desc.params,
+              });
+            } else {
+              parts.push({
+                fragment: el.raw,
+                meaning_key: `${K}.character_set`,
+                meaning_params: { raw: el.raw },
+              });
+            }
+          }
+        }
       },
       onGroupEnter: (_node: AST.Group) => {
         if (quantifierDepth > 0) return;
@@ -228,4 +316,290 @@ function describeCharacterKey(node: AST.Character): KeyResult {
   if (raw === '\\t') return { key: `${K}.tab` };
   // Regular literal
   return { key: `${K}.literal`, params: { char: raw } };
+}
+
+// ─── Summary generation ───
+
+/** A translatable summary part: translation key + params (which can be nested parts). */
+export type SummaryParam = string | number | RegexSummary;
+export interface RegexSummary {
+  key: string;
+  params?: Record<string, SummaryParam>;
+}
+
+/**
+ * Parse a regex pattern + flags and return a high-level human summary.
+ *
+ * Unlike explainRegex() which gives a per-fragment breakdown, this function
+ * walks the AST to produce a single sentence describing what the regex validates.
+ *
+ * Returns null if the regex is invalid or too complex to summarize.
+ *
+ * The returned RegexSummary may contain nested RegexSummary objects in its
+ * params — the caller must resolve them recursively with $t().
+ */
+export function summarizeRegex(pattern: string, flags: string): RegexSummary | null {
+  if (!pattern) return null;
+  try {
+    const literal = `/${pattern}/${flags}`;
+    const ast = parseRegExpLiteral(literal);
+
+    // Collect top-level structure
+    const alternatives = ast.pattern.alternatives;
+
+    // Handle alternation (a|b|c)
+    if (alternatives.length > 1) {
+      const parts = alternatives
+        .map(alt => alt.raw)
+        .filter(Boolean);
+      if (parts.length > 0) {
+        return { key: `${KS}.alternation`, params: { parts: parts.join(' | ') } };
+      }
+    }
+
+    // Single alternative
+    if (alternatives.length === 1) {
+      return summarizeAlternative(alternatives[0]);
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Summarize a single alternative (sequence of elements). */
+function summarizeAlternative(alt: AST.Alternative): RegexSummary | null {
+  const elements = alt.elements;
+  if (elements.length === 0) return null;
+
+  // Check for anchors
+  const hasStart = elements.some(e => e.type === 'Assertion' && (e as AST.Assertion).kind === 'start');
+  const hasEnd = elements.some(e => e.type === 'Assertion' && (e as AST.Assertion).kind === 'end');
+  const anchored = hasStart && hasEnd;
+
+  // Filter out assertions to get the "content" elements
+  const contentElements = elements.filter(e => e.type !== 'Assertion');
+
+  if (contentElements.length === 0) {
+    if (anchored) return { key: `${KS}.empty_anchored` };
+    return { key: `${KS}.empty` };
+  }
+
+  // Single content element (most common case: ^[a-zA-Z0-9]+$)
+  if (contentElements.length === 1) {
+    const elem = contentElements[0];
+    return summarizeElement(elem, anchored);
+  }
+
+  // Multiple content elements — try to describe as a sequence
+  // e.g. ^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ (email)
+  const parts = contentElements
+    .map(e => summarizeElementShort(e))
+    .filter((p): p is RegexSummary => p !== null);
+  if (parts.length > 0) {
+    return { key: `${KS}.sequence`, params: { parts: joinListParts(parts) } };
+  }
+
+  return null;
+}
+
+/** Summarize a single element with full sentence. */
+function summarizeElement(elem: AST.Element, anchored: boolean): RegexSummary | null {
+  // Quantified element
+  if (elem.type === 'Quantifier') {
+    const q = elem as AST.Quantifier;
+    const inner = q.element;
+    const quantDesc = describeQuantifierSummary(q);
+    const contentDesc = describeContent(inner);
+
+    if (contentDesc) {
+      if (anchored) {
+        return {
+          key: `${KS}.anchored_quantified`,
+          params: { content: contentDesc, quantifier: quantDesc },
+        };
+      }
+      return {
+        key: `${KS}.quantified`,
+        params: { content: contentDesc, quantifier: quantDesc },
+      };
+    }
+  }
+
+  // Non-quantified element
+  const contentDesc = describeContent(elem);
+  if (contentDesc) {
+    if (anchored) {
+      return { key: `${KS}.anchored_content`, params: { content: contentDesc } };
+    }
+    return { key: `${KS}.content`, params: { content: contentDesc } };
+  }
+
+  return null;
+}
+
+/** Short description of an element for sequence composition. */
+function summarizeElementShort(elem: AST.Element): RegexSummary | null {
+  if (elem.type === 'Quantifier') {
+    const q = elem as AST.Quantifier;
+    const inner = describeContent(q.element);
+    const quant = describeQuantifierSummary(q);
+    if (!inner) return null;
+    return {
+      key: `${KS}.element_with_quant`,
+      params: { content: inner, quantifier: quant },
+    };
+  }
+  return describeContent(elem);
+}
+
+/** Describe the "content" of an element as a translatable part. */
+function describeContent(elem: AST.Element): RegexSummary | null {
+  switch (elem.type) {
+    case 'CharacterClass':
+      return describeCharacterClassContent(elem as AST.CharacterClass);
+    case 'CharacterSet':
+      return describeCharacterSetContent(elem as AST.CharacterSet);
+    case 'Character':
+      return describeCharacterContent(elem as AST.Character);
+    case 'Group':
+    case 'CapturingGroup': {
+      const group = elem as AST.Group | AST.CapturingGroup;
+      const alts = group.alternatives;
+      if (alts.length === 1) {
+        const parts = alts[0].elements
+          .map(e => describeContent(e))
+          .filter((p): p is RegexSummary => p !== null);
+        if (parts.length > 0) {
+          return joinListParts(parts, `${KS}.followed_by`);
+        }
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Describe a character class [a-zA-Z0-9] as a translatable part. */
+function describeCharacterClassContent(cc: AST.CharacterClass): RegexSummary | null {
+  const items: RegexSummary[] = [];
+  for (const el of cc.elements) {
+    if (el.type === 'CharacterClassRange') {
+      const minChar = String.fromCharCode(el.min.value);
+      const maxChar = String.fromCharCode(el.max.value);
+      items.push(describeRange(minChar, maxChar));
+    } else if (el.type === 'Character') {
+      items.push(describeCharLiteral(el.raw));
+    } else if (el.type === 'CharacterSet') {
+      const desc = describeCharacterSetContent(el as AST.CharacterSet);
+      if (desc) items.push(desc);
+    }
+  }
+  if (items.length === 0) return null;
+
+  const content = joinListParts(items);
+  return cc.negate
+    ? { key: `${KS}.char_class_negated_content`, params: { content } }
+    : content;
+}
+
+/** Describe a character set (\d, \w, \s, etc.) as a translatable part. */
+function describeCharacterSetContent(cs: AST.CharacterSet): RegexSummary | null {
+  switch (cs.kind) {
+    case 'digit':
+      return { key: cs.negate ? `${KS}.set_non_digit` : `${KS}.set_digit` };
+    case 'space':
+      return { key: cs.negate ? `${KS}.set_non_space` : `${KS}.set_space` };
+    case 'word':
+      return { key: cs.negate ? `${KS}.set_non_word` : `${KS}.set_word` };
+    case 'any':
+      return { key: `${KS}.set_any` };
+    default:
+      return null;
+  }
+}
+
+/** Describe a single character as a translatable part. */
+function describeCharacterContent(ch: AST.Character): RegexSummary | null {
+  return describeCharLiteral(ch.raw);
+}
+
+/** Describe a character range like a-z, A-Z, 0-9 as a translatable part. */
+function describeRange(min: string, max: string): RegexSummary {
+  if (min === 'a' && max === 'z') return { key: `${KS}.range_lowercase` };
+  if (min === 'A' && max === 'Z') return { key: `${KS}.range_uppercase` };
+  if (min === '0' && max === '9') return { key: `${KS}.range_digits` };
+  return { key: `${KS}.range_generic`, params: { min, max } };
+}
+
+/** Describe a literal character as a translatable part. */
+function describeCharLiteral(raw: string): RegexSummary {
+  const keyMap: Record<string, string> = {
+    '\\.': `${KS}.char_dot`,
+    '\\+': `${KS}.char_plus`,
+    '\\*': `${KS}.char_asterisk`,
+    '\\?': `${KS}.char_question`,
+    '\\(': `${KS}.char_paren_open`,
+    '\\)': `${KS}.char_paren_close`,
+    '\\[': `${KS}.char_bracket_open`,
+    '\\]': `${KS}.char_bracket_close`,
+    '\\{': `${KS}.char_brace_open`,
+    '\\}': `${KS}.char_brace_close`,
+    '\\\\': `${KS}.char_backslash`,
+    '\\|': `${KS}.char_pipe`,
+    '\\^': `${KS}.char_caret`,
+    '\\$': `${KS}.char_dollar`,
+    '\\/': `${KS}.char_slash`,
+    '\\n': `${KS}.char_newline`,
+    '\\r': `${KS}.char_carriage_return`,
+    '\\t': `${KS}.char_tab`,
+    '\\-': `${KS}.char_hyphen`,
+    '_': `${KS}.char_underscore`,
+    '@': `${KS}.char_at`,
+    '.': `${KS}.char_dot`,
+    '!': `${KS}.char_exclamation`,
+    ',': `${KS}.char_comma`,
+    ';': `${KS}.char_semicolon`,
+    ':': `${KS}.char_colon`,
+    '/': `${KS}.char_slash`,
+    ' ': `${KS}.char_space`,
+  };
+  const key = keyMap[raw];
+  if (key) return { key };
+  return { key: `${KS}.char_literal`, params: { char: raw } };
+}
+
+/** Describe a quantifier as a translatable part. */
+function describeQuantifierSummary(q: AST.Quantifier): RegexSummary {
+  const min = q.min;
+  const max = q.max;
+  if (min === 0 && max === Infinity) return { key: `${KS}.quant_zero_or_more` };
+  if (min === 1 && max === Infinity) return { key: `${KS}.quant_one_or_more` };
+  if (min === 0 && max === 1) return { key: `${KS}.quant_optional` };
+  if (min === max) return { key: `${KS}.quant_exactly`, params: { n: min } };
+  if (max === Infinity) return { key: `${KS}.quant_at_least`, params: { n: min } };
+  return { key: `${KS}.quant_between`, params: { min, max } };
+}
+
+/**
+ * Join a list of translatable parts using list-joining translation keys.
+ * Uses `list_two` for 2 items, `list_sep` + `list_last` for 3+.
+ * `separator` defaults to the "and" joiner; use `${KS}.followed_by` for sequences.
+ */
+function joinListParts(items: RegexSummary[], separator?: string): RegexSummary {
+  const sep = separator ?? `${KS}.list_last`;
+  if (items.length === 0) return { key: '' };
+  if (items.length === 1) return items[0];
+  if (items.length === 2) {
+    return { key: `${KS}.list_two`, params: { a: items[0], b: items[1] } };
+  }
+  // 3+: build comma-separated head, then join with last
+  const head = items.slice(0, -1);
+  const last = items[items.length - 1];
+  const commaJoined = head.reduceRight((acc: RegexSummary, item: RegexSummary) =>
+    ({ key: `${KS}.list_sep`, params: { a: item, b: acc } })
+  );
+  return { key: sep, params: { items: commaJoined, last } };
 }

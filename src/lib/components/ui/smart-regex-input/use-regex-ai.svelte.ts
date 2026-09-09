@@ -2,7 +2,7 @@
  * useRegexAi — composable managing the WebLLM engine lifecycle for the
  * SmartRegexInput AI chat panel.
  *
- * Loads Qwen2.5-0.5B-Instruct (q4f16) entirely in-browser via WebGPU.
+ * Loads Qwen3-0.6B (q4f16) entirely in-browser via WebGPU.
  * The model is lazy-loaded into VRAM only when the brain CTA is clicked.
  * VRAM is released when the panel closes (engine.unload()).
  *
@@ -43,39 +43,23 @@ export interface RegexPart {
   meaning_params?: Record<string, string | number>;
 }
 
-/** WebLLM model ID for Qwen2.5-0.5B-Instruct q4f16. */
-const MODEL_ID = 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+/** WebLLM model ID — Qwen3-0.6B q4f16. */
+const MODEL_ID = 'Qwen3-0.6B-q4f16_1-MLC';
 
-/** System prompt instructing the LLM to generate regex patterns. */
-const SYSTEM_PROMPT = `You are a regex generation assistant. The user describes a validation requirement in natural language. You must:
+/** Build the system prompt for the LLM. */
+function buildSystemPrompt(): string {
+  return `You are a regex generator. Convert the user's natural language request into JavaScript regex patterns.
 
-1. Generate 1 to 3 valid JavaScript regex patterns that satisfy the requirement.
-2. For each pattern, provide a brief one-line description.
-3. Format your response as JSON:
-   {"patterns": [{"pattern": "...", "flags": "", "description": "..."}]}
-4. Flags must be one of: "", "g", "i", "m", "gi", "gm", "im", "gim".
-5. Keep patterns minimal and precise. Prefer anchored patterns (^...$) for full-string validation.
-6. Use character classes like [a-zA-Z0-9] for allowed characters.
-7. Use quantifiers like + (one or more), * (zero or more), {n,m} for repetition.
-8. Do NOT use lookbehind (?<=) or lookahead (?=) unless specifically needed.
+RULES:
+1. Output ONLY valid JSON: {"patterns":[{"pattern":"...","flags":""}]}
+2. Anchor with ^ and $.
+3. Use explicit character classes like [a-zA-Z0-9], not \\w.
+4. No markdown, no explanation, just JSON.
 
-Examples:
-User: "only letters and numbers"
-{"patterns":[{"pattern":"^[a-zA-Z0-9]+$","flags":"","description":"Only alphanumeric characters"}]}
-
-User: "only lowercase letters, 3 to 5 characters"
-{"patterns":[{"pattern":"^[a-z]{3,5}$","flags":"","description":"3 to 5 lowercase letters"}]}
-
-User: "email format"
-{"patterns":[{"pattern":"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$","flags":"","description":"Email format"}]}
-
-User: "letters, numbers, dots and exclamation marks"
-{"patterns":[{"pattern":"^[a-zA-Z0-9.!]+$","flags":"","description":"Only letters, numbers, dots and exclamation marks"}]}
-
-User: "phone number with optional country code"
-{"patterns":[{"pattern":"^\\+?[0-9]{10,15}$","flags":"","description":"Phone number with optional + prefix"}]}
-
-Always respond with valid JSON. No markdown, no code fences, just the JSON object.`;
+Example:
+User: only letters and numbers
+{"patterns":[{"pattern":"^[a-zA-Z0-9]+$","flags":""}]}`;
+}
 
 export function useRegexAi() {
   const _state = $state({
@@ -83,6 +67,8 @@ export function useRegexAi() {
     load_progress: 0,
     is_ready: false,
     is_streaming: false,
+    /** 'thinking' while model reasoning, 'generating' while producing final output. */
+    ai_status: 'idle' as 'idle' | 'thinking' | 'generating',
     messages: [] as ChatMessage[],
     streaming_text: '',
     error: null as string | null,
@@ -155,19 +141,99 @@ export function useRegexAi() {
     _state.streaming_text = '';
     _state.error = null;
     _state.pending_choices = null;
+    _state.ai_status = 'thinking';
 
     try {
-      const completion = await engine.chat.completions.create({
+      const systemPrompt = buildSystemPrompt();
+      console.log('[SmartRegex] System prompt:', systemPrompt);
+      // Disable thinking mode via WebLLM native support (injects  to skip reasoning).
+      // Fallback: if the model still emits thinking tags, we parse them out in the stream loop.
+      // Note: enable_thinking is typed only on non-streaming requests, but WebLLM accepts it for streaming too.
+      // Include full conversation history so the model has context of previous exchanges.
+      // Note: _state.messages already contains the current user message (added above).
+      const historyMessages = _state.messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+      const request = {
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ..._state.messages.map((m) => ({ role: m.role, content: m.content }) as const),
+          { role: 'system' as const, content: systemPrompt },
+          ...historyMessages,
         ],
-        temperature: 0.3,
-        max_tokens: 512,
-        stream: false,
-      });
+        stream: true as const,
+        enable_thinking: false,
+      };
+      const stream = (await engine.chat.completions.create(
+        request as Parameters<typeof engine.chat.completions.create>[0],
+      )) as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>;
 
-      const responseText = completion.choices[0]?.message?.content ?? '';
+      let responseText = '';
+      let thinkingText = '';
+      let inThinking = false;
+      let thinkingEnded = false;
+
+      // Thinking tag patterns: , <thought>, </thought>, <analysis>, </analysis>
+      const THINK_OPEN = /<(?:think|thought|analysis)>\s*$/;
+      const THINK_CLOSE = /<\/(?:think|thought|analysis)>\s*$/;
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (!delta) continue;
+
+        // If we haven't seen any thinking tags yet, check for them
+        if (!thinkingEnded) {
+          // Accumulate raw text for tag detection
+          const rawAccum = responseText + delta;
+
+          // Check if we're entering a thinking block
+          if (!inThinking && THINK_OPEN.test(rawAccum)) {
+            inThinking = true;
+            // Extract any text before the thinking tag
+            const beforeThink = rawAccum.replace(/<(?:think|thought|analysis)>.*$/s, '');
+            responseText = beforeThink;
+            thinkingText = rawAccum.slice(beforeThink.length);
+            _state.ai_status = 'thinking';
+            continue;
+          }
+
+          // If we're inside a thinking block, check for closing tag
+          if (inThinking) {
+            thinkingText += delta;
+            if (THINK_CLOSE.test(thinkingText)) {
+              // Extract text after the closing tag
+              const afterThink = thinkingText.replace(/^.*<\/(?:think|thought|analysis)>\s*/s, '');
+              inThinking = false;
+              thinkingEnded = true;
+              thinkingText = '';
+              if (afterThink) {
+                responseText += afterThink;
+                _state.streaming_text = responseText;
+                _state.ai_status = 'generating';
+              }
+            }
+            continue;
+          }
+
+          // No thinking tags detected — treat as normal output
+          responseText += delta;
+          _state.streaming_text = responseText;
+          // Switch to 'generating' as soon as we get real content
+          if (_state.ai_status === 'thinking') {
+            _state.ai_status = 'generating';
+          }
+        } else {
+          // After thinking ended — normal streaming
+          responseText += delta;
+          _state.streaming_text = responseText;
+        }
+      }
+
+      console.log('[SmartRegex] Raw AI response:', responseText);
+      if (thinkingText) {
+        console.log('[SmartRegex] Thinking (hidden):', thinkingText.slice(0, 200) + '...');
+      }
 
       // Try to parse regex patterns from the response
       const choices = parseRegexChoices(responseText);
@@ -187,6 +253,7 @@ export function useRegexAi() {
     } finally {
       _state.is_streaming = false;
       _state.streaming_text = '';
+      _state.ai_status = 'idle';
     }
   }
 
@@ -230,7 +297,6 @@ export function useRegexAi() {
     // This handles invalid JSON (e.g. multi-value flags field, missing brackets).
     const patternRegex = /"pattern"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
     const flagsRegex = /"flags"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
-    const descRegex = /"description"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
 
     const patterns: string[] = [];
     let match: RegExpExecArray | null;
@@ -244,15 +310,11 @@ export function useRegexAi() {
       while ((match = flagsRegex.exec(text)) !== null) {
         flags.push(match[1].replace(/\\\\/g, '\\').replace(/\\"/g, '"'));
       }
-      const descriptions: string[] = [];
-      while ((match = descRegex.exec(text)) !== null) {
-        descriptions.push(match[1].replace(/\\\\/g, '\\').replace(/\\"/g, '"'));
-      }
 
       return patterns.slice(0, 3).map((p, i) => ({
         pattern: p,
         flags: flags[i] ?? '',
-        description: descriptions[i] ?? '',
+        description: '',
       }));
     }
 
@@ -279,7 +341,14 @@ export function useRegexAi() {
    * Apply a chosen regex option. Called when the user selects A/B/C or confirms a single regex.
    * Returns the chosen pattern and flags for the parent to apply to the input.
    */
-  function applyChoice(index: number): RegexChoice | null {
+  function applyChoice(index: number, message_uuid?: string): RegexChoice | null {
+    // If message_uuid provided, find choices in that specific message
+    if (message_uuid) {
+      const msg = _state.messages.find((m) => m.uuid === message_uuid);
+      if (!msg || !msg.choices || index < 0 || index >= msg.choices.length) return null;
+      return msg.choices[index];
+    }
+    // Fallback: use pending_choices
     if (!_state.pending_choices || index < 0 || index >= _state.pending_choices.length) {
       return null;
     }

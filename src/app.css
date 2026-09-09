@@ -200,7 +200,7 @@
  * Usage: replace `text-muted-foreground` (or similar) with `text-primary-gradient`.
  */
 @utility text-primary-gradient {
-  background: linear-gradient(to bottom right, #38bdf8, #818cf8);
+  background: linear-gradient(to bottom right, #0284c7, #4f46e5, #7c3aed);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -543,6 +543,17 @@ select:-webkit-autofill:focus {
 @keyframes gradient-pan {
   0%   { background-position: 0% 0%; }
   100% { background-position: 200% 0%; }
+}
+
+/**
+ * AI icon shimmer sweep — animates the SVG linearGradient's x1/x2
+ * to create a shimmer effect across the stroke. Used by AiIcon component.
+ * The actual animation is done via SMIL <animate> elements inside the SVG,
+ * so this keyframe is available as a CSS fallback if needed.
+ */
+@keyframes ai-shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 @layer base {
