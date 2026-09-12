@@ -66,6 +66,8 @@ export type SheetPanelPropsMap = {
   'config.regexAiChat': {
     on_apply_regex: (pattern: string, flags: string) => void;
     config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
+    current_regex?: string;
+    current_flags?: string;
   };
 };
 

@@ -208,7 +208,7 @@ implications.
 
 | Component | Purpose | AI Engine | Model |
 |----------|---------|-----------|-------|
-| `SmartRegexInput` | Regex pattern input with AI assistant | WebLLM (WebGPU) | Qwen3-0.6B q4f16 |
+| `SmartRegexInput` | Regex pattern input with AI assistant | WebLLM (WebGPU) | Config-driven via `ai_assistant_model` config row (default: Qwen2.5-1.5B-Instruct q4f16) |
 
 ### Requirements for Smart components
 

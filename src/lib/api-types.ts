@@ -139,6 +139,43 @@ export type ConfigEntry = {
   updated_by_name?: string | null;
 };
 
+/** AI model entity — mirrors the BE `ai_models` table (WebLLM model catalog). */
+export type TestCaseScore = {
+  runs: number[];
+  score: number;
+  method: string;
+  updated_at: string;
+};
+
+export type AiModel = {
+  uuid: string;
+  model_id: string;
+  name: string;
+  label_key?: string | null;
+  description_key?: string | null;
+  power_level: number;
+  affidability: number;
+  rank: number;
+  test_scores?: Record<string, TestCaseScore> | null;
+  is_enabled: boolean;
+  enable_thinking: boolean;
+  temperature: number;
+  top_p: number;
+  max_tokens: number;
+  repetition_penalty: number;
+  sort_order: number;
+  download_size_mb?: number | null;
+  vram_mb?: number | null;
+  compatibility_status: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  version: number;
+  deleted_at?: string;
+  deleted_by?: string;
+};
+
 /** Reject non-JSON / HTML error pages / partial objects so we do not show a false "DB down" from bad data. */
 export function isValidHealthPayload(x: unknown): x is HealthPayload {
   if (!x || typeof x !== 'object') return false;

@@ -100,6 +100,8 @@
   function open_ai_panel() {
     openSheet('config.regexAiChat', {
       config_type,
+      current_regex: value,
+      current_flags: flags,
       on_apply_regex: (pattern: string, flag_str: string) => {
         value = pattern;
         flags = flag_str;

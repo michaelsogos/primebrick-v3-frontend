@@ -175,4 +175,5 @@ export interface ValuesSourceDefinition {
  */
 export const BUILTIN_VALUES_SOURCES: ValuesSourceDefinition[] = [
   { id: 'currencies', label_key: 'system.settings.config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
+  { id: 'ai_models', label_key: 'system.settings.config.typeConfig.valuesSource.ai_models', value_field: 'id', label_field: 'label_key' },
 ];

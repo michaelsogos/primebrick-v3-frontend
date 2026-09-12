@@ -10,6 +10,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigValueInput from './ConfigValueInput.svelte';
+  import { SelectableRow } from '$lib/components/ui/selectable-fieldset';
 
   let {
     entry,
@@ -51,26 +52,12 @@
   }
 </script>
 
-<div
-  class="grid grid-cols-12 items-center rounded-lg border bg-background p-3 gap-4 border-l-[5px] cursor-pointer select-none {tainted ? 'border-l-warning' : selected ? 'border-l-primary' : 'border-l-border'}"
-  role="button"
-  tabindex="0"
-  aria-pressed={selected}
-  data-testid={`config-row-${entry.key}`}
-  onclick={(e) => {
-    // Don't toggle when clicking on interactive elements (inputs, buttons, links, combo)
-    // NOTE: the row div itself has role="button" — exclude it from the closest() check
-    const target = e.target as HTMLElement;
-    const interactive = target.closest('input, button, a, [role="combobox"], [role="listbox"], [role="option"], textarea, select, [data-no-row-toggle]');
-    if (interactive && interactive !== e.currentTarget) return;
-    onToggleSelect(entry, !selected);
-  }}
-  onkeydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onToggleSelect(entry, !selected);
-    }
-  }}
+<SelectableRow
+  id={entry.key}
+  selected={selected}
+  warning={tainted}
+  on_toggle_select={(id, checked) => onToggleSelect(entry, checked)}
+  class="grid grid-cols-12 items-center gap-4"
 >
   <!-- Left (6/12): checkbox (disabled if reserved) + title + description -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
@@ -78,7 +65,7 @@
       checked={selected}
       onCheckedChange={(checked) => onToggleSelect(entry, checked)}
       class="mt-1"
-      data-testid={`config-row-select-${entry.key}`}
+      data-testid="config-row-select-{entry.key}"
     />
     <div class="min-w-0">
       <div class="flex items-center gap-2">
@@ -112,7 +99,7 @@
             onclick={openVersionHistory}
             class="inline-flex"
             title={$t('system.entities.versionHistory.title')}
-            data-testid={`config-row-version-${entry.key}`}
+            data-testid="config-row-version-{entry.key}"
           >
             <Badge class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10" variant="outline">
               v{entry.version}
@@ -160,7 +147,7 @@
         variant="ghost"
         size="icon"
         onclick={onRevert}
-        data-testid={`config-row-revert-${entry.key}`}
+        data-testid="config-row-revert-{entry.key}"
         title={$t('app.common.revertChanges')}
       >
         <Undo2 class="size-4 text-warning" />
@@ -171,10 +158,10 @@
       size="icon"
       onclick={() => onDelete(entry)}
       disabled={entry.reserved}
-      data-testid={`config-row-delete-${entry.key}`}
+      data-testid="config-row-delete-{entry.key}"
       title={$t('app.common.delete')}
     >
       <Trash2 class="size-4 text-destructive" />
     </Button>
   </div>
-</div>
+</SelectableRow>

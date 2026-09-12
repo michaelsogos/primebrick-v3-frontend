@@ -4,7 +4,7 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import { getAllCurrencies } from '$lib/currency';
-  import { fetchConfigEntries } from '$lib/api';
+  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { onMount } from 'svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import Check from '@lucide/svelte/icons/check';
@@ -16,6 +16,8 @@
   }
 
   let { currentCurrency, onCurrencyChange }: $$Props = $props();
+
+  const config = useConfigEntries();
 
   let searchQuery = $state('');
   let favoriteCodes = $state<string[]>([]);
@@ -52,8 +54,8 @@
 
   onMount(async () => {
     try {
-      const entries = await fetchConfigEntries();
-      const entry = entries.find((e) => e.key === 'currency_favorites');
+      await config.ensureLoaded();
+      const entry = config.getEntry('currency_favorites');
       if (entry?.value) {
         favoriteCodes = String(entry.value)
           .split(',')

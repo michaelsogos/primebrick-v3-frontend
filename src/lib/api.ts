@@ -13,6 +13,7 @@ import {
   type ModuleNav,
   type ModuleConfigEntry,
   type ConfigEntry,
+  type AiModel,
   type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
@@ -20,7 +21,7 @@ import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
 import { getCachedETag, setCachedETag } from '$lib/cache/fe-cache-store';
 
-export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType, AiModel } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
@@ -421,6 +422,19 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
   const res = await apiFetch('/api/v1/entities/config_entries/list');
   if (!res.ok) throw new Error(`Config entries fetch failed (${res.status})`);
   const data = (await res.json()) as { rows: ConfigEntry[] };
+  return data.rows;
+}
+
+// === AI models (BE ai_models entity — WebLLM model catalog) ===
+
+export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
+  const params = new URLSearchParams();
+  if (deletedRecords) params.set('deleted_records', deletedRecords);
+  const qs = params.toString();
+  const url = qs ? `/api/v1/entities/ai_model/list?${qs}` : '/api/v1/entities/ai_model/list';
+  const res = await apiFetch(url);
+  if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
+  const data = (await res.json()) as { rows: AiModel[] };
   return data.rows;
 }
 

@@ -2,7 +2,10 @@
  * useRegexAi — composable managing the WebLLM engine lifecycle for the
  * SmartRegexInput AI chat panel.
  *
- * Loads Qwen3-0.6B (q4f16) entirely in-browser via WebGPU.
+ * The WebLLM model ID is passed in as a parameter — it is loaded dynamically
+ * from the `ai_assistant_model` configuration row (reserved, type
+ * `single_select` with `values_source: "ai_models"`). The model runs
+ * entirely in-browser via WebGPU.
  * The model is lazy-loaded into VRAM only when the brain CTA is clicked.
  * VRAM is released when the panel closes (engine.unload()).
  *
@@ -13,12 +16,16 @@
  * - `$derived` values exposed via individual getters
  */
 import type { DeepReadonly } from '$lib/types/deep-readonly';
+import { useAiModels } from '$lib/composables/useAiModels.svelte';
 
 /** A single chat message in the AI conversation. */
 export interface ChatMessage {
   uuid: string;
   role: 'user' | 'assistant';
+  /** Full content sent to / received from the model (for KV cache prefix matching). */
   content: string;
+  /** Original user text for UI display (when content has injected prefixes). */
+  display_content?: string;
   /** When present, the assistant is offering 1-3 regex choices. */
   choices?: RegexChoice[];
 }
@@ -43,26 +50,53 @@ export interface RegexPart {
   meaning_params?: Record<string, string | number>;
 }
 
-/** WebLLM model ID — Qwen3-0.6B q4f16. */
-const MODEL_ID = 'Qwen3-0.6B-q4f16_1-MLC';
-
 /** Build the system prompt for the LLM. */
 function buildSystemPrompt(): string {
-  return `You are a regex generator. Convert the user's natural language request into JavaScript regex patterns.
+  return `/no_think
+You are a regex generator. Convert the user's natural language request into JavaScript regex patterns.
 
 RULES:
 1. Output ONLY valid JSON: {"patterns":[{"pattern":"...","flags":""}]}
 2. Anchor with ^ and $.
-3. Use explicit character classes like [a-zA-Z0-9], not \\w.
-4. No markdown, no explanation, just JSON.
+3. No markdown, no explanation, just JSON.
+4. If the user message starts with "Current regex:", MODIFY that regex. Add new characters INSIDE the existing character class brackets [...]. Keep all existing characters.
+5. If the user says "cancel", "annulla", "reset", or "instead", IGNORE the previous regex and generate a fresh one.
+6. "punto" means dot (.), "virgola" means comma (,), "punto e virgola" means dot AND comma (. and ,), "puntoevirgola" or ";" means semicolon (;). "lettere" means letters, "numeri" means numbers.
+7. Use ONLY ASCII characters (U+0020 to U+007E) in regex patterns. NEVER use Unicode look-alikes: use - (U+002D HYPHEN-MINUS) for "trattino"/"dash"/"minus", NEVER the Unicode minus sign (U+2212) or en-dash (U+2013) or em-dash (U+2014). Use ' (U+0027 APOSTROPHE) for apostrophe, NEVER the Unicode right single quote (U+2019). Use " (U+0022 QUOTATION MARK) for quotes, NEVER the Unicode left/right double quotes (U+201C/U+201D).
 
-Example:
-User: only letters and numbers
-{"patterns":[{"pattern":"^[a-zA-Z0-9]+$","flags":""}]}`;
+Examples:
+
+User: any word
+{"patterns":[{"pattern":"^\\w+$","flags":""}]}
+
+User: email address
+{"patterns":[{"pattern":"^[\\w.]+@[\\w.]+\\.[a-z]{2,}$","flags":"i"}]}
+
+User: numero di 3-5 cifre
+{"patterns":[{"pattern":"^\\d{3,5}$","flags":""}]}
+
+User: lettere e numeri
+{"patterns":[{"pattern":"^[a-zA-Z0-9]+$","flags":""}]}
+
+User: Current regex: ^[a-z]+$
+aggiungi numeri
+{"patterns":[{"pattern":"^[a-z0-9]+$","flags":""}]}
+
+User: Current regex: ^[a-zA-Z0-9.,]+$
+aggiungi underscore e trattino
+{"patterns":[{"pattern":"^[a-zA-Z0-9.,_-]+$","flags":""}]}`;
 }
 
-export function useRegexAi() {
+export function useRegexAi(
+  model_id: string,
+  initial_regex: string = '',
+  initial_flags: string = '',
+) {
+  const aiModels = useAiModels();
+
   const _state = $state({
+    /** The WebLLM model ID currently loaded (or being loaded). */
+    model_id,
     is_loading_model: false,
     load_progress: 0,
     is_ready: false,
@@ -111,7 +145,7 @@ export function useRegexAi() {
 
     try {
       const webllm = await import('@mlc-ai/web-llm');
-      engine = await webllm.CreateMLCEngine(MODEL_ID, {
+      engine = await webllm.CreateMLCEngine(_state.model_id, {
         initProgressCallback: (report: { progress: number }) => {
           _state.load_progress = Math.round(report.progress * 100);
         },
@@ -125,18 +159,46 @@ export function useRegexAi() {
   }
 
   /**
+   * Switch to a different WebLLM model at runtime.
+   * Unloads the current engine, resets state, and loads the new model.
+   * The conversation is cleared because different models produce different patterns.
+   */
+  async function switchModel(new_model_id: string): Promise<void> {
+    if (new_model_id === _state.model_id && _state.is_ready) return;
+    if (!new_model_id) return;
+
+    // Unload current engine
+    if (engine) {
+      try {
+        await engine.unload();
+      } catch {
+        // Ignore errors during unload
+      }
+      engine = null;
+    }
+
+    // Reset state for the new model
+    _state.model_id = new_model_id;
+    _state.is_ready = false;
+    _state.is_loading_model = false;
+    _state.load_progress = 0;
+    _state.error = null;
+    _state.messages = [];
+    _state.pending_choices = null;
+    _state.streaming_text = '';
+    _state.ai_status = 'idle';
+
+    // Reload with the new model
+    await init();
+  }
+
+  /**
    * Send a user message to the LLM and stream the response.
    * Parses the response for regex patterns and sets pending_choices if found.
    */
   async function sendMessage(text: string): Promise<void> {
     if (!engine || _state.is_streaming || !text.trim()) return;
 
-    const userMessage: ChatMessage = {
-      uuid: crypto.randomUUID(),
-      role: 'user',
-      content: text,
-    };
-    _state.messages = [..._state.messages, userMessage];
     _state.is_streaming = true;
     _state.streaming_text = '';
     _state.error = null;
@@ -146,24 +208,79 @@ export function useRegexAi() {
     try {
       const systemPrompt = buildSystemPrompt();
       console.log('[SmartRegex] System prompt:', systemPrompt);
-      // Disable thinking mode via WebLLM native support (injects  to skip reasoning).
-      // Fallback: if the model still emits thinking tags, we parse them out in the stream loop.
-      // Note: enable_thinking is typed only on non-streaming requests, but WebLLM accepts it for streaming too.
-      // Include full conversation history so the model has context of previous exchanges.
-      // Note: _state.messages already contains the current user message (added above).
-      const historyMessages = _state.messages
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+
+      // Find the last regex from previous assistant messages (if any).
+      // This gives the model explicit context for incremental edits like
+      // "aggiungiamo punto e virgola" — without it, a 0.6B model can't infer
+      // which regex to modify from conversation history alone.
+      // Falls back to the initial regex passed from the input field when
+      // the panel was opened (handles reopen after confirm/close cycle).
+      let lastRegex: RegexChoice | null = null;
+      for (let i = _state.messages.length - 1; i >= 0; i--) {
+        const m = _state.messages[i];
+        if (m.role === 'assistant' && m.choices && m.choices.length > 0) {
+          lastRegex = m.choices[0];
+          break;
+        }
+      }
+      // If no conversation history but the input already has a regex, use it
+      if (!lastRegex && initial_regex) {
+        lastRegex = { pattern: initial_regex, flags: initial_flags, description: '' };
+      }
+
+      // Build the user content for the model: inject current regex if available.
+      // Small models (≤2B) forget the system prompt format after 2-3 turns,
+      // so we append a compact JSON reminder with /no_think to every user message.
+      // The /no_think directive suppresses untagged reasoning text in Qwen3 models
+      // even when enable_thinking=false is ignored by WebLLM.
+      const JSON_REMINDER = '\n/no_think\n[Respond ONLY with JSON: {"patterns":[{"pattern":"...","flags":""}]}]';
+      let userContentForModel = text + JSON_REMINDER;
+      if (lastRegex) {
+        userContentForModel = `Current regex: ${lastRegex.pattern}\n${text}${JSON_REMINDER}`;
+      }
+
+      // Store the FULL user content sent to the model (including Current regex
+      // prefix and JSON_REMINDER) as the message content. This is critical for
+      // WebLLM's automatic prefix KV cache reuse: subsequent turns must pass the
+      // exact same tokenized prefix. Storing only the bare text would break the
+      // prefix match and force a full prompt reprocess every turn.
+      // The UI displays display_content (the original user text) instead.
+      const userMessage: ChatMessage = {
+        uuid: crypto.randomUUID(),
+        role: 'user',
+        content: userContentForModel,
+        display_content: text,
+      };
+      _state.messages = [..._state.messages, userMessage];
+
+      // Build messages array directly from stored state.
+      // All messages (user and assistant) store the exact content sent to /
+      // received from the model, so no transformation is needed. This enables
+      // WebLLM's automatic prefix KV cache reuse across turns.
+      const modelMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        { role: 'system', content: systemPrompt },
+      ];
+      for (const m of _state.messages) {
+        if (m.role === 'user') {
+          modelMessages.push({ role: 'user', content: m.content });
+        } else if (m.role === 'assistant') {
+          modelMessages.push({ role: 'assistant', content: m.content });
+        }
+      }
+      // Look up the selected model's params from the BE entity via useAiModels.
+      // This is the critical fix: Qwen3 (hybrid thinking) gets enable_thinking=true
+      // + T=0.6/TopP=0.95, while Qwen2.5 (Instruct, non-thinking) gets
+      // enable_thinking=false + T=0.3/TopP=0.8. Previously all models used
+      // hardcoded enable_thinking=false with no sampling params.
+      const modelParams = aiModels.getModelByModelId(_state.model_id);
       const request = {
-        messages: [
-          { role: 'system' as const, content: systemPrompt },
-          ...historyMessages,
-        ],
+        messages: modelMessages,
         stream: true as const,
-        enable_thinking: false,
+        enable_thinking: modelParams?.enable_thinking ?? false,
+        temperature: modelParams?.temperature ?? 0.7,
+        top_p: modelParams?.top_p ?? 0.9,
+        max_tokens: modelParams?.max_tokens ?? 256,
+        repetition_penalty: modelParams?.repetition_penalty ?? 1.1,
       };
       const stream = (await engine.chat.completions.create(
         request as Parameters<typeof engine.chat.completions.create>[0],
@@ -230,7 +347,16 @@ export function useRegexAi() {
         }
       }
 
-      console.log('[SmartRegex] Raw AI response:', responseText);
+      // Fallback: if stream ended while still in thinking (max_tokens reached
+      // before model closed the thinking tag), try to extract any JSON from
+      // the thinking text as a last resort.
+      if (inThinking && thinkingText && !responseText) {
+        console.warn('[SmartRegex] Stream ended inside thinking block (max_tokens likely too low). Attempting fallback extraction from thinking text.');
+        responseText = thinkingText;
+        _state.streaming_text = responseText;
+      }
+
+      console.log('[SmartRegex] Raw AI response:', responseText.slice(0, 200));
       if (thinkingText) {
         console.log('[SmartRegex] Thinking (hidden):', thinkingText.slice(0, 200) + '...');
       }
@@ -241,6 +367,13 @@ export function useRegexAi() {
         _state.pending_choices = choices;
       }
 
+      // Store the RAW model response (after thinking block stripping) as the
+      // assistant message content. This is critical for WebLLM's automatic
+      // prefix KV cache reuse: the next turn must pass the exact same tokenized
+      // assistant content as part of the conversation prefix. Storing a
+      // simplified "Regex: <pattern>" string would break the prefix match.
+      // The UI uses parseRegexChoices() to extract choices for display,
+      // and falls back to showing raw content when parsing fails.
       const assistantMessage: ChatMessage = {
         uuid: crypto.randomUUID(),
         role: 'assistant',
@@ -318,21 +451,41 @@ export function useRegexAi() {
       }));
     }
 
-    // Step 4: Final fallback — extract backtick-wrapped patterns
-    // Only accept if they look like regex (not JSON with { or "patterns")
-    const backtickMatches = response.match(/`([^`]+)`/g);
-    if (backtickMatches && backtickMatches.length > 0) {
-      const candidates = backtickMatches
-        .map((m) => m.replace(/`/g, '').trim())
-        .filter((p) => p.length > 0 && !p.startsWith('{') && !p.includes('"patterns"'));
-      if (candidates.length > 0) {
-        return candidates.slice(0, 3).map((p) => ({
-          pattern: p,
-          flags: '',
-          description: '',
-        }));
+    // Step 4: Fallback — extract pattern from "Regex: <pattern>" prefix.
+      // Small models sometimes output "Regex: ^[a-z]+$" instead of JSON.
+      const regexPrefixMatch = text.match(/^Regex:\s*(.+)$/i);
+      if (regexPrefixMatch) {
+        const candidate = regexPrefixMatch[1].trim();
+        if (candidate.length > 0 && candidate.includes('[')) {
+          return [{ pattern: candidate, flags: '', description: '' }];
+        }
       }
-    }
+
+      // Step 5: Fallback — extract a bare regex-like string from free text.
+      // Accepts strings that start with ^ or contain [ and end with $.
+      const bareRegexMatch = text.match(/\^.*\$|\^\^.*\$|\^[^]*\$/);
+      if (bareRegexMatch) {
+        const candidate = bareRegexMatch[0].trim();
+        if (candidate.length > 2 && candidate.includes('[')) {
+          return [{ pattern: candidate, flags: '', description: '' }];
+        }
+      }
+
+      // Step 6: Final fallback — extract backtick-wrapped patterns
+      // Only accept if they look like regex (not JSON with { or "patterns")
+      const backtickMatches = response.match(/`([^`]+)`/g);
+      if (backtickMatches && backtickMatches.length > 0) {
+        const candidates = backtickMatches
+          .map((m) => m.replace(/`/g, '').trim())
+          .filter((p) => p.length > 0 && !p.startsWith('{') && !p.includes('"patterns"'));
+        if (candidates.length > 0) {
+          return candidates.slice(0, 3).map((p) => ({
+            pattern: p,
+            flags: '',
+            description: '',
+          }));
+        }
+      }
 
     return null;
   }
@@ -411,7 +564,17 @@ export function useRegexAi() {
   /**
    * Clear the conversation and reset state.
    */
-  function clearConversation(): void {
+  async function clearConversation(): Promise<void> {
+    // Clear WebLLM internal KV cache so the next message starts fresh.
+    // Without this, WebLLM's internal conversation state persists even
+    // after we clear our FE messages array, causing stale context.
+    if (engine) {
+      try {
+        await engine.resetChat();
+      } catch {
+        // Ignore — engine may not be loaded
+      }
+    }
     _state.messages = [];
     _state.pending_choices = null;
     _state.streaming_text = '';
@@ -433,7 +596,7 @@ export function useRegexAi() {
     _state.is_ready = false;
     _state.is_loading_model = false;
     _state.load_progress = 0;
-    clearConversation();
+    await clearConversation();
   }
 
   return {
@@ -441,6 +604,7 @@ export function useRegexAi() {
       return _state as DeepReadonly<typeof _state>;
     },
     init,
+    switchModel,
     sendMessage,
     applyChoice,
     testRegex,

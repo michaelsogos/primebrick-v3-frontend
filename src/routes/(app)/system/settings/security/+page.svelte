@@ -13,6 +13,7 @@
   } from '$lib/api';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
@@ -33,6 +34,7 @@
   let isBulkDeleting = $state(false);
 
   const stepUp = useMfaStepUp();
+  const configCache = useConfigEntries();
 
   // Listen for refresh notifications from the create page (opened in _blank tab)
   useSyncChannel('primebrick_config_sync', {
@@ -40,7 +42,9 @@
     onRefresh: () => void loadEntries(),
   });
 
-  onMount(loadEntries);
+  onMount(() => {
+    void loadEntries();
+  });
 
   // Open the create config page in a new tab (same pattern as users/orgs create)
   function openNewConfig() {
@@ -65,6 +69,9 @@
 
   // handleSave is now a trigger to reload entries after bulk save in ConfigList
   async function handleSave(_entry: ConfigEntry, _value: string) {
+    // Invalidate the shared config cache so other consumers (Smart Regex, etc.)
+    // pick up the new value on their next read.
+    configCache.invalidate();
     await loadEntries();
   }
 
@@ -83,6 +90,7 @@
       );
       if (resp.ok) {
         entries = entries.filter((e) => e.uuid !== deleteTarget!.uuid);
+        configCache.invalidate();
         pushNotification({
           impact: 'NONE',
           messageKey: 'app.common.deleteSuccess',
@@ -128,6 +136,7 @@
       if (resp.ok) {
         const deletedUuids = new Set(uuids);
         entries = entries.filter((e) => !deletedUuids.has(e.uuid));
+        configCache.invalidate();
         pushNotification({
           impact: 'NONE',
           messageKey: 'app.common.deleteSuccess',

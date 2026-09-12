@@ -1,23 +1,22 @@
 /**
- * SW manager for the SmartRegexInput AI model pre-download.
+ * SW manager for the SmartRegexInput AI model cache.
  *
- * Registers the service worker on app load and provides utilities for
- * checking if the WebLLM model is already cached in the browser.
+ * Registers the service worker on app load. The SW intercepts
+ * huggingface.co fetches and caches them via the Cache API
+ * (cache-first strategy) for faster re-downloads.
  *
- * The model itself is cached by WebLLM's internal mechanism (IndexedDB/Cache API)
- * and by our Service Worker (Cache API for huggingface.co responses).
- * Both work together: the SW caches the HTTP responses, and WebLLM caches
- * the parsed model weights in IndexedDB for fast loading.
+ * Model weights are cached by WebLLM's internal mechanism (IndexedDB)
+ * and by the Service Worker (Cache API for huggingface.co responses).
+ * Cache cleanup is handled by the `useModelCache` composable.
  */
 
 const SW_PATH = '/sw-regex-ai.js';
-const MODEL_ID = 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
 
 let sw_registered = false;
 
 /**
  * Register the SmartRegexInput service worker.
- * Called on app load to enable background model caching.
+ * Called on app load to enable cache-first HTTP interception for model files.
  * Safe to call multiple times — only registers once.
  */
 export async function registerRegexAiSw(): Promise<void> {
@@ -29,29 +28,21 @@ export async function registerRegexAiSw(): Promise<void> {
     sw_registered = true;
   } catch {
     // SW registration failure is non-fatal — WebLLM will still work,
-    // just without the background pre-download caching.
+    // just without the cache-first HTTP interception.
     sw_registered = false;
   }
 }
 
 /**
- * Check if the WebLLM model is already cached in the browser.
- * Uses WebLLM's built-in cache check (IndexedDB).
+ * Check if a specific WebLLM model is already cached in the browser (IndexedDB).
  *
  * Returns true if the model is cached and ready for instant loading.
  */
-export async function isModelCached(): Promise<boolean> {
+export async function isModelCached(model_id: string): Promise<boolean> {
   try {
     const webllm = await import('@mlc-ai/web-llm');
-    return await webllm.hasModelInCache(MODEL_ID);
+    return await webllm.hasModelInCache(model_id);
   } catch {
     return false;
   }
-}
-
-/**
- * Get the model ID used by the SmartRegexInput AI assistant.
- */
-export function getModelId(): string {
-  return MODEL_ID;
 }

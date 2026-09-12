@@ -4,13 +4,14 @@
   import ConfigListRow from './ConfigListRow.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import { Checkbox } from '$lib/components/ui/checkbox';
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Undo2 from '@lucide/svelte/icons/undo-2';
   import Plus from '@lucide/svelte/icons/plus';
   import { buildConfigFormSchema } from '$lib/validation/config-validation';
   import { pushNotification } from '$lib/errors/app-errors';
   import { bulkUpdateConfigEntries } from '$lib/api';
+  import { useSelection } from '$lib/composables/useSelection.svelte';
+  import { SelectableToolbar, SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
 
   let {
     entries,
@@ -151,52 +152,42 @@
   }
 
   // ─── Selection state (for bulk delete) ───────────────────────────────────
-  let selectedUuids = $state<Set<string>>(new Set());
+  const selection = useSelection();
 
   let selectedEntries = $derived(
-    entries.filter((e) => selectedUuids.has(e.uuid)),
+    entries.filter((e) => selection.isSelected(e.uuid)),
   );
 
   function handleToggleSelect(entry: ConfigEntry, checked: boolean) {
-    const next = new Set(selectedUuids);
-    if (checked) {
-      next.add(entry.uuid);
-    } else {
-      next.delete(entry.uuid);
-    }
-    selectedUuids = next;
+    selection.toggleSelect(entry.uuid, checked);
   }
 
   function handleBulkDelete() {
     if (deletableSelectedEntries.length === 0) return;
     onBulkDelete(deletableSelectedEntries);
-    selectedUuids = new Set();
+    selection.clearSelection();
   }
 
   // ─── Select-all ──────────────────────────────────────────────────────────
   // All entries are selectable (including reserved). Reserved entries cannot be
   // deleted, but they CAN be selected (e.g. for bulk revert).
   let allSelected = $derived(
-    entries.length > 0 && entries.every((e) => selectedUuids.has(e.uuid)),
+    entries.length > 0 && entries.every((e) => selection.isSelected(e.uuid)),
   );
-  let someSelected = $derived(selectedUuids.size > 0 && !allSelected);
+  let someSelected = $derived(selection.selected_count > 0 && !allSelected);
 
   function handleToggleSelectAll(checked: boolean) {
-    if (checked) {
-      selectedUuids = new Set(entries.map((e) => e.uuid));
-    } else {
-      selectedUuids = new Set();
-    }
+    selection.toggleSelectAll(entries.map((e) => e.uuid), checked);
   }
 
   // ─── Bulk revert ─────────────────────────────────────────────────────────
   // Reverts all selected entries that have unsaved changes to their original values
   let selectedTaintedCount = $derived(
-    [...selectedUuids].filter((uuid) => taintedUuids.has(uuid)).length,
+    [...selection.state.selected_ids].filter((uuid) => taintedUuids.has(uuid)).length,
   );
 
   function handleBulkRevert() {
-    for (const uuid of selectedUuids) {
+    for (const uuid of selection.state.selected_ids) {
       if (taintedUuids.has(uuid)) {
         handleRevert(uuid);
       }
@@ -215,7 +206,13 @@
   $effect(() => {
     if (entries.length !== lastEntryCount) {
       const validUuids = new Set(entries.map((e) => e.uuid));
-      selectedUuids = new Set([...selectedUuids].filter((uuid) => validUuids.has(uuid)));
+      const currentIds = [...selection.state.selected_ids];
+      const staleIds = currentIds.filter((uuid) => !validUuids.has(uuid));
+      if (staleIds.length > 0) {
+        for (const id of staleIds) {
+          selection.toggleSelect(id, false);
+        }
+      }
       lastEntryCount = entries.length;
     }
   });
@@ -271,49 +268,39 @@
     <div class="shrink-0 border-b bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70 px-4 py-2">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <!-- Left: select-all checkbox + bulk action CTAs -->
-        <div class="flex items-center gap-2">
-          <Checkbox
-            checked={allSelected}
-            indeterminate={someSelected}
-            onCheckedChange={() => handleToggleSelectAll(!allSelected)}
-            data-testid="config-toolbar-select-all"
-          />
-          <span class="text-sm text-muted-foreground select-none mr-1">
-            {#if allSelected}
-              {$t('app.common.deselectAll')}
-            {:else}
-              {$t('app.common.selectAll')}
-            {/if}
-          </span>
-          {#if selectedEntries.length > 0}
-            <div class="h-5 w-px bg-border mx-1" aria-hidden="true"></div>
-            {#if selectedTaintedCount > 0}
-              <Button
-                variant="soft"
-                tone="warning"
-                size="sm"
-                onclick={handleBulkRevert}
-                data-testid="config-toolbar-bulk-revert"
-              >
-                <Undo2 class="size-4" />
-                {$t('app.common.bulkRevert')}
-                <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
-              </Button>
-            {/if}
+        <SelectableToolbar
+          all_selected={allSelected}
+          some_selected={someSelected}
+          selected_count={selection.selected_count}
+          on_toggle_select_all={handleToggleSelectAll}
+          test_id="config-toolbar"
+        >
+          {#if selectedTaintedCount > 0}
             <Button
               variant="soft"
-              tone="destructive"
+              tone="warning"
               size="sm"
-              onclick={handleBulkDelete}
-              disabled={deletableSelectedEntries.length === 0}
-              data-testid="config-toolbar-bulk-delete"
+              onclick={handleBulkRevert}
+              data-testid="config-toolbar-bulk-revert"
             >
-              <Trash2 class="size-4" />
-              {$t('app.common.delete')}
-              <span class="ml-1 text-xs opacity-70">({selectedEntries.length})</span>
+              <Undo2 class="size-4" />
+              {$t('app.common.bulkRevert')}
+              <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
             </Button>
           {/if}
-        </div>
+          <Button
+            variant="soft"
+            tone="destructive"
+            size="sm"
+            onclick={handleBulkDelete}
+            disabled={deletableSelectedEntries.length === 0}
+            data-testid="config-toolbar-bulk-delete"
+          >
+            <Trash2 class="size-4" />
+            {$t('app.common.delete')}
+            <span class="ml-1 text-xs opacity-70">({selectedEntries.length})</span>
+          </Button>
+        </SelectableToolbar>
 
         <!-- Right: create CTA (primary) -->
         {#if onCreateAction}
@@ -336,7 +323,7 @@
         {#each ungroupedEntries as entry (entry.uuid)}
           <ConfigListRow
             {entry}
-            selected={selectedUuids.has(entry.uuid)}
+            selected={selection.isSelected(entry.uuid)}
             tainted={taintedUuids.has(entry.uuid)}
             value={formValues[entry.uuid] ?? ''}
             errors={formErrors[entry.uuid] ?? []}
@@ -349,26 +336,21 @@
       </div>
 
       {#each groupKeys as groupKey (groupKey)}
-        <div class="pt-4 first:pt-0">
-          <h3 class="self-start text-xs font-semibold uppercase tracking-wide bg-linear-to-br from-sky-400 to-indigo-400 text-white px-3 pt-1 pb-1 rounded-t-md relative z-10 w-fit ml-3">
-            {$t(`system.settings.config.auth.group.${groupKey}`)}
-          </h3>
-          <div class="border-primary-gradient rounded-lg px-3 pt-3 pb-3 space-y-3">
-            {#each entriesByGroup.get(groupKey) ?? [] as entry (entry.uuid)}
-              <ConfigListRow
-                {entry}
-                selected={selectedUuids.has(entry.uuid)}
-                tainted={taintedUuids.has(entry.uuid)}
-                value={formValues[entry.uuid] ?? ''}
-                errors={formErrors[entry.uuid] ?? []}
-                onChange={(value) => handleFieldChange(entry.uuid, value)}
-                onRevert={() => handleRevert(entry.uuid)}
-                {onDelete}
-                onToggleSelect={handleToggleSelect}
-              />
-            {/each}
-          </div>
-        </div>
+        <SelectableFieldset label={$t(`system.settings.config.auth.group.${groupKey}`)}>
+          {#each entriesByGroup.get(groupKey) ?? [] as entry (entry.uuid)}
+            <ConfigListRow
+              {entry}
+              selected={selection.isSelected(entry.uuid)}
+              tainted={taintedUuids.has(entry.uuid)}
+              value={formValues[entry.uuid] ?? ''}
+              errors={formErrors[entry.uuid] ?? []}
+              onChange={(value) => handleFieldChange(entry.uuid, value)}
+              onRevert={() => handleRevert(entry.uuid)}
+              {onDelete}
+              onToggleSelect={handleToggleSelect}
+            />
+          {/each}
+        </SelectableFieldset>
       {/each}
     </div>
 

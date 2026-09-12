@@ -268,7 +268,17 @@
       disabled={selectLoading}
       loading={selectLoading}
       data-testid={`config-input-single-select-${fieldKey}`}
-    />
+    >
+      {#snippet itemSnippet({ option, resolvedLabel, selected })}
+        {@const descKey = (option as Record<string, any>).description_key}
+        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+          <span class="truncate text-left font-medium">{resolvedLabel}</span>
+          {#if descKey}
+            <span class="truncate text-left text-xs text-muted-foreground">{$t(descKey)}</span>
+          {/if}
+        </div>
+      {/snippet}
+    </ComboSelect>
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
