@@ -79,6 +79,7 @@
   "dependencies": {
     "@eslint-community/regexpp": "4.12.2",
     "@fontsource-variable/inter": "5.2.8",
+    "@huggingface/transformers": "4.2.0",
     "@microsoft/fetch-event-source": "2.0.1",
     "@mlc-ai/web-llm": "0.2.85",
     "class-variance-authority": "0.7.1",

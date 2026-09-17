@@ -14,15 +14,34 @@ the standard text input with two inner CTAs:
 
 ## AI Engine
 
-The AI assistant uses [WebLLM](https://github.com/mlc-ai/web-llm) to run
-Qwen2.5-0.5B-Instruct entirely in the browser via WebGPU. No backend calls are
-made for the AI feature.
+The AI assistant runs ONNX models in the browser via
+[Transformers.js](https://huggingface.co/docs/transformers.js) + ONNX Runtime
+WebGPU. No backend calls are made for the AI feature.
+
+The model is selected from the `ai_models` registry (System Settings → AI
+models); each entry is an engine + quantization variant (e.g.
+`onnx-community/Qwen3-4B-ONNX#fp16`).
 
 ### Requirements
 
 - **WebGPU**: Chrome 113+/Edge 113+ or other Chromium-based browser with WebGPU enabled
-- **VRAM**: ~300MB for the model (q4f16 quantization)
-- **Download**: ~278MB one-time, cached in the browser
+- **VRAM / download size**: model-dependent — shown per model in the AI models list
+- **Download**: one-time per model, cached in the browser (Cache API / OPFS)
+
+### Model quality indicators
+
+Each model row carries three quality/compute fields, all set empirically by
+E2E regression tests:
+
+| Field | Range | Meaning |
+|-------|-------|---------|
+| `power_level` | 1-5 | Compute/size class (the 5-bar indicator). 1 = ≤1B quantized, 5 = ≥4B unquantized (fp16). Higher = heavier, not necessarily better. |
+| `rank` | 0.0-5.0 | Combined score — `quality × 0.8 + speed × 0.2`. Quality = `mean(turn_scores) × 0.6 + (success_count / total_turns) × 5 × 0.4` (turn scores 5 = correct, 2 = partially valid, 1 = fail; "success" = score ≥ 4). Speed = mean per-turn score from real response time in seconds (≤3 s → 5, ≤5 s → 4, ≤7 s → 3, ≤9 s → 2, ≤10 s → 1, >10 s or timeout → 0) |
+
+`rank` measures output quality **and** responsiveness — `power_level` is
+deliberately not part of it, so a light reliable model can outrank a heavy
+unreliable one. A model that cannot answer within the 90 s generation timeout
+on at least 2 of 5 test turns is marked not compatible regardless of quality.
 
 ### Non-WebGPU Browsers
 
@@ -66,7 +85,7 @@ Regex flags are stored as a separate `flags` field in `type_config.validation.ru
 2. **Lazy loading**: The model is loaded into VRAM only when the user clicks the
    brain CTA. A progress bar shows "Loading model X%".
 3. **Ready state**: On subsequent uses, the model is already cached and a
-   "Qwen2.5-0.5B is ready!" message appears.
+   "{model} is ready!" message appears.
 4. **Resource cleanup**: VRAM is released when the AI panel closes.
 
 ## Usage

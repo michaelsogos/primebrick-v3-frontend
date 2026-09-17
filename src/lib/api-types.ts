@@ -139,7 +139,10 @@ export type ConfigEntry = {
   updated_by_name?: string | null;
 };
 
-/** AI model entity — mirrors the BE `ai_models` table (WebLLM model catalog). */
+/**
+ * AI model entity — mirrors the BE `ai_models` table (WebLLM model catalog).
+ * Legacy per-case test shape (WebLLM `regex_test_score` entries).
+ */
 export type TestCaseScore = {
   runs: number[];
   score: number;
@@ -147,16 +150,25 @@ export type TestCaseScore = {
   updated_at: string;
 };
 
+export type ExecutionConfig = {
+  kv_cache_reuse: boolean;
+  sliding_window: boolean;
+  max_history_turns: number;
+  intent_detection: boolean;
+};
+
 export type AiModel = {
   uuid: string;
   model_id: string;
+  dtype?: string | null;
+  engine_type: string;
   name: string;
   label_key?: string | null;
   description_key?: string | null;
   power_level: number;
-  affidability: number;
   rank: number;
-  test_scores?: Record<string, TestCaseScore> | null;
+  /** Heterogeneous JSONB — see normalizeTestScores() in the /ai page. */
+  test_scores?: Record<string, unknown> | null;
   is_enabled: boolean;
   enable_thinking: boolean;
   temperature: number;
@@ -167,6 +179,7 @@ export type AiModel = {
   download_size_mb?: number | null;
   vram_mb?: number | null;
   compatibility_status: string;
+  execution_config?: ExecutionConfig | null;
   created_at: string;
   created_by: string;
   updated_at: string;

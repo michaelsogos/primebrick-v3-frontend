@@ -1,15 +1,19 @@
 /**
- * useModelCache — composable managing WebLLM model cache lifecycle.
+ * useModelCache — composable managing Transformers.js model cache lifecycle.
  *
  * Responsibilities:
- * - Check which models are cached (IndexedDB via hasModelInCache)
- * - Estimate per-model size from Cache API response content-length headers
+ * - Check which models are cached (via Cache API scan)
+ * - Measure per-model size from Cache API response blob sizes
  * - Estimate global storage usage via navigator.storage.estimate()
- * - Delete a single model from cache (IndexedDB + Cache API)
+ * - Delete a single model from cache (Cache API)
  * - Block deletion if the model is currently loaded in VRAM ("in use")
- * - Delete all cached models except the active one
+ * - Delete all cached models
  * - Track MRU (most-recently-used) order in localStorage for auto-eviction
  * - Auto-evict oldest models beyond MAX_CACHED (3) when a new model is loaded
+ *
+ * Transformers.js uses the browser Cache API automatically (env.useBrowserCache).
+ * Models are cached under cache names containing "transformers", "onnx", or "hf".
+ * This composable scans those caches and groups files by model_id (extracted from URL).
  *
  * Follows the composable state exposure pattern (mandatory AGENTS.md rule):
  * - Consolidated `_state` object (underscore = internal)
@@ -18,20 +22,31 @@
  */
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-/** Cache API cache name used by the Service Worker (must match sw-regex-ai.js). */
-const SW_CACHE_NAME = 'webllm-models-v1';
-
 /** localStorage key for persisting the MRU order across page reloads. */
-const MRU_STORAGE_KEY = 'primebrick:ai-model-mru';
+const MRU_STORAGE_KEY = 'primebrick:ai-model-mru-transformers';
 
 /** Maximum number of models to keep cached. Older ones are auto-evicted. */
 const MAX_CACHED = 3;
 
+/** Cache name prefixes used by Transformers.js (env.useBrowserCache). */
+const TRANSFORMERS_CACHE_PREFIXES = ['transformers', 'onnx', 'hf'];
+
+/**
+ * Derives a user-friendly display name from a raw model_id, for orphaned
+ * cache entries that have no catalog display name.
+ * "onnx-community/Qwen2.5-Coder-3B-Instruct#fp16" → "Qwen2.5 Coder 3B (fp16)"
+ */
+export function friendlyModelName(model_id: string): string {
+  const [repo, dtype] = model_id.split('#');
+  const base = (repo.split('/').pop() ?? repo).replace(/-/g, ' ');
+  return dtype ? `${base} (${dtype})` : base;
+}
+
 export function useModelCache() {
   const _state = $state({
-    /** model_id → is_cached (from IndexedDB via hasModelInCache). */
+    /** model_id → is_cached (from Cache API scan). */
     cache_status: {} as Record<string, boolean>,
-    /** model_id → estimated size in bytes (from Cache API content-length). */
+    /** model_id → measured size in bytes (from Cache API blob sizes). */
     model_sizes: {} as Record<string, number>,
     /** Total bytes used (from navigator.storage.estimate). */
     storage_usage: null as number | null,
@@ -40,13 +55,15 @@ export function useModelCache() {
     /** model_ids ordered by last use (most recent first). */
     mru_order: [] as string[],
     is_checking: false,
+    /** True after the first cache scan completes — gates the empty state. */
+    has_scanned: false,
     is_deleting: false,
     /** Error message for the last failed operation (e.g. "model in use"). */
     error: null as string | null,
     /**
      * Models found in the Cache API that are NOT in the ai_models DB catalog.
      * These are "orphaned" — downloaded previously but no longer listed.
-     * model_id → estimated size in bytes.
+     * model_id → measured size in bytes.
      */
     orphaned_models: {} as Record<string, number>,
   });
@@ -73,8 +90,72 @@ export function useModelCache() {
   }
 
   /**
-   * Scan the Cache API for ALL cached model IDs (not just the known ones).
-   * Extracts the model_id from the URL path (huggingface.co/mlc-ai/{model_id}/...).
+   * Check if a cache name belongs to Transformers.js.
+   */
+  function isTransformersCache(name: string): boolean {
+    return TRANSFORMERS_CACHE_PREFIXES.some((prefix) =>
+      name.toLowerCase().includes(prefix),
+    );
+  }
+
+  /**
+   * Extract the model_id from a HuggingFace URL.
+   * Transformers.js downloads from huggingface.co/{repo_id}/resolve/main/...
+   * The repo_id is the model_id (e.g. onnx-community/Qwen3.5-2B-ONNX).
+   */
+  function extractModelId(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.hostname !== 'huggingface.co' && u.hostname !== 'cdn-lfs.huggingface.co' && u.hostname !== 'cdn-lfs-us-1.huggingface.co') {
+        return null;
+      }
+      // Path: /onnx-community/Qwen3.5-2B-ONNX/resolve/main/...
+      // or: /onnx-community/Qwen3.5-2B-ONNX/resolve/...
+      const parts = u.pathname.split('/').filter(Boolean);
+      // Find "resolve" and take the two parts before it
+      const resolveIdx = parts.indexOf('resolve');
+      if (resolveIdx >= 2) {
+        return parts.slice(resolveIdx - 2, resolveIdx).join('/');
+      }
+      // Fallback: first two path segments
+      if (parts.length >= 2) {
+        return parts.slice(0, 2).join('/');
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * ONNX dtype suffix → catalog variant id fragment. Filenames carry the
+   * dtype: model_q4f16.onnx, decoder_model_merged_quantized.onnx, etc.
+   * Longest suffixes first so 'q4f16' wins over 'q4'.
+   */
+  const FILE_DTYPE_MAP: [string, string][] = [
+    ['q4f16', 'q4f16'], ['q2f16', 'q2f16'], ['q1f16', 'q1f16'],
+    ['quantized', 'q8'], ['int8', 'q8'], ['uint8', 'uint8'],
+    ['bnb4', 'bnb4'], ['fp16', 'fp16'],
+    ['q4', 'q4'], ['q2', 'q2'], ['q1', 'q1'],
+  ];
+
+  /**
+   * Extract the catalog variant key ('<repo>#<dtype>') from a cached file URL.
+   * Files without a dtype suffix (config, tokenizer, unsuffixed model.onnx)
+   * return the bare repo id — they are shared by all variants of that repo.
+   */
+  function extractVariantKey(url: string): string | null {
+    const repo = extractModelId(url);
+    if (!repo) return null;
+    const base = url.split('/').pop() ?? '';
+    for (const [suffix, dtype] of FILE_DTYPE_MAP) {
+      if (base.includes(`_${suffix}.onnx`)) return `${repo}#${dtype}`;
+    }
+    return repo;
+  }
+
+  /**
+   * Scan ALL Transformers.js caches and group by model_id.
    * Returns a map of model_id → total size in bytes.
    */
   async function scanAllCachedModels(): Promise<Record<string, number>> {
@@ -82,56 +163,20 @@ export function useModelCache() {
     if (typeof caches === 'undefined') return sizes;
 
     try {
-      const cache = await caches.open(SW_CACHE_NAME);
-      const keys = await cache.keys();
-
-      for (const req of keys) {
-        const url = new URL(req.url);
-        const parts = url.pathname.split('/');
-        const idx = parts.indexOf('mlc-ai');
-        if (idx < 0 || !parts[idx + 1]) continue;
-
-        const modelId = parts[idx + 1];
-        const response = await cache.match(req);
-        if (response) {
-          const contentLength = response.headers.get('content-length');
-          if (contentLength) {
-            sizes[modelId] = (sizes[modelId] ?? 0) + parseInt(contentLength, 10);
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    return sizes;
-  }
-
-  /**
-   * Estimate per-model sizes from the Cache API.
-   * Groups cached HTTP responses by model ID (matching the URL path)
-   * and sums content-length headers.
-   */
-  async function estimateModelSizes(model_ids: string[]): Promise<Record<string, number>> {
-    const sizes: Record<string, number> = {};
-    if (typeof caches === 'undefined') return sizes;
-
-    try {
-      const cache = await caches.open(SW_CACHE_NAME);
-      const keys = await cache.keys();
-
-      for (const req of keys) {
-        const url = req.url;
-        for (const model_id of model_ids) {
-          // Model files URLs contain the model_id in the path
-          if (url.includes(model_id)) {
-            const response = await cache.match(req);
-            if (response) {
-              const contentLength = response.headers.get('content-length');
-              if (contentLength) {
-                sizes[model_id] = (sizes[model_id] ?? 0) + parseInt(contentLength, 10);
-              }
-            }
+      const cacheNames = await caches.keys();
+      for (const name of cacheNames) {
+        if (!isTransformersCache(name)) continue;
+        const cache = await caches.open(name);
+        const keys = await cache.keys();
+        for (const req of keys) {
+          // Variant-aware key: '<repo>#<dtype>' for dtype-suffixed weight files,
+          // bare '<repo>' for shared files (config, tokenizer, fp32 weights).
+          const key = extractVariantKey(req.url);
+          if (!key) continue;
+          const response = await cache.match(req);
+          if (response) {
+            const blob = await response.blob();
+            sizes[key] = (sizes[key] ?? 0) + blob.size;
           }
         }
       }
@@ -144,40 +189,42 @@ export function useModelCache() {
 
   /**
    * Refresh cache status for the given model IDs.
-   * Checks IndexedDB (hasModelInCache), estimates per-model sizes from Cache API,
-   * and gets the global storage estimate.
    */
   async function refreshCacheStatus(model_ids: string[]): Promise<void> {
     _state.is_checking = true;
     _state.error = null;
     try {
-      const webllm = await import('@mlc-ai/web-llm');
+      const allCached = await scanAllCachedModels();
+      const knownSet = new Set(model_ids);
+      // Bare repo ids present in the catalog (variant ids carry '#dtype').
+      const knownRepos = new Set(model_ids.map((id) => id.split('#')[0]));
+
+      // Per-model sizes and cache status for known models.
+      // A variant is cached only when ITS dtype-suffixed files are present;
+      // its reported size also counts files shared at repo level.
       const status: Record<string, boolean> = {};
+      const sizes: Record<string, number> = {};
       for (const id of model_ids) {
-        status[id] = await webllm.hasModelInCache(id);
+        const variantBytes = allCached[id] ?? 0;
+        const sharedBytes = allCached[id.split('#')[0]] ?? 0;
+        status[id] = variantBytes > 0;
+        sizes[id] = variantBytes + sharedBytes;
       }
       _state.cache_status = status;
+      _state.model_sizes = sizes;
 
-      // Per-model sizes from Cache API (known models)
-      _state.model_sizes = await estimateModelSizes(model_ids);
-
-      // Scan ALL cached models to detect orphans (not in the DB catalog)
-      const knownSet = new Set(model_ids);
-      const allCached = await scanAllCachedModels();
+      // Detect orphans (cached but not in DB catalog — neither as variant
+      // nor as a bare repo of any cataloged model)
       const orphans: Record<string, number> = {};
       for (const [id, size] of Object.entries(allCached)) {
-        if (!knownSet.has(id)) {
+        if (!knownSet.has(id) && !knownRepos.has(id)) {
           orphans[id] = size;
         }
       }
       _state.orphaned_models = orphans;
 
       // Global storage estimate
-      if (navigator.storage?.estimate) {
-        const est = await navigator.storage.estimate();
-        _state.storage_usage = est.usage ?? null;
-        _state.storage_quota = est.quota ?? null;
-      }
+      await refreshStorageEstimate();
 
       // Load MRU from localStorage
       _state.mru_order = loadMru();
@@ -185,11 +232,20 @@ export function useModelCache() {
       // ignore
     } finally {
       _state.is_checking = false;
+      _state.has_scanned = true;
     }
   }
 
+  /** Re-read navigator.storage.estimate() into state (after deletions). */
+  async function refreshStorageEstimate(): Promise<void> {
+    if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return;
+    const est = await navigator.storage.estimate();
+    _state.storage_usage = est.usage ?? null;
+    _state.storage_quota = est.quota ?? null;
+  }
+
   /**
-   * Delete a single model from cache (IndexedDB + Cache API).
+   * Delete a single model from cache (all Transformers.js caches).
    * Blocks deletion if the model is currently loaded in VRAM (active_model_id).
    */
   async function deleteModel(model_id: string, active_model_id: string | null): Promise<void> {
@@ -201,18 +257,23 @@ export function useModelCache() {
     _state.is_deleting = true;
     _state.error = null;
     try {
-      const webllm = await import('@mlc-ai/web-llm');
-      await webllm.deleteModelAllInfoInCache(model_id);
-
-      // Also purge Cache API entries for this model
       if (typeof caches !== 'undefined') {
-        const cache = await caches.open(SW_CACHE_NAME);
-        const keys = await cache.keys();
-        await Promise.all(
-          keys
-            .filter((req) => req.url.includes(model_id))
-            .map((req) => cache.delete(req)),
-        );
+        const cacheNames = await caches.keys();
+        for (const name of cacheNames) {
+          if (!isTransformersCache(name)) continue;
+          const cache = await caches.open(name);
+          const keys = await cache.keys();
+          await Promise.all(
+            keys
+              .filter((req) => {
+                // Delete the variant's own files plus repo-shared files
+                // (config/tokenizer) — other variants re-fetch them if needed.
+                const key = extractVariantKey(req.url);
+                return key === model_id || key === model_id.split('#')[0];
+              })
+              .map((req) => cache.delete(req)),
+          );
+        }
       }
 
       _state.cache_status[model_id] = false;
@@ -222,6 +283,9 @@ export function useModelCache() {
       // Remove from MRU
       _state.mru_order = _state.mru_order.filter((id) => id !== model_id);
       saveMru(_state.mru_order);
+
+      // Refresh the storage bar — freed bytes show immediately
+      await refreshStorageEstimate();
     } catch (err) {
       _state.error = err instanceof Error ? err.message : 'Failed to delete model';
     } finally {
@@ -240,12 +304,11 @@ export function useModelCache() {
       const cachedIds = Object.keys(_state.cache_status).filter(
         (id) => _state.cache_status[id] && id !== active_model_id,
       );
-
       for (const id of cachedIds) {
         await deleteModel(id, active_model_id);
       }
 
-      // Orphaned models (not in DB catalog but present in Cache API)
+      // Orphaned models
       const orphanIds = Object.keys(_state.orphaned_models).filter(
         (id) => id !== active_model_id,
       );
@@ -253,17 +316,18 @@ export function useModelCache() {
         await deleteModel(id, active_model_id);
       }
 
-      // If no active model, clear entire SW cache
+      // If no active model, clear all Transformers.js caches entirely
       if (!active_model_id && typeof caches !== 'undefined') {
-        await caches.delete(SW_CACHE_NAME);
+        const cacheNames = await caches.keys();
+        for (const name of cacheNames) {
+          if (isTransformersCache(name)) {
+            await caches.delete(name);
+          }
+        }
       }
 
       // Refresh storage estimate
-      if (navigator.storage?.estimate) {
-        const est = await navigator.storage.estimate();
-        _state.storage_usage = est.usage ?? null;
-        _state.storage_quota = est.quota ?? null;
-      }
+      await refreshStorageEstimate();
     } catch (err) {
       _state.error = err instanceof Error ? err.message : 'Failed to delete all models';
     } finally {
@@ -277,20 +341,14 @@ export function useModelCache() {
    */
   async function recordModelUse(model_id: string): Promise<void> {
     let order = loadMru();
-
-    // Remove if already present
     order = order.filter((id) => id !== model_id);
-
-    // Prepend (most recent first)
     order.unshift(model_id);
 
-    // Auto-evict: if more than MAX_CACHED models are cached, delete the oldest
-    const webllm = await import('@mlc-ai/web-llm');
-    const cachedStatus: Record<string, boolean> = {};
-
     // Check which models in MRU are actually cached
+    const allCached = await scanAllCachedModels();
+    const cachedStatus: Record<string, boolean> = {};
     for (const id of order) {
-      cachedStatus[id] = await webllm.hasModelInCache(id);
+      cachedStatus[id] = (allCached[id] ?? 0) > 0;
     }
 
     // Count cached models
@@ -301,16 +359,7 @@ export function useModelCache() {
       const toEvict = cachedIds.slice(MAX_CACHED);
       for (const id of toEvict) {
         try {
-          await webllm.deleteModelAllInfoInCache(id);
-          if (typeof caches !== 'undefined') {
-            const cache = await caches.open(SW_CACHE_NAME);
-            const keys = await cache.keys();
-            await Promise.all(
-              keys
-                .filter((req) => req.url.includes(id))
-                .map((req) => cache.delete(req)),
-            );
-          }
+          await deleteModel(id, null);
           cachedStatus[id] = false;
         } catch {
           // ignore eviction errors

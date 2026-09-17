@@ -429,6 +429,8 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
 
 export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
   const params = new URLSearchParams();
+  // The selector expects the full catalog — the BE defaults page_size to 25.
+  params.set('page_size', '100');
   if (deletedRecords) params.set('deleted_records', deletedRecords);
   const qs = params.toString();
   const url = qs ? `/api/v1/entities/ai_model/list?${qs}` : '/api/v1/entities/ai_model/list';

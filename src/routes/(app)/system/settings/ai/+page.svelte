@@ -24,7 +24,7 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw } from '@lucide/svelte';
-  import type { TestCaseScore } from '$lib/api-types';
+  import type { AiModel } from '$lib/api-types';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
@@ -34,17 +34,18 @@
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch } from '$lib/api';
+  import { summarizeTestScores, testCaseLabel } from '$lib/ai/ai-model-test-scores';
 
   const aiModels = useAiModels();
   const stepUp = useMfaStepUp();
 
-  // Power levels map for ModelCacheSection (model_id → power_level).
-  let modelPowerLevels = $state<Record<string, number>>({});
+  // Rank map for ModelCacheSection (model_id → rank).
+  let modelRanks = $state<Record<string, number | null>>({});
 
   onMount(async () => {
     await aiModels.ensureLoaded();
-    modelPowerLevels = Object.fromEntries(
-      aiModels.getEnabledModels().map((m) => [m.model_id, m.power_level]),
+    modelRanks = Object.fromEntries(
+      aiModels.getEnabledModels().map((m) => [m.model_id, m.rank]),
     );
   });
 
@@ -122,33 +123,21 @@
     }
   }
 
-  // Human-readable test case key → label.
-  function testCaseLabel(key: string): string {
-    return key.replace(/_test_score$/, '').replace(/_/g, ' ');
+  // Rank formula explanation (quality × 0.8 + speed × 0.2).
+  function rankExplanation(model: AiModel): string {
+    const s = summarizeTestScores(model.test_scores);
+    if (s.quality !== null && s.speed !== null) {
+      const raw = s.quality * 0.8 + s.speed * 0.2;
+      return `(${s.quality.toFixed(2)} × 0.8) + (${s.speed.toFixed(2)} × 0.2) = ${raw.toFixed(1)} → ${model.rank}`;
+    }
+    return `quality × 0.8 + speed × 0.2 → ${model.rank}`;
   }
 
-  // Compute final test score (arithmetic mean of all case scores).
-  function finalTestScore(test_scores: Record<string, TestCaseScore> | null | undefined): number {
-    if (!test_scores) return 0;
-    const scores = Object.values(test_scores).map((ts) => ts.score);
-    if (scores.length === 0) return 0;
-    return scores.reduce((a, b) => a + b, 0) / scores.length;
-  }
-
-  // Cast readonly test_scores to mutable for the each block.
-  function asTestCaseScore(data: unknown): TestCaseScore {
-    return data as TestCaseScore;
-  }
-
-  // Rank formula explanation.
-  function rankExplanation(affidability: number, power_level: number, rank: number): string {
-    const raw = affidability * 0.7 + power_level * 0.3;
-    return `(${affidability} × 0.7) + (${power_level} × 0.3) = ${raw.toFixed(1)} → ${rank}`;
-  }
-
-  // Affidability explanation.
-  function affidabilityExplanation(finalScore: number, affidability: number): string {
-    return `mean(all test case scores) = ${finalScore.toFixed(1)} → round = ${affidability}`;
+  // Power level explanation: parameters (from name/model_id) + dtype.
+  function powerExplanation(model: AiModel): string {
+    const m = `${model.name} ${model.model_id}`.match(/(\d+(?:\.\d+)?)\s*([bBmM])\b/);
+    const params = m ? `${m[1]}${m[2].toUpperCase()}` : '?';
+    return `${params} · ${model.dtype ?? '?'} → power ${model.power_level}/5`;
   }
 </script>
 
@@ -285,66 +274,109 @@
               </div>
 
               <!-- Column 2: gauges (33%, vertically centered) -->
-              <div class="flex items-center gap-3 shrink-0 justify-center" style="flex: 33 1 0%;">                <ScoreGauge value={model.power_level} label={$t('system.entities.ai_model.fields.power_level')} />
-
-                <!-- Test scores gauge with popover dropdown -->
-                {#if model.test_scores && Object.keys(model.test_scores).length > 0}
-                  {@const fScore = finalTestScore(model.test_scores as Record<string, TestCaseScore>)}
-                  <Popover.Root>
-                    <Popover.Trigger
-                      class="inline-flex"
-                      title={$t('system.entities.ai_model.fields.test_scores')}
-                      data-testid={`ai-model-test-scores-cta-${model.model_id}`}
-                    >
-                      <ScoreGauge value={fScore} label={$t('system.entities.ai_model.fields.test_scores')} />
-                    </Popover.Trigger>
-                    <Popover.Content align="start" class="w-64 p-0">
-                      <div
-                        class="space-y-1 p-2"
-                        data-testid={`ai-model-test-scores-dropdown-${model.model_id}`}
-                      >
-                        <div class="flex items-center justify-between border-b border-border/40 pb-1 mb-1">
-                          <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.test_scores')}</span>
-                          <span class="text-sm font-bold">{fScore.toFixed(1)}</span>
-                        </div>
-                        {#each Object.entries(model.test_scores) as [case_key, case_data] (case_key)}
-                          {@const ts = asTestCaseScore(case_data)}
-                          <div class="space-y-0.5 py-0.5">
-                            <div class="flex items-center justify-between text-xs font-medium">
-                              <span class="capitalize">{testCaseLabel(case_key)}</span>
-                              <span class="font-bold">{ts.score.toFixed(1)}</span>
-                            </div>
-                            <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <span>runs:</span>
-                              {#each ts.runs as run, i (i)}
-                                <span class="rounded bg-muted px-1">{run}</span>
-                              {/each}
-                              <span class="ml-1">({ts.method})</span>
-                            </div>
-                          </div>
-                        {/each}
-                      </div>
-                    </Popover.Content>
-                  </Popover.Root>
-                {/if}
-
-                <!-- Affidability gauge with explanation popover -->
+              <div class="flex items-center gap-3 shrink-0 justify-center" style="flex: 33 1 0%;">
+                <!-- Power level gauge with explanation popover -->
                 <Popover.Root>
                   <Popover.Trigger
                     class="inline-flex"
-                    title={$t('system.entities.ai_model.fields.affidability')}
-                    data-testid={`ai-model-affidability-cta-${model.model_id}`}
+                    title={$t('system.entities.ai_model.fields.power_level')}
+                    data-testid={`ai-model-power-cta-${model.model_id}`}
                   >
-                    <ScoreGauge value={model.affidability} label={$t('system.entities.ai_model.fields.affidability')} />
+                    <ScoreGauge value={model.power_level} label={$t('system.entities.ai_model.fields.power_level')} />
                   </Popover.Trigger>
-                  <Popover.Content align="start" class="w-56 p-0">
-                    <div class="space-y-1 p-2" data-testid={`ai-model-affidability-dropdown-${model.model_id}`}>
+                  <Popover.Content align="start" class="w-64 p-0">
+                    <div class="space-y-1 p-2" data-testid={`ai-model-power-dropdown-${model.model_id}`}>
                       <div class="text-xs font-semibold border-b border-border/40 pb-1 mb-1">
-                        {$t('system.entities.ai_model.fields.affidability')}
+                        {$t('system.entities.ai_model.fields.power_level')}
                       </div>
                       <div class="text-[10px] text-muted-foreground space-y-1">
-                        <p>{$t('system.entities.ai_model.affidability.explanation')}</p>
-                        <p class="font-mono text-xs">{affidabilityExplanation(finalTestScore(model.test_scores as Record<string, TestCaseScore>), model.affidability)}</p>
+                        <p>{$t('system.entities.ai_model.power_level.explanation')}</p>
+                        <p class="font-mono text-xs">{powerExplanation(model)}</p>
+                        <p class="border-t border-border/40 pt-1">
+                          {$t('system.entities.ai_model.power_level.disclaimer')}
+                        </p>
+                      </div>
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
+
+                <!-- Test scores gauge with popover dropdown -->
+                <Popover.Root>
+                  {@const tsSummary = summarizeTestScores(model.test_scores)}
+                  <Popover.Trigger
+                    class="inline-flex"
+                    title={$t('system.entities.ai_model.fields.test_scores')}
+                    data-testid={`ai-model-test-scores-cta-${model.model_id}`}
+                  >
+                    <ScoreGauge value={tsSummary.score} label={$t('system.entities.ai_model.fields.test_scores')} />
+                  </Popover.Trigger>
+                  <Popover.Content align="start" class="w-64 p-0">
+                    <div
+                      class="space-y-1 p-2"
+                      data-testid={`ai-model-test-scores-dropdown-${model.model_id}`}
+                    >
+                      <div class="flex items-center justify-between border-b border-border/40 pb-1 mb-1">
+                        <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.test_scores')}</span>
+                        <span class="text-sm font-bold">{tsSummary.score?.toFixed(1) ?? '—'}</span>
+                      </div>
+                      {#if tsSummary.quality !== null || tsSummary.speed !== null || tsSummary.success}
+                        <div class="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          {#if tsSummary.quality !== null}<span>quality <b class="text-foreground">{tsSummary.quality.toFixed(1)}</b></span>{/if}
+                          {#if tsSummary.speed !== null}<span>speed <b class="text-foreground">{tsSummary.speed.toFixed(1)}</b></span>{/if}
+                          {#if tsSummary.success}<span>success <b class="text-foreground">{tsSummary.success}</b></span>{/if}
+                        </div>
+                      {/if}
+                      {#each tsSummary.cases as testCase (testCase.key)}
+                        <div class="space-y-0.5 py-0.5">
+                          <div class="flex items-center justify-between text-xs font-medium">
+                            <span class="capitalize">{testCaseLabel(testCase.key)}</span>
+                            <span class="font-bold">{testCase.score !== null ? testCase.score.toFixed(1) : '—'}</span>
+                          </div>
+                          {#if testCase.runs?.length || testCase.method}
+                            <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              {#if testCase.runs?.length}
+                                <span>runs:</span>
+                                {#each testCase.runs as run, i (i)}
+                                  <span class="rounded bg-muted px-1">{run}</span>
+                                {/each}
+                              {/if}
+                              {#if testCase.method}<span class="ml-1">({testCase.method})</span>{/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
+
+                <Popover.Root>
+                  {@const tsSummary = summarizeTestScores(model.test_scores)}
+                  <Popover.Trigger
+                    class="inline-flex"
+                    title={$t('system.entities.ai_model.fields.speed')}
+                    data-testid={`ai-model-speed-cta-${model.model_id}`}
+                  >
+                    <ScoreGauge value={tsSummary.speed} label={$t('system.entities.ai_model.fields.speed')} />
+                  </Popover.Trigger>
+                  <Popover.Content align="start" class="w-72 p-0">
+                    <div class="space-y-2 p-2" data-testid={`ai-model-speed-dropdown-${model.model_id}`}>
+                      <div class="flex items-center justify-between border-b border-border/40 pb-1">
+                        <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.speed')}</span>
+                        <span class="text-sm font-bold">{tsSummary.speed?.toFixed(1) ?? '—'}</span>
+                      </div>
+                      <p class="text-[10px] text-muted-foreground">
+                        {$t('system.entities.ai_model.speed.explanation')}
+                      </p>
+                      {#if tsSummary.avg_response_s !== null}
+                        <div class="flex items-center justify-between rounded bg-muted/40 px-2 py-1 font-mono text-xs">
+                          <span class="text-muted-foreground">{$t('system.entities.ai_model.speed.avg_response')}</span>
+                          <span class="font-semibold">{tsSummary.avg_response_s.toFixed(1)}s</span>
+                        </div>
+                      {/if}
+                      <div class="grid grid-cols-2 gap-x-3 font-mono text-[10px] text-muted-foreground">
+                        <span>≤ 3s → 5</span><span>≤ 5s → 4</span>
+                        <span>≤ 7s → 3</span><span>≤ 9s → 2</span>
+                        <span>≤ 10s → 1</span><span>&gt; 10s → 0</span>
                       </div>
                     </div>
                   </Popover.Content>
@@ -366,7 +398,7 @@
                       </div>
                       <div class="text-[10px] text-muted-foreground space-y-1">
                         <p>{$t('system.entities.ai_model.rank.explanation')}</p>
-                        <p class="font-mono text-xs">{rankExplanation(model.affidability, model.power_level, model.rank)}</p>
+                        <p class="font-mono text-xs">{rankExplanation(model)}</p>
                       </div>
                     </div>
                   </Popover.Content>
@@ -418,7 +450,7 @@
       <h2 class="text-sm font-semibold">{$t('system.settings.ai.cache_section.title')}</h2>
     </div>
     <div class="rounded-lg border border-border/60 p-4">
-      <ModelCacheSection model_power_levels={modelPowerLevels} />
+      <ModelCacheSection model_ranks={modelRanks} />
     </div>
   </section>
     </div>

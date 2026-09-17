@@ -18,13 +18,15 @@
    */
   import { t } from '$lib/i18n';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
-  import { useModelCache } from '$lib/ai/use-model-cache.svelte';
+  import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import { useSelection } from '$lib/composables/useSelection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import PowerLevelBars from '$lib/components/ui/smart-regex-input/PowerLevelBars.svelte';
+  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import { Trash2, RefreshCw, AlertTriangle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { onMount } from 'svelte';
   import {
     SelectableFieldset,
@@ -33,9 +35,9 @@
   } from '$lib/components/ui/selectable-fieldset';
 
   /** The model ID currently loaded in VRAM (null if none). */
-  let { active_model_id = null, model_power_levels = {} }: {
+  let { active_model_id = null, model_ranks = {} }: {
     active_model_id?: string | null;
-    model_power_levels?: Record<string, number>;
+    model_ranks?: Record<string, number | null>;
   } = $props();
 
   const aiModels = useAiModels();
@@ -57,12 +59,64 @@
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
+  // ─── Delete confirmation dialog ─────────────────────────────────────────
+  // Pending deletion descriptor: ids to delete + user-friendly display name
+  // (single) or names list (bulk) + total bytes to free.
+  let pendingDelete = $state<{
+    ids: string[];
+    name: string | null;
+    names: string[];
+    totalBytes: number;
+    source: 'censused' | 'orphan';
+  } | null>(null);
+  let deleteDialogOpen = $state(false);
+
+  /** Resolves the catalog display name, falling back to a humanized model_id. */
+  function displayName(model_id: string): string {
+    return (
+      aiModels.getEnabledModels().find((m) => m.model_id === model_id)?.name ??
+      friendlyModelName(model_id)
+    );
+  }
+
+  function askDelete(ids: string[], name: string | null, source: 'censused' | 'orphan') {
+    const sizes = source === 'censused' ? cache.state.model_sizes : cache.state.orphaned_models;
+    const totalBytes = ids.reduce((sum, id) => sum + (sizes[id] ?? 0), 0);
+    pendingDelete = { ids, name, names: ids.map(displayName), totalBytes, source };
+    deleteDialogOpen = true;
+  }
+
   function handleDelete(model_id: string) {
-    void cache.deleteModel(model_id, active_model_id);
+    askDelete([model_id], displayName(model_id), 'censused');
   }
 
   function handleDeleteOrphaned(model_id: string) {
-    void cache.deleteModel(model_id, active_model_id);
+    askDelete([model_id], friendlyModelName(model_id), 'orphan');
+  }
+
+  /** Splits a translated message on a variable so it can be rendered in bold. */
+  function splitHighlight(msg: string, hl: string): { pre: string; post: string } {
+    const idx = msg.indexOf(hl);
+    return idx < 0
+      ? { pre: msg, post: '' }
+      : { pre: msg.slice(0, idx), post: msg.slice(idx + hl.length) };
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { ids, source } = pendingDelete;
+    deleteDialogOpen = false;
+    pendingDelete = null;
+    for (const id of ids) {
+      await cache.deleteModel(id, active_model_id);
+    }
+    if (source === 'censused') censusedSelection.clearSelection();
+    else orphanSelection.clearSelection();
+  }
+
+  function cancelDelete() {
+    deleteDialogOpen = false;
+    pendingDelete = null;
   }
 
   function handleRefresh() {
@@ -92,14 +146,12 @@
     const selectedIds = censusedSelection.getSelectedIds().filter(
       (id) => id !== active_model_id,
     );
-    for (const id of selectedIds) {
-      void cache.deleteModel(id, active_model_id);
-    }
-    censusedSelection.clearSelection();
+    if (selectedIds.length > 0) askDelete(selectedIds, null, 'censused');
   }
 
   // ─── Orphaned models derived state ────────────────────────────────────────
   const orphanIds = $derived(Object.keys(cache.state.orphaned_models));
+  const cacheIsEmpty = $derived(censusedModels.length === 0 && orphanIds.length === 0);
   const orphanAllSelected = $derived(
     orphanIds.length > 0 && orphanIds.every((id) => orphanSelection.isSelected(id)),
   );
@@ -115,10 +167,7 @@
     const selectedIds = orphanSelection.getSelectedIds().filter(
       (id) => id !== active_model_id,
     );
-    for (const id of selectedIds) {
-      void cache.deleteModel(id, active_model_id);
-    }
-    orphanSelection.clearSelection();
+    if (selectedIds.length > 0) askDelete(selectedIds, null, 'orphan');
   }
 </script>
 
@@ -163,6 +212,15 @@
     </div>
   {/if}
 
+  <!-- Empty state: nothing cached at all -->
+  {#if cache.state.has_scanned && !cache.state.is_checking && cacheIsEmpty}
+    <div
+      class="rounded-md border border-dashed border-border/60 px-3 py-4 text-sm text-muted-foreground"
+      data-testid="model-cache-empty"
+    >
+      {$t('app.smart.regex.ai.cache.empty')}
+    </div>
+  {:else}
   <!-- Censused models: select-all toolbar + fieldset -->
   <SelectableToolbar
     all_selected={censusedAllSelected}
@@ -207,9 +265,7 @@
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{model.name}</div>
             <div class="flex items-center gap-2 mt-0.5">
-              {#if model_power_levels[model.model_id]}
-                <PowerLevelBars level={model_power_levels[model.model_id]} />
-              {/if}
+              <RankMeter rank={model_ranks[model.model_id]} />
               <span class="text-xs {is_cached ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}">
                 {#if is_cached}
                   {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
@@ -282,8 +338,10 @@
               onCheckedChange={(checked) => orphanSelection.toggleSelect(model_id, checked)}
               data-testid="cache-orphan-select-{model_id}"
             />
+            <ModelIcon model_id={model_id} class="size-5 shrink-0" />
             <div class="min-w-0">
-              <div class="text-sm font-medium truncate font-mono">{model_id}</div>
+              <div class="text-sm font-medium truncate">{friendlyModelName(model_id)}</div>
+              <div class="text-[10px] text-muted-foreground truncate font-mono">{model_id}</div>
               <span class="text-xs text-green-600 dark:text-green-400">
                 {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
               </span>
@@ -304,4 +362,71 @@
       {/each}
     </SelectableFieldset>
   {/if}
+  {/if}
 </div>
+
+<!-- Cache delete confirmation dialog -->
+<DialogBordered
+  bind:open={deleteDialogOpen}
+  severity="destructive"
+  class="sm:max-w-md"
+  showCloseButton={false}
+>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{$t('app.smart.regex.ai.cache.delete_confirm_title')}</Dialog.Title>
+    <Dialog.Description>
+      {#if pendingDelete?.name}
+        {@const name = pendingDelete.name}
+        {@const msg = splitHighlight(
+          $t('app.smart.regex.ai.cache.delete_confirm_single', { model: name }),
+          name,
+        )}
+        {msg.pre}<strong class="font-semibold text-foreground">{name}</strong>{msg.post}
+        <span class="mt-2 block space-y-0.5 text-xs">
+          <span class="block">
+            {$t('app.smart.regex.ai.cache.delete_detail_model')}
+            <span class="font-mono">{pendingDelete.ids[0]}</span>
+          </span>
+          <span class="block">
+            {$t('app.smart.regex.ai.cache.delete_detail_size')}
+            {formatBytes(pendingDelete.totalBytes)}
+          </span>
+        </span>
+      {:else if pendingDelete}
+        {@const size = formatBytes(pendingDelete.totalBytes)}
+        {@const msg = splitHighlight(
+          $t('app.smart.regex.ai.cache.delete_confirm_multi', {
+            count: pendingDelete.ids.length,
+            size,
+          }),
+          size,
+        )}
+        {msg.pre}<strong class="font-semibold text-foreground">{size}</strong>{msg.post}
+        <span class="mt-2 block text-xs">{pendingDelete.names.join(' · ')}</span>
+      {/if}
+    </Dialog.Description>
+  </Dialog.Header>
+  <Dialog.Footer class="gap-2 sm:space-x-0">
+    <Button
+      variant="secondary-outline"
+      class="hover:scale-105 transition-all"
+      onclick={cancelDelete}
+      disabled={cache.state.is_deleting}
+    >
+      {$t('app.common.cancel')}
+    </Button>
+    <Button
+      variant="destructive"
+      class="hover:scale-105 transition-all"
+      onclick={confirmDelete}
+      disabled={cache.state.is_deleting}
+      data-testid="cache-delete-confirm"
+    >
+      {#if cache.state.is_deleting}
+        {$t('app.common.deleting')}
+      {:else}
+        {$t('app.common.delete')}
+      {/if}
+    </Button>
+  </Dialog.Footer>
+</DialogBordered>

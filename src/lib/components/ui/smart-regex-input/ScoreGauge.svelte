@@ -2,7 +2,7 @@
   /**
    * Donut gauge — SVG ring with numeric score at center.
    *
-   * Used for POWER, AFFIDABILITY, and RANK indicators on the AI models page.
+   * Used for POWER, TEST, SPEED, and RANK indicators on the AI models page.
    * Value range is 0-5 by default. Color scales with value:
    *   0-1 red, 2 orange, 3 yellow, 4 lime, 5 green.
    */
@@ -23,20 +23,21 @@
     label,
     size = 36,
   }: {
-    value: number;
+    value: number | null;
     max?: number;
     label?: string;
     size?: number;
   } = $props();
 
+  const numericValue = $derived(value ?? 0);
   const stroke = $derived(Math.max(3, size * 0.1));
   const radius = $derived((size - stroke) / 2);
   const circumference = $derived(2 * Math.PI * radius);
-  const ratio = $derived(Math.max(0, Math.min(1, value / max)));
+  const ratio = $derived(Math.max(0, Math.min(1, numericValue / max)));
   const dashOffset = $derived(circumference * (1 - ratio));
-  const color = $derived(gaugeColor(value, max));
+  const color = $derived(gaugeColor(numericValue, max));
   const displayValue = $derived(
-    Number.isInteger(value) ? String(value) : value.toFixed(1),
+    value === null ? '—' : Number.isInteger(value) ? String(value) : value.toFixed(1),
   );
   const fontSize = $derived(Math.round(size * 0.32));
 </script>

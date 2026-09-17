@@ -18,6 +18,8 @@
   import Flag from '@lucide/svelte/icons/flag';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import X from '@lucide/svelte/icons/x';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
 
   interface $$Props {
     /** The regex pattern string (bindable). */
@@ -110,6 +112,21 @@
       },
     });
   }
+
+  // Auto-open the AI panel after a model switch page reload.
+  // switchModel() sets 'regex-ai-auto-open' in sessionStorage before
+  // reloading the page; on the fresh page load we auto-open the sheet
+  // so the user sees the new model loading without manual interaction.
+  onMount(() => {
+    if (!browser) return;
+    try {
+      if (sessionStorage.getItem('regex-ai-auto-open') === '1') {
+        sessionStorage.removeItem('regex-ai-auto-open');
+        // Defer to next tick so the input is mounted first.
+        queueMicrotask(() => open_ai_panel());
+      }
+    } catch { /* sessionStorage unavailable */ }
+  });
 
   // Show flags badge if any flags are set
   let has_flags = $derived(flags.length > 0);

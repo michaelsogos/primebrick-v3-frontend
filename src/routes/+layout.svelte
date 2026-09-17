@@ -11,8 +11,9 @@
 
 	// Load public auth config once at app startup so the LoginForm and
 	// SessionExpiredDialog know which login methods (form / passkey) to show.
-	// Also register the SmartRegexInput AI service worker for background model
-	// pre-download (non-blocking, fails silently if SW is unavailable).
+	// Also retire the legacy SmartRegexInput model-cache service worker: its
+	// 'transformers-models-v1' store duplicated every byte already cached by
+	// Transformers.js ('transformers-cache'). One-time cleanup on app load.
 	onMount(() => {
 		void loadAuthConfig();
 		void registerRegexAiSw();

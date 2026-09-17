@@ -546,6 +546,20 @@ select:-webkit-autofill:focus {
 }
 
 /**
+ * VRAM load animation: indeterminate bar that slides left-to-right
+ * and loops, used during ONNX session creation + warmup phase.
+ */
+@utility animate-vram-load {
+  animation: vram-load 1.5s ease-in-out infinite;
+}
+
+@keyframes vram-load {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(300%); }
+}
+
+/**
  * AI icon shimmer sweep — animates the SVG linearGradient's x1/x2
  * to create a shimmer effect across the stroke. Used by AiIcon component.
  * The actual animation is done via SMIL <animate> elements inside the SVG,

@@ -40,7 +40,10 @@
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import type { DeepReadonly } from '$lib/types/deep-readonly';
-  import PowerLevelBars from '$lib/components/ui/smart-regex-input/PowerLevelBars.svelte';
+  import type { AiModel } from '$lib/api-types';
+  import { summarizeTestScores, rankColor } from '$lib/ai/ai-model-test-scores';
+  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
+  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -56,11 +59,18 @@
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import CircleStop from '@lucide/svelte/icons/circle-stop';
   import Cpu from '@lucide/svelte/icons/cpu';
   import Server from '@lucide/svelte/icons/server';
   import Info from '@lucide/svelte/icons/info';
   import StickyNotePlus from '@lucide/svelte/icons/sticky-note-plus';
   import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import Microchip from '@lucide/svelte/icons/microchip';
+  import Thermometer from '@lucide/svelte/icons/thermometer';
+  import Gauge from '@lucide/svelte/icons/gauge';
+  import Brackets from '@lucide/svelte/icons/brackets';
+  import Gavel from '@lucide/svelte/icons/gavel';
+  import ArrowDownWideNarrow from '@lucide/svelte/icons/arrow-down-wide-narrow';
 
   interface $$Props {
     on_apply_regex: (pattern: string, flags: string) => void;
@@ -91,7 +101,7 @@
   let aiSource = $state<'local' | 'backend'>('local');
 
   // All available local models for the model dropdown (from BE entity).
-  let availableModels = $state<{ model_id: string; name: string; label_key?: string | null; description_key?: string | null; power_level: number }[]>([]);
+  let availableModels = $state<AiModel[]>([]);
 
   // Model cache composable for MRU tracking and auto-eviction.
   const modelCache = useModelCache();
@@ -105,25 +115,106 @@
     return modelInfo ? modelInfo.name : '';
   });
 
-  // Power level for the currently active model (for the trigger display).
-  let currentPowerLevel = $derived.by(() => {
-    const currentId = ai?.state.model_id ?? modelId;
-    if (!currentId) return 0;
-    const modelInfo = aiModels.getModelByModelId(currentId);
-    return modelInfo?.power_level ?? 0;
+  let currentModel = $derived.by<AiModel | undefined>(() => {
+    const current_id = ai?.state.model_id ?? modelId;
+    return current_id ? aiModels.getModelByModelId(current_id) : undefined;
   });
 
-  // Map power level (1-5) to the matching Tailwind bg color class for the circle indicator.
-  const POWER_LEVEL_CIRCLE_COLORS: Record<number, string> = {
-    1: 'bg-red-500',
-    2: 'bg-orange-500',
-    3: 'bg-yellow-400',
-    4: 'bg-lime-400',
-    5: 'bg-green-500',
+  // Panel lifecycle phase exposed as data-ai-phase on the root element —
+  // lets E2E tests (and debugging) observe the real state machine instead
+  // of polling for individual testids.
+  let aiPhase = $derived(
+    !ai
+      ? 'init'
+      : ai.state.error === 'webgpu_required'
+        ? 'webgpu_required'
+        : ai.state.is_loading_model
+          ? `loading_${ai.state.load_phase ?? 'model'}`
+          : ai.state.error
+            ? 'error'
+            : ai.state.is_ready
+              ? 'ready'
+              : 'idle'
+  );
+
+  // Rank of the currently active model — drives the trigger circle color
+  // via the continuous red→green interpolation (rankColor).
+  let currentRank = $derived(currentModel?.rank ?? null);
+
+  // Sort criteria for the model dropdown. Fixed direction per key:
+  // metrics descending (best first), alphabetic ascending A→Z.
+  type ModelSortKey = 'rank' | 'alphabetic' | 'speed' | 'quality' | 'power';
+  let modelSortBy = $state<ModelSortKey>('rank');
+
+  const SORT_LABEL_KEYS: Record<ModelSortKey, string> = {
+    rank: 'app.smart.regex.ai.model_details.rank',
+    alphabetic: 'app.smart.regex.ai.sort.alphabetic',
+    speed: 'app.smart.regex.ai.model_details.speed',
+    quality: 'app.smart.regex.ai.model_details.test_score',
+    power: 'app.smart.regex.ai.model_details.power',
   };
 
-  // Circle color for the current model's power level.
-  let currentPowerColor = $derived(currentPowerLevel > 0 ? POWER_LEVEL_CIRCLE_COLORS[currentPowerLevel] ?? '' : '');
+  const modelScoreCache = new Map<string, ReturnType<typeof summarizeTestScores>>();
+  function scoresFor(model: AiModel) {
+    let s = modelScoreCache.get(model.model_id);
+    if (!s) {
+      s = summarizeTestScores(model.test_scores);
+      modelScoreCache.set(model.model_id, s);
+    }
+    return s;
+  }
+
+  let sortedModels = $derived.by<AiModel[]>(() => {
+    const models = [...availableModels];
+    switch (modelSortBy) {
+      case 'alphabetic':
+        return models.sort((a, b) => a.name.localeCompare(b.name));
+      case 'speed':
+        return models.sort((a, b) => (scoresFor(b).speed ?? -1) - (scoresFor(a).speed ?? -1));
+      case 'quality':
+        return models.sort((a, b) => (scoresFor(b).score ?? -1) - (scoresFor(a).score ?? -1));
+      case 'power':
+        return models.sort((a, b) => (b.power_level ?? -1) - (a.power_level ?? -1));
+      case 'rank':
+      default:
+        return models.sort((a, b) => (b.rank ?? -1) - (a.rank ?? -1));
+    }
+  });
+
+  /**
+   * Value of the active sort metric for a model row (all metrics are 0-5).
+   * Null for rank/alphabetic — those rows show only the rank meter.
+   */
+  function sortMetricValue(model: AiModel): number | null {
+    switch (modelSortBy) {
+      case 'speed':
+        return scoresFor(model).speed;
+      case 'quality':
+        return scoresFor(model).score;
+      case 'power':
+        return model.power_level;
+      default:
+        return null;
+    }
+  }
+
+  let currentModelScores = $derived(summarizeTestScores(currentModel?.test_scores));
+  let currentModelCacheSize = $derived(currentModel ? modelCache.state.model_sizes[currentModel.model_id] ?? 0 : 0);
+
+  function formatMegabytes(value: number | null | undefined): string {
+    if (!value || value <= 0) return '—';
+    return value >= 1024 ? `${(value / 1024).toFixed(1)} GB` : `${Math.round(value)} MB`;
+  }
+
+  function formatBytes(value: number): string {
+    if (value <= 0) return '—';
+    return value >= 1024 ** 3 ? `${(value / 1024 ** 3).toFixed(1)} GB` : `${Math.round(value / 1024 ** 2)} MB`;
+  }
+
+  function refreshCurrentModelCache() {
+    if (!currentModel) return;
+    void modelCache.refreshCacheStatus([currentModel.model_id]);
+  }
 
   /**
    * Switch to a different local model at runtime.
@@ -145,23 +236,27 @@
         modelId = null;
         return;
       }
-      modelId = configuredId;
+
+      // Check for a pending model switch from sessionStorage (set by
+      // switchModel before page reload). If present, use that model ID
+      // instead of the configured default.
+      let switchModelId: string | null = null;
+      try {
+        switchModelId = sessionStorage.getItem('regex-ai-switch-model');
+        if (switchModelId) sessionStorage.removeItem('regex-ai-switch-model');
+      } catch { /* sessionStorage unavailable */ }
+
+      modelId = switchModelId ?? configuredId;
 
       // 2. Load the model catalog from the BE entity (useAiModels).
       //    The dropdown + power levels are now backend-driven.
       await aiModels.ensureLoaded();
-      availableModels = aiModels.getEnabledModels().map((m) => ({
-        model_id: m.model_id,
-        name: m.name,
-        label_key: m.label_key,
-        description_key: m.description_key,
-        power_level: m.power_level,
-      }));
+      availableModels = aiModels.getEnabledModels();
 
-      // 3. Create the AI composable with the configured model ID.
-      ai = useRegexAi(configuredId, current_regex, current_flags);
+      // 3. Create the AI composable with the resolved model ID.
+      ai = useRegexAi(modelId, current_regex, current_flags);
 
-      // 4. Initialize the WebLLM engine.
+      // 4. Initialize the engine.
       void ai.init();
     })();
 
@@ -355,7 +450,7 @@
   </Button>
 {/snippet}
 
-<div class="flex h-full flex-col">
+<div class="flex h-full flex-col" data-testid="smart-regex-ai-panel" data-ai-phase={aiPhase}>
   <SheetHeader title={headerTitle} actions={headerActions} />
 
   <!-- Body -->
@@ -389,20 +484,70 @@
           <div class="flex flex-col items-center justify-center gap-3 py-8">
             <BrainCircuit class="size-8 text-primary ai-icon-pulse" />
             <p class="text-sm text-muted-foreground" data-testid="smart-regex-ai-loading">
-              {$t('app.smart.regex.ai.loadingModel', { progress: ai.state.load_progress })}
+              {#if ai.state.load_phase === 'vram'}
+                {$t('app.smart.regex.ai.loadingVram')} ({(ai.state.vram_elapsed_ms / 1000).toFixed(1)}s)
+              {:else}
+                {$t('app.smart.regex.ai.loadingModel', { progress: ai.state.load_progress })}
+              {/if}
             </p>
-            <div class="w-full max-w-xs bg-muted rounded-full h-2 overflow-hidden">
-              <div
-                class="h-full rounded-full animate-gradient-pan transition-all duration-300"
-                style="width: {ai.state.load_progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
-                data-testid="smart-regex-ai-progress-bar"
-              ></div>
-            </div>
+            {#if ai.state.load_phase === 'vram'}
+              <!-- VRAM phase: time-based determinate progress bar (capped at 95% until load_complete) -->
+              <div class="w-full max-w-xs bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-150"
+                  style="width: {ai.state.vram_progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6);"
+                  data-testid="smart-regex-ai-progress-bar"
+                ></div>
+              </div>
+            {:else}
+              <!-- Download phase: determinate progress bar -->
+              <div class="w-full max-w-xs bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  class="h-full rounded-full animate-gradient-pan transition-all duration-300"
+                  style="width: {ai.state.load_progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
+                  data-testid="smart-regex-ai-progress-bar"
+                ></div>
+              </div>
+            {/if}
+            {#if ai.state.load_phase === 'downloading' && ai.state.total_files > 0}
+              <p class="text-xs text-muted-foreground" data-testid="smart-regex-ai-loading-files">
+                {ai.state.completed_files}/{ai.state.total_files} files
+                {#if ai.state.slowest_file && ai.state.slowest_file.progress < 100}
+                  — {ai.state.slowest_file.name.replace(/^onnx\//, '')}
+                {/if}
+              </p>
+              <!-- Per-file progress bars -->
+              <div class="w-full max-w-xs space-y-1" data-testid="smart-regex-ai-file-progress">
+                {#each Object.entries(ai.state.file_progress) as [file, progress] (file)}
+                  <div class="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span class="truncate flex-1">{file.replace(/^onnx\//, '')}</span>
+                    <div class="flex-1 bg-muted rounded-full h-1 overflow-hidden">
+                      <div
+                        class="h-full rounded-full bg-primary/60 transition-all duration-200"
+                        style="width: {progress}%"
+                      ></div>
+                    </div>
+                    <span class="tabular-nums w-8 text-right">{Math.round(progress)}%</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
             {#if modelDisplayName}
               <p class="text-xs text-muted-foreground" data-testid="smart-regex-ai-loading-model-name">
                 {modelDisplayName}
               </p>
             {/if}
+            <!-- Cancel download CTA -->
+            <Button
+              size="sm"
+              variant="outline"
+              onclick={() => { void ai?.cancelLoad(); }}
+              class="mt-1 gap-1.5 text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
+              data-testid="smart-regex-ai-cancel-load"
+            >
+              <CircleStop class="size-3.5" />
+              {$t('app.smart.regex.ai.cancelLoad')}
+            </Button>
           </div>
         {:else if ai.state.is_ready}
           <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
@@ -599,21 +744,32 @@
                       <p class="text-xs text-muted-foreground px-1">{choice.description}</p>
                     {/if}
 
-                    <!-- Deterministic bullet list breakdown -->
+                    <!-- Detailed breakdown (collapsible accordion, closed by default) -->
                     {#if breakdown.length > 0}
-                      <div class="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
-                        <ul class="space-y-1">
-                          {#each breakdown as part, j (j)}
-                            <li class="flex items-start gap-2 text-xs">
-                              <span class="text-muted-foreground pt-0.5 shrink-0">•</span>
-                              <code class="shrink-0 rounded bg-background px-1.5 py-0.5 font-mono text-foreground border border-border min-w-[2rem] text-center">
-                                {part.fragment}
-                              </code>
-                              <span class="text-muted-foreground pt-0.5">{$t(part.meaning_key, part.meaning_params ?? {})}</span>
-                            </li>
-                          {/each}
-                        </ul>
-                      </div>
+                      <Accordion.Root type="single" class="w-full" data-testid={`smart-regex-ai-breakdown-${i}`}>
+                        <Accordion.Item value={`breakdown-${i}`}>
+                          <Accordion.Trigger class="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5 hover:text-foreground transition-colors">
+                            <AiIcon size={12} no_animation />
+                            <span>{$t('app.smart.regex.ai.breakdown')}</span>
+                            <ChevronDown class="size-3.5 transition-transform duration-200 accordion-chevron" />
+                          </Accordion.Trigger>
+                          <Accordion.Content class="pb-1">
+                            <div class="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
+                              <ul class="space-y-1">
+                                {#each breakdown as part, j (j)}
+                                  <li class="flex items-start gap-2 text-xs">
+                                    <span class="text-muted-foreground pt-0.5 shrink-0">•</span>
+                                    <code class="shrink-0 rounded bg-background px-1.5 py-0.5 font-mono text-foreground border border-border min-w-[2rem] text-center">
+                                      {part.fragment}
+                                    </code>
+                                    <span class="text-muted-foreground pt-0.5">{$t(part.meaning_key, part.meaning_params ?? {})}</span>
+                                  </li>
+                                {/each}
+                              </ul>
+                            </div>
+                          </Accordion.Content>
+                        </Accordion.Item>
+                      </Accordion.Root>
                     {/if}
                   </div>
                 {/each}
@@ -659,8 +815,9 @@
       {/if}
     </div>
 
-    <!-- Input area (only when ready and no WebGPU error) -->
-    {#if ai && ai.state.is_ready && ai.state.error !== 'webgpu_required'}
+    <!-- Input area (when ready OR on load error — keep selectors visible so
+         the user can switch model; textarea is disabled when not ready) -->
+    {#if ai && ai.state.error !== 'webgpu_required' && (ai.state.is_ready || ai.state.error)}
       <!-- Disclaimer -->
       <div class="px-4 pb-1.5">
         <p class="flex items-center justify-center gap-1 text-[11px] text-muted-foreground" data-testid="smart-regex-ai-disclaimer">
@@ -681,15 +838,13 @@
               bind:value={inputText}
               onkeydown={handleKeydown}
               placeholder={$t('app.smart.regex.ai.placeholder')}
-              class="min-h-[2.5rem] max-h-[5.5rem] overflow-y-auto resize-none !text-xs !bg-background !border !border-border/60 rounded-none !bg-none focus-visible:!ring-0 focus-visible:!ring-offset-0 !py-2.5"
+              disabled={!ai.state.is_ready}
+              class="min-h-[2.5rem] max-h-[5.5rem] overflow-y-auto resize-none !text-xs !bg-background !border !border-border/60 rounded-none !bg-none focus-visible:!ring-0 focus-visible:!ring-offset-0 !py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="smart-regex-ai-input"
             />
 
-            <!-- CTA row: source dropdown + model dropdown (left) + FAB send (right) -->
-            <div class="flex items-center justify-between gap-1 px-2 pb-1 pt-1">
-              <!-- Left group: source dropdown + model dropdown -->
-              <div class="flex items-center gap-0.5">
-                <!-- Source dropdown: Local (default) / Backend (coming soon) -->
+            <div class="space-y-0.5 px-2 pb-1 pt-1">
+              <div class="flex items-center justify-between gap-1">
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger
                     class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
@@ -732,23 +887,79 @@
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
 
-                <!-- Model dropdown: switch between the 3 local models -->
+                <div class="flex items-center gap-1.5">
+                  <Popover.Root>
+                    <Popover.Trigger
+                      class="inline-flex items-center justify-center rounded-md p-1 text-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+                      title={$t('app.smart.regex.ai.cache.title')}
+                      aria-label={$t('app.smart.regex.ai.cache.title')}
+                      data-testid="smart-regex-ai-cache-trigger"
+                    >
+                      <HardDrive class="size-3.5" />
+                    </Popover.Trigger>
+                    <Popover.Content align="end" class="w-72 p-0">
+                      <ModelCachePanel
+                        active_model_id={ai?.state.model_id ?? modelId}
+                        model_ranks={Object.fromEntries(availableModels.map((m) => [m.model_id, m.rank]))}
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
+
+                  <Button
+                    size="icon"
+                    onclick={handleSend}
+                    disabled={!inputText.trim() || ai.state.is_streaming || !ai.state.is_ready}
+                    class="size-7 rounded-full shadow-md !bg-white !bg-none hover:!bg-white/90 border border-border/40 text-foreground disabled:opacity-40 disabled:shadow-none"
+                    data-testid="smart-regex-ai-send"
+                  >
+                    <Send class="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-1 pt-0.5">
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger
-                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
+                    class="min-w-0 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
                     data-testid="smart-regex-ai-model-trigger"
                   >
-                    <BrainCircuit class="size-3.5" />
-                    <span class="font-medium">
-                      {modelDisplayName || '—'}
-                    </span>
-                    {#if currentPowerColor}
-                      <span class="size-2 rounded-full {currentPowerColor} ring-1 ring-foreground/20" data-testid="smart-regex-ai-power-circle"></span>
+                    <BrainCircuit class="size-3.5 shrink-0" />
+                    <span class="truncate font-medium">{modelDisplayName || '—'}</span>
+                    {#if currentRank}
+                      <span
+                        class="size-2 shrink-0 rounded-full ring-1 ring-foreground/20"
+                        style="background: {rankColor(currentRank)};"
+                        data-testid="smart-regex-ai-power-circle"
+                      ></span>
                     {/if}
-                    <ChevronDown class="size-3" />
+                    <ChevronDown class="size-3 shrink-0" />
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start" class="min-w-[12rem]">
-                    {#each availableModels as model (model.model_id)}
+                    <DropdownMenu.Sub>
+                      <DropdownMenu.SubTrigger class="text-xs" data-testid="smart-regex-ai-sort-trigger">
+                        <ArrowDownWideNarrow class="size-3.5" />
+                        <span>{$t('app.smart.regex.ai.sort.by')}: {$t(SORT_LABEL_KEYS[modelSortBy])}</span>
+                      </DropdownMenu.SubTrigger>
+                      <DropdownMenu.SubContent>
+                        <DropdownMenu.RadioGroup bind:value={modelSortBy}>
+                          {#each ['rank', 'alphabetic', 'speed', 'quality', 'power'] as key (key)}
+                            <DropdownMenu.RadioItem
+                              value={key}
+                              class="text-xs"
+                              data-testid={`smart-regex-ai-sort-${key}`}
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                modelSortBy = key as ModelSortKey;
+                              }}
+                            >
+                              {$t(SORT_LABEL_KEYS[key as ModelSortKey])}
+                            </DropdownMenu.RadioItem>
+                          {/each}
+                        </DropdownMenu.RadioGroup>
+                      </DropdownMenu.SubContent>
+                    </DropdownMenu.Sub>
+                    <DropdownMenu.Separator />
+                    {#each sortedModels as model (model.model_id)}
                       <DropdownMenu.Item
                         onclick={() => handleSwitchModel(model.model_id)}
                         disabled={ai.state.is_loading_model}
@@ -758,49 +969,118 @@
                         )}
                         data-testid={`smart-regex-ai-model-${model.model_id}`}
                       >
+                        {@const metric = sortMetricValue(model)}
                         <div class="flex items-center gap-2">
                           <ModelIcon model_id={model.model_id} class="size-4 shrink-0" />
                           <span>{model.name}</span>
                         </div>
-                        {#if model.power_level}
-                          <PowerLevelBars level={model.power_level} />
-                        {/if}
+                        <div class="flex flex-col gap-0.5">
+                          {#if metric !== null}
+                            <RankMeter rank={metric} label={$t(SORT_LABEL_KEYS[modelSortBy])} />
+                            <RankMeter rank={model.rank} label={$t(SORT_LABEL_KEYS.rank)} score_below />
+                          {:else}
+                            <RankMeter rank={model.rank} />
+                          {/if}
+                        </div>
                       </DropdownMenu.Item>
                     {/each}
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
-              </div>
 
-              <!-- Cache management popover + FAB send (right) -->
-              <div class="flex items-center gap-1.5">
-                <!-- Cache management -->
                 <Popover.Root>
                   <Popover.Trigger
-                    class="inline-flex items-center justify-center rounded-md p-1 text-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
-                    title={$t('app.smart.regex.ai.cache.title')}
-                    aria-label={$t('app.smart.regex.ai.cache.title')}
-                    data-testid="smart-regex-ai-cache-trigger"
+                    class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+                    title={$t('app.smart.regex.ai.model_details.title')}
+                    aria-label={$t('app.smart.regex.ai.model_details.title')}
+                    onclick={refreshCurrentModelCache}
+                    data-testid="smart-regex-ai-model-details-trigger"
                   >
-                    <HardDrive class="size-3.5" />
+                    <Microchip class="size-3.5" />
                   </Popover.Trigger>
                   <Popover.Content align="end" class="w-72 p-0">
-                    <ModelCachePanel
-                      active_model_id={ai?.state.model_id ?? modelId}
-                      model_power_levels={Object.fromEntries(availableModels.map((m) => [m.model_id, m.power_level]))}
-                    />
+                    {#if currentModel}
+                      <div class="space-y-3 p-3" data-testid="smart-regex-ai-model-details">
+                        <div class="flex items-start gap-2 border-b border-border/50 pb-2">
+                          <ModelIcon model_id={currentModel.model_id} class="mt-0.5 size-5 shrink-0" />
+                          <div class="min-w-0">
+                            <p class="truncate text-xs font-semibold">{currentModel.name}</p>
+                            <p class="truncate font-mono text-[10px] text-muted-foreground">{currentModel.model_id}</p>
+                          </div>
+                        </div>
+                        <dl class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-xs">
+                          <dt class="text-muted-foreground">{$t('app.smart.regex.ai.model_details.engine')}</dt>
+                          <dd class="font-medium">{currentModel.engine_type}</dd>
+                          <dt class="text-muted-foreground">{$t('app.smart.regex.ai.model_details.quantization')}</dt>
+                          <dd class="font-medium">{currentModel.dtype ?? '—'}</dd>
+                          <dt class="text-muted-foreground">{$t('app.smart.regex.ai.model_details.download_size')}</dt>
+                          <dd class="font-medium">{formatMegabytes(currentModel.download_size_mb)}</dd>
+                          <dt class="text-muted-foreground">{$t('app.smart.regex.ai.model_details.cache_size')}</dt>
+                          <dd class="font-medium">{formatBytes(currentModelCacheSize)}</dd>
+                          <dt class="text-muted-foreground">{$t('app.smart.regex.ai.model_details.vram_size')}</dt>
+                          <dd class="font-medium">{formatMegabytes(currentModel.vram_mb)}</dd>
+                        </dl>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                          <span
+                            class="flex items-center gap-1"
+                            title={$t('system.entities.ai_model.fields.enable_thinking')}
+                          >
+                            {#if currentModel.enable_thinking}
+                              <BrainCircuit class="size-3" />
+                              <span>{$t('system.entities.ai_model.thinking.true')}</span>
+                            {:else}
+                              <Cpu class="size-3" />
+                              <span>{$t('system.entities.ai_model.thinking.false')}</span>
+                            {/if}
+                          </span>
+                          <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.temperature')}>
+                            <Thermometer class="size-3" />
+                            T={currentModel.temperature}
+                          </span>
+                          <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.top_p')}>
+                            <Gauge class="size-3" />
+                            top_p={currentModel.top_p}
+                          </span>
+                          <span
+                            class="flex items-center gap-1"
+                            title={$t('system.entities.ai_model.fields.max_tokens')}
+                          >
+                            <Brackets class="size-3" />
+                            max_tokens={currentModel.max_tokens}
+                          </span>
+                          <span
+                            class="flex items-center gap-1"
+                            title={$t('system.entities.ai_model.fields.repetition_penalty')}
+                          >
+                            <Gavel class="size-3" />
+                            rep_penalty={currentModel.repetition_penalty}
+                          </span>
+                        </div>
+                        <div class="flex items-start justify-between gap-1 border-t border-border/50 pt-2" data-testid="smart-regex-ai-model-kpis">
+                          <ScoreGauge
+                            value={currentModel.power_level}
+                            size={42}
+                            label={$t('app.smart.regex.ai.model_details.power')}
+                          />
+                          <ScoreGauge
+                            value={currentModelScores.score}
+                            size={42}
+                            label={$t('app.smart.regex.ai.model_details.test_score')}
+                          />
+                          <ScoreGauge
+                            value={currentModelScores.speed}
+                            size={42}
+                            label={$t('app.smart.regex.ai.model_details.speed')}
+                          />
+                          <ScoreGauge
+                            value={currentModel.rank}
+                            size={42}
+                            label={$t('app.smart.regex.ai.model_details.rank')}
+                          />
+                        </div>
+                      </div>
+                    {/if}
                   </Popover.Content>
                 </Popover.Root>
-
-                <!-- FAB send button — solid bg to contrast with the wrapper gradient -->
-                <Button
-                  size="icon"
-                onclick={handleSend}
-                disabled={!inputText.trim() || ai.state.is_streaming}
-                class="size-7 rounded-full shadow-md !bg-white !bg-none hover:!bg-white/90 border border-border/40 text-foreground disabled:opacity-40 disabled:shadow-none"
-                data-testid="smart-regex-ai-send"
-              >
-                <Send class="size-3.5" />
-              </Button>
               </div>
             </div>
           </div>

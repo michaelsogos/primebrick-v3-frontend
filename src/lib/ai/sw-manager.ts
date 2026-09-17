@@ -1,47 +1,71 @@
 /**
  * SW manager for the SmartRegexInput AI model cache.
  *
- * Registers the service worker on app load. The SW intercepts
- * huggingface.co fetches and caches them via the Cache API
- * (cache-first strategy) for faster re-downloads.
+ * The Service Worker layer is RETIRED: Transformers.js already caches model
+ * files via the Cache API (env.useBrowserCache → 'transformers-cache'), and
+ * the old SW ('transformers-models-v1') duplicated every downloaded byte.
  *
- * Model weights are cached by WebLLM's internal mechanism (IndexedDB)
- * and by the Service Worker (Cache API for huggingface.co responses).
- * Cache cleanup is handled by the `useModelCache` composable.
+ * registerRegexAiSw() now performs a one-time cleanup: it unregisters any
+ * existing /sw-regex-ai.js registration and deletes the redundant SW-owned
+ * stores. The updated sw-regex-ai.js also self-cleans on activate, so
+ * clients that still run the old SW converge on the next navigation.
  */
 
 const SW_PATH = '/sw-regex-ai.js';
+const SW_OWNED_CACHE_PREFIXES = ['transformers-models-', 'webllm-models-'];
 
-let sw_registered = false;
+let sw_cleaned = false;
 
 /**
- * Register the SmartRegexInput service worker.
- * Called on app load to enable cache-first HTTP interception for model files.
- * Safe to call multiple times — only registers once.
+ * Unregister the legacy model-cache service worker and delete its stores.
+ * Called on app load. Safe to call multiple times — only runs once.
  */
 export async function registerRegexAiSw(): Promise<void> {
-  if (sw_registered) return;
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (sw_cleaned) return;
+  if (typeof navigator === 'undefined' || typeof caches === 'undefined') return;
+  sw_cleaned = true;
 
   try {
-    await navigator.serviceWorker.register(SW_PATH, { scope: '/' });
-    sw_registered = true;
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        regs
+          .filter((reg) => reg.active?.scriptURL.endsWith(SW_PATH))
+          .map((reg) => reg.unregister()),
+      );
+    }
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((name) => SW_OWNED_CACHE_PREFIXES.some((p) => name.startsWith(p)))
+        .map((name) => caches.delete(name)),
+    );
   } catch {
-    // SW registration failure is non-fatal — WebLLM will still work,
-    // just without the cache-first HTTP interception.
-    sw_registered = false;
+    // Cleanup failure is non-fatal — Transformers.js caching works regardless.
   }
 }
 
 /**
- * Check if a specific WebLLM model is already cached in the browser (IndexedDB).
- *
- * Returns true if the model is cached and ready for instant loading.
+ * Check if a specific Transformers.js model is already cached in the browser.
+ * Scans the Cache API for entries matching the model_id.
  */
 export async function isModelCached(model_id: string): Promise<boolean> {
+  if (typeof caches === 'undefined') return false;
   try {
-    const webllm = await import('@mlc-ai/web-llm');
-    return await webllm.hasModelInCache(model_id);
+    const cacheNames = await caches.keys();
+    for (const name of cacheNames) {
+      if (!name.includes('transformers') && !name.includes('onnx') && !name.includes('hf')) {
+        continue;
+      }
+      const cache = await caches.open(name);
+      const keys = await cache.keys();
+      for (const req of keys) {
+        if (req.url.includes(model_id.split('#')[0])) {
+          return true;
+        }
+      }
+    }
+    return false;
   } catch {
     return false;
   }

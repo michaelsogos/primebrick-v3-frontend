@@ -208,7 +208,7 @@ implications.
 
 | Component | Purpose | AI Engine | Model |
 |----------|---------|-----------|-------|
-| `SmartRegexInput` | Regex pattern input with AI assistant | WebLLM (WebGPU) | Config-driven via `ai_assistant_model` config row (default: Qwen2.5-1.5B-Instruct q4f16) |
+| `SmartRegexInput` | Regex pattern input with AI assistant | ONNX Runtime Web (WebGPU) | Config-driven via `ai_assistant_model` config row (default: granite-4.0-micro-ONNX-web q4f16) |
 
 ### Requirements for Smart components
 

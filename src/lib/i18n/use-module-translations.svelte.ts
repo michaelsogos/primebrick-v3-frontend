@@ -4,8 +4,9 @@
  * Called from `(app)/+layout.svelte`. Loads translations for the current
  * module + language on route change and language change.
  *
- * - Cache-first: checks localStorage (5-minute TTL)
- * - Falls back to API: GET /api/v1/system/translations/:module/:language
+ * - Stale-while-revalidate: paints localStorage dict instantly (5-min TTL),
+ *   then always fetches — apiFetch sends If-None-Match, so an unchanged dict
+ *   costs a 304 and a changed dict updates localStorage on the spot
  * - In-memory dedup per session with TTL (LOADED_MODULES Map)
  * - Public pages use fetchPublicTranslations instead (no auth)
  * - ETag: apiFetch sends If-None-Match and handles 304 transparently
@@ -38,22 +39,25 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
   const cacheKey = `${moduleId}:${lang}`;
   if (isLoadedFresh(cacheKey)) return;
 
-  // Check localStorage
+  // Instant paint from localStorage, then ALWAYS revalidate with the BE:
+  // apiFetch sends If-None-Match (pb:etag store) — a 304 means the dict is
+  // unchanged, a 200 returns the fresh dict and updates both caches.
+  // This makes F5 always converge to the latest server-side translations,
+  // regardless of the localStorage TTL.
   const cached = getCachedModuleDict(moduleId, lang);
   if (cached) {
     mergeModuleDict(lang, cached.dict);
-    LOADED_MODULES.set(cacheKey, Date.now());
-    return;
   }
 
-  // Fetch from API (apiFetch handles ETag/304 transparently)
   try {
     const dict = await fetchModuleTranslations(moduleId, lang);
     mergeModuleDict(lang, dict);
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
-    console.error(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
+    if (!cached) {
+      console.error(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
+    }
   }
 }
 
@@ -65,10 +69,9 @@ export async function loadPublicTranslations(lang: UiLang): Promise<void> {
   const cached = getCachedModuleDict('app', lang);
   if (cached) {
     mergeModuleDict(lang, cached.dict);
-    LOADED_MODULES.set(cacheKey, Date.now());
-    return;
   }
 
+  // Always revalidate — same ETag flow as ensureModuleTranslations.
   try {
     const dict = await fetchPublicTranslations(lang);
     mergeModuleDict(lang, dict);

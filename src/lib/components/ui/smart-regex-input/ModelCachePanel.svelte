@@ -11,17 +11,17 @@
    */
   import { t } from '$lib/i18n';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
-  import { useModelCache } from '$lib/ai/use-model-cache.svelte';
+  import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import PowerLevelBars from '$lib/components/ui/smart-regex-input/PowerLevelBars.svelte';
+  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import { Trash2, RefreshCw, HardDrive, AlertTriangle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { onMount } from 'svelte';
 
   /** The model ID currently loaded in VRAM (null if none). */
-  let { active_model_id, model_power_levels }: {
+  let { active_model_id, model_ranks }: {
     active_model_id: string | null;
-    model_power_levels: Record<string, number>;
+    model_ranks: Record<string, number | null>;
   } = $props();
 
   const aiModels = useAiModels();
@@ -101,9 +101,7 @@
           <div class="min-w-0">
             <div class="text-xs font-medium truncate">{model.name}</div>
             <div class="flex items-center gap-1.5">
-              {#if model_power_levels[model.model_id]}
-                <PowerLevelBars level={model_power_levels[model.model_id]} />
-              {/if}
+              <RankMeter rank={model_ranks[model.model_id]} />
               <span class="text-[9px] {is_cached ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}">
                 {#if is_cached}
                   {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
@@ -140,7 +138,8 @@
       {#each Object.entries(cache.state.orphaned_models) as [model_id, size] (model_id)}
         <div class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 bg-yellow-500/5">
           <div class="min-w-0">
-            <div class="text-xs font-medium truncate font-mono">{model_id}</div>
+            <div class="text-xs font-medium truncate">{friendlyModelName(model_id)}</div>
+            <div class="text-[9px] text-muted-foreground truncate font-mono">{model_id}</div>
             <span class="text-[9px] text-green-600 dark:text-green-400">
               {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
             </span>
