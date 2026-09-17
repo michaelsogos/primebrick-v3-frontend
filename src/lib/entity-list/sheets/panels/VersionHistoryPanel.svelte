@@ -20,7 +20,7 @@
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
   import * as Tooltip from "$lib/components/ui/tooltip";
-  import { createHighlighter } from 'shiki';
+  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
 
   interface $$Props {
     entity: string;
@@ -50,36 +50,6 @@
   let versionHistoryHasMore = $state<boolean>(false);
   let expandedEntries = $state<Set<number>>(new Set());
 
-  // Shiki highlighter for JSONB values — lazily initialized, reused across renders.
-  // Same pattern as rfc-error-dialog.svelte.
-  let shikiHighlighter: any = $state(null);
-  const jsonHighlightCache = new Map<string, string>();
-
-  async function getShikiHighlighter() {
-    if (!shikiHighlighter) {
-      shikiHighlighter = await createHighlighter({
-        themes: ['light-plus'],
-        langs: ['json'],
-      });
-    }
-    return shikiHighlighter;
-  }
-
-  async function highlightJson(value: any): Promise<string> {
-    const jsonString = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-    if (jsonHighlightCache.has(jsonString)) return jsonHighlightCache.get(jsonString)!;
-    try {
-      const hl = await getShikiHighlighter();
-      const html = hl.codeToHtml(jsonString, { lang: 'json', theme: 'light-plus' });
-      jsonHighlightCache.set(jsonString, html);
-      return html;
-    } catch {
-      return `<pre class="text-xs font-mono whitespace-pre-wrap">${jsonString}</pre>`;
-    }
-  }
-
-  // Track highlighted HTML per delta entry — keyed by entry.id + field name + old/new
-  let jsonHtmlCache = $state<Record<string, string>>({});
 
   function toggleEntryExpanded(entryId: number) {
     if (expandedEntries.has(entryId)) {
@@ -417,35 +387,6 @@
     loadVersionHistory();
   });
 
-  // Highlight JSONB values with shiki when version history data changes.
-  // Populates jsonHtmlCache with highlighted HTML for each JSON field in each entry.
-  $effect(() => {
-    if (versionHistoryData.length === 0) return;
-    for (const entry of versionHistoryData) {
-      if (entry.action === 'HARD_DELETE') continue;
-      const descs = formatAuditDelta(entry.delta, entry.action);
-      for (let i = 0; i < descs.length; i++) {
-        const d = descs[i] as any;
-        if (!d.isJson) continue;
-        if (d.jsonValue !== undefined) {
-          const key = `${entry.id}:${i}:new`;
-          if (!jsonHtmlCache[key]) {
-            highlightJson(d.jsonValue).then((html) => {
-              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
-            });
-          }
-        }
-        if (d.oldJsonValue !== undefined) {
-          const key = `${entry.id}:${i}:old`;
-          if (!jsonHtmlCache[key]) {
-            highlightJson(d.oldJsonValue).then((html) => {
-              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
-            });
-          }
-        }
-      }
-    }
-  });
 </script>
 
 {#snippet headerActions()}
@@ -569,14 +510,11 @@
                                 {/if}
                               {/if}
                               {#if delta.isJson && delta.oldJsonValue !== undefined}
-                                {@const cacheKey = `${entry.id}:${i}:old`}
-                                {#if jsonHtmlCache[cacheKey]}
-                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
-                                    {@html jsonHtmlCache[cacheKey]}
-                                  </div>
-                                {:else}
-                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
-                                {/if}
+                                <JsonCodeBlock
+                                  code={delta.oldJsonValue}
+                                  maxHeight="15rem"
+                                  class="w-full mt-1"
+                                />
                               {/if}
                               {#if delta.toOperator}
                                 <span class="text-primary">{delta.toOperator}</span>
@@ -607,14 +545,11 @@
                                 {/if}
                               {/if}
                               {#if delta.isJson && delta.jsonValue !== undefined}
-                                {@const cacheKey = `${entry.id}:${i}:new`}
-                                {#if jsonHtmlCache[cacheKey]}
-                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
-                                    {@html jsonHtmlCache[cacheKey]}
-                                  </div>
-                                {:else}
-                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
-                                {/if}
+                                <JsonCodeBlock
+                                  code={delta.jsonValue}
+                                  maxHeight="15rem"
+                                  class="w-full mt-1"
+                                />
                               {/if}
                             </div>
                           </div>

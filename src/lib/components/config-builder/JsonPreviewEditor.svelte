@@ -2,6 +2,7 @@
   import { t } from '$lib/i18n';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Switch } from '$lib/components/ui/switch';
+  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
 
   let { builder }: { builder: ReturnType<typeof useTypeConfigBuilder> } = $props();
@@ -15,6 +16,16 @@
   });
 
   const placeholderJson = '{"validation":{"required":true,"rules":{}}}';
+
+  // Pretty-printed view of builder.json (compact storage format → indented preview).
+  // Falls back to the raw string when the JSON can't be parsed.
+  const previewJson = $derived.by(() => {
+    try {
+      return JSON.parse(builder.json);
+    } catch {
+      return builder.json;
+    }
+  });
 </script>
 
 <div class="space-y-3 border-t pt-4">
@@ -61,7 +72,14 @@
         {previewOpen ? '▼' : '▶'} {$t('system.settings.config.typeConfig.jsonPreview')}
       </button>
       {#if previewOpen}
-        <pre class="rounded-md bg-muted p-3 text-xs font-mono overflow-auto max-h-48" data-testid="tcb-json-preview">{builder.json}</pre>
+        <JsonCodeBlock
+          code={previewJson}
+          lineNumbers
+          copyable
+          minRows={10}
+          maxHeight="24rem"
+          data-testid="tcb-json-preview"
+        />
       {/if}
     </div>
   {/if}

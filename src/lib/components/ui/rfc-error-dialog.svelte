@@ -12,8 +12,8 @@
   import Info from '@lucide/svelte/icons/info'
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import JsonTableViewer from './JsonTableViewer.svelte';
+  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
   import { onMount } from 'svelte';
-  import { createHighlighter } from 'shiki';
 
   type RFC7807Error = {
     id?: string;
@@ -50,38 +50,6 @@
   } = $props();
 
   let previewMode = $state('aesthetic');
-  let highlighter: any = $state(null);
-  let highlightedJson = $state('');
-
-  async function highlightJson() {
-    if (!error) return;
-    
-    try {
-      if (!highlighter) {
-        highlighter = await createHighlighter({
-          themes: ['light-plus'],
-          langs: ['json']
-        });
-      }
-
-      const jsonString = JSON.stringify(error, null, 2);
-      
-      highlightedJson = highlighter.codeToHtml(jsonString, {
-        lang: 'json',
-        theme: 'light-plus'
-      });
-    } catch (e) {
-      console.error('Shiki highlighting error:', e);
-      // Fallback to plain text if highlighting fails
-      highlightedJson = `<pre class="text-xs">${JSON.stringify(error, null, 2)}</pre>`;
-    }
-  }
-
-  $effect(() => {
-    if (error) {
-      highlightJson();
-    }
-  });
 
   function closeDialog() {
     open = false;
@@ -148,9 +116,7 @@
       <!-- Main content area -->
       <div class="flex-1 overflow-auto min-h-0 my-4">
         {#if previewMode === 'raw'}
-          <div class="text-xs bg-muted p-4 rounded-lg overflow-auto h-full">
-            {@html highlightedJson}
-          </div>
+          <JsonCodeBlock code={error} copyable class="h-full rounded-lg" />
         {:else}
           <div class="text-xs border border-neutral-300 shadow-inner rounded-lg overflow-auto h-full">
             {#if error.extra?.issues}
