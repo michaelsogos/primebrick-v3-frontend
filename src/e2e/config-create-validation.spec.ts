@@ -22,7 +22,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/admin-login";
 
-const CREATE_URL = "/system/settings/security/create";
+const CREATE_URL = "/system/settings/configurations/create";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -141,7 +141,7 @@ test.describe("Left column — top-level field validation", () => {
   });
 
   test("key uniqueness — existing key shows keyExists error", async ({ page }) => {
-    // oidc_issuer_url is a reserved config key that always exists on the security page.
+    // oidc_issuer_url is a reserved config key that always exists on the configurations page.
     await fillKey(page, "oidc_issuer_url");
     // The keyExists check has a 500ms debounce + API call.
     const keyInput = page.getByTestId("config-create-key");

@@ -25,7 +25,7 @@ import { fetchConfigEntries } from '$lib/api';
 import type { ConfigEntry } from '$lib/api-types';
 import { clearCachedETag } from '$lib/cache/fe-cache-store';
 
-const CONFIG_ENTRIES_URL = '/api/v1/entities/config_entries/list';
+const CONFIG_ENTRIES_URL = '/api/v1/entities/config_entry/list';
 
 // Module-level singleton — shared across all callers.
 // svelte-ignore state_referenced_locally — module-level $state, intentionally shared.

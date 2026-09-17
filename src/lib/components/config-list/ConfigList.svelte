@@ -135,7 +135,7 @@
       pushNotification({
         impact: 'NONE',
         messageKey: 'app.common.saveSuccess',
-        scope: $t('system.settings.security.title'),
+        scope: $t('system.settings.configurations.title'),
       });
       // Reload entries to get updated version/updated_at
       await onSave(entries[0], ''); // trigger parent reload
@@ -143,7 +143,7 @@
       pushNotification({
         impact: 'HIGH',
         messageKey: 'app.common.saveFailed',
-        scope: $t('system.settings.security.title'),
+        scope: $t('system.settings.configurations.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -260,7 +260,7 @@
   </div>
 {:else if entries.length === 0}
   <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-    <p class="text-sm">{$t('system.settings.security.noEntries')}</p>
+    <p class="text-sm">{$t('system.settings.configurations.noEntries')}</p>
   </div>
 {:else}
   <div class="flex h-full flex-col min-h-0">
@@ -311,7 +311,7 @@
             data-testid="config-toolbar-create"
           >
             <Plus class="size-4" />
-            {$t('system.settings.security.addConfigKey')}
+            {$t('system.settings.configurations.addConfigKey')}
           </Button>
         {/if}
       </div>
@@ -361,7 +361,7 @@
         <div class="flex items-center gap-2">
           {#if hasChanges}
             <span class="text-xs text-primary">
-              {$t('system.settings.security.changesPendingFields')}
+              {$t('system.settings.configurations.changesPendingFields')}
             </span>
             {#if taintedKeys.length <= 5}
               {#each taintedKeys as key (key)}
@@ -373,11 +373,11 @@
               <Badge variant="outline" class="text-xs font-mono border-warning/40 bg-warning/10 text-muted-foreground">
                 {taintedKeys.length}
               </Badge>
-              <span class="text-xs text-primary">{$t('system.settings.security.changesPendingCount')}</span>
+              <span class="text-xs text-primary">{$t('system.settings.configurations.changesPendingCount')}</span>
             {/if}
           {:else}
             <span class="text-xs text-muted-foreground/60">
-              {$t('system.settings.security.noChanges')}
+              {$t('system.settings.configurations.noChanges')}
             </span>
           {/if}
         </div>

@@ -4,7 +4,7 @@
    *
    * Position-agnostic: NO `position: sticky` baked in. The consumer's layout
    * determines whether the toolbar is pinned (flex sibling outside scroll
-   * container, like /security) or inline (inside scroll container, like /ai).
+   * container, like /configurations) or inline (inside scroll container, like /ai).
    *
    * Matches ConfigList toolbar pattern (lines 270-331) but without the
    * sticky/border-b wrapper classes — those are applied by the consumer.

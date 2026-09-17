@@ -6,7 +6,7 @@
  *
  * Flow:
  *   1. Admin logs in via UI LoginForm.
- *   2. Navigate to /system/settings/security.
+ *   2. Navigate to /system/settings/configurations.
  *   3. Assert that rows with type=bigint render a numeric input.
  *   4. Assert that rows with type=boolean render a switch.
  *   5. Assert that rows with type=secret render a password input.
@@ -27,8 +27,8 @@ test.describe("Typed configuration values", () => {
     await loginAsAdmin(page);
   });
 
-  test("security settings page loads and renders config rows", async ({ page }) => {
-    await page.goto("/system/settings/security", { waitUntil: "domcontentloaded" });
+  test("configurations settings page loads and renders config rows", async ({ page }) => {
+    await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     // Wait for the config list to hydrate — at least one config row should appear.
     // The security page always has reserved rows (oidc_issuer_url, etc.).
@@ -38,7 +38,7 @@ test.describe("Typed configuration values", () => {
   });
 
   test("bigint config rows render numeric inputs", async ({ page }) => {
-    await page.goto("/system/settings/security", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     // Wait for hydration
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
@@ -56,7 +56,7 @@ test.describe("Typed configuration values", () => {
   });
 
   test("boolean config rows render switch widgets", async ({ page }) => {
-    await page.goto("/system/settings/security", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
       timeout: 10000,
@@ -71,7 +71,7 @@ test.describe("Typed configuration values", () => {
   });
 
   test("secret config rows render password inputs", async ({ page }) => {
-    await page.goto("/system/settings/security", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
       timeout: 10000,
@@ -86,7 +86,7 @@ test.describe("Typed configuration values", () => {
   });
 
   test("reserved rows show row but type controls are disabled", async ({ page }) => {
-    await page.goto("/system/settings/security", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
       timeout: 10000,

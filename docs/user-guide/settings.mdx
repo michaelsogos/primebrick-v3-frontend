@@ -22,7 +22,7 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/users/[uuid]` | Edit a user (with change-password dialog) |
 | `/system/settings/users/create` | Create a user |
 | `/system/settings/profile` | Edit the current user's profile |
-| `/system/settings/security` | Security settings |
+| `/system/settings/configurations` | Security settings |
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
 
@@ -125,7 +125,7 @@ SuperForms with the form guards and includes avatar preview/color selection
 `/system/settings/email-providers` manages email provider configurations
 (provider name, API key, endpoint, from email/name, reply-to). It talks to
 the `EMAILSENDER` microservice through the backend proxy at
-`/ws/EMAILSENDER/api/v1/entities/providers` using `apiFetchExt` from
+`/ws/EMAILSENDER/api/v1/entities/provider` using `apiFetchExt` from
 `src/lib/api-ext.ts`. `ApiUnreachableError` is handled gracefully — when
 the microservice is offline and the error has already been notified, the
 page suppresses duplicate notifications.

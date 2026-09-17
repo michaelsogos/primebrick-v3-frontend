@@ -142,8 +142,8 @@
 
         pushNotification({
           impact: 'NONE',
-          message: $t('system.settings.security.create.createSuccess'),
-          scope: 'config_entries',
+          message: $t('system.settings.configurations.create.createSuccess'),
+          scope: 'config_entry',
         });
 
         if (window.opener) {
@@ -166,7 +166,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => hasChanges,
-    'system.settings.security.create.unsavedChanges',
+    'system.settings.configurations.create.unsavedChanges',
   );
 
   const isCreatePage = $derived(true);
@@ -185,7 +185,7 @@
     keyChecking = true;
     keyCheckTimer = setTimeout(async () => {
       try {
-        const res = await apiFetch(`/api/v1/entities/config_entries/list`);
+        const res = await apiFetch(`/api/v1/entities/config_entry/list`);
         if (res.ok) {
           const data = (await res.json()) as { rows: Array<{ key: string }> };
           keyExistsError = data.rows.some((r) => r.key === keyValue);
@@ -281,7 +281,7 @@
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
 <FormPageLayout
-  entity="config_entries"
+  entity="config_entry"
   rowUuid=""
   auditData={auditData}
   auditingColumns={[]}
@@ -298,11 +298,11 @@
             searchParams: page.url.searchParams,
             t: $t,
           }),
-          { label: $t('system.settings.security.create.title') }
+          { label: $t('system.settings.configurations.create.title') }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.security.create.title')}</h1>
-      <p class="text-sm text-muted-foreground">{$t('system.settings.security.create.description')}</p>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.configurations.create.title')}</h1>
+      <p class="text-sm text-muted-foreground">{$t('system.settings.configurations.create.description')}</p>
     </div>
   {/snippet}
 
@@ -316,22 +316,22 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.security.create.key')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.key')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.key}
                       oninput={handleKeyInput}
-                      placeholder={$t('system.settings.security.create.keyPlaceholder')}
+                      placeholder={$t('system.settings.configurations.create.keyPlaceholder')}
                       aria-invalid={keyExistsError || props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                       data-testid="config-create-key"
                     />
                     <TranslatedFormFieldErrors />
                     {#if keyExistsError}
                       <div class="text-destructive text-xs font-medium">
-                        {$t('system.settings.security.create.keyExists')}
+                        {$t('system.settings.configurations.create.keyExists')}
                       </div>
                     {/if}
-                    <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.keyHelp')}</p>
+                    <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.keyHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -341,7 +341,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.security.create.type')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.type')}</FormLabel>
                     <ComboSelect
                       mode="single"
                       value={$form.type}
@@ -353,7 +353,7 @@
                       data-testid="config-create-type"
                     />
                     <TranslatedFormFieldErrors />
-                    <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.typeHelp')}</p>
+                    <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.typeHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -363,7 +363,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.security.create.value')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.value')}</FormLabel>
                     <ConfigValueInput
                       type={$form.type as ConfigEntryType}
                       type_config={$form.type_config || null}
@@ -382,7 +382,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.security.create.labelKey')}
+                      {$t('system.settings.configurations.create.labelKey')}
                       <FormLabelWithPriorityHelp
                         text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
@@ -423,7 +423,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.security.create.descriptionKey')}
+                      {$t('system.settings.configurations.create.descriptionKey')}
                       <FormLabelWithPriorityHelp
                         text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
@@ -464,7 +464,7 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.security.create.groupKey')}
+                      {$t('system.settings.configurations.create.groupKey')}
                       <FormLabelWithPriorityHelp
                         text={$t('app.common.optionalTooltipText')}
                         priority="INFORMATION"
@@ -487,8 +487,8 @@
                         const gk = (opt as Record<string, any>).group_key;
                         return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
-                      placeholder={$t('system.settings.security.create.groupKeyPlaceholder')}
-                      searchPlaceholder={$t('system.settings.security.create.groupKeySearch')}
+                      placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
+                      searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
                       data-testid="config-create-group-key"
                     >
                       {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
@@ -524,10 +524,10 @@
                   data-testid="config-create-reserved"
                 />
                 <span class="text-sm font-medium leading-none">
-                  {$t('system.settings.security.create.reserved')}
+                  {$t('system.settings.configurations.create.reserved')}
                 </span>
               </div>
-              <p class="text-xs text-muted-foreground">{$t('system.settings.security.create.reservedHelp')}</p>
+              <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.reservedHelp')}</p>
             </div>
           </div>
 
@@ -537,7 +537,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.security.create.typeConfig')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.typeConfig')}</FormLabel>
                     <TypeConfigBuilder
                       type={$form.type as ConfigEntryType}
                       configKey={$form.key ?? ''}

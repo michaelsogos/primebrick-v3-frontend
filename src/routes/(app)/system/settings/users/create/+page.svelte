@@ -277,7 +277,7 @@
   let isCreatePage = $state(true);
 
   const entityMetadata = useEntityMetadata({
-    endpoint: '/api/v1/entities/user_profiles/meta',
+    endpoint: '/api/v1/entities/user_profile/meta',
     entityName: 'user_profiles'
   });
 

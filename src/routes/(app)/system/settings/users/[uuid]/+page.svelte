@@ -99,7 +99,7 @@
   let isCreatePage = $state(false);
 
   const entityMetadata = useEntityMetadata({
-    endpoint: '/api/v1/entities/user_profiles/meta',
+    endpoint: '/api/v1/entities/user_profile/meta',
     entityName: 'user_profiles',
   });
 
@@ -141,7 +141,7 @@
           avatar_initials: initials,
           roles: updateForm.data.roles || [],
         };
-        const response = await apiFetch(`/api/v1/entities/user_profiles/${uuid}`, {
+        const response = await apiFetch(`/api/v1/entities/user_profile/${uuid}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -181,7 +181,7 @@
   async function loadUser() {
     loading = true;
     try {
-      const response = await apiFetch(`/api/v1/entities/user_profiles/${uuid}`);
+      const response = await apiFetch(`/api/v1/entities/user_profile/${uuid}`);
       if (!response.ok) {
         console.error('Failed to load user');
         return;

@@ -48,7 +48,7 @@
 
   // Open the create config page in a new tab (same pattern as users/orgs create)
   function openNewConfig() {
-    const url = '/system/settings/security/create';
+    const url = '/system/settings/configurations/create';
     const childWindow = window.open(url, '_blank');
     if (childWindow) {
       childWindow.focus();
@@ -94,7 +94,7 @@
         pushNotification({
           impact: 'NONE',
           messageKey: 'app.common.deleteSuccess',
-          scope: $t('system.settings.security.title'),
+          scope: $t('system.settings.configurations.title'),
         });
         deleteDialogOpen = false;
         deleteTarget = null;
@@ -103,7 +103,7 @@
         pushNotification({
           impact: 'HIGH',
           messageKey: 'app.common.deleteFailed',
-          scope: $t('system.settings.security.title'),
+          scope: $t('system.settings.configurations.title'),
           detail: errorData?.detail ?? `HTTP ${resp.status}`,
         });
       }
@@ -111,7 +111,7 @@
       pushNotification({
         impact: 'HIGH',
         messageKey: 'app.common.deleteFailed',
-        scope: $t('system.settings.security.title'),
+        scope: $t('system.settings.configurations.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -140,7 +140,7 @@
         pushNotification({
           impact: 'NONE',
           messageKey: 'app.common.deleteSuccess',
-          scope: $t('system.settings.security.title'),
+          scope: $t('system.settings.configurations.title'),
         });
         bulkDeleteDialogOpen = false;
         bulkTargets = [];
@@ -149,7 +149,7 @@
         pushNotification({
           impact: 'HIGH',
           messageKey: 'app.common.deleteFailed',
-          scope: $t('system.settings.security.title'),
+          scope: $t('system.settings.configurations.title'),
           detail: errorData?.detail ?? `HTTP ${resp.status}`,
         });
       }
@@ -157,7 +157,7 @@
       pushNotification({
         impact: 'HIGH',
         messageKey: 'app.common.deleteFailed',
-        scope: $t('system.settings.security.title'),
+        scope: $t('system.settings.configurations.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
     } finally {
@@ -181,10 +181,10 @@
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">
-        {$t('system.settings.security.title')}
+        {$t('system.settings.configurations.title')}
       </h1>
       <p class="text-sm text-muted-foreground">
-        {$t('system.settings.security.description')}
+        {$t('system.settings.configurations.description')}
       </p>
     </div>
   {/snippet}

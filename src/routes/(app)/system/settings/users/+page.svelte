@@ -181,7 +181,7 @@
 
     setMetaInFlight(
       (async () => {
-        const metaRes = await apiFetchWithTimeout('/api/v1/entities/user_profiles/meta', undefined, 30_000);
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/user_profile/meta', undefined, 30_000);
         if (!metaRes.ok) {
           const apiDetails = await readApiErrorDetails(metaRes);
           const code = apiDetails.code ?? 'GET_METADATA_FAILED';
@@ -302,7 +302,7 @@
         params.set('deleted_records', 'EXCLUDED');
       }
 
-      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profiles/list?${params.toString()}`, undefined, 30_000);
+      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profile/list?${params.toString()}`, undefined, 30_000);
       if (!res.ok) {
         const apiDetails = await readApiErrorDetails(res);
         const code = apiDetails.code ?? 'LIST_FAILED';
@@ -517,7 +517,7 @@
   async function onRestoreRow(row: Record<string, unknown>) {
     const uuid = row.uuid as string;
     try {
-      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profiles/${uuid}/restore`, {
+      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profile/${uuid}/restore`, {
         method: 'POST'
       }, 30_000);
       if (!res.ok) {

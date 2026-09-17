@@ -69,7 +69,7 @@
     isSubmitting = true;
     localError = null;
     try {
-      const res = await apiFetch(`/api/v1/entities/user_profiles/${uuid}/change-password`, {
+      const res = await apiFetch(`/api/v1/entities/user_profile/${uuid}/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newPassword }),

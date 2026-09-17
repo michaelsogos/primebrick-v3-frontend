@@ -137,7 +137,7 @@ dialog when the BE returns 403 with `mfa_step_up_required: true`.
 
 ### Canonical example
 
-The Security settings page (`src/routes/(app)/system/settings/security/+page.svelte`)
+The Configurations settings page (`src/routes/(app)/system/settings/configurations/+page.svelte`)
 is the canonical example of a Config List page. Mirror it for future Config
 Table pages.
 

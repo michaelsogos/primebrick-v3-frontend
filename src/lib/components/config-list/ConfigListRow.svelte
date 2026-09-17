@@ -48,7 +48,7 @@
   );
 
   function openVersionHistory() {
-    openSheet('entity.versionHistory', { entity: 'config_entries', rowUuid: entry.uuid });
+    openSheet('entity.versionHistory', { entity: 'config_entry', rowUuid: entry.uuid });
   }
 </script>
 
@@ -81,10 +81,10 @@
           <Badge
             variant="outline"
             class="shrink-0 text-xs border-info/40 bg-info/10 text-info"
-            title={$t('system.settings.security.reservedBadge')}
+            title={$t('system.settings.configurations.reservedBadge')}
           >
             <Info class="size-3" />
-            {$t('system.settings.security.reservedBadge')}
+            {$t('system.settings.configurations.reservedBadge')}
           </Badge>
         {/if}
       </div>
@@ -107,28 +107,28 @@
           </button>
           {#if updatedAt && updatedByName}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('system.settings.configurations.lastUpdatedPrefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
-              <span class="text-primary">{$t('system.settings.security.lastUpdatedByMid')}</span>
+              <span class="text-primary">{$t('system.settings.configurations.lastUpdatedByMid')}</span>
               <span class="italic text-muted-foreground">{updatedByName}</span>
             </div>
           {:else if updatedAt}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('system.settings.configurations.lastUpdatedPrefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
             </div>
           {/if}
         </div>
       {:else if updatedAt && updatedByName}
         <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
-          <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
+          <span class="text-primary">{$t('system.settings.configurations.lastUpdatedPrefix')}</span>
           <span class="italic text-muted-foreground">{updatedAt}</span>
-          <span class="text-primary">{$t('system.settings.security.lastUpdatedByMid')}</span>
+          <span class="text-primary">{$t('system.settings.configurations.lastUpdatedByMid')}</span>
           <span class="italic text-muted-foreground">{updatedByName}</span>
         </div>
       {:else if updatedAt}
         <div class="flex items-center gap-x-2 whitespace-nowrap text-xs mt-0.5">
-          <span class="text-primary">{$t('system.settings.security.lastUpdatedPrefix')}</span>
+          <span class="text-primary">{$t('system.settings.configurations.lastUpdatedPrefix')}</span>
           <span class="italic text-muted-foreground">{updatedAt}</span>
         </div>
       {/if}

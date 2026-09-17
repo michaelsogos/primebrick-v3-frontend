@@ -401,14 +401,14 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/list`);
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
   const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
   return data.config_entries;
 }
 
 export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number): Promise<void> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ value }),
@@ -419,7 +419,7 @@ export async function updateModuleConfigKey(code: string, uuid: string, value: s
 // === Config entries (BE auth_configurations — Config Table standard) ===
 
 export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
-  const res = await apiFetch('/api/v1/entities/config_entries/list');
+  const res = await apiFetch('/api/v1/entities/config_entry/list');
   if (!res.ok) throw new Error(`Config entries fetch failed (${res.status})`);
   const data = (await res.json()) as { rows: ConfigEntry[] };
   return data.rows;
@@ -450,7 +450,7 @@ export async function createConfigEntry(params: {
   group_key?: string | null;
   reserved?: boolean;
 }): Promise<ConfigEntry> {
-  const res = await apiFetch('/api/v1/entities/config_entries', {
+  const res = await apiFetch('/api/v1/entities/config_entry', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify(params),
@@ -465,7 +465,7 @@ export async function updateConfigEntry(
   patch: { value?: string | bigint | number; type?: string; type_config?: string | null },
   version: number,
 ): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ ...patch, version }),
@@ -482,7 +482,7 @@ export async function bulkUpdateConfigEntries(
     version: number;
   }>,
 ): Promise<number> {
-  const res = await apiFetch('/api/v1/entities/config_entries/bulk-update', {
+  const res = await apiFetch('/api/v1/entities/config_entry/bulk-update', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ updates }),
@@ -493,14 +493,14 @@ export async function bulkUpdateConfigEntries(
 }
 
 export async function deleteConfigEntry(uuid: string, mfaActionAuthorization: string | null): Promise<Response> {
-  return apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+  return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'DELETE',
     headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
   });
 }
 
 export async function bulkDeleteConfigEntries(uuids: string[], mfaActionAuthorization: string | null): Promise<Response> {
-  return apiFetch('/api/v1/entities/config_entries/bulk-delete', {
+  return apiFetch('/api/v1/entities/config_entry/bulk-delete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -511,7 +511,7 @@ export async function bulkDeleteConfigEntries(uuids: string[], mfaActionAuthoriz
 }
 
 export async function restoreConfigEntry(uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}/restore`, {
+  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Config entry restore failed (${res.status})`);

@@ -111,7 +111,7 @@ export type ConfigTypeMoneyConfig = {
 };
 
 /**
- * Standard Config Table entry — returned by `GET /api/v1/entities/config_entries/*`.
+ * Standard Config Table entry — returned by `GET /api/v1/entities/config_entry/*`.
  *
  * The BE coerces `value` to its native JS type before serialization:
  *   - `bigint` → native `bigint` (preserved by ext-json response parsing)

@@ -1,7 +1,7 @@
 /**
  * useRoleMappings — composable that provides CRUD operations for role mappings.
  *
- * The list page uses the entity-pattern endpoints (`/api/v1/entities/role_mappings/...`)
+ * The list page uses the entity-pattern endpoints (`/api/v1/entities/role_mapping/...`)
  * directly via EntityListTable. This composable is used by the create/edit pages
  * for single-record CRUD.
  *
@@ -81,7 +81,7 @@ export function useRoleMappings() {
 
   async function get(uuid: string): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`);
+      const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`);
       if (res.ok) {
         return (await res.json()) as RoleMapping;
       }
@@ -97,7 +97,7 @@ export function useRoleMappings() {
 
   async function create(input: CreateRoleInput): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch("/api/v1/entities/role_mappings", {
+      const res = await apiFetch("/api/v1/entities/role_mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
@@ -120,7 +120,7 @@ export function useRoleMappings() {
 
   async function update(uuid: string, input: UpdateRoleInput): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
+      const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
@@ -142,7 +142,7 @@ export function useRoleMappings() {
 
   async function remove(uuid: string): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
+      const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`, {
         method: "DELETE",
       });
       if (res.ok) {

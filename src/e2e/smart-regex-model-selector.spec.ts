@@ -27,7 +27,7 @@ import {
   type Locator,
 } from "@playwright/test";
 
-const PAGE_URL = "/system/settings/security/create";
+const PAGE_URL = "/system/settings/configurations/create";
 const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 
 const test = base.extend<object, { pwContext: BrowserContext }>({

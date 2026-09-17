@@ -50,7 +50,7 @@
 
   let errors = $state<Record<string, string>>({});
 
-  const PROXY_BASE = '/ws/EMAILSENDER/api/v1/entities/providers';
+  const PROXY_BASE = '/ws/EMAILSENDER/api/v1/entities/provider';
 
   async function loadProviders() {
     loading = true;

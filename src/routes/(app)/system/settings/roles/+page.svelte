@@ -286,7 +286,7 @@
 
     setMetaInFlight(
       (async () => {
-        const metaRes = await apiFetchWithTimeout('/api/v1/entities/role_mappings/meta', undefined, 30_000);
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/role_mapping/meta', undefined, 30_000);
         if (!metaRes.ok) {
           const apiDetails = await readApiErrorDetails(metaRes);
           const code = apiDetails.code ?? 'GET_METADATA_FAILED';
@@ -330,7 +330,7 @@
         params.set('connector', globalConnector);
       }
 
-      const res = await apiFetchWithTimeout(`/api/v1/entities/role_mappings/list?${params.toString()}`, undefined, 30_000);
+      const res = await apiFetchWithTimeout(`/api/v1/entities/role_mapping/list?${params.toString()}`, undefined, 30_000);
       if (!res.ok) {
         const apiDetails = await readApiErrorDetails(res);
         const code = apiDetails.code ?? 'LIST_FAILED';
