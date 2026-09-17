@@ -164,11 +164,14 @@
     </div>
   {/snippet}
 
-  <div class="flex-1 overflow-auto p-4">
-    <div class="space-y-6">
+  <div class="flex-1 overflow-auto">
+    <div class="space-y-6 p-4">
     <!-- AI Models catalog -->
     <section class="space-y-3" data-testid="ai-settings-models-section">
-    <div class="flex items-center justify-between gap-2">
+    <div
+      class="sticky top-0 z-20 -mx-4 -mt-4 flex items-center justify-between gap-2 bg-background px-4 pb-2 pt-4"
+      data-testid="ai-settings-models-sticky-header"
+    >
       <div class="flex items-center gap-2">
         <BrainCircuit class="size-4 text-foreground/70" />
         <h2 class="text-sm font-semibold">{$t('system.settings.ai.models_section.title')}</h2>
@@ -445,13 +448,14 @@
 
   <!-- AI model cache management section -->
   <section class="space-y-3" data-testid="ai-settings-cache-section">
-    <div class="flex items-center gap-2">
-      <HardDrive class="size-4 text-foreground/70" />
-      <h2 class="text-sm font-semibold">{$t('system.settings.ai.cache_section.title')}</h2>
-    </div>
-    <div class="rounded-lg border border-border/60 p-4">
-      <ModelCacheSection model_ranks={modelRanks} />
-    </div>
+    <ModelCacheSection model_ranks={modelRanks}>
+      {#snippet header()}
+        <div class="flex items-center gap-2">
+          <HardDrive class="size-4 text-foreground/70" />
+          <h2 class="text-sm font-semibold">{$t('system.settings.ai.cache_section.title')}</h2>
+        </div>
+      {/snippet}
+    </ModelCacheSection>
   </section>
     </div>
   </div>

@@ -8,6 +8,7 @@
    *   - phi                 -> MicrosoftIcon
    *   - nvidia / nemotron   -> NvidiaIcon
    *   - granite             -> IbmIcon
+   *   - gemma               -> GemmaIcon
    *   - deepseek            -> DeepSeekIcon
    *   - smollm              -> HuggingFaceIcon
    *   - anything else       -> Cpu (fallback)
@@ -19,6 +20,7 @@
   import MicrosoftIcon from '$lib/components/ui/smart-regex-input/MicrosoftIcon.svelte';
   import NvidiaIcon from '$lib/components/ui/smart-regex-input/NvidiaIcon.svelte';
   import IbmIcon from '$lib/components/ui/smart-regex-input/IbmIcon.svelte';
+  import GemmaIcon from '$lib/components/ui/smart-regex-input/GemmaIcon.svelte';
   import DeepSeekIcon from '$lib/components/ui/smart-regex-input/DeepSeekIcon.svelte';
   import HuggingFaceIcon from '$lib/components/ui/smart-regex-input/HuggingFaceIcon.svelte';
   import Cpu from '@lucide/svelte/icons/cpu';
@@ -38,6 +40,7 @@
     if (/phi/i.test(id)) return 'microsoft';
     if (/nvidia|nemotron/i.test(id)) return 'nvidia';
     if (/granite/i.test(id)) return 'ibm';
+    if (/gemma/i.test(id)) return 'gemma';
     if (/deepseek/i.test(id)) return 'deepseek';
     if (/smollm/i.test(id)) return 'huggingface';
     return 'generic';
@@ -54,6 +57,8 @@
   <NvidiaIcon class={className} />
 {:else if family === 'ibm'}
   <IbmIcon class={className} />
+{:else if family === 'gemma'}
+  <GemmaIcon class={className} />
 {:else if family === 'deepseek'}
   <DeepSeekIcon class={className} />
 {:else if family === 'huggingface'}

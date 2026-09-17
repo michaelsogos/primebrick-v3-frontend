@@ -15,7 +15,6 @@
   import { t } from '$lib/i18n';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
-  import Flag from '@lucide/svelte/icons/flag';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import X from '@lucide/svelte/icons/x';
   import { onMount } from 'svelte';
@@ -128,8 +127,9 @@
     } catch { /* sessionStorage unavailable */ }
   });
 
-  // Show flags badge if any flags are set
-  let has_flags = $derived(flags.length > 0);
+  // Flags in JS canonical order (RegExp.flags: dgimsuvy) for the text CTA
+  let flags_display = $derived([...'dgimsuvy'].filter((f) => flags.includes(f)).join(''));
+  let has_flags = $derived(flags_display.length > 0);
 </script>
 
 <div class="relative">
@@ -174,15 +174,12 @@
       )}
       data-testid="smart-regex-flags-cta"
     >
-      <Flag class="size-4" />
-      {#if has_flags}
-        <span
-          class="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-          data-testid="smart-regex-flags-badge"
-        >
-          {flags.length}
-        </span>
-      {/if}
+      <span
+        class={cn('font-serif text-sm leading-none px-0.5', !has_flags && 'text-foreground/50')}
+        data-testid="smart-regex-flags-text"
+      >
+        /{flags_display}
+      </span>
     </button>
 
     <!-- Brain CTA (AI assistant) -->

@@ -27,7 +27,7 @@
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import {
     SelectableFieldset,
     SelectableToolbar,
@@ -35,9 +35,11 @@
   } from '$lib/components/ui/selectable-fieldset';
 
   /** The model ID currently loaded in VRAM (null if none). */
-  let { active_model_id = null, model_ranks = {} }: {
+  let { active_model_id = null, model_ranks = {}, header }: {
     active_model_id?: string | null;
     model_ranks?: Record<string, number | null>;
+    /** Section title row rendered inside the sticky cluster. */
+    header?: Snippet;
   } = $props();
 
   const aiModels = useAiModels();
@@ -131,6 +133,7 @@
   const censusedModels = $derived(
     aiModels.getEnabledModels().filter((m) => cache.state.cache_status[m.model_id] === true),
   );
+
   const censusedAllSelected = $derived(
     censusedModels.length > 0 && censusedModels.every((m) => censusedSelection.isSelected(m.model_id)),
   );
@@ -172,6 +175,13 @@
 </script>
 
 <div class="space-y-4" data-testid="model-cache-section">
+  <!-- Sticky cluster: section title + error + storage bar + censused toolbar -->
+  <div
+    class="sticky top-0 z-20 -mx-4 -mt-4 space-y-3 bg-background px-4 pb-2 pt-4"
+    data-testid="ai-settings-cache-sticky-header"
+  >
+  {@render header?.()}
+
   <!-- Error message -->
   {#if cache.state.error === 'in_use'}
     <div class="rounded-md bg-yellow-400/10 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
@@ -212,16 +222,8 @@
     </div>
   {/if}
 
-  <!-- Empty state: nothing cached at all -->
-  {#if cache.state.has_scanned && !cache.state.is_checking && cacheIsEmpty}
-    <div
-      class="rounded-md border border-dashed border-border/60 px-3 py-4 text-sm text-muted-foreground"
-      data-testid="model-cache-empty"
-    >
-      {$t('app.smart.regex.ai.cache.empty')}
-    </div>
-  {:else}
-  <!-- Censused models: select-all toolbar + fieldset -->
+  <!-- Censused select-all toolbar: part of the sticky cluster, hidden when cache is empty -->
+  {#if !(cache.state.has_scanned && !cache.state.is_checking && cacheIsEmpty)}
   <SelectableToolbar
     all_selected={censusedAllSelected}
     some_selected={censusedSomeSelected}
@@ -242,7 +244,19 @@
       <span class="ml-1 text-xs opacity-70">({censusedSelection.selected_count})</span>
     </Button>
   </SelectableToolbar>
+  {/if}
+  </div>
 
+  <!-- Empty state: nothing cached at all -->
+  {#if cache.state.has_scanned && !cache.state.is_checking && cacheIsEmpty}
+    <div
+      class="rounded-md border border-dashed border-border/60 px-3 py-4 text-sm text-muted-foreground"
+      data-testid="model-cache-empty"
+    >
+      {$t('app.smart.regex.ai.cache.empty')}
+    </div>
+  {:else}
+  <!-- Censused models fieldset (scrolls under the sticky cluster) -->
   <SelectableFieldset label={$t('app.smart.regex.ai.cache.censused_title')}>
     {#each censusedModels as model (model.model_id)}
       {@const is_cached = cache.state.cache_status[model.model_id] ?? false}
