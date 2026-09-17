@@ -1,3 +1,4 @@
 import JsonCodeBlock from './json-code-block.svelte';
+import JsonEditor from './json-editor.svelte';
 
-export { JsonCodeBlock };
+export { JsonCodeBlock, JsonEditor };
