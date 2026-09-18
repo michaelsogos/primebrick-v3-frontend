@@ -4,6 +4,7 @@
   import Pencil from '@lucide/svelte/icons/pencil';
   import Eye from '@lucide/svelte/icons/eye';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
+  import { typeConfigJsonSchema } from '$lib/config/type-config-schema';
 
   let { builder }: { builder: ReturnType<typeof useTypeConfigBuilder> } = $props();
 
@@ -90,6 +91,7 @@
         minRows={10}
         maxHeight="24rem"
         placeholder={placeholderJson}
+        schema={typeConfigJsonSchema}
         data-testid="tcb-raw-json"
       />
       {#if builder.state.rawJsonError}

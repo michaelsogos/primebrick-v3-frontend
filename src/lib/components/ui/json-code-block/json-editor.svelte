@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
   import type { EditorView } from '@codemirror/view';
+  import { jsonLsExtensions } from './json-language-service';
 
   let {
     value = $bindable(''),
@@ -10,6 +11,7 @@
     maxHeight,
     placeholder: placeholderText,
     onChange,
+    schema,
     class: className,
     ...rest
   }: {
@@ -23,6 +25,8 @@
     placeholder?: string;
     /** Called on every edit with the new doc text. */
     onChange?: (v: string) => void;
+    /** Optional JSON Schema → enables schema-aware lint + completion. */
+    schema?: Record<string, unknown>;
   } & HTMLAttributes<HTMLDivElement> = $props();
 
   let host: HTMLDivElement;
@@ -92,6 +96,7 @@
           json(),
           syntaxHighlighting(shikiStyle),
           linter(jsonLintRange()),
+          ...(schema ? await jsonLsExtensions(schema) : []),
           lintGutter(),
           EditorView.updateListener.of((u) => {
             if (u.docChanged && !applyingExternal) {

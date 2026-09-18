@@ -13,44 +13,73 @@
  */
 
 // ─── Validation types (mirror SDK ConfigValidation) ──────────────
+// Single zod source: types are z.infer'd (identical shape to the previous
+// hand-written interfaces) and the JSON Schema is z.toJSONSchema()'d for
+// the CodeMirror language service — one definition, two artifacts.
 
-export interface ConfigValidation {
-  required: boolean;
-  required_error_label_key?: string;
+import { z } from 'zod';
+
+const errorLabelKey = z.string().optional();
+
+const ruleWithNumberSchema = z.object({
+  value: z.number().describe('Numeric boundary for this rule'),
+  error_label_key: errorLabelKey.describe('Translation key for the validation error message'),
+});
+
+export const configValidationSchema = z.object({
+  required: z.boolean().describe('If true, the value cannot be empty'),
+  required_error_label_key: errorLabelKey,
   /** If true, numeric values are unsigned (no sign chars, default min=0). */
-  unsigned?: boolean;
-  rules: {
-    min?: { value: number; error_label_key?: string };
-    max?: { value: number; error_label_key?: string };
-    url?: { protocols: string[]; error_label_key?: string };
-    email?: { error_label_key?: string };
-    regex?: { pattern: string; flags?: string; error_label_key?: string };
-  };
-}
+  unsigned: z.boolean().optional().describe('Numeric values are unsigned (no sign chars)'),
+  rules: z.object({
+    min: ruleWithNumberSchema.optional().describe('Minimum length/value'),
+    max: ruleWithNumberSchema.optional().describe('Maximum length/value'),
+    url: z.object({
+      protocols: z.array(z.string()).describe('Allowed URL protocols, e.g. ["https"]'),
+      error_label_key: errorLabelKey,
+    }).optional().describe('URL protocol validation'),
+    email: z.object({ error_label_key: errorLabelKey }).optional().describe('Email format validation'),
+    regex: z.object({
+      pattern: z.string().describe('Regular expression the value must match'),
+      flags: z.string().optional().describe('Regex flags, e.g. "i"'),
+      error_label_key: errorLabelKey,
+    }).optional().describe('Regex pattern validation'),
+  }).describe('Validation rules applied to the value'),
+});
+
+export type ConfigValidation = z.infer<typeof configValidationSchema>;
 
 // ─── Parsed type_config (union of all possible fields) ──────────
 
-export interface ParsedTypeConfig {
+export const typeConfigSchema = z.object({
   // Validation (all types)
-  validation?: ConfigValidation;
+  validation: configValidationSchema.optional().describe('Validation rules for the config value'),
   // Money
-  currency?: string;
-  allowed_currencies?: string[];
+  currency: z.string().optional().describe('ISO 4217 currency code, e.g. "EUR"'),
+  allowed_currencies: z.array(z.string()).optional().describe('Selectable currency codes'),
   // Badge
-  values?: Record<string, { label_key?: string; color?: string }>;
+  values: z.record(z.string(), z.object({
+    label_key: z.string().optional().describe('Translation key for the badge label'),
+    color: z.string().optional().describe('Badge color token'),
+  })).optional().describe('Badge values map: value → label/color'),
   // single_select / multi_select
-  values_source?: string;
-  api_url?: string;
-  api_verb?: string;
-  value_field?: string;
-  label_field?: string;
+  values_source: z.string().optional().describe('Built-in source id, e.g. "currencies"'),
+  api_url: z.string().optional().describe('Endpoint URL providing the options'),
+  api_verb: z.string().optional().describe('HTTP method for the options endpoint'),
+  value_field: z.string().optional().describe('Response field used as option value'),
+  label_field: z.string().optional().describe('Response field used as option label'),
   // URL
-  default_protocol?: string;
-  allowed_protocols?: string[];
+  default_protocol: z.string().optional().describe('Default URL protocol, e.g. "https"'),
+  allowed_protocols: z.array(z.string()).optional().describe('Allowed URL protocols'),
   // Phone
-  country?: string;
-  allowed_countries?: string[];
-}
+  country: z.string().optional().describe('Default ISO country code, e.g. "IT"'),
+  allowed_countries: z.array(z.string()).optional().describe('Selectable country codes'),
+});
+
+export type ParsedTypeConfig = z.infer<typeof typeConfigSchema>;
+
+/** JSON Schema of type_config — generated from typeConfigSchema (single source). */
+export const typeConfigJsonSchema = z.toJSONSchema(typeConfigSchema);
 
 // ─── Parse ───────────────────────────────────────────────────────
 
