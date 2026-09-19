@@ -44,3 +44,32 @@ scenario and English is the universal fallback.
 - AI agent MUST NOT add non-English translations to `en-GB-fallback.json`.
 - AI agent MUST NOT hardcode user-facing text in components.
 - AI agent MUST use `$t('key')` for all user-facing strings.
+
+## Module dict loading (route → module → schema)
+
+Authenticated pages get translations per-module, resolved **from the URL**:
+
+1. `shellNav.resolveModuleFromRoute(pathname)` matches the path against each
+   module's `route_prefixes` (BE `module-nav-meta.ts`, surfaced via
+   `GET /api/v1/modules`).
+2. The matched module id is passed to
+   `GET /api/v1/system/translations/:module/:language`, where `:module` maps
+   to a **DB schema** (`MODULE_ENTITIES` in BE `translations-dal.ts`):
+   `app`→`public`, `system`/`settings`→`system`, `emailsender`→`emailsender`,
+   `custom`→`custom`.
+
+Consequences:
+
+- Bootstrap always loads `app` + `custom` only.
+- **A page outside every registered `route_prefix` gets NO module dict** —
+  its keys render raw. Example: `/customers` was unrouted (the `crm` module
+  is not registered in `service_registry`), so `system.entities.customer.*`
+  stayed untranslated until the page moved under `/system/customers`.
+- The `settings` module claims `route_prefixes: ["/system"]` → any page under
+  `/system/*` loads the `system` schema dict (`system.*` keys).
+- A registered module with no `MODULE_ENTITIES` mapping makes the dict fetch
+  fail — module id must exist in both `service_registry` and the DAL map.
+
+When creating a new page, verify: which module prefix owns its URL, and which
+schema holds its keys. If they don't line up, either place the route under an
+existing prefix or register a module + schema mapping on the BE.
