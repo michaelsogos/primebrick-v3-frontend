@@ -150,7 +150,8 @@
         await apiFetchExt(PROXY_BASE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          // `{entity}` envelope — the US emailsender enforces it too.
+          body: JSON.stringify({ entity: payload }),
         });
         pushNotification({
           impact: 'NONE',
@@ -161,7 +162,7 @@
         await apiFetchExt(`${PROXY_BASE}/${editingUuid}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ entity: payload }),
         });
         pushNotification({
           impact: 'NONE',

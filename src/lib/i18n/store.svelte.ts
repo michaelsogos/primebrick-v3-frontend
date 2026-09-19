@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { DEFAULT_LANG, normalizeLang, type UiLang } from './languages';
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 
 const STORAGE_KEY = 'pb.lang';
 const I18N_CACHE_PREFIX = 'pb:i18n:';
@@ -25,7 +25,10 @@ function readStoredLang(): UiLang | null {
 let initial: UiLang = DEFAULT_LANG;
 if (browser) initial = readStoredLang() ?? detectBrowserLang();
 
-export const uiLang = writable<UiLang>(initial);
+// globalThis singleton — same HMR split-brain guard as _mergedDicts:
+// a duplicated module instance must share the language selection.
+export const uiLang: Writable<UiLang> =
+  ((globalThis as any).__pb_i18n_lang ??= writable<UiLang>(initial));
 
 export function setUiLang(next: UiLang) {
   uiLang.set(next);

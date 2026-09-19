@@ -13,19 +13,85 @@ description: Login flow, session expiration handling, password policy enforcemen
 required) and POSTs to `/api/v1/auth/login`.
 
 On success it stores the user in `userProfileStore` and invokes the
-`onsuccess` callback, which the login page uses to redirect to the saved
-redirect URL (or `/`). On failure it maps RFC7807 error responses to
-i18n-localized messages, with special handling for rate-limited attempts
-(showing minutes remaining).
+`onsuccess` callback, which the login page resolves through
+`resolvePostLoginTarget()` — sanitized `?redirect_path=` query param
+first, then the sessionStorage-saved redirect, then `/`. On failure it
+maps RFC7807 error responses to i18n-localized messages, with special
+handling for rate-limited attempts (showing minutes remaining).
 
-```svelte
-<LoginForm
-  onsuccess={() => {
-    const redirectUrl = getAndClearRedirectUrl();
-    window.location.href = redirectUrl || '/';
-  }}
-/>
-```
+### Session boot (auto-login)
+
+Before showing the form, the login page runs a client-side boot check —
+no `/auth/me` round-trip:
+
+1. **Valid local session** — `sessionStorage['user']` exists and its
+   `expires_at` is not within the 30 s expiry buffer → navigate straight
+   to the post-login target while a `LoadingWatermark` shows "Auto
+   Logging" (cookie icon, flip animation).
+2. **Expired or missing local session** → a single `triggerRefresh()`
+   attempt ("Refreshing Token" state, rotate-ccw-key icon). The HttpOnly
+   refresh cookie is the authoritative channel, so this also recovers
+   sessions in fresh tabs where `sessionStorage` is empty.
+3. **Refresh fails** → stale local state is cleared via
+   `userProfileStore.clear()` and the normal login form renders.
+
+The shared helpers live in `src/lib/auth/session-check.ts`
+(`hasLocalSession`, `isTokenExpired`, `refreshAccessToken`,
+`triggerRefresh`) and are also used by `apiFetch`'s 401 retry path —
+`triggerRefresh` is single-flight, so concurrent callers share one
+refresh request.
+
+### Post-login redirect
+
+`src/lib/auth/redirect-cache.ts` exposes the redirect helpers:
+
+| Helper | Purpose |
+|--------|---------|
+| `saveRedirectUrl(url)` | Persists the current app path in sessionStorage (API routes skipped) |
+| `getAndClearRedirectUrl()` | Reads and clears the saved redirect |
+| `sanitizeRedirectPath(raw)` | Accepts only same-origin `/...` paths — rejects `//host`, `/api/…`, backslashes, control chars |
+| `resolvePostLoginTarget(qsParam, lastRoute)` | `redirect_path` QS → saved redirect → last meaningful route → `/` |
+| `goToLoginPage()` | Hard-navigates to `/login` preserving the current path both in sessionStorage and as a sanitized `?redirect_path=` (survives reloads and new tabs) |
+
+`SessionExpiredDialog`'s "Go to login" button uses `goToLoginPage()`, so
+the original destination is restored after re-authentication even from
+the full login page.
+
+### Last-route restore
+
+`pb:shell:lastRoute` (localStorage) tracks the last meaningful page via
+`afterNavigate` — `/`, `/login*` and `/api/*` are never saved, so the
+post-login resolution's third fallback is deterministic rather than
+degenerating to `/`.
+
+## Module switching & route-aware translations
+
+Selecting a module in the sidebar switcher calls
+`shellNav.selectModule(id)` **and navigates** to the module's first
+`route_prefixes` entry (metadata-driven; modules without prefixes land
+on `/`). `/system/settings` itself redirects to `/system/settings/profile`
+via a `+page.ts` universal `load()` — `redirect()` inside a component
+`<script>` only works on SSR; on client-side navigation it surfaces as
+an unhandled "Redirect" error and a blank page.
+
+The route change is what drives lazy translation loading:
+`useModuleTranslations()` (mounted in the `(app)` layout) resolves the
+module from `page.url.pathname` and fetches its dictionary — so module
+dictionaries load on navigation, not on selection.
+
+## Logout
+
+`POST /api/v1/auth/logout` (PUBLIC) clears both HttpOnly auth cookies —
+`access_token` (path `/`) and `refresh_token`
+(path `/api/v1/auth/refresh`). JavaScript cannot clear HttpOnly
+cookies, so the server round-trip is required.
+
+`AppSidebar`'s `handleLogout` calls the endpoint (best-effort), then
+clears local state — `userProfileStore.clear()`,
+`getAndClearRedirectUrl()`, `shellNav.clearLastRoute()` — and navigates
+to `/login` **without** `redirect_path`. After a real logout the login
+boot's refresh attempt fails and the form renders: the session is
+officially over.
 
 ## Session expiration
 

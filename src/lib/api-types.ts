@@ -1,3 +1,19 @@
+/**
+ * Entity write-payload standard (`{entity}` envelope). Every non-bulk CUD
+ * endpoint under `/api/v1/entities/*` accepts this envelope: the entity
+ * fields live under `entity`, and `translations` is an optional sibling of
+ * `{key, language, value}` rows persisted atomically with the entity write
+ * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
+ * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
+ */
+export type EntityWritePayload<E> = {
+  entity: E;
+  translations?: PendingTranslationRow[];
+};
+
+/** One pending translation row piggybacked on an entity write. */
+export type PendingTranslationRow = { key: string; language: string; value: string };
+
 export type ModuleInfo = {
   id: string;
   name: string;
@@ -111,6 +127,32 @@ export type ConfigTypeMoneyConfig = {
 };
 
 /**
+ * Per-type capability matrix — served by the BE via
+ * `GET /api/v1/entities/config_entry/meta` (`type_capabilities` field).
+ *
+ * Canonical definition lives in `@primebrick/sdk` (`TYPE_CAPABILITIES`);
+ * this is the FE-side mirror of the wire shape only.
+ */
+export type BoundsKind = 'length' | 'value';
+
+export type WidgetCapability = 'currency' | 'country' | 'badge_values' | 'select_source' | 'url_protocols';
+
+export type ValidationCapabilities = {
+  required: boolean;
+  unsigned: boolean;
+  min?: BoundsKind;
+  max?: BoundsKind;
+  regex: boolean;
+};
+
+export type TypeCapabilities = {
+  validation: ValidationCapabilities;
+  widget: Partial<Record<WidgetCapability, true>>;
+};
+
+export type TypeCapabilitiesMap = Partial<Record<ConfigEntryType, TypeCapabilities>>;
+
+/**
  * Standard Config Table entry — returned by `GET /api/v1/entities/config_entry/*`.
  *
  * The BE coerces `value` to its native JS type before serialization:
@@ -180,6 +222,38 @@ export type AiModel = {
   vram_mb?: number | null;
   compatibility_status: string;
   execution_config?: ExecutionConfig | null;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  version: number;
+  deleted_at?: string;
+  deleted_by?: string;
+};
+
+/**
+ * `ai_cerebellum` row — per-assistant tuning preset for a model.
+ * NULL param fields mean "inherit the ai_models default".
+ */
+export type AiCerebellum = {
+  uuid: string;
+  assistant_key: string;
+  model_id: string;
+  /** Tuning name shown in the chat footer dropdown (e.g. 'default', 'precise'). */
+  name: string;
+  description_key?: string | null;
+  enable_thinking?: boolean | null;
+  temperature?: number | null;
+  top_p?: number | null;
+  max_tokens?: number | null;
+  repetition_penalty?: number | null;
+  /** Partial override merged over ai_models.execution_config. NULL = inherit all. */
+  execution_config?: Partial<ExecutionConfig> | null;
+  is_default: boolean;
+  is_enabled: boolean;
+  sort_order: number;
+  /** Per-tuning test measurements keyed by test case. */
+  test_scores?: Record<string, unknown> | null;
   created_at: string;
   created_by: string;
   updated_at: string;

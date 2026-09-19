@@ -1,7 +1,8 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
-import { userProfileState } from '$lib/user-profile-store.svelte';
+import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
+import { userProfileStore } from '$lib/user-profile-store.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
@@ -13,7 +14,9 @@ import {
   type ModuleNav,
   type ModuleConfigEntry,
   type ConfigEntry,
+  type TypeCapabilitiesMap,
   type AiModel,
+  type AiCerebellum,
   type ServiceInfo
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
@@ -27,93 +30,8 @@ export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableEr
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
 
-// Concurrency control for token refresh
-let refreshPromise: Promise<void> | null = null;
-
-/**
- * Check if there is a local user session in sessionStorage
- */
-function hasLocalSession(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  try {
-    const userStr = sessionStorage.getItem('user');
-    if (!userStr) return false;
-    
-    const user = JSON.parse(userStr);
-    // Consider session valid if it has at least an idp_code or username
-    return !!(user.idp_code || user.username);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Check if the access token is expired by comparing expiresAt from session storage
- * Supports both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
- */
-function isTokenExpired(): boolean {
-  if (typeof window === 'undefined') return true;
-  
-  try {
-    const userStr = sessionStorage.getItem('user');
-    if (!userStr) return true;
-    
-    const user = JSON.parse(userStr);
-    // Support both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
-    const expiresAt = user.expires_at || user.expiresAt;
-    if (!expiresAt) return true;
-    
-    // Add 30 seconds buffer to account for clock skew
-    const now = Date.now();
-    return expiresAt - 30000 < now;
-  } catch {
-    return true;
-  }
-}
-
-/**
- * Refresh the access token by calling the backend refresh endpoint
- * Updates session storage with new user data on success
- */
-async function refreshAccessToken(): Promise<void> {
-  try {
-    const response = await fetch('/api/v1/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('[Token Refresh] Failed:', errorData);
-      throw new Error(errorData.detail || 'Token refresh failed');
-    }
-
-    const data = await response.json();
-    
-    // Update session storage with new user data
-    if (data.success && data.user) {
-      sessionStorage.setItem('user', JSON.stringify(data.user));
-      console.log('[Token Refresh] Successfully refreshed token');
-    }
-  } catch (error) {
-    console.error('[Token Refresh] Error:', error);
-    throw error;
-  }
-}
-
-/**
- * Trigger token refresh with concurrency control
- * Multiple simultaneous calls will wait for the same refresh operation
- */
-async function triggerRefresh(): Promise<void> {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-  }
-  await refreshPromise;
-}
+// hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
+// live in $lib/auth/session-check — shared with the login page boot.
 
 function requestUrlString(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
@@ -250,7 +168,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       if (typeof window !== 'undefined') {
         // Clear in-memory profile so the passkey dialog doesn't render
         // on top of the session-expired dialog with stale data.
-        userProfileState.current = null;
+        userProfileStore.clear();
         saveRedirectUrl(window.location.pathname + window.location.search);
         return sessionExpiredStore.enqueue(input, nextInit);
       }
@@ -271,8 +189,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
           // Clear corrupted session data (both sessionStorage and in-memory)
           // before showing dialog so the passkey dialog doesn't render with
           // stale profile data.
-          sessionStorage.removeItem('user');
-          userProfileState.current = null;
+          userProfileStore.clear();
           saveRedirectUrl(window.location.pathname + window.location.search);
           return sessionExpiredStore.enqueue(input, nextInit);
         }
@@ -411,7 +328,7 @@ export async function updateModuleConfigKey(code: string, uuid: string, value: s
   const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify({ value }),
+    body: extJsonStringify({ entity: { value } }),
   });
   if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }
@@ -425,7 +342,42 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
   return data.rows;
 }
 
+/**
+ * Fetches `GET /api/v1/entities/config_entry/meta` — carries
+ * `type_capabilities` (canonical per-type capability matrix from
+ * `@primebrick/sdk`) alongside the entity meta columns.
+ */
+export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: TypeCapabilitiesMap }> {
+  const res = await apiFetch('/api/v1/entities/config_entry/meta');
+  if (!res.ok) throw new Error(`Config entry meta fetch failed (${res.status})`);
+  return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
+}
+
 // === AI models (BE ai_models entity — WebLLM model catalog) ===
+
+export async function fetchAiCerebellum(filters?: {
+  assistant_key?: string;
+  model_id?: string;
+}): Promise<AiCerebellum[]> {
+  const params = new URLSearchParams();
+  params.set('page_size', '100');
+  const conditions: Array<{ field: string; op: string; value: string }> = [];
+  if (filters?.assistant_key) {
+    conditions.push({ field: 'assistant_key', op: '=', value: filters.assistant_key });
+  }
+  if (filters?.model_id) {
+    conditions.push({ field: 'model_id', op: '=', value: filters.model_id });
+  }
+  if (conditions.length) {
+    params.set('filters', JSON.stringify(conditions));
+    params.set('connector', 'AND');
+  }
+  const url = `/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
+  const res = await apiFetch(url);
+  if (!res.ok) throw new Error(`AI cerebellum fetch failed (${res.status})`);
+  const data = (await res.json()) as { rows: AiCerebellum[] };
+  return data.rows;
+}
 
 export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
   const params = new URLSearchParams();
@@ -449,11 +401,18 @@ export async function createConfigEntry(params: {
   description_key?: string | null;
   group_key?: string | null;
   reserved?: boolean;
+  /**
+   * Optional translation rows piggybacked on the same write — the BE inserts
+   * them in the SAME transaction as the entity ({entity, translations}
+   * write standard). Duplicate (key, language) rows are skipped, not fatal.
+   */
+  translations?: { key: string; language: string; value: string }[];
 }): Promise<ConfigEntry> {
+  const { translations, ...entity } = params;
   const res = await apiFetch('/api/v1/entities/config_entry', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify(params),
+    body: extJsonStringify(translations?.length ? { entity, translations } : { entity }),
   });
   if (!res.ok) throw new Error(`Config entry create failed (${res.status})`);
   const data = (await res.json()) as ConfigEntry;
@@ -468,7 +427,7 @@ export async function updateConfigEntry(
   const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify({ ...patch, version }),
+    body: extJsonStringify({ entity: { ...patch, version } }),
   });
   if (!res.ok) throw new Error(`Config entry update failed (${res.status})`);
 }
@@ -563,7 +522,8 @@ export async function createTranslation(moduleCode: string, data: {
   const res = await apiFetch(`/api/v1/entities/translation?module=${encodeURIComponent(moduleCode)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    // `{entity}` envelope — a `translations` sibling is rejected by the BE.
+    body: JSON.stringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation create failed (${res.status})`);
   return await res.json();
@@ -578,7 +538,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation update failed (${res.status})`);
   return await res.json();

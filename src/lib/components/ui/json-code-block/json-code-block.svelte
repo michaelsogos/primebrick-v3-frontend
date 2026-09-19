@@ -55,19 +55,26 @@
 </script>
 
 <div
-  class={cn('relative rounded-md bg-muted', className)}
+  class={cn('relative flex flex-col overflow-hidden rounded-md bg-muted', className)}
   style={containerStyle}
   {...rest}
 >
   {#if copyable}
-    <CopyButton
-      text={jsonString}
-      class="absolute top-1.5 right-1.5 z-10 text-muted-foreground hover:text-foreground"
-      data-testid="json-code-block-copy"
-    />
+    <!-- Copy CTA in the header — the standard position (same as the regex
+         preview card), never an overlay inside the code area. -->
+    <div class="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-1.5">
+      <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">JSON</span>
+      <CopyButton
+        text={jsonString}
+        variant="ghost"
+        size="icon"
+        class="size-7 text-muted-foreground hover:text-foreground"
+        data-testid="json-code-block-copy"
+      />
+    </div>
   {/if}
   <div
-    class="h-full overflow-auto p-3 text-xs font-mono leading-5"
+    class="min-h-0 flex-1 overflow-auto p-3 text-xs font-mono leading-5"
     class:line-numbers={lineNumbers}
     data-testid="json-code-block-content"
   >

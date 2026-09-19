@@ -1,4 +1,4 @@
-import { derived, writable, type Readable } from 'svelte/store';
+import { derived, writable, type Readable, type Writable } from 'svelte/store';
 import { uiLang } from './store.svelte';
 import { DEFAULT_LANG, type UiLang } from './languages';
 
@@ -9,7 +9,11 @@ type Dict = Record<string, string>;
 
 // Merged dict store — modules add their translations via mergeModuleDict.
 // The dict is flat (same shape as the BE's jsonb_object_agg response).
-const _mergedDicts = writable<Record<UiLang, Dict>>({} as Record<UiLang, Dict>);
+// globalThis singleton: editing this module (or en-GB-fallback.json) during
+// `vite dev` creates a second module instance (?t= URL) — a plain writable
+// would split-brain (loader writes one store, components read the other).
+const _mergedDicts: Writable<Record<UiLang, Dict>> =
+  ((globalThis as any).__pb_i18n_merged ??= writable({} as Record<UiLang, Dict>));
 
 /** Merge a partial dict (from API or fallback) into the i18n store for a language. */
 export function mergeModuleDict(lang: UiLang, partial: Dict): void {
@@ -33,6 +37,8 @@ function interpolate(template: string, params: Record<string, any>): string {
 export const dict = derived([uiLang, _mergedDicts], ([$lang, $dicts]) =>
   $dicts[$lang] ?? $dicts[DEFAULT_LANG] ?? {}
 );
+
+
 
 /**
  * Returns all i18n keys from the current locale's flat dict.

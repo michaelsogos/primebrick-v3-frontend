@@ -1,5 +1,1 @@
-<script lang="ts">
-  import { redirect } from '@sveltejs/kit';
-
-  redirect(307, '/system/settings/profile');
-</script>
+<!-- Redirect target is +page.ts load → /system/settings/profile. -->

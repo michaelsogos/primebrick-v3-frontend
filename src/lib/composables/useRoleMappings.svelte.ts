@@ -100,7 +100,7 @@ export function useRoleMappings() {
       const res = await apiFetch("/api/v1/entities/role_mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ entity: input }),
       });
       if (res.ok) {
         const data = (await res.json()) as { success: boolean; role: RoleMapping };
@@ -123,7 +123,7 @@ export function useRoleMappings() {
       const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ entity: input }),
       });
       if (res.ok) {
         await list();

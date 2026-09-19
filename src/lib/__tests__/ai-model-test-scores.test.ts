@@ -30,7 +30,7 @@ describe("AI model test score normalization", () => {
   it("returns null for missing or invalid scores", () => {
     expect(parseScoreValue(undefined)).toBeNull();
     expect(parseScoreValue("invalid")).toBeNull();
-    expect(summarizeTestScores(null)).toEqual({ score: null, quality: null, speed: null, success: null, cases: [] });
+    expect(summarizeTestScores(null)).toEqual({ score: null, quality: null, speed: null, avg_response_s: null, success: null, cases: [] });
   });
 
   it("formats test case keys consistently", () => {

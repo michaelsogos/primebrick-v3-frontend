@@ -92,12 +92,15 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
+      restore?: boolean;
+      versionHistory?: boolean;
       customActions?: Array<{
         actionName: string;
         translationKey: string;
         icon: string;
         textColor?: string;
         disabledWhenDeleted?: boolean;
+        requiredPermission?: string | string[];
       }>;
     };
     dropdownMenuRow: TRow | null;
@@ -280,6 +283,7 @@
                   </div>
                 </DropdownMenu.Item>
               {/if}
+              {#if entityRowActions?.versionHistory !== false}
               <DropdownMenu.Item
                 onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
               >
@@ -288,6 +292,7 @@
                   <span>{$t('app.common.versionHistory')}</span>
                 </div>
               </DropdownMenu.Item>
+              {/if}
               {#if entityRowActions?.preview !== false}
                 <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
                   <div class="flex items-center gap-2">
@@ -312,7 +317,7 @@
               {/if}
               {#if entityRowActions?.delete !== false}
                 <DropdownMenu.Separator />
-                {#if isRowDeleted(row)}
+                {#if isRowDeleted(row) && entityRowActions?.restore !== false}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                     <div class="flex items-center gap-2">
                       <span class="relative flex items-center justify-center">

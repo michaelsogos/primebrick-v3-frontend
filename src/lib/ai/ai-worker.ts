@@ -1,5 +1,5 @@
 /**
- * regex-ai-worker.ts — Web Worker for Transformers.js model loading + inference.
+ * ai-worker.ts — Web Worker for Transformers.js model loading + inference.
  *
  * Single text-generation pipeline path. The `kv_cache_reuse` flag (from BE
  * execution_config) decides whether a DynamicCache is created and passed as

@@ -14,6 +14,8 @@ export interface UserProfile {
   email_verified?: boolean;
   issuer?: string;
   roles?: string[];
+  /** Expanded permission set emitted by `GET /api/v1/auth/me` (may contain `*` wildcards). */
+  permissions?: string[];
   // Audit fields
   created_at?: string;
   created_by?: string;

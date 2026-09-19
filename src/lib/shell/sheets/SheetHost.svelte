@@ -20,6 +20,7 @@
   import PhonePrefixSelectPanel from '$lib/shell/sheets/panels/PhonePrefixSelectPanel.svelte';
   import RegexFlagsPanel from '$lib/components/ui/smart-regex-input/regex-flags-panel.svelte';
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
+  import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -33,7 +34,8 @@
     'config.protocolSelect': ProtocolSelectPanel,
     'config.phonePrefixSelect': PhonePrefixSelectPanel,
     'config.regexFlags': RegexFlagsPanel,
-    'config.regexAiChat': RegexAiChatPanel
+    'config.regexAiChat': RegexAiChatPanel,
+    'config.jsonAiChat': JsonConfigAiChatPanel
   };
 
   const panelId = $derived(sheetState.panelId);

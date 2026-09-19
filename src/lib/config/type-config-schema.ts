@@ -145,8 +145,12 @@ export function serializeTypeConfig(config: ParsedTypeConfig): string {
 /**
  * Auto-generate an error_label_key for a validation rule.
  * Standard rules (required, min, max, invalidUrl, invalidEmail) map to
- * generic `app.common.validation.*` keys. Custom rules use the convention
- * `system.settings.config.auth.{configKey}.errors.{rule}`.
+ * generic `app.common.validation.*` keys — the default always points to the
+ * existing system seed key so module translations keep their reusability.
+ * Rules without a system default use the convention
+ * `custom.config.{configKey}.errors.{rule}` — user-created keys live in
+ * custom.translations (global, shared, cross-org) and MUST start with
+ * `custom.` (enforced by the BE).
  * Users can override this in the builder UI.
  * If configKey is empty, uses "my_custom_setting" as a placeholder example.
  */
@@ -170,7 +174,7 @@ export function autoErrorLabelKey(configKey: string, rule: string): string {
     return GENERIC_ERROR_KEYS[rule];
   }
   const key = configKey.trim() || 'my_custom_setting';
-  return `system.settings.config.auth.${key}.errors.${rule}`;
+  return `custom.config.${key}.errors.${rule}`;
 }
 
 // ─── Default limits ──────────────────────────────────────────────

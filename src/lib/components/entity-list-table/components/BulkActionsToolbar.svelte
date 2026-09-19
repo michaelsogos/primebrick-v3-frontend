@@ -29,7 +29,8 @@
     onHtmlExport,
     onBulkDuplicate,
     onBulkDelete,
-    onBulkRestore
+    onBulkRestore,
+    bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true }
   }: {
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
@@ -48,6 +49,8 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
+    /** Capability + permission gate per bulk CTA (from `meta.actions`). */
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
   } = $props();
 </script>
 
@@ -81,45 +84,53 @@
     </div>
   {:else}
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
-      <Button
-        variant="soft"
-        tone="primary"
-        size="xs"
-        onclick={onBulkExport}
-      >
-        <Download class="size-3.5" />
-        {$t('system.entities.list.bulkActions.export')}
-      </Button>
-      <Button
-        variant="soft"
-        tone="primary"
-        size="xs"
-        onclick={onHtmlExport}
-      >
-        <Download class="size-3.5" />
-        {$t('system.entities.list.bulkActions.exportHtml')}
-      </Button>
-      <Button
-        variant="soft"
-        tone="primary"
-        size="xs"
-        onclick={onBulkDuplicate}
-        disabled={selectedKeys.length < 2}
-      >
-        <Copy class="size-3.5" />
-        {$t('system.entities.list.bulkActions.duplicate')}
-      </Button>
-      <Button
-        variant="soft"
-        tone="destructive"
-        size="xs"
-        onclick={onBulkDelete}
-        disabled={selectedKeys.length < 2 || hasDeletedSelected}
-      >
-        <Trash2 class="size-3.5" />
-        {$t('system.entities.list.bulkActions.delete')}
-      </Button>
-      {#if hasDeletedSelected}
+      {#if bulkCapabilities.export}
+        <Button
+          variant="soft"
+          tone="primary"
+          size="xs"
+          onclick={onBulkExport}
+        >
+          <Download class="size-3.5" />
+          {$t('system.entities.list.bulkActions.export')}
+        </Button>
+      {/if}
+      {#if bulkCapabilities.htmlExport}
+        <Button
+          variant="soft"
+          tone="primary"
+          size="xs"
+          onclick={onHtmlExport}
+        >
+          <Download class="size-3.5" />
+          {$t('system.entities.list.bulkActions.exportHtml')}
+        </Button>
+      {/if}
+      {#if bulkCapabilities.duplicate}
+        <Button
+          variant="soft"
+          tone="primary"
+          size="xs"
+          onclick={onBulkDuplicate}
+          disabled={selectedKeys.length < 2}
+        >
+          <Copy class="size-3.5" />
+          {$t('system.entities.list.bulkActions.duplicate')}
+        </Button>
+      {/if}
+      {#if bulkCapabilities.delete}
+        <Button
+          variant="soft"
+          tone="destructive"
+          size="xs"
+          onclick={onBulkDelete}
+          disabled={selectedKeys.length < 2 || hasDeletedSelected}
+        >
+          <Trash2 class="size-3.5" />
+          {$t('system.entities.list.bulkActions.delete')}
+        </Button>
+      {/if}
+      {#if hasDeletedSelected && bulkCapabilities.restore}
         <Button
           variant="soft"
           tone="warning"

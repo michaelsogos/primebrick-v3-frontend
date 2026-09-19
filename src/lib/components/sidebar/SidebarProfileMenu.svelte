@@ -47,6 +47,7 @@
               {...props}
               size="lg"
               title={userName}
+              data-testid="sidebar-profile-menu-trigger"
               class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div class={cn('flex items-center', collapsed && 'w-full justify-center')}>
@@ -113,7 +114,7 @@
 
           <DropdownMenu.Separator />
 
-          <DropdownMenu.Item variant="destructive" onclick={onLogout}>
+          <DropdownMenu.Item variant="destructive" onclick={onLogout} data-testid="sidebar-logout-button">
             <LogOut />
             <span>{$t('app.userMenu.itemSignOut')}</span>
           </DropdownMenu.Item>

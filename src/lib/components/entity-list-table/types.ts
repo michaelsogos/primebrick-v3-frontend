@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter, EntityAction } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -95,8 +95,16 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
       icon: string;
       textColor?: string;
       disabledWhenDeleted?: boolean;
+      /** Gate evaluated by `hasRequiredPermission` — sentinel, perm string, or OR-array. */
+      requiredPermission?: string | string[];
     }>;
   };
+  /**
+   * Derived capability contract from `meta.actions`. When provided, standard
+   * row/bulk CTAs are additionally gated on the op existing, being `enabled`,
+   * and the user satisfying its `permissions`.
+   */
+  entityActions?: EntityAction[];
   customActionHandlers?: Record<string, (row: TRow) => void>;
   onCreateAction?: () => void;
   onEditAction?: (row: TRow) => void;

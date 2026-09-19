@@ -21,7 +21,16 @@ function getLastRoute(): string | null {
 
 function saveLastRoute(pathname: string): void {
   if (typeof localStorage === 'undefined') return;
+  // Only meaningful app pages are restorable — `/` (blank home), `/login`
+  // and API paths must never overwrite the last real page, otherwise the
+  // post-login restore degenerates to "always `/`".
+  if (pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/api/')) return;
   localStorage.setItem(LAST_ROUTE_KEY, pathname);
+}
+
+function clearLastRoute(): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.removeItem(LAST_ROUTE_KEY);
 }
 
 function resolveModuleFromRoute(pathname: string): string | null {
@@ -57,6 +66,7 @@ export const shellNav = {
   resolveModuleFromRoute,
   getLastRoute,
   saveLastRoute,
+  clearLastRoute,
 };
 
 export { loadShellNav };

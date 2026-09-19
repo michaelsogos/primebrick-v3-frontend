@@ -24,6 +24,7 @@
   } from './utils';
   import { useExport } from './composables/useExport.svelte.js';
   import { useBulkActions } from './composables/useBulkActions.svelte.js';
+  import { hasRequiredPermission, isEntityOpAllowed } from '$lib/permissions.svelte';
   import { useRowActions } from './composables/useRowActions.svelte.js';
   import { useDialogs } from './composables/useDialogs.svelte.js';
   import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
@@ -80,6 +81,7 @@
     rowActionsEnabled = false,
     rowActions,
     entityRowActions,
+    entityActions,
     customActionHandlers,
     onCreateAction,
     onEditAction,
@@ -430,6 +432,59 @@
     setDuplicateScope: dialogs.setDuplicateScope
   });
 
+  // ── Capability + permission gating (meta.actions contract) ─────────────
+
+  /**
+   * True when the op exists in `meta.actions`, is `enabled`, and the current
+   * user satisfies its declared requirement. FAIL-CLOSED: when `entityActions`
+   * is absent (meta without `actions` — contract violation) every CTA is
+   * treated as not allowed.
+   */
+  function opAllowed(op: string): boolean {
+    if (!entityActions) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[EntityListTable] no entityActions provided for entity "${entity}" — ` +
+          `meta.actions missing (contract violation or stale meta cache); all CTAs gated off`
+        );
+      }
+      return false;
+    }
+    return isEntityOpAllowed(entityActions, op);
+  }
+
+  /**
+   * Row/bulk visibility flags derived from `entityRowActions` (product
+   * visibility) ∩ `entityActions` (capability + per-user enablement).
+   * `restore`/`versionHistory` default true — they were not flags before.
+   */
+  const effectiveRowActions = $derived.by(() => {
+    const ra = entityRowActions;
+    return {
+      edit: ra?.edit !== false && opAllowed('update.single'),
+      duplicate: ra?.duplicate !== false && opAllowed('duplicate.bulk'),
+      preview: ra?.preview !== false && opAllowed('get'),
+      delete: ra?.delete !== false && opAllowed('delete.single'),
+      restore: (ra as { restore?: boolean } | undefined)?.restore !== false && opAllowed('restore.single'),
+      versionHistory: opAllowed('read.audit'),
+      customActions: ra?.customActions?.filter((a) => hasRequiredPermission(a.requiredPermission))
+    };
+  });
+
+  /** Create CTA — provided handler only effective when `create.single` is allowed. */
+  const effectiveOnCreateAction = $derived(
+    onCreateAction && opAllowed('create.single') ? onCreateAction : undefined
+  );
+
+  /** Bulk toolbar CTA capabilities — each maps to its canonical op. */
+  const bulkCapabilities = $derived({
+    export: opAllowed('export'),
+    htmlExport: opAllowed('export'),
+    duplicate: opAllowed('duplicate.bulk'),
+    delete: opAllowed('delete.bulk'),
+    restore: opAllowed('restore.bulk')
+  });
+
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
     translationKey: () => effectiveTranslationKey,
@@ -567,7 +622,7 @@
     toggleColumnKey={toggleColumnKey}
     resetColumnsAndSorting={resetColumnsAndSorting}
     checkboxVisualOnlyClass={checkboxVisualOnlyClass}
-    onCreateAction={onCreateAction}
+    onCreateAction={effectiveOnCreateAction}
     toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}
@@ -584,6 +639,7 @@
     onBulkDuplicate={() => bulkActions.handleBulkDuplicate()}
     onBulkDelete={() => bulkActions.handleBulkDelete()}
     onBulkRestore={() => bulkActions.handleBulkRestore()}
+    bulkCapabilities={bulkCapabilities}
   />
 
   <EntityListTableContent
@@ -600,7 +656,7 @@
     previewPanel={previewPanel}
     actionsEnabled={actionsEnabled}
     rowActions={rowActions}
-    entityRowActions={entityRowActions}
+    entityRowActions={effectiveRowActions}
     dropdownMenuRow={dropdownMenuRow}
     datetimeIanaModeByKey={datetimeIanaModeByKey}
     datetimeIanaRenderTick={datetimeIanaRenderTick}

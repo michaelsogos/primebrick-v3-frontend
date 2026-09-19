@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
+  import { resolvePostLoginTarget } from '$lib/auth/redirect-cache';
+  import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import LoadingWatermark from '$lib/components/auth/LoadingWatermark.svelte';
+  import Cookie from '@lucide/svelte/icons/cookie';
+  import RotateCcwKey from '@lucide/svelte/icons/rotate-ccw-key';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -65,7 +71,36 @@
   const alertToken = $derived(page.url.searchParams.get('token'));
   const hasAlert = $derived(!!alertType && !!alertToken);
 
+  /**
+   * Session boot — decide between auto-enter and the login form WITHOUT a
+   * server round-trip where possible:
+   *  - local session + unexpired access token → straight in ('checking').
+   *  - otherwise → attempt ONE refresh ('refreshing'): the HttpOnly refresh
+   *    cookie is the authoritative channel — this also covers fresh tabs
+   *    where sessionStorage['user'] is empty but the session is still valid.
+   *  - refresh fails (or none exists) → clear stale local state → form.
+   * `expires_at` comes from sessionStorage['user'] (login/refresh payload).
+   */
+  let bootState = $state<'checking' | 'refreshing' | 'form'>('checking');
+
+  async function bootSessionCheck() {
+    const target = resolvePostLoginTarget(page.url.searchParams.get('redirect_path'), shellNav.getLastRoute());
+    if (hasLocalSession() && !isTokenExpired()) {
+      window.location.href = target;
+      return;
+    }
+    bootState = 'refreshing';
+    try {
+      await triggerRefresh();
+      window.location.href = target;
+    } catch {
+      userProfileStore.clear();
+      bootState = 'form';
+    }
+  }
+
   onMount(() => {
+    void bootSessionCheck();
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
 
@@ -189,10 +224,18 @@
           <CardDescription>{$t('app.auth.login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
-          <LoginForm onsuccess={() => {
-            const redirectUrl = getAndClearRedirectUrl();
-            window.location.href = redirectUrl || '/';
-          }} />
+          {#if bootState === 'form'}
+            <LoginForm onsuccess={() => {
+              window.location.href = resolvePostLoginTarget(page.url.searchParams.get('redirect_path'), shellNav.getLastRoute());
+            }} />
+          {:else}
+            <LoadingWatermark
+              icon={bootState === 'checking' ? Cookie : RotateCcwKey}
+              titleKey={bootState === 'checking' ? 'app.auth.login.auto_logging' : 'app.auth.login.refreshing_token'}
+              hintKey={bootState === 'checking' ? 'app.auth.login.auto_logging_hint' : 'app.auth.login.refreshing_token_hint'}
+              animation="flip"
+            />
+          {/if}
         </CardContent>
       </Card>
 

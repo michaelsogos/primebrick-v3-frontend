@@ -106,7 +106,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ entity: body }),
         });
 
         if (!response.ok) {

@@ -5,10 +5,27 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 
   let { collapsed }: { collapsed: boolean } = $props();
+
+  /**
+   * Module selection = navigation. The module's first `route_prefixes`
+   * entry is its home base (e.g. settings → /system/settings, whose page
+   * redirects to /profile); modules without prefixes land on `/`.
+   * Route changes then drive module translations via useModuleTranslations.
+   * Already inside the prefix → no-op (keep the deep page).
+   */
+  function handleSelectModule(m: (typeof shellNav.modules)[number]) {
+    void shellNav.selectModule(m.id);
+    const target = m.route_prefixes?.[0] ?? '/';
+    const path = page.url.pathname;
+    const inside = target === '/' ? path === '/' : path === target || path.startsWith(target + '/');
+    if (!inside) void goto(target);
+  }
 
   const selectedModule = $derived(
     shellNav.modules.find((m) => m.id === shellNav.selectedModuleId) ?? shellNav.modules[0]
@@ -52,9 +69,7 @@
           <DropdownMenu.Item
             class={cn('gap-2', dropdownMenuSelectedItemClass(shellNav.selectedModuleId === m.id))}
             closeOnSelect={true}
-            onSelect={() => {
-              void shellNav.selectModule(m.id);
-            }}
+            onSelect={() => handleSelectModule(m)}
           >
             <div class="flex size-6 shrink-0 items-center justify-center">
               <DynamicIcon name={m.icon ?? 'layout-grid'} size={16} />

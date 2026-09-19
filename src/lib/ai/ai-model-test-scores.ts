@@ -25,6 +25,17 @@ export type TestScoresSummary = {
   cases: ScoreCase[];
 };
 
+/**
+ * Canonical test-case keys stored in ai_models.test_scores (and
+ * ai_cerebellum.test_scores). Each assistant's harness writes under its own
+ * key — cases never overwrite each other, and the summary score is the mean
+ * across cases (quality = average of test cases).
+ */
+export const AI_TEST_CASES = {
+  REGEX: 'regex_test_score',
+  JSON_EDITOR_WITH_SCHEMA: 'json_editor_with_schema_test_score',
+} as const;
+
 const TEST_SCORE_META_KEYS = new Set([
   'score_detail', 'perf', 'generation_config', 'turns', 'note', 'notes',
   'load_ok', 'generation_ok', 'tested_at', 'protocol', 'strategy',

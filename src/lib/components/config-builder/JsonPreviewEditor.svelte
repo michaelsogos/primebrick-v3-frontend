@@ -1,12 +1,21 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { JsonCodeBlock, JsonEditor } from '$lib/components/ui/json-code-block';
+  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import Pencil from '@lucide/svelte/icons/pencil';
   import Eye from '@lucide/svelte/icons/eye';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
+  import type { ConfigEntryType } from '$lib/api-types';
   import { typeConfigJsonSchema } from '$lib/config/type-config-schema';
 
-  let { builder }: { builder: ReturnType<typeof useTypeConfigBuilder> } = $props();
+  let {
+    type,
+    builder,
+  }: {
+    type: ConfigEntryType;
+    builder: ReturnType<typeof useTypeConfigBuilder>;
+  } = $props();
 
   let previewOpen = $state(true);
 
@@ -41,6 +50,19 @@
     if (next) rawJsonInput = prettyJson(builder.json);
   }
 
+  function openAiAssistant() {
+    openSheet('config.jsonAiChat', {
+      config_type: type,
+      config_key: () => builder.state.configKey,
+      current_json: () => builder.json,
+      on_apply_json: (json: string) => {
+        builder.setRawJson(json);
+        // Keep the raw editor in sync when advanced mode is visible.
+        if (builder.state.advancedMode) rawJsonInput = prettyJson(json);
+      },
+    });
+  }
+
   const placeholderJson = '{"validation":{"required":true,"rules":{}}}';
 
   // Pretty-printed view of builder.json (compact storage format → indented preview).
@@ -65,21 +87,33 @@
     >
       {previewOpen ? '▼' : '▶'} {$t('system.settings.config.typeConfig.jsonPreview')}
     </button>
-    <button
-      type="button"
-      class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-      onclick={() => setAdvanced(!builder.state.advancedMode)}
-      title={$t('system.settings.config.typeConfig.advancedMode')}
-      data-testid="tcb-advanced"
-    >
-      {#if builder.state.advancedMode}
-        <Eye class="h-3.5 w-3.5" />
-        Preview
-      {:else}
-        <Pencil class="h-3.5 w-3.5" />
-        {$t('app.common.edit')}
-      {/if}
-    </button>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        onclick={() => setAdvanced(!builder.state.advancedMode)}
+        title={$t('system.settings.config.typeConfig.advancedMode')}
+        data-testid="tcb-advanced"
+      >
+        {#if builder.state.advancedMode}
+          <Eye class="h-3.5 w-3.5" />
+          Preview
+        {:else}
+          <Pencil class="h-3.5 w-3.5" />
+          {$t('app.common.edit')}
+        {/if}
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
+        onclick={openAiAssistant}
+        title={$t('app.smart.json.ai.brainCta')}
+        aria-label={$t('app.smart.json.ai.brainCta')}
+        data-testid="tcb-ai-assistant-cta"
+      >
+        <AiIcon size={16} />
+      </button>
+    </div>
   </div>
 
   {#if previewOpen}

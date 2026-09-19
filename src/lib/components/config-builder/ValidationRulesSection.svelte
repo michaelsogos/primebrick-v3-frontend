@@ -9,6 +9,8 @@
   import type { ConfigEntryType } from '$lib/api-types';
   import { autoErrorLabelKey } from '$lib/config/type-config-schema';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
+  import { useTypeCapabilities } from '$lib/composables/useTypeCapabilities.svelte';
+  import { onMount } from 'svelte';
 
   let {
     type,
@@ -20,12 +22,15 @@
     builder: ReturnType<typeof useTypeConfigBuilder>;
   } = $props();
 
-  const isNumericType = $derived(type === 'bigint' || type === 'number' || type === 'money');
-  // String-derived types: support min/max (length) and regex validation
-  const isStringType = $derived(type === 'string' || type === 'text' || type === 'secret' || type === 'url' || type === 'email' || type === 'phone');
-  const isUrlType = $derived(type === 'url');
-  // Types that support min/max (numeric value or string length)
-  const hasMinMax = $derived(isNumericType || isStringType);
+  // Per-type capabilities — canonical matrix from @primebrick/sdk via
+  // config_entry/meta (see useTypeCapabilities). Replaces hardcoded type checks.
+  const typeCapabilities = useTypeCapabilities();
+  onMount(() => void typeCapabilities.ensureLoaded());
+  const caps = $derived(typeCapabilities.capabilitiesFor(type));
+  const isNumericType = $derived(caps.validation.min === 'value');
+  const isStringType = $derived(caps.validation.min === 'length');
+  const isUrlType = $derived(caps.widget.url_protocols === true);
+  const hasMinMax = $derived(caps.validation.min !== undefined);
 
   // All i18n keys for ComboSelect error_label_key selectors
   const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
@@ -203,7 +208,7 @@
   {/if}
 
   <!-- Unsigned (numeric only) -->
-  {#if isNumericType}
+  {#if caps.validation.unsigned}
     <div class="space-y-2">
       <div class="flex items-center gap-3">
         <Switch

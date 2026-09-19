@@ -1,0 +1,501 @@
+<script lang="ts">
+  /**
+   * JsonSchemaChoiceCard — GENERIC card for JSON-schema assistant choices.
+   *
+   * Two kinds (hybrid "Option B"):
+   * - `topic` — deterministic schema navigation card. Expandable topics emit
+   *   a LOCAL cascade message (no model call); leaf topics ask the model to
+   *   generate a config for that path.
+   * - `config` — model-produced JSON candidate: JsonCodeBlock preview,
+   *   validation errors, Apply/Discard actions.
+   *
+   * Fully schema-agnostic: the object name used in generated prompts and
+   * the i18n namespace arrive via props.
+   */
+  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
+  import { Button } from '$lib/components/ui/button';
+  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { t, dict, getDictKeys } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
+  import { uiLangTopBarTwoLetterSuffix, uiLangRegionSuffix } from '$lib/i18n/languages';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import type { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
+  import { topicsToChoices, valueOptionsToChoices, errorLabelRuleFromPath } from './json-schema-explorer';
+  import type { JsonAssistantChoice, SchemaTopic } from './json-schema.types';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Check from '@lucide/svelte/icons/check';
+  import X from '@lucide/svelte/icons/x';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
+
+  type AiHandle = ReturnType<typeof useAiAssistant<JsonAssistantChoice>>;
+
+  let {
+    choice,
+    ai,
+    topics_index,
+    on_apply_json,
+    testid_prefix,
+    message_uuid,
+    resolution,
+    i18n_ns,
+    object_label,
+    on_after_apply,
+    suggest_key,
+    on_new_error_message,
+    on_accept_translations,
+    on_reject_translations,
+  }: {
+    choice: JsonAssistantChoice;
+    ai: AiHandle;
+    /** path → SchemaTopic lookup (for cascade expansion). */
+    topics_index: Map<string, SchemaTopic>;
+    on_apply_json: (json: string) => void;
+    testid_prefix: string;
+    /** Owning message — needed to mark apply/discard resolution. */
+    message_uuid: string;
+    /** Resolution of the owning message, if the user already decided. */
+    resolution?: 'applied' | 'discarded';
+    /** i18n namespace for candidate/valid/apply/… keys. */
+    i18n_ns: string;
+    /** Object name used in generated prompts (e.g. 'type_config'). */
+    object_label: string;
+    /** Called after a successful apply — e.g. re-seed the root navigator. */
+    on_after_apply?: () => void;
+    /**
+     * Suggest an auto-generated key for an `error_label_key` leaf
+     * (e.g. autoErrorLabelKey(configKey, rule)). When provided, those
+     * leaves open a key-picker flow instead of a model generation.
+     */
+    suggest_key?: (path: string) => string;
+    /**
+     * Called when the user types a NEW error message in the key-picker —
+     * the caller translates it into all languages, creates the translation
+     * rows, and proposes the merged config.
+     */
+    on_new_error_message?: (message: string, path: string, rule: string) => void;
+    /**
+     * translations_preview accept — approved languages are queued as
+     * pending translations and the key merge is proposed.
+     */
+    on_accept_translations?: (path: string, key: string, translations: Record<string, string>) => void;
+    /**
+     * translations_preview reject — the key still lands in the JSON, but no
+     * translation rows are queued (user will fill them in later).
+     */
+    on_reject_translations?: (path: string, key: string) => void;
+  } = $props();
+
+  function handleTopicClick() {
+    if (choice.kind !== 'topic') return;
+    const node = topics_index.get(choice.path);
+    if (node && node.children.length > 0) {
+      // Deterministic cascade — local assistant message, no model turn.
+      const header = node.description
+        ? `${node.title}: ${node.description}`
+        : node.title;
+      ai.addLocalAssistantMessage(header, topicsToChoices(node.children));
+    } else if (node?.leaf_kind === 'error_label_key' && suggest_key) {
+      // error_label_key leaf — local key-picker flow, no model call.
+      const header = node.description
+        ? `${node.title}: ${node.description}`
+        : node.title;
+      ai.addLocalAssistantMessage(header, [{
+        kind: 'key_picker',
+        path: node.path,
+        rule: errorLabelRuleFromPath(node.path),
+        suggested_key: suggest_key(node.path),
+      }]);
+    } else if (node?.value_options?.length) {
+      // Closed-domain leaf (boolean/enum) — offer value CTAs locally;
+      // picking one sends the precise request to the model.
+      const header = node.description
+        ? `${node.title}: ${node.description}`
+        : node.title;
+      ai.addLocalAssistantMessage(header, valueOptionsToChoices(node.path, node.value_options));
+    } else {
+      // Open-domain leaf — ask the model to produce a config for this path.
+      // The prompt uses the ORIGINAL schema describe (English is fine for
+      // the model); the card header shows the localized description only.
+      const hint = node?.schema_description ?? node?.description;
+      const prompt = hint
+        ? `Generate the ${object_label} JSON for "${node?.title ?? choice.title}". ${hint}`
+        : `Generate the ${object_label} JSON for "${choice.title}".`;
+      void ai.sendMessage(prompt);
+    }
+  }
+
+  function handleValueClick() {
+    if (choice.kind !== 'value') return;
+    void ai.sendMessage(
+      `Set "${choice.path}" to ${JSON.stringify(choice.value)} and return the complete ${object_label} JSON.`,
+    );
+  }
+
+  function handleApply() {
+    if (choice.kind !== 'config' || !choice.valid) return;
+    try {
+      const compact = JSON.stringify(JSON.parse(choice.json));
+      on_apply_json(compact);
+      // Sheet stays open — the assistant supports iterative refinement.
+      // Condense the assistant turn to a compact applied-state summary so
+      // future prompts stay small (KV prefix invalidated on mutation).
+      ai.resolveChoice(message_uuid, 'applied', {
+        condensed_content: $t(`${i18n_ns}.applied_summary`, { json: compact }),
+      });
+      // Restart the deterministic navigator — a new local message with the
+      // continue hint + root topics, so the flow loops like the intro.
+      on_after_apply?.();
+    } catch { /* invalid JSON cannot be applied anyway */ }
+  }
+
+  function handleDiscard() {
+    if (choice.kind !== 'config') return;
+    ai.resolveChoice(message_uuid, 'discarded', {
+      condensed_content: $t(`${i18n_ns}.discarded_summary`),
+    });
+  }
+
+  // ─── key_picker (error_label_key leaves) ─────────────────────────────
+  const keyOptions = $derived(
+    getDictKeys($dict as Record<string, unknown>).map((k) => ({ key: k })),
+  );
+  let newErrorMessage = $state('');
+
+  /** Pick an existing (or newly typed) translation key → precise prompt. */
+  function handleKeySelect(value: string | string[]) {
+    if (choice.kind !== 'key_picker') return;
+    const key = Array.isArray(value) ? value[0] : value;
+    if (!key) return;
+    // Resolve the picker — later free text must reach the model, not the flow.
+    ai.resolveChoice(message_uuid, 'applied', {
+      condensed_content: $t(`${i18n_ns}.key_picker.picked_summary`, { key }),
+    });
+    void ai.sendMessage(
+      `Set "${choice.path}" to ${JSON.stringify(key)} and return the complete ${object_label} JSON.`,
+    );
+  }
+
+  /** New error message → caller translates + creates rows + proposes merge. */
+  function handleNewMessage() {
+    if (choice.kind !== 'key_picker') return;
+    const msg = newErrorMessage.trim();
+    if (!msg) return;
+    ai.resolveChoice(message_uuid, 'applied', {
+      condensed_content: $t(`${i18n_ns}.key_picker.chat_message`, { key: choice.suggested_key }),
+    });
+    on_new_error_message?.(msg, choice.path, choice.rule);
+    newErrorMessage = '';
+  }
+
+  // ─── translations_preview (new error message → per-language approval) ──
+  let previewLang = $state('');
+  let approvedLangs = $state(new Set<string>());
+
+  const previewLangs = $derived(
+    choice.kind === 'translations_preview' ? Object.keys(choice.translations) : [],
+  );
+  // Default preview language = the app's UI language (like the topbar
+  // selector); falls back to the first available language.
+  const activePreviewLang = $derived(
+    previewLang || (previewLangs.includes(get(uiLang)) ? get(uiLang) : previewLangs[0] || ''),
+  );
+  const previewFlag = $derived(uiLangRegionSuffix(activePreviewLang).toLowerCase());
+  const approvedCount = $derived(approvedLangs.size);
+
+  function toggleApproved(lang: string) {
+    const next = new Set(approvedLangs);
+    if (next.has(lang)) next.delete(lang);
+    else next.add(lang);
+    approvedLangs = next;
+  }
+
+  function approveAll() {
+    approvedLangs = new Set(previewLangs);
+  }
+
+  function handleAcceptTranslations() {
+    if (choice.kind !== 'translations_preview') return;
+    const approved: Record<string, string> = {};
+    for (const lang of approvedLangs) {
+      const value = choice.translations[lang];
+      if (value) approved[lang] = value;
+    }
+    on_accept_translations?.(choice.path, choice.key, approved);
+    ai.resolveChoice(message_uuid, 'applied', {
+      condensed_content: $t(`${i18n_ns}.translations_preview.accepted_summary`, {
+        key: choice.key,
+        count: approvedLangs.size,
+      }),
+    });
+  }
+
+  function handleRejectTranslations() {
+    if (choice.kind !== 'translations_preview') return;
+    on_reject_translations?.(choice.path, choice.key);
+    ai.resolveChoice(message_uuid, 'applied', {
+      condensed_content: $t(`${i18n_ns}.translations_preview.key_only_summary`, { key: choice.key }),
+    });
+  }
+</script>
+
+{#if choice.kind === 'topic'}
+  <button
+    type="button"
+    class="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent/50"
+    onclick={handleTopicClick}
+    data-testid="{testid_prefix}-topic"
+  >
+    <div class="min-w-0 flex-1">
+      <p class="text-xs font-medium text-foreground">{choice.title}</p>
+      {#if choice.description}
+        <p class="mt-0.5 text-[11px] text-muted-foreground">{choice.description}</p>
+      {/if}
+    </div>
+    {#if choice.expandable}
+      <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
+    {:else}
+      <Sparkles class="size-4 shrink-0 text-primary/70" />
+    {/if}
+  </button>
+{:else if choice.kind === 'value'}
+  <!-- Closed-domain value CTA — sends a precise "set X to V" request.
+       Positive value (true/first) = primary, others = gradient-border
+       secondary — same affirmative/negative pair as Apply/Discard. -->
+  {#if choice.value === true}
+    <Button
+      size="sm"
+      onclick={handleValueClick}
+      data-testid="{testid_prefix}-value"
+    >
+      {choice.title}
+    </Button>
+  {:else}
+    <button
+      type="button"
+      class="rounded-md bg-gradient-to-r from-sky-400/60 via-indigo-500/60 to-violet-500/60 p-px transition-opacity hover:opacity-80"
+      onclick={handleValueClick}
+      data-testid="{testid_prefix}-value"
+    >
+      <span class="flex h-8 items-center rounded-[5px] bg-background px-3 text-xs font-medium text-foreground">
+        {choice.title}
+      </span>
+    </button>
+  {/if}
+{:else if choice.kind === 'key_picker'}
+  <!-- error_label_key leaf — local key picker. Same ComboSelect pattern the
+       builder form uses (dict keys + allowCreate + auto-suggested default),
+       plus a free-text input: a new message is translated into every
+       language and seeded as a new translation key. -->
+  <div class="rounded-lg border border-border p-3 space-y-3" data-testid="{testid_prefix}-key-picker">
+    <p class="text-xs text-muted-foreground">
+      {$t(`${i18n_ns}.key_picker.intro`, { key: choice.suggested_key })}
+    </p>
+    <ComboSelect
+      mode="single"
+      value=""
+      onChange={handleKeySelect}
+      options={keyOptions}
+      valueField="key"
+      labelField="key"
+      isLabelTranslated={true}
+      allowCreate={true}
+      defaultSearch={choice.suggested_key}
+      placeholder={choice.suggested_key}
+      searchPlaceholder={choice.suggested_key}
+      class="text-xs"
+      data-testid="{testid_prefix}-key-combo"
+    >
+      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
+        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+          <span class="font-medium truncate">{resolvedLabel}</span>
+          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
+        </div>
+      {/snippet}
+    </ComboSelect>
+    <div class="flex items-center gap-2">
+      <input
+        type="text"
+        class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 text-xs"
+        placeholder={$t(`${i18n_ns}.key_picker.new_message`)}
+        bind:value={newErrorMessage}
+        onkeydown={(e) => e.key === 'Enter' && handleNewMessage()}
+        data-testid="{testid_prefix}-key-message"
+      />
+      <Button
+        size="sm"
+        onclick={handleNewMessage}
+        disabled={!newErrorMessage.trim()}
+        data-testid="{testid_prefix}-key-generate"
+      >
+        {$t(`${i18n_ns}.key_picker.generate`)}
+      </Button>
+    </div>
+  </div>
+{:else if choice.kind === 'translations_preview'}
+  <!-- New error message preview — per-language approval before the key
+       merge is proposed. Approved languages become pending translations
+       flushed atomically on the underlying form save; reject keeps the
+       key only (translations can be added later). -->
+  <div class="overflow-hidden rounded-lg border border-border" data-testid="{testid_prefix}-translations-preview">
+    <div class="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-2">
+      <span class="truncate font-mono text-[11px] text-muted-foreground">{choice.key}</span>
+      <!-- Same look as the topbar LangSelect (flag + region suffix + chevron),
+           but local to the preview — it never changes the app language. -->
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <button
+              {...props}
+              type="button"
+              class="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs hover:bg-accent"
+              data-testid="{testid_prefix}-preview-lang"
+            >
+              <span class={`fi fi-${previewFlag} shrink-0 rounded-sm`} aria-hidden="true"></span>
+              <span class="font-semibold">{uiLangTopBarTwoLetterSuffix(activePreviewLang)}</span>
+              <ChevronDown class="size-3.5 opacity-70" />
+            </button>
+          {/snippet}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" class="min-w-40">
+          {#each previewLangs as lang (lang)}
+            <DropdownMenu.Item
+              onSelect={() => (previewLang = lang)}
+              closeOnSelect={true}
+              class={dropdownMenuItemWithSelectedClass('flex items-center gap-2', lang === activePreviewLang)}
+            >
+              <span class={`fi fi-${uiLangRegionSuffix(lang).toLowerCase()} shrink-0 rounded-sm`} aria-hidden="true"></span>
+              <span class="min-w-0 flex-1 truncate">{lang}</span>
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
+    <div class="px-3 py-2">
+      <p class="text-xs text-foreground">{choice.translations[activePreviewLang] ?? ''}</p>
+    </div>
+    <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+      <label class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <input
+          type="checkbox"
+          class="size-3.5"
+          checked={approvedLangs.has(activePreviewLang)}
+          onchange={() => toggleApproved(activePreviewLang)}
+          data-testid="{testid_prefix}-approve-toggle"
+        />
+        {$t(`${i18n_ns}.translations_preview.approve`)}
+      </label>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-muted-foreground" data-testid="{testid_prefix}-approve-count">
+          {$t(`${i18n_ns}.translations_preview.counter`, { approved: approvedCount, total: previewLangs.length })}
+        </span>
+        <button
+          type="button"
+          class="text-[11px] font-medium text-primary hover:underline"
+          onclick={approveAll}
+          data-testid="{testid_prefix}-approve-all"
+        >
+          {$t(`${i18n_ns}.translations_preview.approve_all`)}
+        </button>
+      </div>
+    </div>
+    {#if resolution !== 'applied'}
+      <div class="flex justify-end gap-2 border-t border-border px-3 py-2">
+        <button
+          type="button"
+          class="rounded-md bg-gradient-to-r from-sky-400/60 via-indigo-500/60 to-violet-500/60 p-px transition-opacity hover:opacity-80"
+          onclick={handleRejectTranslations}
+          data-testid="{testid_prefix}-translations-reject"
+        >
+          <span class="flex h-8 items-center gap-1.5 rounded-[5px] bg-background px-3 text-xs font-medium text-foreground">
+            <X class="size-3.5" />
+            {$t(`${i18n_ns}.translations_preview.reject`)}
+          </span>
+        </button>
+        <Button
+          size="sm"
+          onclick={handleAcceptTranslations}
+          disabled={approvedCount === 0}
+          data-testid="{testid_prefix}-translations-accept"
+        >
+          <Check class="size-3.5" />
+          {$t(`${i18n_ns}.translations_preview.accept`)}
+        </Button>
+      </div>
+    {:else}
+      <div class="flex items-center justify-end border-t border-border px-3 py-2">
+        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+          <CircleCheck class="size-3.5" />
+          {$t(`${i18n_ns}.applied`)}
+        </span>
+      </div>
+    {/if}
+  </div>
+{:else if resolution !== 'discarded'}
+  <div
+    class="overflow-hidden rounded-lg border {choice.valid ? 'border-border' : 'border-destructive/50'}"
+    data-testid="{testid_prefix}-config-card"
+  >
+    <div class="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-2">
+      <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {$t(`${i18n_ns}.candidate`)}
+      </span>
+      {#if choice.valid}
+        <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+          <Check class="size-3" />
+          {$t(`${i18n_ns}.valid`)}
+        </span>
+      {:else}
+        <span class="inline-flex items-center gap-1 text-[10px] text-destructive">
+          <CircleAlert class="size-3" />
+          {$t(`${i18n_ns}.invalid`)}
+        </span>
+      {/if}
+    </div>
+    <JsonCodeBlock code={choice.json} lineNumbers copyable maxHeight="14rem" />
+    {#if !choice.valid && choice.errors.length > 0}
+      <ul class="space-y-0.5 border-t border-destructive/30 bg-destructive/5 px-3 py-2">
+        {#each choice.errors as err, i (i)}
+          <li class="text-[11px] text-destructive">{err}</li>
+        {/each}
+      </ul>
+    {/if}
+    {#if choice.valid}
+      {#if resolution === 'applied'}
+        <!-- Resolved: compact success label, right-aligned in the card footer -->
+        <div class="flex items-center justify-end border-t border-border px-3 py-2" data-testid="{testid_prefix}-applied">
+          <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <CircleCheck class="size-3.5" />
+            {$t(`${i18n_ns}.applied`)}
+          </span>
+        </div>
+      {:else}
+        <div class="flex justify-end gap-2 border-t border-border px-3 py-2">
+          <button
+            type="button"
+            class="rounded-md bg-gradient-to-r from-sky-400/60 via-indigo-500/60 to-violet-500/60 p-px transition-opacity hover:opacity-80"
+            onclick={handleDiscard}
+            data-testid="{testid_prefix}-discard"
+          >
+            <span class="flex h-8 items-center gap-1.5 rounded-[5px] bg-background px-3 text-xs font-medium text-foreground">
+              <X class="size-3.5" />
+              {$t(`${i18n_ns}.discard`)}
+            </span>
+          </button>
+          <Button
+            size="sm"
+            onclick={handleApply}
+            data-testid="{testid_prefix}-apply"
+          >
+            <Check class="size-3.5" />
+            {$t(`${i18n_ns}.apply`)}
+          </Button>
+        </div>
+      {/if}
+    {/if}
+  </div>
+{/if}

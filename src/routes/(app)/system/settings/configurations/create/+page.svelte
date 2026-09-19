@@ -19,6 +19,7 @@
   import { z } from 'zod';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { apiFetch, createConfigEntry } from '$lib/api';
+  import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -123,7 +124,12 @@
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
+      // Drained OUTSIDE the try so the catch can re-queue them on failure.
+      const translations = takePendingTranslations();
       try {
+        // Flush queued translation rows into the SAME write — the BE inserts
+        // them in the entity's transaction (atomic). Rows queued by the AI
+        // assistant's key_picker only land here, never at propose time.
         const params = {
           key: updateForm.data.key,
           value: updateForm.data.value,
@@ -133,6 +139,7 @@
           description_key: updateForm.data.description_key?.trim() || null,
           group_key: updateForm.data.group_key?.trim() || null,
           reserved: updateForm.data.reserved,
+          ...(translations.length > 0 ? { translations } : {}),
         };
         const data = await createConfigEntry(params);
         console.log('Config entry created successfully');
@@ -151,6 +158,10 @@
         }
       } catch (error) {
         console.error('Failed to create config entry:', error);
+        // Re-queue drained translations so a retry can still flush them.
+        for (const row of translations) {
+          addPendingTranslation(row.key, { [row.language]: row.value });
+        }
         cancel();
       }
     },
@@ -168,6 +179,10 @@
     () => hasChanges,
     'system.settings.configurations.create.unsavedChanges',
   );
+
+  // Leaving the page without saving must never persist queued translations —
+  // the pending queue dies with the form (zero orphan rows).
+  $effect(() => () => clearPendingTranslations());
 
   const isCreatePage = $derived(true);
   const auditData = $derived(buildAuditData());

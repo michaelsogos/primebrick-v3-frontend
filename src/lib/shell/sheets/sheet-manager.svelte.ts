@@ -12,7 +12,8 @@ export type SheetPanelId =
   | 'config.protocolSelect'
   | 'config.phonePrefixSelect'
   | 'config.regexFlags'
-  | 'config.regexAiChat';
+  | 'config.regexAiChat'
+  | 'config.jsonAiChat';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -68,6 +69,17 @@ export type SheetPanelPropsMap = {
     config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
     current_regex?: string;
     current_flags?: string;
+  };
+  'config.jsonAiChat': {
+    on_apply_json: (json: string) => void;
+    /** Live getter — the builder mutates after each apply, so a snapshot
+     *  string would go stale inside the assistant's system prompt. */
+    current_json?: string | (() => string);
+    /** Row's config_key — needed to auto-generate error_label_key values.
+     *  String or live getter (a snapshot goes stale if the user edits the
+     *  key field while the sheet is open). */
+    config_key?: string | (() => string);
+    config_type: import('$lib/api-types').ConfigEntryType;
   };
 };
 

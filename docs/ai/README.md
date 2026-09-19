@@ -5,6 +5,7 @@ These files help humans and agents collaborate consistently on the **Primebrick 
 | File | Role |
 |------|------|
 | [`patterns.md`](./patterns.md) | UI patterns, page layout, Shadcn vendor workflow, dev etiquette |
+| [`auth-session.md`](./auth-session.md) | Session detection without `/auth/me`: `session-check.ts` helpers, login page boot state machine, redirect-cache helpers |
 | [`svelte-runes.md`](./svelte-runes.md) | Svelte 5 runes patterns: `$derived` vs `$derived.by`, anti-patterns, `state_referenced_locally`, ESLint integration, Svelte MCP workflow |
 | [`SKILLS.md`](./SKILLS.md) | **Skill selection** — check `[x]` the skills that apply to this repository |
 | [`WORKFLOWS.md`](./WORKFLOWS.md) | Optional workflows (plan → implement → verify) |

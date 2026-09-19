@@ -16,10 +16,11 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
+  import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityAction, EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
@@ -36,6 +37,7 @@
   };
 
   type CustomerMeta = {
+    actions?: EntityAction[];
     entity: 'customer';
     titleKey?: string;
     titleText?: string;
@@ -124,6 +126,8 @@
   const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
+  // Page-level create CTA — same meta.actions contract as EntityListTable ops.
+  const canCreate = $derived(isEntityOpAllowed(meta?.actions, 'create.single'));
   const rowsLoading = $derived(metaLoaded && loading);
   const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'uuid');
   const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
@@ -768,10 +772,12 @@
       </div>
 
       <div class="flex shrink-0 items-center justify-end gap-2">
-        <Button href="/customers/new">
-          <Plus class="size-4" />
-          {$t('app.common.new')}
-        </Button>
+        {#if canCreate}
+          <Button href="/customers/new">
+            <Plus class="size-4" />
+            {$t('app.common.new')}
+          </Button>
+        {/if}
       </div>
     </div>
   {/snippet}
@@ -788,6 +794,7 @@
       columns={columns}
       rowActionsEnabled
       entityRowActions={meta?.list.rowActions}
+    entityActions={meta?.actions}
       defaultSort={meta?.list.defaultSort}
       pageSizeOptions={meta?.list.pageSizeOptions}
       searchPlaceholderKey={meta?.list.searchPlaceholderKey}

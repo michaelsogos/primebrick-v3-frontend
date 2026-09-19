@@ -23,8 +23,10 @@
   import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw } from '@lucide/svelte';
-  import type { AiModel } from '$lib/api-types';
+  import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, CircuitBoard } from '@lucide/svelte';
+  import type { AiModel, AiCerebellum } from '$lib/api-types';
+  import { fetchAiCerebellum } from '$lib/api';
+  import { resolveEffectiveParams } from '$lib/ai/ai-cerebellum';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
@@ -42,12 +44,54 @@
   // Rank map for ModelCacheSection (model_id → rank).
   let modelRanks = $state<Record<string, number | null>>({});
 
+  // Cerebellum tunings (assistant × model), fetched once alongside the catalog.
+  let cerebellumRows = $state<AiCerebellum[]>([]);
+  let cerebellumError = $state<string | null>(null);
+
   onMount(async () => {
     await aiModels.ensureLoaded();
     modelRanks = Object.fromEntries(
       aiModels.getEnabledModels().map((m) => [m.model_id, m.rank]),
     );
+    try {
+      cerebellumRows = await fetchAiCerebellum();
+    } catch (err) {
+      cerebellumError = err instanceof Error ? err.message : 'Failed to load cerebellum tunings';
+    }
   });
+
+  // Tunings grouped by assistant_key: each group lists its tunings with the
+  // resolved params (tuning override ← model default). The model row the
+  // tuning targets is matched by model_id.
+  let cerebellumGroups = $derived.by(() => {
+    const byAssistant = new Map<string, AiCerebellum[]>();
+    for (const row of cerebellumRows) {
+      if (!row.is_enabled || row.deleted_at) continue;
+      const list = byAssistant.get(row.assistant_key) ?? [];
+      list.push(row);
+      byAssistant.set(row.assistant_key, list);
+    }
+    return [...byAssistant.entries()].map(([assistant_key, rows]) => ({
+      assistant_key,
+      rows: rows.sort((a, b) => a.sort_order - b.sort_order),
+    }));
+  });
+
+  function modelFor(model_id: string): AiModel | undefined {
+    return aiModels.state.models.find((m) => m.model_id === model_id);
+  }
+
+  /** Short override summary for one tuning, e.g. "T=0.10 · max_tokens=512". */
+  function tuningOverrides(t: AiCerebellum): string {
+    const parts: string[] = [];
+    if (t.temperature !== null && t.temperature !== undefined) parts.push(`T=${t.temperature}`);
+    if (t.top_p !== null && t.top_p !== undefined) parts.push(`top_p=${t.top_p}`);
+    if (t.max_tokens !== null && t.max_tokens !== undefined) parts.push(`max_tokens=${t.max_tokens}`);
+    if (t.repetition_penalty !== null && t.repetition_penalty !== undefined) parts.push(`rep_penalty=${t.repetition_penalty}`);
+    if (t.enable_thinking !== null && t.enable_thinking !== undefined) parts.push(t.enable_thinking ? 'thinking' : 'no-thinking');
+    if (t.execution_config && Object.keys(t.execution_config).length) parts.push('exec_config');
+    return parts.join(' · ');
+  }
 
   // All models sorted by rank DESC (top ranked first).
   let allModels = $derived.by(() => {
@@ -440,6 +484,52 @@
                 {/if}
               </div>
             </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </section>
+
+  <!-- Cerebellum section — per-assistant, per-model tuned params -->
+  <section class="space-y-3" data-testid="ai-settings-cerebellum-section">
+    <div class="flex items-center gap-2">
+      <CircuitBoard class="size-4 text-foreground/70" />
+      <h2 class="text-sm font-semibold">{$t('system.settings.ai.cerebellum_section.title')}</h2>
+    </div>
+    <p class="text-xs text-muted-foreground">{$t('system.settings.ai.cerebellum_section.description')}</p>
+    {#if cerebellumError}
+      <div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{cerebellumError}</div>
+    {:else if cerebellumGroups.length === 0}
+      <div class="text-sm text-muted-foreground" data-testid="ai-cerebellum-empty">{$t('system.settings.ai.cerebellum_section.empty')}</div>
+    {:else}
+      <div class="space-y-2">
+        {#each cerebellumGroups as group (group.assistant_key)}
+          <div class="rounded-lg border border-border/60 p-3 space-y-2" data-testid={`ai-cerebellum-group-${group.assistant_key}`}>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium font-mono">{group.assistant_key}</span>
+              <span class="text-[10px] text-muted-foreground">{$t('system.settings.ai.cerebellum_section.assistant')}</span>
+            </div>
+            {#each group.rows as row (row.uuid)}
+              {@const model = modelFor(row.model_id)}
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/30 px-2 py-1.5 text-xs" data-testid={`ai-cerebellum-row-${group.assistant_key}-${row.name}`}>
+                <span class="font-medium">{$t(row.name)}</span>
+                {#if row.is_default}
+                  <span class="rounded bg-primary/10 px-1 text-[10px] text-primary">{$t('app.smart.ai.cerebellum.default')}</span>
+                {/if}
+                <span class="text-muted-foreground font-mono break-all">{model?.name ?? row.model_id}</span>
+                {#if tuningOverrides(row)}
+                  <span class="font-mono text-foreground/80">{tuningOverrides(row)}</span>
+                {:else}
+                  <span class="text-muted-foreground">{$t('app.smart.ai.cerebellum.model_defaults')}</span>
+                {/if}
+                {#if model}
+                  {@const eff = resolveEffectiveParams(model, row)}
+                  <span class="text-[10px] text-muted-foreground font-mono">
+                    → T={eff.temperature} top_p={eff.top_p} max={eff.max_tokens} rep={eff.repetition_penalty} {eff.enable_thinking ? 'thinking' : 'no-thinking'}
+                  </span>
+                {/if}
+              </div>
+            {/each}
           </div>
         {/each}
       </div>

@@ -4,7 +4,8 @@
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { afterNavigate } from '$app/navigation';
-  import { userProfileState } from '$lib/user-profile-store.svelte';
+  import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
+  import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
@@ -41,10 +42,20 @@
   });
 
   async function handleLogout() {
-    document.cookie = 'access_token=; path=/; max-age=0';
-    document.cookie = 'refresh_token=; path=/api/v1/auth/refresh; max-age=0';
-    sessionStorage.removeItem('user');
-    window.location.href = '/login';
+    // Auth cookies are HttpOnly — document.cookie cannot touch them (the
+    // previous attempt was dead code: the refresh cookie survived and the
+    // login boot silently re-authenticated). Only the server can clear
+    // them, via POST /auth/logout. Best-effort: local state is cleared
+    // regardless of the response.
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // offline / BE down — still clear everything local
+    }
+    userProfileStore.clear();      // sessionStorage['user'] + in-memory profile
+    getAndClearRedirectUrl();      // a logout must never restore a saved redirect
+    shellNav.clearLastRoute();     // don't land the next session on this user's page
+    window.location.href = '/login'; // NO redirect_path — by definition
   }
 
   afterNavigate(() => {

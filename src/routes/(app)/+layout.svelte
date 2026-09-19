@@ -57,6 +57,8 @@
             has_passkey: data.has_passkey,
             auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed,
             has_mfa: data.has_mfa,
+            // Expanded permission set for per-CTA enablement (BE stays authoritative).
+            permissions: data.permissions,
           });
 
           // ONE-TIME enforcer decision — made right here, with confirmed
@@ -92,6 +94,10 @@
 
     // Always load "app" module translations on app init (shell + public pages)
     await loadModuleTranslations('app', get(uiLang));
+    // "custom" is the first authenticated dictionary — user-created keys
+    // (custom.*), global/shared, loaded right after login and on every F5
+    // via the same localStorage + ETag revalidation as every module dict.
+    await loadModuleTranslations('custom', get(uiLang));
   });
 </script>
 

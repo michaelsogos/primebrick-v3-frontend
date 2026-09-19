@@ -48,6 +48,8 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
+      restore?: boolean;
+      versionHistory?: boolean;
     };
     dropdownMenuRow: TRow | null;
     onToggleRowSelect: (key: string) => void;
@@ -140,14 +142,16 @@
               </div>
             </DropdownMenu.Item>
           {/if}
-          <DropdownMenu.Item
-            onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
-          >
-            <div class="flex items-center gap-2">
-              <FileClock class="size-4 opacity-70" />
-              <span>{$t('app.common.versionHistory')}</span>
-            </div>
-          </DropdownMenu.Item>
+          {#if entityRowActions?.versionHistory !== false}
+            <DropdownMenu.Item
+              onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
+            >
+              <div class="flex items-center gap-2">
+                <FileClock class="size-4 opacity-70" />
+                <span>{$t('app.common.versionHistory')}</span>
+              </div>
+            </DropdownMenu.Item>
+          {/if}
           {#if entityRowActions?.preview !== false}
             <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
               <div class="flex items-center gap-2">
@@ -158,7 +162,7 @@
           {/if}
           {#if entityRowActions?.delete !== false}
             <DropdownMenu.Separator />
-            {#if rowDeleted}
+            {#if rowDeleted && entityRowActions?.restore !== false}
               <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                 <div class="flex items-center gap-2">
                   <span class="relative flex items-center justify-center">

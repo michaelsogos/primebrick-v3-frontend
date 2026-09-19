@@ -75,5 +75,5 @@
 <div class="space-y-6">
   <ValidationRulesSection {type} {configKey} {builder} />
   <WidgetConfigSection {type} {builder} />
-  <JsonPreviewEditor {builder} />
+  <JsonPreviewEditor {type} {builder} />
 </div>

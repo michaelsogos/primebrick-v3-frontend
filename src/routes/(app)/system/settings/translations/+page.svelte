@@ -45,7 +45,7 @@
   async function loadModules() {
     try {
       // Static translation modules (always available — not in service_registry)
-      const staticModules = ['app', 'system'];
+      const staticModules = ['app', 'system', 'custom'];
       // US microservice modules from the existing /api/v1/modules endpoint
       const serviceModules = (await fetchModules())
         .map(m => m.id.toLowerCase())
@@ -53,7 +53,7 @@
       modules = [...staticModules, ...serviceModules];
     } catch (e) {
       // Fall back to static modules only if the modules endpoint fails
-      modules = ['app', 'system'];
+      modules = ['app', 'system', 'custom'];
       pushNotification({ impact: 'MEDIUM', message: 'Failed to load service modules, showing static modules only', scope: 'translations', detail: String(e) });
     }
   }

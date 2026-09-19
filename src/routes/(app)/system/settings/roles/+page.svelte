@@ -7,7 +7,7 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityAction, EntityListListMeta, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
@@ -23,6 +23,7 @@
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   type RoleMappingMeta = {
+    actions?: EntityAction[];
     entity: 'role_mappings';
     translationKey?: string;
     titleKey?: string;
@@ -507,6 +508,7 @@
     {columns}
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
+    entityActions={meta?.actions}
     onCreateAction={openCreate}
     onEditAction={openEdit}
     defaultSort={meta?.list.defaultSort}

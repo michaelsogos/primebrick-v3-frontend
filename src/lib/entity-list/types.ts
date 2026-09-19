@@ -123,6 +123,12 @@ export type EntityListListMeta = {
     edit?: boolean;
     preview?: boolean;
   };
+  /**
+   * Optional per-op overrides applied to the derived `meta.actions` entries
+   * (e.g. `{ "delete.bulk": { enabled: false } }` hides the CTA even though
+   * the endpoint exists).
+   */
+  actions_overrides?: Record<string, { enabled?: boolean }>;
   /** Whether the create action is enabled for this entity */
   enableCreateAction?: boolean;
 };
@@ -131,7 +137,24 @@ export type EntityListListMeta = {
  * Top-level entity meta shape returned by `GET /api/v1/entities/{entity}/meta`.
  * Enforces the `translationKey` convention (snake_case singular, no uppercase).
  */
+/**
+ * One entry of `meta.actions` — derived server-side from the entity's
+ * registered routes. `op` identifies the endpoint operation
+ * (`"list"`, `"get"`, `"create.single"`, `"delete.bulk"`, ...).
+ */
+export type EntityAction = {
+  op: string;
+  /** OR-group of concrete permission strings the endpoint declares. */
+  permissions?: string[];
+  /** Sentinel gate used instead of concrete perms (e.g. `_authenticated_user`). */
+  sentinel?: "_public" | "_authenticated_user" | "_authenticated_admin";
+  /** Product visibility flag — false hides the CTA for everyone. */
+  enabled: boolean;
+};
+
 export type EntityListMeta = {
+  /** Derived capability contract: which endpoint ops exist and what they require. */
+  actions?: EntityAction[];
   /** Entity name in snake_case plural — used for API URLs (e.g. `role_mappings`). */
   entity: string;
   /**

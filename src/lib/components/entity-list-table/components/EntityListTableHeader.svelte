@@ -47,7 +47,8 @@
     onHtmlExport,
     onBulkDuplicate,
     onBulkDelete,
-    onBulkRestore
+    onBulkRestore,
+    bulkCapabilities
   }: EntityListTableHeaderProps<TRow> = $props();
 
   type EntityListTableHeaderProps<TRow> = {
@@ -93,6 +94,7 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
   };
 </script>
 
@@ -175,4 +177,5 @@
   onBulkDuplicate={onBulkDuplicate}
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
+  bulkCapabilities={bulkCapabilities}
 />

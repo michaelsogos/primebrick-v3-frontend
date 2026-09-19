@@ -7,7 +7,7 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityAction, EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
@@ -23,6 +23,7 @@
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
   type UserProfileMeta = {
+    actions?: EntityAction[];
     entity: 'user_profiles';
     translationKey?: string;
     titleKey?: string;
@@ -586,6 +587,7 @@
     columns={columns}
     rowActionsEnabled
     entityRowActions={meta?.list.rowActions}
+    entityActions={meta?.actions}
     customActionHandlers={{
       changePassword: (row: UserProfileListRow) => {
         changePasswordRow = row;

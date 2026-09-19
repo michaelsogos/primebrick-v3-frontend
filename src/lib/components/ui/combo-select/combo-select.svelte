@@ -395,7 +395,7 @@
           >
             <div class="flex items-center gap-2 w-full">
               {#if mode === "multi"}
-                <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0" />
+                <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0"></div>
               {/if}
               <span class="flex-1 truncate text-left">
                 {$t('app.common.create')} <span class="font-medium">"{search.trim()}"</span>

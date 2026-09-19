@@ -111,15 +111,18 @@ export function useModuleTranslations(): { stop: () => void } {
       }
     });
 
-    // Watch language changes — when the user switches language, reload
-    // the current module's translations for the new language.
+    // Watch language changes — when the user switches language, reload the
+    // bootstrap dicts (app + custom) plus the current route module's
+    // translations for the new language.
     unsubLang = uiLang.subscribe(($lang) => {
       const path = page.url.pathname;
       const moduleId = shellNav.resolveModuleFromRoute(path);
-      if (moduleId) {
+      const modules = new Set(['app', 'custom']);
+      if (moduleId) modules.add(moduleId);
+      for (const id of modules) {
         // Reset the in-memory cache for this module so the new language loads
-        LOADED_MODULES.delete(`${moduleId}:${$lang}`);
-        void ensureModuleTranslations(moduleId, $lang);
+        LOADED_MODULES.delete(`${id}:${$lang}`);
+        void ensureModuleTranslations(id, $lang);
       }
     });
   }

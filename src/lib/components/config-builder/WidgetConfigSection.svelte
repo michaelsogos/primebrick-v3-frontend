@@ -6,6 +6,8 @@
   import { getAllCurrencies } from '$lib/currency';
   import type { ConfigEntryType } from '$lib/api-types';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
+  import { useTypeCapabilities } from '$lib/composables/useTypeCapabilities.svelte';
+  import { onMount } from 'svelte';
   import BadgeValuesEditor from './BadgeValuesEditor.svelte';
   import SelectSourceEditor from './SelectSourceEditor.svelte';
 
@@ -17,9 +19,14 @@
     builder: ReturnType<typeof useTypeConfigBuilder>;
   } = $props();
 
-  const isMoney = $derived(type === 'money');
-  const isBadge = $derived(type === 'badge');
-  const isSelect = $derived(type === 'single_select' || type === 'multi_select');
+  // Per-type capabilities — canonical matrix from @primebrick/sdk via
+  // config_entry/meta (see useTypeCapabilities). Replaces hardcoded type checks.
+  const typeCapabilities = useTypeCapabilities();
+  onMount(() => void typeCapabilities.ensureLoaded());
+  const caps = $derived(typeCapabilities.capabilitiesFor(type));
+  const isMoney = $derived(caps.widget.currency === true);
+  const isBadge = $derived(caps.widget.badge_values === true);
+  const isSelect = $derived(caps.widget.select_source === true);
 
   // Currency options for money type
   const currencyOptions = $derived(

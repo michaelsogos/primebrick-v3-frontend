@@ -122,7 +122,7 @@
           });
         }
       })
-      .optional(),
+      .default(''),
     send_invitation: z.boolean().default(false),
     display_name: displayNameSchema(z.string()),
     email: z.string()
