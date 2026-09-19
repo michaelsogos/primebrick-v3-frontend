@@ -2,7 +2,8 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
@@ -31,10 +32,10 @@
   let challengeToken = $state('');
   let availableFactors = $state<Array<{ factor_id: string; factor_type: string; label: string | null }>>([]);
   let factorId = $state('');
-  let code = $state('');
   let loading = $state(false);
   let verifying = $state(false);
   let error = $state<string | null>(null);
+  const otp = useOtpInput({ onSubmit: () => verify(), disabled: () => verifying });
 
   // Reset state when dialog opens
   $effect(() => {
@@ -42,7 +43,7 @@
       challengeToken = '';
       availableFactors = [];
       factorId = '';
-      code = '';
+      otp.reset();
       error = null;
       void initiate();
     }
@@ -75,7 +76,7 @@
   }
 
   async function verify() {
-    if (!code || code.length !== 6) {
+    if (otp.code.length !== 6) {
       error = $t('app.auth.mfa.codeRequired');
       return;
     }
@@ -88,12 +89,13 @@
         body: JSON.stringify({
           mfa_challenge_token: challengeToken,
           factor_id: factorId,
-          code,
+          code: otp.code,
         }),
       });
       if (!resp.ok) {
         const err = await resp.json();
         error = err.detail || $t('app.auth.mfa.invalidCode');
+        otp.reset();
         return;
       }
       const data = await resp.json();
@@ -163,17 +165,12 @@
 
         <div class="space-y-2">
           <Label for="mfa-stepup-code">{$t('app.auth.mfa.verifyCode')}</Label>
-          <Input
+          <OtpInput
             id="mfa-stepup-code"
-            type="text"
-            inputmode="numeric"
-            pattern="\d{6}"
-            maxlength={6}
-            autocomplete="one-time-code"
-            placeholder="000000"
-            class="text-center text-lg tracking-widest"
-            bind:value={code}
-            onkeydown={(e) => { if (e.key === 'Enter') verify(); }}
+            data-testid="mfa-stepup-code-input"
+            bind:value={otp.code}
+            onsubmit={otp.requestSubmit}
+            disabled={verifying}
           />
         </div>
 

@@ -10,6 +10,7 @@
   import { authConfigState } from '$lib/auth-config-store.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { enforcerStore, hideEnforcer } from '$lib/auth-enforcer-store.svelte';
+  import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Fingerprint from '@lucide/svelte/icons/fingerprint';
   import Smartphone from '@lucide/svelte/icons/smartphone';
@@ -31,8 +32,12 @@
 
   // Sync `open` with the store flag. The store is the single source of truth
   // for visibility — set once by the layout, cleared by enrollment/dismiss.
+  // The session-expired login dialog takes absolute precedence: while it is
+  // open the enforcer must not render — two modal dialogs share the same
+  // z-index and the enforcer's overlay would swallow pointer/keyboard events
+  // meant for the login form.
   $effect(() => {
-    open = enforcerStore.visible;
+    open = enforcerStore.visible && !sessionExpiredStore.isOpen;
     if (open) {
       // Reset method selection when dialog opens.
       // If passkey_required=true, auto-select passkey (no method selector shown).

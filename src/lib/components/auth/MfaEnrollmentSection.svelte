@@ -2,6 +2,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Spinner } from '$lib/components/ui/spinner';
   import { Input } from '$lib/components/ui/input';
+  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
@@ -21,8 +23,8 @@
   let secret = $state("");
   let qrCodeUrl = $state("");
   let recoveryCodes = $state<string[]>([]);
-  let verifyCode = $state("");
   let enrollLabel = $state("");
+  const otp = useOtpInput({ onSubmit: () => finishEnrollment(), disabled: () => enrolling });
   let enrollError = $state<string | null>(null);
 
   // ─── Derived ────────────────────────────────────────────────────────────────
@@ -58,7 +60,7 @@
   }
 
   async function finishEnrollment() {
-    if (!verifyCode || verifyCode.length !== 6) {
+    if (otp.code.length !== 6) {
       enrollError = $t('app.auth.mfa.codeRequired');
       return;
     }
@@ -70,13 +72,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           enrollment_token: enrollmentToken,
-          passcode: verifyCode,
+          passcode: otp.code,
           label: enrollLabel || undefined,
         }),
       });
       if (!resp.ok) {
         const err = await resp.json();
         enrollError = err.detail || $t('app.auth.mfa.invalidCode');
+        otp.reset();
         return;
       }
 
@@ -200,16 +203,12 @@
     </div>
     <div class="space-y-2">
       <Label for="mfa-enroller-code">{$t('app.auth.mfa.verifyCode')}</Label>
-      <Input
+      <OtpInput
         id="mfa-enroller-code"
-        type="text"
-        inputmode="numeric"
-        pattern="\d{6}"
-        maxlength={6}
-        autocomplete="one-time-code"
-        placeholder="000000"
-        class="text-center text-lg tracking-widest"
-        bind:value={verifyCode}
+        data-testid="mfa-enroller-code-input"
+        bind:value={otp.code}
+        onsubmit={otp.requestSubmit}
+        disabled={enrolling}
       />
     </div>
     {#if enrollError}

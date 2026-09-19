@@ -442,7 +442,10 @@
    */
   function opAllowed(op: string): boolean {
     if (!entityActions) {
-      if (import.meta.env.DEV) {
+      // Only warn when meta has actually loaded (columns are meta-derived —
+      // columns.length > 0 means meta arrived but `actions` is still absent).
+      // During the meta-loading window entityActions is legitimately undefined.
+      if (import.meta.env.DEV && columns.length > 0) {
         console.warn(
           `[EntityListTable] no entityActions provided for entity "${entity}" — ` +
           `meta.actions missing (contract violation or stale meta cache); all CTAs gated off`

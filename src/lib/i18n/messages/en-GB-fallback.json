@@ -63,6 +63,7 @@
   "app.auth.login.mfa.code": "Authentication code",
   "app.auth.login.mfa.codeRequired": "Please enter the 6-digit code",
   "app.auth.login.mfa.invalidCode": "Invalid authentication code",
+  "app.auth.login.mfa.challengeExpired": "Your sign-in session has expired. Please go back and log in again.",
   "app.auth.login.mfa.connectionError": "Connection error or verification failed",
   "app.auth.login.mfa.factorLabel": "Device",
   "app.auth.login.mfa.verify": "Verify",

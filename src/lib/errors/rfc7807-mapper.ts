@@ -22,6 +22,18 @@ export function mapRFC7807ToMessageKey(
 		if (!error.internal_code || genericAuthCodes.includes(error.internal_code)) {
 			return { key: 'app.auth.login.invalidCredentials' };
 		}
+
+		if (
+			error.internal_code === 'MFA_CHALLENGE_EXPIRED' ||
+			error.internal_code === 'MFA_CHALLENGE_TOKEN_INVALID' ||
+			error.internal_code === 'MFA_CHALLENGE_TOKEN_MALFORMED'
+		) {
+			return { key: 'app.auth.login.mfa.challengeExpired' };
+		}
+
+		if (error.internal_code === 'MFA_INVALID_CODE') {
+			return { key: 'app.auth.login.mfa.invalidCode' };
+		}
 	}
 
 	if (error.status === 403) {

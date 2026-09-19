@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -29,16 +31,49 @@
     oncancel?: () => void;
   } = $props();
 
-  let code = $state('');
   let submitting = $state(false);
   let errorMsg = $state<string | null>(null);
+  const otp = useOtpInput({ onSubmit: () => handleVerify(), disabled: () => submitting || !challengeReady });
+
+  // The challenge token carried in from the login response may already be
+  // stale (page reload, HMR, long idle on this form, BE restart). Every time
+  // this form mounts we swap it for a fresh one — the BE verifies the old
+  // token's signature (exp ignored) and moves the stashed session tokens to
+  // the new challenge. If the stash is gone, verification is impossible and
+  // the user must restart password login.
+  // svelte-ignore state_referenced_locally
+  let challengeToken = $state(mfa_challenge_token);
+  // svelte-ignore state_referenced_locally
+  let factors = $state(available_factors);
+  let challengeReady = $state(false);
+
+  onMount(async () => {
+    try {
+      const resp = await apiFetch('/api/v1/auth/mfa/challenge/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mfa_challenge_token: mfa_challenge_token }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        challengeToken = data.mfa_challenge_token;
+        factors = data.available_factors;
+      }
+      // On failure we still enable the form with the original token — the
+      // verify call will surface the real error (expired/invalid code).
+    } catch {
+      // Network error — same fallback: keep the original token.
+    } finally {
+      challengeReady = true;
+    }
+  });
 
   // v1: TOTP only — use the first (preferred) factor.
   // When multiple factor types are supported, this will be a selector.
-  const factor = $derived(available_factors[0]);
+  const factor = $derived(factors[0]);
 
   async function handleVerify() {
-    if (!code || code.length !== 6) {
+    if (otp.code.length !== 6) {
       errorMsg = $t('app.auth.login.mfa.codeRequired');
       return;
     }
@@ -49,9 +84,9 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mfa_challenge_token,
+          mfa_challenge_token: challengeToken,
           factor_id: factor.factor_id,
-          code,
+          code: otp.code,
         }),
       });
 
@@ -69,6 +104,7 @@
         } else {
           errorMsg = errorData.detail || $t('app.auth.login.mfa.invalidCode');
         }
+        otp.reset();
         return;
       }
 
@@ -99,21 +135,16 @@
 
     <div class="space-y-2">
       <Label for="mfa-code-input">{$t('app.auth.login.mfa.code')}</Label>
-      <Input
+      <OtpInput
         id="mfa-code-input"
-        type="text"
-        inputmode="numeric"
-        pattern="\d{6}"
-        maxlength={6}
-        autocomplete="one-time-code"
         data-testid="mfa-code-input"
-        placeholder="000000"
-        class="text-center text-lg tracking-widest"
-        bind:value={code}
+        bind:value={otp.code}
+        onsubmit={otp.requestSubmit}
+        disabled={submitting || !challengeReady}
       />
     </div>
 
-    <Button type="button" data-testid="mfa-verify-button" class="w-full" disabled={submitting} onclick={handleVerify}>
+    <Button type="button" data-testid="mfa-verify-button" class="w-full" disabled={submitting || !challengeReady} onclick={handleVerify}>
       {#if submitting}
         <Spinner class="mr-2" />
       {/if}

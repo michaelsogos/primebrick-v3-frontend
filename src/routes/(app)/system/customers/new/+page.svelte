@@ -17,7 +17,7 @@
             pathname: page.url.pathname,
             t: (key) => $t(key)
           }),
-          { label: $t('system.entities.customer.title'), href: '/customers' }
+          { label: $t('system.entities.customer.title'), href: '/system/customers' }
         ]}
       />
       <h1 class="text-xl font-semibold leading-tight">{$t('system.entities.customer.new.title')}</h1>

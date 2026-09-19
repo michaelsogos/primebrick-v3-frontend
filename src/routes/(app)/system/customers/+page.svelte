@@ -773,7 +773,7 @@
 
       <div class="flex shrink-0 items-center justify-end gap-2">
         {#if canCreate}
-          <Button href="/customers/new">
+          <Button href="/system/customers/new">
             <Plus class="size-4" />
             {$t('app.common.new')}
           </Button>

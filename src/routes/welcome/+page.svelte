@@ -9,6 +9,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -329,17 +330,12 @@
 
             <div class="space-y-2">
               <label for="otp" class="text-sm font-medium">{$t('app.auth.welcome.otp.codeLabel')}</label>
-              <Input
+              <OtpInput
                 id="otp"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]{6}"
-                maxlength={6}
                 data-testid="welcome-otp-input"
                 bind:value={_state.otp_code}
-                placeholder="000000"
-                class="text-center text-2xl tracking-[0.5em] font-mono"
-                onkeydown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
+                onsubmit={handleVerifyOtp}
+                disabled={_state.submitting}
               />
             </div>
 
