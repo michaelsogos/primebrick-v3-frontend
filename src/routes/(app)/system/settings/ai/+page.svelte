@@ -393,45 +393,39 @@
                         </div>
                       {/each}
 
-                      <!-- Test report: global run header + per-turn detail -->
-                      {#if model.test_scores}
-                        {@const ts = model.test_scores as Record<string, any>}
-                        {@const turns = Array.isArray(ts?.turns) ? ts.turns : []}
-                        {@const genCfg = ts?.generation_config}
-                        {@const execCfg = ts?.execution_config}
-                        {@const loadInfo = ts?.load}
-                        {#if turns.length || loadInfo || ts.note}
-                        <div class="border-t border-border/40 pt-1.5 space-y-1.5" data-testid={`ai-model-test-report-${model.model_id}`}>
+                      <!-- Test report: per-case sections, aggregates computed on the fly -->
+                      {#each tsSummary.cases as reportCase (reportCase.key)}
+                        {#if reportCase.turns.length || reportCase.load || reportCase.note || reportCase.load_ok === false}
+                        <div class="border-t border-border/40 pt-1.5 space-y-1.5" data-testid={`ai-model-test-report-${model.model_id}-${reportCase.key}`}>
                           <div class="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground/70">
-                            <span>{$t('system.entities.ai_model.test_report.title')}</span>
-                            {#if ts.tested_at}<span>{new Date(ts.tested_at).toLocaleDateString()}</span>{/if}
+                            <span>{$t('system.entities.ai_model.test_report.title')} · {testCaseLabel(reportCase.key)}</span>
+                            {#if reportCase.tested_at}<span>{new Date(reportCase.tested_at).toLocaleDateString()}</span>{/if}
                           </div>
 
-                          {#if loadInfo?.error}
+                          {#if reportCase.load?.error || reportCase.error}
                             <div class="rounded bg-destructive/10 px-2 py-1 text-[10px] text-destructive">
-                              <b>LOAD FAILURE</b> — {loadInfo.error}
+                              <b>LOAD FAILURE</b> — {reportCase.load?.error ?? reportCase.error}
                             </div>
                           {:else}
                             <div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
-                              {#if loadInfo?.load_time_ms != null}<span>load {(loadInfo.load_time_ms / 1000).toFixed(0)}s</span>{/if}
-                              {#if ts.generation_ok !== undefined}<span>gen {ts.generation_ok ? 'ok' : 'failed'}</span>{/if}
-                              {#if tsSummary.avg_response_s !== null}<span>avg {tsSummary.avg_response_s.toFixed(1)}s/turn</span>{/if}
-                              {#if genCfg}
-                                <span>T={genCfg.temperature} top_p={genCfg.top_p} max={genCfg.max_tokens}</span>
+                              {#if reportCase.load?.load_time_ms != null}<span>load {(Number(reportCase.load.load_time_ms) / 1000).toFixed(0)}s</span>{/if}
+                              {#if reportCase.generation_ok !== undefined}<span>gen {reportCase.generation_ok ? 'ok' : 'failed'}</span>{/if}
+                              {#if reportCase.avg_response_s !== null}<span>avg {reportCase.avg_response_s.toFixed(1)}s/turn</span>{/if}
+                              {#if reportCase.generation_config}
+                                <span>T={reportCase.generation_config.temperature} top_p={reportCase.generation_config.top_p} max={reportCase.generation_config.max_tokens}</span>
                               {/if}
-                              {#if execCfg}
-                                <span>kv {execCfg.kv_cache_reuse ? 'on' : 'off'}{execCfg.max_history_turns ? ` · window ${execCfg.max_history_turns}` : ''}</span>
+                              {#if reportCase.execution_config}
+                                <span>kv {reportCase.execution_config.kv_cache_reuse ? 'on' : 'off'}{reportCase.execution_config.max_history_turns ? ` · window ${reportCase.execution_config.max_history_turns}` : ''}</span>
                               {/if}
                             </div>
                           {/if}
 
-                          {#if turns.length}
+                          {#if reportCase.turns.length}
                             <div class="max-h-56 space-y-1 overflow-y-auto pr-0.5">
-                              {#each turns as turn, ti (ti)}
+                              {#each reportCase.turns as turn, ti (ti)}
                                 {@const n = turn.n ?? turn.turn ?? ti + 1}
                                 {@const tScore = typeof turn.score === 'number' ? turn.score : null}
                                 {@const tActual = turn.actual ?? turn.output}
-                                {@const tExpected = turn.expected}
                                 {@const tSecs = turn.response_s ?? turn.ttft_s}
                                 <details class="group rounded border border-border/40 text-[10px]">
                                   <summary class="flex cursor-pointer list-none items-center gap-1.5 px-1.5 py-1 hover:bg-accent/40">
@@ -445,7 +439,7 @@
                                   </summary>
                                   <div class="space-y-1 border-t border-border/40 px-2 py-1.5">
                                     {#if turn.prompt}<div><span class="text-muted-foreground">prompt:</span> <span class="font-medium">{turn.prompt}</span></div>{/if}
-                                    {#if tExpected != null}<div><span class="text-muted-foreground">expected:</span> <code class="font-mono">{tExpected}</code></div>{/if}
+                                    {#if turn.expected != null}<div><span class="text-muted-foreground">expected:</span> <code class="font-mono">{turn.expected}</code></div>{/if}
                                     {#if tActual != null}<div><span class="text-muted-foreground">actual:</span> <code class="font-mono">{tActual}</code></div>{/if}
                                     {#if turn.actual_response}<div><span class="text-muted-foreground">raw:</span><pre class="mt-0.5 max-h-24 overflow-auto rounded bg-muted/40 p-1 font-mono whitespace-pre-wrap">{turn.actual_response}</pre></div>{/if}
                                     <div class="flex gap-x-3 font-mono text-muted-foreground">
@@ -459,12 +453,12 @@
                             </div>
                           {/if}
 
-                          {#if ts.note}
-                            <p class="text-[10px] leading-snug text-muted-foreground italic">{ts.note}</p>
+                          {#if reportCase.note}
+                            <p class="text-[10px] leading-snug text-muted-foreground italic">{reportCase.note}</p>
                           {/if}
                         </div>
                         {/if}
-                      {/if}
+                      {/each}
                     </div>
                   </Popover.Content>
                 </Popover.Root>
