@@ -231,6 +231,7 @@
     selected_count={censusedSelection.selected_count}
     on_toggle_select_all={handleToggleSelectAllCensused}
     test_id="cache-censused-toolbar"
+    class="pt-2"
   >
     <Button
       variant="soft"
@@ -258,6 +259,7 @@
     </div>
   {:else}
   <!-- Censused models fieldset (scrolls under the sticky cluster) -->
+  <div class="-mt-2">
   <SelectableFieldset label={$t('app.smart.regex.ai.cache.censused_title')}>
     {#each censusedModels as model (model.model_id)}
       {@const is_cached = cache.state.cache_status[model.model_id] ?? false}
@@ -310,6 +312,7 @@
       </SelectableRow>
     {/each}
   </SelectableFieldset>
+  </div>
 
   <!-- Divider -->
   {#if orphanIds.length > 0}
