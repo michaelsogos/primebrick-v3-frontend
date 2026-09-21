@@ -492,7 +492,7 @@
   async function onDeleteRow(row: Record<string, unknown>) {
     const uuid = row.uuid as string;
     try {
-      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}`, {
+      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}?version=${row.version}`, {
         method: 'DELETE'
       }, 30_000);
       if (!res.ok) {
@@ -518,7 +518,7 @@
   async function onRestoreRow(row: Record<string, unknown>) {
     const uuid = row.uuid as string;
     try {
-      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profile/${uuid}/restore`, {
+      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}/restore?version=${row.version}`, {
         method: 'POST'
       }, 30_000);
       if (!res.ok) {

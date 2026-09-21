@@ -85,7 +85,7 @@
     isDeleting = true;
     try {
       const resp = await stepUp.executeWithToken(
-        (token) => deleteConfigEntry(deleteTarget!.uuid, token),
+        (token) => deleteConfigEntry(deleteTarget!.uuid, deleteTarget!.version, token),
         { action: 'delete', target_resource: 'config_entries' },
       );
       if (resp.ok) {
@@ -128,9 +128,10 @@
     if (bulkTargets.length === 0) return;
     isBulkDeleting = true;
     try {
-      const uuids = bulkTargets.map((e) => e.uuid);
+      const items = bulkTargets.map((e) => ({ uuid: e.uuid, version: e.version }));
+      const uuids = items.map((i) => i.uuid);
       const resp = await stepUp.executeWithToken(
-        (token) => bulkDeleteConfigEntries(uuids, token),
+        (token) => bulkDeleteConfigEntries(items, token),
         { action: 'bulk_delete', target_resource: 'config_entries' },
       );
       if (resp.ok) {

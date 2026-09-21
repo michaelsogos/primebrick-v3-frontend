@@ -15,7 +15,7 @@
 import { browser } from '$app/environment';
 
 const FE_CACHE_PREFIX = 'pb:etag:';
-const FE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min — same as i18n TTL
+const FE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour — performance only; a 304 means "unchanged", correctness comes from BE-side invalidation
 
 interface FECacheEntry {
   etag: string;

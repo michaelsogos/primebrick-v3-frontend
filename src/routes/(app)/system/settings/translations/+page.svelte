@@ -24,7 +24,7 @@
     language: string;
     value: string;
     updated_at?: string;
-    version?: number;
+    version: number;
   };
 
   let modules = $state<string[]>([]);
@@ -105,7 +105,7 @@
         await createTranslation(selectedModule, { key: editKey, language: editLanguage, value: editValue });
         pushNotification({ impact: 'NONE', message: 'Translation created', scope: 'translations' });
       } else if (editingRow) {
-        await updateTranslation(selectedModule, editingRow.uuid, { key: editKey, language: editLanguage, value: editValue });
+        await updateTranslation(selectedModule, editingRow.uuid, { key: editKey, language: editLanguage, value: editValue, version: editingRow.version });
         pushNotification({ impact: 'NONE', message: 'Translation updated', scope: 'translations' });
       }
       closeDialog();
@@ -120,7 +120,7 @@
   async function remove(row: TranslationRow) {
     if (!confirm(`Delete translation "${row.key}" (${row.language})?`)) return;
     try {
-      await deleteTranslation(selectedModule, row.uuid);
+      await deleteTranslation(selectedModule, row.uuid, row.version);
       pushNotification({ impact: 'NONE', message: 'Translation deleted', scope: 'translations' });
       await loadRows();
     } catch (e) {
@@ -130,7 +130,7 @@
 
   async function restore(row: TranslationRow) {
     try {
-      await restoreTranslation(selectedModule, row.uuid);
+      await restoreTranslation(selectedModule, row.uuid, row.version);
       pushNotification({ impact: 'NONE', message: 'Translation restored', scope: 'translations' });
       await loadRows();
     } catch (e) {

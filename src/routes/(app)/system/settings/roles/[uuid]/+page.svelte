@@ -95,6 +95,7 @@
       label_key: label_key || undefined,
       is_admin,
       permissions: Array.from(selected_permissions),
+      version: role.version,
     });
     saving = false;
     if (ok) {

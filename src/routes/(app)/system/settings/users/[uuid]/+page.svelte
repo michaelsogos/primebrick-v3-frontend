@@ -128,7 +128,7 @@
       await superFormObj.validateForm({ update: true, focusOnError: false });
     },
     async onUpdate({ form: updateForm, cancel }) {
-      if (!updateForm.valid) return;
+      if (!updateForm.valid || !user) return;
 
       try {
         // Calculate avatar initials from display_name (unified with CREATE/PROFILE)
@@ -140,8 +140,9 @@
           avatar_color: updateForm.data.avatar_color || undefined,
           avatar_initials: initials,
           roles: updateForm.data.roles || [],
+          version: user.version,
         };
-        const response = await apiFetch(`/api/v1/entities/user_profile/${uuid}`, {
+        const response = await apiFetch(`/api/v1/auth/users/${uuid}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -156,8 +157,9 @@
 
         const data = await response.json();
         if (data) {
-          console.log('User updated successfully');
-          await loadUser();
+          // The write response IS the authoritative entity (RETURNING) —
+          // consume it directly instead of re-fetching.
+          user = data;
           notifyParentRefresh();
           if (window.opener) {
             window.close();

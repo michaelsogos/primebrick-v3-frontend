@@ -89,6 +89,7 @@ export type ModuleConfigEntry = {
   value: string | null;
   label_key?: string;
   description_key?: string;
+  version: number;
 };
 
 /**
@@ -249,7 +250,7 @@ export type AiCerebellum = {
   repetition_penalty?: number | null;
   /** Partial override merged over ai_models.execution_config. NULL = inherit all. */
   execution_config?: Partial<ExecutionConfig> | null;
-  is_default: boolean;
+
   is_enabled: boolean;
   sort_order: number;
   /** Per-tuning test measurements keyed by test case. */

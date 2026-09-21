@@ -94,12 +94,13 @@
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
-      if (!updateForm.valid) return;
+      if (!updateForm.valid || !organization) return;
 
       try {
         const body = {
           display_name: updateForm.data.display_name,
           website_url: updateForm.data.website_url || undefined,
+          version: organization.version,
         };
         const response = await apiFetch(`/api/v1/entities/organization/${uuid}`, {
           method: 'PUT',

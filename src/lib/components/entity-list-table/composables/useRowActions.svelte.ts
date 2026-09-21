@@ -108,7 +108,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isDeleting = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}?version=${(row as Record<string, unknown>).version}`, {
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
@@ -150,7 +150,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isRestoring = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore?version=${(row as Record<string, unknown>).version}`, {
         method: 'POST'
       });
       // Refresh the list after successful restore

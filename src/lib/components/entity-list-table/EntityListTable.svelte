@@ -404,6 +404,7 @@
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
+    rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
     onBulkActionStart: () => {
       // Optional: handle bulk action start
     },

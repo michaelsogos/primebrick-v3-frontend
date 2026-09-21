@@ -159,6 +159,9 @@
           scope: 'email-providers',
         });
       } else if (editingUuid) {
+        // Optimistic concurrency: the US dal.update requires the row version.
+        const editing = providers.find((p) => p.uuid === editingUuid);
+        if (editing?.version !== undefined) payload.version = editing.version;
         await apiFetchExt(`${PROXY_BASE}/${editingUuid}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

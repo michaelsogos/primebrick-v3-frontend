@@ -4,7 +4,7 @@ import { writable, type Writable } from 'svelte/store';
 
 const STORAGE_KEY = 'pb.lang';
 const I18N_CACHE_PREFIX = 'pb:i18n:';
-const I18N_TTL_MS = 5 * 60 * 1000; // 5 minutes — user-facing freshness window
+const I18N_TTL_MS = 60 * 60 * 1000; // 1 hour — performance only; freshness is guaranteed by BE cache invalidation on writes
 
 function detectBrowserLang(): UiLang {
   if (!browser) return DEFAULT_LANG;

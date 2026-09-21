@@ -85,11 +85,6 @@
         data-testid="{testid_prefix}-cerebellum-{tuning.assistant_key}"
       >
         <span>{$t(tuning.name)}</span>
-        {#if tuning.is_default}
-          <span class="text-[10px] text-muted-foreground">
-            {$t(`app.smart.ai.cerebellum.default`)}
-          </span>
-        {/if}
       </DropdownMenu.Item>
     {/each}
   </DropdownMenu.Content>

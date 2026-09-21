@@ -112,8 +112,8 @@ export function useAiModels() {
       _state.deletionFilterMode = mode;
       void reload();
     },
-    async deleteModel(uuid: string, mfaToken?: string): Promise<boolean> {
-      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}`, {
+    async deleteModel(uuid: string, version: number, mfaToken?: string): Promise<boolean> {
+      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}?version=${version}`, {
         method: 'DELETE',
         headers: mfaToken ? { 'X-MFA-Action-Authorization': mfaToken } : {},
       });
@@ -121,8 +121,8 @@ export function useAiModels() {
       await reload();
       return true;
     },
-    async restoreModel(uuid: string): Promise<boolean> {
-      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}/restore`, {
+    async restoreModel(uuid: string, version: number): Promise<boolean> {
+      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}/restore?version=${version}`, {
         method: 'POST',
       });
       if (!res.ok) return false;

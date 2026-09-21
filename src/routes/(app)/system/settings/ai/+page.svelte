@@ -110,11 +110,11 @@
 
   // Delete dialog state.
   let deleteDialogOpen = $state(false);
-  let modelToDelete = $state<{ uuid: string; name: string } | null>(null);
+  let modelToDelete = $state<{ uuid: string; name: string; version: number } | null>(null);
   let isDeleting = $state(false);
 
-  function handleDeleteClick(uuid: string, name: string) {
-    modelToDelete = { uuid, name };
+  function handleDeleteClick(uuid: string, name: string, version: number) {
+    modelToDelete = { uuid, name, version };
     deleteDialogOpen = true;
   }
 
@@ -126,7 +126,7 @@
     // executeWithToken: first attempt without token → BE 403 → dialog opens →
     // user verifies → retry with X-MFA-Action-Authorization header → DELETE succeeds.
     const resp = await stepUp.executeWithToken(
-      (token) => apiFetch(`/api/v1/entities/ai_model/${targetUuid}`, {
+      (token) => apiFetch(`/api/v1/entities/ai_model/${targetUuid}?version=${modelToDelete!.version}`, {
         method: 'DELETE',
         headers: token ? { 'X-MFA-Action-Authorization': token } : {},
       }),
@@ -154,8 +154,8 @@
   }
 
   // Restore handler.
-  async function handleRestore(uuid: string) {
-    const ok = await aiModels.restoreModel(uuid);
+  async function handleRestore(uuid: string, version: number) {
+    const ok = await aiModels.restoreModel(uuid, version);
     if (!ok) {
       pushNotification({
         impact: 'MEDIUM',
@@ -459,7 +459,7 @@
                   <Button
                     variant="soft"
                     size="sm"
-                    onclick={() => handleRestore(model.uuid)}
+                    onclick={() => handleRestore(model.uuid, model.version)}
                     disabled={aiModels.state.loading}
                     title={$t('app.common.restore')}
                     data-testid={`ai-model-restore-${model.model_id}`}
@@ -473,7 +473,7 @@
                     variant="ghost"
                     size="icon-sm"
                     class="text-destructive hover:text-destructive"
-                    onclick={() => handleDeleteClick(model.uuid, model.name)}
+                    onclick={() => handleDeleteClick(model.uuid, model.name, model.version)}
                     disabled={aiModels.state.loading}
                     title={$t('app.common.delete')}
                     aria-label={$t('app.common.delete')}
@@ -513,9 +513,6 @@
               {@const model = modelFor(row.model_id)}
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/30 px-2 py-1.5 text-xs" data-testid={`ai-cerebellum-row-${group.assistant_key}-${row.name}`}>
                 <span class="font-medium">{$t(row.name)}</span>
-                {#if row.is_default}
-                  <span class="rounded bg-primary/10 px-1 text-[10px] text-primary">{$t('app.smart.ai.cerebellum.default')}</span>
-                {/if}
                 <span class="text-muted-foreground font-mono break-all">{model?.name ?? row.model_id}</span>
                 {#if tuningOverrides(row)}
                   <span class="font-mono text-foreground/80">{tuningOverrides(row)}</span>

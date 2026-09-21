@@ -115,7 +115,12 @@
   }
 </script>
 
-<BorderedDialog bind:open severity="primary" tone="soft" class="sm:max-w-md">
+<BorderedDialog bind:open severity="primary" tone="soft" class="sm:max-w-md"
+  onOpenAutoFocus={(e: Event) => {
+    // Focus the OTP hidden input so the user can type/paste without the mouse.
+    e.preventDefault();
+    document.querySelector<HTMLElement>('[data-pin-input-input]')?.focus();
+  }}>
   <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <ShieldCheck class="size-5 text-primary" />

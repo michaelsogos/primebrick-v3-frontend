@@ -298,7 +298,12 @@
 </Card>
 
   <!-- Enrollment Dialog -->
-  <BorderedDialog bind:open={enrollDialogOpen} severity="primary" tone="soft" class="sm:max-w-md">
+  <BorderedDialog bind:open={enrollDialogOpen} severity="primary" tone="soft" class="sm:max-w-md"
+    onOpenAutoFocus={(e: Event) => {
+      // Focus the OTP hidden input so the user can type/paste without the mouse.
+      e.preventDefault();
+      document.querySelector<HTMLElement>('[data-pin-input-input]')?.focus();
+    }}>
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <QrCode class="size-5" />

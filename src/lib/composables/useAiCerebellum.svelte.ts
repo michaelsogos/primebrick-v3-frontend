@@ -83,12 +83,6 @@ export function useAiCerebellum(assistant_key: string) {
         .filter((t) => t.model_id === model_id && t.is_enabled)
         .sort((a, b) => a.sort_order - b.sort_order);
     },
-    /** The is_default tuning for a model, if any. */
-    getDefaultTuning(model_id: string): AiCerebellum | undefined {
-      return getCache(assistant_key).tunings.find(
-        (t) => t.model_id === model_id && t.is_enabled && t.is_default,
-      );
-    },
     async invalidate(): Promise<void> {
       clearCachedETag(AI_CEREBELLUM_URL);
       const cache = getCache(assistant_key);

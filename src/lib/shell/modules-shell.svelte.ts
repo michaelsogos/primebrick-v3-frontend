@@ -46,7 +46,9 @@ function resolveModuleFromRoute(pathname: string): string | null {
       }
     }
   }
-  return null;
+  // No prefix matched (e.g. `/` home): the reserved module (system settings)
+  // is the default — not the first module by sort order.
+  return _state.modules.find((m) => m.is_reserved)?.id ?? null;
 }
 
 export const shellNav = {

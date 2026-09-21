@@ -20,8 +20,9 @@ import { mergeModuleDict, getFallbackDict } from './index';
 import type { UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
+import { onConnectivityRestored } from '$lib/app-connectivity-events';
 
-const LOADED_TTL_MS = 5 * 60 * 1000; // 5 min — same as i18n localStorage TTL
+const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
 const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
 
 /** Check if a module was loaded recently (within TTL). */
@@ -55,9 +56,10 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
-    if (!cached) {
-      console.error(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
-    }
+    // Never silent: a failed fetch leaves raw keys on screen until the next
+    // navigation — always log it. `cached` only decides severity.
+    const log = cached ? console.warn : console.error;
+    log(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
   }
 }
 
@@ -98,6 +100,20 @@ export async function loadModuleTranslations(moduleId: string, lang: UiLang): Pr
  */
 export function useModuleTranslations(): { stop: () => void } {
   let unsubLang: Unsubscriber | null = null;
+  let unsubConnectivity: (() => void) | null = null;
+
+  function reloadFor(lang: UiLang) {
+    const path = page.url.pathname;
+    const moduleId = shellNav.resolveModuleFromRoute(path);
+    const modules = new Set(['app', 'custom']);
+    if (moduleId) modules.add(moduleId);
+    for (const id of modules) {
+      // Reset the in-memory cache for this module so the (new language or
+      // recovered) fetch is not deduped away.
+      LOADED_MODULES.delete(`${id}:${lang}`);
+      void ensureModuleTranslations(id, lang);
+    }
+  }
 
   if (browser) {
     // Watch route changes via Svelte 5's reactive `page` object.
@@ -114,21 +130,17 @@ export function useModuleTranslations(): { stop: () => void } {
     // Watch language changes — when the user switches language, reload the
     // bootstrap dicts (app + custom) plus the current route module's
     // translations for the new language.
-    unsubLang = uiLang.subscribe(($lang) => {
-      const path = page.url.pathname;
-      const moduleId = shellNav.resolveModuleFromRoute(path);
-      const modules = new Set(['app', 'custom']);
-      if (moduleId) modules.add(moduleId);
-      for (const id of modules) {
-        // Reset the in-memory cache for this module so the new language loads
-        LOADED_MODULES.delete(`${id}:${$lang}`);
-        void ensureModuleTranslations(id, $lang);
-      }
-    });
+    unsubLang = uiLang.subscribe(($lang) => reloadFor($lang));
+
+    // If a dict fetch failed because the backend was unreachable, the merged
+    // dict is missing keys and nothing would refetch while the user stays on
+    // the page. On connectivity recovery, re-run the bootstrap loads.
+    unsubConnectivity = onConnectivityRestored(() => reloadFor(get(uiLang)));
   }
 
   function stop() {
     unsubLang?.();
+    unsubConnectivity?.();
   }
 
   return { stop };

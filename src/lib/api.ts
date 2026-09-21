@@ -324,11 +324,11 @@ export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry
   return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number): Promise<void> {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
   const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify({ entity: { value } }),
+    body: extJsonStringify({ entity: { value, version } }),
   });
   if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }
@@ -451,26 +451,26 @@ export async function bulkUpdateConfigEntries(
   return data.updated;
 }
 
-export async function deleteConfigEntry(uuid: string, mfaActionAuthorization: string | null): Promise<Response> {
-  return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
+export async function deleteConfigEntry(uuid: string, version: number, mfaActionAuthorization: string | null): Promise<Response> {
+  return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}?version=${version}`, {
     method: 'DELETE',
     headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
   });
 }
 
-export async function bulkDeleteConfigEntries(uuids: string[], mfaActionAuthorization: string | null): Promise<Response> {
+export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: number }>, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch('/api/v1/entities/config_entry/bulk-delete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {}),
     },
-    body: JSON.stringify({ uuids }),
+    body: JSON.stringify({ items }),
   });
 }
 
-export async function restoreConfigEntry(uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore`, {
+export async function restoreConfigEntry(uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore?version=${version}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Config entry restore failed (${res.status})`);
@@ -529,11 +529,12 @@ export async function createTranslation(moduleCode: string, data: {
   return await res.json();
 }
 
-/** Admin: update a translation row. */
+/** Admin: update a translation row. `version` is required (optimistic concurrency). */
 export async function updateTranslation(moduleCode: string, uuid: string, data: {
   key?: string;
   language?: string;
   value?: string;
+  version: number;
 }): Promise<unknown> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
@@ -545,16 +546,16 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
 }
 
 /** Admin: soft-delete a translation row. */
-export async function deleteTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
+export async function deleteTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(`Translation delete failed (${res.status})`);
 }
 
 /** Admin: restore a soft-deleted translation row. */
-export async function restoreTranslation(moduleCode: string, uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}`, {
+export async function restoreTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Translation restore failed (${res.status})`);

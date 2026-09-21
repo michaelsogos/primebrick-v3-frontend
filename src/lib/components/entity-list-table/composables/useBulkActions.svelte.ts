@@ -6,6 +6,8 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export interface BulkActionsOptions {
   entity: () => string;
   selectedKeys: () => string[];
+  /** Resolve a selected key to its row (for the caller-observed `version`). */
+  rowByKey?: (key: string) => Record<string, unknown> | undefined;
   onBulkActionStart?: () => void;
   onBulkActionComplete?: () => void;
   onBulkActionError?: (error: Error) => void;
@@ -28,6 +30,7 @@ export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
     selectedKeys: selectedKeysFn,
+    rowByKey,
     onBulkActionStart,
     onBulkActionComplete,
     onBulkActionError,
@@ -53,12 +56,18 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isDeleting = true;
       onBulkActionStart?.();
 
+      // {items: [{uuid, version}]} — each record carries the caller-observed
+      // version for the per-row optimistic-concurrency guard.
+      const items = selectedKeys.map((k) => {
+        const row = rowByKey?.(k);
+        return { uuid: k, version: row?.version as number };
+      });
       const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: JSON.stringify({ items })
       });
 
       if (!res.ok) {
@@ -131,12 +140,16 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isRestoring = true;
       onBulkActionStart?.();
 
+      const items = selectedKeys.map((k) => {
+        const row = rowByKey?.(k);
+        return { uuid: k, version: row?.version as number };
+      });
       const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: JSON.stringify({ items })
       });
 
       if (!res.ok) {

@@ -49,6 +49,7 @@ export interface UpdateRoleInput {
   label_key?: string;
   is_admin?: boolean;
   permissions?: string[];
+  version: number;
 }
 
 export function useRoleMappings() {
