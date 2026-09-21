@@ -66,7 +66,43 @@ export function useModelCache() {
      * model_id → measured size in bytes.
      */
     orphaned_models: {} as Record<string, number>,
+    /**
+     * Storage breakdown segments (bytes). Their sum + free space must equal
+     * the storage quota — the progress bar is only honest if every used byte
+     * is attributed to exactly one segment.
+     */
+    /** Bytes attributed to models present in the ai_models catalog. */
+    cataloged_bytes: 0,
+    /** Bytes in Cache API entries whose URL is not attributable to a model. */
+    non_model_cache_bytes: 0,
+    /**
+     * storage.estimate().usage minus all measured bytes — covers IndexedDB,
+     * service workers, localStorage and anything the Cache API scan cannot see.
+     */
+    other_storage_bytes: 0,
   });
+
+  /** Last full scan result — reused to recompute the breakdown after deletes. */
+  let lastScan: { models: Record<string, number>; non_model_bytes: number } | null = null;
+  let lastKnown: { knownSet: Set<string>; knownRepos: Set<string> } | null = null;
+
+  /** Recompute the storage breakdown segments from the last scan + estimate. */
+  function computeBreakdown(): void {
+    if (!lastScan || !lastKnown) return;
+    let cataloged = 0;
+    let orphaned = 0;
+    for (const [id, size] of Object.entries(lastScan.models)) {
+      if (lastKnown.knownSet.has(id) || lastKnown.knownRepos.has(id)) {
+        cataloged += size;
+      } else {
+        orphaned += size;
+      }
+    }
+    _state.cataloged_bytes = cataloged;
+    _state.non_model_cache_bytes = lastScan.non_model_bytes;
+    const attributed = cataloged + orphaned + lastScan.non_model_bytes;
+    _state.other_storage_bytes = Math.max(0, (_state.storage_usage ?? 0) - attributed);
+  }
 
   /** Load MRU order from localStorage. */
   function loadMru(): string[] {
@@ -155,28 +191,33 @@ export function useModelCache() {
   }
 
   /**
-   * Scan ALL Transformers.js caches and group by model_id.
-   * Returns a map of model_id → total size in bytes.
+   * Scan ALL Cache API stores — no name filter. Every cached response is
+   * measured; entries whose URL maps to a model are grouped by variant key
+   * ('<repo>#<dtype>' or bare '<repo>'), everything else (non-model caches,
+   * unparsable URLs, legacy SW caches) counts into `non_model_bytes`.
    */
-  async function scanAllCachedModels(): Promise<Record<string, number>> {
-    const sizes: Record<string, number> = {};
-    if (typeof caches === 'undefined') return sizes;
+  async function scanAllCachedModels(): Promise<{
+    models: Record<string, number>;
+    non_model_bytes: number;
+  }> {
+    const models: Record<string, number> = {};
+    let non_model_bytes = 0;
+    if (typeof caches === 'undefined') return { models, non_model_bytes };
 
     try {
       const cacheNames = await caches.keys();
       for (const name of cacheNames) {
-        if (!isTransformersCache(name)) continue;
         const cache = await caches.open(name);
         const keys = await cache.keys();
         for (const req of keys) {
-          // Variant-aware key: '<repo>#<dtype>' for dtype-suffixed weight files,
-          // bare '<repo>' for shared files (config, tokenizer, fp32 weights).
-          const key = extractVariantKey(req.url);
-          if (!key) continue;
           const response = await cache.match(req);
-          if (response) {
-            const blob = await response.blob();
-            sizes[key] = (sizes[key] ?? 0) + blob.size;
+          if (!response) continue;
+          const blob = await response.blob();
+          const key = extractVariantKey(req.url);
+          if (key) {
+            models[key] = (models[key] ?? 0) + blob.size;
+          } else {
+            non_model_bytes += blob.size;
           }
         }
       }
@@ -184,7 +225,7 @@ export function useModelCache() {
       // ignore
     }
 
-    return sizes;
+    return { models, non_model_bytes };
   }
 
   /**
@@ -194,10 +235,13 @@ export function useModelCache() {
     _state.is_checking = true;
     _state.error = null;
     try {
-      const allCached = await scanAllCachedModels();
+      const scan = await scanAllCachedModels();
+      const allCached = scan.models;
+      lastScan = scan;
       const knownSet = new Set(model_ids);
       // Bare repo ids present in the catalog (variant ids carry '#dtype').
       const knownRepos = new Set(model_ids.map((id) => id.split('#')[0]));
+      lastKnown = { knownSet, knownRepos };
 
       // Per-model sizes and cache status for known models.
       // A variant is cached only when ITS dtype-suffixed files are present;
@@ -223,8 +267,9 @@ export function useModelCache() {
       }
       _state.orphaned_models = orphans;
 
-      // Global storage estimate
+      // Global storage estimate, then attribute every used byte to a segment
       await refreshStorageEstimate();
+      computeBreakdown();
 
       // Load MRU from localStorage
       _state.mru_order = loadMru();
@@ -280,12 +325,20 @@ export function useModelCache() {
       _state.model_sizes[model_id] = 0;
       delete _state.orphaned_models[model_id];
 
+      // Drop the deleted entries from the last scan so the breakdown
+      // segments stay consistent with what was actually removed
+      if (lastScan) {
+        delete lastScan.models[model_id];
+        delete lastScan.models[model_id.split('#')[0]];
+      }
+
       // Remove from MRU
       _state.mru_order = _state.mru_order.filter((id) => id !== model_id);
       saveMru(_state.mru_order);
 
       // Refresh the storage bar — freed bytes show immediately
       await refreshStorageEstimate();
+      computeBreakdown();
     } catch (err) {
       _state.error = err instanceof Error ? err.message : 'Failed to delete model';
     } finally {
@@ -326,8 +379,10 @@ export function useModelCache() {
         }
       }
 
-      // Refresh storage estimate
+      // Rescan + refresh so the breakdown reflects the mass deletion
+      lastScan = await scanAllCachedModels();
       await refreshStorageEstimate();
+      computeBreakdown();
     } catch (err) {
       _state.error = err instanceof Error ? err.message : 'Failed to delete all models';
     } finally {
@@ -345,7 +400,7 @@ export function useModelCache() {
     order.unshift(model_id);
 
     // Check which models in MRU are actually cached
-    const allCached = await scanAllCachedModels();
+    const allCached = (await scanAllCachedModels()).models;
     const cachedStatus: Record<string, boolean> = {};
     for (const id of order) {
       cachedStatus[id] = (allCached[id] ?? 0) > 0;

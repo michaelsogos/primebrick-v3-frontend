@@ -14,6 +14,7 @@
   import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
+  import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
   import { Trash2, RefreshCw, HardDrive, AlertTriangle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { onMount } from 'svelte';
@@ -159,21 +160,18 @@
     </div>
   {/if}
 
-  <!-- Storage bar -->
+  <!-- Storage bar (stacked by attribution) -->
   {#if cache.state.storage_usage !== null && cache.state.storage_quota !== null}
-    {@const pct = cache.state.storage_quota > 0 ? Math.min(100, (cache.state.storage_usage / cache.state.storage_quota) * 100) : 0}
-    <div class="space-y-1">
-      <div class="flex justify-between text-[9px] text-muted-foreground">
-        <span>{$t('app.smart.regex.ai.cache.storage_used', { used: formatBytes(cache.state.storage_usage), quota: formatBytes(cache.state.storage_quota) })}</span>
-        <span>{pct.toFixed(0)}%</span>
-      </div>
-      <div class="h-1 rounded-full bg-muted overflow-hidden">
-        <div
-          class="h-full rounded-full transition-all"
-          style="width: {pct}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
-        ></div>
-      </div>
-    </div>
+    {@const orphanedBytes = Object.values(cache.state.orphaned_models).reduce((sum, n) => sum + n, 0)}
+    <StorageBreakdownBar
+      usage={cache.state.storage_usage}
+      quota={cache.state.storage_quota}
+      cataloged_bytes={cache.state.cataloged_bytes}
+      orphaned_bytes={orphanedBytes}
+      other_cache_bytes={cache.state.non_model_cache_bytes}
+      other_storage_bytes={cache.state.other_storage_bytes}
+      compact
+    />
   {/if}
 
   <!-- Delete all -->

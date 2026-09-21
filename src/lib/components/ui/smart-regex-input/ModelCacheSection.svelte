@@ -22,6 +22,7 @@
   import { useSelection } from '$lib/composables/useSelection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
+  import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
   import { Trash2, RefreshCw, AlertTriangle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
@@ -154,6 +155,9 @@
 
   // ─── Orphaned models derived state ────────────────────────────────────────
   const orphanIds = $derived(Object.keys(cache.state.orphaned_models));
+  const orphanedBytes = $derived(
+    Object.values(cache.state.orphaned_models).reduce((sum, n) => sum + n, 0),
+  );
   const cacheIsEmpty = $derived(censusedModels.length === 0 && orphanIds.length === 0);
   const orphanAllSelected = $derived(
     orphanIds.length > 0 && orphanIds.every((id) => orphanSelection.isSelected(id)),
@@ -193,32 +197,29 @@
     </div>
   {/if}
 
-  <!-- Storage bar with refresh CTA at the end -->
+  <!-- Storage bar (stacked by attribution) with refresh CTA at the end -->
   {#if cache.state.storage_usage !== null && cache.state.storage_quota !== null}
-    {@const pct = cache.state.storage_quota > 0 ? Math.min(100, (cache.state.storage_usage / cache.state.storage_quota) * 100) : 0}
-    <div class="space-y-1">
-      <div class="flex justify-between text-xs text-muted-foreground">
-        <span>{$t('app.smart.regex.ai.cache.storage_used', { used: formatBytes(cache.state.storage_usage), quota: formatBytes(cache.state.storage_quota) })}</span>
-        <span>{pct.toFixed(0)}%</span>
+    <div class="flex items-center gap-2">
+      <div class="flex-1 min-w-0">
+        <StorageBreakdownBar
+          usage={cache.state.storage_usage}
+          quota={cache.state.storage_quota}
+          cataloged_bytes={cache.state.cataloged_bytes}
+          orphaned_bytes={orphanedBytes}
+          other_cache_bytes={cache.state.non_model_cache_bytes}
+          other_storage_bytes={cache.state.other_storage_bytes}
+        />
       </div>
-      <div class="flex items-center gap-2">
-        <div class="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all"
-            style="width: {pct}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
-          ></div>
-        </div>
-        <button
-          onclick={handleRefresh}
-          disabled={cache.state.is_checking}
-          class="shrink-0 text-foreground/50 hover:text-foreground transition-colors"
-          title={$t('app.smart.regex.ai.cache.refresh')}
-          aria-label={$t('app.smart.regex.ai.cache.refresh')}
-          data-testid="cache-section-refresh"
-        >
-          <RefreshCw class="size-3.5 {cache.state.is_checking ? 'animate-spin' : ''}" />
-        </button>
-      </div>
+      <button
+        onclick={handleRefresh}
+        disabled={cache.state.is_checking}
+        class="shrink-0 text-foreground/50 hover:text-foreground transition-colors"
+        title={$t('app.smart.regex.ai.cache.refresh')}
+        aria-label={$t('app.smart.regex.ai.cache.refresh')}
+        data-testid="cache-section-refresh"
+      >
+        <RefreshCw class="size-3.5 {cache.state.is_checking ? 'animate-spin' : ''}" />
+      </button>
     </div>
   {/if}
 
