@@ -57,10 +57,16 @@
     if (v?.rules?.min) {
       minInput = String(v.rules.min.value);
       minErrorKey = v.rules.min.error_label_key ?? autoErrorLabelKey(configKey, 'min');
+    } else {
+      minInput = '';
+      minErrorKey = '';
     }
     if (v?.rules?.max) {
       maxInput = String(v.rules.max.value);
       maxErrorKey = v.rules.max.error_label_key ?? autoErrorLabelKey(configKey, 'max');
+    } else {
+      maxInput = '';
+      maxErrorKey = '';
     }
     if (v?.rules?.regex) {
       regexPattern = v.rules.regex.pattern;
@@ -79,15 +85,25 @@
       } else {
         regexPatternError = null;
       }
+    } else {
+      regexPattern = '';
+      regexFlags = '';
+      regexErrorKey = '';
+      regexPatternError = null;
     }
     if (v?.rules?.url) {
       urlProtocols = v.rules.url.protocols.join(', ');
       urlErrorKey = v.rules.url.error_label_key ?? autoErrorLabelKey(configKey, 'url');
+    } else {
+      urlProtocols = '';
+      urlErrorKey = '';
     }
     if (v?.required_error_label_key) {
       requiredErrorKey = v.required_error_label_key;
     } else if (v?.required) {
       requiredErrorKey = autoErrorLabelKey(configKey, 'required');
+    } else {
+      requiredErrorKey = '';
     }
   });
 

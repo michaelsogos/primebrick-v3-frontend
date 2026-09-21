@@ -8,8 +8,10 @@
  * API — so the /ai test-score popover reports a second, independent case.
  *
  * Determinism: NO blind sleeps and NO long waits — every step polls DOM
- * evidence in ≤5s slots, ≤12 retries (60s cap per step). Model load uses
- * data-ai-phase (≤5s slots, ≤120 retries = 10min cap).
+ * evidence in ≤5s slots, ≤6 retries (30s cap per step). The ONLY exception is
+ * the model download: while data-ai-phase is a `loading_*` phase the wait
+ * extends to 8min max, still polling every 5s to catch `ready` ASAP.
+ * The assistant sheet MUST be proven mounted before any phase wait.
  *
  * Scoring (mirrors docs/modules/ai-models.md — duplicated locally because
  * spec files run in Node and cannot import `$lib`):
@@ -20,43 +22,59 @@
  *   score   = quality·0.8 + speed·0.2
  *   model rank = mean over ALL *_test_score cases of their computed score
  *
- * Auth: persistent headed Edge profile (login+MFA done once by a human).
+ * Auth: dedicated Playwright-owned Edge profile (E2E_PROFILE — persists the
+ *   Cache API so completed model files survive across runs; HF resume is
+ *   per-file, a mid-file interruption restarts that file) + programmatic
+ *   admin/admin login. Same convention as auth-mfa.spec.ts: admin MFA
+ *   factors are deleted via DB in beforeAll so the password login cannot
+ *   stall on an MFA challenge.
  * Requires WebGPU — skips cleanly when no adapter is present.
  * Locators: data-testid only (brittle-on-purpose convention).
  */
-import {
-  test as base,
-  expect,
-  chromium,
-  type BrowserContext,
-  type Page,
-} from "@playwright/test";
+import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { deleteMfaFactorsByUsername, getPool, setAuthMethodEnforcerDismissed } from "./helpers/db";
 
-const PAGE_URL = "/system/settings/configurations/create";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
+const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
+// Dedicated Playwright-owned Edge profile (NOT the user's real profile):
+// persists the Cache API model files across runs so the ~2GB model does not
+// re-download every time. Login is still programmatic — the profile only
+// carries cache, not required auth state.
+const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
+const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
-const test = base.extend<object, { pwContext: BrowserContext }>({
-  // eslint-disable-next-line no-empty-pattern
-  pwContext: [
-    async ({}, use) => {
-      const ctx = await chromium.launchPersistentContext(E2E_PROFILE, {
-        channel: "msedge",
-        headless: false,
-        viewport: { width: 1440, height: 900 },
-      });
-      await use(ctx);
-      await ctx.close();
-    },
-    { scope: "worker" },
-  ],
-  page: async ({ pwContext }, use) => {
-    const page = pwContext.pages()[0] ?? (await pwContext.newPage());
-    await use(page);
-  },
-});
+/**
+ * Session strategy: REUSE over relaunch.
+ * - If an Edge debug session is already listening on CDP_URL, attach to it
+ *   (connectOverCDP) and reuse its persistent context — the same Cache API
+ *   (downloaded models), cookies and open pages are shared.
+ * - Otherwise launch a fresh persistent context WITH a CDP port so later
+ *   specs in the same — or a subsequent — run can attach to it.
+ * The browser is NEVER closed by the spec: the session is deliberately left
+ * running for observation and reuse by the next spec/model run.
+ */
+async function getSharedContext(): Promise<BrowserContext> {
+  try {
+    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
+    const ctx = browser.contexts()[0];
+    if (ctx) {
+      log("attached to running Edge session (CDP :9333)");
+      return ctx;
+    }
+  } catch {
+    /* no debug session up — launch one */
+  }
+  log("launching new persistent Edge session (CDP :9333)");
+  return chromium.launchPersistentContext(E2E_PROFILE, {
+    channel: "msedge",
+    headless: false,
+    viewport: { width: 1440, height: 900 },
+    args: ["--remote-debugging-port=9333"],
+  });
+}
 
 // ─── Scoring (local copy of the documented formulas) ─────────────────────────
 
@@ -158,8 +176,8 @@ const TURNS: TurnSpec[] = [
 
 // ─── Bounded evidence waits (≤5s slots) ──────────────────────────────────────
 
-/** Poll a predicate in ≤5s slots for up to maxRetries (default 12 → 60s). */
-async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 12): Promise<T> {
+/** Poll a predicate in ≤5s slots for up to maxRetries (default 6 → 30s). */
+async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     const out = await fn().catch(() => null);
     if (out !== null && out !== false) return out;
@@ -169,13 +187,54 @@ async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 1
   throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
 }
 
-async function waitPanelPhase(page: Page, want: string, maxRetries = 120): Promise<string> {
+/**
+ * Deterministic visibility gate: locator.waitFor polls continuously inside
+ * each ≤5s slot, retried ≤6 times (30s cap). Fails fast with the testid in
+ * the error instead of hanging on an unbounded wait.
+ */
+async function waitVisible(locator: ReturnType<Page["locator"]>, what: string, maxRetries = 6): Promise<void> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await locator.waitFor({ state: "visible", timeout: 5000 });
+      return;
+    } catch {
+      if (i === maxRetries - 1) throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
+      log(`  still waiting: ${what} (${(i + 1) * 5}s)`);
+    }
+  }
+}
+
+/**
+ * Wait for data-ai-phase === `want`. Two budgets, both in ≤5s slots:
+ *  - phases `init`/`loading_*` (download in progress): up to 96 slots (8min)
+ *    — a cold ~2GB model download legitimately takes minutes;
+ *  - any other phase stuck without progress: 6 consecutive slots (30s).
+ * Terminal phases (webgpu_required, error) fail immediately.
+ */
+async function waitPanelPhase(page: Page, want: string): Promise<string> {
   const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
-  return poll(async () => {
-    const phase = await panel.getAttribute("data-ai-phase");
+  let lastPhase = "";
+  let stuck = 0;
+  for (let slot = 0; slot < 96; slot++) {
+    const phase = (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
+    if (phase === want) return phase;
     if (phase === "webgpu_required" || phase === "error") throw new Error(`panel phase "${phase}"`);
-    return phase === want ? phase : null;
-  }, `data-ai-phase=${want}`, maxRetries);
+    if (phase !== lastPhase) {
+      lastPhase = phase;
+      stuck = 0;
+      log(`  data-ai-phase="${phase}"`);
+    } else {
+      stuck++;
+      // Only `loading_*` phases (download) get the full 8min — any other
+      // phase stuck unchanged for 30s is a broken flow, fail fast.
+      if (!phase.startsWith("loading") && stuck >= 6) {
+        throw new Error(`panel stuck at phase "${phase}" for 30s`);
+      }
+      if (stuck % 4 === 3) log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
+    }
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+  throw new Error(`Timeout waiting for data-ai-phase=${want} (8min download cap)`);
 }
 
 /** Extract the last config-card JSON produced by the assistant, if any. */
@@ -208,7 +267,7 @@ async function sendTurn(page: Page, prompt: string): Promise<{ response_s: numbe
       // no card but streaming ended → prose answer (score 0)
       if (await send.isEnabled()) return "done-no-card";
       return null;
-    }, "turn response", 12);
+    }, "turn response", 6);
   } catch {
     timed_out = true;
   }
@@ -241,53 +300,115 @@ function scoreTurn(spec: TurnSpec, json: string | null, timed_out: boolean): Pic
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
 test.describe("AI quality — json_editor_with_schema", () => {
-  test.describe.configure({ timeout: 1_200_000 }); // cold model download can take minutes
+  test.describe.configure({ timeout: 600_000 });
 
-  test("5-turn incremental schema edit → persist json_editor_with_schema_test_score", async ({ page, pwContext }) => {
-    // 1. Open the config-create form — WebGPU check must run on the real
-    //    origin (about:blank reports no adapter in headed Edge). If the
-    //    profile session expired, the first goto lands on the Casdoor/MFA
-    //    flow: re-navigate in ≤5s slots, ≤12 retries (60s) while the human
-    //    completes MFA.
-    await page.goto(PAGE_URL);
-    log("landed: " + page.url());
-    test.skip(
-      !(await page.evaluate(async () => "gpu" in navigator && (await navigator.gpu.requestAdapter()) !== null)),
-      "WebGPU adapter not available",
-    );
-    await poll(async () => {
-      if (await page.locator('[data-testid="config-create-key"]').isVisible().catch(() => false)) return true;
-      if (!page.url().includes("/system/settings/configurations/create")) {
-        await page.goto(PAGE_URL).catch(() => {});
+  test.beforeAll(async () => {
+    // Same convention as auth-mfa.spec.ts: strip admin MFA factors via DB so
+    // the password login cannot stall on a challenge we cannot answer.
+    await deleteMfaFactorsByUsername("admin");
+    await setAuthMethodEnforcerDismissed("admin", true);
+  });
+
+  test("5-turn incremental schema edit → persist json_editor_with_schema_test_score", async () => {
+    // Attach to a running session or launch a persistent one (CDP :9333).
+    // The browser is left open on purpose — next spec reuses it.
+    const context = await getSharedContext();
+    const page = context.pages()[0] ?? (await context.newPage());
+    {
+      // 0. Auth gate: /api/v1/auth/me is the deterministic signal — the SPA
+      //    renders the form shell even with an expired session (401), so URL
+      //    or DOM checks alone can lie.
+      const isAuthed = () =>
+        page.evaluate(async () => {
+          try { return (await fetch("/api/v1/auth/me")).ok; } catch { return false; }
+        });
+      await page.goto(PAGE_URL);
+      log("landed: " + page.url());
+
+      // Pin UI language: fresh profiles may resolve to a language with no
+      // dictionary (e.g. en-US; DB ships en-GB/it-IT/…), rendering raw keys.
+      // pb.lang is read at app boot → reload once after setting it.
+      const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+      if (langNow !== "it-IT") {
+        await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+        await page.reload();
+        log("pb.lang=it-IT set — reloaded");
       }
-      return null;
-    }, "config-create-key visible", 12);
 
-    await page.locator('[data-testid="config-create-key"]').fill("e2e_json_quality_probe");
-    // type defaults to 'string' → TypeConfigBuilder/JsonPreviewEditor render
-    // immediately, no ComboSelect interaction needed.
-    await expect(page.locator('[data-testid="tcb-ai-assistant-cta"]')).toBeVisible({ timeout: 5000 });
-    log("form ready");
+      if (!(await isAuthed())) {
+        log("session expired (auth/me → 401) — logging in as admin");
+        await page.goto(`${BASE_URL}/login`);
+        // /login boots with a session check: if a refresh succeeds it
+        // redirects away before the form ever renders; if the refresh fails
+        // the form appears. Poll bounded for either outcome.
+        let submitted = false;
+        for (let i = 0; i < 6 && page.url().includes("/login"); i++) {
+          const input = page.getByTestId("login-username-input");
+          if (!submitted && (await input.isVisible().catch(() => false))) {
+            await input.fill("admin");
+            await page.getByTestId("login-password-input").fill("admin");
+            await page.getByTestId("login-submit-button").click();
+            submitted = true;
+            log("login form submitted");
+          }
+          await page.waitForTimeout(5000);
+        }
+        await poll(async () => ((await isAuthed()) ? true : null), "auth/me authenticated");
+        log("login OK — re-navigating to target page");
+        await page.goto(PAGE_URL);
+      } else {
+        log("session already authenticated");
+      }
 
-    // 2. Open the assistant sheet, wait for the model (data-ai-phase).
-    await page.locator('[data-testid="tcb-ai-assistant-cta"]').click();
-    log("assistant sheet opened, waiting for model…");
-    await waitPanelPhase(page, "ready");
-    log("model ready");
+      // 1. Form must mount: ≤5s slots, ≤6 retries (30s cap).
+      test.skip(
+        !(await page.evaluate(async () => "gpu" in navigator && (await navigator.gpu.requestAdapter()) !== null)),
+        "WebGPU adapter not available",
+      );
+      await waitVisible(page.locator('[data-testid="config-create-key"]'), "config-create-key");
+      log("form mounted");
+
+      // Hydration gate: sidebar nav links render only after onMount +
+      // module-nav fetch, i.e. handlers are attached and the page is
+      // interactive. Clicking before this point hits dead SSR DOM.
+      await waitVisible(page.locator('a[href^="/system/"]').first(), "sidebar nav (app interactive)");
+      log("app hydrated");
+
+      await page.locator('[data-testid="config-create-key"]').fill("e2e_json_quality_probe");
+      // type defaults to 'string' → TypeConfigBuilder/JsonPreviewEditor render
+      // immediately, no ComboSelect interaction needed.
+      await expect(page.locator('[data-testid="tcb-ai-assistant-cta"]')).toBeVisible({ timeout: 5000 });
+      log("AI CTA visible");
+
+      // 2. Open the assistant sheet and PROVE the panel mounted (≤30s)
+      //    BEFORE waiting on any model phase — never wait for a model that
+      //    cannot load because the sheet was never opened.
+      const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
+      await page.locator('[data-testid="tcb-ai-assistant-cta"]').click();
+      await waitVisible(panel, `${PREFIX}-panel (sheet open)`);
+      log("assistant sheet mounted — panel in DOM");
+
+      // 3. Model readiness: `loading_*` phases get the 8min download budget
+      //    (persistent profile keeps completed files across runs), every other
+      //    phase fails fast after 30s unchanged. Warm-cache load is ~10s.
+      const phase = await waitPanelPhase(page, "ready");
+      log(`model ready (data-ai-phase=${phase})`);
 
     // Discover the model_id via the selector's selected menu item.
     await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
     const model_id = await poll(async () => {
-      const items = page.locator(`[data-testid^="${PREFIX}-model-"]`);
+      // Model entries are DropdownMenu.Item → role="menuitem" (excludes the
+      // `*-trigger` elements sharing the testid prefix). The selected row is
+      // marked by menuListSelectedSurfaceDropdownClasses → `font-semibold`.
+      const items = page.locator(`[role="menuitem"][data-testid^="${PREFIX}-model-"]`);
       for (const item of await items.all()) {
         const cls = await item.getAttribute("class");
-        const checked = await item.getAttribute("aria-checked");
-        if (checked === "true" || (cls ?? "").includes("bg-accent")) {
+        if ((cls ?? "").includes("font-semibold")) {
           return (await item.getAttribute("data-testid"))!.replace(`${PREFIX}-model-`, "");
         }
       }
       return null;
-    }, "selected model id", 12);
+    }, "selected model id", 6);
     await page.keyboard.press("Escape");
     log(`model_id=${model_id}`);
 
@@ -299,24 +420,36 @@ test.describe("AI quality — json_editor_with_schema", () => {
       turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: json, response_s, ...verdict });
       log(`  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}`);
       if (verdict.score >= 4) await applyLastCandidate(page);
+
+      // Form-level assertion after the "remove min" turn: the applied JSON
+      // dropped rules.min, so the min input must stay empty (the builder must
+      // not re-inject its init default on an explicit apply). max=10 must
+      // be preserved from T3.
+      if (i === 3 && verdict.score >= 4) {
+        const minInput = page.getByTestId("tcb-min");
+        const maxInput = page.getByTestId("tcb-max");
+        expect(await minInput.inputValue(), "min rule re-appeared after removal").toBe("");
+        expect(await maxInput.inputValue(), "max rule lost after min removal").toBe("10");
+        log("  form check: min empty, max=10 preserved");
+      }
     }
 
     // 4. Persist the case under json_editor_with_schema_test_score and
-    //    recompute rank = mean over all *_test_score cases.
-    const api = pwContext.request;
-    const listRes = await api.get("/api/v1/entities/ai_model/list?page_size=100");
-    expect(listRes.ok()).toBeTruthy();
-    const { rows } = (await listRes.json()) as { rows: Record<string, unknown>[] };
-    const model = rows.find((r) => r.model_id === model_id);
-    expect(model, `model ${model_id} not in ai_model list`).toBeTruthy();
+    //    recompute rank = mean over all *_test_score cases. Written via SQL
+    //    through the shared E2E pool (same pattern as the original harness).
+    const pool = getPool();
+    const { rows } = await pool.query<{ test_scores: Record<string, unknown> | null }>(
+      `SELECT test_scores FROM public.ai_models WHERE model_id = $1 AND deleted_at IS NULL`,
+      [model_id],
+    );
+    expect(rows.length, `model ${model_id} not in ai_models`).toBe(1);
 
     const metrics = caseMetrics(
       turns.map((t) => t.score),
       turns.map((t) => t.response_s),
     );
-    const existing = (model!.test_scores ?? {}) as Record<string, unknown>;
     const nextScores = {
-      ...existing,
+      ...(rows[0].test_scores ?? {}),
       json_editor_with_schema_test_score: {
         protocol: "e2e_5turn_json_schema_v1",
         tested_at: new Date().toISOString(),
@@ -333,12 +466,18 @@ test.describe("AI quality — json_editor_with_schema", () => {
       .filter((s): s is number => s !== null);
     const rank = caseScores.length ? Math.round((caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10) / 10 : undefined;
 
-    const putRes = await api.put(`/api/v1/entities/ai_model/${model!.uuid}`, {
-      data: { version: model!.version, test_scores: nextScores, ...(rank !== undefined ? { rank } : {}) },
-    });
-    expect(putRes.ok(), `persist failed: ${await putRes.text()}`).toBeTruthy();
+    const upd = await pool.query(
+      `UPDATE public.ai_models
+       SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
+       WHERE model_id = $1 AND deleted_at IS NULL`,
+      [model_id, JSON.stringify(nextScores), rank ?? null],
+    );
+    expect(upd.rowCount).toBe(1);
 
-    log(`[json_editor_with_schema] ${model_id}: ${metrics.success} score=${metrics.score.toFixed(2)} rank=${rank}`);
-    expect(turns.filter((t) => t.score >= 4).length).toBeGreaterThan(0);
+      log(`[json_editor_with_schema] ${model_id}: ${metrics.success} score=${metrics.score.toFixed(2)} rank=${rank}`);
+      expect(turns.filter((t) => t.score >= 4).length).toBeGreaterThan(0);
+      // The browser is intentionally left open: the persistent session (and
+      // its model cache) is reused by the next spec/run via CDP :9333.
+    }
   });
 });

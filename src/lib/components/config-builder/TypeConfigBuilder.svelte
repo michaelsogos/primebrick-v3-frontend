@@ -38,12 +38,17 @@
     }
   });
 
-  // Auto-set default min length for string types if no min rule exists.
+  // Auto-set default min length for string types ONCE, at form init.
   // Strings can be empty by default (min=0), but if required=true then min=1
   // (a required string must have at least 1 character).
-  // The user can override it in the ValidationRulesSection UI.
+  // Runs only on the first string-type pass: an explicit removal of the min
+  // rule (manual clear or AI-applied JSON) must NOT re-inject the default —
+  // `required` already enforces non-empty at validation time.
+  let minDefaultApplied = false;
   $effect(() => {
-    if (STRING_TYPES.has(type) && !builder.validation?.rules?.min) {
+    if (!STRING_TYPES.has(type) || minDefaultApplied) return;
+    minDefaultApplied = true;
+    if (!builder.validation?.rules?.min) {
       const required = builder.validation?.required === true;
       builder.setMin(required ? 1 : 0);
     }
