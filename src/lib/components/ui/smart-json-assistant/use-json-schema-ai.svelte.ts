@@ -242,6 +242,16 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     return ai.sendMessage(text);
   }
 
+  /**
+   * Programmatic send — bypasses the key_picker free-text interception.
+   * Choice cards (topic leaf prompts, value CTAs, key-select) generate
+   * system prompts that must ALWAYS reach the model; only text typed into
+   * the chat input goes through the interception in `sendMessage`.
+   * Without this split, a leaf click right after an unresolved key-picker
+   * would be hijacked into the new-error-message flow.
+   */
+  const sendModelMessage = (text: string) => ai.sendMessage(text);
+
   return {
     get state() {
       return ai.state;
@@ -259,6 +269,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     init: ai.init,
     switchModel: ai.switchModel,
     sendMessage,
+    sendModelMessage,
     applyChoice: ai.applyChoice,
     resolveChoice: ai.resolveChoice,
     addLocalAssistantMessage: ai.addLocalAssistantMessage,

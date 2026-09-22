@@ -22,6 +22,7 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/users/[uuid]` | Edit a user (with change-password dialog) |
 | `/system/settings/users/create` | Create a user |
 | `/system/settings/profile` | Edit the current user's profile |
+| `/system/settings/ai` | Manage browser-local AI models, cache/storage, and test scores |
 | `/system/settings/configurations` | Security settings |
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
@@ -119,6 +120,26 @@ The user edit page (`/system/settings/users/[uuid]`) and create page
 `/system/settings/profile` edits the current user's profile. It uses
 SuperForms with the form guards and includes avatar preview/color selection
 (see [UI components](/docs/user-guide/ui-components)).
+
+## AI models
+
+`/system/settings/ai` manages the browser-local AI models used by the smart
+assistants (e.g. the JSON-schema assistant in the config builder). Models run
+in the browser via WebGPU — there is no server-side inference.
+
+- **Storage bar** — stacked breakdown of `navigator.storage.estimate().usage`
+  into cataloged models, orphaned cached models (in Cache API but not in the
+  `ai_models` catalog — individually deletable), other caches, and other
+  browser storage. The segments always sum to the real estimate.
+- **Model names** — displayed as `&lt;name> (&lt;quantization>)`, e.g.
+  `Qwen2.5-Coder-3B-Instruct (q4f16)`.
+- **Test scores** — each model carries per-case quality reports in
+  `ai_models.test_scores` under `*_test_score` keys (e.g.
+  `regex_test_score`, `json_editor_with_schema_test_score`). The test-report
+  popover renders one section per case with per-turn evidence: prompt,
+  expected vs actual output, verdict, reason, and response time. Aggregate
+  quality/speed/case score and the model rank are computed at read time
+  from the turn data — they are never stored.
 
 ## Email providers
 

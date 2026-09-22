@@ -70,7 +70,6 @@
    */
   let created = $state<JsonAiHandle | null>(null);
   let capsLoaded = $state(false);
-  let seeded = false;
 
   function createComposable(id: string): JsonAiHandle {
     const c = useJsonConfigAi(id, current_json ?? '', () => scopedSchema, handleNewErrorMessage);
@@ -79,11 +78,11 @@
     return c;
   }
 
-  // Seed once: capabilities resolved AND model ready.
+  // Seed whenever the conversation is empty and the model is ready — this
+  // also re-seeds after "new session" (clearConversation empties messages).
   $effect(() => {
-    if (seeded || !capsLoaded || !created?.state.is_ready) return;
+    if (!capsLoaded || !created?.state.is_ready) return;
     if (created.state.messages.length > 0) return;
-    seeded = true;
     created.addLocalAssistantMessage(
       $t('app.smart.json.ai.explorer_intro'),
       topicsToChoices(localizedTopics),

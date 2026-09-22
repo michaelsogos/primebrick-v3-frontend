@@ -32,7 +32,8 @@
  * Locators: data-testid only (brittle-on-purpose convention).
  */
 import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { deleteMfaFactorsByUsername, getPool, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
@@ -76,50 +77,12 @@ async function getSharedContext(): Promise<BrowserContext> {
   });
 }
 
-// ─── Scoring (local copy of the documented formulas) ─────────────────────────
+// ─── Scoring: shared formulas + merged-turn persistence live in
+//     helpers/test-scores.ts — this spec owns the "conversation" phase of the
+//     json_editor_with_schema_test_score case; the navigation spec owns the
+//     "navigation" phase. Aggregates cover ALL turns across both phases.
 
-function turnSpeedScore(response_s: number): number {
-  if (response_s <= 3) return 5;
-  if (response_s <= 5) return 4;
-  if (response_s <= 7) return 3;
-  if (response_s <= 9) return 2;
-  if (response_s <= 10) return 1;
-  return 0;
-}
-
-type TurnResult = {
-  n: number;
-  prompt: string;
-  expected: string;
-  actual: string | null;
-  score: number;
-  verdict: "pass" | "partial" | "fail";
-  reason: string;
-  response_s: number;
-};
-
-function caseMetrics(scores: number[], times: number[]) {
-  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const successCount = scores.filter((s) => s >= 4).length;
-  const quality = mean * 0.6 + (successCount / scores.length) * 5 * 0.4;
-  const speed = times.map(turnSpeedScore).reduce((a, b) => a + b, 0) / times.length;
-  return {
-    quality,
-    speed,
-    score: quality * 0.8 + speed * 0.2,
-    success: `${successCount}/${scores.length}`,
-  };
-}
-
-/** Aggregate any *_test_score case from stored turns (same formulas). */
-function caseScoreFromStored(caseObj: Record<string, unknown>): number | null {
-  const turns = Array.isArray(caseObj.turns) ? (caseObj.turns as { score?: number; response_s?: number }[]) : [];
-  const scores = turns.map((t) => t.score).filter((s): s is number => typeof s === "number");
-  const times = turns.map((t) => t.response_s).filter((s): s is number => typeof s === "number");
-  if (!scores.length) return null;
-  const m = caseMetrics(scores, times.length ? times : scores.map(() => 1));
-  return m.score;
-}
+type TurnResult = E2ETurn & { actual: string | null };
 
 // ─── Turn definitions ────────────────────────────────────────────────────────
 
@@ -382,10 +345,19 @@ test.describe("AI quality — json_editor_with_schema", () => {
 
       // 2. Open the assistant sheet and PROVE the panel mounted (≤30s)
       //    BEFORE waiting on any model phase — never wait for a model that
-      //    cannot load because the sheet was never opened.
+      //    cannot load because the sheet was never opened. The CTA click can
+      //    land on not-yet-hydrated SSR DOM — retry it inside the poll.
       const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
-      await page.locator('[data-testid="tcb-ai-assistant-cta"]').click();
-      await waitVisible(panel, `${PREFIX}-panel (sheet open)`);
+      for (let i = 0; i < 6; i++) {
+        await page.locator('[data-testid="tcb-ai-assistant-cta"]').click().catch(() => {});
+        try {
+          await panel.waitFor({ state: "visible", timeout: 5000 });
+          break;
+        } catch {
+          if (i === 5) throw new Error(`Timeout waiting for ${PREFIX}-panel (sheet open) (30s)`);
+          log(`  sheet not mounted yet — retrying CTA click (${(i + 1) * 5}s)`);
+        }
+      }
       log("assistant sheet mounted — panel in DOM");
 
       // 3. Model readiness: `loading_*` phases get the 8min download budget
@@ -393,6 +365,15 @@ test.describe("AI quality — json_editor_with_schema", () => {
       //    phase fails fast after 30s unchanged. Warm-cache load is ~10s.
       const phase = await waitPanelPhase(page, "ready");
       log(`model ready (data-ai-phase=${phase})`);
+
+    // Clean chat session for the "conversation" phase: leftover messages from
+    // a previous spec (e.g. the navigation sweep) must not contaminate turns.
+    const newSession = page.locator(`[data-testid="${PREFIX}-new-session"]`);
+    if (await newSession.isVisible().catch(() => false)) {
+      await newSession.click();
+      await waitPanelPhase(page, "ready");
+      log("new session started");
+    }
 
     // Discover the model_id via the selector's selected menu item.
     await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
@@ -434,48 +415,13 @@ test.describe("AI quality — json_editor_with_schema", () => {
       }
     }
 
-    // 4. Persist the case under json_editor_with_schema_test_score and
-    //    recompute rank = mean over all *_test_score cases. Written via SQL
-    //    through the shared E2E pool (same pattern as the original harness).
-    const pool = getPool();
-    const { rows } = await pool.query<{ test_scores: Record<string, unknown> | null }>(
-      `SELECT test_scores FROM public.ai_models WHERE model_id = $1 AND deleted_at IS NULL`,
-      [model_id],
-    );
-    expect(rows.length, `model ${model_id} not in ai_models`).toBe(1);
-
-    const metrics = caseMetrics(
-      turns.map((t) => t.score),
-      turns.map((t) => t.response_s),
-    );
-    const nextScores = {
-      ...(rows[0].test_scores ?? {}),
-      json_editor_with_schema_test_score: {
-        protocol: "e2e_5turn_json_schema_v1",
-        tested_at: new Date().toISOString(),
-        load_ok: true,
-        generation_ok: true,
-        turns,
-        success_count: turns.filter((t) => t.score >= 4).length,
-        total_turns: turns.length,
-      },
-    };
-    const caseScores = Object.entries(nextScores)
-      .filter(([k, v]) => k.endsWith("_test_score") && v && typeof v === "object")
-      .map(([, v]) => caseScoreFromStored(v as Record<string, unknown>))
-      .filter((s): s is number => s !== null);
-    const rank = caseScores.length ? Math.round((caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10) / 10 : undefined;
-
-    const upd = await pool.query(
-      `UPDATE public.ai_models
-       SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
-       WHERE model_id = $1 AND deleted_at IS NULL`,
-      [model_id, JSON.stringify(nextScores), rank ?? null],
-    );
-    expect(upd.rowCount).toBe(1);
-
-      log(`[json_editor_with_schema] ${model_id}: ${metrics.success} score=${metrics.score.toFixed(2)} rank=${rank}`);
-      expect(turns.filter((t) => t.score >= 4).length).toBeGreaterThan(0);
+    // 4. Merge the "conversation" turns into json_editor_with_schema_test_score.
+    //    The navigation spec contributes its own "navigation" turns to the
+    //    SAME case — quality/speed/score and rank are derived from ALL turns
+    //    across both sessions at read time.
+    const res = await mergeTestScoreTurns(model_id, "json_editor_with_schema_test_score", "conversation", turns);
+    log(`[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
+    expect(turns.filter((t) => t.score >= 4).length).toBeGreaterThan(0);
       // The browser is intentionally left open: the persistent session (and
       // its model cache) is reused by the next spec/run via CDP :9333.
     }
