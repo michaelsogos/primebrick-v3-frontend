@@ -4,6 +4,14 @@
  * ai-chat-panel — every assistant wrapper imports from here.
  */
 
+/** A documentation source attached to an assistant answer (RAG citation). */
+export interface AiSource {
+  repo: string;
+  path: string;
+  title: string;
+  similarity: number;
+}
+
 /** A single chat message in the AI conversation. */
 export interface ChatMessage<TChoice = unknown> {
   uuid: string;
@@ -14,6 +22,8 @@ export interface ChatMessage<TChoice = unknown> {
   display_content?: string;
   /** When present, the assistant is offering 1-N structured choices. */
   choices?: TChoice[];
+  /** Documentation sources backing this answer — rendered as link chips. */
+  sources?: AiSource[];
   /**
    * Resolution of a choices-bearing message: the user applied or discarded
    * the offered config. The CTAs are replaced by a status label; the sheet
@@ -36,6 +46,8 @@ export interface ProcessedResponse<TChoice = unknown> {
   display_content?: string;
   /** Parsed structured choices, if any. */
   choices?: TChoice[] | null;
+  /** Documentation sources to attach to the assistant message (citations). */
+  sources?: AiSource[];
 }
 
 /** Context passed to transform_user_content — lets the hook read history + model config. */

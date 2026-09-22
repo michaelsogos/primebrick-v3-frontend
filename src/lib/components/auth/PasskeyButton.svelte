@@ -26,6 +26,19 @@
 
   let loading = $state(false);
 
+  /** Map WebAuthn internal_codes to specific translated messages — a generic
+   * "login failed" hides actionable causes (e.g. passkey no longer
+   * registered in the IDP after an IDP data reset). */
+  function passkeyErrorMessage(err: { internal_code?: string }): { message?: string } {
+    if (err.internal_code === 'webauthn_credential_not_found') {
+      return { message: $t('app.auth.login.passkey.credentialNotFound') };
+    }
+    if (err.internal_code === 'webauthn_session_expired') {
+      return { message: $t('app.auth.login.passkey.sessionExpired') };
+    }
+    return {};
+  }
+
   async function signInWithPasskey() {
     if (loading) return;
     loading = true;
@@ -41,7 +54,7 @@
 
       if (!beginResp.ok) {
         const err = await beginResp.json();
-        pushNotification({ ...err, toast: false });
+        pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
@@ -78,7 +91,7 @@
 
       if (!finishResp.ok) {
         const err = await finishResp.json();
-        pushNotification({ ...err, toast: false });
+        pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }

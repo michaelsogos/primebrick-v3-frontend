@@ -11,6 +11,14 @@
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 import { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
+import {
+  buildActionsBlock,
+  findPendingChoiceMessage,
+  parseChatAction,
+  type ChatAction,
+  type PendingActionSpec,
+} from '$lib/components/ui/smart-ai/chat-actions';
+import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import type { JsonAssistantChoice } from './json-schema.types';
 
 export type { JsonAssistantChoice } from './json-schema.types';
@@ -50,6 +58,17 @@ export interface JsonSchemaAiOptions {
    * routed here (as the error message to translate) instead of the model.
    */
   on_key_picker_free_text?: (message: string, path: string, rule: string) => void;
+  /**
+   * Chat-action executor: when the user answers a pending choice in natural
+   * language, the model returns a validated action which is executed here —
+   * same semantics as the equivalent card click. When this is provided, user
+   * chat input is wrapped with the [Pending actions] block while a choice
+   * is unresolved.
+   */
+  on_chat_action?: (
+    action: ChatAction,
+    message: ChatMessage<JsonAssistantChoice>,
+  ) => void | Promise<void>;
 }
 
 /**
@@ -160,6 +179,66 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     return { kind: 'config', json: pretty, valid, errors };
   };
 
+  /**
+   * Chat-action context — captured when user input is wrapped with the
+   * [Pending actions] block (transform_user_content), consumed by
+   * process_response to recognize a strict action reply, and executed by
+   * sendMessage after the model turn completes.
+   */
+  const chatActionState = {
+    ctx: null as {
+      message: ChatMessage<JsonAssistantChoice>;
+      specs: PendingActionSpec[];
+    } | null,
+    resolved: null as {
+      action: ChatAction;
+      message: ChatMessage<JsonAssistantChoice>;
+    } | null,
+    /** Consume the action resolved by process_response this turn (or null). */
+    takeResolved() {
+      const r = this.resolved;
+      this.resolved = null;
+      return r;
+    },
+  };
+  /** Card prompts (sendModelMessage) must never get the pending wrap. */
+  let bypassChatActions = false;
+
+  /**
+   * Enumerate the pending message's choices as model-facing actions.
+   * key_picker is excluded — free text while it is pending is the new error
+   * message itself (intercepted before this mechanism ever runs).
+   */
+  function actionSpecs(choices: JsonAssistantChoice[]): PendingActionSpec[] {
+    const specs: PendingActionSpec[] = [];
+    choices.forEach((c, i) => {
+      if (c.kind === 'topic') {
+        specs.push({ id: 'pick', index: i, label: `choose "${c.title}"` });
+      } else if (c.kind === 'value') {
+        specs.push({
+          id: 'pick',
+          index: i,
+          label: `set "${c.path}" to ${JSON.stringify(c.value)}`,
+        });
+      } else if (c.kind === 'config') {
+        specs.push(
+          { id: 'apply', label: 'apply the proposed configuration' },
+          { id: 'discard', label: 'discard the proposed configuration' },
+        );
+      } else if (c.kind === 'translations_preview') {
+        specs.push(
+          {
+            id: 'apply',
+            label: 'accept the translations',
+            langs: Object.keys(c.translations),
+          },
+          { id: 'discard', label: 'reject the translations' },
+        );
+      }
+    });
+    return specs;
+  }
+
   const ai = useAiAssistant<JsonAssistantChoice>(model_id, {
     build_system_prompt: () =>
       opts.build_system_prompt(
@@ -167,7 +246,38 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
         typeof opts.current_json === 'function' ? opts.current_json() : opts.current_json,
       ),
 
+    /**
+     * Wrap user input with the [Pending actions] block when the last
+     * assistant message still offers unresolved choices. The block lives in
+     * the USER message — the system prompt stays byte-identical so KV prefix
+     * reuse is preserved. Programmatic card prompts bypass the wrap.
+     */
+    transform_user_content: (text, ctx) => {
+      chatActionState.ctx = null;
+      if (bypassChatActions || !opts.on_chat_action) return text;
+      const pending = findPendingChoiceMessage(ctx.messages);
+      if (!pending) return text;
+      const specs = actionSpecs(pending.choices ?? []);
+      if (specs.length === 0) return text;
+      chatActionState.ctx = { message: pending, specs };
+      return `${text}\n${buildActionsBlock(specs)}`;
+    },
+
     process_response: async (raw, regenerate) => {
+      // A strict action reply wins over everything else — the model detected
+      // the user answering the pending choices.
+      if (chatActionState.ctx) {
+        const action = parseChatAction(raw, chatActionState.ctx.specs);
+        if (action) {
+          chatActionState.resolved = { action, message: chatActionState.ctx.message };
+          return {
+            content: raw,
+            display_content: get(t)(`${opts.i18n_ns}.chat_action_ack`),
+            choices: null,
+          };
+        }
+      }
+
       const candidate = extractJsonCandidate(raw);
       if (!candidate) {
         // Pure prose answer (e.g. "explain the rules") — no card.
@@ -239,7 +349,13 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
       opts.on_key_picker_free_text(text, pending.path, pending.rule);
       return;
     }
-    return ai.sendMessage(text);
+    await ai.sendMessage(text);
+    // The model resolved a pending choice via strict action JSON — execute
+    // it with the same semantics as the equivalent card click.
+    const resolved = chatActionState.takeResolved();
+    if (resolved) {
+      await opts.on_chat_action?.(resolved.action, resolved.message);
+    }
   }
 
   /**
@@ -250,7 +366,14 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
    * Without this split, a leaf click right after an unresolved key-picker
    * would be hijacked into the new-error-message flow.
    */
-  const sendModelMessage = (text: string) => ai.sendMessage(text);
+  const sendModelMessage = async (text: string) => {
+    bypassChatActions = true;
+    try {
+      await ai.sendMessage(text);
+    } finally {
+      bypassChatActions = false;
+    }
+  };
 
   return {
     get state() {

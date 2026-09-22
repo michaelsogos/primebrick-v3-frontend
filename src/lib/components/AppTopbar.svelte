@@ -17,7 +17,8 @@
   import Info from '@lucide/svelte/icons/info'
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import XIcon from '@lucide/svelte/icons/x';
-  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -125,8 +126,19 @@
       <Sidebar.Trigger aria-label={$t('app.nav.open')} class="shrink-0" />
     </div>
 
-    <div class="flex min-w-0 justify-center">
+    <div class="flex min-w-0 items-center justify-center gap-2">
       <CommandPalette />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="relative shrink-0"
+        aria-label={$t('app.aiChat.aria')}
+        title={$t('app.aiChat.aria')}
+        onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
+      >
+        <AiIcon size={16} />
+      </Button>
     </div>
 
     <div class="flex min-w-0 shrink-0 items-center justify-end gap-2">
@@ -180,11 +192,27 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('app.aiChat.aria')}
-        title={$t('app.aiChat.aria')}
-        onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
+        aria-label={$t('app.aiGuide.aria')}
+        title={$t('app.aiGuide.aria')}
+        onclick={() => openSheet('shell.aiGuide', {}, { contentClass: 'w-[600px] p-0' })}
       >
-        <MessageSquare class="size-4" />
+        <GradientIcon
+          size={16}
+          paths={[
+            'M12 3V2',
+            'M16.066 16.865 7 22l2-11V6a3 3 0 016 0v5l2 11',
+            'm19.792 4.5.866-.5',
+            'm19.797 13.5.866.5',
+            'M21 9h1',
+            'M3 9H2',
+            'm4.203 13.5-.866.5',
+            'M4.208 4.5 3.342 4',
+            'M5.5 22h13',
+            'm7.932 16.875 7.377-4.178',
+            'M8 11h8',
+            'M8 7h8',
+          ]}
+        />
       </Button>
 
       <ThemeToggle />

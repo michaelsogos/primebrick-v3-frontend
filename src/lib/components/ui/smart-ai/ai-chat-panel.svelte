@@ -55,7 +55,15 @@
   import Server from '@lucide/svelte/icons/server';
   import Info from '@lucide/svelte/icons/info';
   import StickyNotePlus from '@lucide/svelte/icons/sticky-note-plus';
+  import ArrowDown from '@lucide/svelte/icons/arrow-down';
   import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import type { AiSource } from './ai-assistant.types';
+
+  /** Build the docs site URL for a citation (path like "guide/overview.mdx"). */
+  function sourceUrl(source: AiSource): string {
+    return `https://docs.primebrick.dev/en/${source.path.replace(/\.mdx?$/, '')}`;
+  }
 
   type AiHandle = ReturnType<typeof useAiAssistant<TChoice>>;
 
@@ -93,6 +101,32 @@
   let modelId = $state<string | null>(null);
   let inputText = $state('');
   let scrollContainer = $state<HTMLElement | null>(null);
+
+  // Sticky-scroll: auto-scroll only when the user is already near the bottom
+  // (≤50px). Scrolling up during generation must NOT be yanked back down —
+  // model callouts grow in background instead.
+  let stickToBottom = $state(true);
+  const SCROLL_STICK_PX = 50;
+
+  function handleScroll() {
+    if (!scrollContainer) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+    stickToBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_STICK_PX;
+  }
+
+  /** Any interactive element clicked inside the transcript (choice cards,
+   * CTAs, apply/discard) counts as a user action → re-stick to bottom so the
+   * resulting turn is visible. Plain text clicks don't match. */
+  function handleContentClickCapture(e: MouseEvent) {
+    if ((e.target as HTMLElement | null)?.closest('button, a, [role="button"]')) {
+      stickToBottom = true;
+    }
+  }
+
+  function scrollToBottom() {
+    stickToBottom = true;
+    if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
 
   // AI source: "local" (default, in-browser) or "backend" (coming soon).
   let aiSource = $state<'local' | 'backend'>('local');
@@ -190,7 +224,7 @@
     if (!ai) return;
     void ai.state.messages.length;
     void ai.state.streaming_text;
-    if (browser && scrollContainer) {
+    if (browser && scrollContainer && stickToBottom) {
       queueMicrotask(() => {
         if (scrollContainer) {
           scrollContainer.scrollTop = scrollContainer.scrollHeight;
@@ -222,6 +256,7 @@
     const text = inputText.trim();
     if (!text || ai.state.is_streaming) return;
     inputText = '';
+    stickToBottom = true; // user's own message → always scroll to bottom
     void ai.sendMessage(text);
   }
 
@@ -285,7 +320,7 @@
       </div>
     {:else if ai}
     <!-- Messages -->
-    <div bind:this={scrollContainer} class="min-h-0 flex-1 overflow-y-auto px-4 py-3 space-y-3">
+    <div bind:this={scrollContainer} onscroll={handleScroll} onclickcapture={handleContentClickCapture} class="min-h-0 flex-1 overflow-y-auto px-4 py-3 space-y-3">
       {#if ai.state.messages.length === 0 && !ai.state.is_streaming}
         <!-- ─── Empty states with distinct icons + animations ─── -->
         {#if ai.state.error === 'webgpu_required'}
@@ -309,8 +344,8 @@
               <!-- VRAM phase: time-based determinate progress bar -->
               <div class="w-full max-w-xs bg-muted rounded-full h-2 overflow-hidden">
                 <div
-                  class="h-full rounded-full transition-all duration-150"
-                  style="width: {ai.state.vram_progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6);"
+                  class="h-full rounded-full animate-gradient-pan transition-all duration-150"
+                  style="width: {ai.state.vram_progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
                   data-testid="{testid_prefix}-progress-bar"
                 ></div>
               </div>
@@ -338,8 +373,8 @@
                     <span class="truncate flex-1">{file.replace(/^onnx\//, '')}</span>
                     <div class="flex-1 bg-muted rounded-full h-1 overflow-hidden">
                       <div
-                        class="h-full rounded-full bg-primary/60 transition-all duration-200"
-                        style="width: {progress}%"
+                        class="h-full rounded-full animate-gradient-pan transition-all duration-200"
+                        style="width: {progress}%; background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
                       ></div>
                     </div>
                     <span class="tabular-nums w-8 text-right">{Math.round(progress)}%</span>
@@ -414,8 +449,28 @@
               <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <Bot class="size-4 text-primary" />
               </div>
-              <div class="max-w-[80%] rounded-lg px-3 py-2 text-xs bg-muted">
-                {message.content}
+              <div class="max-w-[80%] space-y-1.5">
+                <div class="rounded-lg px-3 py-2 text-xs bg-muted">
+                  {message.content}
+                </div>
+                {#if message.sources && message.sources.length > 0}
+                  <!-- RAG citations — any assistant can attach sources to an answer -->
+                  <div class="flex flex-wrap gap-1" data-testid="{testid_prefix}-sources">
+                    {#each message.sources as source (source.path)}
+                      <!-- External docs site URL — same pattern as shell AiChatPanel citations -->
+                      <a
+                        href={sourceUrl(source)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+                        title={source.path}
+                      >
+                        <BookOpen class="size-3 shrink-0" />
+                        <span class="truncate max-w-40">{source.title}</span>
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
               </div>
             </div>
           {/if}
@@ -451,6 +506,20 @@
     <!-- Input area (when ready OR on load error — keep selectors visible so
          the user can switch model; textarea is disabled when not ready) -->
     {#if ai && ai.state.error !== 'webgpu_required' && (ai.state.is_ready || ai.state.error)}
+    <div class="relative">
+      <!-- Back-to-bottom pill: visible only while scrolled up; arrow-only,
+           centered, half-overlapping the composer footer top edge. -->
+      {#if !stickToBottom && ai.state.messages.length > 0}
+        <button
+          type="button"
+          class="absolute -top-4 left-1/2 z-10 flex size-8 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
+          onclick={scrollToBottom}
+          data-testid="{testid_prefix}-scroll-bottom"
+          aria-label={$t('app.common.scrollToBottom')}
+        >
+          <ArrowDown class="size-4" />
+        </button>
+      {/if}
       <!-- Disclaimer -->
       <div class="px-4 pb-1.5">
         <p class="flex items-center justify-center gap-1 text-[11px] text-muted-foreground" data-testid="{testid_prefix}-disclaimer">
@@ -587,6 +656,7 @@
           </div>
         </div>
       </div>
+    </div>
     {/if}
     {/if}
   </div>

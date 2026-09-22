@@ -14,6 +14,8 @@
   import AiChatPanel from '$lib/components/ui/smart-ai/ai-chat-panel.svelte';
   import type { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
   import { useRegexAi, type RegexChoice } from '$lib/components/ui/smart-regex-input/use-regex-ai.svelte';
+  import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
+  import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { explainRegex, summarizeRegex, type RegexSummary } from '$lib/components/ui/smart-regex-input/regex-explainer';
   import type { DeepReadonly } from '$lib/types/deep-readonly';
   import { AiIcon } from '$lib/components/ui/ai-icon';
@@ -34,6 +36,32 @@
   } = $props();
 
   type AiHandle = ReturnType<typeof useAiAssistant<RegexChoice>>;
+  type RegexAiHandle = ReturnType<typeof useRegexAi>;
+
+  let created = $state<RegexAiHandle | null>(null);
+
+  function createComposable(id: string): RegexAiHandle {
+    const c = useRegexAi(id, current_regex, current_flags, { on_chat_action: handleChatAction });
+    created = c;
+    return c;
+  }
+
+  /**
+   * Chat-action executor — the model resolved a pending pattern choice from
+   * the user's natural-language reply. Same semantics as the card clicks:
+   * pick/apply → apply the pattern (condensed resolution), discard → reject.
+   */
+  function handleChatAction(action: ChatAction, message: ChatMessage<RegexChoice>) {
+    const ai = created;
+    if (!ai) return;
+    if (action.action === 'discard') {
+      handleRejectSingle(ai, message.uuid);
+      return;
+    }
+    // 'apply' accepts the proposal — pick 0 when no explicit index.
+    const index = action.action === 'pick' ? (action.index ?? 0) : 0;
+    handleApplyChoice(ai, index, message.uuid);
+  }
 
   function handleApplyChoice(ai: AiHandle, index: number, message_uuid?: string) {
     const choice = ai.applyChoice(index, message_uuid);
@@ -393,7 +421,7 @@
   i18n_ns="app.smart.regex.ai"
   topic_key="app.smart.regex.ai.topic"
   testid_prefix="smart-regex-ai"
-  create_composable={(id) => useRegexAi(id, current_regex, current_flags)}
+  create_composable={createComposable}
   choices={choicesSnippet}
 />
 

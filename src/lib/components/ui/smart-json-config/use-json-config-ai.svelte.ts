@@ -7,6 +7,9 @@
 import { useJsonSchemaAi } from '$lib/components/ui/smart-json-assistant/use-json-schema-ai.svelte';
 import { typeConfigSchema } from '$lib/config/type-config-schema';
 import type { JsonCandidateValidation } from '$lib/components/ui/smart-json-assistant/use-json-schema-ai.svelte';
+import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
+import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
+import type { JsonAssistantChoice } from '$lib/components/ui/smart-json-assistant/json-schema.types';
 
 function buildSystemPrompt(schema: object, current_json: string): string {
   const schemaCompact = JSON.stringify(schema);
@@ -71,6 +74,10 @@ export function useJsonConfigAi(
   current_json: string | (() => string),
   schema: object | (() => object),
   on_key_picker_free_text?: (message: string, path: string, rule: string) => void,
+  on_chat_action?: (
+    action: ChatAction,
+    message: ChatMessage<JsonAssistantChoice>,
+  ) => void | Promise<void>,
 ) {
   return useJsonSchemaAi(model_id, {
     current_json,
@@ -80,5 +87,6 @@ export function useJsonConfigAi(
     assistant_key: 'json_config',
     i18n_ns: 'app.smart.json.ai',
     on_key_picker_free_text,
+    on_chat_action,
   });
 }

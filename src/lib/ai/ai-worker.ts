@@ -19,6 +19,7 @@ import {
   pipeline,
   DynamicCache,
 } from '@huggingface/transformers';
+import { resumableFetch } from './resumable-fetch';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -172,6 +173,11 @@ async function loadModel(payload: LoadPayload): Promise<void> {
   try {
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+    // Resumable downloads: env.fetch is the documented hook (env.js) used by
+    // getFile for every remote file. Our wrapper persists 64MB shards to the
+    // 'hf-resumable' cache while streaming and resumes interrupted downloads
+    // via HTTP Range — transformers sees a plain 200 response.
+    env.fetch = resumableFetch;
 
     const external_data = await detectExternalDataFiles(repo_id);
     post({ type: 'load_phase', phase: 'downloading', worker_nonce });

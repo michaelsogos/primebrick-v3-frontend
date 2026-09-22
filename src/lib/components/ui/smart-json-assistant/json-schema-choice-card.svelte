@@ -56,7 +56,6 @@
     object_label,
     on_after_apply,
     suggest_key,
-    on_new_error_message,
     on_accept_translations,
     on_reject_translations,
   }: {
@@ -82,12 +81,6 @@
      * leaves open a key-picker flow instead of a model generation.
      */
     suggest_key?: (path: string) => string;
-    /**
-     * Called when the user types a NEW error message in the key-picker —
-     * the caller translates it into all languages, creates the translation
-     * rows, and proposes the merged config.
-     */
-    on_new_error_message?: (message: string, path: string, rule: string) => void;
     /**
      * translations_preview accept — approved languages are queued as
      * pending translations and the key merge is proposed.
@@ -174,7 +167,13 @@
   const keyOptions = $derived(
     getDictKeys($dict as Record<string, unknown>).map((k) => ({ key: k })),
   );
-  let newErrorMessage = $state('');
+
+  // Bound combo value, seeded with the suggested key — same pattern as
+  // ValidationRulesSection (/create): a key that exists in the dict resolves
+  // to its translation in the trigger instead of showing the raw key.
+  // svelte-ignore state_referenced_locally — seed only; user selection
+  // immediately resolves the choice via handleKeySelect.
+  let keyPickerValue = $state(choice.kind === 'key_picker' ? choice.suggested_key : '');
 
   /** Pick an existing (or newly typed) translation key → precise prompt. */
   function handleKeySelect(value: string | string[]) {
@@ -188,18 +187,6 @@
     void sendModel(
       `Set "${choice.path}" to ${JSON.stringify(key)} and return the complete ${object_label} JSON.`,
     );
-  }
-
-  /** New error message → caller translates + creates rows + proposes merge. */
-  function handleNewMessage() {
-    if (choice.kind !== 'key_picker') return;
-    const msg = newErrorMessage.trim();
-    if (!msg) return;
-    ai.resolveChoice(message_uuid, 'applied', {
-      condensed_content: $t(`${i18n_ns}.key_picker.chat_message`, { key: choice.suggested_key }),
-    });
-    on_new_error_message?.(msg, choice.path, choice.rule);
-    newErrorMessage = '';
   }
 
   // ─── translations_preview (new error message → per-language approval) ──
@@ -297,17 +284,17 @@
     </button>
   {/if}
 {:else if choice.kind === 'key_picker'}
-  <!-- error_label_key leaf — local key picker. Same ComboSelect pattern the
-       builder form uses (dict keys + allowCreate + auto-suggested default),
-       plus a free-text input: a new message is translated into every
-       language and seeded as a new translation key. -->
+  <!-- error_label_key leaf — local key picker. ComboSelect for existing
+       keys (allowCreate + auto-suggested default); a NEW error message is
+       typed directly in the chat — the assistant translates it into every
+       language and proposes the merged config. -->
   <div class="rounded-lg border border-border p-3 space-y-3" data-testid="{testid_prefix}-key-picker">
     <p class="text-xs text-muted-foreground">
       {$t(`${i18n_ns}.key_picker.intro`, { key: choice.suggested_key })}
     </p>
     <ComboSelect
       mode="single"
-      value=""
+      bind:value={keyPickerValue}
       onChange={handleKeySelect}
       options={keyOptions}
       valueField="key"
@@ -327,24 +314,6 @@
         </div>
       {/snippet}
     </ComboSelect>
-    <div class="flex items-center gap-2">
-      <input
-        type="text"
-        class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 text-xs"
-        placeholder={$t(`${i18n_ns}.key_picker.new_message`)}
-        bind:value={newErrorMessage}
-        onkeydown={(e) => e.key === 'Enter' && handleNewMessage()}
-        data-testid="{testid_prefix}-key-message"
-      />
-      <Button
-        size="sm"
-        onclick={handleNewMessage}
-        disabled={!newErrorMessage.trim()}
-        data-testid="{testid_prefix}-key-generate"
-      >
-        {$t(`${i18n_ns}.key_picker.generate`)}
-      </Button>
-    </div>
   </div>
 {:else if choice.kind === 'translations_preview'}
   <!-- New error message preview — per-language approval before the key

@@ -154,9 +154,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     if ((nextInit as any)._sessionRetry) {
       throw new Error('Session retry failed - still 401 after successful login');
     }
-    // Skip refresh for auth endpoints - user doesn't have tokens yet
+    // Skip refresh for auth endpoints - user doesn't have tokens yet.
+    // webauthn/signin too: a legit 401 (e.g. credential no longer registered
+    // in the IDP) must reach the caller — enqueueing it would deadlock the
+    // session-expired dialog (the dialog waits on the very request being
+    // enqueued → spinner forever, error never shown).
     const url = requestUrlString(input);
-    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
+    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh') || url.includes('/api/v1/auth/webauthn/signin')) {
       // Let the 401 propagate to the caller for proper error handling
       return res;
     }
@@ -230,8 +234,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     throw new ApiUnreachableError(res.status, alreadyNotified);
   }
 
-  // Auto-handle RFC7807 errors for non-auth endpoints
-  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh')) {
+  // Auto-handle RFC7807 errors for non-auth endpoints — auth endpoints
+  // (login/refresh/webauthn signin) surface their own error handling.
+  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh') && !url.includes('/api/v1/auth/webauthn/signin')) {
     await handleRFC7807Error(res);
   }
 
@@ -390,6 +395,37 @@ export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCL
   if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
   const data = (await res.json()) as { rows: AiModel[] };
   return data.rows;
+}
+
+// === Docs KB search (system RPC — BE pass-through to ai.docs_kb) ===
+
+export interface DocsSearchHit {
+  id: bigint;
+  repo: string;
+  path: string;
+  title: string;
+  chunk_idx: number;
+  content: string;
+  metadata: Record<string, unknown>;
+  similarity: number;
+  keyword_hits: number;
+  score: number;
+}
+
+export async function searchDocs(params: {
+  embedding: number[];
+  keywords?: string[];
+  limit?: number;
+  repo?: string;
+}): Promise<DocsSearchHit[]> {
+  const res = await apiFetch('/api/v1/system/docs/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Docs search failed (${res.status})`);
+  const data = (await res.json()) as { results: DocsSearchHit[] };
+  return data.results;
 }
 
 export async function createConfigEntry(params: {

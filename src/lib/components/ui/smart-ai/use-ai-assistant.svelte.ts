@@ -785,6 +785,7 @@ export function useAiAssistant<TChoice = unknown>(
         content: processed.content,
         display_content: processed.display_content,
         choices: choices ?? undefined,
+        sources: processed.sources,
       };
       _state.messages = [..._state.messages, assistantMessage];
     } catch (err) {

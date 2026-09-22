@@ -12,6 +12,15 @@
  */
 import { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
 import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
+import {
+  buildActionsBlock,
+  findPendingChoiceMessage,
+  parseChatAction,
+  type ChatAction,
+  type PendingActionSpec,
+} from '$lib/components/ui/smart-ai/chat-actions';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 export type { ChatMessage };
 
@@ -107,7 +116,40 @@ export function useRegexAi(
   model_id: string,
   initial_regex: string = '',
   initial_flags: string = '',
+  opts?: {
+    /**
+     * Chat-action executor: when the user answers a pending pattern choice
+     * in natural language, the model returns a validated action executed
+     * here — same semantics as the equivalent card click.
+     */
+    on_chat_action?: (
+      action: ChatAction,
+      message: ChatMessage<RegexChoice>,
+    ) => void | Promise<void>;
+  },
 ) {
+  /**
+   * Chat-action context — captured when user input is wrapped with the
+   * [Pending actions] block, consumed by process_response, executed by
+   * sendMessage after the model turn completes.
+   */
+  const chatActionState = {
+    ctx: null as {
+      message: ChatMessage<RegexChoice>;
+      specs: PendingActionSpec[];
+    } | null,
+    resolved: null as {
+      action: ChatAction;
+      message: ChatMessage<RegexChoice>;
+    } | null,
+    /** Consume the action resolved by process_response this turn (or null). */
+    takeResolved() {
+      const r = this.resolved;
+      this.resolved = null;
+      return r;
+    },
+  };
+
   const ai = useAiAssistant<RegexChoice>(model_id, {
     build_system_prompt: buildSystemPrompt,
 
@@ -132,13 +174,49 @@ export function useRegexAi(
       if (lastRegex && useIntentDetection && detectIntent(text) === 'modify') {
         userContentForModel = `Current regex: ${lastRegex.pattern}\n${text}${JSON_REMINDER}`;
       }
+
+      // Pending choices → wrap with the action block. It goes LAST so it
+      // overrides the JSON_REMINDER contract when the user is answering a
+      // choice rather than asking for a new regex.
+      chatActionState.ctx = null;
+      if (opts?.on_chat_action) {
+        const pending = findPendingChoiceMessage(ctx.messages);
+        if (pending?.choices?.length) {
+          const specs: PendingActionSpec[] = pending.choices.map((c, i) => ({
+            id: 'pick' as const,
+            index: i,
+            label: `use /${c.pattern}/${c.flags}${c.description ? ` — ${c.description}` : ''}`,
+          }));
+          specs.push(
+            { id: 'apply', label: 'accept the proposed regex' },
+            { id: 'discard', label: 'reject the proposals' },
+          );
+          chatActionState.ctx = { message: pending, specs };
+          userContentForModel += buildActionsBlock(specs);
+        }
+      }
       return userContentForModel;
     },
 
-    process_response: (raw) => ({
-      content: raw,
-      choices: parseRegexChoices(raw),
-    }),
+    process_response: (raw) => {
+      // A strict action reply wins over pattern parsing — the model detected
+      // the user answering the pending choices.
+      if (chatActionState.ctx) {
+        const action = parseChatAction(raw, chatActionState.ctx.specs);
+        if (action) {
+          chatActionState.resolved = { action, message: chatActionState.ctx.message };
+          return {
+            content: raw,
+            display_content: get(t)('app.smart.regex.ai.chat_action_ack'),
+            choices: null,
+          };
+        }
+      }
+      return {
+        content: raw,
+        choices: parseRegexChoices(raw),
+      };
+    },
   }, { assistant_key: 'regex' });
 
   /**
@@ -269,6 +347,18 @@ export function useRegexAi(
     }
   }
 
+  /**
+   * User send — after the model turn, execute a resolved chat action (the
+   * model returned strict action JSON answering the pending pattern choice).
+   */
+  async function sendMessage(text: string): Promise<void> {
+    await ai.sendMessage(text);
+    const resolved = chatActionState.takeResolved();
+    if (resolved) {
+      await opts?.on_chat_action?.(resolved.action, resolved.message);
+    }
+  }
+
   return {
     get state() {
       return ai.state;
@@ -285,7 +375,7 @@ export function useRegexAi(
     setTuning: ai.setTuning,
     init: ai.init,
     switchModel: ai.switchModel,
-    sendMessage: ai.sendMessage,
+    sendMessage,
     applyChoice: ai.applyChoice,
     resolveChoice: ai.resolveChoice,
     addLocalAssistantMessage: ai.addLocalAssistantMessage,

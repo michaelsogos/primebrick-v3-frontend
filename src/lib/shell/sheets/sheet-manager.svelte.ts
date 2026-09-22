@@ -4,6 +4,7 @@ export type SheetPanelId =
   | 'shell.errors'
   | 'shell.versions'
   | 'shell.aiChat'
+  | 'shell.aiGuide'
   | 'entity.searchIn'
   | 'entity.columns'
   | 'entity.filters'
@@ -29,6 +30,7 @@ export type SheetPanelPropsMap = {
   'shell.errors': Record<string, never>;
   'shell.versions': Record<string, never>;
   'shell.aiChat': Record<string, never>;
+  'shell.aiGuide': Record<string, never>;
   'entity.searchIn': Record<string, unknown>;
   'entity.columns': Record<string, unknown>;
   'entity.filters': {

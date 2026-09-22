@@ -54,24 +54,25 @@ async function waitVisible(locator: ReturnType<Page["locator"]>, what: string, m
   }
 }
 
-async function getSharedContext(): Promise<BrowserContext> {
+async function getSharedContext(): Promise<{ context: BrowserContext; launched: boolean }> {
   try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
+    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 15000 });
     const ctx = browser.contexts()[0];
     if (ctx) {
       log("attached to running Edge session (CDP :9333)");
-      return ctx;
+      return { context: ctx, launched: false };
     }
   } catch {
     /* no debug session up — launch one */
   }
   log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
+  const context = await chromium.launchPersistentContext(E2E_PROFILE, {
     channel: "msedge",
     headless: false,
     viewport: { width: 1440, height: 900 },
     args: ["--remote-debugging-port=9333"],
   });
+  return { context, launched: true };
 }
 
 async function waitPanelPhase(page: Page, want: string): Promise<string> {
@@ -88,8 +89,12 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
       log(`  data-ai-phase="${phase}"`);
     } else {
       stuck++;
-      if (!phase.startsWith("loading") && stuck >= 6) {
-        throw new Error(`panel stuck at phase "${phase}" for 30s`);
+      // 'init' covers the composable-creation chain (config+model catalog
+      // ensureLoaded): on a cold profile the Vite module waterfall starves
+      // the first fetches — allow 60s before declaring a stall.
+      const stallCap = phase === "init" ? 12 : 6;
+      if (!phase.startsWith("loading") && stuck >= stallCap) {
+        throw new Error(`panel stuck at phase "${phase}" for ${stallCap * 5}s`);
       }
       if (stuck % 4 === 3) log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
     }
@@ -114,19 +119,40 @@ type TopicNode = {
  * the real modules — no fixture duplication.
  */
 async function expectedTree(page: Page, configType: string): Promise<{ roots: TopicNode[]; index: Record<string, TopicNode> }> {
-  return page.evaluate(async (type) => {
-    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n, i18n] = await Promise.all([
-      import("/src/lib/components/ui/smart-json-config/type-config-explorer.ts"),
-      import("/src/lib/config/type-config-schema.ts"),
-      import("/src/lib/components/ui/smart-json-assistant/json-schema-explorer.ts"),
-      import("/src/lib/components/ui/smart-json-config/type-config-i18n.ts"),
-      import("/src/lib/i18n/index.ts"),
-    ]);
-    // t is a Svelte Readable — grab the current translator via subscribe().
-    let translate!: (key: string) => string;
-    (i18n as { t: { subscribe: (fn: (v: (key: string) => string) => void) => () => void } })
-      .t.subscribe((v) => { translate = v; })();
-    const meta = await (await fetch("/api/v1/entities/config_entry/meta")).json();
+  // meta + translation dicts via the context's request — shares the session
+  // cookie but does NOT go through the page. In-page fetch/dynamic-import of
+  // the live i18n module proved to wedge on cold profiles; the topic titles
+  // only need a flat key→string lookup, so we rebuild `t` from the same
+  // module dicts the app merges (system + public).
+  const [meta, sysDict, pubDict] = await Promise.all([
+    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.json()),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.json() : {})),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.json() : {})),
+  ]);
+  return page.evaluate(async ({ type, meta, dicts }) => {
+    const mods: any[] = [];
+    for (const url of [
+      "/src/lib/components/ui/smart-json-config/type-config-explorer.ts",
+      "/src/lib/config/type-config-schema.ts",
+      "/src/lib/components/ui/smart-json-assistant/json-schema-explorer.ts",
+      "/src/lib/components/ui/smart-json-config/type-config-i18n.ts",
+    ]) {
+      // Race each import — a wedged module fetch would stall the whole
+      // Promise.all forever; surface WHICH one instead.
+      (window as any).__et_step = url;
+      mods.push(
+        await Promise.race([
+          import(/* @vite-ignore */ url),
+          new Promise((_, rej) => setTimeout(() => rej(new Error(`import timeout: ${url}`)), 15_000)),
+        ]),
+      );
+      (window as any).__et_step = `done:${url}`;
+    }
+    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n] = mods;
+    // Flat key→string lookup — same merge the app does (module dicts), and
+    // t() returns the key itself when missing.
+    const flatDict = { ...(dicts.public as Record<string, string>), ...(dicts.system as Record<string, string>) };
+    const translate = (key: string) => flatDict[key] ?? key;
     const caps = meta.type_capabilities?.[type] ?? { validation: { required: true, unsigned: false, regex: false }, widget: {} };
     const scoped = schemaForCapabilities(typeConfigJsonSchema as never, caps);
     const roots = topicI18n.localizeTopics(explorer.buildSchemaTopics(scoped), caps, translate) as TopicNode[];
@@ -134,7 +160,7 @@ async function expectedTree(page: Page, configType: string): Promise<{ roots: To
     const walk = (nodes: TopicNode[]) => nodes.forEach((n) => { flat[n.path] = n; walk(n.children); });
     walk(roots);
     return { roots, index: flat };
-  }, configType);
+  }, { type: configType, meta, dicts: { system: sysDict, public: pubDict } });
 }
 
 type Counts = { choices: number; picker: number; values: number; config: number };
@@ -172,17 +198,22 @@ function producedKind(before: Counts, after: Counts): OutcomeKind | "none" {
 }
 
 test.describe("JSON-schema assistant — topic navigation sweep", () => {
-  test.describe.configure({ timeout: 600_000 });
+  test.describe.configure({ timeout: 600_000, mode: "serial" });
 
   test.beforeAll(async () => {
     await deleteMfaFactorsByUsername("admin");
     await setAuthMethodEnforcerDismissed("admin", true);
   });
 
-  test("click every explorer topic link; each level matches the schema tree", async () => {
-    // Identical bootstrap to ai-json-schema-quality.spec.ts — proven.
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+  /**
+   * Shared bootstrap: attach the Edge session, land on the config-create
+   * page (auth-gated), open the assistant sheet, wait model-ready, start a
+   * NEW session and return {page, model_id}. Used by both tests — the chat
+   * phase got its own test so each phase keeps its own 10min budget.
+   */
+  async function bootAssistant(): Promise<{ page: Page; model_id: string }> {
+    let { context, launched } = await getSharedContext();
+    let page = context.pages()[0] ?? (await context.newPage());
 
     // ── Auth gate ──
     const isAuthed = () =>
@@ -193,6 +224,25 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
     // URL aborts (ERR_ABORTED). Navigate only when needed.
     if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
     log("landed: " + page.url());
+
+    // ── Connectivity probe — a freshly-launched Edge occasionally boots with
+    // a wedged network service (app shows "Offline", every in-page fetch
+    // hangs while curl works). Detect it fast and relaunch the context once.
+    const online = () =>
+      page.evaluate(async () => {
+        try {
+          return (await fetch("/api/v1/health", { signal: AbortSignal.timeout(4000) })).ok;
+        } catch {
+          return false;
+        }
+      });
+    if (launched && !(await online().catch(() => false))) {
+      log("in-page fetch wedged on fresh launch — relaunching Edge once");
+      await context.close().catch(() => {});
+      ({ context } = await getSharedContext());
+      page = context.pages()[0] ?? (await context.newPage());
+      if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
+    }
 
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
     if (langNow !== "it-IT") {
@@ -224,19 +274,34 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
 
     await waitVisible(page.locator('[data-testid="config-create-key"]'), "config-create-key");
     await waitVisible(page.locator('a[href^="/system/"]').first(), "app interactive");
+
+    // Gate the sheet open on the app reporting backend-online: if the sheet
+    // mounts while backendState.offline is still true (transient wedge at
+    // boot), every apiFetch fast-fails → config.ensureLoaded() resolves empty
+    // → no configured model → ai never created → data-ai-phase="init" forever.
+    // The AppShell health poller self-heals within ~5s of network recovery;
+    // the badge's chip class is the observable proxy (i18n-independent).
+    await poll(async () => {
+      if (!(await online().catch(() => false))) return null;
+      const offlineBadge = await page.locator("button:has(.text-red-700)").count();
+      return offlineBadge === 0 ? true : null;
+    }, "app health chip online", 12);
+
     await page.locator('[data-testid="config-create-key"]').fill("e2e_nav_probe");
     // Click may land on a not-yet-hydrated CTA (SSR DOM is visible before
     // Svelte attaches handlers) — retry the click each slot until the
     // sheet actually mounts, bounded at 30s.
     const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
-    for (let i = 0; i < 6; i++) {
-      await page.locator('[data-testid="tcb-ai-assistant-cta"]').click().catch(() => {});
-      try {
-        await panel.waitFor({ state: "visible", timeout: 5000 });
-        break;
-      } catch {
-        if (i === 5) throw new Error("Timeout waiting for smart-json-ai-panel (30s)");
-        log(`  sheet not mounted yet — retrying CTA click (${(i + 1) * 5}s)`);
+    if (!(await panel.isVisible().catch(() => false))) {
+      for (let i = 0; i < 6; i++) {
+        await page.locator('[data-testid="tcb-ai-assistant-cta"]').click().catch(() => {});
+        try {
+          await panel.waitFor({ state: "visible", timeout: 5000 });
+          break;
+        } catch {
+          if (i === 5) throw new Error("Timeout waiting for smart-json-ai-panel (30s)");
+          log(`  sheet not mounted yet — retrying CTA click (${(i + 1) * 5}s)`);
+        }
       }
     }
     log("assistant sheet mounted");
@@ -268,11 +333,30 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
     }, "selected model id", 6);
     await page.keyboard.press("Escape");
     log(`model_id=${model_id}`);
+    return { page, model_id };
+  }
+
+  test("click every explorer topic link; each level matches the schema tree", async () => {
+    const { page, model_id } = await bootAssistant();
 
     // Explorer seed message = first cascade. Then compute the expected tree
-    // in-page with the app's own modules (same scoping + i18n).
+    // in-page with the app's own modules (same scoping + i18n). The evaluate
+    // does dynamic imports + fetch — bound it: a wedged page would hang the
+    // test until the 10min cap otherwise.
     await waitVisible(page.locator(`[data-testid="${PREFIX}-choices"]`).first(), "explorer seed cascade");
-    const { roots, index } = await expectedTree(page, "string");
+    const { roots, index } = await poll(
+      async () =>
+        Promise.race([
+          expectedTree(page, "string"),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error("evaluate timeout")), 45_000)),
+        ]).catch(async (e) => {
+          const step = await page.evaluate(() => (window as any).__et_step ?? "(none)").catch(() => "(evaluate dead)");
+          log(`  expectedTree failed: ${(e as Error).message} — last step: ${step}`);
+          return null;
+        }),
+      "expectedTree in-page evaluate",
+      2,
+    );
     expect(roots.length, "schema explorer produced no root topics").toBeGreaterThan(0);
     log(`expected tree: ${roots.length} root topics, ${Object.keys(index).length} total nodes`);
 
@@ -383,5 +467,139 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
     log(`[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
 
     expect(failures, `navigation failures:\n${failures.join("\n")}`).toEqual([]);
+  });
+
+  test("answer pending choices via natural-language chat", async () => {
+    // ── CHAT phase: the SAME explorer answered via chat input ──
+    // Pending choices are wrapped into the user message ([Pending actions]);
+    // the model replies with a strict action JSON that the app executes
+    // exactly like the equivalent card click.
+    const { page, model_id } = await bootAssistant();
+    await waitVisible(page.locator(`[data-testid="${PREFIX}-choices"]`).first(), "chat-phase seed cascade");
+    const { roots } = await poll(
+      async () =>
+        Promise.race([
+          expectedTree(page, "string"),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error("evaluate timeout")), 45_000)),
+        ]).catch(async (e) => {
+          const step = await page.evaluate(() => (window as any).__et_step ?? "(none)").catch(() => "(evaluate dead)");
+          log(`  expectedTree failed: ${(e as Error).message} — last step: ${step}`);
+          return null;
+        }),
+      "expectedTree in-page evaluate",
+      3,
+    );
+    expect(roots.length, "schema explorer produced no root topics").toBeGreaterThan(0);
+
+    const failures: string[] = [];
+
+    const chatInput = page.locator(`[data-testid="${PREFIX}-input"]`);
+    const chatTurns: E2ETurn[] = [];
+
+    /** Type a chat message and wait for a NEW outcome element to appear. */
+    async function chatSay(text: string, want: OutcomeKind | "applied" | "discarded"): Promise<{ got: string; response_s: number; evidence: string }> {
+      const before = await outcomeCounts(page);
+      const appliedBefore = await page.locator(`[data-testid="${PREFIX}-applied"]`).count();
+      const t0 = Date.now();
+      await chatInput.fill(text);
+      await chatInput.press("Enter");
+      const outcome = await poll(async () => {
+        if (want === "applied") {
+          const now = await page.locator(`[data-testid="${PREFIX}-applied"]`).count();
+          return now > appliedBefore ? "applied" : null;
+        }
+        if (want === "discarded") {
+          const now = await outcomeCounts(page);
+          return now.config < before.config ? "discarded" : null;
+        }
+        const now = await outcomeCounts(page);
+        return outcomeTotal(now) > outcomeTotal(before) ? producedKind(before, now) : null;
+      }, `chat outcome "${want}" for "${text}"`, 6).catch(() => null);
+      const response_s = (Date.now() - t0) / 1000;
+      let evidence = outcome ?? "none";
+      if (!outcome) {
+        const lastBubble = await page
+          .locator(`[data-testid="${PREFIX}-panel"] .whitespace-pre-wrap`)
+          .last()
+          .textContent()
+          .catch(() => null);
+        evidence = `none | last assistant msg: ${(lastBubble ?? "(none)").slice(0, 300)}`;
+      }
+      return { got: outcome ?? "none", response_s, evidence };
+    }
+
+    const recordChatTurn = (prompt: string, want: string, r: { got: string; response_s: number; evidence: string }) => {
+      const score = r.got === want ? 5 : r.got === "none" ? 0 : 2;
+      chatTurns.push({
+        n: chatTurns.length + 1,
+        prompt,
+        expected: want,
+        actual: r.evidence,
+        score,
+        verdict: score === 5 ? "pass" : score === 0 ? "fail" : "partial",
+        reason: `"${prompt}" → ${r.got}`,
+        response_s: r.response_s,
+      });
+      log(`    ${r.got === want ? "✓" : "✗"} chat "${prompt}" → ${r.got} (${r.response_s.toFixed(1)}s)`);
+      if (r.got !== want) failures.push(`[chat] "${prompt}" expected ${want}, got ${r.got}`);
+    };
+
+    // T1: pick the first root topic BY TITLE → cascade of its children.
+    const chatRoot = roots[0];
+    {
+      const r = await chatSay(chatRoot.title, "cascade");
+      recordChatTurn(`chat: "${chatRoot.title}"`, "cascade", r);
+      if (r.got === "cascade") {
+        // The new cascade must render exactly the node's children.
+        const container = page.locator(`[data-testid="${PREFIX}-choices"]`).last();
+        const rendered = await container.locator(`[data-testid="${PREFIX}-topic"] p.text-xs.font-medium`).allTextContents();
+        const expected = chatRoot.children.map((c) => c.title);
+        const missing = expected.filter((t) => !rendered.includes(t));
+        const exceeding = rendered.filter((t) => !expected.includes(t));
+        if (missing.length || exceeding.length) {
+          failures.push(`[chat] cascade of "${chatRoot.title}": missing=${missing.join("|")} exceeding=${exceeding.join("|")}`);
+        }
+      }
+    }
+
+    // T2: pick the first child BY ORDINAL → its expected outcome kind.
+    const chatChild = chatRoot.children[0];
+    const wantChild = chatChild ? expectedKind(chatChild) : "cascade";
+    {
+      const r = await chatSay("1", wantChild);
+      recordChatTurn(`chat: "1" (${chatChild?.path ?? "none"})`, wantChild, r);
+    }
+
+    // T3: the child offers closed-domain values → pick by VALUE text.
+    if (wantChild === "value-ctas" && chatChild?.value_options?.length) {
+      const r = await chatSay("true", "config-card");
+      recordChatTurn('chat: "true" (value pick)', "config-card", r);
+
+      // T4: the config card is pending → discard it in natural language.
+      if (r.got === "config-card") {
+        const d = await chatSay("scarta", "discarded");
+        recordChatTurn('chat: "scarta" (discard)', "discarded", d);
+      }
+
+      // T5: ask again → new config card → apply via chat; the builder's
+      // required toggle must turn on (form-state proof of the apply path).
+      const again = await chatSay("rendi il campo obbligatorio", "config-card");
+      recordChatTurn('chat: "rendi il campo obbligatorio"', "config-card", again);
+      if (again.got === "config-card") {
+        const a = await chatSay("applica", "applied");
+        recordChatTurn('chat: "applica" (apply)', "applied", a);
+        if (a.got === "applied") {
+          const state = await page.locator('[data-testid="tcb-required"]').getAttribute('data-state').catch(() => null);
+          if (state !== 'checked') failures.push(`[chat] apply via chat: tcb-required data-state=${state}`);
+        }
+      }
+    }
+
+    // Merge the "chat" turns into the SAME json_editor_with_schema_test_score
+    // case — aggregates cover ALL turns (conversation + navigation + chat).
+    const resChat = await mergeTestScoreTurns(model_id, "json_editor_with_schema_test_score", "chat", chatTurns);
+    log(`[json_editor_with_schema] ${model_id}: merged score=${resChat.score.toFixed(2)} rank=${resChat.rank} (total turns=${resChat.total_turns})`);
+
+    expect(failures, `chat failures:\n${failures.join("\n")}`).toEqual([]);
   });
 });

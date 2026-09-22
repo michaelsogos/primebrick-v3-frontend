@@ -15,7 +15,7 @@
   import { useJsonConfigAi } from './use-json-config-ai.svelte';
   import { schemaForCapabilities } from './type-config-explorer';
   import { localizeTopics } from './type-config-i18n';
-  import { buildSchemaTopics, indexSchemaTopics, topicsToChoices, errorLabelRuleFromPath, setJsonPath } from '$lib/components/ui/smart-json-assistant/json-schema-explorer';
+  import { buildSchemaTopics, indexSchemaTopics, topicsToChoices, valueOptionsToChoices, errorLabelRuleFromPath, setJsonPath } from '$lib/components/ui/smart-json-assistant/json-schema-explorer';
   import JsonSchemaChoiceCard from '$lib/components/ui/smart-json-assistant/json-schema-choice-card.svelte';
   import { typeConfigJsonSchema, autoErrorLabelKey } from '$lib/config/type-config-schema';
   import { addPendingTranslation } from '$lib/i18n/pending-translations.svelte';
@@ -23,6 +23,8 @@
   import { useTypeCapabilities } from '$lib/composables/useTypeCapabilities.svelte';
   import type { ConfigEntryType } from '$lib/api-types';
   import type { JsonAssistantChoice } from '$lib/components/ui/smart-json-assistant/json-schema.types';
+  import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
+  import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { onMount } from 'svelte';
   import Bot from '@lucide/svelte/icons/bot';
 
@@ -72,7 +74,7 @@
   let capsLoaded = $state(false);
 
   function createComposable(id: string): JsonAiHandle {
-    const c = useJsonConfigAi(id, current_json ?? '', () => scopedSchema, handleNewErrorMessage);
+    const c = useJsonConfigAi(id, current_json ?? '', () => scopedSchema, handleNewErrorMessage, handleChatAction);
     created = c;
     void typeCapabilities.ensureLoaded().then(() => { capsLoaded = true; });
     return c;
@@ -169,6 +171,106 @@
     } catch { merged = {}; }
     ai.proposeCandidate(JSON.stringify(setJsonPath(merged, path, key)));
   }
+
+  /**
+   * Chat-action executor — the model resolved a pending choice from the
+   * user's natural-language reply. Each branch reproduces EXACTLY the
+   * semantics of the equivalent card click (JsonSchemaChoiceCard):
+   * - topic pick → cascade / key-picker / value CTAs / leaf prompt
+   * - value pick → "set X to V" model prompt
+   * - config apply/discard → apply + condensed resolution (+ explorer reseed)
+   * - translations_preview apply/discard → accept (all or langs subset) / reject
+   * Navigation picks (topic/value) do NOT resolve the message — like clicks.
+   */
+  function handleChatAction(action: ChatAction, message: ChatMessage<JsonAssistantChoice>) {
+    const ai = created;
+    if (!ai) return;
+    const choices = message.choices ?? [];
+    const target =
+      action.action === 'pick'
+        ? choices[action.index ?? -1]
+        : choices.find((c) => c.kind === 'config' || c.kind === 'translations_preview');
+    if (!target) return;
+
+    if (target.kind === 'topic') {
+      const node = topicsIndex.get(target.path);
+      const header = node?.description ? `${node.title}: ${node.description}` : (node?.title ?? target.title);
+      if (node && node.children.length > 0) {
+        ai.addLocalAssistantMessage(header, topicsToChoices(node.children));
+      } else if (node?.leaf_kind === 'error_label_key') {
+        ai.addLocalAssistantMessage(header, [{
+          kind: 'key_picker',
+          path: node.path,
+          rule: errorLabelRuleFromPath(node.path),
+          suggested_key: suggestKey(node.path),
+        }]);
+      } else if (node?.value_options?.length) {
+        ai.addLocalAssistantMessage(header, valueOptionsToChoices(node.path, node.value_options));
+      } else {
+        const hint = node?.schema_description ?? node?.description;
+        void ai.sendModelMessage(
+          hint
+            ? `Generate the type_config JSON for "${node?.title ?? target.title}". ${hint}`
+            : `Generate the type_config JSON for "${target.title}".`,
+        );
+      }
+      return;
+    }
+
+    if (target.kind === 'value') {
+      void ai.sendModelMessage(
+        `Set "${target.path}" to ${JSON.stringify(target.value)} and return the complete type_config JSON.`,
+      );
+      return;
+    }
+
+    if (target.kind === 'config') {
+      if (action.action === 'discard' || !target.valid) {
+        ai.resolveChoice(message.uuid, 'discarded', {
+          condensed_content: $t('app.smart.json.ai.discarded_summary'),
+        });
+        return;
+      }
+      try {
+        const compact = JSON.stringify(JSON.parse(target.json));
+        on_apply_json(compact);
+        ai.resolveChoice(message.uuid, 'applied', {
+          condensed_content: $t('app.smart.json.ai.applied_summary', { json: compact }),
+        });
+        ai.addLocalAssistantMessage(
+          $t('app.smart.json.ai.continue_hint'),
+          topicsToChoices(localizedTopics),
+        );
+      } catch { /* invalid JSON cannot be applied anyway */ }
+      return;
+    }
+
+    if (target.kind === 'translations_preview') {
+      if (action.action === 'discard') {
+        handleRejectTranslations(target.path, target.key);
+        ai.resolveChoice(message.uuid, 'applied', {
+          condensed_content: $t('app.smart.json.ai.translations_preview.key_only_summary', { key: target.key }),
+        });
+        return;
+      }
+      // Accept: explicit langs subset, or ALL languages when unspecified.
+      const wanted = action.langs?.length
+        ? action.langs
+        : Object.keys(target.translations);
+      const approved: Record<string, string> = {};
+      for (const lang of wanted) {
+        const value = target.translations[lang];
+        if (value) approved[lang] = value;
+      }
+      handleAcceptTranslations(target.path, target.key, approved);
+      ai.resolveChoice(message.uuid, 'applied', {
+        condensed_content: $t('app.smart.json.ai.translations_preview.accepted_summary', {
+          key: target.key,
+          count: Object.keys(approved).length,
+        }),
+      });
+    }
+  }
 </script>
 
 {#snippet choicesSnippet({ ai, message }: {
@@ -209,7 +311,6 @@
         i18n_ns="app.smart.json.ai"
         object_label="type_config"
         suggest_key={suggestKey}
-        on_new_error_message={handleNewErrorMessage}
         on_accept_translations={handleAcceptTranslations}
         on_reject_translations={handleRejectTranslations}
         on_after_apply={() =>
