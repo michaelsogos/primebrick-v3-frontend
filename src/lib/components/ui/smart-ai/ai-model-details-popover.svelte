@@ -10,6 +10,7 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
   import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
+  import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
   import type { AiCerebellum, AiModel } from '$lib/api-types';
   import type { EffectiveAiParams } from '$lib/ai/ai-cerebellum';
   import { t } from '$lib/i18n';
@@ -100,6 +101,7 @@
             <CircuitBoard class="size-3 shrink-0 text-foreground/60" />
             <span class="text-muted-foreground">{$t(`app.smart.ai.cerebellum.title`)}:</span>
             <span class="font-medium text-foreground">{tuning.name}</span>
+            <CerebellumRecommendationBadge recommendation={tuning.recommendation} />
           </div>
         {/if}
         <div class="space-y-1.5 text-[10px]">

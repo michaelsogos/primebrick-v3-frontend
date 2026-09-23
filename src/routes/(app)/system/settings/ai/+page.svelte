@@ -30,6 +30,7 @@
   import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
+  import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
@@ -122,6 +123,12 @@
     return enabledTunings.find(
       (r) => r.assistant_key === selectedAssistantKey && r.model_id === model_id,
     ) ?? null;
+  }
+
+  /** Enabled tunings of a model that carry a recommendation badge —
+   *  shown on the card when no assistant is selected (model defaults). */
+  function recommendedTuningsFor(model_id: string): AiCerebellum[] {
+    return enabledTunings.filter((r) => r.model_id === model_id && r.recommendation);
   }
 
   function openCerebellumCreate() {
@@ -354,6 +361,13 @@
                       <span class="flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400" title={$t('system.entities.ai_model.compatibility.NOT_COMPATIBLE')}>
                         <ShieldX class="size-3" />
                       </span>
+                    {/if}
+                    {#if tuning?.recommendation}
+                      <CerebellumRecommendationBadge recommendation={tuning.recommendation} />
+                    {:else if !selectedAssistantKey}
+                      {#each recommendedTuningsFor(model.model_id) as rec (rec.uuid)}
+                        <CerebellumRecommendationBadge recommendation={rec.recommendation} />
+                      {/each}
                     {/if}
                     {#if !model.is_enabled}
                       <span class="text-[10px] text-muted-foreground">({$t('system.entities.ai_model.enabled.false')})</span>

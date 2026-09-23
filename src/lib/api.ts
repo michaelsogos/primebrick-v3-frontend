@@ -385,16 +385,21 @@ export async function fetchAiCerebellum(filters?: {
 }
 
 export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
-  const params = new URLSearchParams();
-  // The selector expects the full catalog — the BE defaults page_size to 25.
-  params.set('page_size', '100');
-  if (deletedRecords) params.set('deleted_records', deletedRecords);
-  const qs = params.toString();
-  const url = qs ? `/api/v1/entities/ai_model/list?${qs}` : '/api/v1/entities/ai_model/list';
-  const res = await apiFetch(url);
-  if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
-  const data = (await res.json()) as { rows: AiModel[] };
-  return data.rows;
+  // The selector expects the full catalog. page_size is capped at 100 by the
+  // BE, and deleted+alive rows can exceed that — paginate until exhausted.
+  const rows: AiModel[] = [];
+  let page = 1;
+  for (;;) {
+    const params = new URLSearchParams({ page_size: '100', page: String(page) });
+    if (deletedRecords) params.set('deleted_records', deletedRecords);
+    const res = await apiFetch(`/api/v1/entities/ai_model/list?${params}`);
+    if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
+    const data = (await res.json()) as { rows: AiModel[]; total?: number };
+    rows.push(...data.rows);
+    if (data.rows.length < 100 || (data.total !== undefined && rows.length >= data.total)) break;
+    page++;
+  }
+  return rows;
 }
 
 // === Docs KB search (system RPC — BE pass-through to ai.docs_kb) ===

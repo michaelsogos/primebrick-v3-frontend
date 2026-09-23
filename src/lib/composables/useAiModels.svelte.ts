@@ -39,6 +39,32 @@ const _state = $state({
   deletionFilterMode: 'non_deleted' as DeletionFilterMode,
 });
 
+/**
+ * Full catalog — ALWAYS `deleted_records=INCLUDED`, independent of the
+ * deletion-filter toggle. The toolbar filter is a LIST concern only: cache
+ * management and canonical name resolution must see every cataloged model
+ * (disabled AND soft-deleted), otherwise their cached files would be
+ * wrongly reported as orphans.
+ */
+const _catalog = $state({
+  models: [] as AiModel[],
+  fetched: false,
+});
+let catalogPromise: Promise<void> | null = null;
+
+async function ensureCatalogLoaded(): Promise<void> {
+  if (_catalog.fetched || catalogPromise) return catalogPromise ?? Promise.resolve();
+  catalogPromise = (async () => {
+    try {
+      _catalog.models = await fetchAiModels('INCLUDED');
+      _catalog.fetched = true;
+    } finally {
+      catalogPromise = null;
+    }
+  })();
+  return catalogPromise;
+}
+
 let fetchPromise: Promise<void> | null = null;
 
 function deletionFilterToParam(mode: DeletionFilterMode): 'EXCLUDED' | 'ONLY' | 'INCLUDED' | undefined {
@@ -102,13 +128,19 @@ export function useAiModels() {
         .sort((a, b) => a.sort_order - b.sort_order);
     },
     /**
-     * ALL non-deleted catalog models (enabled + disabled). The cache scanner
-     * needs the FULL catalog for orphan detection — a disabled model's files
-     * are still cataloged, not orphaned.
+     * FULL catalog — every ai_models row including disabled and soft-deleted,
+     * unaffected by the deletion-filter toggle. Cache management and
+     * canonical-name resolution use this; the filtered list uses `state.models`.
+     * Call `ensureCatalogLoaded()` before reading (same contract as
+     * `getEnabledModels`).
      */
     getAllModels(): AiModel[] {
-      return _state.models;
+      return _catalog.models;
     },
+    getCatalogModelByModelId(model_id: string): AiModel | undefined {
+      return _catalog.models.find((m) => m.model_id === model_id);
+    },
+    ensureCatalogLoaded,
     getModelByModelId(model_id: string): AiModel | undefined {
       // Same as getEnabledModels — no ensureLoaded() call here.
       return _state.models.find((m) => m.model_id === model_id);
@@ -140,6 +172,7 @@ export function useAiModels() {
     invalidate(): void {
       clearCachedETag(AI_MODELS_URL);
       _state.fetched = false;
+      _catalog.fetched = false;
     },
   };
 }

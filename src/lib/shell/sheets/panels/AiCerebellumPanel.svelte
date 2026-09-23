@@ -19,6 +19,7 @@
   import type { AiCerebellum, AiModel } from '$lib/api-types';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import AiModelOption from '$lib/components/ui/smart-ai/ai-model-option.svelte';
+  import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import Input from '$lib/components/ui/input/input.svelte';
   import Slider from '$lib/components/ui/slider/slider.svelte';
@@ -162,8 +163,11 @@
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-xs font-medium text-muted-foreground" for="cerebellum-model">
+        <label class="flex items-center gap-2 text-xs font-medium text-muted-foreground" for="cerebellum-model">
           {$t(`${fieldNs}.model_id`)}
+          {#if existing?.recommendation}
+            <CerebellumRecommendationBadge recommendation={existing.recommendation} />
+          {/if}
         </label>
         <ComboSelect
           id="cerebellum-model"
@@ -176,7 +180,13 @@
           data-testid="ai-cerebellum-model"
         >
           {#snippet itemSnippet({ option })}
-            <AiModelOption model={option as AiModel} />
+            {@const rec = (rows ?? []).find((r) => r.assistant_key === assistant_key && r.model_id === (option as AiModel).model_id)?.recommendation}
+            <div class="flex items-center gap-2">
+              <AiModelOption model={option as AiModel} />
+              {#if rec}
+                <CerebellumRecommendationBadge recommendation={rec} />
+              {/if}
+            </div>
           {/snippet}
           {#snippet selectedSnippet({ option })}
             <AiModelOption model={option as AiModel} />

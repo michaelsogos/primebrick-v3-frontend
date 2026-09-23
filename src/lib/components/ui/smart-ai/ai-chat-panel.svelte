@@ -171,9 +171,11 @@
 
   function refreshCurrentModelCache() {
     if (!currentModel) return;
-    void modelCache.refreshCacheStatus(
-      [currentModel.model_id],
-      aiModels.getAllModels().map((m) => m.model_id),
+    void aiModels.ensureCatalogLoaded().then(() =>
+      modelCache.refreshCacheStatus(
+        [currentModel.model_id],
+        aiModels.getAllModels().map((m) => m.model_id),
+      ),
     );
   }
 

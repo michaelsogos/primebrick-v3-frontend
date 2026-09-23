@@ -14,6 +14,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import type { AiCerebellum } from '$lib/api-types';
+  import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
   import { t } from '$lib/i18n';
   import CircuitBoard from '@lucide/svelte/icons/circuit-board';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -43,11 +44,10 @@
    * name and must read identical to the sheet title. $t() falls back to
    * the raw string when it isn't a key, so plain names still work.
    */
-  let selectedName = $derived(
-    selected_tuning_uuid
-      ? $t(tunings.find((x) => x.uuid === selected_tuning_uuid)?.name ?? '')
-      : '',
+  let selectedTuning = $derived(
+    selected_tuning_uuid ? tunings.find((x) => x.uuid === selected_tuning_uuid) : undefined,
   );
+  let selectedName = $derived(selectedTuning ? $t(selectedTuning.name) : '');
 </script>
 
 <DropdownMenu.Root>
@@ -60,6 +60,7 @@
     <CircuitBoard class="size-3.5 shrink-0" />
     {#if selectedName}
       <span class="truncate font-medium">{selectedName}</span>
+      <CerebellumRecommendationBadge recommendation={selectedTuning?.recommendation} />
     {/if}
     <ChevronDown class="size-3 shrink-0" />
   </DropdownMenu.Trigger>
@@ -85,15 +86,9 @@
         data-testid="{testid_prefix}-cerebellum-{tuning.assistant_key}"
       >
         <span class="truncate">{$t(tuning.name)}</span>
-        {#if tuning.recommendation === 'RECOMMENDED'}
-          <span class="ml-auto shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium text-emerald-600 dark:text-emerald-400">
-            {$t('app.smart.ai.cerebellum.recommended')}
-          </span>
-        {:else if tuning.recommendation === 'NOT_RECOMMENDED'}
-          <span class="ml-auto shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
-            {$t('app.smart.ai.cerebellum.not_recommended')}
-          </span>
-        {/if}
+        <span class="ml-auto shrink-0">
+          <CerebellumRecommendationBadge recommendation={tuning.recommendation} />
+        </span>
       </DropdownMenu.Item>
     {/each}
   </DropdownMenu.Content>

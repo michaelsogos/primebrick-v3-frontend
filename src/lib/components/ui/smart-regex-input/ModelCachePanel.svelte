@@ -31,6 +31,7 @@
   // Refresh cache status when popover opens (component mounts only when visible)
   onMount(async () => {
     await aiModels.ensureLoaded();
+    await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
       aiModels.getEnabledModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
@@ -57,7 +58,8 @@
     void cache.deleteModel(model_id, active_model_id);
   }
 
-  function handleRefresh() {
+  async function handleRefresh() {
+    await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
       aiModels.getEnabledModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),

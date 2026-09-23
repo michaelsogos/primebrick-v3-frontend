@@ -50,6 +50,7 @@
 
   onMount(async () => {
     await aiModels.ensureLoaded();
+    await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
       aiModels.getEnabledModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
@@ -78,7 +79,9 @@
 
   /** Resolves the catalog display name, falling back to a humanized model_id. */
   function displayName(model_id: string): string {
-    return aiModels.getModelByModelId(model_id)?.name ?? friendlyModelName(model_id);
+    return (
+      aiModels.getCatalogModelByModelId(model_id)?.name ?? friendlyModelName(model_id)
+    );
   }
 
   function askDelete(ids: string[], name: string | null, source: 'censused' | 'orphan') {
@@ -121,7 +124,8 @@
     pendingDelete = null;
   }
 
-  function handleRefresh() {
+  async function handleRefresh() {
+    await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
       aiModels.getEnabledModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
