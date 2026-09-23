@@ -12,9 +12,10 @@ import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 import { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
 import {
-  buildActionsBlock,
+  buildClassifierUser,
+  CLASSIFIER_SYSTEM,
   findPendingChoiceMessage,
-  parseChatAction,
+  parseClassification,
   type ChatAction,
   type PendingActionSpec,
 } from '$lib/components/ui/smart-ai/chat-actions';
@@ -68,6 +69,14 @@ export interface JsonSchemaAiOptions {
   on_chat_action?: (
     action: ChatAction,
     message: ChatMessage<JsonAssistantChoice>,
+  ) => void | Promise<void>;
+  /**
+   * Second turn on a translations_preview: the classifier decided the typed
+   * text is a corrected baseline message — re-run the translate flow with it.
+   */
+  on_baseline_revise?: (
+    text: string,
+    choice: Extract<JsonAssistantChoice, { kind: 'translations_preview' }>,
   ) => void | Promise<void>;
 }
 
@@ -180,29 +189,11 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
   };
 
   /**
-   * Chat-action context — captured when user input is wrapped with the
-   * [Pending actions] block (transform_user_content), consumed by
-   * process_response to recognize a strict action reply, and executed by
-   * sendMessage after the model turn completes.
+   * Pending-choice routing is decided BEFORE generation by a dedicated
+   * classifier turn (see sendMessage) — the model's reply never carries an
+   * embedded action contract, so a normal answer can never be mistaken for
+   * a pick.
    */
-  const chatActionState = {
-    ctx: null as {
-      message: ChatMessage<JsonAssistantChoice>;
-      specs: PendingActionSpec[];
-    } | null,
-    resolved: null as {
-      action: ChatAction;
-      message: ChatMessage<JsonAssistantChoice>;
-    } | null,
-    /** Consume the action resolved by process_response this turn (or null). */
-    takeResolved() {
-      const r = this.resolved;
-      this.resolved = null;
-      return r;
-    },
-  };
-  /** Card prompts (sendModelMessage) must never get the pending wrap. */
-  let bypassChatActions = false;
 
   /**
    * Enumerate the pending message's choices as model-facing actions.
@@ -233,6 +224,10 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
             langs: Object.keys(c.translations),
           },
           { id: 'discard', label: 'reject the translations' },
+          {
+            id: 'revise',
+            label: 'provide a corrected version of the message to translate',
+          },
         );
       }
     });
@@ -246,38 +241,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
         typeof opts.current_json === 'function' ? opts.current_json() : opts.current_json,
       ),
 
-    /**
-     * Wrap user input with the [Pending actions] block when the last
-     * assistant message still offers unresolved choices. The block lives in
-     * the USER message — the system prompt stays byte-identical so KV prefix
-     * reuse is preserved. Programmatic card prompts bypass the wrap.
-     */
-    transform_user_content: (text, ctx) => {
-      chatActionState.ctx = null;
-      if (bypassChatActions || !opts.on_chat_action) return text;
-      const pending = findPendingChoiceMessage(ctx.messages);
-      if (!pending) return text;
-      const specs = actionSpecs(pending.choices ?? []);
-      if (specs.length === 0) return text;
-      chatActionState.ctx = { message: pending, specs };
-      return `${text}\n${buildActionsBlock(specs)}`;
-    },
-
     process_response: async (raw, regenerate) => {
-      // A strict action reply wins over everything else — the model detected
-      // the user answering the pending choices.
-      if (chatActionState.ctx) {
-        const action = parseChatAction(raw, chatActionState.ctx.specs);
-        if (action) {
-          chatActionState.resolved = { action, message: chatActionState.ctx.message };
-          return {
-            content: raw,
-            display_content: get(t)(`${opts.i18n_ns}.chat_action_ack`),
-            choices: null,
-          };
-        }
-      }
-
       const candidate = extractJsonCandidate(raw);
       if (!candidate) {
         // Pure prose answer (e.g. "explain the rules") — no card.
@@ -334,6 +298,10 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
    * typed text still lands in the conversation as a local user message.
    */
   async function sendMessage(text: string): Promise<void> {
+    // Same guard as the inner sendMessage — the classifier one-off must not
+    // collide with an in-flight generation (worker would answer
+    // 'already generating' → stream_error → visible error state).
+    if (!ai.state.is_ready || ai.state.is_streaming || !text.trim()) return;
     const lastAssistant = [...ai.state.messages].reverse().find((m) => m.role === 'assistant');
     const pending =
       lastAssistant && !lastAssistant.resolution
@@ -349,31 +317,72 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
       opts.on_key_picker_free_text(text, pending.path, pending.rule);
       return;
     }
-    await ai.sendMessage(text);
-    // The model resolved a pending choice via strict action JSON — execute
-    // it with the same semantics as the equivalent card click.
-    const resolved = chatActionState.takeResolved();
-    if (resolved) {
-      await opts.on_chat_action?.(resolved.action, resolved.message);
+
+    // ── Pending-choice routing: a dedicated classifier turn decides whether
+    // the user is answering the pending choices or making a new request.
+    // The model interprets intent in isolation — the generation prompt that
+    // follows carries NO action contract, so a normal answer can never
+    // degrade into a false pick. ──
+    const pendingMsg = findPendingChoiceMessage(
+      ai.state.messages as ChatMessage<JsonAssistantChoice>[],
+    );
+    if (pendingMsg && opts.on_chat_action) {
+      const specs = actionSpecs(pendingMsg.choices ?? []);
+      if (specs.length > 0) {
+        // Classifier failure (one-off bail, worker error, unparseable
+        // output) must degrade to a normal send — never crash the turn.
+        const verdict = await ai.generateOneOff(
+          CLASSIFIER_SYSTEM,
+          buildClassifierUser(
+            pendingMsg.display_content ?? pendingMsg.content,
+            specs,
+            text,
+          ),
+          // A revise verdict carries the extracted sentence — needs headroom.
+          { max_new_tokens: specs.some((s) => s.id === 'revise') ? 96 : 24, temperature: 0 },
+        ).catch(() => '');
+        const action = parseClassification(verdict, specs);
+        // Dev-visible: what the classifier actually decided for this input.
+        console.debug('[chat-actions] verdict:', JSON.stringify(verdict), '→', action);
+        if (action?.action === 'revise') {
+          // Second turn on the translations preview: the user corrected the
+          // baseline message — resolve the stale preview and re-run the
+          // translate flow with the new text.
+          const tp = (pendingMsg.choices ?? []).find(
+            (c): c is Extract<JsonAssistantChoice, { kind: 'translations_preview' }> =>
+              c.kind === 'translations_preview',
+          );
+          if (tp && opts.on_baseline_revise) {
+            ai.addLocalUserMessage(text);
+            ai.resolveChoice(pendingMsg.uuid, 'discarded', {
+              condensed_content: get(t)(`${opts.i18n_ns}.discarded_summary`),
+            });
+            // Prefer the classifier-extracted payload (preamble stripped);
+            // fall back to the raw message if the model emitted bare true.
+            await opts.on_baseline_revise(action.text ?? text, tp);
+            return;
+          }
+        }
+        if (action && action.action !== 'revise') {
+          ai.addLocalUserMessage(text);
+          ai.addLocalAssistantMessage(get(t)(`${opts.i18n_ns}.chat_action_ack`));
+          await opts.on_chat_action(action, pendingMsg);
+          return;
+        }
+      }
     }
+
+    await ai.sendMessage(text);
   }
 
   /**
-   * Programmatic send — bypasses the key_picker free-text interception.
-   * Choice cards (topic leaf prompts, value CTAs, key-select) generate
-   * system prompts that must ALWAYS reach the model; only text typed into
-   * the chat input goes through the interception in `sendMessage`.
-   * Without this split, a leaf click right after an unresolved key-picker
-   * would be hijacked into the new-error-message flow.
+   * Programmatic send — bypasses the key_picker free-text interception AND
+   * the pending-choice classifier (those live in the composable's
+   * `sendMessage`, which card prompts never go through). Choice cards
+   * (topic leaf prompts, value CTAs, key-select) generate system prompts
+   * that must ALWAYS reach the model verbatim.
    */
-  const sendModelMessage = async (text: string) => {
-    bypassChatActions = true;
-    try {
-      await ai.sendMessage(text);
-    } finally {
-      bypassChatActions = false;
-    }
-  };
+  const sendModelMessage = async (text: string) => ai.sendMessage(text);
 
   return {
     get state() {
@@ -387,6 +396,12 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     },
     get effective_params() {
       return ai.effective_params;
+    },
+    get download_mbs() {
+      return ai.download_mbs;
+    },
+    get download_mbps() {
+      return ai.download_mbps;
     },
     setTuning: ai.setTuning,
     init: ai.init,

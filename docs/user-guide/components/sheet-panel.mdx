@@ -1,0 +1,119 @@
+---
+title: Sheet panel
+description: The global right-side sheet — one host, a typed panel registry, and the canonical HEAD / TOOLBAR / CONTENT / FOOT anatomy via SheetPanelLayout.
+---
+
+# Sheet panel
+
+`src/lib/shell/sheets/`
+
+The application has **one** global side sheet. Pages and components never
+mount their own `Sheet.Root` — they call `openSheet()` and the single
+`SheetHost` (mounted in `AppShell`) renders the requested panel.
+
+## Architecture
+
+| Piece | File | Role |
+|-------|------|------|
+| Manager | `src/lib/shell/sheets/sheet-manager.svelte.ts` | `sheetState`, `openSheet`, `replaceSheet`, `closeSheet`, typed `SheetPanelId` + `SheetPanelPropsMap` |
+| Host | `src/lib/shell/sheets/SheetHost.svelte` | The only `Sheet.Root`/`Sheet.Content`; resolves the panel component from a registry |
+| Layout | `src/lib/shell/sheets/SheetPanelLayout.svelte` | Canonical panel anatomy — HEAD, optional TOOLBAR, scrollable CONTENT, optional FOOT |
+| Header | `src/lib/shell/sheets/SheetHeader.svelte` | HEAD chrome (`title` + `actions` snippets) |
+| Panels | `src/lib/shell/sheets/panels/`, `src/lib/entity-list/sheets/panels/` | Registered panel components |
+
+## Opening a sheet
+
+```ts
+import { openSheet, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+
+openSheet('shell.aiModelTestReport', { model }, {
+  side: 'right',                         // default
+  contentClass: 'w-3/4 sm:max-w-xl p-0', // Sheet.Content classes (width!)
+  modal: true,                           // default
+});
+
+closeSheet(); // programmatic close
+```
+
+Props are typed per panel id via `SheetPanelPropsMap` — TypeScript rejects
+unknown ids or mismatched props.
+
+## Panel anatomy
+
+Every panel uses `SheetPanelLayout`, which enforces a fixed anatomy:
+
+<Mermaid chart={`block
+  columns 1
+  HEAD["HEAD — title + actions (default close button)"]
+  TOOLBAR["TOOLBAR — optional strip (search, tabs, chips)"]
+  CONTENT["CONTENT — the only scrollable region"]
+  FOOT["FOOT — optional fixed bottom strip (actions, inputs)"]
+  HEAD --> TOOLBAR --> CONTENT --> FOOT`} />
+
+- **HEAD** — `SheetHeader`: mandatory `icon` snippet + `title` snippet on
+  the left, `actions` snippet on the right. The icon MUST be the same icon
+  as the CTA that opens the sheet. When `actions` is omitted a standard
+  close button renders. AI-assistant sheets share one convention: `AiIcon`
+  + "AI Assistant" + a topic qualifier (`global`, `guide`, `regex`, `json`).
+- **TOOLBAR** — optional below-head strip (`border-b px-3 py-2`) for tools
+  only: search inputs, tab bars, action chips. Metadata belongs in CONTENT.
+- **CONTENT** — `min-h-0 flex-1 overflow-auto`; the only region that
+  scrolls. Default padding `p-2`, override with `contentClass`. How the
+  content is sectioned (labels, dividers, accordions, tabs) is the panel's
+  own domain — no enforced standard.
+- **FOOT** — optional fixed bottom strip (`border-t`) for action buttons or
+  input boxes; never scrolls.
+
+### Header action styles
+
+Every CTA in the header uses **one** shared chrome — the same as close:
+`inline-flex size-8` icon button, `text-muted-foreground opacity-70`,
+`hover:bg-accent hover:opacity-100`, icon `size-4`. Close renders it via
+`Sheet.Close`; other CTAs render it via a plain `<button>`. No `Button`
+component variants, no tinted pills — the header is symmetric by rule.
+
+### Sheet width
+
+Every sheet renders at the same width — **384px** (`w-3/4 sm:max-w-sm`
+on the `right`/`left` variant). Do not pass width classes in
+`contentClass`: `sm:max-w-sm` caps them silently. A wider sheet is a
+central change to `Sheet.Content`, not a per-call override.
+
+```svelte
+<SheetPanelLayout contentClass="px-4 py-3">
+  {#snippet title()}
+    <span>Panel title</span>
+  {/snippet}
+
+  <p>Scrollable content…</p>
+
+  {#snippet footer()}
+    <div class="flex justify-end gap-2 p-3">
+      <button>Apply</button>
+    </div>
+  {/snippet}
+</SheetPanelLayout>
+```
+
+## Registering a panel
+
+1. Add the id to `SheetPanelId` in `sheet-manager.svelte.ts`
+   (`'shell.*'` for shell panels, `'entity.*'` for entity-list, `'config.*'`
+   for config-driven panels).
+2. Add its props to `SheetPanelPropsMap`.
+3. Create the component under `src/lib/shell/sheets/panels/` using
+   `SheetPanelLayout`.
+4. Register the component in the `registry` inside `SheetHost.svelte`.
+5. Open it from a click handler with `openSheet()`.
+
+## Guidelines
+
+- Open sheets from discrete events (clicks), never from effects that watch a
+  bindable "open" flag — that produces a close/re-open loop.
+- Do not mount `Sheet.Root` outside `SheetHost`.
+- Do not re-create the anatomy inside a panel — `SheetPanelLayout` owns it.
+
+## Next steps
+
+- [UI patterns](/frontend/guide/ui-patterns) — popover vs dialog vs sheet
+- [App shell](/frontend/guide/app-shell) — where `SheetHost` is mounted

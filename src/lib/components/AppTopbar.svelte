@@ -135,7 +135,7 @@
         class="relative shrink-0"
         aria-label={$t('app.aiChat.aria')}
         title={$t('app.aiChat.aria')}
-        onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
+        onclick={() => openSheet('shell.aiChat', {})}
       >
         <AiIcon size={16} />
       </Button>
@@ -161,7 +161,7 @@
         class="relative"
         aria-label={$t('app.errors.aria')}
         title={$t('app.errors.aria')}
-        onclick={() => openSheet('shell.errors', {}, { contentClass: 'w-[420px] p-0' })}
+        onclick={() => openSheet('shell.errors', {})}
       >
         <TriangleAlert class="size-4" />
         {#if $appErrors.length > 0}
@@ -194,7 +194,7 @@
         class="relative"
         aria-label={$t('app.aiGuide.aria')}
         title={$t('app.aiGuide.aria')}
-        onclick={() => openSheet('shell.aiGuide', {}, { contentClass: 'w-[600px] p-0' })}
+        onclick={() => openSheet('shell.aiGuide', {})}
       >
         <GradientIcon
           size={16}

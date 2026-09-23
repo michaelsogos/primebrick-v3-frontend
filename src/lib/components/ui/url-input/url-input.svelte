@@ -94,8 +94,7 @@
         currentProtocol,
         allowedProtocols: allowedProtocols.length > 0 ? allowedProtocols : ['http', 'https', 'ftp', 'redis', 'rediss', 'tcp', 'ws', 'wss', 'mailto'],
         onProtocolChange: handleProtocolChange,
-      },
-      { side: 'right', contentClass: 'w-[360px] p-0' },
+      }
     );
   }
 

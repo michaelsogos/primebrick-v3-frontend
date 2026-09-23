@@ -14,7 +14,9 @@ export type SheetPanelId =
   | 'config.phonePrefixSelect'
   | 'config.regexFlags'
   | 'config.regexAiChat'
-  | 'config.jsonAiChat';
+  | 'config.jsonAiChat'
+  | 'shell.aiModelTestReport'
+  | 'shell.aiCerebellum';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -83,6 +85,20 @@ export type SheetPanelPropsMap = {
     config_key?: string | (() => string);
     config_type: import('$lib/api-types').ConfigEntryType;
   };
+  'shell.aiModelTestReport': {
+    /** The ai_model row whose test_scores report is rendered. */
+    model: import('$lib/api-types').AiModel;
+  };
+  'shell.aiCerebellum': {
+    /** Enabled ai_model rows for the model ComboSelect. */
+    models: readonly import('$lib/api-types').AiModel[];
+    /** Known assistants: key + stored `name` i18n key for that assistant. */
+    assistants: readonly { key: string; name: string }[];
+    /** Existing cerebellum rows — a matching (assistant, model) pair turns the sheet into edit mode. */
+    rows?: readonly import('$lib/api-types').AiCerebellum[];
+    /** Called after a successful save so the caller can reload rows. */
+    onCreated?: () => void;
+  };
 };
 
 type AnyPanelProps = SheetPanelPropsMap[SheetPanelId];
@@ -113,7 +129,7 @@ export const sheetState = $state<SheetState>({
   panelId: null,
   props: null,
   side: 'right',
-  contentClass: 'w-[420px] p-0',
+  contentClass: 'p-0',
   keepMountedState: false,
   modal: true
 });

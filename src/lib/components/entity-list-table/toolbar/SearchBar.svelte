@@ -87,8 +87,7 @@
           onSearchInKeysChange,
           toggleSearchKey,
           sheetMenuCheckboxClass: checkboxVisualOnlyClass
-        } as any,
-        { contentClass: 'w-[360px] p-0' }
+        } as any
       )}
   >
     {searchScopeLabel()}

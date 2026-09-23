@@ -255,6 +255,8 @@ export type AiCerebellum = {
   sort_order: number;
   /** Per-tuning test measurements keyed by test case. */
   test_scores?: Record<string, unknown> | null;
+  /** Visual recommendation badge — cosmetic only, no effect on selection/execution. */
+  recommendation?: 'RECOMMENDED' | 'NOT_RECOMMENDED' | null;
   created_at: string;
   created_by: string;
   updated_at: string;

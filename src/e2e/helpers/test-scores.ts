@@ -38,7 +38,11 @@ export function caseMetrics(scores: number[], times: number[]) {
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
   const successCount = scores.filter((s) => s >= 4).length;
   const quality = mean * 0.6 + (successCount / scores.length) * 5 * 0.4;
-  const speed = times.map(turnSpeedScore).reduce((a, b) => a + b, 0) / times.length;
+  // Same single rule as ai-model-test-scores.ts: average the seconds first,
+  // then bucket the average — never mean-of-buckets.
+  const speed = times.length
+    ? turnSpeedScore(times.reduce((a, b) => a + b, 0) / times.length)
+    : 0;
   return {
     quality,
     speed,
@@ -91,7 +95,7 @@ export async function mergeTestScoreTurns(
     ...(rows[0].test_scores ?? {}),
     [caseKey]: {
       ...prevCase,
-      protocol: "e2e_json_schema_conversation+navigation",
+      protocol: "e2e_json_schema_conversation+navigation+chat+mixed",
       tested_at: new Date().toISOString(),
       load_ok: true,
       generation_ok: true,

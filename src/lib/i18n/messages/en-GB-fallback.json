@@ -150,7 +150,7 @@
   "app.smart.regex.flags.multiline": "Multiline (m)",
   "app.smart.regex.flags.multilineHelp": "^ and $ match at line boundaries",
   "app.smart.ai.cerebellum.title": "Cerebellum",
-  "app.smart.ai.cerebellum.model_defaults": "Model defaults",
+  "app.smart.ai.cerebellum.model_defaults": "Defaults",
   "app.smart.ai.cerebellum.default": "default",
   "app.smart.ai.model_details.sampling": "Sampling",
   "app.smart.ai.model_details.kv_cache": "KV cache",

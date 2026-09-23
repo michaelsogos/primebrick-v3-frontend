@@ -20,14 +20,17 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
+  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, CircuitBoard } from '@lucide/svelte';
+  import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, CircuitBoard, Star } from '@lucide/svelte';
   import type { AiModel, AiCerebellum } from '$lib/api-types';
   import { fetchAiCerebellum } from '$lib/api';
-  import { resolveEffectiveParams } from '$lib/ai/ai-cerebellum';
+  import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
@@ -35,11 +38,47 @@
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { apiFetch } from '$lib/api';
-  import { summarizeTestScores, testCaseLabel } from '$lib/ai/ai-model-test-scores';
+  import { apiFetch, updateConfigEntry } from '$lib/api';
+  import { Badge } from '$lib/components/ui/badge';
+  import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
+  import AiModelTestReport from '$lib/components/ui/smart-ai/ai-model-test-report.svelte';
 
   const aiModels = useAiModels();
+  const configEntries = useConfigEntries();
   const stepUp = useMfaStepUp();
+
+  // Default model = the `ai_assistant_model` config entry value. This is the
+  // persisted default every Smart* assistant resolves at mount (distinct from
+  // a runtime model switch inside a panel).
+  let defaultEntry = $derived(configEntries.state.entries.find((e) => e.key === 'ai_assistant_model'));
+  let defaultModelId = $derived(defaultEntry?.value != null ? String(defaultEntry.value) : null);
+  let settingDefaultFor = $state<string | null>(null);
+
+  async function setDefaultModel(model: AiModel) {
+    const entry = defaultEntry;
+    if (!entry || settingDefaultFor !== null) return;
+    settingDefaultFor = model.model_id;
+    try {
+      await updateConfigEntry(entry.uuid, { value: model.model_id }, entry.version);
+      await configEntries.refresh();
+      pushNotification({
+        impact: 'NONE',
+        message: `${model.name} → ${$t('system.entities.ai_model.default')}`,
+        scope: 'AI Model',
+        toast: true,
+      });
+    } catch (err) {
+      pushNotification({
+        impact: 'MEDIUM',
+        messageKey: 'system.entities.ai_model.set_as_default',
+        scope: 'AI Model',
+        detail: err instanceof Error ? err.message : 'Set default failed',
+        toast: true,
+      });
+    } finally {
+      settingDefaultFor = null;
+    }
+  }
 
   // Rank map for ModelCacheSection (model_id → rank).
   let modelRanks = $state<Record<string, number | null>>({});
@@ -49,7 +88,7 @@
   let cerebellumError = $state<string | null>(null);
 
   onMount(async () => {
-    await aiModels.ensureLoaded();
+    await Promise.all([aiModels.ensureLoaded(), configEntries.ensureLoaded()]);
     modelRanks = Object.fromEntries(
       aiModels.getEnabledModels().map((m) => [m.model_id, m.rank]),
     );
@@ -60,37 +99,41 @@
     }
   });
 
-  // Tunings grouped by assistant_key: each group lists its tunings with the
-  // resolved params (tuning override ← model default). The model row the
-  // tuning targets is matched by model_id.
-  let cerebellumGroups = $derived.by(() => {
-    const byAssistant = new Map<string, AiCerebellum[]>();
-    for (const row of cerebellumRows) {
-      if (!row.is_enabled || row.deleted_at) continue;
-      const list = byAssistant.get(row.assistant_key) ?? [];
-      list.push(row);
-      byAssistant.set(row.assistant_key, list);
+  // Selected assistant in the models-toolbar dropdown — null = model defaults
+  // (no tuning override applied to the params shown per model row).
+  let selectedAssistantKey = $state<string>('');
+
+  // Enabled, non-deleted tunings — the only rows that can override params.
+  let enabledTunings = $derived(cerebellumRows.filter((r) => r.is_enabled && !r.deleted_at));
+
+  // Distinct assistants that own ≥1 tuning (dropdown options). `name` is the
+  // assistant's i18n key shared by all its rows (verified in DB).
+  let cerebellumAssistants = $derived.by(() => {
+    const byKey = new Map<string, AiCerebellum>();
+    for (const row of enabledTunings) {
+      if (!byKey.has(row.assistant_key)) byKey.set(row.assistant_key, row);
     }
-    return [...byAssistant.entries()].map(([assistant_key, rows]) => ({
-      assistant_key,
-      rows: rows.sort((a, b) => a.sort_order - b.sort_order),
-    }));
+    return [...byKey.entries()].map(([key, row]) => ({ key, name: row.name }));
   });
 
-  function modelFor(model_id: string): AiModel | undefined {
-    return aiModels.state.models.find((m) => m.model_id === model_id);
+  /** Tuning for a (model_id, selected assistant) pair, or null. */
+  function tuningFor(model_id: string): AiCerebellum | null {
+    if (!selectedAssistantKey) return null;
+    return enabledTunings.find(
+      (r) => r.assistant_key === selectedAssistantKey && r.model_id === model_id,
+    ) ?? null;
   }
 
-  /** Short override summary for one tuning, e.g. "T=0.10 · max_tokens=512". */
-  function tuningOverrides(t: AiCerebellum): string {
-    const parts: string[] = [];
-    if (t.temperature !== null && t.temperature !== undefined) parts.push(`T=${t.temperature}`);
-    if (t.top_p !== null && t.top_p !== undefined) parts.push(`top_p=${t.top_p}`);
-    if (t.max_tokens !== null && t.max_tokens !== undefined) parts.push(`max_tokens=${t.max_tokens}`);
-    if (t.repetition_penalty !== null && t.repetition_penalty !== undefined) parts.push(`rep_penalty=${t.repetition_penalty}`);
-    if (t.enable_thinking !== null && t.enable_thinking !== undefined) parts.push(t.enable_thinking ? 'thinking' : 'no-thinking');
-    if (t.execution_config && Object.keys(t.execution_config).length) parts.push('exec_config');
-    return parts.join(' · ');
+  function openCerebellumCreate() {
+    openSheet('shell.aiCerebellum', {
+      models: aiModels.getEnabledModels(),
+      assistants: cerebellumAssistants,
+      rows: cerebellumRows,
+      onCreated: () => {
+        cerebellumRows = [];
+        fetchAiCerebellum().then((rows) => (cerebellumRows = rows));
+      },
+    });
   }
 
   // All models sorted by rank DESC (top ranked first).
@@ -220,8 +263,36 @@
         <BrainCircuit class="size-4 text-foreground/70" />
         <h2 class="text-sm font-semibold">{$t('system.settings.ai.models_section.title')}</h2>
       </div>
-      <!-- Toolbar: deletion filter toggle + refresh -->
+      <!-- Toolbar: cerebellum assistant selector + create CTA + deletion filter + refresh -->
       <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <CircuitBoard class="size-3.5" />
+          <span>{$t('app.smart.ai.cerebellum.title')}</span>
+        </div>
+        <ComboSelect
+          mode="single"
+          bind:value={selectedAssistantKey}
+          options={[
+            { key: '', label: $t('app.smart.ai.cerebellum.model_defaults') },
+            ...cerebellumAssistants.map((a) => ({ key: a.key, label: $t(a.name) })),
+          ]}
+          valueField="key"
+          labelField="label"
+          searchable={false}
+          class="w-44"
+          aria-label={$t('app.smart.ai.cerebellum.title')}
+          data-testid="ai-cerebellum-assistant-trigger"
+        />
+        <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+        <Button
+          variant="default"
+          size="sm"
+          type="button"
+          onclick={openCerebellumCreate}
+          data-testid="ai-cerebellum-create-cta"
+        >
+          {$t('system.entities.ai_cerebellum.create')}
+        </Button>
         <DeletionFilterToggle
           deletionFilterMode={deletionFilterMode}
           onDeletionFilterModeChange={onDeletionFilterModeChange}
@@ -251,6 +322,9 @@
     {:else}
       <div class="space-y-2">
         {#each allModels as model (model.uuid)}
+          {@const tuning = tuningFor(model.model_id)}
+          {@const eff = resolveEffectiveParams(model, tuning)}
+          {@const overridden = tuningOverriddenKeys(tuning)}
           <div
             class="rounded-lg border border-border/60 p-3 {model.is_enabled && !model.deleted_at ? '' : 'opacity-50'}"
             data-testid={`ai-model-row-${model.model_id}`}
@@ -262,6 +336,16 @@
                 <div class="min-w-0 space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-medium">{model.name}</span>
+                    {#if model.model_id === defaultModelId}
+                      <Badge
+                        variant="outline"
+                        class="border-sky-400/60 bg-gradient-to-r from-sky-400/15 to-indigo-500/15 text-sky-700 dark:text-sky-300"
+                        data-testid={`ai-model-default-${model.model_id}`}
+                      >
+                        <Star class="size-3 fill-current" />
+                        {$t('system.entities.ai_model.default')}
+                      </Badge>
+                    {/if}
                     {#if model.compatibility_status === 'COMPATIBLE'}
                       <span class="flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400" title={$t('system.entities.ai_model.compatibility.COMPATIBLE')}>
                         <ShieldCheck class="size-3" />
@@ -290,31 +374,31 @@
                       </span>
                     {/if}
                     <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.enable_thinking')}>
-                      {#if model.enable_thinking}
+                      {#if eff.enable_thinking}
                         <BrainCircuit class="size-3" />
-                        <span>{$t('system.entities.ai_model.thinking.true')}</span>
+                        <span class={overridden.has('enable_thinking') ? 'text-primary-gradient' : ''}>{$t('system.entities.ai_model.thinking.true')}</span>
                       {:else}
                         <Cpu class="size-3" />
-                        <span>{$t('system.entities.ai_model.thinking.false')}</span>
+                        <span class={overridden.has('enable_thinking') ? 'text-primary-gradient' : ''}>{$t('system.entities.ai_model.thinking.false')}</span>
                       {/if}
                     </span>
                   </div>
                   <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.temperature')}>
                       <Thermometer class="size-3" />
-                      T={model.temperature}
+                      <span class={overridden.has('temperature') ? 'text-primary-gradient' : ''}>T={eff.temperature}</span>
                     </span>
                     <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.top_p')}>
                       <Gauge class="size-3" />
-                      top_p={model.top_p}
+                      <span class={overridden.has('top_p') ? 'text-primary-gradient' : ''}>top_p={eff.top_p}</span>
                     </span>
                     <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.max_tokens')}>
                       <Brackets class="size-3" />
-                      max_tokens={model.max_tokens}
+                      <span class={overridden.has('max_tokens') ? 'text-primary-gradient' : ''}>max_tokens={eff.max_tokens}</span>
                     </span>
                     <span class="flex items-center gap-1" title={$t('system.entities.ai_model.fields.repetition_penalty')}>
                       <Gavel class="size-3" />
-                      rep_penalty={model.repetition_penalty}
+                      <span class={overridden.has('repetition_penalty') ? 'text-primary-gradient' : ''}>rep_penalty={eff.repetition_penalty}</span>
                     </span>
                   </div>
                 </div>
@@ -347,121 +431,8 @@
                   </Popover.Content>
                 </Popover.Root>
 
-                <!-- Test scores gauge with popover dropdown -->
-                <Popover.Root>
-                  {@const tsSummary = summarizeTestScores(model.test_scores)}
-                  <Popover.Trigger
-                    class="inline-flex"
-                    title={$t('system.entities.ai_model.fields.test_scores')}
-                    data-testid={`ai-model-test-scores-cta-${model.model_id}`}
-                  >
-                    <ScoreGauge value={tsSummary.score} label={$t('system.entities.ai_model.fields.test_scores')} />
-                  </Popover.Trigger>
-                  <Popover.Content align="start" class="w-96 p-0">
-                    <div
-                      class="space-y-2 p-2"
-                      data-testid={`ai-model-test-scores-dropdown-${model.model_id}`}
-                    >
-                      <div class="flex items-center justify-between border-b border-border/40 pb-1">
-                        <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.test_scores')}</span>
-                        <span class="text-sm font-bold">{tsSummary.score?.toFixed(1) ?? '—'}</span>
-                      </div>
-                      {#if tsSummary.quality !== null || tsSummary.speed !== null || tsSummary.success}
-                        <div class="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          {#if tsSummary.quality !== null}<span>quality <b class="text-foreground">{tsSummary.quality.toFixed(1)}</b></span>{/if}
-                          {#if tsSummary.speed !== null}<span>speed <b class="text-foreground">{tsSummary.speed.toFixed(1)}</b></span>{/if}
-                          {#if tsSummary.success}<span>success <b class="text-foreground">{tsSummary.success}</b></span>{/if}
-                        </div>
-                      {/if}
-                      {#each tsSummary.cases as testCase (testCase.key)}
-                        <div class="space-y-0.5 py-0.5">
-                          <div class="flex items-center justify-between text-xs font-medium">
-                            <span class="capitalize">{testCaseLabel(testCase.key)}</span>
-                            <span class="font-bold">{testCase.score !== null ? testCase.score.toFixed(1) : '—'}</span>
-                          </div>
-                          {#if testCase.runs?.length || testCase.method}
-                            <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              {#if testCase.runs?.length}
-                                <span>runs:</span>
-                                {#each testCase.runs as run, i (i)}
-                                  <span class="rounded bg-muted px-1">{run}</span>
-                                {/each}
-                              {/if}
-                              {#if testCase.method}<span class="ml-1">({testCase.method})</span>{/if}
-                            </div>
-                          {/if}
-                        </div>
-                      {/each}
-
-                      <!-- Test report: per-case sections, aggregates computed on the fly -->
-                      {#each tsSummary.cases as reportCase (reportCase.key)}
-                        {#if reportCase.turns.length || reportCase.load || reportCase.note || reportCase.load_ok === false}
-                        <div class="border-t border-border/40 pt-1.5 space-y-1.5" data-testid={`ai-model-test-report-${model.model_id}-${reportCase.key}`}>
-                          <div class="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground/70">
-                            <span>{$t('system.entities.ai_model.test_report.title')} · {testCaseLabel(reportCase.key)}</span>
-                            {#if reportCase.tested_at}<span>{new Date(reportCase.tested_at).toLocaleDateString()}</span>{/if}
-                          </div>
-
-                          {#if reportCase.load?.error || reportCase.error}
-                            <div class="rounded bg-destructive/10 px-2 py-1 text-[10px] text-destructive">
-                              <b>LOAD FAILURE</b> — {reportCase.load?.error ?? reportCase.error}
-                            </div>
-                          {:else}
-                            <div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
-                              {#if reportCase.load?.load_time_ms != null}<span>load {(Number(reportCase.load.load_time_ms) / 1000).toFixed(0)}s</span>{/if}
-                              {#if reportCase.generation_ok !== undefined}<span>gen {reportCase.generation_ok ? 'ok' : 'failed'}</span>{/if}
-                              {#if reportCase.avg_response_s !== null}<span>avg {reportCase.avg_response_s.toFixed(1)}s/turn</span>{/if}
-                              {#if reportCase.generation_config}
-                                <span>T={reportCase.generation_config.temperature} top_p={reportCase.generation_config.top_p} max={reportCase.generation_config.max_tokens}</span>
-                              {/if}
-                              {#if reportCase.execution_config}
-                                <span>kv {reportCase.execution_config.kv_cache_reuse ? 'on' : 'off'}{reportCase.execution_config.max_history_turns ? ` · window ${reportCase.execution_config.max_history_turns}` : ''}</span>
-                              {/if}
-                            </div>
-                          {/if}
-
-                          {#if reportCase.turns.length}
-                            <div class="max-h-56 space-y-1 overflow-y-auto pr-0.5">
-                              {#each reportCase.turns as turn, ti (ti)}
-                                {@const n = turn.n ?? turn.turn ?? ti + 1}
-                                {@const tScore = typeof turn.score === 'number' ? turn.score : null}
-                                {@const tActual = turn.actual ?? turn.output}
-                                {@const tSecs = turn.response_s ?? turn.ttft_s}
-                                <details class="group rounded border border-border/40 text-[10px]">
-                                  <summary class="flex cursor-pointer list-none items-center gap-1.5 px-1.5 py-1 hover:bg-accent/40">
-                                    <span class="font-mono font-semibold w-5">T{n}</span>
-                                    <span class="font-bold {tScore !== null && tScore >= 4 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}">
-                                      {tScore !== null ? tScore.toFixed(0) : '—'}/5
-                                    </span>
-                                    <span>{turn.verdict === 'pass' ? '✓' : turn.verdict ? '✗' : ''}</span>
-                                    <span class="truncate flex-1 text-muted-foreground">{turn.reason ?? turn.note ?? turn.prompt ?? ''}</span>
-                                    {#if tSecs != null}<span class="font-mono text-muted-foreground">{tSecs.toFixed(1)}s</span>{/if}
-                                  </summary>
-                                  <div class="space-y-1 border-t border-border/40 px-2 py-1.5">
-                                    {#if turn.prompt}<div><span class="text-muted-foreground">prompt:</span> <span class="font-medium">{turn.prompt}</span></div>{/if}
-                                    {#if turn.expected != null}<div><span class="text-muted-foreground">expected:</span> <code class="font-mono">{turn.expected}</code></div>{/if}
-                                    {#if tActual != null}<div><span class="text-muted-foreground">actual:</span> <code class="font-mono">{tActual}</code></div>{/if}
-                                    {#if turn.actual_response}<div><span class="text-muted-foreground">raw:</span><pre class="mt-0.5 max-h-24 overflow-auto rounded bg-muted/40 p-1 font-mono whitespace-pre-wrap">{turn.actual_response}</pre></div>{/if}
-                                    <div class="flex gap-x-3 font-mono text-muted-foreground">
-                                      {#if turn.tokens_per_second != null}<span>{turn.tokens_per_second} t/s</span>{/if}
-                                      {#if turn.kv_cache_hit_ratio != null}<span>kv hit {(turn.kv_cache_hit_ratio * 100).toFixed(0)}%</span>{/if}
-                                      {#if turn.reason}<span>reason: {turn.reason}</span>{/if}
-                                    </div>
-                                  </div>
-                                </details>
-                              {/each}
-                            </div>
-                          {/if}
-
-                          {#if reportCase.note}
-                            <p class="text-[10px] leading-snug text-muted-foreground italic">{reportCase.note}</p>
-                          {/if}
-                        </div>
-                        {/if}
-                      {/each}
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
+                <!-- Test scores gauge: minimal popover + details CTA → side sheet -->
+                <AiModelTestReport {model} />
 
                 <Popover.Root>
                   {@const tsSummary = summarizeTestScores(model.test_scores)}
@@ -487,10 +458,33 @@
                           <span class="font-semibold">{tsSummary.avg_response_s.toFixed(1)}s</span>
                         </div>
                       {/if}
-                      <div class="grid grid-cols-2 gap-x-3 font-mono text-[10px] text-muted-foreground">
-                        <span>≤ 3s → 5</span><span>≤ 5s → 4</span>
-                        <span>≤ 7s → 3</span><span>≤ 9s → 2</span>
-                        <span>≤ 10s → 1</span><span>&gt; 10s → 0</span>
+                      <!-- Speed rubric as a gradient bar: each 1/6 band is the
+                           gaugeColor bucket; scores sit above their color, the
+                           second thresholds below. Marker = model's speed. -->
+                      <div class="px-0.5 pb-1 pt-3.5">
+                        <div class="relative">
+                          <div class="absolute inset-x-0 -top-3 flex">
+                            {#each [0, 1, 2, 3, 4, 5] as s (s)}
+                              <span class="flex-1 text-center font-mono text-[9px] font-bold" style="color:{gaugeColor(s, 5)}">{s}</span>
+                            {/each}
+                          </div>
+                          <div
+                            class="h-1.5 rounded-full"
+                            style="background:linear-gradient(to right, #ef4444 0% 30%, #f97316 30% 50%, #eab308 50% 70%, #84cc16 70% 90%, #22c55e 90% 100%)"
+                          ></div>
+                          {#if tsSummary.speed !== null}
+                            <div
+                              class="absolute -top-1 h-3.5 w-px bg-foreground"
+                              style="left:{Math.min(100, Math.max(0, (tsSummary.speed / 5) * 100))}%"
+                              title={$t('system.entities.ai_model.fields.speed')}
+                            ></div>
+                          {/if}
+                          <div class="absolute inset-x-0 top-2 flex font-mono text-[9px] text-muted-foreground">
+                            {#each ['> 10s', '≤ 10s', '≤ 9s', '≤ 7s', '≤ 5s', '≤ 3s'] as sec, i (i)}
+                              <span class="flex-1 text-center">{sec}</span>
+                            {/each}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </Popover.Content>
@@ -535,6 +529,21 @@
                     {$t('app.common.restore')}
                   </Button>
                 {:else}
+                  <!-- Active non-default: offer "set as default" (updates the
+                       persisted ai_assistant_model config entry) -->
+                  {#if model.model_id !== defaultModelId && model.is_enabled}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onclick={() => setDefaultModel(model)}
+                      disabled={settingDefaultFor !== null}
+                      title={$t('system.entities.ai_model.set_as_default')}
+                      aria-label={$t('system.entities.ai_model.set_as_default')}
+                      data-testid={`ai-model-set-default-${model.model_id}`}
+                    >
+                      <Star class={settingDefaultFor === model.model_id ? 'size-4 animate-spin' : 'size-4'} />
+                    </Button>
+                  {/if}
                   <!-- Active: show delete (disable) button -->
                   <Button
                     variant="ghost"
@@ -551,49 +560,6 @@
                 {/if}
               </div>
             </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </section>
-
-  <!-- Cerebellum section — per-assistant, per-model tuned params -->
-  <section class="space-y-3" data-testid="ai-settings-cerebellum-section">
-    <div class="flex items-center gap-2">
-      <CircuitBoard class="size-4 text-foreground/70" />
-      <h2 class="text-sm font-semibold">{$t('system.settings.ai.cerebellum_section.title')}</h2>
-    </div>
-    <p class="text-xs text-muted-foreground">{$t('system.settings.ai.cerebellum_section.description')}</p>
-    {#if cerebellumError}
-      <div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{cerebellumError}</div>
-    {:else if cerebellumGroups.length === 0}
-      <div class="text-sm text-muted-foreground" data-testid="ai-cerebellum-empty">{$t('system.settings.ai.cerebellum_section.empty')}</div>
-    {:else}
-      <div class="space-y-2">
-        {#each cerebellumGroups as group (group.assistant_key)}
-          <div class="rounded-lg border border-border/60 p-3 space-y-2" data-testid={`ai-cerebellum-group-${group.assistant_key}`}>
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-medium font-mono">{group.assistant_key}</span>
-              <span class="text-[10px] text-muted-foreground">{$t('system.settings.ai.cerebellum_section.assistant')}</span>
-            </div>
-            {#each group.rows as row (row.uuid)}
-              {@const model = modelFor(row.model_id)}
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/30 px-2 py-1.5 text-xs" data-testid={`ai-cerebellum-row-${group.assistant_key}-${row.name}`}>
-                <span class="font-medium">{$t(row.name)}</span>
-                <span class="text-muted-foreground font-mono break-all">{model?.name ?? row.model_id}</span>
-                {#if tuningOverrides(row)}
-                  <span class="font-mono text-foreground/80">{tuningOverrides(row)}</span>
-                {:else}
-                  <span class="text-muted-foreground">{$t('app.smart.ai.cerebellum.model_defaults')}</span>
-                {/if}
-                {#if model}
-                  {@const eff = resolveEffectiveParams(model, row)}
-                  <span class="text-[10px] text-muted-foreground font-mono">
-                    → T={eff.temperature} top_p={eff.top_p} max={eff.max_tokens} rep={eff.repetition_penalty} {eff.enable_thinking ? 'thinking' : 'no-thinking'}
-                  </span>
-                {/if}
-              </div>
-            {/each}
           </div>
         {/each}
       </div>

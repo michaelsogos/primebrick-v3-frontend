@@ -48,6 +48,17 @@ const CDP_URL = "http://127.0.0.1:9333";
 const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
 /**
+ * Multi-model mode: `AI_E2E_MODEL_IDS="id1,id2"` runs the full 5-turn
+ * conversation phase SERIALLY per model inside the same browser session —
+ * models are switched live through the assistant's own selector (worker-per-
+ * model teardown, no reload). Empty/unset → single run on the default model.
+ */
+const TARGET_MODEL_IDS = (process.env.AI_E2E_MODEL_IDS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+/**
  * Session strategy: REUSE over relaunch.
  * - If an Edge debug session is already listening on CDP_URL, attach to it
  *   (connectOverCDP) and reuse its persistent context — the same Cache API
@@ -182,6 +193,14 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
     const phase = (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
     if (phase === want) return phase;
     if (phase === "webgpu_required" || phase === "error") throw new Error(`panel phase "${phase}"`);
+    // Empty phase = panel re-mounting/re-initing (attribute momentarily
+    // unset) — transitional, never a "stuck" state.
+    if (phase === "") {
+      if (lastPhase !== "") log(`  data-ai-phase="" (panel re-init)`);
+      lastPhase = "";
+      await new Promise((r) => setTimeout(r, 5000));
+      continue;
+    }
     if (phase !== lastPhase) {
       lastPhase = phase;
       stuck = 0;
@@ -210,16 +229,22 @@ async function lastCandidateJson(page: Page): Promise<string | null> {
   return start >= 0 && end > start ? text.slice(start, end + 1) : null;
 }
 
-/** Send one turn; wait ≤60s for a new config card OR the send button re-enabled (prose answer). */
+/** Send one turn; wait ≤30s for a new config card OR the turn ending without one. */
 async function sendTurn(page: Page, prompt: string): Promise<{ response_s: number; json: string | null; timed_out: boolean }> {
   const input = page.locator(`[data-testid="${PREFIX}-input"]`);
   const send = page.locator(`[data-testid="${PREFIX}-send"]`);
+  const typing = page.locator(`[data-testid="${PREFIX}-typing"]`);
   const cardsBefore = await page.locator(`[data-testid="${PREFIX}-config-card"]`).count();
 
   await input.fill(prompt);
-  await expect(send).toBeEnabled({ timeout: 5000 });
+  // A previous turn may still be generating past its evidence cap — wait
+  // for the typing indicator to clear (the send button also disables on an
+  // empty input, so it cannot mark end-of-turn).
+  await expect(typing).toBeHidden({ timeout: 90_000 });
   const t0 = Date.now();
-  await send.click();
+  // Bounded click: the send CTA is disabled while is_streaming — an explicit
+  // timeout keeps a stuck stream from eating the whole test budget.
+  await send.click({ timeout: 15_000 });
   log(`  sent: "${prompt}"`);
 
   let timed_out = false;
@@ -227,8 +252,14 @@ async function sendTurn(page: Page, prompt: string): Promise<{ response_s: numbe
     await poll(async () => {
       const cardsNow = await page.locator(`[data-testid="${PREFIX}-config-card"]`).count();
       if (cardsNow > cardsBefore) return "card";
-      // no card but streaming ended → prose answer (score 0)
-      if (await send.isEnabled()) return "done-no-card";
+      // Turn ended without a card (prose answer OR classifier-resolved
+      // pending action like a topic pick — no card is produced either way).
+      // is_streaming flickers false in the classifier→generation gap, so a
+      // hidden typing indicator must persist across a second check.
+      if ((await typing.count()) === 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+        if ((await typing.count()) === 0) return "done-no-card";
+      }
       return null;
     }, "turn response", 6);
   } catch {
@@ -273,6 +304,9 @@ test.describe("AI quality — json_editor_with_schema", () => {
   });
 
   test("5-turn incremental schema edit → persist json_editor_with_schema_test_score", async () => {
+    // Budget scales with the model list: each model can take the full
+    // download cap on a cold cache plus the turn generation time.
+    test.setTimeout(Math.max(600_000, TARGET_MODEL_IDS.length * 600_000));
     // Attach to a running session or launch a persistent one (CDP :9333).
     // The browser is left open on purpose — next spec reuses it.
     const context = await getSharedContext();
@@ -360,68 +394,120 @@ test.describe("AI quality — json_editor_with_schema", () => {
       }
       log("assistant sheet mounted — panel in DOM");
 
-      // 3. Model readiness: `loading_*` phases get the 8min download budget
-      //    (persistent profile keeps completed files across runs), every other
-      //    phase fails fast after 30s unchanged. Warm-cache load is ~10s.
-      const phase = await waitPanelPhase(page, "ready");
-      log(`model ready (data-ai-phase=${phase})`);
+      // 3. Per-model loop: each entry of TARGET_MODEL_IDS is selected live via
+      //    the assistant's own selector (worker-per-model, no browser restart).
+      //    Empty list → single run on the configured default model.
+      const targets: (string | null)[] = TARGET_MODEL_IDS.length ? TARGET_MODEL_IDS : [null];
+      const summary: { model_id: string; passed: number; total: number }[] = [];
 
-    // Clean chat session for the "conversation" phase: leftover messages from
-    // a previous spec (e.g. the navigation sweep) must not contaminate turns.
-    const newSession = page.locator(`[data-testid="${PREFIX}-new-session"]`);
-    if (await newSession.isVisible().catch(() => false)) {
-      await newSession.click();
-      await waitPanelPhase(page, "ready");
-      log("new session started");
-    }
-
-    // Discover the model_id via the selector's selected menu item.
-    await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
-    const model_id = await poll(async () => {
-      // Model entries are DropdownMenu.Item → role="menuitem" (excludes the
-      // `*-trigger` elements sharing the testid prefix). The selected row is
-      // marked by menuListSelectedSurfaceDropdownClasses → `font-semibold`.
-      const items = page.locator(`[role="menuitem"][data-testid^="${PREFIX}-model-"]`);
-      for (const item of await items.all()) {
-        const cls = await item.getAttribute("class");
-        if ((cls ?? "").includes("font-semibold")) {
-          return (await item.getAttribute("data-testid"))!.replace(`${PREFIX}-model-`, "");
+      for (const target of targets) {
+        if (target) {
+          // Switch model through the selector. A missing item means the model
+          // is disabled/incompatible — skip it, never fake a score row.
+          await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
+          const item = page.locator(`[role="menuitem"][data-testid="${PREFIX}-model-${target}"]`);
+          if ((await item.count()) === 0) {
+            await page.keyboard.press("Escape");
+            log(`SKIP ${target} — not in model selector (disabled/incompatible?)`);
+            continue;
+          }
+          await item.click();
+          log(`switching model → ${target}`);
+          // waitPanelPhase("ready") would return instantly while the switch
+          // has not started transitioning yet — wait for the phase to LEAVE
+          // ready first, then for it to come back.
+          await poll(async () => {
+            const ph = await page
+              .locator(`[data-testid="${PREFIX}-panel"]`)
+              .getAttribute("data-ai-phase")
+              .catch(() => null);
+            return ph !== null && ph !== "ready" ? ph : null;
+          }, "model switch start", 3);
         }
+
+        // Model readiness: `loading_*` phases get the 8min download budget
+        // (persistent profile keeps completed files across runs), every other
+        // phase fails fast after 30s unchanged. Warm-cache load is ~10s.
+        const phase = await waitPanelPhase(page, "ready");
+        log(`model ready (data-ai-phase=${phase})`);
+
+        // Clean chat session for the "conversation" phase: leftover messages
+        // from a previous spec/model must not contaminate turns.
+        // new-session stays DISABLED on a fresh session — isVisible alone is
+        // not enough, a disabled button would hang the click actionability
+        // wait for the whole test timeout.
+        const newSession = page.locator(`[data-testid="${PREFIX}-new-session"]`);
+        if (await newSession.isEnabled().catch(() => false)) {
+          await newSession.click();
+          await waitPanelPhase(page, "ready");
+          log("new session started");
+        }
+
+        // Discover the model_id via the selector's selected menu item — also
+        // PROVES the requested model actually got selected in multi mode.
+        await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
+        const model_id = await poll(async () => {
+          // Model entries are DropdownMenu.Item → role="menuitem" (excludes the
+          // `*-trigger` elements sharing the testid prefix). The selected row is
+          // marked by menuListSelectedSurfaceDropdownClasses → `font-semibold`.
+          const items = page.locator(`[role="menuitem"][data-testid^="${PREFIX}-model-"]`);
+          for (const menuItem of await items.all()) {
+            const cls = await menuItem.getAttribute("class");
+            if ((cls ?? "").includes("font-semibold")) {
+              return (await menuItem.getAttribute("data-testid"))!.replace(`${PREFIX}-model-`, "");
+            }
+          }
+          return null;
+        }, "selected model id", 6);
+        await page.keyboard.press("Escape");
+        log(`model_id=${model_id}`);
+        if (target && model_id !== target) {
+          throw new Error(`model switch mismatch: requested ${target}, selected ${model_id}`);
+        }
+
+        // Run the 5 deterministic turns (each capped at 60s evidence wait).
+        // The merge runs in `finally` — turns recorded before a mid-loop
+        // failure are still persisted (same contract as the mixed spec).
+        const turns: TurnResult[] = [];
+        try {
+          for (const [i, spec] of TURNS.entries()) {
+            const { response_s, json, timed_out } = await sendTurn(page, spec.prompt);
+            const verdict = scoreTurn(spec, json, timed_out);
+            turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: json, response_s, ...verdict });
+            log(`  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}`);
+            if (verdict.score >= 4) await applyLastCandidate(page);
+
+            // Form-level assertion after the "remove min" turn: the applied
+            // JSON dropped rules.min, so the min input must stay empty (the
+            // builder must not re-inject its init default on an explicit
+            // apply). max=10 must be preserved from T3.
+            if (i === 3 && verdict.score >= 4) {
+              const minInput = page.getByTestId("tcb-min");
+              const maxInput = page.getByTestId("tcb-max");
+              expect(await minInput.inputValue(), "min rule re-appeared after removal").toBe("");
+              expect(await maxInput.inputValue(), "max rule lost after min removal").toBe("10");
+              log("  form check: min empty, max=10 preserved");
+            }
+          }
+        } finally {
+          // Merge the "conversation" turns into
+          // json_editor_with_schema_test_score. The navigation/mixed specs
+          // contribute their own phase turns to the SAME case — aggregates
+          // cover ALL turns across sessions.
+          if (turns.length) {
+            const res = await mergeTestScoreTurns(model_id, "json_editor_with_schema_test_score", "conversation", turns);
+            log(`[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
+            summary.push({ model_id, passed: turns.filter((t) => t.score >= 4).length, total: turns.length });
+          }
+        }
+        // A model with zero passing turns still records its turns — the score
+        // row is honest evidence, not a reason to abort the remaining models.
       }
-      return null;
-    }, "selected model id", 6);
-    await page.keyboard.press("Escape");
-    log(`model_id=${model_id}`);
 
-    // 3. Run the 5 deterministic turns (each capped at 60s evidence wait).
-    const turns: TurnResult[] = [];
-    for (const [i, spec] of TURNS.entries()) {
-      const { response_s, json, timed_out } = await sendTurn(page, spec.prompt);
-      const verdict = scoreTurn(spec, json, timed_out);
-      turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: json, response_s, ...verdict });
-      log(`  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}`);
-      if (verdict.score >= 4) await applyLastCandidate(page);
-
-      // Form-level assertion after the "remove min" turn: the applied JSON
-      // dropped rules.min, so the min input must stay empty (the builder must
-      // not re-inject its init default on an explicit apply). max=10 must
-      // be preserved from T3.
-      if (i === 3 && verdict.score >= 4) {
-        const minInput = page.getByTestId("tcb-min");
-        const maxInput = page.getByTestId("tcb-max");
-        expect(await minInput.inputValue(), "min rule re-appeared after removal").toBe("");
-        expect(await maxInput.inputValue(), "max rule lost after min removal").toBe("10");
-        log("  form check: min empty, max=10 preserved");
+      for (const s of summary) {
+        log(`SUMMARY ${s.model_id}: ${s.passed}/${s.total} turns passed`);
       }
-    }
-
-    // 4. Merge the "conversation" turns into json_editor_with_schema_test_score.
-    //    The navigation spec contributes its own "navigation" turns to the
-    //    SAME case — quality/speed/score and rank are derived from ALL turns
-    //    across both sessions at read time.
-    const res = await mergeTestScoreTurns(model_id, "json_editor_with_schema_test_score", "conversation", turns);
-    log(`[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
-    expect(turns.filter((t) => t.score >= 4).length).toBeGreaterThan(0);
+      expect(summary.some((s) => s.passed > 0)).toBe(true);
       // The browser is intentionally left open: the persistent session (and
       // its model cache) is reused by the next spec/run via CDP :9333.
     }

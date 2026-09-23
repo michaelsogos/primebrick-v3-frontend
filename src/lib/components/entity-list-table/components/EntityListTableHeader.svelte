@@ -134,7 +134,6 @@
           onResetFilters
         }
       } as any, {
-        contentClass: 'w-[360px] p-0',
         modal: false
       });
     } else {
@@ -153,8 +152,7 @@
         toggleColumnKey,
         onResetColumnVisibility: resetColumnsAndSorting,
         sheetMenuCheckboxClass: checkboxVisualOnlyClass
-      } as any,
-      { contentClass: 'w-[360px] p-0' }
+      } as any
     )}
   onCreateAction={onCreateAction}
 />

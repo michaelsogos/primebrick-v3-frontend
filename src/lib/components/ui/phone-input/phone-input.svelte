@@ -113,8 +113,7 @@
         currentCountry: country,
         allowedCountries,
         onCountryChange: handleCountryChange,
-      },
-      { side: 'right', contentClass: 'w-[360px] p-0' },
+      }
     );
   }
 

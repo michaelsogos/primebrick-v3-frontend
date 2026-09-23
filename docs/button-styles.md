@@ -1,112 +1,77 @@
 # Button Style Standards
 
-This document defines the standard styles for primary and secondary buttons in the Primebrick frontend. These standards should be applied to all new buttons going forward.
+The `Button` component (`$lib/components/ui/button`) is a **variant × tone**
+matrix built on `tailwind-variants`. Pick a variant (how the tone's gradient is
+used) and a tone (which semantic color). Never hand-write border or background
+classes on a `Button` — the matrix already covers every combination.
 
-## Standard Button Styles
+## The mental model
 
-### Secondary Buttons
+`primary` is a gradient (sky-400 → indigo-400), and every semantic color has
+its own gradient pair. The **variant** decides where the gradient goes:
 
-**Use for:** Cancel actions, secondary options, non-destructive actions
+| Role | Variant | Look |
+|---|---|---|
+| **Primary action** | `variant="default"` (or the named semantic variants below) | Solid gradient background, white text |
+| **Secondary action** | `variant="outline"` + `tone` | **Gradient border + white/neutral background** |
+| **Soft action** | `variant="soft"` + `tone` | **Soft gradient border + lightly tinted gradient background** |
+| Neutral, no tone | `secondary`, `secondary-outline`, `ghost`, `link`, `glass` | Plain neutral chrome — no gradient, no tone semantics |
 
-**Required classes:**
+### Neutral variants policy
+
+- `ghost` — **the only neutral variant with a de-facto standard**: icon-only
+  subtle actions (`size="icon-*"`) in toolbars, headers, and dismiss controls,
+  or text actions that must not compete visually. ~50 usages follow this.
+- `secondary` / `secondary-outline` / `link` / `glass` — **explicit instruction
+  only**. They are neutral escapes for cases the matrix does not cover; do not
+  reach for them by default.
+
+So "secondary button with the primary gradient border" is
+`variant="outline" tone="primary"` — **not** `variant="secondary"`.
+`variant="secondary"` is the plain neutral gray button (Cancel-style chrome).
+
+## Tones
+
+`tone` selects the semantic gradient: `primary` (default), `destructive`,
+`warning`, `success`, `info`.
+
+- `outline` + tone → `border-{tone}-gradient` (solid gradient border, neutral bg)
+- `soft` + tone → `border-{tone}-gradient-soft` (soft gradient border + tinted bg)
+- The solid- gradient-bg semantic roles are standalone **variants**
+  (`destructive`, `warning`, `success`, `info`) — they already carry their tone.
+
+## Recipes
+
 ```svelte
-class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
+<Button variant="default">Save</Button>                        <!-- primary gradient bg -->
+<Button variant="outline" tone="primary">Details</Button>      <!-- gradient border, white bg -->
+<Button variant="soft" tone="info">Learn more</Button>         <!-- soft border + tinted bg -->
+<Button variant="destructive">Delete</Button>                  <!-- red gradient bg -->
+<Button variant="outline" tone="destructive">Discard</Button>  <!-- red gradient border -->
+<Button variant="secondary">Cancel</Button>                    <!-- plain neutral -->
+<Button variant="ghost" size="icon-sm"><X /></Button>          <!-- icon-only neutral -->
 ```
 
-**Example:**
-```svelte
-<Button
-  variant="secondary"
-  class="border border-neutral-300 hover:border-neutral-400 hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all"
-  onclick={handleCancel}
->
-  {$t('common.cancel')}
-</Button>
-```
+## Hard rules
 
-### Primary Buttons
+- **ONLY documented variant/tone combinations are allowed.** The matrix above
+  is the closed set — no ad-hoc styling, no invented roles.
+- **NEVER** add `border`, `border-*`, `bg-*`, or gradient classes to a `Button`
+  via `class=` to fake a role — pick the right `variant`/`tone` combo.
+- **NEVER** use `variant="secondary"` expecting a gradient border — it is the
+  neutral role. Gradient border + neutral bg = `variant="outline"`.
+- `variant="secondary"`, `"secondary-outline"`, `"link"`, `"glass"` require an
+  explicit instruction. `ghost` is allowed only for icon-only/subtle actions.
+- **NEVER** stack `variant="soft"`/`outline` with manual `border-*-gradient`
+  classes — the compound variants already apply them.
+- Hover/active/disabled/focus states are baked into `buttonVariants`
+  (`hover:brightness-105`, `active:translate-y-px`, `disabled:opacity-50`,
+  `focus-visible:ring-[3px]`). Do not re-add them.
+- Icon-only buttons: `size="icon-xs" | "icon-sm" | "icon" | "icon-lg"`.
+  **Sheet header CTAs are exempt** — they use the shared `size-8` chrome from
+  `docs/ai/sheets.md`, not `Button`.
 
-**Use for:** Primary actions, confirmations, destructive actions (with `variant="destructive"`)
+## Sizes
 
-**Required classes:**
-```svelte
-class="hover:bg-{color}/80 hover:scale-105 transition-all"
-```
-
-Where `{color}` is the button's base color:
-- For standard primary: `bg-primary` → `hover:bg-primary/80`
-- For destructive: `bg-destructive` → `hover:bg-destructive/80`
-- For warning: `bg-warning` → `hover:bg-warning/80`
-
-**Examples:**
-
-Standard primary:
-```svelte
-<Button
-  variant="default"
-  class="hover:bg-primary/80 hover:scale-105 transition-all"
-  onclick={handleConfirm}
->
-  Confirm
-</Button>
-```
-
-Destructive (delete):
-```svelte
-<Button
-  variant="destructive"
-  class="hover:bg-destructive/80 hover:scale-105 transition-all"
-  onclick={handleDelete}
->
-  {$t('common.delete')}
-</Button>
-```
-
-Warning (export):
-```svelte
-<Button
-  class="bg-warning text-warning-foreground hover:bg-warning/80 hover:scale-105 transition-all"
-  onclick={handleExport}
->
-  Export
-</Button>
-```
-
-## Soft Buttons
-
-**Note:** Soft buttons (`variant="soft"`) should NOT have these additional styles applied. Keep them as-is without the border, hover scale, or transition effects.
-
-## Style Breakdown
-
-### Border (Secondary Only)
-- `border border-neutral-300` - Light neutral border for visibility
-- `hover:border-neutral-400` - Slightly darker border on hover
-
-### Hover Effects
-- `hover:bg-accent hover:text-accent-foreground` - Background and text color change on hover (secondary)
-- `hover:bg-{color}/80` - More intense background color on hover (primary)
-- `hover:scale-105` - Subtle scale up (1.05x) on hover for better interactivity
-
-### Transitions
-- `transition-all` - Smooth transitions for all properties
-
-## When to Apply These Standards
-
-Apply these styles to:
-- All dialog confirmation buttons
-- All form action buttons (save, cancel, delete)
-- All bulk action buttons
-- All toolbar action buttons
-
-Do NOT apply to:
-- Soft buttons (keep them as-is)
-- Icon-only buttons in toolbars (unless they're primary actions)
-- Navigation links
-- Toggle switches
-
-## Examples in Codebase
-
-See `EntityListTable.svelte` for reference implementations:
-- Export dialog (lines 3116-3148)
-- Delete confirmation dialog (lines 3056-3074)
-- Bulk delete confirmation dialog (lines 3087-3107)
+`default` (h-9) · `sm` (h-8) · `xs` (h-7) · `lg` (h-10) · `icon*` sizes.
+Compact toolbars/popovers default to `sm` or `xs`.

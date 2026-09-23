@@ -36,7 +36,7 @@ E2E regression tests:
 | Field | Range | Meaning |
 |-------|-------|---------|
 | `power_level` | 1-5 | Compute/size class (the 5-bar indicator). 1 = ≤1B quantized, 5 = ≥4B unquantized (fp16). Higher = heavier, not necessarily better. |
-| `rank` | 0.0-5.0 | Combined score — `quality × 0.8 + speed × 0.2`. Quality = `mean(turn_scores) × 0.6 + (success_count / total_turns) × 5 × 0.4` (turn scores 5 = correct, 2 = partially valid, 1 = fail; "success" = score ≥ 4). Speed = mean per-turn score from real response time in seconds (≤3 s → 5, ≤5 s → 4, ≤7 s → 3, ≤9 s → 2, ≤10 s → 1, >10 s or timeout → 0) |
+| `rank` | 0.0-5.0 | Combined score — `quality × 0.8 + speed × 0.2`. Quality = `mean(turn_scores) × 0.6 + (success_count / total_turns) × 5 × 0.4` (turn scores 5 = correct, 2 = partially valid, 1 = fail; "success" = score ≥ 4). Speed = bucket of the average response time — the seconds are averaged FIRST (per case, then mean of case averages for the model), then mapped once: ≤3 s → 5, ≤5 s → 4, ≤7 s → 3, ≤9 s → 2, ≤10 s → 1, >10 s → 0 |
 
 `rank` measures output quality **and** responsiveness — `power_level` is
 deliberately not part of it, so a light reliable model can outrank a heavy

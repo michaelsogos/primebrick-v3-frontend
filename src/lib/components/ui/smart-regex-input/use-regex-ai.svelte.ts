@@ -13,9 +13,10 @@
 import { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
 import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import {
-  buildActionsBlock,
+  buildClassifierUser,
+  CLASSIFIER_SYSTEM,
   findPendingChoiceMessage,
-  parseChatAction,
+  parseClassification,
   type ChatAction,
   type PendingActionSpec,
 } from '$lib/components/ui/smart-ai/chat-actions';
@@ -128,28 +129,6 @@ export function useRegexAi(
     ) => void | Promise<void>;
   },
 ) {
-  /**
-   * Chat-action context — captured when user input is wrapped with the
-   * [Pending actions] block, consumed by process_response, executed by
-   * sendMessage after the model turn completes.
-   */
-  const chatActionState = {
-    ctx: null as {
-      message: ChatMessage<RegexChoice>;
-      specs: PendingActionSpec[];
-    } | null,
-    resolved: null as {
-      action: ChatAction;
-      message: ChatMessage<RegexChoice>;
-    } | null,
-    /** Consume the action resolved by process_response this turn (or null). */
-    takeResolved() {
-      const r = this.resolved;
-      this.resolved = null;
-      return r;
-    },
-  };
-
   const ai = useAiAssistant<RegexChoice>(model_id, {
     build_system_prompt: buildSystemPrompt,
 
@@ -174,44 +153,10 @@ export function useRegexAi(
       if (lastRegex && useIntentDetection && detectIntent(text) === 'modify') {
         userContentForModel = `Current regex: ${lastRegex.pattern}\n${text}${JSON_REMINDER}`;
       }
-
-      // Pending choices → wrap with the action block. It goes LAST so it
-      // overrides the JSON_REMINDER contract when the user is answering a
-      // choice rather than asking for a new regex.
-      chatActionState.ctx = null;
-      if (opts?.on_chat_action) {
-        const pending = findPendingChoiceMessage(ctx.messages);
-        if (pending?.choices?.length) {
-          const specs: PendingActionSpec[] = pending.choices.map((c, i) => ({
-            id: 'pick' as const,
-            index: i,
-            label: `use /${c.pattern}/${c.flags}${c.description ? ` — ${c.description}` : ''}`,
-          }));
-          specs.push(
-            { id: 'apply', label: 'accept the proposed regex' },
-            { id: 'discard', label: 'reject the proposals' },
-          );
-          chatActionState.ctx = { message: pending, specs };
-          userContentForModel += buildActionsBlock(specs);
-        }
-      }
       return userContentForModel;
     },
 
     process_response: (raw) => {
-      // A strict action reply wins over pattern parsing — the model detected
-      // the user answering the pending choices.
-      if (chatActionState.ctx) {
-        const action = parseChatAction(raw, chatActionState.ctx.specs);
-        if (action) {
-          chatActionState.resolved = { action, message: chatActionState.ctx.message };
-          return {
-            content: raw,
-            display_content: get(t)('app.smart.regex.ai.chat_action_ack'),
-            choices: null,
-          };
-        }
-      }
       return {
         content: raw,
         choices: parseRegexChoices(raw),
@@ -348,15 +293,40 @@ export function useRegexAi(
   }
 
   /**
-   * User send — after the model turn, execute a resolved chat action (the
-   * model returned strict action JSON answering the pending pattern choice).
+   * User send — a dedicated classifier turn decides whether the typed text
+   * resolves the pending pattern choices (pick/apply/discard) or is a new
+   * request. The generation prompt carries no action contract, so a normal
+   * answer can never degrade into a false pick.
    */
   async function sendMessage(text: string): Promise<void> {
-    await ai.sendMessage(text);
-    const resolved = chatActionState.takeResolved();
-    if (resolved) {
-      await opts?.on_chat_action?.(resolved.action, resolved.message);
+    if (!ai.state.is_ready || ai.state.is_streaming || !text.trim()) return;
+    const pending = findPendingChoiceMessage(
+      ai.state.messages as ChatMessage<RegexChoice>[],
+    );
+    if (pending?.choices?.length && opts?.on_chat_action) {
+      const specs: PendingActionSpec[] = pending.choices.map((c, i) => ({
+        id: 'pick' as const,
+        index: i,
+        label: `use /${c.pattern}/${c.flags}${c.description ? ` — ${c.description}` : ''}`,
+      }));
+      specs.push(
+        { id: 'apply', label: 'accept the proposed regex' },
+        { id: 'discard', label: 'reject the proposals' },
+      );
+      const verdict = await ai.generateOneOff(
+        CLASSIFIER_SYSTEM,
+        buildClassifierUser(pending.display_content ?? pending.content, specs, text),
+        { max_new_tokens: 24, temperature: 0 },
+      ).catch(() => '');
+      const action = parseClassification(verdict, specs);
+      if (action) {
+        ai.addLocalUserMessage(text);
+        ai.addLocalAssistantMessage(get(t)('app.smart.regex.ai.chat_action_ack'));
+        await opts.on_chat_action(action, pending);
+        return;
+      }
     }
+    await ai.sendMessage(text);
   }
 
   return {
@@ -371,6 +341,12 @@ export function useRegexAi(
     },
     get effective_params() {
       return ai.effective_params;
+    },
+    get download_mbs() {
+      return ai.download_mbs;
+    },
+    get download_mbps() {
+      return ai.download_mbps;
     },
     setTuning: ai.setTuning,
     init: ai.init,

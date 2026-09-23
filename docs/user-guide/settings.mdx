@@ -139,7 +139,9 @@ in the browser via WebGPU — there is no server-side inference.
   popover renders one section per case with per-turn evidence: prompt,
   expected vs actual output, verdict, reason, and response time. Aggregate
   quality/speed/case score and the model rank are computed at read time
-  from the turn data — they are never stored.
+  from the turn data — they are never stored. Speed uses a single rule at
+  every level: average the response seconds first (per case, then mean of
+  case averages), then bucket the average (≤3 s → 5 … >10 s → 0).
 
 ## Email providers
 

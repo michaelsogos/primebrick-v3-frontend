@@ -150,13 +150,21 @@ const tree = await page.evaluate(async () => {
 `ai_models.test_scores` stores per-case objects under `*_test_score` keys with
 canonical `turns[]` (`{ n, prompt, expected, actual, score, verdict, reason,
 response_s }`). Aggregates (`quality`, `speed`, `score`, `rank`) are computed
-at READ time by `ai-model-test-scores.ts` — never persist them. The E2E writes
+at READ time by `ai-model-test-scores.ts` — never persist them. Speed follows
+ONE rule at every level: average the `response_s` values first, then bucket
+the average via `turnSpeedScore` (case avg → case speed; mean of case avgs →
+model speed). `response_s` is recorded for every turn including fast UI-driven
+outcomes — sub-second latencies are real signal (command perception), not
+outliers. The E2E writes
 the case via SQL through `helpers/db.ts` (`UPDATE ai_models SET test_scores …,
 rank = mean(case scores)`), matching the original harness.
 
 ## Reference specs
 
-- `src/e2e/ai-json-schema-quality.spec.ts` — 5-turn prompt-driven quality case
+- `src/e2e/ai-json-schema-quality.spec.ts` — 5-turn prompt-driven quality case.
+  Multi-model: `AI_E2E_MODEL_IDS="id1,id2"` runs the whole phase serially per
+  model in the SAME browser (live model switch via the assistant selector,
+  no relaunch); unset = default model only. Scores persist per `model_id`.
 - `src/e2e/ai-json-schema-navigation.spec.ts` — click-through of every
   explorer topic link with per-level missing/exceeding checks
 - `src/e2e/auth-mfa.spec.ts` — login + MFA DB-cleanup conventions

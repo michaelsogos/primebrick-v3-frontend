@@ -101,6 +101,14 @@ export function useAiModels() {
         .filter((m) => m.is_enabled)
         .sort((a, b) => a.sort_order - b.sort_order);
     },
+    /**
+     * ALL non-deleted catalog models (enabled + disabled). The cache scanner
+     * needs the FULL catalog for orphan detection — a disabled model's files
+     * are still cataloged, not orphaned.
+     */
+    getAllModels(): AiModel[] {
+      return _state.models;
+    },
     getModelByModelId(model_id: string): AiModel | undefined {
       // Same as getEnabledModels — no ensureLoaded() call here.
       return _state.models.find((m) => m.model_id === model_id);

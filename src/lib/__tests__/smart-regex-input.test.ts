@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 vi.mock("$lib/shell/sheets/sheet-manager.svelte", () => ({
   openSheet: vi.fn(),
   closeSheet: vi.fn(),
-  sheetState: { open: false, panelId: null, props: null, side: "right", contentClass: "w-[420px] p-0", keepMountedState: false, modal: true },
+  sheetState: { open: false, panelId: null, props: null, side: "right", contentClass: "p-0", keepMountedState: false, modal: true },
 }));
 
 // Mock the i18n store to return keys as-is

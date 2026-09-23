@@ -41,6 +41,7 @@
   import AiModelSelector from './ai-model-selector.svelte';
   import AiModelDetailsPopover from './ai-model-details-popover.svelte';
   import AiCerebellumSelector from './ai-cerebellum-selector.svelte';
+  import { RealtimeMeter } from '$lib/components/ui/realtime-meter';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
   import Send from '@lucide/svelte/icons/send';
@@ -170,7 +171,10 @@
 
   function refreshCurrentModelCache() {
     if (!currentModel) return;
-    void modelCache.refreshCacheStatus([currentModel.model_id]);
+    void modelCache.refreshCacheStatus(
+      [currentModel.model_id],
+      aiModels.getAllModels().map((m) => m.model_id),
+    );
   }
 
   /**
@@ -358,6 +362,13 @@
                   data-testid="{testid_prefix}-progress-bar"
                 ></div>
               </div>
+              <!-- Live throughput meter — real CDN bytes only (cache replay excluded) -->
+              <RealtimeMeter
+                value={ai.download_mbs}
+                unit="MB/s"
+                secondary="{ai.download_mbps.toFixed(0)} Mbps"
+                testid="{testid_prefix}-dl-meter"
+              />
             {/if}
             {#if ai.state.load_phase === 'downloading' && ai.state.total_files > 0}
               <p class="text-xs text-muted-foreground" data-testid="{testid_prefix}-loading-files">
@@ -507,19 +518,6 @@
          the user can switch model; textarea is disabled when not ready) -->
     {#if ai && ai.state.error !== 'webgpu_required' && (ai.state.is_ready || ai.state.error)}
     <div class="relative">
-      <!-- Back-to-bottom pill: visible only while scrolled up; arrow-only,
-           centered, half-overlapping the composer footer top edge. -->
-      {#if !stickToBottom && ai.state.messages.length > 0}
-        <button
-          type="button"
-          class="absolute -top-4 left-1/2 z-10 flex size-8 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
-          onclick={scrollToBottom}
-          data-testid="{testid_prefix}-scroll-bottom"
-          aria-label={$t('app.common.scrollToBottom')}
-        >
-          <ArrowDown class="size-4" />
-        </button>
-      {/if}
       <!-- Disclaimer -->
       <div class="px-4 pb-1.5">
         <p class="flex items-center justify-center gap-1 text-[11px] text-muted-foreground" data-testid="{testid_prefix}-disclaimer">
@@ -529,7 +527,20 @@
       </div>
 
       <!-- Gradient primary border wrapper: textarea + CTA row -->
-      <div class="p-3 pt-0">
+      <div class="relative p-3 pt-0">
+        <!-- Back-to-bottom pill: visible only while scrolled up; arrow-only,
+             centered, half-overlapping the input box top border. -->
+        {#if !stickToBottom && ai.state.messages.length > 0}
+          <button
+            type="button"
+            class="absolute -top-3.5 left-1/2 z-10 flex h-7 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
+            onclick={scrollToBottom}
+            data-testid="{testid_prefix}-scroll-bottom"
+            aria-label={$t('app.common.scrollToBottom')}
+          >
+            <ArrowDown class="size-4" />
+          </button>
+        {/if}
         <div
           class="rounded-lg bg-gradient-to-r from-sky-400/60 via-indigo-500/60 to-violet-500/60 p-px"
           data-testid="{testid_prefix}-input-wrapper"

@@ -12,6 +12,11 @@ Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer p
 
 Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 
+Buttons: always go through the `variant × tone` matrix of `ui/button` —
+see [`docs/button-styles.md`](../button-styles.md) for the full standard
+(gradient roles, tones, sizes, hard rules). Never hand-style a `Button`
+with border/background classes.
+
 ### Customization (keep updates easy)
 
 - **Composition-first:** wrappers, slots, props, local classes.
@@ -192,10 +197,13 @@ The **right-hand “sidebar” sheet** is not route-owned UI: it is a **single r
 |-------|------|
 | `$lib/shell/sheets/sheet-manager.svelte.ts` | `sheetState`, `openSheet`, `closeSheet`, `replaceSheet`; typed `SheetPanelId` and per-panel props. |
 | `$lib/shell/sheets/SheetHost.svelte` | One `Sheet.Root` / `Sheet.Content`; picks the panel component from a **registry** by `sheetState.panelId`. |
+| `$lib/shell/sheets/SheetPanelLayout.svelte` | **Canonical panel anatomy** — HEAD / TOOLBAR / CONTENT / FOOT. Every panel MUST use it. |
 | `$lib/shell/sheets/panels/*` | Shell panels (e.g. errors, versions). |
 | `$lib/entity-list/sheets/panels/*` | Entity-list panels (search-in, columns, filters). |
 
-**How to add a panel:** register the Svelte™ panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions.
+**Full reference:** [`docs/ai/sheets.md`](./sheets.md) — manager API, panel anatomy, registration checklist, hard rules.
+
+**How to add a panel:** register the Svelte™ panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions. The panel component MUST use `SheetPanelLayout` for anatomy — never mount `Sheet.Root` outside `SheetHost` and never invent ad-hoc panel layouts.
 
 **Do not** drive `openSheet` from an `$effect` that also depends on a **bindable boolean** mirroring sheet open state (e.g. “open when flag is true and sheet looks closed”). While the sheet is closing, the flag can still be `true` for a tick and the effect will **re-open** the sheet → infinite loop. Prefer **opening from the click handler** (or another discrete event) and use small, one-way sync effects only for “parent set flag false → `closeSheet`” / “sheet dismissed → clear flag”.
 

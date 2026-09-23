@@ -14,6 +14,7 @@
    */
   import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
   import { Button } from '$lib/components/ui/button';
+  import { Checkbox } from '$lib/components/ui/checkbox';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import { t, dict, getDictKeys } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -359,11 +360,9 @@
     </div>
     <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
       <label class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <input
-          type="checkbox"
-          class="size-3.5"
+        <Checkbox
           checked={approvedLangs.has(activePreviewLang)}
-          onchange={() => toggleApproved(activePreviewLang)}
+          onCheckedChange={() => toggleApproved(activePreviewLang)}
           data-testid="{testid_prefix}-approve-toggle"
         />
         {$t(`${i18n_ns}.translations_preview.approve`)}

@@ -152,8 +152,7 @@
       {
         currentCurrency: currencyCode ?? num.currency,
         onCurrencyChange,
-      },
-      { side: 'right', contentClass: 'w-[360px] p-0' },
+      }
     );
   }
 </script>

@@ -50,8 +50,10 @@
 
   onMount(async () => {
     await aiModels.ensureLoaded();
-    const models = aiModels.getEnabledModels();
-    void cache.refreshCacheStatus(models.map((m) => m.model_id));
+    void cache.refreshCacheStatus(
+      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getAllModels().map((m) => m.model_id),
+    );
   });
 
   function formatBytes(bytes: number | null | undefined): string {
@@ -76,10 +78,7 @@
 
   /** Resolves the catalog display name, falling back to a humanized model_id. */
   function displayName(model_id: string): string {
-    return (
-      aiModels.getEnabledModels().find((m) => m.model_id === model_id)?.name ??
-      friendlyModelName(model_id)
-    );
+    return aiModels.getModelByModelId(model_id)?.name ?? friendlyModelName(model_id);
   }
 
   function askDelete(ids: string[], name: string | null, source: 'censused' | 'orphan') {
@@ -123,8 +122,10 @@
   }
 
   function handleRefresh() {
-    const models = aiModels.getEnabledModels();
-    void cache.refreshCacheStatus(models.map((m) => m.model_id));
+    void cache.refreshCacheStatus(
+      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getAllModels().map((m) => m.model_id),
+    );
   }
 
   // ─── Censused models derived state ────────────────────────────────────────

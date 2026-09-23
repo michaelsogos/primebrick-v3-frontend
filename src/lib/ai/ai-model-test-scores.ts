@@ -111,7 +111,9 @@ type CaseMetrics = {
 /**
  * Documented scoring formulas — computed on the fly, never stored:
  *   quality = mean(turns)·0.6 + (success/total)·5·0.4   (success = score ≥ 4)
- *   speed   = mean(per-turn speed buckets)
+ *   speed   = turnSpeedScore(mean response_s) — the seconds average is
+ *             computed FIRST, then bucketed. One rule at every level:
+ *             case speed = bucket(case avg), model speed = bucket(model avg).
  *   score   = quality·0.8 + speed·0.2
  */
 export function computeCaseMetrics(turns: TestTurn[]): CaseMetrics {
@@ -135,10 +137,7 @@ export function computeCaseMetrics(turns: TestTurn[]): CaseMetrics {
   const success = `${successCount}/${scored.length}`;
   const quality = mean * 0.6 + (successCount / scored.length) * 5 * 0.4;
 
-  const speedScores = times.map(turnSpeedScore);
-  const speed = speedScores.length
-    ? speedScores.reduce((total, score) => total + score, 0) / speedScores.length
-    : null;
+  const speed = avg_response_s !== null ? turnSpeedScore(avg_response_s) : null;
 
   const score = speed !== null ? quality * 0.8 + speed * 0.2 : quality;
   return { score, quality, speed, success, avg_response_s, runs: scored };
@@ -242,13 +241,12 @@ export function summarizeTestScores(test_scores: Record<string, unknown> | null 
   const qualities = summary.cases.map((c) => c.quality).filter((s): s is number => s !== null);
   summary.quality = qualities.length ? qualities.reduce((t, s) => t + s, 0) / qualities.length : null;
 
-  const speeds = summary.cases.map((c) => c.speed).filter((s): s is number => s !== null);
-  summary.speed = speeds.length ? speeds.reduce((t, s) => t + s, 0) / speeds.length : null;
-
-  const times = summary.cases.flatMap((c) => c.turns)
-    .map((turn) => parseScoreValue(turn?.response_s ?? turn?.ttft_s))
-    .filter((time): time is number => time !== null);
-  summary.avg_response_s = times.length ? times.reduce((t, s) => t + s, 0) / times.length : null;
+  // Model avg = mean of per-case averages (mean of means — each case weighs
+  // the same regardless of turn count). Speed is bucketed from THAT average,
+  // same single rule as the case level.
+  const caseAvgs = summary.cases.map((c) => c.avg_response_s).filter((s): s is number => s !== null);
+  summary.avg_response_s = caseAvgs.length ? caseAvgs.reduce((t, s) => t + s, 0) / caseAvgs.length : null;
+  summary.speed = summary.avg_response_s !== null ? turnSpeedScore(summary.avg_response_s) : null;
 
   const successParts = summary.cases.map((c) => c.success).filter((s): s is string => s !== null);
   summary.success = successParts.length ? successParts.join(' · ') : null;

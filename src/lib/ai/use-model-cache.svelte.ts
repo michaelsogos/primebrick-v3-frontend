@@ -230,17 +230,22 @@ export function useModelCache() {
 
   /**
    * Refresh cache status for the given model IDs.
+   *
+   * `known_ids` = the FULL ai_models catalog (enabled AND disabled): cached
+   * files matching any catalog entry are "cataloged", not orphaned. Passing
+   * only the enabled/visible subset wrongly orphans every disabled-but-known
+   * model (e.g. all granite rows while they were disabled).
    */
-  async function refreshCacheStatus(model_ids: string[]): Promise<void> {
+  async function refreshCacheStatus(model_ids: string[], known_ids: string[] = model_ids): Promise<void> {
     _state.is_checking = true;
     _state.error = null;
     try {
       const scan = await scanAllCachedModels();
       const allCached = scan.models;
       lastScan = scan;
-      const knownSet = new Set(model_ids);
+      const knownSet = new Set(known_ids);
       // Bare repo ids present in the catalog (variant ids carry '#dtype').
-      const knownRepos = new Set(model_ids.map((id) => id.split('#')[0]));
+      const knownRepos = new Set(known_ids.map((id) => id.split('#')[0]));
       lastKnown = { knownSet, knownRepos };
 
       // Per-model sizes and cache status for known models.

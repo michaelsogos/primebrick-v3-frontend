@@ -22,6 +22,8 @@
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
   import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
+  import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
+  import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -37,7 +39,9 @@
     'config.regexFlags': RegexFlagsPanel,
     'config.regexAiChat': RegexAiChatPanel,
     'config.jsonAiChat': JsonConfigAiChatPanel,
-    'shell.aiGuide': GuideAiChatPanel
+    'shell.aiGuide': GuideAiChatPanel,
+    'shell.aiModelTestReport': AiModelTestReportPanel,
+    'shell.aiCerebellum': AiCerebellumPanel
   };
 
   const panelId = $derived(sheetState.panelId);

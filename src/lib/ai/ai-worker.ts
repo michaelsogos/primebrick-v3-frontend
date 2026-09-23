@@ -19,7 +19,7 @@ import {
   pipeline,
   DynamicCache,
 } from '@huggingface/transformers';
-import { resumableFetch } from './resumable-fetch';
+import { resumableFetch, setByteReporter } from './resumable-fetch';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -69,6 +69,7 @@ interface MeasurementData {
   prompt_token_count: number;
   cache_bytes: number | null;
   memory_usage_bytes: number | null;
+  vram_bytes: number | null;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────
@@ -90,11 +91,48 @@ let loaded_files: string[] = [];
 let file_progress: Record<string, number> = {};
 let total_files = 0;
 let completed_files = 0;
+// Cumulative live-network bytes for the download speed meter — reset per
+// load; reported throttled (~4 msg/s) via `download_bytes` messages.
+let net_bytes = 0;
+let last_byte_tick = 0;
 
 let past_key_values: DynamicCache | null = null;
 let cache_valid = false;
 let cache_len_before_gen = 0;
 let prev_gen_time_ms: number | null = null;
+
+// ─── VRAM tracking ──────────────────────────────────────────────────────
+// WebGPU exposes no VRAM-usage API, but every tensor ONNX Runtime allocates
+// lives in a GPUBuffer. Wrapping createBuffer/destroy gives the REAL model
+// VRAM footprint — live allocated bytes attributed to this worker.
+let vram_tracked_bytes = 0;
+let vram_tracking_installed = false;
+
+function installVramTracking(): void {
+  if (vram_tracking_installed) return;
+  const GPUDeviceCtor = (self as any).GPUDevice;
+  const GPUBufferCtor = (self as any).GPUBuffer;
+  if (!GPUDeviceCtor?.prototype?.createBuffer || !GPUBufferCtor?.prototype?.destroy) return;
+  const sizes = new WeakMap<GPUBuffer, number>();
+  const origCreate = GPUDeviceCtor.prototype.createBuffer;
+  GPUDeviceCtor.prototype.createBuffer = function (this: GPUDevice, desc: GPUBufferDescriptor) {
+    const buf = origCreate.call(this, desc);
+    const size = Number(desc.size) || 0;
+    sizes.set(buf, size);
+    vram_tracked_bytes += size;
+    return buf;
+  };
+  const origDestroy = GPUBufferCtor.prototype.destroy;
+  GPUBufferCtor.prototype.destroy = function (this: GPUBuffer) {
+    const size = sizes.get(this);
+    if (size != null) {
+      sizes.delete(this);
+      vram_tracked_bytes = Math.max(0, vram_tracked_bytes - size);
+    }
+    return origDestroy.call(this);
+  };
+  vram_tracking_installed = true;
+}
 
 const STOP_STRINGS = ['[END_OF_TEXT]', '<|im_end|>', '<|im_start|>'];
 
@@ -168,16 +206,31 @@ async function loadModel(payload: LoadPayload): Promise<void> {
   file_progress = {};
   total_files = 0;
   completed_files = 0;
+  net_bytes = 0;
+  last_byte_tick = 0;
   const loadStart = performance.now();
 
   try {
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+    // Install GPUBuffer tracking BEFORE the ONNX session allocates weights —
+    // the captured byte total at load_complete is the model's real VRAM size.
+    installVramTracking();
     // Resumable downloads: env.fetch is the documented hook (env.js) used by
     // getFile for every remote file. Our wrapper persists 64MB shards to the
     // 'hf-resumable' cache while streaming and resumes interrupted downloads
     // via HTTP Range — transformers sees a plain 200 response.
     env.fetch = resumableFetch;
+    // Report cumulative live-network bytes ~4×/s for the speed meter —
+    // cache-replayed shards are not counted (see resumable-fetch.ts).
+    setByteReporter((n) => {
+      net_bytes += n;
+      const now = performance.now();
+      if (now - last_byte_tick >= 250) {
+        last_byte_tick = now;
+        post({ type: 'download_bytes', bytes: net_bytes });
+      }
+    });
 
     const external_data = await detectExternalDataFiles(repo_id);
     post({ type: 'load_phase', phase: 'downloading', worker_nonce });
@@ -211,6 +264,9 @@ async function loadModel(payload: LoadPayload): Promise<void> {
         // during this gap, not a frozen 100% download bar.
         if (!download_complete_notified && total_files > 0 && completed_files >= total_files) {
           download_complete_notified = true;
+          // Final byte count — the last chunks may have fallen under the
+          // 250ms throttle, so flush the total before switching phase.
+          post({ type: 'download_bytes', bytes: net_bytes });
           post({ type: 'load_phase', phase: 'vram', worker_nonce });
         }
       }
@@ -295,6 +351,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       },
       fingerprint,
       warmup_ms: Math.round(warmupTime),
+      vram_bytes: vram_tracked_bytes || null,
     });
     post({
       type: 'measure',
@@ -315,6 +372,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
         prompt_token_count: 0,
         cache_bytes: await measureCacheBytes(),
         memory_usage_bytes: await measureMemoryBytes(),
+        vram_bytes: vram_tracked_bytes || null,
       },
     });
   } catch (err) {
@@ -349,18 +407,32 @@ async function generate(payload: GeneratePayload): Promise<void> {
   post({ type: 'debug', step: 'gen_enter', model_id: current_model_id, kv_cache_reuse: current_kv_cache_reuse, num_messages: payload.messages?.length });
 
   try {
+    // Qwen3 dialect: enable_thinking=false only renders an empty
+    // <think></think> block — this export ignores it and opens a fresh
+    // <think> anyway. The /no_think directive in the last user message is
+    // the documented suppression for hybrid-thinking Qwen3 checkpoints.
+    const noThink =
+      payload.params.enable_thinking === false && /qwen3/i.test(current_model_id ?? '');
+    const messages = noThink
+      ? payload.messages.map((m, i) =>
+          i === payload.messages.length - 1 && m.role === 'user'
+            ? { ...m, content: m.content + '\n/no_think' }
+            : m,
+        )
+      : payload.messages;
+
     // Render the chat template
     let prompt: string;
     try {
       prompt = tokenizer.apply_chat_template
-        ? String(tokenizer.apply_chat_template(payload.messages, {
+        ? String(tokenizer.apply_chat_template(messages, {
             add_generation_prompt: true,
             tokenize: false,
             enable_thinking: payload.params.enable_thinking ?? false,
           }))
-        : payload.messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
+        : messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
     } catch {
-      prompt = payload.messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
+      prompt = messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
     }
     post({ type: 'debug', step: 'prompt_tail', len: prompt.length, tail: prompt.slice(-150), kv_cache_reuse: current_kv_cache_reuse });
 
@@ -432,14 +504,34 @@ async function generate(payload: GeneratePayload): Promise<void> {
     const using_cache = current_kv_cache_reuse && cache_valid && cache_seq_len_before > 0;
     post({ type: 'debug', step: 'kv_cache_pipeline', prompt_token_count: full_token_count, cache_len_before_gen: cache_seq_len_before, using_cache });
 
+    // Hard think-suppression for the Qwen3 dialect: neither the empty
+    // <think></think> block nor /no_think are reliable on this ONNX export —
+    // ban the think-tag token ids outright via the logits processor so the
+    // model physically cannot open a thinking block.
+    let suppress_tokens: number[] | undefined;
+    if (noThink) {
+      suppress_tokens = [];
+      for (const s of ['<think>', '</think>']) {
+        try {
+          const enc = Array.from(tokenizer.encode(s) ?? []);
+          if (enc.length === 1) suppress_tokens.push(Number(enc[0]));
+        } catch { /* noop */ }
+      }
+      if (!suppress_tokens.length) suppress_tokens = undefined;
+    }
+
     const result = await Promise.race([
-      pipeline_generator(payload.messages, {
+      pipeline_generator(messages, {
         max_new_tokens: payload.params.max_new_tokens,
         do_sample: payload.params.do_sample ?? (payload.params.temperature > 0),
         temperature: payload.params.temperature,
         top_p: payload.params.top_p,
         repetition_penalty: payload.params.repetition_penalty,
         eos_token_id: [...eos_ids],
+        suppress_tokens,
+        // The pipeline re-renders the chat template internally — enable_thinking
+        // must travel through tokenizer_kwargs or it is lost (default: thinking on).
+        tokenizer_kwargs: { enable_thinking: payload.params.enable_thinking },
         stopping_criteria: interruptable,
         // Always pass past_key_values when kv_cache_reuse is enabled, even on T1
         // with an empty cache. The library's getPastKeyValues() mutates the
@@ -523,6 +615,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
         prompt_token_count: full_token_count,
         cache_bytes: await measureCacheBytes(),
         memory_usage_bytes: await measureMemoryBytes(),
+        vram_bytes: vram_tracked_bytes || null,
       },
     });
     prev_gen_time_ms = genTime;

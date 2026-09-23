@@ -78,6 +78,10 @@ export function useJsonConfigAi(
     action: ChatAction,
     message: ChatMessage<JsonAssistantChoice>,
   ) => void | Promise<void>,
+  on_baseline_revise?: (
+    text: string,
+    choice: Extract<JsonAssistantChoice, { kind: 'translations_preview' }>,
+  ) => void | Promise<void>,
 ) {
   return useJsonSchemaAi(model_id, {
     current_json,
@@ -88,5 +92,6 @@ export function useJsonConfigAi(
     i18n_ns: 'app.smart.json.ai',
     on_key_picker_free_text,
     on_chat_action,
+    on_baseline_revise,
   });
 }

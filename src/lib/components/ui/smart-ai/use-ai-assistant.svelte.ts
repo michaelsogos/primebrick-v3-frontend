@@ -25,6 +25,7 @@
  */
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { useAiModels } from '$lib/composables/useAiModels.svelte';
+import { apiFetch } from '$lib/api';
 import { useAiCerebellum } from '$lib/composables/useAiCerebellum.svelte';
 import { resolveEffectiveParams, type EffectiveAiParams } from '$lib/ai/ai-cerebellum';
 import type { AiCerebellum } from '$lib/api-types';
@@ -48,6 +49,7 @@ type WorkerMessage =
   | { type: 'webgpu'; available: boolean }
   | { type: 'load_phase'; phase: 'downloading' | 'vram'; worker_nonce: string }
   | { type: 'load_progress'; progress?: number; file?: string | null; stage?: string; total_files?: number; completed_files?: number; file_progress?: Record<string, number> }
+  | { type: 'download_bytes'; bytes: number }
   | { type: 'load_started'; seq: number; model_id: string; repo_id: string; dtype: string; device: string; worker_nonce: string }
   | {
       type: 'load_complete';
@@ -61,6 +63,7 @@ type WorkerMessage =
       model_config?: Record<string, any>;
       fingerprint?: string;
       warmup_ms?: number;
+      vram_bytes?: number | null;
     }
   | { type: 'load_error'; error: string; model_id?: string }
   | { type: 'stream'; token: string }
@@ -70,7 +73,8 @@ type WorkerMessage =
   | { type: 'reset_complete' }
   | { type: 'dispose_complete'; disposed_model_id?: string; worker_nonce?: string }
   | { type: 'status'; worker_nonce: string; loaded_model_id: string | null; dtype: string | null; pipeline_alive: boolean; is_generating: boolean; loaded_files?: string[] }
-  | { type: 'measure'; data: any };
+  | { type: 'measure'; data: any }
+  | { type: 'debug'; step?: string; [key: string]: unknown };
 
 export function useAiAssistant<TChoice = unknown>(
   model_id: string,
@@ -103,6 +107,11 @@ export function useAiAssistant<TChoice = unknown>(
     current_file: null as string | null,
     /** Slowest file (lowest progress) for display: { name, progress }. */
     slowest_file: null as { name: string; progress: number } | null,
+    /**
+     * Live-network byte samples `{ t, bytes }` (cumulative per load) for the
+     * download speed meter — capped ring buffer, ~4 samples/s from the worker.
+     */
+    byte_samples: [] as { t: number; bytes: number }[],
     is_ready: false,
     is_streaming: false,
     /** 'thinking' while model reasoning, 'generating' while producing final output. */
@@ -127,6 +136,7 @@ export function useAiAssistant<TChoice = unknown>(
       model_config: Record<string, any> | null;
       fingerprint: string;
       warmup_ms: number;
+      vram_bytes: number | null;
       worker_nonce: string;
     } | null,
     /** Nonce of the live worker — changes when the worker is recreated. */
@@ -171,6 +181,23 @@ export function useAiAssistant<TChoice = unknown>(
   /** Select a tuning by uuid (null = back to model defaults). */
   function setTuning(uuid: string | null): void {
     _state.selected_tuning_uuid = uuid;
+  }
+
+  /** Live download throughput in MB/s — 3s sliding window over byte samples. */
+  function downloadMbs(): number {
+    const w = _state.byte_samples;
+    if (w.length < 2) return 0;
+    const newest = w[w.length - 1];
+    const cutoff = newest.t - 3000;
+    let oldest = w[0];
+    for (const s of w) {
+      if (s.t >= cutoff) {
+        oldest = s;
+        break;
+      }
+    }
+    const dt = newest.t - oldest.t;
+    return dt > 0 ? ((newest.bytes - oldest.bytes) / dt) * 1000 / 1e6 : 0;
   }
 
   // Web Worker instance (lazy-created on init)
@@ -273,6 +300,11 @@ export function useAiAssistant<TChoice = unknown>(
         }
         break;
       }
+      case 'download_bytes': {
+        _state.byte_samples.push({ t: performance.now(), bytes: msg.bytes });
+        if (_state.byte_samples.length > 120) _state.byte_samples.shift();
+        break;
+      }
       case 'load_complete': {
         // Stop VRAM timer. Keep the last vram_elapsed_ms from the interval
         // as the final value — don't recalculate (cached models would show 0.0s).
@@ -308,8 +340,12 @@ export function useAiAssistant<TChoice = unknown>(
           model_config: msg.model_config ?? null,
           fingerprint: msg.fingerprint ?? '',
           warmup_ms: msg.warmup_ms ?? 0,
+          vram_bytes: msg.vram_bytes ?? null,
           worker_nonce: msg.worker_nonce,
         };
+        // Persist the measured VRAM footprint — GPUBuffer tracking in the
+        // worker gives the real allocated bytes, stored as vram_mb.
+        if (msg.vram_bytes && msg.vram_bytes > 0) void persistVram(msg.vram_bytes);
         if (pending_load_resolver) {
           pending_load_resolver();
           pending_load_resolver = null;
@@ -385,6 +421,10 @@ export function useAiAssistant<TChoice = unknown>(
       }
       case 'measure': {
         _state.measurements = msg.data;
+        break;
+      }
+      case 'debug': {
+        console.debug('[ai-worker]', msg.step, msg);
         break;
       }
       default: {
@@ -530,6 +570,25 @@ export function useAiAssistant<TChoice = unknown>(
   }
 
   /**
+   * Persist the worker-measured VRAM footprint (GPUBuffer tracking) onto the
+   * ai_models row. Best-effort: admin-only endpoint — a non-admin session or a
+   * stale version simply skips the write; the panel keeps working either way.
+   */
+  async function persistVram(vram_bytes: number): Promise<void> {
+    const vram_mb = Math.round(vram_bytes / (1024 * 1024));
+    const row = aiModels.getModelByModelId(_state.model_id);
+    if (!row?.uuid || row.version == null || row.vram_mb === vram_mb) return;
+    try {
+      const res = await apiFetch(`/api/v1/entities/ai_model/${row.uuid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity: { vram_mb, version: row.version } }),
+      });
+      if (res.ok) aiModels.invalidate();
+    } catch { /* measurement persistence is best-effort */ }
+  }
+
+  /**
    * Measure VRAM proxy: JS heap + Cache API bytes + GPU adapter info.
    * WebGPU does NOT expose direct VRAM usage via standard APIs.
    */
@@ -617,6 +676,7 @@ export function useAiAssistant<TChoice = unknown>(
     _state.current_file = null;
     _state.loaded_info = null;
     _state.worker_nonce = null;
+    _state.byte_samples = [];
     _state.messages = [];
     _state.pending_choices = null;
     _state.streaming_text = '';
@@ -855,7 +915,10 @@ export function useAiAssistant<TChoice = unknown>(
     user_prompt: string,
     params?: { max_new_tokens?: number; temperature?: number; top_p?: number; repetition_penalty?: number },
   ): Promise<string> {
-    if (!worker || !_state.is_ready) return '';
+    // A one-off while another generation is in flight hits the worker's
+    // `is_generating` guard → stream_error → _state.error (the panel shows
+    // a hard error). Bail early instead of poisoning the UI state.
+    if (!worker || !_state.is_ready || _state.is_streaming) return '';
 
     _state.is_streaming = true;
     _state.streaming_text = '';
@@ -887,6 +950,11 @@ export function useAiAssistant<TChoice = unknown>(
     } finally {
       _state.is_streaming = false;
       _state.streaming_text = '';
+      // The one-off overwrote past_key_values with its own prompt's KV.
+      // The next conversation turn does blind prefix slicing on the SAME
+      // system prompt (no invalidate trigger) — a stale prefix would be
+      // served silently. Force a full re-prefill.
+      postToWorker({ type: 'invalidate_cache' });
     }
   }
 
@@ -1000,6 +1068,14 @@ export function useAiAssistant<TChoice = unknown>(
     /** Effective generation params after tuning resolution. */
     get effective_params(): EffectiveAiParams {
       return effective_params;
+    },
+    /** Live download throughput in MB/s — 3s sliding window over byte samples. */
+    get download_mbs(): number {
+      return downloadMbs();
+    },
+    /** Live download throughput in Mbps (megabits/s). */
+    get download_mbps(): number {
+      return downloadMbs() * 8;
     },
     setTuning,
     init,

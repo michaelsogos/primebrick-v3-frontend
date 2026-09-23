@@ -74,7 +74,16 @@
   let capsLoaded = $state(false);
 
   function createComposable(id: string): JsonAiHandle {
-    const c = useJsonConfigAi(id, current_json ?? '', () => scopedSchema, handleNewErrorMessage, handleChatAction);
+    const c = useJsonConfigAi(
+      id,
+      current_json ?? '',
+      () => scopedSchema,
+      handleNewErrorMessage,
+      handleChatAction,
+      // Baseline revision: the typed text is a corrected error message —
+      // re-run the same translate+preview flow with it (same key, new text).
+      (text, choice) => handleNewErrorMessage(text, choice.path, errorLabelRuleFromPath(choice.path)),
+    );
     created = c;
     void typeCapabilities.ensureLoaded().then(() => { capsLoaded = true; });
     return c;

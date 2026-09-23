@@ -249,6 +249,12 @@ export function useGuideAi(model_id: string) {
     get effective_params() {
       return ai.effective_params;
     },
+    get download_mbs() {
+      return ai.download_mbs;
+    },
+    get download_mbps() {
+      return ai.download_mbps;
+    },
     setTuning: ai.setTuning,
     init: ai.init,
     switchModel: ai.switchModel,

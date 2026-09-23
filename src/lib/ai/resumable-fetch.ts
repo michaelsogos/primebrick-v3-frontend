@@ -48,6 +48,31 @@ interface ShardManifest {
 const manifestKey = (url: string) => `${url}?__resume_manifest`;
 const shardKey = (url: string, i: number) => `${url}?__resume_shard=${i}`;
 
+/**
+ * Live-network byte reporter. The worker registers a sink once per model
+ * load; we invoke it for every chunk that arrived from the CDN — replayed
+ * cache shards are deliberately NOT counted (local reads would report
+ * fake GB/s on the speed meter).
+ */
+export type ByteReporter = (delta_bytes: number) => void;
+let report_bytes: ByteReporter | null = null;
+export function setByteReporter(fn: ByteReporter | null): void {
+  report_bytes = fn;
+}
+
+/** Diagnostic breadcrumbs — the composable logs these to the console. */
+function dbg(step: string, extra?: Record<string, unknown>): void {
+  try {
+    // Only in dedicated workers — page.postMessage would emit window events.
+    const g = globalThis as any;
+    if (typeof g.DedicatedWorkerGlobalScope !== 'undefined' && g.self instanceof g.DedicatedWorkerGlobalScope) {
+      g.postMessage({ type: 'debug', step: `rfetch:${step}`, ...extra });
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function etagOf(resp: Response): string | null {
   return resp.headers.get('x-linked-etag') ?? resp.headers.get('etag');
 }
@@ -130,38 +155,151 @@ function shardWriter(cache: Cache, url: string, manifest: ShardManifest, start_i
   };
 }
 
+/**
+ * A dead-but-not-closed connection (CDN stall, silent socket drop) leaves
+ * `reader.read()` pending forever — observed empirically as a download that
+ * freezes mid-file with no error. Race every read against a stall timer:
+ * on stall we cancel the dead body and reopen a `Range:` request from the
+ * last delivered byte (bounded retries), so the stream self-heals instead
+ * of hanging the whole model init.
+ */
+const STALL_MS = 60_000;
+const MAX_STALLS = 8;
+const STALL = Symbol('stall');
+
+/**
+ * Live-stream semaphore — bounds parallel network bodies.
+ * Fully parallel fetches used to die mid-flight (~56MB each) and aborted
+ * sockets saturated the per-host pool, making every new fetch fail instantly.
+ * Now that every read races a stall timer and dead bodies reconnect with a
+ * `Range:` request (self-healing), bounded parallelism is safe again:
+ * 4 slots ≈ the max external-data files per model.
+ */
+let live_slots = 0;
+const LIVE_MAX = 4;
+const live_waiters: (() => void)[] = [];
+async function acquireLive(): Promise<void> {
+  if (live_slots < LIVE_MAX) {
+    live_slots++;
+    return;
+  }
+  await new Promise<void>((r) => live_waiters.push(r));
+  live_slots++;
+}
+function releaseLive(): void {
+  live_slots--;
+  live_waiters.shift()?.();
+}
+
+/** Backoff between reconnects — instant retry storms get killed instantly. */
+const backoff = (stalls: number) =>
+  new Promise<void>((r) => setTimeout(r, Math.min(2000 * stalls, 15000)));
+
+function stallTimer(): Promise<typeof STALL> {
+  return new Promise((r) => setTimeout(() => r(STALL), STALL_MS));
+}
+
 /** Pull-based tee: forwards body chunks downstream while feeding the writer. */
 function teeStream(
   body: ReadableStream<Uint8Array>,
   writer: ReturnType<typeof shardWriter>,
   onDone?: () => Promise<void>,
+  reconnect?: (delivered: number) => Promise<ReadableStream<Uint8Array> | null>,
 ): ReadableStream<Uint8Array> {
-  const reader = body.getReader();
+  let reader = body.getReader();
   let cancelled = false;
+  let delivered = 0;
+  let stalls = 0;
+  let holds_live = false;
+  const release = () => {
+    if (holds_live) {
+      holds_live = false;
+      releaseLive();
+    }
+  };
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
-      const { done, value } = await reader.read();
-      // NOTE: cancelling our stream resolves the pending underlying read()
-      // with done=true — do NOT treat that as a clean completion: shards
-      // must survive so the download can resume.
-      if (done) {
-        if (!cancelled) {
-          await writer.end();
-          await onDone?.();
-          controller.close();
+      if (!holds_live) {
+        await acquireLive();
+        holds_live = true;
+      }
+      // Keep reading within the same pull after a reconnect — see
+      // shardReplayStream for why returning early deadlocks the consumer.
+      for (;;) {
+        const res = await Promise.race([reader.read(), stallTimer()]).catch((e) => {
+          dbg('read_reject', { delivered, err: String(e) });
+          return 'READ_ERR' as const;
+        });
+        if (res === 'READ_ERR' || res === STALL) {
+          stalls++;
+          void reader.cancel();
+          dbg(res === STALL ? 'stall' : 'read_err', { delivered, stalls });
+          if (stalls > MAX_STALLS || !reconnect) {
+            release();
+            controller.error(new Error(`hf-resumable: stream stalled ${stalls}×`));
+            return;
+          }
+          await backoff(stalls);
+          const nb = await reconnect(delivered).catch(() => null);
+          if (!nb) {
+            release();
+            controller.error(new Error('hf-resumable: stall reconnect failed'));
+            return;
+          }
+          dbg('reconnected', { delivered });
+          reader = nb.getReader();
+          continue;
+        }
+        const { done, value } = res;
+        // NOTE: cancelling our stream resolves the pending underlying read()
+        // with done=true — do NOT treat that as a clean completion: shards
+        // must survive so the download can resume.
+        if (done) {
+          release();
+          if (!cancelled) {
+            await writer.end();
+            await onDone?.();
+            controller.close();
+          }
+          return;
+        }
+        if (value && !cancelled) {
+          stalls = 0;
+          writer.push(value);
+          controller.enqueue(value);
+          delivered += value.length;
+          report_bytes?.(value.length);
         }
         return;
-      }
-      if (value && !cancelled) {
-        writer.push(value);
-        controller.enqueue(value);
       }
     },
     cancel(reason) {
       cancelled = true;
+      release();
       void reader.cancel(reason);
     },
   });
+}
+
+/** Opens a Range request from `offset`; returns the body only on a valid 206. */
+async function rangeBody(
+  url: string,
+  offset: number,
+  expected_total?: number,
+): Promise<ReadableStream<Uint8Array> | null> {
+  const resp = await fetch(url, { redirect: 'follow', headers: { Range: `bytes=${offset}-` } });
+  if (resp.status !== 206 || !resp.body) {
+    void resp.body?.cancel();
+    return null;
+  }
+  if (expected_total !== undefined) {
+    const total = Number((resp.headers.get('content-range') ?? '').split('/')[1]);
+    if (total !== expected_total) {
+      void resp.body.cancel();
+      return null;
+    }
+  }
+  return resp.body;
 }
 
 /** Fresh download: stream the response while persisting shards. */
@@ -179,11 +317,15 @@ async function fetchAndShard(
 
   const manifest: ShardManifest = { etag: etagOf(resp), size, done_count: 0 };
   await writeManifest(cache, url, manifest);
-  const stream = teeStream(resp.body, shardWriter(cache, url, manifest, 0), () =>
-    // Stream consumed → transformers stores the full file in its own cache
-    // right after this; shards become redundant. Delete them so we never
-    // hold the same bytes twice.
-    deleteShardEntries(cache, url, manifest.done_count),
+  const stream = teeStream(
+    resp.body,
+    shardWriter(cache, url, manifest, 0),
+    () =>
+      // Stream consumed → transformers stores the full file in its own cache
+      // right after this; shards become redundant. Delete them so we never
+      // hold the same bytes twice.
+      deleteShardEntries(cache, url, manifest.done_count),
+    (delivered) => rangeBody(url, delivered, size),
   );
   return new Response(stream, { status: 200, headers: resp.headers });
 }
@@ -216,9 +358,17 @@ async function resumeResponse(
     );
   }
 
+  // HEADERS-ONLY probe: validates Range support + etag, then the body is
+  // cancelled immediately. The live continuation is opened lazily inside the
+  // stream once it reaches the live section and holds the live semaphore —
+  // holding 4 open-but-unread probe bodies saturated the connection pool and
+  // got every subsequent connection killed (empirical).
   const probe = await fetch(url, {
     redirect: 'follow',
     headers: { Range: `bytes=${offset}-` },
+  }).catch((e) => {
+    dbg('probe_reject', { url: url.split('/').pop(), offset, err: String(e) });
+    throw e;
   });
 
   const etag = etagOf(probe);
@@ -227,17 +377,24 @@ async function resumeResponse(
     probe.status === 206 &&
     total === manifest.size &&
     (!manifest.etag || !etag || etag === manifest.etag);
+  void probe.body?.cancel();
+  dbg('probe_ok', { url: url.split('/').pop(), status: probe.status, offset });
 
   if (!valid) {
     // 200 (Range ignored) or stale manifest — restart clean.
-    void probe.body?.cancel();
     return null;
   }
 
   const headers = new Headers(probe.headers);
   headers.delete('content-range');
   headers.set('content-length', String(manifest.size));
-  const stream = shardReplayStream(cache, url, manifest.done_count, probe.body, manifest);
+  const stream = shardReplayStream(
+    cache,
+    url,
+    manifest.done_count,
+    () => rangeBody(url, offset, manifest.size),
+    manifest,
+  );
   return new Response(stream, { status: 200, headers });
 }
 
@@ -249,13 +406,23 @@ function shardReplayStream(
   cache: Cache,
   url: string,
   count: number,
-  liveBody: ReadableStream<Uint8Array> | null,
+  liveSource: (() => Promise<ReadableStream<Uint8Array> | null>) | null,
   manifest?: ShardManifest,
 ): ReadableStream<Uint8Array> {
   let shard_idx = 0;
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   let writer: ReturnType<typeof shardWriter> | null = null;
   let cancelled = false;
+  let live_delivered = 0;
+  let stalls = 0;
+  let reader_used = false;
+  let holds_live = false;
+  const release = () => {
+    if (holds_live) {
+      holds_live = false;
+      releaseLive();
+    }
+  };
 
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
@@ -270,32 +437,91 @@ function shardReplayStream(
         shard_idx++;
         return;
       }
-      if (!liveBody) {
+      if (!liveSource) {
         // Full replay from shards — transformers re-caches the file;
         // shard copies are redundant from here on.
         if (manifest) await deleteShardEntries(cache, url, manifest.done_count);
         controller.close();
         return;
       }
-      reader ??= liveBody.getReader();
       writer ??= manifest ? shardWriter(cache, url, manifest, count) : null;
-      const { done, value } = await reader.read();
-      // Pending read() resolves done=true on cancel — see teeStream.
-      if (done) {
-        if (!cancelled) {
-          await writer?.end();
-          if (manifest) await deleteShardEntries(cache, url, manifest.done_count);
-          controller.close();
+      // Serialize live streaming across files — parallel CDN bodies saturate
+      // the per-host connection pool and die mid-flight (empirical). The live
+      // body is opened only now, while holding the semaphore — never before.
+      if (!holds_live) {
+        await acquireLive();
+        holds_live = true;
+      }
+      if (!reader) {
+        const body = await liveSource().catch(() => null);
+        if (!body) {
+          release();
+          controller.error(new Error('hf-resumable: live range request failed'));
+          return;
+        }
+        reader = body.getReader();
+        if (!reader_used) {
+          reader_used = true;
+          dbg('replay_live_start', { url: url.split('/').pop(), count });
+        }
+      }
+      // Loop inside pull: after a stall/read-error reconnect we keep reading
+      // the new body in the SAME pull — relying on the stream to re-invoke
+      // pull() after an empty resolution leaves the consumer's pending read()
+      // unanswered forever (observed empirically: reconnect → dead silence).
+      for (;;) {
+        const res = await Promise.race([reader.read(), stallTimer()]).catch((e) => {
+          dbg('replay_read_reject', { live_delivered, err: String(e) });
+          return 'READ_ERR' as const;
+        });
+        if (res === 'READ_ERR' || res === STALL) {
+          stalls++;
+          void reader.cancel();
+          dbg(res === STALL ? 'replay_stall' : 'replay_read_err', { live_delivered, stalls });
+          // Resume the live portion from the last delivered byte — the
+          // persisted-shard part is unchanged (offset stays count*SHARD_SIZE).
+          if (stalls > MAX_STALLS) {
+            release();
+            controller.error(new Error(`hf-resumable: stream stalled ${stalls}×`));
+            return;
+          }
+          await backoff(stalls);
+          const nb = await rangeBody(url, count * SHARD_SIZE + live_delivered, manifest?.size).catch(
+            () => null,
+          );
+          if (!nb) {
+            release();
+            controller.error(new Error('hf-resumable: stall reconnect failed'));
+            return;
+          }
+          dbg('replay_reconnected', { live_delivered });
+          reader = nb.getReader();
+          continue;
+        }
+        const { done, value } = res;
+        // Pending read() resolves done=true on cancel — see teeStream.
+        if (done) {
+          release();
+          if (!cancelled) {
+            await writer?.end();
+            if (manifest) await deleteShardEntries(cache, url, manifest.done_count);
+            controller.close();
+          }
+          return;
+        }
+        if (value) {
+          stalls = 0;
+          writer?.push(value);
+          controller.enqueue(value);
+          live_delivered += value.length;
+          report_bytes?.(value.length);
         }
         return;
-      }
-      if (value) {
-        writer?.push(value);
-        controller.enqueue(value);
       }
     },
     cancel(reason) {
       cancelled = true;
+      release();
       void reader?.cancel(reason);
     },
   });
@@ -312,6 +538,7 @@ export async function resumableFetch(input: any, init?: any): Promise<Response> 
     return fetch(input, init);
   }
 
+  dbg('fetch', { url: url.split('/').pop(), method: init?.method ?? 'GET' });
   let cache: Cache;
   try {
     cache = await caches.open(SHARD_CACHE_NAME);
@@ -322,13 +549,16 @@ export async function resumableFetch(input: any, init?: any): Promise<Response> 
   try {
     const manifest = await readManifest(cache, url);
     if (manifest && manifest.done_count > 0) {
+      dbg('resume', { url: url.split('/').pop(), done: manifest.done_count });
       const resumed = await resumeResponse(cache, url, manifest);
       if (resumed) return resumed;
+      dbg('resume_fallback_fresh', { url: url.split('/').pop() });
       // Stale/incomplete manifest — drop leftovers and start fresh.
       await deleteShardEntries(cache, url, manifest.done_count);
     }
     return await fetchAndShard(cache, url, input, init);
-  } catch {
+  } catch (e) {
+    dbg('outer_catch', { url: url.split('/').pop(), err: String(e) });
     // Any bookkeeping failure must never break the download itself.
     return fetch(input, init);
   }

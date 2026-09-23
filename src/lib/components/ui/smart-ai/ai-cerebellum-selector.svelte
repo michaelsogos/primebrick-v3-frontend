@@ -84,7 +84,16 @@
         )}
         data-testid="{testid_prefix}-cerebellum-{tuning.assistant_key}"
       >
-        <span>{$t(tuning.name)}</span>
+        <span class="truncate">{$t(tuning.name)}</span>
+        {#if tuning.recommendation === 'RECOMMENDED'}
+          <span class="ml-auto shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium text-emerald-600 dark:text-emerald-400">
+            {$t('app.smart.ai.cerebellum.recommended')}
+          </span>
+        {:else if tuning.recommendation === 'NOT_RECOMMENDED'}
+          <span class="ml-auto shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
+            {$t('app.smart.ai.cerebellum.not_recommended')}
+          </span>
+        {/if}
       </DropdownMenu.Item>
     {/each}
   </DropdownMenu.Content>

@@ -1,0 +1,58 @@
+---
+title: Button
+description: Primebrick Button variant × tone matrix — how the primary gradient and semantic color gradients map to variants, tones, and sizes.
+---
+
+# Button
+
+`src/lib/components/ui/button/button.svelte`
+
+## Purpose
+
+The `Button` primitive exposes a **variant × tone** matrix. The brand primary
+color is a gradient (sky → indigo), and every semantic color (`destructive`,
+`warning`, `success`, `info`) has its own gradient pair. The `variant` prop
+decides *where* the gradient is applied; the `tone` prop decides *which*
+gradient is used.
+
+## Variant × tone matrix
+
+| Role | Props | Result |
+|---|---|---|
+| Primary action | `variant="default"` | Solid gradient background, white text |
+| Secondary action | `variant="outline" tone="primary"` | Gradient border on a neutral background |
+| Soft action | `variant="soft" tone="primary"` | Soft gradient border + lightly tinted background |
+| Semantic solid | `variant="destructive" \| "warning" \| "success" \| "info"` | Solid gradient background in that tone |
+| Semantic border | `variant="outline" tone="…"` | Gradient border in that tone, neutral background |
+| Semantic soft | `variant="soft" tone="…"` | Soft gradient border + tinted background in that tone |
+| Neutral chrome | `variant="secondary" \| "secondary-outline" \| "ghost" \| "link" \| "glass"` | Plain neutral styling, no gradient |
+
+```svelte
+<Button variant="default">Save</Button>
+<Button variant="outline" tone="primary">Details</Button>
+<Button variant="soft" tone="info">Learn more</Button>
+<Button variant="outline" tone="destructive">Discard</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="secondary">Cancel</Button>
+```
+
+## Rules
+
+- The matrix above is a **closed set** — only documented `variant`/`tone`
+  combinations are allowed. No ad-hoc styling, no invented roles.
+- Never fake a role with manual `border-*`, `bg-*`, or gradient utility
+  classes on the `class` prop.
+- `variant="secondary"` is the plain neutral button — it has **no** gradient
+  border. The "secondary with primary gradient border" role is
+  `variant="outline" tone="primary"`.
+- `secondary`, `secondary-outline`, `link`, and `glass` are neutral escapes —
+  use them only when explicitly requested. `ghost` is reserved for icon-only
+  or visually subordinate actions.
+- Hover, active, focus, and disabled states are built into the variants; do not
+  add transition or hover classes yourself.
+- Icon-only buttons use `size="icon-xs"`, `"icon-sm"`, `"icon"`, or `"icon-lg"`.
+
+## Sizes
+
+`default` (h-9), `sm` (h-8), `xs` (h-7), `lg` (h-10), plus the icon sizes.
+Compact toolbars and popovers use `sm` or `xs`.

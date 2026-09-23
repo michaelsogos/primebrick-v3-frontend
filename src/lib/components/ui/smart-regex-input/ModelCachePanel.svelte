@@ -31,8 +31,10 @@
   // Refresh cache status when popover opens (component mounts only when visible)
   onMount(async () => {
     await aiModels.ensureLoaded();
-    const models = aiModels.getEnabledModels();
-    void cache.refreshCacheStatus(models.map((m) => m.model_id));
+    void cache.refreshCacheStatus(
+      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getAllModels().map((m) => m.model_id),
+    );
   });
 
   function formatBytes(bytes: number | null | undefined): string {
@@ -56,8 +58,10 @@
   }
 
   function handleRefresh() {
-    const models = aiModels.getEnabledModels();
-    void cache.refreshCacheStatus(models.map((m) => m.model_id));
+    void cache.refreshCacheStatus(
+      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getAllModels().map((m) => m.model_id),
+    );
   }
 </script>
 
