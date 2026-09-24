@@ -12,7 +12,7 @@
  *      subsequent calls return immediately without hitting the network.
  *
  * `invalidate()` clears the ETag cache and marks the in-memory state as
- * stale, so the next `getEnabledModels()` call re-fetches. Call this after
+ * stale, so the next `getVisibleModels()` call re-fetches. Call this after
  * writes (create/update/delete) so other components pick up the new values.
  *
  * Follows the composable state exposure pattern from AGENTS.md:
@@ -77,6 +77,10 @@ async function ensureLoaded(): Promise<void> {
   if (_state.fetched || _state.loading || fetchPromise) {
     return fetchPromise ?? Promise.resolve();
   }
+  return fetchVisibleModels();
+}
+
+async function fetchVisibleModels(): Promise<void> {
   _state.loading = true;
   _state.error = null;
   fetchPromise = (async () => {
@@ -93,24 +97,18 @@ async function ensureLoaded(): Promise<void> {
   return fetchPromise;
 }
 
-/** Reload models from the BE, respecting the current deletion filter mode. */
+/**
+ * Reload after data writes (create/update/delete/restore). Refreshes BOTH
+ * the filtered list and the catalog snapshot — the snapshot is the source
+ * of truth for cache attribution, so it must track catalog mutations.
+ * UI filter changes do NOT go through here (see setDeletionFilterMode).
+ */
 async function reload(): Promise<void> {
   clearCachedETag(AI_MODELS_URL);
   _state.fetched = false;
-  _state.loading = true;
-  _state.error = null;
-  fetchPromise = (async () => {
-    try {
-      _state.models = await fetchAiModels(deletionFilterToParam(_state.deletionFilterMode));
-      _state.fetched = true;
-    } catch (err) {
-      _state.error = err instanceof Error ? err.message : 'Failed to load AI models';
-    } finally {
-      _state.loading = false;
-      fetchPromise = null;
-    }
-  })();
-  return fetchPromise;
+  _catalog.fetched = false;
+  await fetchVisibleModels();
+  await ensureCatalogLoaded();
 }
 
 export function useAiModels() {
@@ -118,13 +116,23 @@ export function useAiModels() {
     get state(): DeepReadonly<typeof _state> {
       return _state as DeepReadonly<typeof _state>;
     },
-    getEnabledModels(): AiModel[] {
-      // Do NOT call ensureLoaded() here — this method is called inside
-      // template {#each} blocks which are $derived contexts. Mutating
-      // state (loading flag) inside a derived is forbidden by Svelte 5.
-      // Callers MUST call ensureLoaded() in onMount first.
-      return _state.models
-        .filter((m) => m.is_enabled)
+    /**
+     * Visible list (respects the deletion-filter toggle) sorted by
+     * sort_order — the catalog rows the user can actually pick.
+     * Callers MUST call ensureLoaded() in onMount first (no state
+     * mutation inside derived contexts).
+     */
+    getVisibleModels(): AiModel[] {
+      return [..._state.models].sort((a, b) => a.sort_order - b.sort_order);
+    },
+    /**
+     * Alive + compatible models — the set users can select for chat and
+     * cerebellum tuning. From the catalog snapshot (not the filtered
+     * list), excluding soft-deleted rows.
+     */
+    getAliveCompatibleModels(): AiModel[] {
+      return _catalog.models
+        .filter((m) => m.compatibility_status === 'COMPATIBLE' && !m.deleted_at)
         .sort((a, b) => a.sort_order - b.sort_order);
     },
     /**
@@ -132,7 +140,7 @@ export function useAiModels() {
      * unaffected by the deletion-filter toggle. Cache management and
      * canonical-name resolution use this; the filtered list uses `state.models`.
      * Call `ensureCatalogLoaded()` before reading (same contract as
-     * `getEnabledModels`).
+     * `getVisibleModels`).
      */
     getAllModels(): AiModel[] {
       return _catalog.models;
@@ -140,9 +148,19 @@ export function useAiModels() {
     getCatalogModelByModelId(model_id: string): AiModel | undefined {
       return _catalog.models.find((m) => m.model_id === model_id);
     },
+    /**
+     * Compatible-models snapshot — from the full catalog (INCLUDED), NOT
+     * the filtered visible list and NOT filtered by is_enabled. This is
+     * the stable reference for cache attribution and machine-rank
+     * comparison: it changes only on catalog writes (reload/invalidate),
+     * never on UI deletion-filter changes.
+     */
+    getCompatibleModels(): AiModel[] {
+      return _catalog.models.filter((m) => m.compatibility_status === 'COMPATIBLE');
+    },
     ensureCatalogLoaded,
     getModelByModelId(model_id: string): AiModel | undefined {
-      // Same as getEnabledModels — no ensureLoaded() call here.
+      // Same as getVisibleModels — no ensureLoaded() call here.
       return _state.models.find((m) => m.model_id === model_id);
     },
     ensureLoaded,
@@ -150,7 +168,9 @@ export function useAiModels() {
     setDeletionFilterMode(mode: DeletionFilterMode): void {
       if (_state.deletionFilterMode === mode) return;
       _state.deletionFilterMode = mode;
-      void reload();
+      // UI filter only — must NOT touch the catalog snapshot.
+      _state.fetched = false;
+      void fetchVisibleModels();
     },
     async deleteModel(uuid: string, version: number, mfaToken?: string): Promise<boolean> {
       const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}?version=${version}`, {

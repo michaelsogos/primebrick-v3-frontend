@@ -353,6 +353,8 @@
 </AppPageScaffold>
 
 <DeleteDialog
+  entity="service_registry"
+  recordName={deleteTarget?.code}
   open={deleteDialogOpen}
   onOpenChange={(open) => { if (!open) { deleteDialogOpen = false; deleteTarget = null; } }}
   isDeleting={isDeleting}

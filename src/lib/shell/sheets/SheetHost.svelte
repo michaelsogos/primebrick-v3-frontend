@@ -24,6 +24,7 @@
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
   import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
   import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
+  import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -41,7 +42,8 @@
     'config.jsonAiChat': JsonConfigAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
     'shell.aiModelTestReport': AiModelTestReportPanel,
-    'shell.aiCerebellum': AiCerebellumPanel
+    'shell.aiCerebellum': AiCerebellumPanel,
+    'shell.aiModelCache': AiModelCachePanel
   };
 
   const panelId = $derived(sheetState.panelId);

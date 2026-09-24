@@ -5,6 +5,12 @@
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
   interface BulkRestoreDialogProps {
+    /**
+     * Entity translation key (e.g. 'ai_model', 'customer'). The title is
+     * auto-built as `app.common.restoreEntitiesTitle` + `system.entities.{entity}.plural`
+     * — NEVER pass a custom title.
+     */
+    entity: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
@@ -14,6 +20,7 @@
   }
 
   let {
+    entity,
     open = $bindable(),
     onOpenChange,
     selectedCount,
@@ -21,13 +28,17 @@
     onConfirm,
     onCancel
   }: BulkRestoreDialogProps = $props();
+
+  let entityPlural = $derived($t(`system.entities.${entity}.plural`));
 </script>
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('system.entities.list.bulkActions.restoreConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>
+      {$t('app.common.restoreEntitiesTitle', { entity: entityPlural })}
+    </Dialog.Title>
     <Dialog.Description>
-      Sei sicuro di voler ripristinare {selectedCount} elementi?
+      {$t('app.common.restoreEntitiesConfirm', { count: selectedCount, entity: entityPlural })}
     </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">

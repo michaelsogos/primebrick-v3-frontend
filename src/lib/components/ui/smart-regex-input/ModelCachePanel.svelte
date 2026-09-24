@@ -15,8 +15,9 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
-  import { Trash2, RefreshCw, HardDrive, AlertTriangle } from '@lucide/svelte';
+  import { Trash2, RefreshCw, HardDrive, AlertTriangle, PanelRightOpen } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { onMount } from 'svelte';
 
   /** The model ID currently loaded in VRAM (null if none). */
@@ -33,7 +34,7 @@
     await aiModels.ensureLoaded();
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
     );
   });
@@ -61,7 +62,7 @@
   async function handleRefresh() {
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
     );
   }
@@ -74,15 +75,26 @@
       <HardDrive class="size-3.5 text-foreground/70" />
       <span class="text-xs font-semibold">{$t('app.smart.regex.ai.cache.title')}</span>
     </div>
-    <button
-      onclick={handleRefresh}
-      disabled={cache.state.is_checking}
-      class="text-foreground/50 hover:text-foreground transition-colors"
-      title={$t('app.smart.regex.ai.cache.refresh')}
-      aria-label={$t('app.smart.regex.ai.cache.refresh')}
-    >
-      <RefreshCw class="size-3 {cache.state.is_checking ? 'animate-spin' : ''}" />
-    </button>
+    <div class="flex items-center gap-1">
+      <button
+        onclick={handleRefresh}
+        disabled={cache.state.is_checking}
+        class="text-foreground/50 hover:text-foreground transition-colors"
+        title={$t('app.smart.regex.ai.cache.refresh')}
+        aria-label={$t('app.smart.regex.ai.cache.refresh')}
+      >
+        <RefreshCw class="size-3 {cache.state.is_checking ? 'animate-spin' : ''}" />
+      </button>
+      <button
+        onclick={() => openSheet('shell.aiModelCache', { active_model_id, model_ranks })}
+        class="text-foreground/50 hover:text-foreground transition-colors"
+        title={$t('app.smart.regex.ai.cache.details')}
+        aria-label={$t('app.smart.regex.ai.cache.details')}
+        data-testid="cache-details-cta"
+      >
+        <PanelRightOpen class="size-3" />
+      </button>
+    </div>
   </div>
 
   <!-- Error message (e.g. "model in use") -->
@@ -98,7 +110,7 @@
 
   <!-- Model list -->
   <div class="space-y-1.5">
-    {#each aiModels.getEnabledModels() as model (model.model_id)}
+    {#each aiModels.getCompatibleModels() as model (model.model_id)}
       {@const is_cached = cache.state.cache_status[model.model_id] ?? false}
       {@const is_active = model.model_id === active_model_id}
       {@const size = cache.state.model_sizes[model.model_id] ?? 0}

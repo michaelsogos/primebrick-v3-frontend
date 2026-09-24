@@ -3,8 +3,17 @@
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import EntityConfirmQuestion from './EntityConfirmQuestion.svelte';
 
   interface DeleteDialogProps {
+    /**
+     * Entity translation key (e.g. 'ai_model', 'customer'). The title is
+     * auto-built as `app.common.deleteEntityTitle` + `system.entities.{entity}.singular`
+     * — NEVER pass a custom title.
+     */
+    entity: string;
+    /** Optional record name shown under the description (e.g. model.name). */
+    recordName?: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     isDeleting: boolean;
@@ -13,18 +22,26 @@
   }
 
   let {
+    entity,
+    recordName,
     open = $bindable(),
     onOpenChange,
     isDeleting,
     onConfirm,
     onCancel
   }: DeleteDialogProps = $props();
+
+  let entityName = $derived($t(`system.entities.${entity}.singular`));
 </script>
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('app.common.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('app.common.deleteConfirm')}</Dialog.Description>
+    <Dialog.Title>
+      {$t('app.common.deleteEntityTitle', { entity: entityName })}
+    </Dialog.Title>
+    <Dialog.Description>
+      <EntityConfirmQuestion action="delete" {entity} {recordName} />
+    </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
     <Button

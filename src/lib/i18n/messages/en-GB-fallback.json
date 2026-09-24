@@ -419,6 +419,7 @@
   "app.smart.regex.ai.cache.deleted": "Model deleted from cache",
   "app.smart.regex.ai.cache.deleted_all": "All models deleted from cache (except active)",
   "app.smart.regex.ai.cache.refresh": "Refresh",
+  "app.smart.regex.ai.cache.details": "Details",
   "app.smart.regex.ai.cache.orphaned_title": "Cached models not in catalog",
   "app.smart.regex.ai.cache.censused_title": "Censused models",
   "app.smart.regex.ai.cache.empty": "No models in cache",

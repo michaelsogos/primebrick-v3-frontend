@@ -52,7 +52,7 @@
     await aiModels.ensureLoaded();
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
     );
   });
@@ -127,7 +127,7 @@
   async function handleRefresh() {
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getEnabledModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map((m) => m.model_id),
       aiModels.getAllModels().map((m) => m.model_id),
     );
   }
@@ -137,7 +137,7 @@
   // The cache manager is for managing cached files — uncached models
   // have nothing to manage (no delete button, no size to show).
   const censusedModels = $derived(
-    aiModels.getEnabledModels().filter((m) => cache.state.cache_status[m.model_id] === true),
+    aiModels.getCompatibleModels().filter((m) => cache.state.cache_status[m.model_id] === true),
   );
 
   const censusedAllSelected = $derived(

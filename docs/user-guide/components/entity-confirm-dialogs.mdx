@@ -1,0 +1,125 @@
+---
+title: Entity Confirm Dialogs
+description: Standard delete/restore confirmation dialogs whose title and body are fully derived from entity translation keys.
+---
+
+# Entity Confirm Dialogs
+
+`src/lib/components/entity-list-table/dialogs/`
+
+## Purpose
+
+Every confirmation dialog that deletes or restores an **entity record** must use
+one of the four standard dialogs. **Title and body copy are never passed by the
+caller** — they are built by convention from two translation-key families:
+
+- `system.entities.{entity}.singular` / `.plural` — the entity display name
+- `app.common.{action}` — the title/body templates with `{entity}`, `{name}`,
+  `{count}` placeholders
+
+This guarantees that no dialog ever says generic *"record"* and that copy stays
+consistent across every list page and detail page.
+
+## Components
+
+| Component | Severity | Title key | Body key |
+|---|---|---|---|
+| `DeleteDialog` | `destructive` | `app.common.deleteEntityTitle` → `Delete {entity}` | `app.common.deleteEntityConfirm` → `…delete {entity}{name}?` + `app.common.deleteConfirm` (undo warning, second line) |
+| `BulkDeleteDialog` | `destructive` | `app.common.deleteEntitiesTitle` | `app.common.deleteEntitiesConfirm` (`{count}` + `{entity}` plural) |
+| `RestoreDialog` | `warning` | `app.common.restoreEntityTitle` | `app.common.restoreEntityConfirm` (`{entity}{name}`) |
+| `BulkRestoreDialog` | `warning` | `app.common.restoreEntitiesTitle` | `app.common.restoreEntitiesConfirm` (`{count}` + `{entity}` plural) |
+
+All four wrap `DialogBordered` with `showCloseButton={false}`,
+`sm:max-w-md`, secondary-outline Cancel + severity-colored confirm button, and
+an `isDeleting`/`isRestoring` busy state on the confirm CTA.
+
+## Usage
+
+### Single record — `/system/settings/ai` (canonical)
+
+```svelte
+<DeleteDialog
+  entity={deleteTarget?.entity ?? 'ai_model'}
+  recordName={deleteTarget?.name}
+  bind:open={deleteDialogOpen}
+  onOpenChange={(open) => { if (!open) cancelDelete(); }}
+  isDeleting={isDeleting}
+  onConfirm={confirmDelete}
+  onCancel={cancelDelete}
+/>
+```
+
+Renders: **"Elimina Modello AI"** / *"Sei sicuro di voler eliminare **il
+Modello AI** ***"Qwen2.5 Coder 3B (q4f16)"***?"* + *"Questa azione non può
+essere annullata."* on a second line. The `{entity}` placeholder is resolved
+via `singular_definite` (with article) and rendered **bold**; `{name}` is
+rendered ***bold italic***.
+
+### Entity list tables
+
+`EntityListTable` wires all four dialogs automatically through
+`EntityListTableDialogs` — no per-page setup. The `entity` prop of the table
+drives the translation keys, and `recordName` is derived from the row (first
+non-empty of `name`, `username`, `email`, `code`, `key`, `model_id`).
+
+### Bulk
+
+```svelte
+<BulkDeleteDialog
+  entity="config_entry"
+  bind:open={bulkDeleteDialogOpen}
+  selectedCount={selectedKeys.length}
+  isDeleting={isDeleting}
+  onConfirm={handleBulkDelete}
+  onCancel={() => (bulkDeleteDialogOpen = false)}
+/>
+```
+
+## Props
+
+### `DeleteDialog` / `RestoreDialog`
+
+| Prop | Type | Description |
+|---|---|---|
+| `entity` | `string` **required** | Entity key used to resolve `system.entities.{entity}.singular` — never pass a custom title |
+| `recordName` | `string?` | Record display name, interpolated as `"{name}"` inside the confirm question |
+| `open` | `boolean` (bindable) | Visibility |
+| `onOpenChange` | `(open: boolean) => void` | Close handler |
+| `isDeleting` / `isRestoring` | `boolean` | Busy state on the confirm CTA |
+| `onConfirm` / `onCancel` | `() => void` | Actions |
+
+### `BulkDeleteDialog` / `BulkRestoreDialog`
+
+Same contract, plus `selectedCount: number` (interpolated as `{count}`) — no
+`recordName`.
+
+## Translation keys required per entity
+
+For the dialogs to render correctly an entity needs, in
+`system.translations`:
+
+```
+system.entities.{entity}.singular           → e.g. "Modello AI"   (titles)
+system.entities.{entity}.plural             → e.g. "Modelli AI"   (bulk)
+system.entities.{entity}.singular_definite  → e.g. "il Modello AI" (confirm
+                                              question — name WITH the
+                                              definite article, per-language;
+                                              falls back to `singular`)
+```
+
+The `app.common.*` templates already exist for all supported languages.
+`app.common.deleteConfirm` ("This action cannot be undone.") is rendered as
+the second line of `DeleteDialog` — keep it alive.
+
+## Rules
+
+- **Never pass a custom title/body** to these dialogs — there is no such prop.
+- **Never use `DialogBordered` directly** for entity delete/restore.
+- Non-entity destructive dialogs (model cache files, MFA reset, sessions) MAY
+  keep custom titles via `DialogBordered` — they are not entity records.
+
+## Next steps
+
+- [DialogBordered](/docs/user-guide/components/dialog-bordered)
+- [EntityListTable](/docs/user-guide/components/entity-list-table)
+- [Component catalog](/docs/user-guide/components)

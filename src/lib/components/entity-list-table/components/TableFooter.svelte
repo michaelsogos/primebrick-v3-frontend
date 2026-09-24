@@ -1,10 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
+  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { Toolbar } from '$lib/components/ui/toolbar';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';
-  import { cn } from '$lib/utils.js';
   import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
   import ChevronLeft from '@lucide/svelte/icons/chevron-left'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
@@ -57,12 +58,7 @@
   } = $props();
 </script>
 
-<div
-  class={cn(
-    'flex items-center justify-between gap-3 border-t bg-background px-3 py-2',
-    'text-xs'
-  )}
->
+<Toolbar class="gap-3 rounded-t-none border-t text-xs">
   <!-- Left side: Row range + Selection Counter -->
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
     <div class="text-muted-foreground">
@@ -92,7 +88,7 @@
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
-          <Button variant="soft" size="xs" {...props}>
+          <Button variant="ghost" size="sm" {...props}>
             {pageSize}
           </Button>
         {/snippet}
@@ -114,63 +110,67 @@
     <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
     <div class="flex items-center gap-2">
-      <Button
-        variant="soft"
-        size="xs"
-        disabled={footerPage <= 1}
-        onclick={() => {
-          if (footerUsesClientPaging) clientSelectedPage = 1;
-          else onPageChange(1);
-        }}
-        aria-label={$t('system.entities.list.firstPage')}
-        title={$t('system.entities.list.firstPage')}
-      >
-        <ChevronsLeft class="size-4" />
-      </Button>
-      <Button
-        variant="soft"
-        size="xs"
-        disabled={footerPage <= 1}
-        onclick={() => {
-          if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
-          else onPageChange(Math.max(1, page - 1));
-        }}
-        aria-label={$t('system.entities.list.previousPage')}
-        title={$t('system.entities.list.previousPage')}
-      >
-        <ChevronLeft class="size-4" />
-      </Button>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.firstPage')}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={footerPage <= 1}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = 1;
+            else onPageChange(1);
+          }}
+          aria-label={$t('system.entities.list.firstPage')}
+          title={$t('system.entities.list.firstPage')}
+        >
+          <ChevronsLeft class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={footerPage <= 1}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
+            else onPageChange(Math.max(1, page - 1));
+          }}
+          aria-label={$t('system.entities.list.previousPage')}
+          title={$t('system.entities.list.previousPage')}
+        >
+          <ChevronLeft class="size-4" />
+        </Button>
+      </ButtonGroup>
       <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
         {$t('system.entities.list.paginationStatus')
           .replace('{page}', String(footerPage))
           .replace('{total}', String(footerTotalPages))}
       </div>
-      <Button
-        variant="soft"
-        size="xs"
-        disabled={footerPage >= footerTotalPages}
-        onclick={() => {
-          if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
-          else onPageChange(Math.min(totalPages, page + 1));
-        }}
-        aria-label={$t('system.entities.list.nextPage')}
-        title={$t('system.entities.list.nextPage')}
-      >
-        <ChevronRight class="size-4" />
-      </Button>
-      <Button
-        variant="soft"
-        size="xs"
-        disabled={footerPage >= footerTotalPages}
-        onclick={() => {
-          if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
-          else onPageChange(totalPages);
-        }}
-        aria-label={$t('system.entities.list.lastPage')}
-        title={$t('system.entities.list.lastPage')}
-      >
-        <ChevronsRight class="size-4" />
-      </Button>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.nextPage')}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={footerPage >= footerTotalPages}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
+            else onPageChange(Math.min(totalPages, page + 1));
+          }}
+          aria-label={$t('system.entities.list.nextPage')}
+          title={$t('system.entities.list.nextPage')}
+        >
+          <ChevronRight class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={footerPage >= footerTotalPages}
+          onclick={() => {
+            if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
+            else onPageChange(totalPages);
+          }}
+          aria-label={$t('system.entities.list.lastPage')}
+          title={$t('system.entities.list.lastPage')}
+        >
+          <ChevronsRight class="size-4" />
+        </Button>
+      </ButtonGroup>
     </div>
   </div>
-</div>
+</Toolbar>

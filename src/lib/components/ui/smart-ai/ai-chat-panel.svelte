@@ -209,9 +209,10 @@
 
       modelId = switchModelId ?? configuredId;
 
-      // 2. Load the model catalog from the BE entity.
-      await aiModels.ensureLoaded();
-      availableModels = aiModels.getEnabledModels();
+      // 2. Load the model catalog from the BE entity — selectable models
+      // are the alive+compatible snapshot rows.
+      await aiModels.ensureCatalogLoaded();
+      availableModels = aiModels.getAliveCompatibleModels();
 
       // 3. Create the AI composable with the resolved model ID.
       ai = create_composable(modelId);

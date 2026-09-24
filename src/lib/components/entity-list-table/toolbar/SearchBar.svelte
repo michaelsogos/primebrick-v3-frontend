@@ -41,9 +41,9 @@
   class="
     group/input
     w-full
-    border-primary-gradient
-    hover:brightness-105
-    focus-within:ring-2 focus-within:ring-ring/50
+    border-foreground/25
+    hover:border-foreground/40
+    focus-within:border-foreground/50 focus-within:ring-2 focus-within:ring-foreground/20
     rounded-md transition-all duration-200
   "
 >
@@ -77,7 +77,7 @@
   <InputGroupButton
     variant="ghost"
     size="xs"
-    class="h-full rounded-l-none rounded-r-md border-left-primary-gradient-soft hover:brightness-105 transition-colors"
+    class="h-full rounded-l-none rounded-r-md border-l border-foreground/25 transition-colors"
     onclick={() =>
       openSheet(
         'entity.searchIn',

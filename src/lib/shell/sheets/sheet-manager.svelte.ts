@@ -16,7 +16,8 @@ export type SheetPanelId =
   | 'config.regexAiChat'
   | 'config.jsonAiChat'
   | 'shell.aiModelTestReport'
-  | 'shell.aiCerebellum';
+  | 'shell.aiCerebellum'
+  | 'shell.aiModelCache';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -98,6 +99,12 @@ export type SheetPanelPropsMap = {
     rows?: readonly import('$lib/api-types').AiCerebellum[];
     /** Called after a successful save so the caller can reload rows. */
     onCreated?: () => void;
+  };
+  'shell.aiModelCache': {
+    /** The model currently loaded in VRAM — its cache cannot be deleted. */
+    active_model_id?: string | null;
+    /** model_id → quality rank, from the compatible catalog snapshot. */
+    model_ranks?: Record<string, number | null>;
   };
 };
 

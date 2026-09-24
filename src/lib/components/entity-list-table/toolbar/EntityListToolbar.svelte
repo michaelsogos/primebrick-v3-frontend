@@ -4,8 +4,9 @@
   import { SearchBar, ViewModeToggle, DeletionFilterToggle } from '.';
   import RotateCw from '@lucide/svelte/icons/rotate-cw'
   import Columns3 from '@lucide/svelte/icons/columns-3'
-  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import Funnel from '@lucide/svelte/icons/funnel';
   import { Button } from '$lib/components/ui/button';
+  import { Toolbar } from '$lib/components/ui/toolbar';
   import type { ViewName } from '$lib/entity-list/types';
 
   interface ToolbarProps {
@@ -55,7 +56,7 @@
   }: ToolbarProps = $props();
 </script>
 
-<div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
+<div class="flex min-w-0 flex-wrap items-center justify-between gap-2 px-3 py-1.5">
   <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
     <SearchBar
       search={search}
@@ -68,51 +69,58 @@
     />
   </div>
 
-  <div class="flex items-center justify-end gap-2">
+  <Toolbar class="w-auto flex-none justify-end">
     <ViewModeToggle
       viewMode={viewMode}
       onViewModeChange={onViewModeChange}
     />
+    <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
     {#if hasSoftDelete}
       <DeletionFilterToggle
         deletionFilterMode={deletionFilterMode}
         onDeletionFilterModeChange={onDeletionFilterModeChange}
       />
+      <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {/if}
 
     <Button
-      variant="soft"
-      size="icon-sm"
+      variant="ghost"
+      size="sm"
+      type="button"
+      onclick={onColumnSelectorClick}
+      aria-label={$t('system.entities.list.columns')}
+      title={$t('system.entities.list.columns')}
+    >
+      <Columns3 class="size-4" />
+      <span class="hidden lg:inline">{$t('system.entities.list.columns')}</span>
+    </Button>
+
+    {#if filterableColumns.length > 0}
+      <Button
+        variant="ghost"
+        size="sm"
+        type="button"
+        onclick={() => onFiltersOpenChange(!filtersOpen)}
+        aria-label={$t('system.entities.list.filters')}
+        title={$t('system.entities.list.filters')}
+      >
+        <Funnel class="size-4" />
+        <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
+      </Button>
+    {/if}
+
+    <Button
+      variant="ghost"
+      size="sm"
       disabled={rowsLoading || refreshDisabled}
       onclick={onRefresh}
       aria-label={$t('system.entities.list.refresh')}
       title={$t('system.entities.list.refresh')}
     >
       <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
+      <span class="hidden lg:inline">{$t('system.entities.list.refresh')}</span>
     </Button>
-
-    <Button
-      variant="soft"
-      size="sm"
-      type="button"
-      onclick={onColumnSelectorClick}
-    >
-      <Columns3 class="size-4" />
-      {$t('system.entities.list.columns')}
-    </Button>
-
-    {#if filterableColumns.length > 0}
-      <Button
-        variant="soft"
-        size="sm"
-        type="button"
-        onclick={() => onFiltersOpenChange(!filtersOpen)}
-      >
-        <SlidersHorizontal class="size-4" />
-        {$t('system.entities.list.filters')}
-      </Button>
-    {/if}
 
     {#if onCreateAction}
       <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
@@ -125,5 +133,5 @@
         {$t('system.entities.list.new')}
       </Button>
     {/if}
-  </div>
+  </Toolbar>
 </div>

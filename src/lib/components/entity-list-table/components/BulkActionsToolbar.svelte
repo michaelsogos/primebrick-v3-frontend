@@ -52,25 +52,39 @@
     /** Capability + permission gate per bulk CTA (from `meta.actions`). */
     bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
   } = $props();
+
+  /** True when at least one bulk CTA can ever render for this entity. When
+   *  false (e.g. organization — no bulk routes by design) the toggle and its
+   *  divider are useless, so the bar stays fixed on the FilterBar. */
+  const hasAnyBulkCapability = $derived(
+    bulkCapabilities.export ||
+      bulkCapabilities.htmlExport ||
+      bulkCapabilities.duplicate ||
+      bulkCapabilities.delete ||
+      bulkCapabilities.restore
+  );
+  const showBulkPanel = $derived(hasAnyBulkCapability && toolbarMode === 'bulk');
 </script>
 
 <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
-  <Button
-    variant="outline"
-    size="xs"
-    onclick={onToggleToolbarMode}
-  >
-    {#if toolbarMode === 'filters'}
-      <ListCheck class="size-3.5" />
-      {$t('system.entities.list.bulkActions.toggleToBulk')}
-    {:else}
-      <Funnel class="size-3.5" />
-      {$t('system.entities.list.bulkActions.toggleToFilters')}
-    {/if}
-  </Button>
-  <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+  {#if hasAnyBulkCapability}
+    <Button
+      variant="outline"
+      size="xs"
+      onclick={onToggleToolbarMode}
+    >
+      {#if toolbarMode === 'filters'}
+        <ListCheck class="size-3.5" />
+        {$t('system.entities.list.bulkActions.toggleToBulk')}
+      {:else}
+        <Funnel class="size-3.5" />
+        {$t('system.entities.list.bulkActions.toggleToFilters')}
+      {/if}
+    </Button>
+    <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+  {/if}
 
-  {#if toolbarMode === 'filters'}
+  {#if !showBulkPanel}
     <div in:fly={{ y: 20, duration: 200 }}>
       <FilterBar
         hasAppliedFilters={hasAppliedFilters}

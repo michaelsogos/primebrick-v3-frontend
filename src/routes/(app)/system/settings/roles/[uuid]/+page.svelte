@@ -7,6 +7,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { Button } from '$lib/components/ui/button';
+  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Checkbox } from '$lib/components/ui/checkbox';
@@ -292,36 +293,12 @@
   {/if}
 </AppPageScaffold>
 
-{#if deleteOpen && role}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    role="dialog"
-    aria-modal="true"
-    data-testid="roles-edit-delete-dialog"
-  >
-    <div class="rounded-lg border bg-background p-6 shadow-lg max-w-md w-full mx-4">
-      <h2 class="text-lg font-semibold">{$t('system.settings.roles.deleteConfirmTitle')}</h2>
-      <p class="text-sm text-muted-foreground mt-2">
-        {$t('system.settings.roles.deleteConfirmBody', { values: { role: role.idp_role } })}
-      </p>
-      <div class="flex justify-end gap-2 mt-6">
-        <Button
-          variant="outline"
-          onclick={() => (deleteOpen = false)}
-          disabled={deleting}
-          data-testid="roles-edit-delete-cancel"
-        >
-          {$t('app.common.cancel')}
-        </Button>
-        <Button
-          variant="destructive"
-          onclick={handleDelete}
-          disabled={deleting}
-          data-testid="roles-edit-delete-confirm"
-        >
-          {deleting ? $t('app.common.deleting') : $t('app.common.delete')}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
+<DeleteDialog
+  entity="role"
+  recordName={role?.idp_role}
+  bind:open={deleteOpen}
+  onOpenChange={(open) => { if (!open) deleteOpen = false; }}
+  isDeleting={deleting}
+  onConfirm={handleDelete}
+  onCancel={() => (deleteOpen = false)}
+/>

@@ -212,7 +212,6 @@ export type AiModel = {
   rank: number;
   /** Heterogeneous JSONB — see normalizeTestScores() in the /ai page. */
   test_scores?: Record<string, unknown> | null;
-  is_enabled: boolean;
   enable_thinking: boolean;
   temperature: number;
   top_p: number;
@@ -221,6 +220,10 @@ export type AiModel = {
   sort_order: number;
   download_size_mb?: number | null;
   vram_mb?: number | null;
+  /** Architecture-derived agnostic metrics (from HF config.json — see patch). */
+  kv_cache_bytes_per_token?: number | null;
+  flops_per_token?: number | null;
+  working_set_mb?: number | null;
   compatibility_status: string;
   execution_config?: ExecutionConfig | null;
   created_at: string;
@@ -251,7 +254,6 @@ export type AiCerebellum = {
   /** Partial override merged over ai_models.execution_config. NULL = inherit all. */
   execution_config?: Partial<ExecutionConfig> | null;
 
-  is_enabled: boolean;
   /** Per-tuning test measurements keyed by test case. */
   test_scores?: Record<string, unknown> | null;
   /** Visual recommendation badge — cosmetic only, no effect on selection/execution. */

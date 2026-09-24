@@ -1,6 +1,6 @@
 ---
 title: DialogBordered
-description: Dialog wrapper that adds a colored top border strip to the standard ui/dialog.
+description: Dialog wrapper that signals semantic intent via a colored accent (top strip or full gradient border).
 ---
 
 # DialogBordered
@@ -9,65 +9,89 @@ description: Dialog wrapper that adds a colored top border strip to the standard
 
 ## Purpose
 
-Wraps `ui/dialog` to add a colored top strip (2px tall) above the dialog body.
-The strip color signals the dialog's semantic intent (primary, info, warning,
-success, destructive, neutral). Use it anywhere you want a dialog that
-visually communicates its category at a glance — confirmation prompts,
-error detail viewers, success notices.
+Wraps `ui/dialog` to give the dialog a **semantic severity color**: either a
+colored top strip (default) or a full gradient border (`tone="soft"`). Use it
+anywhere a dialog must communicate its category at a glance — confirmations,
+error viewers, destructive actions, warnings.
+
+> **Entity delete/restore confirmations must NOT use `DialogBordered`
+> directly.** Use the standard entity dialogs instead — they derive title and
+> body copy from translation keys by convention. See
+> [Entity confirm dialogs](/docs/user-guide/components/entity-confirm-dialogs).
 
 ## Origin
 
 **Custom** — thin wrapper around the in-repo `ui/dialog` (shadcn-svelte™
-extended). Adds the colored header strip and forwards `open`/`children`.
+extended). Adds the severity accent and forwards `open`/`children` plus any
+bits-ui `Dialog.Content` props.
 
 ## Usage
 
-### Default (primary)
+### Default (primary top strip)
 
 ```svelte
 <script lang="ts">
-  import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
+  import DialogBordered from "$lib/components/ui/dialog-bordered.svelte";
   let open = $state(false);
 </script>
 
-<BorderedDialog bind:open>
+<DialogBordered bind:open>
   <h2 class="text-lg font-semibold">Confirm action</h2>
   <p class="text-sm text-muted-foreground">Are you sure?</p>
-</BorderedDialog>
+</DialogBordered>
 ```
 
-### Destructive confirmation
+### Destructive (animated gradient strip)
 
 ```svelte
-<BorderedDialog bind:open color="destructive">
-  <h2 class="text-lg font-semibold text-destructive">Delete repository</h2>
+<DialogBordered bind:open severity="destructive" showCloseButton={false}>
+  <h2 class="text-lg font-semibold">Delete cache entry</h2>
   <p class="text-sm text-muted-foreground">This action cannot be undone.</p>
-</BorderedDialog>
+</DialogBordered>
 ```
 
-### Warning without close button
+### Soft tone (full gradient border, no top strip)
 
 ```svelte
-<BorderedDialog bind:open color="warning" showCloseButton={false}>
-  <p>Read-only notice.</p>
-</BorderedDialog>
+<DialogBordered bind:open severity="primary" tone="soft">
+  <p>Content framed by a full gradient border.</p>
+</DialogBordered>
 ```
 
 ## Props
 
-Full prop table: see [API reference — dialog-bordered](/docs/user-guide/api-reference#dialog-bordered).
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `open` | `boolean` (bindable) | — | Dialog visibility |
+| `severity` | `'primary' \| 'info' \| 'success' \| 'warning' \| 'destructive' \| 'neutral'` | `'primary'` | Accent color. `warning`/`destructive` animate the gradient. |
+| `tone` | `'' \| 'soft'` | `''` | `''` = colored top strip; `'soft'` = full-around gradient border. |
+| `showCloseButton` | `boolean` | `true` | Forwarded to `Dialog.Content` |
+| `class` | `string` | `''` | Extra classes on `Dialog.Content` |
+| `children` | `Snippet` | required | Dialog body |
+| `...restProps` | — | — | Pass-through of bits-ui `Dialog.Content` props (`escapeKeydownBehavior`, `onInteractOutside`, …) for persistent dialogs |
 
-Key props:
+## Severity → accent map
 
-- `open` (`boolean`, bindable) — controls dialog visibility.
-- `color` (`"primary" | "info" | "warning" | "success" | "destructive" | "neutral"`, default `"primary"`) — top strip color. `warning` and `destructive` use an animated gradient pan.
-- `showCloseButton` (`boolean`, default `true`) — forwarded to `Dialog.Content`.
-- `class` — extra classes for `Dialog.Content`.
-- `children` (`Snippet`, required) — dialog body.
+| `severity` | Accent |
+|---|---|
+| `primary` | sky-400 → indigo-400 gradient strip |
+| `info` | sky-400 → blue-600 gradient strip |
+| `success` | emerald-400 → emerald-600 gradient strip |
+| `warning` | animated yellow gradient strip |
+| `destructive` | animated rose→red gradient strip |
+| `neutral` | solid neutral-500 strip |
+
+## When to use which dialog
+
+| Case | Component |
+|---|---|
+| Delete/restore an **entity record** (single or bulk) | `DeleteDialog` / `RestoreDialog` / `BulkDeleteDialog` / `BulkRestoreDialog` — never `DialogBordered` directly |
+| Destructive action on a **non-entity** thing (cache files, credentials, sessions) | `DialogBordered severity="destructive"` with a custom title |
+| Non-destructive confirm / notice / detail viewer | `DialogBordered` with the matching `severity` |
+| Generic content dialog with no semantic intent | plain `ui/dialog` |
 
 ## Next steps
 
+- [Entity confirm dialogs](/docs/user-guide/components/entity-confirm-dialogs)
 - [RFCErrorDialog](/docs/user-guide/components/rfc-error-dialog)
 - [Component catalog](/docs/user-guide/components)
-- [UI stack](/docs/user-guide/ui-stack)
-- [API reference](/docs/user-guide/api-reference#dialog-bordered)

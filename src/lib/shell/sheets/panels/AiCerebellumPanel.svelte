@@ -60,7 +60,6 @@
   let sliding_window = $state(true);
   let intent_detection = $state(false);
   let max_history_turns = $state<number | null>(null);
-  let is_enabled = $state(true);
   let recommendation = $state<'RECOMMENDED' | 'NOT_RECOMMENDED' | ''>('');
   let saving = $state(false);
 
@@ -87,7 +86,6 @@
     top_p = row.top_p ?? null;
     max_tokens = row.max_tokens ?? null;
     repetition_penalty = row.repetition_penalty ?? null;
-    is_enabled = row.is_enabled;
     recommendation = row.recommendation ?? '';
   });
 
@@ -119,7 +117,6 @@
         intent_detection,
         ...(max_history_turns != null ? { max_history_turns } : {}),
       },
-      is_enabled,
       recommendation: recommendation || null,
     };
     // Edit mode → PUT /:uuid with mandatory optimistic-lock version.
@@ -274,13 +271,7 @@
         />
       </div>
 
-      <SwitchField
-        size="sm"
-        id="cerebellum-enabled"
-        bind:checked={is_enabled}
-        label={$t(`${fieldNs}.is_enabled`)}
-        data-testid="ai-cerebellum-enabled"
-      />
+
     </div>
 
   {#snippet footer()}

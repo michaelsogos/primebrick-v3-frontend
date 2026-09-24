@@ -32,8 +32,7 @@
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { Button } from '$lib/components/ui/button';
   import DeletionFilterToggle from '$lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelte';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
@@ -43,10 +42,14 @@
   import { Badge } from '$lib/components/ui/badge';
   import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
   import AiModelTestReport from '$lib/components/ui/smart-ai/ai-model-test-report.svelte';
+  import MachineCapabilitiesSection from '$lib/components/ui/smart-ai/machine-capabilities-section.svelte';
+  import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
+  import { Switch } from '$lib/components/ui/switch';
 
   const aiModels = useAiModels();
   const configEntries = useConfigEntries();
   const stepUp = useMfaStepUp();
+  const machine = useMachineCapabilities();
 
   // Default model = the `ai_assistant_model` config entry value. This is the
   // persisted default every Smart* assistant resolves at mount (distinct from
@@ -90,8 +93,10 @@
 
   onMount(async () => {
     await Promise.all([aiModels.ensureLoaded(), configEntries.ensureLoaded()]);
+    // Ranks for the cache section come from the compatible snapshot —
+    // independent of the deletion-filter toggle.
     modelRanks = Object.fromEntries(
-      aiModels.getEnabledModels().map((m) => [m.model_id, m.rank]),
+      aiModels.getCompatibleModels().map((m) => [m.model_id, m.rank]),
     );
     try {
       cerebellumRows = await fetchAiCerebellum();
@@ -104,14 +109,14 @@
   // (no tuning override applied to the params shown per model row).
   let selectedAssistantKey = $state<string>('');
 
-  // Enabled, non-deleted tunings — the only rows that can override params.
-  let enabledTunings = $derived(cerebellumRows.filter((r) => r.is_enabled && !r.deleted_at));
+  // Non-deleted tunings — the only rows that can override params.
+  let activeTunings = $derived(cerebellumRows.filter((r) => !r.deleted_at));
 
   // Distinct assistants that own ≥1 tuning (dropdown options). `name` is the
   // assistant's i18n key shared by all its rows (verified in DB).
   let cerebellumAssistants = $derived.by(() => {
     const byKey = new Map<string, AiCerebellum>();
-    for (const row of enabledTunings) {
+    for (const row of activeTunings) {
       if (!byKey.has(row.assistant_key)) byKey.set(row.assistant_key, row);
     }
     return [...byKey.entries()].map(([key, row]) => ({ key, name: row.name }));
@@ -120,7 +125,7 @@
   /** Tuning for a (model_id, selected assistant) pair, or null. */
   function tuningFor(model_id: string): AiCerebellum | null {
     if (!selectedAssistantKey) return null;
-    return enabledTunings.find(
+    return activeTunings.find(
       (r) => r.assistant_key === selectedAssistantKey && r.model_id === model_id,
     ) ?? null;
   }
@@ -129,7 +134,7 @@
    *  shown on the card when no assistant is selected (model defaults). */
   function recommendationsFor(model_id: string): { recommendation: 'RECOMMENDED' | 'NOT_RECOMMENDED'; names: string[] }[] {
     const names: Record<string, string[]> = { RECOMMENDED: [], NOT_RECOMMENDED: [] };
-    for (const r of enabledTunings) {
+    for (const r of activeTunings) {
       if (r.model_id === model_id && r.recommendation) names[r.recommendation].push(r.name);
     }
     return (Object.keys(names) as ('RECOMMENDED' | 'NOT_RECOMMENDED')[])
@@ -139,7 +144,7 @@
 
   function openCerebellumCreate() {
     openSheet('shell.aiCerebellum', {
-      models: aiModels.getEnabledModels(),
+      models: aiModels.getAliveCompatibleModels(),
       assistants: cerebellumAssistants,
       rows: cerebellumRows,
       onCreated: () => {
@@ -149,11 +154,19 @@
     });
   }
 
+  // Machine rank (from the capabilities probe) — drives the "fits this
+  // machine" toolbar filter: only models whose power_level the measured
+  // fast memory can host. Default off → the whole list is shown.
+  let machineRank = $derived(machine.machineRank);
+  let fitsMachineOnly = $state(false);
+
   // All models sorted by rank DESC (top ranked first).
   let allModels = $derived.by(() => {
     void aiModels.state.models;
     void aiModels.state.fetched;
-    return [...aiModels.state.models].sort((a, b) => b.rank - a.rank);
+    return [...aiModels.state.models]
+      .filter((m) => !fitsMachineOnly || machineRank === null || m.power_level <= machineRank)
+      .sort((a, b) => b.rank - a.rank);
   });
 
   // Deletion filter mode (non_deleted | deleted | all).
@@ -164,32 +177,64 @@
     aiModels.setDeletionFilterMode(mode);
   }
 
-  // Delete dialog state.
+  // Delete dialog state — the trash CTA is contextual on the cerebellum
+  // assistant selector: defaults ('') → soft delete the MODEL; a selected
+  // assistant → soft delete its cerebellum tuning for that model (hidden
+  // when the model has no tuning for the selected assistant).
+  type DeleteTarget = {
+    kind: 'model' | 'cerebellum';
+    entity: 'ai_model' | 'ai_cerebellum';
+    uuid: string;
+    name: string;
+    version: number;
+  };
   let deleteDialogOpen = $state(false);
-  let modelToDelete = $state<{ uuid: string; name: string; version: number } | null>(null);
+  let deleteTarget = $state<DeleteTarget | null>(null);
   let isDeleting = $state(false);
 
-  function handleDeleteClick(uuid: string, name: string, version: number) {
-    modelToDelete = { uuid, name, version };
+  function handleDeleteClick(model: AiModel, tuning: AiCerebellum | null) {
+    if (selectedAssistantKey === '') {
+      deleteTarget = {
+        kind: 'model',
+        entity: 'ai_model',
+        uuid: model.uuid,
+        name: model.name,
+        version: model.version,
+      };
+    } else if (tuning) {
+      deleteTarget = {
+        kind: 'cerebellum',
+        entity: 'ai_cerebellum',
+        uuid: tuning.uuid,
+        name: $t(tuning.name),
+        version: tuning.version,
+      };
+    } else {
+      return;
+    }
     deleteDialogOpen = true;
   }
 
   async function confirmDelete() {
-    if (!modelToDelete) return;
-    const targetUuid = modelToDelete.uuid;
+    if (!deleteTarget) return;
+    const target = deleteTarget;
     isDeleting = true;
     // Always go through step-up MFA — the BE requires it (403 + mfa_step_up_required).
     // executeWithToken: first attempt without token → BE 403 → dialog opens →
     // user verifies → retry with X-MFA-Action-Authorization header → DELETE succeeds.
     const resp = await stepUp.executeWithToken(
-      (token) => apiFetch(`/api/v1/entities/ai_model/${targetUuid}?version=${modelToDelete!.version}`, {
+      (token) => apiFetch(`/api/v1/entities/${target.entity}/${target.uuid}?version=${target.version}`, {
         method: 'DELETE',
         headers: token ? { 'X-MFA-Action-Authorization': token } : {},
       }),
-      { action: 'delete', target_resource: 'ai_model' },
+      { action: 'delete', target_resource: target.entity },
     );
     if (resp.ok) {
-      await aiModels.reload();
+      if (target.kind === 'model') {
+        await aiModels.reload();
+      } else {
+        cerebellumRows = await fetchAiCerebellum();
+      }
     } else {
       pushNotification({
         impact: 'MEDIUM',
@@ -201,12 +246,12 @@
     }
     isDeleting = false;
     deleteDialogOpen = false;
-    modelToDelete = null;
+    deleteTarget = null;
   }
 
   function cancelDelete() {
     deleteDialogOpen = false;
-    modelToDelete = null;
+    deleteTarget = null;
   }
 
   // Restore handler.
@@ -266,6 +311,9 @@
 
   <div class="flex-1 overflow-auto">
     <div class="space-y-6 p-4">
+    <!-- Machine capabilities (browser-measured) -->
+    <MachineCapabilitiesSection />
+
     <!-- AI Models catalog -->
     <section class="space-y-3" data-testid="ai-settings-models-section">
     <div
@@ -278,6 +326,24 @@
       </div>
       <!-- Toolbar: cerebellum assistant selector + create CTA + deletion filter + refresh -->
       <div class="flex items-center gap-2">
+        <label
+          class="flex items-center gap-1.5 text-xs text-muted-foreground {machineRank === null ? 'opacity-50' : ''}"
+          title={$t('system.settings.ai.models_section.fits_machine')}
+        >
+          <Gauge class="size-3.5" />
+          <Switch
+            bind:checked={fitsMachineOnly}
+            disabled={machineRank === null}
+            aria-label={$t('system.settings.ai.models_section.fits_machine')}
+            data-testid="ai-models-fits-machine-switch"
+          />
+          <span>
+            {fitsMachineOnly
+              ? $t('system.settings.ai.models_section.fits_machine_only')
+              : $t('system.settings.ai.models_section.all_models')}
+          </span>
+        </label>
+        <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <CircuitBoard class="size-3.5" />
           <span>{$t('app.smart.ai.cerebellum.title')}</span>
@@ -339,7 +405,7 @@
           {@const eff = resolveEffectiveParams(model, tuning)}
           {@const overridden = tuningOverriddenKeys(tuning)}
           <div
-            class="rounded-lg border border-border/60 p-3 {model.is_enabled && !model.deleted_at ? '' : 'opacity-50'}"
+            class="rounded-lg border border-border/60 p-3 {model.deleted_at ? 'opacity-50' : ''}"
             data-testid={`ai-model-row-${model.model_id}`}
           >
             <div class="flex items-start gap-4 min-w-0">
@@ -374,9 +440,6 @@
                       {#each recommendationsFor(model.model_id) as rec (rec.recommendation)}
                         <CerebellumRecommendationBadge recommendation={rec.recommendation} names={rec.names} size="md" />
                       {/each}
-                    {/if}
-                    {#if !model.is_enabled}
-                      <span class="text-[10px] text-muted-foreground">({$t('system.entities.ai_model.enabled.false')})</span>
                     {/if}
                   </div>
                   <div class="text-xs text-muted-foreground font-mono break-all">{model.model_id}</div>
@@ -550,8 +613,10 @@
                   </Button>
                 {:else}
                   <!-- Active non-default: offer "set as default" (updates the
-                       persisted ai_assistant_model config entry) -->
-                  {#if model.model_id !== defaultModelId && model.is_enabled}
+                       persisted ai_assistant_model config entry). Hidden when an
+                       assistant is selected — default selection only makes sense
+                       on the model-defaults view. -->
+                  {#if selectedAssistantKey === '' && model.model_id !== defaultModelId && model.compatibility_status === 'COMPATIBLE'}
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -564,19 +629,23 @@
                       <Star class={settingDefaultFor === model.model_id ? 'size-4 animate-spin' : 'size-4'} />
                     </Button>
                   {/if}
-                  <!-- Active: show delete (disable) button -->
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    class="text-destructive hover:text-destructive"
-                    onclick={() => handleDeleteClick(model.uuid, model.name, model.version)}
-                    disabled={aiModels.state.loading}
-                    title={$t('app.common.delete')}
-                    aria-label={$t('app.common.delete')}
-                    data-testid={`ai-model-delete-${model.model_id}`}
-                  >
-                    <Trash2 class="size-4" />
-                  </Button>
+                  <!-- Active: contextual delete — model on defaults,
+                       cerebellum when an assistant is selected; hidden when
+                       the model has no tuning for the selected assistant -->
+                  {#if selectedAssistantKey === '' || tuning}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="text-destructive hover:text-destructive"
+                      onclick={() => handleDeleteClick(model, tuning)}
+                      disabled={aiModels.state.loading}
+                      title={$t('app.common.delete')}
+                      aria-label={$t('app.common.delete')}
+                      data-testid={selectedAssistantKey === '' ? `ai-model-delete-${model.model_id}` : `ai-cerebellum-delete-${model.model_id}`}
+                    >
+                      <Trash2 class="size-4" />
+                    </Button>
+                  {/if}
                 {/if}
               </div>
             </div>
@@ -601,41 +670,16 @@
   </div>
 </AppPageScaffold>
 
-<!-- Delete confirmation dialog -->
-<DialogBordered bind:open={deleteDialogOpen} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
-  <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('app.common.deleteConfirmTitle')}</Dialog.Title>
-    <Dialog.Description>
-      {$t('app.common.deleteConfirm')}
-      {#if modelToDelete}
-        <span class="block mt-1 font-medium">{modelToDelete.name}</span>
-      {/if}
-    </Dialog.Description>
-  </Dialog.Header>
-  <Dialog.Footer class="gap-2 sm:space-x-0">
-    <Button
-      variant="secondary-outline"
-      class="hover:scale-105 transition-all"
-      onclick={cancelDelete}
-      disabled={isDeleting}
-    >
-      {$t('app.common.cancel')}
-    </Button>
-    <Button
-      variant="destructive"
-      class="hover:scale-105 transition-all"
-      onclick={confirmDelete}
-      disabled={isDeleting}
-      data-testid="ai-model-delete-confirm"
-    >
-      {#if isDeleting}
-        {$t('app.common.deleting')}
-      {:else}
-        {$t('app.common.delete')}
-      {/if}
-    </Button>
-  </Dialog.Footer>
-</DialogBordered>
+<!-- Delete confirmation dialog — entity-aware title (model vs cerebellum) -->
+<DeleteDialog
+  entity={deleteTarget?.entity ?? 'ai_model'}
+  recordName={deleteTarget?.name}
+  bind:open={deleteDialogOpen}
+  onOpenChange={(open) => { if (!open) cancelDelete(); }}
+  isDeleting={isDeleting}
+  onConfirm={confirmDelete}
+  onCancel={cancelDelete}
+/>
 
 <!-- MFA step-up dialog -->
 <MfaStepUpDialog

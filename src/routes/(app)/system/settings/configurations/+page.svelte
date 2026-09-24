@@ -16,6 +16,7 @@
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import BulkDeleteDialog from '$lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import type { ConfigEntry } from '$lib/api-types';
 
@@ -202,6 +203,8 @@
 </AppPageScaffold>
 
 <DeleteDialog
+  entity="config_entry"
+  recordName={deleteTarget?.key}
   bind:open={deleteDialogOpen}
   onOpenChange={(open) => {
     deleteDialogOpen = open;
@@ -215,7 +218,9 @@
   }}
 />
 
-<DeleteDialog
+<BulkDeleteDialog
+  entity="config_entry"
+  selectedCount={bulkTargets.length}
   bind:open={bulkDeleteDialogOpen}
   onOpenChange={(open) => {
     bulkDeleteDialogOpen = open;
