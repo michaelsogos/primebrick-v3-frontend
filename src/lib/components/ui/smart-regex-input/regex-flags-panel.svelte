@@ -3,7 +3,7 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import { Switch } from '$lib/components/ui/switch';
+  import { SwitchField } from '$lib/components/ui/switch-field';
   import XIcon from '@lucide/svelte/icons/x';
 
   interface $$Props {
@@ -63,44 +63,32 @@
 
   <div class="min-h-0 flex-1 overflow-auto p-4 space-y-4">
     <!-- Global flag -->
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex flex-col gap-0.5">
-        <span class="text-sm font-medium">{$t('app.smart.regex.flags.global')}</span>
-        <span class="text-xs text-muted-foreground">{$t('app.smart.regex.flags.globalHelp')}</span>
-      </div>
-      <Switch
-        bind:checked={flagG}
-        onCheckedChange={handleToggle}
-        data-testid="smart-regex-flag-g"
-      />
-    </div>
+    <SwitchField
+      bind:checked={flagG}
+      onCheckedChange={handleToggle}
+      label={$t('app.smart.regex.flags.global')}
+      description={$t('app.smart.regex.flags.globalHelp')}
+      data-testid="smart-regex-flag-g"
+    />
 
     <!-- Ignore case flag -->
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex flex-col gap-0.5">
-        <span class="text-sm font-medium">{$t('app.smart.regex.flags.ignoreCase')}</span>
-        <span class="text-xs text-muted-foreground">{$t('app.smart.regex.flags.ignoreCaseHelp')}</span>
-      </div>
-      <Switch
-        bind:checked={flagI}
-        onCheckedChange={handleToggle}
-        data-testid="smart-regex-flag-i"
-      />
-    </div>
+    <SwitchField
+      bind:checked={flagI}
+      onCheckedChange={handleToggle}
+      label={$t('app.smart.regex.flags.ignoreCase')}
+      description={$t('app.smart.regex.flags.ignoreCaseHelp')}
+      data-testid="smart-regex-flag-i"
+    />
 
     <!-- Multiline flag (only for text type) -->
     {#if showMultiline}
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex flex-col gap-0.5">
-          <span class="text-sm font-medium">{$t('app.smart.regex.flags.multiline')}</span>
-          <span class="text-xs text-muted-foreground">{$t('app.smart.regex.flags.multilineHelp')}</span>
-        </div>
-        <Switch
-          bind:checked={flagM}
-          onCheckedChange={handleToggle}
-          data-testid="smart-regex-flag-m"
-        />
-      </div>
+      <SwitchField
+        bind:checked={flagM}
+        onCheckedChange={handleToggle}
+        label={$t('app.smart.regex.flags.multiline')}
+        description={$t('app.smart.regex.flags.multilineHelp')}
+        data-testid="smart-regex-flag-m"
+      />
     {/if}
   </div>
 </div>

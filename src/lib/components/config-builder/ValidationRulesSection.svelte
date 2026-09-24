@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t, dict, getDictKeys } from '$lib/i18n';
-  import { Switch } from '$lib/components/ui/switch';
+  import { SwitchField } from '$lib/components/ui/switch-field';
   import { TextInput } from '$lib/components/ui/input';
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
@@ -171,20 +171,14 @@
   <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.validationRules')}</h4>
 
   <!-- Required -->
-  <div class="space-y-2">
-    <div class="flex items-center gap-3">
-      <Switch
-        id="tcb-required"
-        checked={builder.validation?.required ?? false}
-        onCheckedChange={(checked) => builder.setRequired(checked)}
-        data-testid="tcb-required"
-      />
-      <span class="text-sm font-medium leading-none">
-        {$t('system.settings.config.typeConfig.required')}
-      </span>
-    </div>
-    <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.requiredHelp')}</p>
-  </div>
+  <SwitchField
+    id="tcb-required"
+    checked={builder.validation?.required ?? false}
+    onCheckedChange={(checked: boolean) => builder.setRequired(checked)}
+    label={$t('system.settings.config.typeConfig.required')}
+    description={$t('system.settings.config.typeConfig.requiredHelp')}
+    data-testid="tcb-required"
+  />
 
   {#if builder.validation?.required}
     <div class="space-y-1">
@@ -211,34 +205,21 @@
         placeholder={autoErrorLabelKey(configKey, 'required')}
         searchPlaceholder={autoErrorLabelKey(configKey, 'required')}
         class="text-xs"
-        data-testid="tcb-required-error-key"
-      >
-        {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-          <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-            <span class="font-medium truncate">{resolvedLabel}</span>
-            <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-          </div>
-        {/snippet}
-      </ComboSelect>
+        display="detailed"
+      />
     </div>
   {/if}
 
   <!-- Unsigned (numeric only) -->
   {#if caps.validation.unsigned}
-    <div class="space-y-2">
-      <div class="flex items-center gap-3">
-        <Switch
-          id="tcb-unsigned"
-          checked={builder.validation?.unsigned === true}
-          onCheckedChange={(checked) => builder.setUnsigned(checked)}
-          data-testid="tcb-unsigned"
-        />
-        <span class="text-sm font-medium leading-none">
-          {$t('system.settings.config.typeConfig.unsigned')}
-        </span>
-      </div>
-      <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.unsignedHelp')}</p>
-    </div>
+    <SwitchField
+      id="tcb-unsigned"
+      checked={builder.validation?.unsigned === true}
+      onCheckedChange={(checked: boolean) => builder.setUnsigned(checked)}
+      label={$t('system.settings.config.typeConfig.unsigned')}
+      description={$t('system.settings.config.typeConfig.unsignedHelp')}
+      data-testid="tcb-unsigned"
+    />
   {/if}
 
   <!-- Min / Max (numeric types: value; string-derived types: length) -->
@@ -287,15 +268,8 @@
           placeholder={autoErrorLabelKey(configKey, 'min')}
           searchPlaceholder={autoErrorLabelKey(configKey, 'min')}
           class="text-xs"
-          data-testid="tcb-min-error-key"
-        >
-          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-              <span class="font-medium truncate">{resolvedLabel}</span>
-              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-            </div>
-          {/snippet}
-        </ComboSelect>
+        display="detailed"
+      />
       {/if}
     </div>
     <div class="space-y-1">
@@ -341,15 +315,8 @@
           placeholder={autoErrorLabelKey(configKey, 'max')}
           searchPlaceholder={autoErrorLabelKey(configKey, 'max')}
           class="text-xs"
-          data-testid="tcb-max-error-key"
-        >
-          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-              <span class="font-medium truncate">{resolvedLabel}</span>
-              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-            </div>
-          {/snippet}
-        </ComboSelect>
+        display="detailed"
+      />
       {/if}
     </div>
   </div>
@@ -399,15 +366,8 @@
           placeholder={autoErrorLabelKey(configKey, 'url')}
           searchPlaceholder={autoErrorLabelKey(configKey, 'url')}
           class="text-xs"
-          data-testid="tcb-url-error-key"
-        >
-          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-              <span class="font-medium truncate">{resolvedLabel}</span>
-              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-            </div>
-          {/snippet}
-        </ComboSelect>
+        display="detailed"
+      />
       {/if}
     </div>
   {/if}
@@ -466,15 +426,8 @@
           placeholder={autoErrorLabelKey(configKey, 'regex')}
           searchPlaceholder={autoErrorLabelKey(configKey, 'regex')}
           class="text-xs"
-          data-testid="tcb-regex-error-key"
-        >
-          {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-              <span class="font-medium truncate">{resolvedLabel}</span>
-              <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-            </div>
-          {/snippet}
-        </ComboSelect>
+        display="detailed"
+      />
       {/if}
     </div>
   {/if}

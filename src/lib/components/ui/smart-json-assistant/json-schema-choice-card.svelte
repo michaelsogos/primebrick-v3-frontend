@@ -306,15 +306,9 @@
       placeholder={choice.suggested_key}
       searchPlaceholder={choice.suggested_key}
       class="text-xs"
+      display="detailed"
       data-testid="{testid_prefix}-key-combo"
-    >
-      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-          <span class="font-medium truncate">{resolvedLabel}</span>
-          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-        </div>
-      {/snippet}
-    </ComboSelect>
+    />
   </div>
 {:else if choice.kind === 'translations_preview'}
   <!-- New error message preview — per-language approval before the key

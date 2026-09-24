@@ -325,6 +325,7 @@
                       <ComboSelect
                         {...props}
                         mode="multi"
+                        display="custom"
                         bind:value={$form.roles}
                         options={availableRoles.length > 0 ? availableRoles : [
                           { idp_role: 'administrators' },

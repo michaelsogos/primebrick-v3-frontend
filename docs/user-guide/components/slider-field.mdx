@@ -1,0 +1,87 @@
+---
+title: SliderField
+description: Nullable range input — slider + reactive value label, NULL means "inherit". No numeric input.
+---
+
+# SliderField
+
+`src/lib/components/ui/slider-field/slider-field.svelte`
+
+## Purpose
+
+A slider-only input for **bounded numeric params that may be `null`**
+(NULL = "inherit a default", e.g. cerebellum overrides over model defaults).
+
+- `value === null` → the label shows `defaultValue` (the inherited value,
+  muted/italic); the slider sits on that default. One-way: the real value
+  stays `null` — the label always shows the **effective** value, never the
+  word "inherit".
+- Dragging the slider writes whatever value the slider lands on.
+- The X button next to the label clears back to `null` (inherit).
+
+There is intentionally **no numeric input**: the label is the readout. For
+always-set ranges use [`Slider`](/docs/user-guide/components/slider).
+
+### Discrete ladders (`steps`)
+
+For wide/non-linear ranges pass `steps` — an ascending value ladder. The
+slider moves over the ladder indices and `value` holds the step value:
+
+```svelte
+<SliderField
+  bind:value={maxTokens}
+  defaultValue={model.max_tokens}
+  steps={[128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]}
+/>
+```
+
+Canonical uses: `AiCerebellumPanel` (`temperature` 0–2/0.1, `top_p`
+0.01–1/0.01, `repetition_penalty` 1–2/0.01, `max_tokens` ladder 128–32768).
+
+## Origin
+
+**Custom** — composes the Primebrick `Slider` wrapper (bits-ui `Slider`)
+with an inherit/reset affordance.
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { SliderField } from '$lib/components/ui/slider-field';
+  let temperature = $state<number | null>(null); // null = inherit
+</script>
+
+<SliderField
+  bind:value={temperature}
+  defaultValue={model.temperature}
+  min={0}
+  max={2}
+  step={0.1}
+  decimals={1}
+/>
+```
+
+Canonical uses: `AiCerebellumPanel` (`temperature` 0–2/0.1, `top_p`
+0.01–1/0.01, `repetition_penalty` 1–2/0.01, `max_tokens` ladder, `max_history_turns`) — all with `size="sm"`.
+
+## Props
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `number \| null` (bindable) | `null` | `null` = inherit |
+| `defaultValue` | `number` | — | effective value shown/parked when `null` |
+| `min` / `max` | `number` | `0` / `100` | range bounds |
+| `step` | `number` | `1` | granularity (ignored when `steps` is set) |
+| `steps` | `number[]` | — | ascending value ladder for non-linear ranges |
+| `decimals` | `number` | `0` | decimals shown in the value label (`toFixed`) |
+| `disabled` | `boolean` | `false` | dims the control |
+| `tone` | `SliderTone` | `'primary'` | semantic gradient of the filled range |
+| `label` | `string` | — | component-owned field label above the slider row (`for={id}`); never add an external `<label>` |
+| `size` | `'default' \| 'sm'` | `'default'` | label density — `default`: `text-sm font-medium` (form pages); `sm`: `text-xs font-medium text-muted-foreground` (dense sheets). Layout only, never affects colors/gradients |
+| `id` | `string` | — | forwarded to the slider root so `<label for>` works |
+| `class` | `string` | — | appended to the wrapper |
+
+## Next steps
+
+- [Slider](/docs/user-guide/components/slider) — non-nullable variant
+- [Component catalog](/docs/user-guide/components)

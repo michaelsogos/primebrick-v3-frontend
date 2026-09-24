@@ -7,8 +7,8 @@
    * Used on the AI settings page — extracted so the popover stays readable.
    */
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import Button from '$lib/components/ui/button/button.svelte';
-  import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
+  import { cn } from '$lib/utils.js';
   import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '$lib/ai/ai-model-test-scores';
   import type { AiModel } from '$lib/api-types';
@@ -23,7 +23,6 @@
 
   let { model }: { model: AiModel } = $props();
 
-  let popoverOpen = $state(false);
   let tsSummary = $derived(summarizeTestScores(model.test_scores));
 
   /** Aggregate passed turns (score ≥4) across all cases. */
@@ -41,23 +40,22 @@
   });
 
   function openDetails() {
-    popoverOpen = false;
     openSheet('shell.aiModelTestReport', { model });
   }
 </script>
 
 {#snippet metric(Icon: Component<{ class?: string }>, label: string, value: string, color: string | undefined)}
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      {#snippet child({ props })}
-        <span {...props} class="flex items-center gap-1"><Icon class="size-3" /><b style={color ? `color:${color}` : undefined}>{value}</b></span>
-      {/snippet}
-    </Tooltip.Trigger>
-    <Tooltip.Content>{label}</Tooltip.Content>
-  </Tooltip.Root>
+  <span class="group/metric relative flex items-center gap-1">
+    <Icon class="size-3" /><b style={color ? `color:${color}` : undefined}>{value}</b>
+    <span
+      class="pointer-events-none absolute top-full left-1/2 z-50 mt-1 -translate-x-1/2 rounded-md border border-border/60 bg-foreground px-2 py-1 text-xs font-medium whitespace-nowrap text-background opacity-0 shadow-md transition-opacity group-hover/metric:opacity-100"
+    >
+      {label}
+    </span>
+  </span>
 {/snippet}
 
-<Popover.Root bind:open={popoverOpen}>
+<Popover.Root>
   <Popover.Trigger
     class="inline-flex"
     title={$t('system.entities.ai_model.fields.test_scores')}
@@ -65,7 +63,7 @@
   >
     <ScoreGauge value={tsSummary.score} label={$t('system.entities.ai_model.fields.test_scores')} />
   </Popover.Trigger>
-  <Popover.Content align="start" class="w-72 p-0">
+  <Popover.Content align="start" class="w-72 p-0 overflow-visible">
     <div class="space-y-2 p-2" data-testid={`ai-model-test-scores-dropdown-${model.model_id}`}>
       <div class="flex items-center justify-between border-b border-border/40 pb-1">
         <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.test_scores')}</span>
@@ -93,17 +91,14 @@
           <span class="font-bold" style="color:{testCase.score !== null ? gaugeColor(testCase.score, 5) : undefined}">{testCase.score !== null ? testCase.score.toFixed(1) : '—'}</span>
         </div>
       {/each}
-      <Button
-        variant="outline"
-        tone="primary"
-        size="xs"
-        class="w-full"
+      <Popover.Close
+        class={cn(buttonVariants({ variant: 'outline', size: 'xs', tone: 'primary' }), 'w-full')}
         onclick={openDetails}
         data-testid={`ai-model-test-details-cta-${model.model_id}`}
       >
         <Maximize2 class="size-3" />
         {$t('system.entities.ai_model.test_report.title')}
-      </Button>
+      </Popover.Close>
     </div>
   </Popover.Content>
 </Popover.Root>

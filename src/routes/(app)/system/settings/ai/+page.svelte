@@ -125,10 +125,16 @@
     ) ?? null;
   }
 
-  /** Enabled tunings of a model that carry a recommendation badge —
+  /** Enabled tunings of a model carrying a recommendation, grouped by type —
    *  shown on the card when no assistant is selected (model defaults). */
-  function recommendedTuningsFor(model_id: string): AiCerebellum[] {
-    return enabledTunings.filter((r) => r.model_id === model_id && r.recommendation);
+  function recommendationsFor(model_id: string): { recommendation: 'RECOMMENDED' | 'NOT_RECOMMENDED'; names: string[] }[] {
+    const names: Record<string, string[]> = { RECOMMENDED: [], NOT_RECOMMENDED: [] };
+    for (const r of enabledTunings) {
+      if (r.model_id === model_id && r.recommendation) names[r.recommendation].push(r.name);
+    }
+    return (Object.keys(names) as ('RECOMMENDED' | 'NOT_RECOMMENDED')[])
+      .filter((k) => names[k].length > 0)
+      .map((k) => ({ recommendation: k, names: names[k] }));
   }
 
   function openCerebellumCreate() {
@@ -343,6 +349,15 @@
                 <div class="min-w-0 space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-medium">{model.name}</span>
+                    {#if model.compatibility_status === 'COMPATIBLE'}
+                      <span class="flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400" title={$t('system.entities.ai_model.compatibility.COMPATIBLE')}>
+                        <ShieldCheck class="size-3" />
+                      </span>
+                    {:else if model.compatibility_status === 'NOT_COMPATIBLE'}
+                      <span class="flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400" title={$t('system.entities.ai_model.compatibility.NOT_COMPATIBLE')}>
+                        <ShieldX class="size-3" />
+                      </span>
+                    {/if}
                     {#if model.model_id === defaultModelId}
                       <Badge
                         variant="outline"
@@ -353,20 +368,11 @@
                         {$t('system.entities.ai_model.default')}
                       </Badge>
                     {/if}
-                    {#if model.compatibility_status === 'COMPATIBLE'}
-                      <span class="flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400" title={$t('system.entities.ai_model.compatibility.COMPATIBLE')}>
-                        <ShieldCheck class="size-3" />
-                      </span>
-                    {:else if model.compatibility_status === 'NOT_COMPATIBLE'}
-                      <span class="flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400" title={$t('system.entities.ai_model.compatibility.NOT_COMPATIBLE')}>
-                        <ShieldX class="size-3" />
-                      </span>
-                    {/if}
                     {#if tuning?.recommendation}
-                      <CerebellumRecommendationBadge recommendation={tuning.recommendation} />
+                      <CerebellumRecommendationBadge recommendation={tuning.recommendation} size="md" />
                     {:else if !selectedAssistantKey}
-                      {#each recommendedTuningsFor(model.model_id) as rec (rec.uuid)}
-                        <CerebellumRecommendationBadge recommendation={rec.recommendation} />
+                      {#each recommendationsFor(model.model_id) as rec (rec.recommendation)}
+                        <CerebellumRecommendationBadge recommendation={rec.recommendation} names={rec.names} size="md" />
                       {/each}
                     {/if}
                     {#if !model.is_enabled}
@@ -475,7 +481,7 @@
                       <!-- Speed rubric as a gradient bar: each 1/6 band is the
                            gaugeColor bucket; scores sit above their color, the
                            second thresholds below. Marker = model's speed. -->
-                      <div class="px-0.5 pb-1 pt-3.5">
+                      <div class="px-0.5 pb-3 pt-3.5">
                         <div class="relative">
                           <div class="absolute inset-x-0 -top-3 flex">
                             {#each [0, 1, 2, 3, 4, 5] as s (s)}
@@ -493,7 +499,7 @@
                               title={$t('system.entities.ai_model.fields.speed')}
                             ></div>
                           {/if}
-                          <div class="absolute inset-x-0 top-2 flex font-mono text-[9px] text-muted-foreground">
+                          <div class="absolute inset-x-0 top-3.5 flex font-mono text-[9px] text-muted-foreground">
                             {#each ['> 10s', '≤ 10s', '≤ 9s', '≤ 7s', '≤ 5s', '≤ 3s'] as sec, i (i)}
                               <span class="flex-1 text-center">{sec}</span>
                             {/each}

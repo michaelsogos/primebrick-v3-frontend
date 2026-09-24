@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -177,6 +177,55 @@
  */
 @utility hr-primary-gradient {
   background: linear-gradient(to right, #38bdf8, #818cf8);
+}
+
+/**
+ * Slider RANGE gradient fills (left → right), same color pairs as the
+ * matching border-{tone}-gradient utilities. Used by Slider/SliderField via
+ * the `tone` prop — the filled range is a tone gradient, never a flat color.
+ */
+@utility bg-range-primary-gradient {
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+}
+@utility bg-range-destructive-gradient {
+  background: linear-gradient(to right, #fb7185, #dc2626);
+}
+@utility bg-range-warning-gradient {
+  background: linear-gradient(to right, #fde047, #eab308);
+}
+@utility bg-range-info-gradient {
+  background: linear-gradient(to right, #38bdf8, #2563eb);
+}
+@utility bg-range-success-gradient {
+  background: linear-gradient(to right, #34d399, #059669);
+}
+
+/**
+ * Scrollbar utilities for floating surfaces (dropdowns, popovers, command
+ * lists): the native scrollbar steals ~15px and breaks right-alignment of
+ * trailing content (e.g. RankMeter). `no-scrollbar` hides it entirely (wheel
+ * still scrolls); `scrollbar-thin` keeps a slim 5px indicator.
+ */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /**

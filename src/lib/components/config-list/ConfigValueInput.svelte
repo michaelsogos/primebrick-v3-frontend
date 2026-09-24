@@ -267,6 +267,7 @@
       placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
+      display="custom"
       data-testid={`config-input-single-select-${fieldKey}`}
     >
       {#snippet itemSnippet({ option, resolvedLabel, selected })}

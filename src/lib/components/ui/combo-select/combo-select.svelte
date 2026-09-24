@@ -4,6 +4,7 @@
   import * as Popover from "$lib/components/ui/popover";
   import * as Command from "$lib/components/ui/command";
   import Badge from "$lib/components/ui/badge/badge.svelte";
+  import { badgeClassesFromToken } from "$lib/colors/badge";
   import X from "@lucide/svelte/icons/x";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Check from "@lucide/svelte/icons/check";
@@ -26,6 +27,19 @@
     id?: string;
     searchable?: boolean;
     searchPlaceholder?: string;
+    /**
+     * Declarative option template — avoids ad-hoc snippets for common layouts:
+     *   'default'  — plain label (default)
+     *   'badge'    — option rendered as a colored Badge; reads `colorField`
+     *   'detailed' — two-line row: label + `secondaryField` value (mono, muted)
+     *   'custom'   — REQUIRED to enable itemSnippet/selectedSnippet; snippets
+     *                are ignored without it (one canonical combobox look).
+     */
+    display?: 'default' | 'badge' | 'detailed' | 'custom';
+    /** display='badge': option field carrying a color token (e.g. 'emerald-500'). Default 'color'. */
+    colorField?: string;
+    /** display='detailed': option field rendered under the label (mono, muted). Defaults to the resolved value. */
+    secondaryField?: string;
     itemSnippet?: Snippet<[{
       option: string | Record<string, any>;
       selected: boolean;
@@ -82,6 +96,9 @@
     id,
     searchable = true,
     searchPlaceholder = "Search...",
+    display = 'default',
+    colorField = 'color',
+    secondaryField,
     itemSnippet,
     isOptionDisabled,
     getSearchKeywords,
@@ -96,6 +113,16 @@
     "data-testid": dataTestId,
     ...restProps
   }: Props = $props();
+
+  // Contract: itemSnippet/selectedSnippet only render in display='custom'.
+  // Warn in dev so a forgotten display='custom' doesn't fail silently.
+  $effect(() => {
+    if (import.meta.env.DEV && (itemSnippet || selectedSnippet) && display !== 'custom') {
+      console.warn(
+        "[ComboSelect] itemSnippet/selectedSnippet ignored — pass display=\"custom\" to enable snippet rendering.",
+      );
+    }
+  });
 
   let open = $state(false);
   let search = $state("");
@@ -278,12 +305,17 @@
       >
         {#if mode === "single"}
           {#if selectedNormalized}
-            {#if selectedSnippet}
+            {#if display === 'custom' && selectedSnippet}
               {@render selectedSnippet({
                 option: selectedNormalized.raw,
                 resolvedLabel: selectedNormalized.label,
                 resolvedValue: selectedNormalized.value,
               })}
+            {:else if display === 'badge'}
+              {@const c = badgeClassesFromToken(getByPath(selectedNormalized.raw as Record<string, any>, colorField) as string ?? null)}
+              <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
+                {selectedNormalized.label}
+              </Badge>
             {:else}
               <span class="flex-1 truncate text-left">
                 {selectedNormalized.label}
@@ -291,7 +323,7 @@
             {/if}
           {:else if (value as string).trim() !== ''}
             <!-- Created value not in options list — render with "new" badge -->
-            {#if selectedSnippet}
+            {#if display === 'custom' && selectedSnippet}
               {@render selectedSnippet({
                 option: { [valueField ?? 'value']: value } as Record<string, any>,
                 resolvedLabel: value as string,
@@ -390,6 +422,7 @@
               "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
               "data-highlighted:bg-muted data-highlighted:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              "[&_.cn-command-item-indicator]:hidden",
             )}
             onSelect={() => handleCreate()}
           >
@@ -417,6 +450,10 @@
                 "data-highlighted:bg-muted data-highlighted:text-foreground",
                 "data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-60 data-disabled:text-muted-foreground data-disabled:data-highlighted:bg-transparent",
                 "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                // command-item appends a check indicator (ml-auto opacity-0,
+                // never data-checked here) → dead space on the right; hide it
+                // so trailing content (e.g. RankMeter) stays flush right.
+                "[&_.cn-command-item-indicator]:hidden",
               )}
               onSelect={() => {
                 if (isDisabled) return;
@@ -438,13 +475,25 @@
                     {/if}
                   </div>
                 {/if}
-                {#if itemSnippet}
+                {#if display === 'custom' && itemSnippet}
                   {@render itemSnippet({
                     option: opt.raw,
                     selected: mode === "multi" ? selectedValues.includes(opt.value) : (value as string) === opt.value,
                     resolvedLabel: opt.label,
                     resolvedValue: opt.value,
                   })}
+                {:else if display === 'badge'}
+                  {@const c = badgeClassesFromToken(getByPath(opt.raw as Record<string, any>, colorField) as string ?? null)}
+                  <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
+                    {opt.label}
+                  </Badge>
+                {:else if display === 'detailed'}
+                  <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="truncate font-medium">{opt.label}</span>
+                    <span class="truncate font-mono text-xs text-muted-foreground">
+                      {secondaryField ? String(getByPath(opt.raw as Record<string, any>, secondaryField) ?? opt.value) : opt.value}
+                    </span>
+                  </div>
                 {:else}
                   <span class="flex-1 truncate text-left">{opt.label}</span>
                 {/if}

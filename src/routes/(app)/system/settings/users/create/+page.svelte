@@ -404,6 +404,7 @@
                     <ComboSelect
                       {...props}
                       mode="multi"
+                      display="custom"
                       data-testid="admin-user-create-roles-select"
                       bind:value={$form.roles}
                       options={availableRoles.length > 0 ? availableRoles : [
@@ -469,6 +470,7 @@
                     <ComboSelect
                       {...props}
                       mode="single"
+                      display="custom"
                       data-testid="admin-user-create-org-select"
                       bind:value={$form.idp_org}
                       options={availableOrgs}

@@ -31,37 +31,32 @@ A single-value range slider for bounded numeric settings (e.g. temperature
 <Slider bind:value={temperature} min={0} max={2} step={0.1} />
 ```
 
-### Slider + numeric Input (nullable "inherit" pattern)
+### Tones
 
-When `null`/empty means "inherit a default", pair the slider with a numeric
-`Input`: an empty input shows `placeholder="inherit"` while dragging the
-slider writes the override value.
+The filled range is a semantic **gradient** (never a flat color), selected
+via `tone` — same color pairs as the `border-{tone}-gradient` utilities:
+
+| `tone` | Range gradient |
+|---|---|
+| `primary` (default) | sky-400 → indigo-400 |
+| `destructive` | rose-400 → red-600 |
+| `warning` | yellow-300 → yellow-500 |
+| `info` | sky-400 → blue-600 |
+| `success` | emerald-400 → emerald-600 |
+
+The track (`bg-{tone}/20`) and thumb border (`border-{tone}/50`) follow the
+same tone.
 
 ```svelte
-<script lang="ts">
-  let temperature = $state(""); // '' = inherit
-  let tempSlider = $state(0);
-  $effect(() => {
-    tempSlider = temperature.trim() !== '' ? Number(temperature) : 0;
-  });
-</script>
-
-<div class="flex items-center gap-2">
-  <Slider
-    bind:value={tempSlider}
-    min={0}
-    max={2}
-    step={0.1}
-    class="flex-1"
-    onValueChange={(v) => (temperature = String(v))}
-  />
-  <Input type="number" step="0.1" min="0" max="2"
-    bind:value={temperature} placeholder="inherit" class="w-16" />
-</div>
+<Slider bind:value={level} tone="warning" min={0} max={10} />
 ```
 
-Canonical use: `AiCerebellumPanel` temperature field
-(`src/lib/shell/sheets/panels/AiCerebellumPanel.svelte`).
+### Nullable "inherit" ranges — use SliderField
+
+When `null` means "inherit a default" (e.g. per-assistant overrides over
+model defaults), do NOT pair `Slider` with a numeric `Input` — use
+[`SliderField`](/docs/user-guide/components/slider-field), the single
+reusable component for that pattern (slider + reactive label + reset-to-inherit).
 
 ## Props
 
@@ -71,5 +66,6 @@ Canonical use: `AiCerebellumPanel` temperature field
 | `min` / `max` | `number` | `0` / `100` | range bounds |
 | `step` | `number` | `1` | granularity |
 | `disabled` | `boolean` | `false` | dims the control |
+| `tone` | `'primary' \| 'destructive' \| 'warning' \| 'info' \| 'success'` | `'primary'` | semantic gradient of the range/track/thumb |
 | `onValueChange` | `(v: number) => void` | — | live drag callback (bits-ui passthrough) |
 | `class` | `string` | — | appended to Root |

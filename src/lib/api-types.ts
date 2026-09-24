@@ -252,7 +252,6 @@ export type AiCerebellum = {
   execution_config?: Partial<ExecutionConfig> | null;
 
   is_enabled: boolean;
-  sort_order: number;
   /** Per-tuning test measurements keyed by test case. */
   test_scores?: Record<string, unknown> | null;
   /** Visual recommendation badge — cosmetic only, no effect on selection/execution. */

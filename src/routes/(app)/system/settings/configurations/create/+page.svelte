@@ -3,7 +3,7 @@
   import { t, dict } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
-  import { Switch } from '$lib/components/ui/switch';
+  import { SwitchField } from '$lib/components/ui/switch-field';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -418,15 +418,9 @@
                       defaultSearch={labelKeyDefaultSearch}
                       placeholder={labelKeyPlaceholder}
                       searchPlaceholder={labelKeyPlaceholder}
+                      display="detailed"
                       data-testid="config-create-label-key"
-                    >
-                      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-                          <span class="font-medium truncate">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-                        </div>
-                      {/snippet}
-                    </ComboSelect>
+                    />
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -459,15 +453,9 @@
                       defaultSearch={descriptionKeyDefaultSearch}
                       placeholder={descriptionKeyPlaceholder}
                       searchPlaceholder={descriptionKeyPlaceholder}
+                      display="detailed"
                       data-testid="config-create-description-key"
-                    >
-                      {#snippet itemSnippet({ resolvedLabel, resolvedValue })}
-                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-                          <span class="font-medium truncate">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground truncate font-mono">{resolvedValue}</span>
-                        </div>
-                      {/snippet}
-                    </ComboSelect>
+                    />
                     <TranslatedFormFieldErrors />
                   </div>
                 {/snippet}
@@ -504,6 +492,7 @@
                       }}
                       placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
                       searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
+                      display="custom"
                       data-testid="config-create-group-key"
                     >
                       {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
@@ -531,19 +520,13 @@
               </FormControl>
             </FormField>
 
-            <div class="space-y-2">
-              <div class="flex items-center gap-3">
-                <Switch
-                  checked={$form.reserved}
-                  onCheckedChange={(checked) => { $form.reserved = checked; }}
-                  data-testid="config-create-reserved"
-                />
-                <span class="text-sm font-medium leading-none">
-                  {$t('system.settings.configurations.create.reserved')}
-                </span>
-              </div>
-              <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.reservedHelp')}</p>
-            </div>
+            <SwitchField
+              checked={$form.reserved}
+              onCheckedChange={(checked) => { $form.reserved = checked; }}
+              label={$t('system.settings.configurations.create.reserved')}
+              description={$t('system.settings.configurations.create.reservedHelp')}
+              data-testid="config-create-reserved"
+            />
           </div>
 
           <!-- Column 2: Type Config Builder -->

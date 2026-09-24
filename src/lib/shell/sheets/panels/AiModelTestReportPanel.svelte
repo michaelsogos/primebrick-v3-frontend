@@ -104,6 +104,9 @@
               <span class="flex flex-1 flex-col">
                 <span class="capitalize group-hover/accordion-trigger:underline">{testCaseLabel(reportCase.key)}</span>
                 <span class="mt-1 flex items-center gap-3 text-[10px] font-normal text-muted-foreground">
+                  {#if reportCase.score !== null}
+                    {@render metric(Trophy, $t(scoreKey), fmt(reportCase.score), gaugeColor(reportCase.score, 5), 'size-3')}
+                  {/if}
                   {#if reportCase.quality !== null}
                     {@render metric(Award, $t(qualityKey), fmt(reportCase.quality), gaugeColor(reportCase.quality, 5), 'size-3')}
                   {/if}

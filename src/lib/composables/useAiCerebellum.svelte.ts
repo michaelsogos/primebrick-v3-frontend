@@ -75,13 +75,13 @@ export function useAiCerebellum(assistant_key: string) {
     },
     ensureLoaded,
     /**
-     * Enabled tunings for a model, sorted by sort_order.
+     * Enabled tunings for a model (at most one — the (assistant, model) pair
+     * is unique in the DB).
      * Pure read — call ensureLoaded() in onMount first.
      */
     getTuningsForModel(model_id: string): AiCerebellum[] {
       return getCache(assistant_key).tunings
-        .filter((t) => t.model_id === model_id && t.is_enabled)
-        .sort((a, b) => a.sort_order - b.sort_order);
+        .filter((t) => t.model_id === model_id && t.is_enabled);
     },
     async invalidate(): Promise<void> {
       clearCachedETag(AI_CEREBELLUM_URL);

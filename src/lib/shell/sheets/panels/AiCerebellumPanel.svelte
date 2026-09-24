@@ -21,9 +21,9 @@
   import AiModelOption from '$lib/components/ui/smart-ai/ai-model-option.svelte';
   import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
-  import Input from '$lib/components/ui/input/input.svelte';
-  import Slider from '$lib/components/ui/slider/slider.svelte';
-  import Switch from '$lib/components/ui/switch/switch.svelte';
+  import { SliderField } from '$lib/components/ui/slider-field';
+  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
   import { pushNotification } from '$lib/errors/app-errors';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -51,14 +51,22 @@
 
   let assistant_key = $state('');
   let model_id = $state('');
-  let enable_thinking = $state<'inherit' | 'true' | 'false'>('inherit');
-  let temperature = $state('');
-  let top_p = $state('');
-  let max_tokens = $state('');
-  let repetition_penalty = $state('');
-  let sort_order = $state('100');
+  let enable_thinking = $state(false);
+  let temperature = $state<number | null>(null);
+  let top_p = $state<number | null>(null);
+  let max_tokens = $state<number | null>(null);
+  let repetition_penalty = $state<number | null>(null);
+  let kv_cache_reuse = $state(false);
+  let sliding_window = $state(true);
+  let intent_detection = $state(false);
+  let max_history_turns = $state<number | null>(null);
   let is_enabled = $state(true);
+  let recommendation = $state<'RECOMMENDED' | 'NOT_RECOMMENDED' | ''>('');
   let saving = $state(false);
+
+  // Fallback slider defaults for a NEW cerebellum (or when the selected model
+  // lacks the value) — the values that performed best in our repeated tests.
+  const CREATE_DEFAULTS = { temperature: 0.1, top_p: 0.8, max_tokens: 256, repetition_penalty: 1.1, max_history_turns: 6 };
 
   const assistantOptions = $derived(assistants.map((a) => ({ key: a.key, label: $t(a.name) })));
 
@@ -67,29 +75,29 @@
     rows.find((r) => r.assistant_key === assistant_key && r.model_id === model_id) ?? null,
   );
 
+  /** Selected model — its defaults are the values inherited when a field is NULL. */
+  const selectedModel = $derived(models.find((m) => m.model_id === model_id) ?? null);
+
   // Prepopulate when the selected pair matches an existing row (edit mode).
   $effect(() => {
     const row = existing;
     if (!row) return;
-    enable_thinking = row.enable_thinking == null ? 'inherit' : row.enable_thinking ? 'true' : 'false';
-    temperature = row.temperature == null ? '' : String(row.temperature);
-    top_p = row.top_p == null ? '' : String(row.top_p);
-    max_tokens = row.max_tokens == null ? '' : String(row.max_tokens);
-    repetition_penalty = row.repetition_penalty == null ? '' : String(row.repetition_penalty);
-    sort_order = String(row.sort_order);
+    enable_thinking = row.enable_thinking ?? selectedModel?.enable_thinking ?? false;
+    temperature = row.temperature ?? null;
+    top_p = row.top_p ?? null;
+    max_tokens = row.max_tokens ?? null;
+    repetition_penalty = row.repetition_penalty ?? null;
     is_enabled = row.is_enabled;
+    recommendation = row.recommendation ?? '';
   });
 
-  function numOrNull(v: string): number | null {
-    const n = Number(v);
-    return v.trim() !== '' && Number.isFinite(n) ? n : null;
-  }
-
-  // Temperature slider (0–2 step 0.1) mirrors the string input: an empty
-  // input = inherit (slider sits at 0); dragging the slider writes a value.
-  let tempSlider = $state(0);
+  // execution_config: cerebellum override ?? model config ?? tested defaults.
   $effect(() => {
-    tempSlider = numOrNull(temperature) ?? 0;
+    const cfg = existing?.execution_config ?? selectedModel?.execution_config ?? null;
+    kv_cache_reuse = cfg?.kv_cache_reuse ?? false;
+    sliding_window = cfg?.sliding_window ?? true;
+    intent_detection = cfg?.intent_detection ?? false;
+    max_history_turns = cfg?.max_history_turns ?? null;
   });
 
   async function save() {
@@ -100,13 +108,19 @@
       assistant_key,
       model_id,
       name: existing?.name ?? storedName,
-      enable_thinking: enable_thinking === 'inherit' ? null : enable_thinking === 'true',
-      temperature: numOrNull(temperature),
-      top_p: numOrNull(top_p),
-      max_tokens: numOrNull(max_tokens),
-      repetition_penalty: numOrNull(repetition_penalty),
+      enable_thinking,
+      temperature,
+      top_p,
+      max_tokens,
+      repetition_penalty,
+      execution_config: {
+        kv_cache_reuse,
+        sliding_window,
+        intent_detection,
+        ...(max_history_turns != null ? { max_history_turns } : {}),
+      },
       is_enabled,
-      sort_order: numOrNull(sort_order) ?? 100,
+      recommendation: recommendation || null,
     };
     // Edit mode → PUT /:uuid with mandatory optimistic-lock version.
     const resp = existing
@@ -165,8 +179,8 @@
       <div class="space-y-1.5">
         <label class="flex items-center gap-2 text-xs font-medium text-muted-foreground" for="cerebellum-model">
           {$t(`${fieldNs}.model_id`)}
-          {#if existing?.recommendation}
-            <CerebellumRecommendationBadge recommendation={existing.recommendation} />
+          {#if recommendation}
+            <CerebellumRecommendationBadge recommendation={recommendation} />
           {/if}
         </label>
         <ComboSelect
@@ -177,12 +191,15 @@
           valueField="model_id"
           labelField="name"
           placeholder={$t(`${fieldNs}.model_id`)}
+          display="custom"
           data-testid="ai-cerebellum-model"
         >
           {#snippet itemSnippet({ option })}
             {@const rec = (rows ?? []).find((r) => r.assistant_key === assistant_key && r.model_id === (option as AiModel).model_id)?.recommendation}
-            <div class="flex items-center gap-2">
-              <AiModelOption model={option as AiModel} />
+            <div class="flex min-w-0 flex-1 items-center gap-2">
+              <div class="min-w-0 flex-1">
+                <AiModelOption model={option as AiModel} />
+              </div>
               {#if rec}
                 <CerebellumRecommendationBadge recommendation={rec} />
               {/if}
@@ -195,75 +212,75 @@
       </div>
 
       <div class="grid grid-cols-2 gap-3">
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-temperature">
-            {$t(`${fieldNs}.temperature`)}
-          </label>
-          <div class="flex items-center gap-2">
-            <Slider
-              bind:value={tempSlider}
-              min={0}
-              max={2}
-              step={0.1}
-              class="flex-1"
-              onValueChange={(v: number) => (temperature = String(v))}
-              data-testid="ai-cerebellum-temperature-slider"
-            />
-            <Input id="cerebellum-temperature" type="number" step="0.1" min="0" max="2" bind:value={temperature} placeholder="inherit" class="w-16" data-testid="ai-cerebellum-temperature" />
-          </div>
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-top-p">
-            {$t(`${fieldNs}.top_p`)}
-          </label>
-          <Input id="cerebellum-top-p" type="number" step="0.01" min="0.01" max="1" bind:value={top_p} placeholder="inherit" data-testid="ai-cerebellum-top-p" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-max-tokens">
-            {$t(`${fieldNs}.max_tokens`)}
-          </label>
-          <Input id="cerebellum-max-tokens" type="number" step="1" min="1" max="32768" bind:value={max_tokens} placeholder="inherit" data-testid="ai-cerebellum-max-tokens" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-rep-penalty">
-            {$t(`${fieldNs}.repetition_penalty`)}
-          </label>
-          <Input id="cerebellum-rep-penalty" type="number" step="0.01" min="1" max="2" bind:value={repetition_penalty} placeholder="inherit" data-testid="ai-cerebellum-repetition-penalty" />
-        </div>
+        <SliderField size="sm" id="cerebellum-temperature" bind:value={temperature} label={$t(`${fieldNs}.temperature`)} defaultValue={selectedModel?.temperature ?? CREATE_DEFAULTS.temperature} min={0} max={2} step={0.1} decimals={1} data-testid="ai-cerebellum-temperature" />
+        <SliderField size="sm" id="cerebellum-top-p" bind:value={top_p} label={$t(`${fieldNs}.top_p`)} defaultValue={selectedModel?.top_p ?? CREATE_DEFAULTS.top_p} min={0.01} max={1} step={0.01} decimals={2} data-testid="ai-cerebellum-top-p" />
+        <SliderField size="sm" id="cerebellum-max-tokens" bind:value={max_tokens} label={$t(`${fieldNs}.max_tokens`)} defaultValue={selectedModel?.max_tokens ?? CREATE_DEFAULTS.max_tokens} steps={[128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]} data-testid="ai-cerebellum-max-tokens" />
+        <SliderField size="sm" id="cerebellum-rep-penalty" bind:value={repetition_penalty} label={$t(`${fieldNs}.repetition_penalty`)} defaultValue={selectedModel?.repetition_penalty ?? CREATE_DEFAULTS.repetition_penalty} min={1} max={2} step={0.01} decimals={2} data-testid="ai-cerebellum-repetition-penalty" />
       </div>
 
+      <SwitchField
+        size="sm"
+        id="cerebellum-thinking"
+        bind:checked={enable_thinking}
+        label={$t(`${fieldNs}.enable_thinking`)}
+        data-testid="ai-cerebellum-thinking"
+      />
+
+      <SelectableFieldset label={$t(`${fieldNs}.execution_config`)}>
+        <div class="grid grid-cols-2 gap-3">
+          <SwitchField
+            size="sm"
+            id="cerebellum-kv-cache"
+            bind:checked={kv_cache_reuse}
+            label={$t(`${fieldNs}.kv_cache_reuse`)}
+            data-testid="ai-cerebellum-kv-cache-reuse"
+          />
+          <SwitchField
+            size="sm"
+            id="cerebellum-sliding-window"
+            bind:checked={sliding_window}
+            label={$t(`${fieldNs}.sliding_window`)}
+            data-testid="ai-cerebellum-sliding-window"
+          />
+          <SwitchField
+            size="sm"
+            id="cerebellum-intent-detection"
+            bind:checked={intent_detection}
+            label={$t(`${fieldNs}.intent_detection`)}
+            data-testid="ai-cerebellum-intent-detection"
+          />
+          <SliderField size="sm" id="cerebellum-max-history" bind:value={max_history_turns} label={$t(`${fieldNs}.max_history_turns`)} defaultValue={selectedModel?.execution_config?.max_history_turns ?? CREATE_DEFAULTS.max_history_turns} min={1} max={16} step={1} data-testid="ai-cerebellum-max-history-turns" />
+        </div>
+      </SelectableFieldset>
+
       <div class="space-y-1.5">
-        <label class="text-xs font-medium text-muted-foreground" for="cerebellum-thinking">
-          {$t(`${fieldNs}.enable_thinking`)}
+        <label class="text-xs font-medium text-muted-foreground" for="cerebellum-recommendation">
+          {$t(`${fieldNs}.recommendation`)}
         </label>
         <ComboSelect
-          id="cerebellum-thinking"
+          id="cerebellum-recommendation"
           mode="single"
-          bind:value={enable_thinking}
+          bind:value={recommendation}
           options={[
-            { value: 'inherit', label: 'inherit' },
-            { value: 'true', label: $t('system.entities.ai_cerebellum.thinking.true') },
-            { value: 'false', label: $t('system.entities.ai_cerebellum.thinking.false') },
+            { value: 'RECOMMENDED', label: $t('app.smart.ai.cerebellum.recommended'), color: 'emerald-500' },
+            { value: 'NOT_RECOMMENDED', label: $t('app.smart.ai.cerebellum.not_recommended'), color: 'amber-500' },
           ]}
           valueField="value"
           labelField="label"
           searchable={false}
-          data-testid="ai-cerebellum-thinking"
+          display="badge"
+          placeholder={$t(`${fieldNs}.recommendation`)}
+          data-testid="ai-cerebellum-recommendation"
         />
       </div>
 
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1.5">
-          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-sort-order">
-            {$t(`${fieldNs}.sort_order`)}
-          </label>
-          <Input id="cerebellum-sort-order" type="number" step="1" min="0" max="9999" bind:value={sort_order} class="w-24" data-testid="ai-cerebellum-sort-order" />
-        </div>
-        <div class="flex items-center gap-2 pt-4">
-          <Switch bind:checked={is_enabled} data-testid="ai-cerebellum-enabled" />
-          <span class="text-xs text-muted-foreground">{$t(`${fieldNs}.is_enabled`)}</span>
-        </div>
-      </div>
+      <SwitchField
+        size="sm"
+        id="cerebellum-enabled"
+        bind:checked={is_enabled}
+        label={$t(`${fieldNs}.is_enabled`)}
+        data-testid="ai-cerebellum-enabled"
+      />
     </div>
 
   {#snippet footer()}

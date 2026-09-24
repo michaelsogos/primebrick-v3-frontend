@@ -144,8 +144,8 @@ export function useAiAssistant<TChoice = unknown>(
     /**
      * Selected cerebellum tuning uuid — null means "model defaults".
      * Auto-set to this assistant's dedicated tuning for the active model
-     * (first by sort_order) on model load/switch; stays null when the
-     * assistant has no tuning for that model.
+     * on model load/switch (the (assistant, model) pair is unique — at most
+     * one enabled row); stays null when the assistant has no tuning.
      */
     selected_tuning_uuid: null as string | null,
   });
@@ -529,8 +529,8 @@ export function useAiAssistant<TChoice = unknown>(
     _state.error = null;
 
     // Load cerebellum tunings for this assistant, then auto-select the
-    // dedicated tuning for the active model (first by sort_order). No
-    // tuning for this pair → null → pure model defaults.
+    // dedicated tuning for the active model (unique per (assistant, model)
+    // pair). No tuning for this pair → null → pure model defaults.
     if (cerebellum) {
       await cerebellum.ensureLoaded();
       if (!_state.selected_tuning_uuid) {

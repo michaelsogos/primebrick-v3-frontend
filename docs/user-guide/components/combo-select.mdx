@@ -60,11 +60,58 @@ settings area for role, permission, org, and module selection.
 />
 ```
 
-### Custom item rendering
+### Display modes (`display`)
+
+Options are rendered through the typed `display` prop — a closed set, like
+`Button` variants. Pick a built-in template instead of writing a snippet.
+
+| `display` | Renders |
+|---|---|
+| `'default'` (default) | Plain resolved label |
+| `'detailed'` | Two-line row — label + secondary value (mono, muted). The secondary line comes from `secondaryField`; when omitted it shows the resolved value. Covers the common "label + key" layout |
+| `'badge'` | The option rendered as a colored `Badge`. The color token (e.g. `'emerald-500'`) is read from `colorField` (default `'color'`) |
+| `'custom'` | Enables `itemSnippet`/`selectedSnippet` for fully bespoke rows |
 
 ```svelte
-<ComboSelect mode="single" bind:value options={roles} valueField="idp_role" labelField="label_key">
-  {#snippet item({ option, selected, resolvedLabel })}
+<!-- Badge options (statuses, recommendations, ...) -->
+<ComboSelect
+  mode="single"
+  bind:value
+  display="badge"
+  colorField="color"
+  options={[{ value: 'ok', label: 'OK', color: 'emerald-500' }]}
+  valueField="value"
+  labelField="label"
+/>
+
+<!-- Two-line label + key rows -->
+<ComboSelect
+  mode="single"
+  bind:value
+  display="detailed"
+  options={i18nKeys}
+  valueField="key"
+  labelField="key"
+/>
+```
+
+### Custom item rendering (`display="custom"`)
+
+`itemSnippet`/`selectedSnippet` are **ignored unless `display="custom"`** —
+in dev the component logs a console warning when snippets are passed with
+any other display. Use `custom` only for layouts no built-in display covers
+(e.g. model cards, avatar rows, conditional badges).
+
+```svelte
+<ComboSelect
+  mode="single"
+  bind:value
+  display="custom"
+  options={roles}
+  valueField="idp_role"
+  labelField="label_key"
+>
+  {#snippet itemSnippet({ option, selected, resolvedLabel })}
     <span class="flex items-center gap-2">
       {#if selected}<Check class="size-4" />{/if}
       {resolvedLabel}
@@ -95,8 +142,9 @@ to bits-ui's `Command.Item` `keywords` prop for scoring.
 Full prop table: see [API reference — combo-select](/docs/user-guide/api-reference#combo-select).
 
 Key props: `mode`, `value` (bindable), `options`, `valueField`, `labelField`,
-`isLabelTranslated`, `searchable`, `disabled`, `loading`, `itemSnippet`,
-`selectedSnippet`, `isOptionDisabled`, `getSearchKeywords`.
+`isLabelTranslated`, `searchable`, `disabled`, `loading`, `display`,
+`colorField`, `secondaryField`, `itemSnippet`, `selectedSnippet` (only with
+`display="custom"`), `isOptionDisabled`, `getSearchKeywords`.
 
 ## Next steps
 

@@ -1,0 +1,70 @@
+---
+title: SwitchField
+description: The mandatory labelled switch — switch + label + optional description sublabel + optional help tooltip.
+---
+
+# SwitchField
+
+`src/lib/components/ui/switch-field/switch-field.svelte`
+
+## Purpose
+
+`SwitchField` is **the only standard** for a labelled boolean switch in a
+form. The canonical order is switch FIRST, label immediately after:
+
+```
+[Switch] Label [?]
+description        (optional muted sublabel under the row)
+```
+
+Never use the label-left / switch-right (`justify-between`) layout, and never
+hand-roll `Switch + <span>` markup in a form — that is what `SwitchField`
+enforces.
+
+The bare `Switch` component is reserved for composite widgets that own their
+labelling (`ConfigValueInput`, toolbar toggles like the AND/OR connector,
+`thumbIcons` toggles).
+
+## Usage
+
+```svelte
+<SwitchField
+  id="enable-thinking"
+  bind:checked={enable_thinking}
+  label={$t('fields.enable_thinking')}
+  description={$t('fields.enable_thinking_help')}
+  data-testid="cerebellum-thinking"
+/>
+```
+
+For external stores that cannot use `bind:` (superForm, builders), use
+`checked` + `onCheckedChange`:
+
+```svelte
+<SwitchField
+  checked={$form.reserved}
+  onCheckedChange={(c) => ($form.reserved = c)}
+  label={$t('...reserved')}
+  description={$t('...reservedHelp')}
+/>
+```
+
+## Props
+
+| Prop | Type | Purpose |
+|---|---|---|
+| `checked` | `boolean` (bindable) | switch state |
+| `onCheckedChange` | `(checked: boolean) => void` | alternative to `bind:` for external stores |
+| `label` | `string` | label rendered right after the switch |
+| `description` | `string` | optional muted `text-xs` sublabel under the row |
+| `tooltip` | `string` | optional help text; renders a `?` `FormLabelWithPriorityHelp` inside the label |
+| `tooltipTitle` | `string` | optional tooltip heading |
+| `tooltipPriority` | `TooltipPriority` | optional priority-styled tooltip content |
+| `tooltipLabelKey` | `string` | optional muted italic i18n key next to the `?` icon |
+| `disabled` | `boolean` | disables the switch (label gets `peer-disabled` styling) |
+| `size` | `'default' \| 'sm'` | label density — `default`: `text-sm font-medium` (form pages); `sm`: `text-xs font-medium text-muted-foreground` (dense sheets). Layout only, never affects colors/gradients |
+| `id` | `string` | forwarded to the switch so the external `<label for>` works |
+| `data-testid` | `string` | on the wrapper; the inner switch gets `<testid>-switch` |
+
+Canonical uses: `AiCerebellumPanel` (all boolean fields), `configurations/create`
+(Reserved), `ValidationRulesSection` (required/unsigned), `regex-flags-panel`.
