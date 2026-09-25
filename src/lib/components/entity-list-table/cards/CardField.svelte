@@ -38,12 +38,12 @@
 
   const value = $derived(row[column.key]);
   const isIanaRecordMode = $derived(
-    column.type === 'datetime' && !!column.datetimeIanaToggle && (datetimeIanaModeByKey[column.key] ?? 'browser') === 'record'
+    column.type === 'datetime' && !!column.datetime_iana_toggle && (datetimeIanaModeByKey[column.key] ?? 'browser') === 'record'
   );
   const auditingColumns = getAuditColumnsContext();
 
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
-    return col.type === 'datetime' && !!col.datetimeIanaToggle && (modeByKey[col.key] ?? 'browser') === 'record';
+    return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
   }
 </script>
 
@@ -54,12 +54,12 @@
   )}
 >
   <span class="text-xs font-medium text-muted-foreground inline-flex items-center gap-1">
-    {$t(column.labelKey)}
-    {#if column.tooltip && column.showListTooltip !== false}
+    {$t(column.label_key)}
+    {#if column.tooltip && column.show_list_tooltip !== false}
       <FormLabelWithPriorityHelp
         text={$t(column.tooltip)}
-        priority={column.tooltipPriority}
-        title={column.tooltipTitle ? $t(column.tooltipTitle) : undefined}
+        priority={column.tooltip_priority}
+        title={column.tooltip_title ? $t(column.tooltip_title) : undefined}
       />
     {/if}
   </span>

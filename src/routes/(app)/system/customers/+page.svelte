@@ -20,31 +20,17 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityAction, EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
-    orderedColumnsFromListMeta,
-    sanitizeVisibleKeys
+    orderedColumns,
+    sanitizeVisibleKeys,
+    searchableTextColumns
   } from '$lib/entity-list';
 
-  type MetaFilter = {
-    key: string;
-    labelKey: string;
-    type: 'enum' | string;
-    options?: string[];
-  };
-
-  type CustomerMeta = {
-    actions?: EntityAction[];
-    entity: 'customer';
-    titleKey?: string;
-    titleText?: string;
-    /** Column key for stable row identity in the UI (see API `uid`). */
-    uid: string;
-    list: EntityListListMeta & { filters?: MetaFilter[] };
-  };
+  type CustomerMeta = EntityMeta;
 
   type CustomerListRow = {
     uuid: string;
@@ -84,8 +70,7 @@
 
   let filtersOpen = $state(false);
 
-  const viewMode: ViewName = 'table';
-  const viewVisibility = $derived(meta?.list.viewVisibility);
+  const viewMode = $derived(meta?.table?.default_view ?? 'table');
   let statusFilter = $state<'ACTIVE' | 'INACTIVE' | null>(null);
   
   // Filter values for all filterable columns
@@ -113,32 +98,31 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const title = $derived(meta?.titleText ?? $t(meta?.titleKey ?? 'system.entities.customer.title'));
-  const columns = $derived(orderedColumnsFromListMeta(meta?.list));
-  const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
-  const dataColumns = $derived(
-    (meta?.list.columns ?? []).filter((c: MetaColumn) => {
-      const stickyKeys = new Set((meta?.list.stickyColumns ?? []).map((c) => c.key));
-      const auditingKeys = new Set((meta?.list.auditingColumns ?? []).map((c) => c.key));
-      return !stickyKeys.has(c.key) && !auditingKeys.has(c.key);
-    })
-  );
-  const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
+  const title = $derived($t(meta?.title_key ?? 'system.entities.customer.title'));
+  const columns = $derived(orderedColumns(meta?.columns));
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
   // Page-level create CTA — same meta.actions contract as EntityListTable ops.
   const canCreate = $derived(isEntityOpAllowed(meta?.actions, 'create.single'));
   const rowsLoading = $derived(metaLoaded && loading);
-  const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'uuid');
-  const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
+  const defaultSortKey = $derived(meta?.table?.default_sort?.key ?? 'uuid');
+  const defaultSortDir = $derived(meta?.table?.default_sort?.dir ?? 'asc');
+  /** Effective `search_in` keys — explicit scope wins; default is visible ∩ searchable text columns. */
+  const effectiveSearchInKeys = $derived(
+    searchInKeys && searchInKeys.length
+      ? searchInKeys
+      : searchableTextColumns(columns)
+          .filter((c) => visibleKeys.includes(c.key))
+          .map((c) => c.key)
+  );
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
+      visibleKeys = defaultVisibleColumnKeys(columns);
       return;
     }
     if (!columns.length) return;
-    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
   }
 
   function arrayEq(a: string[] | null, b: string[] | null): boolean {
@@ -172,26 +156,26 @@
     const cached = getMetaCache();
     if (cached) {
       meta = cached;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       // Only reset sort if not already restored from session storage
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
+      pageSize = Number(meta.table?.default_page_size ?? pageSize);
       ensureVisibleKeys();
       return;
     }
     const inFlight = getMetaInFlight();
     if (inFlight) {
       meta = await inFlight;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       // Only reset sort if not already restored from session storage
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = Number(meta.list.defaultPageSize ?? pageSize);
+      pageSize = Number(meta.table?.default_page_size ?? pageSize);
       ensureVisibleKeys();
       return;
     }
@@ -219,13 +203,13 @@
 
     const m = meta as unknown as CustomerMeta | null;
     if (!m) return;
-    const defSort = m.list.defaultSort;
+    const defSort = m.table?.default_sort;
     // Only reset sort if not already restored from session storage
     if (sortKey === null) {
       sortKey = null;
       sortDir = defSort?.dir ?? 'asc';
     }
-    pageSize = Number(m.list.defaultPageSize ?? pageSize);
+    pageSize = Number(m.table?.default_page_size ?? pageSize);
     ensureVisibleKeys();
   }
 
@@ -362,7 +346,7 @@
 
     const qs = new URLSearchParams();
     if (appliedSearch.trim()) qs.set('search', appliedSearch.trim());
-    if (appliedSearch.trim() && searchInKeys && searchInKeys.length) qs.set('search_in', searchInKeys.join(','));
+    if (appliedSearch.trim() && effectiveSearchInKeys.length) qs.set('search_in', effectiveSearchInKeys.join(','));
     if (statusFilter) qs.set('status', statusFilter);
     // Convert filterValues to backend filters array format using bracket notation
     // Format: filters[0][field]=status&filters[0][op]==&filters[0][value]=ACTIVE
@@ -632,7 +616,7 @@
   // Keep visibleKeys valid as meta/columns change (without infinite loops).
   $effect(() => {
     if (!columns.length) return;
-    const next = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    const next = sanitizeVisibleKeys(visibleKeys, columns);
     if (!arrayEq(next, visibleKeys)) visibleKeys = next;
   });
 
@@ -721,7 +705,7 @@
   }
 
   function onResetColumnVisibility(view: ViewName) {
-    visibleKeys = defaultVisibleColumnKeys(columns, view, viewVisibility);
+    visibleKeys = defaultVisibleColumnKeys(columns);
   }
 
   function onSelectedKeysChange(keys: string[]) {
@@ -787,17 +771,14 @@
       bind:datetimeIanaModeByKey
       bind:datetimeIanaRenderTick
       uid={meta?.uid ?? 'uuid'}
-      {stickyColumns}
-      {dataColumns}
-      {auditingColumns}
       columnOrderStorageKey={skColumnOrder}
       columns={columns}
       rowActionsEnabled
-      entityRowActions={meta?.list.rowActions}
+      entityCustomActions={meta?.table?.row_custom_actions}
     entityActions={meta?.actions}
-      defaultSort={meta?.list.defaultSort}
-      pageSizeOptions={meta?.list.pageSizeOptions}
-      searchPlaceholderKey={meta?.list.searchPlaceholderKey}
+      defaultView={viewMode}
+      defaultSort={meta?.table?.default_sort}
+      pageSizeOptions={meta?.table?.page_size_options}
       selectionLabelSingularKey="system.entities.customer.singular"
       selectionLabelKey="system.entities.customer.plural"
       rows={rows}
@@ -830,7 +811,6 @@
       onAdvancedFiltersChange={onAdvancedFiltersChange}
       {deletionFilterMode}
       onDeletionFilterModeChange={onDeletionFilterModeChange}
-      viewVisibility={viewVisibility}
     >
 
         </EntityListTable>

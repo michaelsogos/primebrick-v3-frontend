@@ -1,0 +1,191 @@
+---
+title: Entity metadata
+description: The canonical EntityMeta schema served by GET /api/v1/entities/{entity}/meta — anatomy, column dictionary, table options, actions contract, and search behavior.
+---
+
+# Entity metadata
+
+Every entity exposes `GET /api/v1/entities/{entity}/meta` — a typed JSON
+document that describes how the entity is displayed and what operations it
+supports. The backend owns the canonical type (`EntityMeta` in
+`src/http/entity-meta.types.ts`); the frontend mirrors the response shape
+in `src/lib/entity-list/types.ts`. All fields are snake_case end to end.
+
+## Anatomy
+
+```json
+{
+  "entity": "user_profile",
+  "translation_key": "user_profile",
+  "title_key": "system.entities.user_profile.title",
+  "uid": "uuid",
+  "display_field": "display_name",
+  "display_name": "${display_name}",
+  "actions_overrides": {
+    "duplicate.bulk": { "enabled": false }
+  },
+  "columns": [
+    {
+      "key": "display_name",
+      "label_key": "system.entities.user_profile.fields.display_name",
+      "type": "text",
+      "order": 0,
+      "sticky": true,
+      "hideable": false,
+      "default_visible": true,
+      "sortable": true,
+      "searchable": true,
+      "filterable": true
+    }
+  ],
+  "table": {
+    "default_view": "table",
+    "default_sort": { "key": "created_at", "dir": "desc" },
+    "default_page_size": 25,
+    "page_size_options": [10, 25, 50, 100],
+    "row_custom_actions": [
+      {
+        "action_name": "change_password",
+        "translation_key": "system.settings.users.change_password",
+        "icon": "key-round",
+        "required_permission": "AUTHENTICATED_ADMIN"
+      }
+    ]
+  },
+  "actions": [
+    { "op": "list", "enabled": true, "permissions": ["user_profile.read.all"] },
+    { "op": "create.single", "enabled": true, "permissions": ["user_profile.create.single"] },
+    { "op": "duplicate.bulk", "enabled": false }
+  ],
+  "collaboration": { "enabled": true, "expose_editing_value": true }
+}
+```
+
+## Root properties
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `entity` | yes | Entity key, snake_case singular — matches the route segment |
+| `translation_key` | yes | snake_case singular i18n prefix for all entity keys |
+| `title_key` | yes | i18n key for the entity title |
+| `uid` | yes | Column key used as unique row identity |
+| `display_field` | yes | Key of the primary display column — drives the first/sticky column |
+| `display_name` | response | Display expression template (`${field}` syntax). Optional in the static meta — `assembleMeta` materializes it as `"${display_field}"` when omitted |
+| `actions_overrides` | no | Per-op `enabled` escape hatch — may only toggle existing ops, never invents them |
+| `columns` | yes | Root-level field dictionary shared by **all** page types (table, form, preview) |
+| `table` | no | `EntityListTable` options — absent on form-only metas (e.g. `GET /api/v1/auth/me/meta`) |
+| `actions` | response | Derived capability contract — injected at runtime |
+| `collaboration` | response | Realtime collaboration flags — injected at runtime |
+
+`display_name` is the generic "how the entity is displayed" representation —
+edit pages consume it automatically for their title, and the same expression
+is reusable for comboboxes, related-object labels, and other display contexts.
+
+## `columns` — the field dictionary
+
+`MetaColumn` describes one entity field. `key`, `label_key`, `type`, and
+`order` are required; every other prop is an optional flag:
+
+| Prop | Purpose |
+|------|---------|
+| `order` | Required explicit position — array position in `columns` does **not** matter. Rendering groups derive from flags: `sticky` first, normal next, `audited` last — each sorted by `order`. Convention: `uuid` is `order: -1` (first sticky, hidden but selectable), `display_field` is `order: 0` |
+| `sticky` | Pinned left — `uuid` and the `display_field` column are the standard sticky pair |
+| `audited` | System audit column (`created_at`, `updated_by`, ...) — rendered last |
+| `default_visible` | `false` = present in the column selector but hidden by default (e.g. `uuid`, `idp_code`) |
+| `hideable` | `false` = cannot be hidden |
+| `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
+| `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
+| `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
+| `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
+| `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
+
+## `table` — EntityListTable options
+
+Present only on entities rendered by `EntityListTable`:
+
+| Prop | Purpose |
+|------|---------|
+| `default_view` | Initial view mode: `table`, `cards`, or `cards_list` |
+| `default_sort` | `{ key, dir }` applied when no user sort is stored |
+| `default_page_size` | Initial rows per page |
+| `page_size_options` | Page-size dropdown values |
+| `row_custom_actions` | Table-specific custom row CTAs (non-standard ops) |
+
+`row_custom_actions` entries carry only display config (`action_name`,
+`translation_key`, `icon`, `text_color`, `disabled_when_deleted`,
+`required_permission`). Whether the operation exists is still decided by
+`actions` — the page wires the handler via `customActionHandlers`.
+
+## `actions` — the capability contract
+
+The backend derives `actions` from the registered route table
+(`deriveEntityActions`). The array **always** contains the full standard
+vocabulary — a missing route produces an explicit `{ enabled: false }`
+entry rather than an absent op:
+
+`list`, `meta`, `get`, `create.single`, `update.single`, `delete.single`,
+`restore.single`, `read.audit`, `export`, `delete.bulk`, `restore.bulk`,
+`duplicate.single`, `duplicate.bulk`
+
+- `enabled: false` → the operation is unavailable for everyone — the UI
+  never renders its CTA, on every page type.
+- `enabled: true` → rendered subject to per-user `permissions`/`sentinel`.
+- `actions_overrides[op].enabled = false` suppresses an existing op at
+  product level (e.g. hiding a route that exists but should not be exposed).
+- Non-standard routes (`change-password`, `check-availability`) surface as
+  additional bare ops.
+
+This is the single capability/visibility mechanism — there are no parallel
+row-action boolean flags in the schema.
+
+## Search behavior
+
+The default "all fields" search covers **visible ∩ searchable ∩
+text-physical** columns:
+
+- A hidden-by-default column (`uuid`) is **not** searched until the user
+  makes it visible.
+- The scope selector lists **all** searchable columns, including hidden
+  ones — an explicit selection always wins (a selected hidden column is
+  searched).
+- Non-text columns (`jsonb`, dates, numbers) are `searchable: false` and
+  never enter an `ILIKE` scope.
+
+## Writing a new meta
+
+On the backend, annotate the static object with `EntityMeta` — the closed
+type rejects unknown properties and missing `display_field` at compile
+time:
+
+```ts
+import type { EntityMeta } from "../../http/entity-meta.types.js";
+
+export const ticketMeta: EntityMeta = {
+  entity: "ticket",
+  translation_key: "ticket",
+  title_key: "system.entities.ticket.title",
+  uid: "uuid",
+  display_field: "title",
+  // display_name omitted — materialized as "${title}" by assembleMeta
+  columns: [
+    { key: "title", label_key: "system.entities.ticket.fields.title", type: "text", order: 0, sticky: true, hideable: false, sortable: true, searchable: true },
+    { key: "uuid", label_key: "system.entities.ticket.fields.uuid", type: "text", order: -1, sticky: true, default_visible: false },
+    { key: "created_at", label_key: "system.entities.ticket.fields.created_at", type: "datetime", order: 90, audited: true, default_visible: false, searchable: false },
+  ],
+  table: {
+    default_view: "table",
+    default_sort: { key: "created_at", dir: "desc" },
+    default_page_size: 25,
+    page_size_options: [10, 25, 50, 100],
+  },
+};
+```
+
+`ConfigEntryMeta extends EntityMeta` exists for metas carrying extra
+required fields (`type_capabilities`).
+
+## Next steps
+
+- [Entity list table](/docs/user-guide/components/entity-list-table) — the table component driven by `columns` + `table` + `actions`
+- [Form page layout](/docs/user-guide/components/form-page-layout) — form pages consuming `columns` tooltips and `display_name`
+- [API reference](/docs/user-guide/api-reference) — full prop tables

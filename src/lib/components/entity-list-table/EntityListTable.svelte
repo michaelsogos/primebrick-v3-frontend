@@ -42,14 +42,10 @@
     entity = 'customer',
     translationKey,
     columns,
-    stickyColumns,
-    dataColumns,
-    auditingColumns,
-    viewVisibility,
     columnOrderStorageKey,
     defaultSort,
+    defaultView,
     pageSizeOptions: pageSizeOptionsProp,
-    searchPlaceholderKey,
     selectionLabelKey,
     selectionLabelSingularKey,
     selectionLabelText,
@@ -80,7 +76,7 @@
     refreshDisabled = false,
     rowActionsEnabled = false,
     rowActions,
-    entityRowActions,
+    entityCustomActions,
     entityActions,
     customActionHandlers,
     onCreateAction,
@@ -106,10 +102,10 @@
     noRecordsMessage
   }: EntityListTableProps<TRow> = $props();
 
-  // Set context for child components — must be reactive because auditingColumns
-  // arrives after meta is loaded (initial value is [] before meta fetch completes)
+  // Set context for child components — must be reactive because the audited
+  // columns arrive after meta is loaded (initial value is [] before meta fetch)
   $effect(() => {
-    setAuditColumnsContext(auditingColumns);
+    setAuditColumnsContext(auditingColumnsGroup);
   });
 
   // Translation key for dynamic i18n keys (dialogs, version history).
@@ -123,66 +119,36 @@
   const columnOrder = useColumnOrder(() => columnOrderStorageKey);
   const orderState = columnOrder.state;
 
-  const allColumns = $derived.by(() => {
-    let all: MetaColumn[];
-    if (stickyColumns || auditingColumns) {
-      all = [
-        ...columnOrder.applyKeyOrder(stickyColumns ?? [], orderState.sticky),
-        ...columnOrder.applyKeyOrder(dataColumns ?? [], orderState.data),
-        ...columnOrder.applyKeyOrder(auditingColumns ?? [], orderState.auditing)
-      ];
-    } else {
-      all = columns;
-    }
-    // Deduplicate by key, preserving order.
-    const seen = new Set<string>();
-    const dedup: MetaColumn[] = [];
-    for (const col of all) {
-      if (!seen.has(col.key)) {
-        seen.add(col.key);
-        dedup.push(col);
-      }
-    }
-    return dedup;
-  });
-  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
+  // Columns arrive as the single root-level `columns` array (pre-ordered via
+  // `orderedColumns`); the sticky/audited groups are derived from column flags.
+  const allColumns = $derived(columns);
+  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetime_iana_toggle));
   const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
-  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const searchableColumns = $derived(
+    allColumns.filter((c) => c.searchable !== false && c.type === 'text')
+  );
   const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
-  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const stickyColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(
-      stickyColumns ??
-      (() => {
-        // Back-compat: use sticky flag from column metadata
-        return allColumns.filter((c) => c.sticky === true);
-      })(),
-      orderState.sticky
-    )
+    columnOrder.applyKeyOrder(allColumns.filter((c) => c.sticky === true), orderState.sticky)
   );
 
-  const auditingKeySet = new Set([
-    'created_at',
-    'created_by',
-    'updated_at',
-    'updated_by',
-    'version',
-    'deleted_at',
-    'deleted_by'
-  ]);
   const auditingColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+    columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
   );
   const hasSoftDelete = $derived(
     auditingColumnsGroup.some((c) => c.key === 'deleted_at' || c.key === 'deleted_by')
   );
   const nonAuditingColumns = $derived(
     columnOrder.applyKeyOrder(
-      dataColumns ??
-        allColumns.filter(
-          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
-        ),
+      allColumns.filter((c) => !c.audited && !c.sticky),
       orderState.data
+    )
+  );
+  // Rendered columns: sticky → normal → audited groups (manual reorder via
+  // `orderState` applied), filtered by current visibility.
+  const shownColumns = $derived(
+    [...stickyColumnsGroup, ...nonAuditingColumns, ...auditingColumnsGroup].filter((c) =>
+      visibleKeys.includes(c.key)
     )
   );
 
@@ -191,7 +157,7 @@
     columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
   );
   const viewModeComposable = useViewMode({
-    initialMode: 'table',
+    initialMode: () => defaultView,
     storageKey: () => viewModeStorageKey
   });
   const viewMode = $derived(viewModeComposable.state.viewMode);
@@ -458,22 +424,19 @@
   }
 
   /**
-   * Row/bulk visibility flags derived from `entityRowActions` (product
-   * visibility) ∩ `entityActions` (capability + per-user enablement).
-   * `restore`/`versionHistory` default true — they were not flags before.
+   * Row/bulk CTA visibility derived solely from the `meta.actions` capability
+   * contract — an op is visible iff it is enabled AND the user satisfies its
+   * declared requirement. Custom CTAs come from `meta.table.row_custom_actions`.
    */
-  const effectiveRowActions = $derived.by(() => {
-    const ra = entityRowActions;
-    return {
-      edit: ra?.edit !== false && opAllowed('update.single'),
-      duplicate: ra?.duplicate !== false && opAllowed('duplicate.bulk'),
-      preview: ra?.preview !== false && opAllowed('get'),
-      delete: ra?.delete !== false && opAllowed('delete.single'),
-      restore: (ra as { restore?: boolean } | undefined)?.restore !== false && opAllowed('restore.single'),
-      versionHistory: opAllowed('read.audit'),
-      customActions: ra?.customActions?.filter((a) => hasRequiredPermission(a.requiredPermission))
-    };
-  });
+  const effectiveRowActions = $derived.by(() => ({
+    edit: opAllowed('update.single'),
+    duplicate: opAllowed('duplicate.bulk'),
+    preview: opAllowed('get'),
+    delete: opAllowed('delete.single'),
+    restore: opAllowed('restore.single'),
+    versionHistory: opAllowed('read.audit'),
+    custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
+  }));
 
   /** Create CTA — provided handler only effective when `create.single` is allowed. */
   const effectiveOnCreateAction = $derived(
@@ -564,7 +527,7 @@
     () => rowsLoading,
     () => sortKey,
     () => sortDir,
-    () => dataColumns,
+    () => nonAuditingColumns,
     () => auditingColumnsGroup,
     () => nonAuditingColumns,
     () => onFilterValuesChange,
@@ -603,7 +566,6 @@
   <EntityListTableHeader
     search={search}
     onSearchInput={onSearchInput}
-    searchPlaceholderKey={searchPlaceholderKey}
     searchInKeys={searchInKeys}
     searchableColumns={searchableColumns}
     onSearchInKeysChange={onSearchInKeysChange}
@@ -707,9 +669,9 @@
     onPageChange={onPageChange}
     entity={entity}
     columns={columns}
-    stickyColumns={stickyColumns}
-    dataColumns={dataColumns}
-    auditingColumns={auditingColumns}
+    stickyColumns={stickyColumnsGroup}
+    dataColumns={nonAuditingColumns}
+    auditingColumns={auditingColumnsGroup}
     rowActionsEnabled={rowActionsEnabled}
     footerRangeTotal={footerRangeTotal}
     footerPage={footerPage}

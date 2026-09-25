@@ -285,14 +285,14 @@
         if (newValue) {
           const newBadgeConfig = column.badge.values[newValue as string];
           badgeColor = newBadgeConfig?.color;
-          badgeLabelText = newBadgeConfig?.labelText;
-          badgeLabelKey = newBadgeConfig?.labelKey;
+          badgeLabelText = newBadgeConfig?.label_text;
+          badgeLabelKey = newBadgeConfig?.label_key;
         }
         if (oldValue) {
           const oldBadgeConfig = column.badge.values[oldValue as string];
           oldBadgeColor = oldBadgeConfig?.color;
-          oldBadgeLabelText = oldBadgeConfig?.labelText;
-          oldBadgeLabelKey = oldBadgeConfig?.labelKey;
+          oldBadgeLabelText = oldBadgeConfig?.label_text;
+          oldBadgeLabelKey = oldBadgeConfig?.label_key;
         }
       } else if (isColor) {
         if (newValue) {

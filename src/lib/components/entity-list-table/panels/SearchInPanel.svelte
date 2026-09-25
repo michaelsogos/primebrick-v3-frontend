@@ -8,7 +8,7 @@
   import X from '@lucide/svelte/icons/x'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
-  type ColumnLike = { key: string; labelKey: string };
+  type ColumnLike = { key: string; label_key: string };
 
   interface $$Props {
     searchInKeys: string[] | null | undefined;
@@ -72,7 +72,7 @@
         <span class="pointer-events-none shrink-0" aria-hidden="true">
           <Checkbox checked={!!searchInKeys?.includes(col.key)} class={checkboxVisualOnlyClass} />
         </span>
-        <span class="min-w-0 flex-1 truncate">{$t(col.labelKey)}</span>
+        <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
       </button>
     {/each}
   </div>

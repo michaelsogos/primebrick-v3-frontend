@@ -11,7 +11,6 @@
   let {
     search,
     onSearchInput,
-    searchPlaceholderKey,
     searchInKeys,
     searchableColumns,
     onSearchInKeysChange,
@@ -19,7 +18,6 @@
   }: {
     search: string;
     onSearchInput: (value: string) => void;
-    searchPlaceholderKey?: string;
     searchInKeys: string[] | null;
     searchableColumns: MetaColumn[];
     onSearchInKeysChange: (keys: string[] | null) => void;
@@ -31,7 +29,7 @@
     const keys = searchInKeys;
     if (keys.length === 1) {
       const col = searchableColumns.find((c) => c.key === keys[0]);
-      return col ? $t(col.labelKey) : keys[0];
+      return col ? $t(col.label_key) : keys[0];
     }
     return `${keys.length} ${$t('system.entities.list.searchInFields')}`;
   });
@@ -58,7 +56,7 @@
     class="text-sm placeholder:text-muted-foreground/70"
     value={search}
     oninput={(e: Event) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
-    placeholder={$t(searchPlaceholderKey ?? 'system.entities.list.searchPlaceholder')}
+    placeholder={$t('system.entities.list.searchPlaceholder')}
   />
 
   {#if search.trim().length > 0}

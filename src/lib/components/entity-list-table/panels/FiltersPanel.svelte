@@ -147,10 +147,10 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
           timezoneValues[col.key] = tz;
 
           // Only send IANA field if:
-          // 1. Column has datetimeIanaToggle (has IANA field in DB)
+          // 1. Column has datetime_iana_toggle (has IANA field in DB)
           // 2. Selected timezone differs from browser timezone
-          if (col.datetimeIanaToggle && tz !== browserTimezone) {
-            const ianaField = col.datetimeIanaToggle.recordIanaField;
+          if (col.datetime_iana_toggle && tz !== browserTimezone) {
+            const ianaField = col.datetime_iana_toggle.record_iana_field;
             tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
           }
         } else {
@@ -168,8 +168,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     return Object.entries(col.badge.values).map(([key, value]) => ({
       key,
       label:
-        value.labelText ||
-        $t(value.labelKey || `system.entities.customer.status.${key}`),
+        value.label_text ||
+        $t(value.label_key || `system.entities.customer.status.${key}`),
       color: value.color,
     }));
   }
@@ -529,7 +529,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               for="filter-{col.key}"
               class="text-xs font-normal text-foreground"
             >
-              {$t(col.labelKey)}
+              {$t(col.label_key)}
             </label>
           </div>
 
@@ -688,7 +688,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               <div class="flex-1 min-w-0">
                 <div class="text-xs flex flex-wrap items-center gap-1">
                   <span class="font-bold text-foreground">
-                    {column ? $t(column.labelKey) : filter.field}
+                    {column ? $t(column.label_key) : filter.field}
                   </span>
                   <span class="text-primary">
                     {$t(`system.entities.list.operators.${filter.operator}`)}
@@ -696,8 +696,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   <span class="italic text-muted-foreground">
                     {Array.isArray(filter.value)
                       ? filter.value.map((v) =>
-                          column?.badge?.values?.[v]?.labelText ||
-                          $t(column?.badge?.values?.[v]?.labelKey || `system.entities.customer.status.${v}`)
+                          column?.badge?.values?.[v]?.label_text ||
+                          $t(column?.badge?.values?.[v]?.label_key || `system.entities.customer.status.${v}`)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
                       ? (() => {
@@ -753,7 +753,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     >
                       {newFilterField
                         ? (filterableColumns.find((c) => c.key === newFilterField)
-                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.labelKey)
+                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.label_key)
                             : newFilterField)
                         : $t("system.entities.list.selectField")}
                     </span>
@@ -779,7 +779,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                     closeOnSelect={true}
                     class={dropdownMenuItemWithSelectedClass('', newFilterField === col.key)}
                   >
-                    {$t(col.labelKey)}
+                    {$t(col.label_key)}
                   </DropdownMenu.Item>
                 {/each}
               </DropdownMenu.Content>
@@ -867,8 +867,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           class="shadow-none"
                           style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
                         >
-                          {value.labelText ||
-                            $t(value.labelKey || `system.entities.customer.status.${key}`)}
+                          {value.label_text ||
+                            $t(value.label_key || `system.entities.customer.status.${key}`)}
                         </Badge>
                       </DropdownMenuCheckboxItem>
                     {/each}

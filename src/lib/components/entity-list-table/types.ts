@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ListMetaViewVisibility, ViewName, AdvancedFilter, EntityAction } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -36,15 +36,11 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    */
   translationKey?: string;
   /**
-   * Columns to render/select in the UI.
-   * - New shape (preferred): provide `stickyColumns` + `dataColumns` + `auditingColumns`
-   * - Back-compat: provide `columns` only
+   * Columns to render/select in the UI — the full root-level `columns` array
+   * from the entity meta (ordered via `orderedColumns`). Sticky/audited
+   * grouping is derived internally from the `sticky` / `audited` flags.
    */
   columns: MetaColumn[];
-  stickyColumns?: MetaColumn[];
-  dataColumns?: MetaColumn[];
-  auditingColumns?: MetaColumn[];
-  viewVisibility?: ListMetaViewVisibility;
   /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
   columnOrderStorageKey?: string;
   /** Session-scoped (sessionStorage) storage key for filter values. */
@@ -52,8 +48,9 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   /** Session-scoped (sessionStorage) storage key for advanced filters. */
   advancedFiltersStorageKey?: string;
   defaultSort?: { key: string; dir: SortDir };
+  /** Initial view mode from `meta.table.default_view` (defaults to 'table'). */
+  defaultView?: ViewName;
   pageSizeOptions?: number[];
-  searchPlaceholderKey?: string;
   selectionLabelKey?: string;
   selectionLabelSingularKey?: string;
   selectionLabelText?: string;
@@ -84,21 +81,12 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   refreshDisabled?: boolean;
   rowActionsEnabled?: boolean;
   rowActions?: Snippet<[ { row: TRow } ]>;
-  entityRowActions?: {
-    duplicate?: boolean;
-    delete?: boolean;
-    edit?: boolean;
-    preview?: boolean;
-    customActions?: Array<{
-      actionName: string;
-      translationKey: string;
-      icon: string;
-      textColor?: string;
-      disabledWhenDeleted?: boolean;
-      /** Gate evaluated by `hasRequiredPermission` — sentinel, perm string, or OR-array. */
-      requiredPermission?: string | string[];
-    }>;
-  };
+  /**
+   * Table-specific custom row CTA display config from
+   * `meta.table.row_custom_actions`. Standard ops (edit/delete/….) are derived
+   * from `entityActions` only — no parallel boolean flags.
+   */
+  entityCustomActions?: RowCustomAction[];
   /**
    * Derived capability contract from `meta.actions`. When provided, standard
    * row/bulk CTAs are additionally gated on the op existing, being `enabled`,

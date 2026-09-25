@@ -31,7 +31,7 @@
   import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
   import { settingsTabMenuSegment } from "$lib/breadcrumb/settings-breadcrumb";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
-  import type { MetaColumn } from "$lib/entity-list/types";
+  import { orderedColumns } from "$lib/entity-list";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import { useFormGuard } from "$lib/composables/useFormGuard.svelte";
   import { useActiveRoles } from "$lib/composables/useActiveRoles.svelte";
@@ -181,7 +181,7 @@
   });
 
   function getColMeta(key: string) {
-    return metadata.state.meta?.list?.columns?.find((c) => c.key === key);
+    return metadata.state.meta?.columns?.find((c) => c.key === key);
   }
 
   // Block internal navigation when there are changes
@@ -281,7 +281,7 @@
     rowUuid={userUuid}
     meta={(metadata.state.meta as EntityMetadata | null) || undefined}
     auditData={auditData}
-    auditingColumns={(metadata.state.meta?.list?.auditingColumns as MetaColumn[] | undefined) || []}
+    auditingColumns={orderedColumns(metadata.state.meta?.columns).filter((c) => c.audited)}
     isCreatePage={isCreatePage}
   >
   {#snippet header()}
@@ -491,11 +491,11 @@
                       <Checkbox {...props} checked={$form.is_admin === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idpAdmin")}
-                        {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
+                        {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('is_admin')!.tooltip!)}
-                            priority={getColMeta('is_admin')?.tooltipPriority}
-                            title={getColMeta('is_admin')?.tooltipTitle ? $t(getColMeta('is_admin')!.tooltipTitle!) : undefined}
+                            priority={getColMeta('is_admin')?.tooltip_priority}
+                            title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>
@@ -511,11 +511,11 @@
                       <Checkbox {...props} checked={$form.is_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idpVerified")}
-                        {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
+                        {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('is_verified')!.tooltip!)}
-                            priority={getColMeta('is_verified')?.tooltipPriority}
-                            title={getColMeta('is_verified')?.tooltipTitle ? $t(getColMeta('is_verified')!.tooltipTitle!) : undefined}
+                            priority={getColMeta('is_verified')?.tooltip_priority}
+                            title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>
@@ -531,11 +531,11 @@
                       <Checkbox {...props} checked={$form.email_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idpEmailVerified")}
-                        {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
+                        {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
                             text={$t(getColMeta('email_verified')!.tooltip!)}
-                            priority={getColMeta('email_verified')?.tooltipPriority}
-                            title={getColMeta('email_verified')?.tooltipTitle ? $t(getColMeta('email_verified')!.tooltipTitle!) : undefined}
+                            priority={getColMeta('email_verified')?.tooltip_priority}
+                            title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>

@@ -78,12 +78,12 @@
         onclick={() => handleSortClick(col)}
       >
         <span class="inline-flex items-center gap-1">
-          {$t(col.labelKey)}
-          {#if col.tooltip && col.showListTooltip !== false}
+          {$t(col.label_key)}
+          {#if col.tooltip && col.show_list_tooltip !== false}
             <FormLabelWithPriorityHelp
               text={$t(col.tooltip)}
-              priority={col.tooltipPriority}
-              title={col.tooltipTitle ? $t(col.tooltipTitle) : undefined}
+              priority={col.tooltip_priority}
+              title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
             />
           {/if}
           {#if col.sortable !== false}

@@ -9,6 +9,7 @@
     "ui-components",
     "ui-patterns",
     "components/index",
+    "entity-metadata",
     "components/entity-list-table",
     "components/combo-select",
     "components/dynamic-icon",

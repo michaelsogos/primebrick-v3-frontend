@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -226,7 +227,7 @@
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.list?.auditingColumns || []}
+  auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}
@@ -406,11 +407,11 @@
               <div class="flex items-center space-x-2">
                 <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
                 <label for="is-admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.isAdmin')}
-                  {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.showFormTooltip !== false}
+                  {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
                       text={$t(getColMeta('is_admin')!.tooltip!)}
-                      priority={getColMeta('is_admin')?.tooltipPriority}
-                      title={getColMeta('is_admin')?.tooltipTitle ? $t(getColMeta('is_admin')!.tooltipTitle!) : undefined}
+                      priority={getColMeta('is_admin')?.tooltip_priority}
+                      title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
@@ -424,11 +425,11 @@
               <div class="flex items-center space-x-2">
                 <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
                 <label for="is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.isVerified')}
-                  {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.showFormTooltip !== false}
+                  {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
                       text={$t(getColMeta('is_verified')!.tooltip!)}
-                      priority={getColMeta('is_verified')?.tooltipPriority}
-                      title={getColMeta('is_verified')?.tooltipTitle ? $t(getColMeta('is_verified')!.tooltipTitle!) : undefined}
+                      priority={getColMeta('is_verified')?.tooltip_priority}
+                      title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
@@ -437,11 +438,11 @@
               <div class="flex items-center space-x-2">
                 <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
                 <label for="email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.emailVerified')}
-                  {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.showFormTooltip !== false}
+                  {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
                       text={$t(getColMeta('email_verified')!.tooltip!)}
-                      priority={getColMeta('email_verified')?.tooltipPriority}
-                      title={getColMeta('email_verified')?.tooltipTitle ? $t(getColMeta('email_verified')!.tooltipTitle!) : undefined}
+                      priority={getColMeta('email_verified')?.tooltip_priority}
+                      title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>

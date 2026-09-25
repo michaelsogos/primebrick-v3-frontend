@@ -9,7 +9,7 @@
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
-  type ColumnLike = { key: string; labelKey: string; hideable?: boolean };
+  type ColumnLike = { key: string; label_key: string; hideable?: boolean };
 
   interface $$Props {
     stickyColumns: ColumnLike[];
@@ -98,7 +98,7 @@
                           class={checkboxVisualOnlyClass}
                         />
                       </span>
-                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.label_key)}</span>
                     </button>
                   </div>
                 {/snippet}
@@ -146,7 +146,7 @@
                           class={checkboxVisualOnlyClass}
                         />
                       </span>
-                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.label_key)}</span>
                     </button>
                   </div>
                 {/snippet}
@@ -197,7 +197,7 @@
                           class={checkboxVisualOnlyClass}
                         />
                       </span>
-                      <span class="min-w-0 flex-1 truncate">{t(col.labelKey)}</span>
+                      <span class="min-w-0 flex-1 truncate">{t(col.label_key)}</span>
                     </button>
                   </div>
                 {/snippet}

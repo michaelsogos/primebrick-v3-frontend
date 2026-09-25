@@ -210,7 +210,7 @@
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
               <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
-                {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
+                {$t(allColumns.find((c) => c.key === effectiveSortKey)?.label_key ?? '')}
               </Button>
             {/snippet}
           </DropdownMenu.Trigger>
@@ -220,7 +220,7 @@
                 class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
                 onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
               >
-                {$t(col.labelKey)}
+                {$t(col.label_key)}
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
@@ -264,7 +264,7 @@
         {#each datetimeIanaToggleColumns as col (col.key)}
           <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
           <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
+            <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
             <Switch
               checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
               disabled={rowsLoading}

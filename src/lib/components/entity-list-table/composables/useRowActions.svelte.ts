@@ -276,8 +276,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     });
   }
 
-  function handleCustomAction(action: { actionName: string; translationKey: string }, row: TRow) {
-    const handler = getCustomActionHandlers?.()?.[action.actionName];
+  function handleCustomAction(action: { action_name: string; translation_key: string }, row: TRow) {
+    const handler = getCustomActionHandlers?.()?.[action.action_name];
     if (handler) {
       handler(row);
     } else {
@@ -287,8 +287,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         type: '/errors/not-implemented',
         title: tFn('app.common.errors.notImplemented.title'),
         status: 501,
-        detail: tFn('app.common.errors.notImplemented.detail', { action: action.actionName }),
-        instance: `customAction:${action.actionName}`,
+        detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+        instance: `customAction:${action.action_name}`,
         internal_code: 'CUSTOM_ACTION_NO_HANDLER',
         severity: 'LOW',
       });

@@ -92,12 +92,12 @@
                   <!-- Column 1: _at field (deleted_at or updated_at) -->
                   {#if hasDeletedFields && deletedFields.length > 0}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(deletedFields[0].labelKey)}:</span>
+                      <span class="text-primary">{$t(deletedFields[0].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[0].key], deletedFields[0])}</span>
                     </div>
                   {:else if updatedFields.length > 0}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(updatedFields[0].labelKey)}:</span>
+                      <span class="text-primary">{$t(updatedFields[0].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[0].key], updatedFields[0])}</span>
                     </div>
                   {:else}
@@ -109,7 +109,7 @@
                   <!-- Column 2: created_at -->
                   {#if createdFields.length > 0}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(createdFields[0].labelKey)}:</span>
+                      <span class="text-primary">{$t(createdFields[0].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[0].key], createdFields[0])}</span>
                     </div>
                   {:else}
@@ -134,7 +134,7 @@
                   <!-- Column 1: _by field (deleted_by or updated_by) -->
                   {#if hasDeletedFields && deletedFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(deletedFields[1].labelKey)}:</span>
+                      <span class="text-primary">{$t(deletedFields[1].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[deletedFields[1].key], deletedFields[1])}</span>
                     </div>
                   {:else if hasDeletedFields && deletedFields.length === 1}
@@ -143,7 +143,7 @@
                     </div>
                   {:else if updatedFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(updatedFields[1].labelKey)}:</span>
+                      <span class="text-primary">{$t(updatedFields[1].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[updatedFields[1].key], updatedFields[1])}</span>
                     </div>
                   {:else if updatedFields.length === 1}
@@ -159,7 +159,7 @@
                   <!-- Column 2: created_by -->
                   {#if createdFields.length > 1}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(createdFields[1].labelKey)}:</span>
+                      <span class="text-primary">{$t(createdFields[1].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[createdFields[1].key], createdFields[1])}</span>
                     </div>
                   {:else if createdFields.length === 1}
@@ -175,7 +175,7 @@
                   <!-- Column 3: last_synced_at -->
                   {#if syncFields.length > 0 && auditData.last_synced_at}
                     <div class="flex items-center gap-x-2 whitespace-nowrap">
-                      <span class="text-primary">{$t(syncFields[0].labelKey)}:</span>
+                      <span class="text-primary">{$t(syncFields[0].label_key)}:</span>
                       <span class="italic text-muted-foreground">{auditBox.formatValue(auditData[syncFields[0].key], syncFields[0])}</span>
                     </div>
                   {:else}

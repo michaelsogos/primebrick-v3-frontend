@@ -12,7 +12,6 @@
   interface ToolbarProps {
     search: string;
     onSearchInput: (value: string) => void;
-    searchPlaceholderKey?: string;
     searchInKeys: string[] | null;
     searchableColumns: any[];
     onSearchInKeysChange: (keys: string[] | null) => void;
@@ -35,7 +34,6 @@
   let {
     search,
     onSearchInput,
-    searchPlaceholderKey,
     searchInKeys,
     searchableColumns,
     onSearchInKeysChange,
@@ -56,12 +54,11 @@
   }: ToolbarProps = $props();
 </script>
 
-<div class="flex min-w-0 flex-wrap items-center justify-between gap-2 px-3 py-1.5">
+<Toolbar>
   <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
     <SearchBar
       search={search}
       onSearchInput={onSearchInput}
-      searchPlaceholderKey={searchPlaceholderKey}
       searchInKeys={searchInKeys}
       searchableColumns={searchableColumns}
       onSearchInKeysChange={onSearchInKeysChange}
@@ -69,7 +66,7 @@
     />
   </div>
 
-  <Toolbar class="w-auto flex-none justify-end">
+  <div class="flex items-center justify-end gap-2">
     <ViewModeToggle
       viewMode={viewMode}
       onViewModeChange={onViewModeChange}
@@ -133,5 +130,5 @@
         {$t('system.entities.list.new')}
       </Button>
     {/if}
-  </Toolbar>
-</div>
+  </div>
+</Toolbar>

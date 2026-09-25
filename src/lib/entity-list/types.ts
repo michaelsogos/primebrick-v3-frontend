@@ -6,7 +6,7 @@ export type ViewName = 'table' | 'cards' | 'cards_list';
 
 /**
  * Branded type that enforces snake_case singular (no uppercase letters).
- * Used for `translationKey` in entity meta — the i18n key prefix.
+ * Used for `translation_key` in entity meta — the i18n key prefix.
  *
  * The brand is applied via the `asSnakeCaseSingular()` helper, which
  * performs a runtime check rejecting strings containing A-Z.
@@ -38,109 +38,86 @@ export function isSnakeCaseSingular(value: string): value is SnakeCaseSingular {
 export function asSnakeCaseSingular(value: string): SnakeCaseSingular {
   if (/[A-Z]/.test(value)) {
     throw new Error(
-      `Invalid translationKey "${value}" — must be snake_case singular (no uppercase letters). ` +
+      `Invalid translation_key "${value}" — must be snake_case singular (no uppercase letters). ` +
       `Use snake_case singular like "user_profile" instead of "userProfile".`
     );
   }
   return value as SnakeCaseSingular;
 }
 
-/** Visibility configuration for a specific view. */
-export type ViewVisibilityConfig = {
-  visible?: string[];
-  hidden?: string[];
-  notDisplayable?: string[];
-  notHideable?: string[];
-};
-
-/** Visibility configurations per view mode. */
-export type ListMetaViewVisibility = {
-  [K in ViewName]: ViewVisibilityConfig;
-};
-
 import type { TooltipPriority } from '$lib/components/ui/tooltip';
 
-/** Column definition from entity list meta (API). */
+/**
+ * Entity field descriptor — root-level `columns` dictionary from the meta
+ * (canonical BE `MetaColumn`, snake_case end-to-end).
+ */
 export type MetaColumn = {
   key: string;
-  labelKey: string;
+  label_key: string;
   /**
    * `date`: locale date only. `datetime`: locale date + time (`Intl` default hour cycle for that locale).
    * `color`: displays as a color circle with tooltip showing HEX value.
    */
-  type: 'text' | 'badge' | 'date' | 'datetime' | 'color' | string;
+  type: 'text' | 'badge' | 'date' | 'datetime' | 'color' | 'boolean' | 'number' | string;
+  /** Deterministic display position — explicit per column, array position
+   * does not matter. Convention: `uuid` is `order: -1` (first sticky,
+   * hidden but selectable); `display_field` is `order: 0`. */
+  order: number;
   sortable?: boolean;
   searchable?: boolean;
   hideable?: boolean;
-  defaultVisible?: boolean;
+  default_visible?: boolean;
   filterable?: boolean;
+  /** Pinned left, rendered before normal columns. */
   sticky?: boolean;
+  /** System-managed auditing column — rendered last. */
+  audited?: boolean;
   badge?: {
-    values?: Record<string, { labelKey?: string; labelText?: string; color?: string }>;
+    values?: Record<string, { label_key?: string; label_text?: string; color?: string }>;
   };
   /**
    * `datetime` only: header CTA toggles between browser-local `Intl` (default) and
-   * {@link recordIanaField} on the row (IANA id from the API).
+   * {@link MetaColumn.datetime_iana_toggle.record_iana_field} on the row (IANA id from the API).
    */
-  datetimeIanaToggle?: {
-    recordIanaField: string;
+  datetime_iana_toggle?: {
+    record_iana_field: string;
   };
   /** i18n key for tooltip content. If set, a tooltip renders in form and/or list contexts (per show flags). Works as plain tooltip even without priority/title. */
   tooltip?: string;
   /** Priority/severity for the tooltip icon + title color. Optional/advanced. */
-  tooltipPriority?: TooltipPriority;
+  tooltip_priority?: TooltipPriority;
   /** i18n key for tooltip title (shown in priority color). Optional/advanced. */
-  tooltipTitle?: string;
+  tooltip_title?: string;
   /** Show tooltip in form context. Default: true if `tooltip` is set. */
-  showFormTooltip?: boolean;
+  show_form_tooltip?: boolean;
   /** Show tooltip in list/table/card context. Default: true if `tooltip` is set. */
-  showListTooltip?: boolean;
+  show_list_tooltip?: boolean;
 };
 
-/** `meta.list` slice shared by entity list UIs. */
-export type EntityListListMeta = {
-  searchPlaceholderKey?: string;
-  /**
-   * Non-sticky, non-auditing columns, ordered for display.
-   * Back-compat: older APIs used `columns` to mean "all columns".
-   */
-  columns?: MetaColumn[];
-  /** Sticky (pinned) columns, ordered for display (rendered first). */
-  stickyColumns?: MetaColumn[];
-  /** Auditing columns, ordered for display (rendered last). */
-  auditingColumns?: MetaColumn[];
-  defaultPageSize?: number;
-  pageSizeOptions?: number[];
-  defaultSort?: { key: string; dir: SortDir };
-  /** Visibility rules per view mode. */
-  viewVisibility?: ListMetaViewVisibility;
-  /** Columns that support filtering. */
-  filterFields?: MetaColumn[];
-  /** Row actions supported by this entity */
-  rowActions?: {
-    duplicate?: boolean;
-    delete?: boolean;
-    edit?: boolean;
-    preview?: boolean;
-  };
-  /**
-   * Optional per-op overrides applied to the derived `meta.actions` entries
-   * (e.g. `{ "delete.bulk": { enabled: false } }` hides the CTA even though
-   * the endpoint exists).
-   */
-  actions_overrides?: Record<string, { enabled?: boolean }>;
-  /** Whether the create action is enabled for this entity */
-  enableCreateAction?: boolean;
+/** UI configuration for a non-standard row CTA (route-backed bare op). */
+export type RowCustomAction = {
+  /** Bare op name matching `meta.actions` (e.g. `change_password`). */
+  action_name: string;
+  translation_key: string;
+  icon: string;
+  text_color?: string;
+  disabled_when_deleted?: boolean;
+  required_permission?: string | string[];
+};
+
+/** `meta.table` — EntityListTable options (absent on form-only metas). */
+export type TableMeta = {
+  default_view?: ViewName;
+  default_sort?: { key: string; dir: SortDir };
+  default_page_size?: number;
+  page_size_options?: number[];
+  row_custom_actions?: RowCustomAction[];
 };
 
 /**
- * Top-level entity meta shape returned by `GET /api/v1/entities/{entity}/meta`.
- * Enforces the `translationKey` convention (snake_case singular, no uppercase).
- */
-/**
- * One entry of `meta.actions` — derived server-side from the entity's
- * registered routes. `op` identifies the endpoint operation
- * (`"list"`, `"get"`, `"create.single"`, `"delete.bulk"`, ...).
+ * One entry of `meta.actions` — the derived capability contract.
+ * EVERY standard op is present; `enabled: false` means the op is
+ * unavailable for everyone (route missing or product-disabled).
  */
 export type EntityAction = {
   op: string;
@@ -148,83 +125,76 @@ export type EntityAction = {
   permissions?: string[];
   /** Sentinel gate used instead of concrete perms (e.g. `_authenticated_user`). */
   sentinel?: "_public" | "_authenticated_user" | "_authenticated_admin";
-  /** Product visibility flag — false hides the CTA for everyone. */
+  /** Availability flag — false hides the CTA for everyone. */
   enabled: boolean;
 };
 
-export type EntityListMeta = {
-  /** Derived capability contract: which endpoint ops exist and what they require. */
-  actions?: EntityAction[];
-  /** Entity name in snake_case plural — used for API URLs (e.g. `role_mappings`). */
-  entity: string;
-  /**
-   * Translation key prefix in snake_case singular (e.g. `role_mapping`).
-   * Used to build dynamic i18n keys like `entities.${translationKey}.plural`.
-   * MUST NOT contain uppercase letters.
-   */
-  translationKey?: SnakeCaseSingular;
-  titleKey?: string;
-  updatePageTitle?: string;
-  uid: string;
-  list: EntityListListMeta;
+/** Collaboration fragment injected by `assembleMeta`. */
+export type CollaborationMeta = {
+  enabled: boolean;
+  expose_editing_value: boolean;
 };
 
-/** All columns in the order they should be displayed (sticky -> data -> auditing). */
-export function orderedColumnsFromListMeta(list: EntityListListMeta | null | undefined): MetaColumn[] {
-  if (!list) return [];
-  if (list.stickyColumns || list.auditingColumns) {
-    return [...(list.stickyColumns ?? []), ...(list.columns ?? []), ...(list.auditingColumns ?? [])];
-  }
-  return list.columns ?? [];
+/**
+ * Canonical entity meta — the served `GET /api/v1/entities/{entity}/meta`
+ * response (mirrors BE `EntityMetaResponse`, snake_case end-to-end).
+ */
+export type EntityMeta = {
+  entity: string;
+  /** i18n prefix, snake_case singular (e.g. `role_mapping`). */
+  translation_key?: SnakeCaseSingular;
+  title_key?: string;
+  uid: string;
+  /** Canonical display field — column key for first/sticky identity. */
+  display_field: string;
+  /** Display expression template (`${field}` syntax) — always materialized. */
+  display_name: string;
+  /** Per-op enable overrides (source only — the served `actions` already
+   *  has them applied). */
+  actions_overrides?: Record<string, { enabled?: boolean }>;
+  /** Entity field dictionary (root-level, transversal). */
+  columns: MetaColumn[];
+  /** Table options — absent on form-only metas (e.g. /auth/me/meta). */
+  table?: TableMeta;
+  /** Derived capability contract (runtime-injected). */
+  actions?: EntityAction[];
+  /** Collaboration fragment (runtime-injected). */
+  collaboration?: CollaborationMeta;
+};
+
+/**
+ * Columns in display order: sticky group → normal group → audited group,
+ * each sorted by `order`.
+ */
+export function orderedColumns(columns: readonly MetaColumn[] | null | undefined): MetaColumn[] {
+  if (!columns?.length) return [];
+  const byOrder = (a: MetaColumn, b: MetaColumn) => a.order - b.order;
+  return [
+    ...columns.filter((c) => c.sticky).sort(byOrder),
+    ...columns.filter((c) => !c.sticky && !c.audited).sort(byOrder),
+    ...columns.filter((c) => c.audited).sort(byOrder),
+  ];
 }
 
-/** Keys visible by default from column meta and view visibility config. */
-export function defaultVisibleColumnKeys(
-  columns: MetaColumn[],
-  view: ViewName = 'table',
-  viewVisibility?: ListMetaViewVisibility
-): string[] {
-  if (!columns.length) return [];
-
-  const config = viewVisibility?.[view];
-  if (config?.visible) {
-    // Explicit visible list: filter to existing columns.
-    return config.visible.filter((k) => columns.some((c) => c.key === k));
-  }
-
-  // Fallback to column-level defaults, respecting view-specific hidden/notHideable.
-  let candidates = columns
-    .filter((c) => c.hideable === false || c.defaultVisible !== false)
+/** Keys visible by default — from column flags. */
+export function defaultVisibleColumnKeys(columns: MetaColumn[]): string[] {
+  return columns
+    .filter((c) => c.hideable === false || c.default_visible !== false)
     .map((c) => c.key);
-
-  if (config?.hidden) {
-    candidates = candidates.filter((k) => !config.hidden!.includes(k));
-  }
-
-  // Ensure notHideable are always included.
-  if (config?.notHideable) {
-    for (const k of config.notHideable) {
-      if (columns.some((c) => c.key === k) && !candidates.includes(k)) {
-        candidates.push(k);
-      }
-    }
-  }
-
-  return candidates;
 }
 
 /** Drop unknown keys and fall back to defaults when nothing left. */
-export function sanitizeVisibleKeys(
-  visibleKeys: string[],
-  columns: MetaColumn[],
-  view: ViewName = 'table',
-  viewVisibility?: ListMetaViewVisibility
-): string[] {
+export function sanitizeVisibleKeys(visibleKeys: string[], columns: MetaColumn[]): string[] {
   if (!columns.length) return [];
   const allowed = new Set(columns.map((c) => c.key));
-  let next = visibleKeys.filter((k) => allowed.has(k));
-  if (next.length === 0) next = defaultVisibleColumnKeys(columns, view, viewVisibility);
-  return next;
+  const next = visibleKeys.filter((k) => allowed.has(k));
+  return next.length ? next : defaultVisibleColumnKeys(columns);
+}
+
+/** Text-physical searchable columns — the scope selector + default
+ *  "all fields" search set. */
+export function searchableTextColumns(columns: MetaColumn[]): MetaColumn[] {
+  return columns.filter((c) => c.searchable !== false && c.type === 'text');
 }
 
 /** Filter operators available for advanced filters. */

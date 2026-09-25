@@ -8,7 +8,6 @@
   let {
     search,
     onSearchInput,
-    searchPlaceholderKey,
     searchInKeys,
     searchableColumns,
     onSearchInKeysChange,
@@ -54,7 +53,6 @@
   type EntityListTableHeaderProps<TRow> = {
     search: string;
     onSearchInput: (value: string) => void;
-    searchPlaceholderKey?: string;
     searchInKeys: string[] | null;
     searchableColumns: MetaColumn[];
     onSearchInKeysChange: (keys: string[] | null) => void;
@@ -101,7 +99,6 @@
 <EntityListToolbar
   search={search}
   onSearchInput={onSearchInput}
-  searchPlaceholderKey={searchPlaceholderKey}
   searchInKeys={searchInKeys}
   searchableColumns={searchableColumns}
   onSearchInKeysChange={onSearchInKeysChange}

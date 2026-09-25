@@ -9,7 +9,7 @@ export function formatDatetimeIanaListCell(
   lang: UiLang,
   mode: 'browser' | 'record'
 ): string {
-  if (column.type !== 'datetime' || !column.datetimeIanaToggle) {
+  if (column.type !== 'datetime' || !column.datetime_iana_toggle) {
     return formatListCellValue(column, row[column.key], lang);
   }
   const raw = row[column.key];
@@ -17,7 +17,7 @@ export function formatDatetimeIanaListCell(
   if (mode === 'browser') {
     return formatListCellValue(column, raw, lang);
   }
-  const tzRaw = row[column.datetimeIanaToggle.recordIanaField];
+  const tzRaw = row[column.datetime_iana_toggle.record_iana_field];
   const tz = typeof tzRaw === 'string' && tzRaw.trim() ? tzRaw.trim() : '';
   if (!tz) return formatListCellValue(column, raw, lang);
   return formatUiDateTimeInTimeZone(raw as string | number | Date, lang, tz);
@@ -34,7 +34,7 @@ export function formatDatetimeCellDisplay(
   mode: 'browser' | 'record'
 ): { text: string; iana: string | null } {
   const text = formatDatetimeIanaListCell(column, row, lang, mode);
-  if (column.type !== 'datetime' || !column.datetimeIanaToggle) {
+  if (column.type !== 'datetime' || !column.datetime_iana_toggle) {
     return { text, iana: null };
   }
   const raw = row[column.key];
@@ -44,7 +44,7 @@ export function formatDatetimeCellDisplay(
   if (mode === 'browser') {
     return { text, iana: null };
   }
-  const tzRaw = row[column.datetimeIanaToggle.recordIanaField];
+  const tzRaw = row[column.datetime_iana_toggle.record_iana_field];
   const tz = typeof tzRaw === 'string' && tzRaw.trim() ? tzRaw.trim() : null;
   return { text, iana: tz };
 }

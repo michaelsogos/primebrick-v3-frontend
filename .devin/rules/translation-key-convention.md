@@ -20,30 +20,29 @@
 
 ### 1. BE meta files (`*.meta.ts`)
 
-Every meta object MUST include a `translationKey` field alongside `entity`:
+Every meta object MUST be typed `EntityMeta` and include `translation_key` alongside `entity` and `display_field` (see `.devin/rules/entity-meta-schema.md` on the BE for the full canonical anatomy):
 
 ```ts
-export const roleMappingsMeta = {
-  entity: "role_mappings",           // snake_case plural — used for API URLs
-  translationKey: "role_mapping",    // snake_case singular — used for i18n keys
-  titleKey: "entities.role_mapping.title",
-  list: {
-    columns: [
-      { key: "idp_role", labelKey: "entities.role_mapping.fields.idp_role", ... },
-    ],
-  },
-} as const;
+export const roleMappingsMeta: EntityMeta = {
+  entity: "role_mapping",            // snake_case singular — used for API URLs
+  translation_key: "role_mapping",   // snake_case singular — used for i18n keys
+  title_key: "entities.role_mapping.title",
+  display_field: "idp_role",
+  columns: [
+    { key: "idp_role", label_key: "entities.role_mapping.fields.idp_role", type: "text", order: 0, ... },
+  ],
+};
 ```
 
 - `entity`: snake_case **singular** (API URL path, e.g. `/api/v1/entities/role_mapping`)
-- `translationKey`: snake_case singular (i18n key prefix, e.g. `entities.role_mapping.*`)
+- `translation_key`: snake_case singular (i18n key prefix, e.g. `entities.role_mapping.*`)
 
 **Note:** The `entity` field was previously plural in some meta files
 (`role_mappings`, `user_profiles`, `config_entries`). The new standard is
-**singular** for both `entity` and `translationKey`. Existing plural meta
+**singular** for both `entity` and `translation_key`. Existing plural meta
 files will be renamed in a separate PR.
 
-All `labelKey`, `titleKey`, `tooltip`, `tooltipTitle` values MUST use the `translationKey` as the entity segment.
+All `label_key`, `title_key`, `tooltip`, `tooltip_title` values MUST use the `translation_key` as the entity segment.
 
 ### 2. FE locale files (`*.json`)
 
@@ -80,7 +79,7 @@ $t(`entities.${entity}.plural`)
 $t(`entities.${entity}.fields.${field}`)
 ```
 
-The `EntityListTable` component accepts a `translationKey` prop that defaults to `entity`. Pages MUST pass `meta.translationKey` when available.
+The `EntityListTable` component accepts a `translationKey` prop that defaults to `entity`. Pages MUST pass `meta.translation_key` when available.
 
 ### 4. FE hardcoded keys
 
@@ -98,7 +97,7 @@ $t('entities.user_profiles.fields.is_admin')
 ## Enforcement
 
 - AI agent MUST use snake_case singular for all translation key entity segments.
-- AI agent MUST include `translationKey` in every new BE meta file.
+- AI agent MUST include `translation_key` in every new BE meta file.
 - AI agent MUST pass `translationKey` from meta to `EntityListTable` in every new entity list page.
 - AI agent MUST NOT use camelCase or PascalCase in translation key entity segments.
 - AI agent MUST NOT use snake_case plural in translation key entity segments.

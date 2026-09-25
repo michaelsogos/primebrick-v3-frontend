@@ -94,13 +94,13 @@
       delete?: boolean;
       restore?: boolean;
       versionHistory?: boolean;
-      customActions?: Array<{
-        actionName: string;
-        translationKey: string;
+      custom_actions?: Array<{
+        action_name: string;
+        translation_key: string;
         icon: string;
-        textColor?: string;
-        disabledWhenDeleted?: boolean;
-        requiredPermission?: string | string[];
+        text_color?: string;
+        disabled_when_deleted?: boolean;
+        required_permission?: string | string[];
       }>;
     };
     dropdownMenuRow: TRow | null;
@@ -118,7 +118,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
     isRowDeleted: (row: TRow) => boolean;
   } = $props();
@@ -301,16 +301,16 @@
                   </div>
                 </DropdownMenu.Item>
               {/if}
-              {#if entityRowActions?.customActions && handleCustomAction}
-                {#each entityRowActions.customActions as action}
-                  {@const isDisabled = action.disabledWhenDeleted && isRowDeleted(row)}
+              {#if entityRowActions?.custom_actions && handleCustomAction}
+                {#each entityRowActions.custom_actions as action}
+                  {@const isDisabled = action.disabled_when_deleted && isRowDeleted(row)}
                   <DropdownMenu.Item
                     onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}
-                    class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.textColor ?? '')}
+                    class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
                   >
                     <div class="flex items-center gap-2">
                       <DynamicIcon name={action.icon} size={16} class="opacity-70" />
-                      <span>{$t(action.translationKey)}</span>
+                      <span>{$t(action.translation_key)}</span>
                     </div>
                   </DropdownMenu.Item>
                 {/each}

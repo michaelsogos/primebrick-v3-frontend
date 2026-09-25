@@ -44,22 +44,23 @@ for two-way sync.
 
 | Group | Props |
 |-------|-------|
-| Identity | `uid`, `entity`, `columnOrderStorageKey`, `filterValuesStorageKey`, `advancedFiltersStorageKey` |
-| Columns | `stickyColumns`, `dataColumns`, `auditingColumns`, `columns` (back-compat), `viewVisibility` |
+| Identity | `uid`, `entity`, `translationKey`, `columnOrderStorageKey`, `filterValuesStorageKey`, `advancedFiltersStorageKey` |
+| Columns | `columns` — the full root-level meta array via `orderedColumns(meta.columns)` |
 | Data | `rows`, `total`, `metaLoading`, `rowsLoading`, `error` |
 | Pagination | `page`, `pageSize`, `pageSizeOptions`, `onPageChange`, `onPageSizeChange` |
-| Search | `search`, `onSearchInput`, `searchInKeys`, `onSearchInKeysChange`, `searchPlaceholderKey` |
+| Search | `search`, `onSearchInput`, `searchInKeys`, `onSearchInKeysChange` |
 | Sorting | `sortKey`, `sortDir`, `onSortChange`, `defaultSort` |
+| View | `defaultView` (`meta.table.default_view`) |
 | Column visibility | `visibleKeys`, `onVisibleKeysChange`, `onResetColumnVisibility` |
 | Selection | `selectedKeys` (bindable), `onSelectedKeysChange`, `rowSelectionEnabled` |
-| Actions | `onRefresh`, `rowActions` (snippet), `entityRowActions`, `customActionHandlers`, `onCreateAction`, `onEditAction` |
+| Actions | `onRefresh`, `rowActions` (snippet), `entityActions` (`meta.actions`), `entityCustomActions` (`meta.table.row_custom_actions`), `customActionHandlers`, `onCreateAction`, `onEditAction` |
 | Filters | `filtersOpen` (bindable), `filterValues`, `onFilterValuesChange`, `advancedFilters`, `onAdvancedFiltersChange` |
 | Deletion filter | `deletionFilterMode` (bindable), `onDeletionFilterModeChange` |
 | Customization | `cell` (snippet), `metaLoadingView`, `rowsLoadingView`, `emptyView`, `errorView` |
 
-The preferred column shape splits columns into `stickyColumns`,
-`dataColumns`, and `auditingColumns` groups; the flat `columns` array is
-kept for backwards compatibility.
+Columns arrive as the single root-level `columns` array from the entity
+meta. Sticky/audited groups are derived internally from the `sticky` and
+`audited` column flags — there are no parallel group arrays.
 
 ## Composable architecture
 
@@ -92,15 +93,12 @@ functions, individual `$derived` getters).
 
 ## View modes
 
-Three view modes: `table`, `cards`, `cards_list`. The active mode is stored
-in sessionStorage under `{columnOrderStorageKey}:viewMode` (fallback
-`pb.entityList:{uid}:viewMode`). The toolbar's `ViewModeToggle` switches
-between them. Rendering is handled by `EntityListTableTableView` and
-`EntityListTableCardView`.
-
-Per-view column visibility is controlled by the `viewVisibility` prop, a
-`ListMetaViewVisibility` mapping each view name to a `ViewVisibilityConfig`
-(`visible`, `hidden`, `notDisplayable`, `notHideable`).
+Three view modes: `table`, `cards`, `cards_list`. The initial mode comes
+from `meta.table.default_view` via the `defaultView` prop; the active mode
+is stored in sessionStorage under `{columnOrderStorageKey}:viewMode`
+(fallback `pb.entityList:{uid}:viewMode`). The toolbar's `ViewModeToggle`
+switches between them. Rendering is handled by `EntityListTableTableView`
+and `EntityListTableCardView`.
 
 ## Selection model
 
@@ -155,23 +153,32 @@ by `useSheetPanels`:
 
 ## Column types
 
-`MetaColumn` defines a column. Key fields:
+`MetaColumn` defines a column — the root-level entity field dictionary
+shared by table, form, and preview pages. All fields are snake_case:
 
 | Field | Purpose |
 |-------|---------|
-| `key` | Column identifier |
-| `labelKey` | i18n key for the header label |
-| `type` | `text`, `badge`, `date`, `datetime`, `color`, ... |
+| `key` | Column identifier (row field key) |
+| `label_key` | i18n key for the header/form label |
+| `type` | `text`, `badge`, `date`, `datetime`, `color`, `boolean`, `number` |
+| `order` | Required `0..N` position within its group |
+| `sticky` | Pinned to the left (typically `meta.display_field`) |
+| `audited` | System audit column — rendered last |
 | `sortable`, `searchable`, `filterable`, `hideable` | Capability flags |
-| `defaultVisible` | Shown by default |
-| `sticky` | Pinned to the left |
-| `badge` | Per-value `{ labelKey, labelText, color }` mapping |
-| `datetimeIanaToggle` | `{ recordIanaField }` for IANA timezone toggle |
-| `tooltip`, `tooltipPriority`, `tooltipTitle` | Tooltip configuration |
+| `default_visible` | `false` = selectable but hidden by default (e.g. `uuid`) |
+| `badge` | Per-value `{ label_key, label_text, color }` mapping |
+| `datetime_iana_toggle` | `{ record_iana_field }` for IANA timezone toggle |
+| `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip configuration |
+| `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
 
 Utility functions in `src/lib/entity-list/types.ts`:
-`orderedColumnsFromListMeta()`, `defaultVisibleColumnKeys()`,
-`sanitizeVisibleKeys()`, `getOperatorsForColumnType()`.
+`orderedColumns()` (sticky → normal → audited, each by `order`),
+`defaultVisibleColumnKeys()`, `sanitizeVisibleKeys()`,
+`searchableTextColumns()`, `getOperatorsForColumnType()`.
+
+The default "all fields" search covers **visible ∩ searchable ∩ `text`
+columns**: hidden-by-default columns (e.g. `uuid`) are excluded until the
+user shows them or picks them explicitly in the search-scope selector.
 
 ## Persistence
 

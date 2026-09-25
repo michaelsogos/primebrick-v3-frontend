@@ -81,7 +81,8 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: ALL translations are BE-owned; FE fallback is English-only for `app.*` keys only).
 3. **`.devin/rules/translation-key-convention.md`** — ⚠️ CRITICAL: translation keys MUST be snake_case singular (e.g. `entities.user_profile.fields.*`, NOT `userProfile` or `user_profiles`).
 4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
-5. **`docs/ai/`** — skills selection and suggested workflows.
+5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
+6. **`docs/ai/`** — skills selection and suggested workflows.
 
 ## List pages
 

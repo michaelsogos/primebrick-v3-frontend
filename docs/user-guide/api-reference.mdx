@@ -244,7 +244,14 @@ Source: `src/lib/components/entity-list-table/components/CardActions.svelte`
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
-| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
+| entityRowActions | &lbrace;
+       edit?: boolean;
+       duplicate?: boolean;
+       preview?: boolean;
+       delete?: boolean;
+       restore?: boolean;
+       versionHistory?: boolean;
+     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | onToggleRowSelect | (key: string) => void | — | no | yes |  |
 | onOpenRowDropdown | (row: TRow) => void | — | no | yes |  |
@@ -349,7 +356,12 @@ Source: `src/lib/components/entity-list-table/components/CardItem.svelte`
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | cell | Snippet&lt;[&lbrace; row: TRow; column: MetaColumn &rbrace;]> | — | no | no |  |
 | rowActions | Snippet&lt;[&lbrace; row: TRow &rbrace;]> | — | no | no |  |
-| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
+| entityRowActions | &lbrace;
+       edit?: boolean;
+       duplicate?: boolean;
+       preview?: boolean;
+       delete?: boolean;
+     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | viewMode | 'cards_list' \| 'cards_grid' | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
@@ -409,7 +421,12 @@ Source: `src/lib/components/entity-list-table/components/CardViewRenderer.svelte
 | previewPanel | &lbrace; state: &lbrace; focusedRowIndex: number \| null &rbrace; &rbrace; | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | rowActions | Snippet&lt;[&lbrace; row: TRow &rbrace;]> | — | no | no |  |
-| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;     &rbrace; | — | no | no |  |
+| entityRowActions | &lbrace;
+       edit?: boolean;
+       duplicate?: boolean;
+       preview?: boolean;
+       delete?: boolean;
+     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
@@ -539,15 +556,12 @@ Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 |------|------|---------|----------|----------|-------------|
 | uid | unknown | — | no | yes |  |
 | entity | string | customer | no | no |  |
+| translationKey | unknown | — | no | yes |  |
 | columns | unknown | — | no | yes |  |
-| stickyColumns | unknown | — | no | yes |  |
-| dataColumns | unknown | — | no | yes |  |
-| auditingColumns | unknown | — | no | yes |  |
-| viewVisibility | unknown | — | no | yes |  |
 | columnOrderStorageKey | unknown | — | no | yes |  |
 | defaultSort | unknown | — | no | yes |  |
+| defaultView | unknown | — | no | yes |  |
 | pageSizeOptions | unknown | — | no | yes |  |
-| searchPlaceholderKey | unknown | — | no | yes |  |
 | selectionLabelKey | unknown | — | no | yes |  |
 | selectionLabelSingularKey | unknown | — | no | yes |  |
 | selectionLabelText | unknown | — | no | yes |  |
@@ -578,7 +592,8 @@ Source: `src/lib/components/entity-list-table/EntityListTable.svelte`
 | refreshDisabled | boolean | false | no | no |  |
 | rowActionsEnabled | boolean | false | no | no |  |
 | rowActions | unknown | — | no | yes |  |
-| entityRowActions | unknown | — | no | yes |  |
+| entityCustomActions | unknown | — | no | yes |  |
+| entityActions | unknown | — | no | yes |  |
 | customActionHandlers | unknown | — | no | yes |  |
 | onCreateAction | unknown | — | no | yes |  |
 | onEditAction | unknown | — | no | yes |  |
@@ -779,7 +794,6 @@ Source: `src/lib/components/entity-list-table/components/EntityListTableHeader.s
 |------|------|---------|----------|----------|-------------|
 | search | string | — | no | yes |  |
 | onSearchInput | (value: string) => void | — | no | yes |  |
-| searchPlaceholderKey | string | — | no | no |  |
 | searchInKeys | string[] \| null | — | no | yes |  |
 | searchableColumns | MetaColumn[] | — | no | yes |  |
 | onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
@@ -937,7 +951,6 @@ Source: `src/lib/components/entity-list-table/toolbar/EntityListToolbar.svelte`
 |------|------|---------|----------|----------|-------------|
 | search | string | — | no | yes |  |
 | onSearchInput | (value: string) => void | — | no | yes |  |
-| searchPlaceholderKey | string | — | no | no |  |
 | searchInKeys | string[] \| null | — | no | yes |  |
 | searchableColumns | any[] | — | no | yes |  |
 | onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
@@ -1095,7 +1108,18 @@ Source: `src/lib/components/entity-list-table/components/PreviewPanelWrapper.sve
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
-| previewPanel | &lbrace;       state: &lbrace;         previewPanelOpen: boolean;         previewRow: TRow \| null;         focusedRowIndex: number \| null;         previewEditMode: boolean;         previewRowIndex: number;       &rbrace;;       openPreview: (row: TRow) => void;       closePreview: () => void;       setPreviewEditMode: (mode: boolean) => void;     &rbrace; | — | no | yes |  |
+| previewPanel | &lbrace;
+       state: &lbrace;
+         previewPanelOpen: boolean;
+         previewRow: TRow \| null;
+         focusedRowIndex: number \| null;
+         previewEditMode: boolean;
+         previewRowIndex: number;
+       &rbrace;;
+       openPreview: (row: TRow) => void;
+       closePreview: () => void;
+       setPreviewEditMode: (mode: boolean) => void;
+     &rbrace; | — | no | yes |  |
 | rows | TRow[] | — | no | yes |  |
 | viewRows | TRow[] | — | no | yes |  |
 | uid | string | — | no | yes |  |
@@ -1147,7 +1171,6 @@ Source: `src/lib/components/entity-list-table/toolbar/SearchBar.svelte`
 |------|------|---------|----------|----------|-------------|
 | search | string | — | no | yes |  |
 | onSearchInput | (value: string) => void | — | no | yes |  |
-| searchPlaceholderKey | string | — | no | no |  |
 | searchInKeys | string[] \| null | — | no | yes |  |
 | searchableColumns | MetaColumn[] | — | no | yes |  |
 | onSearchInKeysChange | (keys: string[] \| null) => void | — | no | yes |  |
@@ -1218,11 +1241,16 @@ Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 | orderedSelectedRows | TRow[] | — | no | yes |  |
 | rowSelectionEnabled | boolean | — | no | yes |  |
 | selectedKeys | string[] | — | no | yes |  |
-| rowRangeSelection | &lbrace;       state: &lbrace; rowRangeMouseDown: boolean; rangeDragActive: boolean &rbrace;;       onRowRangeMouseDown: (index: number, e: MouseEvent) => void;     &rbrace; | — | no | yes |  |
+| rowRangeSelection | &lbrace;
+       state: &lbrace; rowRangeMouseDown: boolean; rangeDragActive: boolean &rbrace;;
+       onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
+     &rbrace; | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | rowKey | (row: TRow) => string | — | no | yes |  |
 | isRowDeleted | (row: TRow) => boolean | — | no | yes |  |
-| previewPanel | &lbrace;       focusedRowIndex: number \| null;     &rbrace; | — | no | yes |  |
+| previewPanel | &lbrace;
+       focusedRowIndex: number \| null;
+     &rbrace; | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
 | rowChromeH | string | — | no | yes |  |
 | stickyColumnsGroup | MetaColumn[] | — | no | yes |  |
@@ -1230,7 +1258,12 @@ Source: `src/lib/components/entity-list-table/components/TableBody.svelte`
 | datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | cell | Snippet&lt;[ &lbrace; row: TRow; column: MetaColumn &rbrace; ]> | — | no | no |  |
 | rowActions | Snippet&lt;[ &lbrace; row: TRow &rbrace; ]> | — | no | no |  |
-| entityRowActions | &lbrace;       duplicate?: boolean;       delete?: boolean;       edit?: boolean;       preview?: boolean;     &rbrace; | — | no | no |  |
+| entityRowActions | &lbrace;
+       duplicate?: boolean;
+       delete?: boolean;
+       edit?: boolean;
+       preview?: boolean;
+     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
 | onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
@@ -1306,7 +1339,11 @@ Source: `src/lib/components/entity-list-table/components/TableHeader.svelte`
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|
 | rowSelectionEnabled | boolean | — | no | yes |  |
-| stickyColumnsState | &lbrace;       checkboxHeadRef: HTMLTableCellElement \| null;       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;       stickyRef: any;     &rbrace; | — | no | yes |  |
+| stickyColumnsState | &lbrace;
+       checkboxHeadRef: HTMLTableCellElement \| null;
+       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;
+       stickyRef: any;
+     &rbrace; | — | no | yes |  |
 | rowChromeH | string | — | no | yes |  |
 | allOnPageSelected | boolean | — | no | yes |  |
 | headerIndeterminate | boolean | — | no | yes |  |
@@ -1321,7 +1358,14 @@ Source: `src/lib/components/entity-list-table/components/TableHeader.svelte`
 | datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | toggleDatetimeIana | (col: MetaColumn) => void | — | no | yes |  |
 | actionsEnabled | boolean | — | no | yes |  |
-| previewPanel | &lbrace;       state: &lbrace;         previewPanelOpen: boolean;         previewRow: TRow \| null;       &rbrace;;       openPreview: (row: TRow) => void;       closePreview: () => void;     &rbrace; | — | no | yes |  |
+| previewPanel | &lbrace;
+       state: &lbrace;
+         previewPanelOpen: boolean;
+         previewRow: TRow \| null;
+       &rbrace;;
+       openPreview: (row: TRow) => void;
+       closePreview: () => void;
+     &rbrace; | — | no | yes |  |
 | viewRows | TRow[] | — | no | yes |  |
 
 ### `&lt;TableHeader />`
@@ -1361,13 +1405,33 @@ Source: `src/lib/components/entity-list-table/components/TableRow.svelte`
 | selectedKeys | string[] | — | no | yes |  |
 | shownColumns | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
 | stickyColumnsGroup | import('$lib/entity-list/types').MetaColumn[] | — | no | yes |  |
-| stickyColumnsState | &lbrace;       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;       stickyRef: any;     &rbrace; | — | no | yes |  |
+| stickyColumnsState | &lbrace;
+       state: &lbrace; stickyLeftOffsets: Record&lt;string, number> &rbrace;;
+       stickyRef: any;
+     &rbrace; | — | no | yes |  |
 | datetimeIanaModeByKey | Record&lt;string, 'browser' \| 'record'> | — | no | yes |  |
 | datetimeIanaRenderTick | number | — | no | yes |  |
 | cell | Snippet&lt;[TableRowCellArgs]> | — | no | no |  |
-| entityRowActions | &lbrace;       edit?: boolean;       duplicate?: boolean;       preview?: boolean;       delete?: boolean;       customActions?: Array&lt;&lbrace;         actionName: string;         translationKey: string;         icon: string;         textColor?: string;         disabledWhenDeleted?: boolean;       &rbrace;>;     &rbrace; | — | no | no |  |
+| entityRowActions | &lbrace;
+       edit?: boolean;
+       duplicate?: boolean;
+       preview?: boolean;
+       delete?: boolean;
+       restore?: boolean;
+       versionHistory?: boolean;
+       custom_actions?: Array&lt;&lbrace;
+         action_name: string;
+         translation_key: string;
+         icon: string;
+         text_color?: string;
+         disabled_when_deleted?: boolean;
+         required_permission?: string \| string[];
+       &rbrace;>;
+     &rbrace; | — | no | no |  |
 | dropdownMenuRow | TRow \| null | — | no | yes |  |
-| previewPanel | &lbrace;       focusedRowIndex: number \| null;     &rbrace; | — | no | yes |  |
+| previewPanel | &lbrace;
+       focusedRowIndex: number \| null;
+     &rbrace; | — | no | yes |  |
 | onRowRangeMouseDown | (index: number, e: MouseEvent) => void | — | no | yes |  |
 | onEntityRowClick | (key: string, e: MouseEvent) => void | — | no | yes |  |
 | onPreviewRow | (row: TRow) => void | — | no | yes |  |

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -196,7 +197,7 @@
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.list?.auditingColumns || []}
+  auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}

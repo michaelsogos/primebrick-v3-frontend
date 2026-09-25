@@ -91,7 +91,7 @@
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
             <span class="inline-flex items-center gap-1">
-              {$t(col.labelKey)}
+              {$t(col.label_key)}
               {#if col.sortable !== false}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
@@ -121,10 +121,10 @@
             handleSortClick(col);
           }}
         >
-          {#if col.datetimeIanaToggle}
+          {#if col.datetime_iana_toggle}
             <div class="flex w-full min-w-0 items-center justify-between gap-1">
               <span class="inline-flex min-w-0 items-center gap-1">
-                {$t(col.labelKey)}
+                {$t(col.label_key)}
                 {#if col.sortable !== false}
                   {#if sortKey !== col.key}
                     <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
@@ -159,7 +159,7 @@
             </div>
           {:else}
             <span class="inline-flex items-center gap-1">
-              {$t(col.labelKey)}
+              {$t(col.label_key)}
               {#if col.sortable !== false}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />

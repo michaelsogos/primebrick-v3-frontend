@@ -102,6 +102,15 @@ export function useStickyColumns(options: {
     return () => window.removeEventListener('resize', onResize);
   });
 
+  // Recompute offsets when the sticky group membership/order or column
+  // visibility changes (e.g. column-selector drag&drop). Refs keyed by
+  // `col.key` survive reorders, so DOM events alone don't trigger this.
+  $effect(() => {
+    void safeStickyColumnsGroup.map((c) => c.key).join(',');
+    void options.visibleKeys();
+    queueMicrotask(() => updateStickyOffsets());
+  });
+
   // ResizeObserver effect: watches DOM dimension changes only
   $effect(() => {
     // Track checkboxHeadRef so effect re-runs when ref populates after mount

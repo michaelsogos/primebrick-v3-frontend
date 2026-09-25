@@ -102,7 +102,7 @@
       return {
         type: 'badge',
         colors: badgeColors,
-        text: col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)
+        text: col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)
       };
     } else if (col.type === 'datetime') {
       const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
@@ -278,9 +278,9 @@
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each stickyColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -297,9 +297,9 @@
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each dataColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -316,9 +316,9 @@
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each auditingColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -337,9 +337,9 @@
       class="shadow-none"
       style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
     >
-      {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+      {col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)}
     </Badge>
-  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+  {:else if col.type === 'datetime' && col.datetime_iana_toggle}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
     {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
     {#if isDatetimeIanaRecordMode(col, datetimeIanaModeByKey) && parts.iana}
