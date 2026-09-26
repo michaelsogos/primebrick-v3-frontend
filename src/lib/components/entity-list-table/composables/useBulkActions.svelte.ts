@@ -71,25 +71,27 @@ export function useBulkActions(options: BulkActionsOptions) {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'danger';
+        // Propagate the RFC 7807 body verbatim — `extra.issues` carries the
+        // per-row bulk detail (≤10 offenders) rendered by RfcErrorDialog.
+        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
-          title: data.title || 'Bulk delete failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
+          toneForImpact: 'danger',
+          ...(data ?? {}),
+          title: data?.title || 'Bulk delete failed',
+          status: data?.status || res.status,
+          detail: data?.detail || 'Unknown error',
         };
       }
+
+      // 200 {received, affected} — success toast via the shell (no event card)
+      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      pushNotification({
+        impact: 'NONE',
+        messageKey: 'app.common.deleteSuccess',
+        messageParams: { count: result?.affected ?? items.length },
+        scope: tFn('app.common.errors.scope.bulkDeleteApi'),
+      });
 
       // Clear selection after successful deletion
       onSelectionChange?.([]);
@@ -153,25 +155,24 @@ export function useBulkActions(options: BulkActionsOptions) {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'warning';
+        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
-          title: data.title || 'Bulk restore failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
+          toneForImpact: 'warning',
+          ...(data ?? {}),
+          title: data?.title || 'Bulk restore failed',
+          status: data?.status || res.status,
+          detail: data?.detail || 'Unknown error',
         };
       }
+
+      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      pushNotification({
+        impact: 'NONE',
+        messageKey: 'system.entities.versionHistory.recordRestored',
+        messageParams: { count: result?.affected ?? items.length },
+        scope: tFn('app.common.errors.scope.bulkRestoreApi'),
+      });
 
       // Clear selection after successful restore
       onSelectionChange?.([]);

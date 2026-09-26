@@ -224,6 +224,17 @@ export type AiModel = {
   kv_cache_bytes_per_token?: number | null;
   flops_per_token?: number | null;
   working_set_mb?: number | null;
+  /** 'hf_estimate' = COALESCE(vram_mb,download)+kv×8192;
+   *  'e2e_measured' = GPUBuffer-tracked total (KV already inside). */
+  working_set_source?: 'hf_estimate' | 'e2e_measured';
+  working_set_detail?: {
+    weights_mb?: number;
+    kv_mb?: number;
+    ctx_ref?: number;
+    measured_vram_bytes?: number;
+    measured_at?: string;
+    measured_ctx_tokens?: number | null;
+  } | null;
   compatibility_status: string;
   execution_config?: ExecutionConfig | null;
   created_at: string;
@@ -234,6 +245,16 @@ export type AiModel = {
   deleted_at?: string;
   deleted_by?: string;
 };
+
+/**
+ * Variant identity of an ai_models row: "<model_id>#<dtype>". `model_id` is the
+ * bare HF repo (storage is normalized); the dtype suffix is derived, never
+ * stored. Use this wherever a specific quantization must be identified —
+ * cache keys, cerebellum refs, config values, testids, assistant state.
+ */
+export function modelVariantKey(m: { model_id: string; dtype?: string | null }): string {
+  return m.dtype ? `${m.model_id}#${m.dtype}` : m.model_id;
+}
 
 /**
  * `ai_cerebellum` row — per-assistant tuning preset for a model.

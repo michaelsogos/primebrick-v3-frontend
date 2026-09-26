@@ -487,7 +487,13 @@ export async function bulkUpdateConfigEntries(
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ updates }),
   });
-  if (!res.ok) throw new Error(`Config entries bulk update failed (${res.status})`);
+  if (!res.ok) {
+    // Propagate the RFC 7807 body verbatim so the caller can pushNotification()
+    // it and extra.issues (per-row bulk detail) reaches the error dialog.
+    const errorData = await res.json().catch(() => null);
+    if (errorData && typeof errorData === 'object' && 'status' in errorData) throw errorData;
+    throw new Error(`Config entries bulk update failed (${res.status})`);
+  }
   const data = (await res.json()) as { success: boolean; updated: number };
   return data.updated;
 }

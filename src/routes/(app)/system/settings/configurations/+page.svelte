@@ -148,12 +148,18 @@
         bulkTargets = [];
       } else {
         const errorData = await resp.json().catch(() => null);
-        pushNotification({
-          impact: 'HIGH',
-          messageKey: 'app.common.deleteFailed',
-          scope: $t('system.settings.configurations.title'),
-          detail: errorData?.detail ?? `HTTP ${resp.status}`,
-        });
+        // RFC 7807 body (type+status) → push verbatim so extra.issues reaches
+        // the RfcErrorDialog; otherwise fall back to a plain notification.
+        if (errorData && typeof errorData === 'object' && 'status' in errorData) {
+          pushNotification(errorData);
+        } else {
+          pushNotification({
+            impact: 'HIGH',
+            messageKey: 'app.common.deleteFailed',
+            scope: $t('system.settings.configurations.title'),
+            detail: errorData?.detail ?? `HTTP ${resp.status}`,
+          });
+        }
       }
     } catch (err) {
       pushNotification({

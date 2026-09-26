@@ -140,12 +140,18 @@
       // Reload entries to get updated version/updated_at
       await onSave(entries[0], ''); // trigger parent reload
     } catch (err) {
-      pushNotification({
-        impact: 'HIGH',
-        messageKey: 'app.common.saveFailed',
-        scope: $t('system.settings.configurations.title'),
-        detail: err instanceof Error ? err.message : undefined,
-      });
+      // RFC 7807 body thrown by the API helper (type+status+extra.issues) →
+      // push verbatim so the error dialog renders the per-row detail.
+      if (err && typeof err === 'object' && 'status' in err && 'type' in err) {
+        pushNotification(err as never);
+      } else {
+        pushNotification({
+          impact: 'HIGH',
+          messageKey: 'app.common.saveFailed',
+          scope: $t('system.settings.configurations.title'),
+          detail: err instanceof Error ? err.message : undefined,
+        });
+      }
     } finally {
       isBulkSaving = false;
     }
