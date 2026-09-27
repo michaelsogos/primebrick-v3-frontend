@@ -18651,7 +18651,7 @@
           "column": 0
         },
         "end": {
-          "line": 713,
+          "line": 719,
           "column": 0
         }
       },
@@ -42517,6 +42517,211 @@
     }
   },
   {
+    "file": "src/lib/components/ui/number-ticker/number-ticker.svelte",
+    "component": "number-ticker",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 50,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "value",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "0",
+          "defaultValue": {
+            "raw": "0",
+            "kind": "literal",
+            "value": 0
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 17,
+              "column": 4
+            },
+            "end": {
+              "line": 17,
+              "column": 13
+            }
+          }
+        },
+        {
+          "name": "decimals",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "0",
+          "defaultValue": {
+            "raw": "0",
+            "kind": "literal",
+            "value": 0
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 18,
+              "column": 4
+            },
+            "end": {
+              "line": 18,
+              "column": 16
+            }
+          }
+        },
+        {
+          "name": "prefix",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "''",
+          "defaultValue": {
+            "raw": "''",
+            "kind": "literal",
+            "value": ""
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 19,
+              "column": 4
+            },
+            "end": {
+              "line": 19,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "suffix",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "''",
+          "defaultValue": {
+            "raw": "''",
+            "kind": "literal",
+            "value": ""
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 20,
+              "column": 4
+            },
+            "end": {
+              "line": 20,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "speed",
+          "kind": "let",
+          "description": "Value-units per second — duration = distance / speed (min 800ms).",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "100",
+          "defaultValue": {
+            "raw": "100",
+            "kind": "literal",
+            "value": 100
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 22,
+              "column": 4
+            },
+            "end": {
+              "line": 22,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "typeSource": "unknown",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 20
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "rest_props": {
+        "type": "Element",
+        "name": "span"
+      },
+      "contexts": [],
+      "diagnostics": [
+        {
+          "component": "src/lib/components/ui/number-ticker/number-ticker.svelte",
+          "kind": "prop-unknown-type",
+          "name": "class",
+          "message": "Prop \"class\" type could not be inferred; falling back to \"any\".",
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 20
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
     "file": "src/lib/components/ui/numeric-input/numeric-input.svelte",
     "component": "numeric-input",
     "data": {
@@ -51590,7 +51795,7 @@
           "column": 0
         },
         "end": {
-          "line": 142,
+          "line": 190,
           "column": 0
         }
       },
@@ -54265,6 +54470,289 @@
             "end": {
               "line": 12,
               "column": 8
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "file": "src/lib/components/ui/stat-card/stat-card.svelte",
+    "component": "stat-card",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 81,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "label",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 21,
+              "column": 9
+            }
+          }
+        },
+        {
+          "name": "value",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "0",
+          "defaultValue": {
+            "raw": "0",
+            "kind": "literal",
+            "value": 0
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 22,
+              "column": 4
+            },
+            "end": {
+              "line": 22,
+              "column": 13
+            }
+          }
+        },
+        {
+          "name": "decimals",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "0",
+          "defaultValue": {
+            "raw": "0",
+            "kind": "literal",
+            "value": 0
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 16
+            }
+          }
+        },
+        {
+          "name": "prefix",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "''",
+          "defaultValue": {
+            "raw": "''",
+            "kind": "literal",
+            "value": ""
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 24,
+              "column": 4
+            },
+            "end": {
+              "line": 24,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "suffix",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "''",
+          "defaultValue": {
+            "raw": "''",
+            "kind": "literal",
+            "value": ""
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 25,
+              "column": 4
+            },
+            "end": {
+              "line": 25,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "speed",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 9
+            }
+          }
+        },
+        {
+          "name": "card",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "true",
+          "defaultValue": {
+            "raw": "true",
+            "kind": "literal",
+            "value": true
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 27,
+              "column": 4
+            },
+            "end": {
+              "line": 27,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "sub",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 7
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "typeSource": "unknown",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 30,
+              "column": 4
+            },
+            "end": {
+              "line": 30,
+              "column": 20
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [
+        {
+          "name": "icon",
+          "default": false,
+          "slot_props": "Record<string, never>",
+          "source": {
+            "start": {
+              "line": 72,
+              "column": 6
+            },
+            "end": {
+              "line": 72,
+              "column": 24
+            }
+          }
+        }
+      ],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "rest_props": {
+        "type": "Element",
+        "name": "div"
+      },
+      "contexts": [],
+      "diagnostics": [
+        {
+          "component": "src/lib/components/ui/stat-card/stat-card.svelte",
+          "kind": "prop-unknown-type",
+          "name": "class",
+          "message": "Prop \"class\" type could not be inferred; falling back to \"any\".",
+          "source": {
+            "start": {
+              "line": 30,
+              "column": 4
+            },
+            "end": {
+              "line": 30,
+              "column": 20
             }
           }
         }
@@ -57074,6 +57562,31 @@
     }
   },
   {
+    "file": "src/lib/components/ui/toolbar/toolbar-divider.svelte",
+    "component": "toolbar-divider",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 2,
+          "column": 0
+        }
+      },
+      "syntaxMode": "legacy",
+      "props": [],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/ui/toolbar/toolbar.svelte",
     "component": "toolbar",
     "data": {
@@ -57083,7 +57596,7 @@
           "column": 0
         },
         "end": {
-          "line": 25,
+          "line": 81,
           "column": 0
         }
       },
@@ -57108,11 +57621,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 7,
+              "line": 26,
               "column": 4
             },
             "end": {
-              "line": 7,
+              "line": 26,
               "column": 25
             }
           }
@@ -57129,12 +57642,87 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 8,
+              "line": 27,
               "column": 4
             },
             "end": {
-              "line": 8,
+              "line": 27,
               "column": 20
+            }
+          }
+        },
+        {
+          "name": "card",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "true",
+          "defaultValue": {
+            "raw": "true",
+            "kind": "literal",
+            "value": true
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "groups",
+          "kind": "let",
+          "type": "Snippet[]",
+          "typeSource": "typescript",
+          "value": "[]",
+          "defaultValue": {
+            "raw": "[]",
+            "kind": "array",
+            "value": []
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 29,
+              "column": 4
+            },
+            "end": {
+              "line": 29,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "refresh",
+          "kind": "let",
+          "type": "{ onclick: () => void; loading?: boolean; disabled?: boolean }",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 30,
+              "column": 4
+            },
+            "end": {
+              "line": 30,
+              "column": 11
             }
           }
         }
@@ -57147,12 +57735,27 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 23,
+              "line": 56,
               "column": 2
             },
             "end": {
-              "line": 23,
+              "line": 56,
               "column": 24
+            }
+          }
+        },
+        {
+          "name": "primary",
+          "default": false,
+          "slot_props": "Record<string, never>",
+          "source": {
+            "start": {
+              "line": 78,
+              "column": 4
+            },
+            "end": {
+              "line": 78,
+              "column": 25
             }
           }
         }
@@ -57173,11 +57776,11 @@
           "message": "Prop \"ref\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 7,
+              "line": 26,
               "column": 4
             },
             "end": {
-              "line": 7,
+              "line": 26,
               "column": 25
             }
           }
@@ -57189,11 +57792,11 @@
           "message": "Prop \"class\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 8,
+              "line": 27,
               "column": 4
             },
             "end": {
-              "line": 8,
+              "line": 27,
               "column": 20
             }
           }

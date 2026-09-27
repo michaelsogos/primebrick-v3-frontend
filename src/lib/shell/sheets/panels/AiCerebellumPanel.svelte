@@ -16,7 +16,7 @@
    * from the /ai models-section toolbar dropdown.
    */
   import { apiFetch } from '$lib/api';
-  import type { AiCerebellum, AiModel } from '$lib/api-types';
+  import { modelVariantKey, type AiCerebellum, type AiModel } from '$lib/api-types';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import AiModelOption from '$lib/components/ui/smart-ai/ai-model-option.svelte';
   import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
@@ -75,7 +75,7 @@
   );
 
   /** Selected model — its defaults are the values inherited when a field is NULL. */
-  const selectedModel = $derived(models.find((m) => m.model_id === model_id) ?? null);
+  const selectedModel = $derived(models.find((m) => modelVariantKey(m) === model_id || m.model_id === model_id) ?? null);
 
   // Prepopulate when the selected pair matches an existing row (edit mode).
   $effect(() => {
@@ -192,7 +192,7 @@
           data-testid="ai-cerebellum-model"
         >
           {#snippet itemSnippet({ option })}
-            {@const rec = (rows ?? []).find((r) => r.assistant_key === assistant_key && r.model_id === (option as AiModel).model_id)?.recommendation}
+            {@const rec = (rows ?? []).find((r) => r.assistant_key === assistant_key && r.model_id === modelVariantKey(option as AiModel))?.recommendation}
             <div class="flex min-w-0 flex-1 items-center gap-2">
               <div class="min-w-0 flex-1">
                 <AiModelOption model={option as AiModel} />

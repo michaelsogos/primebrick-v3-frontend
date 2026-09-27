@@ -120,6 +120,31 @@ structure**:
 - Validation triggers only on user interaction (tainted fields).
 - The `onUpdate` callback handles the API call and error mapping locally.
 
+#### KPI stats (StatCard + NumberTicker)
+
+For KPI values (machine capabilities, dashboard stats) use
+`StatCard` from `$lib/components/ui/stat-card` — never hand-roll
+icon+number+label markup.
+
+- `label` muted `text-xs font-medium`, `value` animated via embedded
+  `NumberTicker` (count-up, duration ∝ distance via `speed` units/s).
+- UoM always inside the value via `suffix` (` GB/s`, ` TFLOPS`) — never a
+  detached caption. `prefix` for bounds (e.g. `≥`).
+- Semantic color goes on the root `class` (e.g. `text-amber-600
+  dark:text-amber-400`) — value and icon inherit, label stays muted.
+- `card` (default true) = bordered shell with the icon in its own right
+  column; `card={false}` = bare stat, icon left of the label, less space.
+- Sizing is content-driven (`w-fit`, min/max bounds) — stats never
+  force a full-width fill; the caller's grid/flex owns layout. Center
+  strips with `flex flex-1 justify-center gap-3`.
+- `icon` is a `Snippet` prop: `{#snippet icon()}<Zap class="size-4 shrink-0" />{/snippet}`.
+- Use bare `NumberTicker` alone (`$lib/components/ui/number-ticker`) only
+  for inline numbers without the label/icon stat chrome.
+- Canonical example: machine-capabilities strip in
+  `src/lib/components/ui/smart-ai/machine-capabilities-section.svelte`.
+- User docs: `docs/user-guide/components/stat-card.mdx`,
+  `components/number-ticker.mdx`.
+
 #### Password inputs
 
 ALL password-type inputs (passwords, API keys, client secrets, tokens)
@@ -163,6 +188,46 @@ NOT user passwords, NOT subject to the password policy.
   `email-providers/+page.svelte` (API key).
 
 See `.devin/rules/password-input-standard.md` for the enforcing rule.
+
+### Toolbars (MANDATORY ordering)
+
+Every toolbar MUST use `Toolbar` from `$lib/components/ui/toolbar`. The
+component **enforces** the presentation order — do not reorder manually:
+
+```
+[children: free-form controls] | [group] | [group] | refresh | [primary]
+```
+
+**Hard rules (non-negotiable):**
+
+1. **Primary CTA(s) always rightmost** — pass them via the `primary`
+   snippet. A divider is auto-rendered before them.
+2. **Refresh** — pass via the `refresh` prop object
+   `{ onclick, loading?, disabled? }`; it renders the standard
+   `ghost size="sm"` icon+label button immediately before the primary
+   CTAs. Never hand-roll a refresh button.
+3. **Every isolated island** (ButtonGroup segmented, selects, toggle
+   groups) MUST be passed in `groups: Snippet[]` — each gets a divider
+   automatically. A ButtonGroup without an isolating divider is wrong:
+   nobody can tell it is a self-contained unit.
+4. **`card`** (default `true`) = bordered card chrome
+   (`border border-border/60` over the same `bg-muted/30`) for standalone toolbars.
+   `card={false}` = borderless `bg-muted/30` — the embedded
+   EntityListTable look (its toolbar already passes `card={false}`).
+5. Section titles stay **outside** the toolbar (left side of the header
+   row); the toolbar holds CTAs only.
+6. **CTA zone is always far-right** (`ml-auto` wrapper). Content pinned
+   left goes in the `left` snippet (`flex-1 min-w-0`) — e.g. SearchBar in
+   entity lists, row counters in table footers. Never use
+   `justify-between` to split zones.
+7. Button rules still apply: toggles = `ButtonGroup segmented` +
+   `ghost icon-sm` + `aria-pressed`; primary = `variant="default"
+   size="sm"`.
+
+Canonical example: `/ai` models header in
+`src/routes/(app)/system/settings/ai/+page.svelte`
+(`data-testid="ai-models-toolbar"`). User docs:
+`docs/user-guide/components/toolbar.mdx`.
 
 ### Tables / lists
 

@@ -24,8 +24,8 @@
   import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import { HardDrive, BrainCircuit, Cpu, Thermometer, Gauge, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, CircuitBoard, Star } from '@lucide/svelte';
-  import type { AiModel, AiCerebellum } from '$lib/api-types';
+  import { HardDrive, BrainCircuit, CircuitBoard, Cpu, Thermometer, Gauge, Trophy, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, Star, TriangleAlert } from '@lucide/svelte';
+  import { modelVariantKey, type AiModel, type AiCerebellum } from '$lib/api-types';
   import { fetchAiCerebellum } from '$lib/api';
   import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -44,7 +44,9 @@
   import AiModelTestReport from '$lib/components/ui/smart-ai/ai-model-test-report.svelte';
   import MachineCapabilitiesSection from '$lib/components/ui/smart-ai/machine-capabilities-section.svelte';
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
-  import { Switch } from '$lib/components/ui/switch';
+  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { Toolbar } from '$lib/components/ui/toolbar';
+  import { cn } from '$lib/utils.js';
 
   const aiModels = useAiModels();
   const configEntries = useConfigEntries();
@@ -61,9 +63,9 @@
   async function setDefaultModel(model: AiModel) {
     const entry = defaultEntry;
     if (!entry || settingDefaultFor !== null) return;
-    settingDefaultFor = model.model_id;
+    settingDefaultFor = modelVariantKey(model);
     try {
-      await updateConfigEntry(entry.uuid, { value: model.model_id }, entry.version);
+      await updateConfigEntry(entry.uuid, { value: modelVariantKey(model) }, entry.version);
       await configEntries.refresh();
       pushNotification({
         impact: 'NONE',
@@ -96,7 +98,7 @@
     // Ranks for the cache section come from the compatible snapshot —
     // independent of the deletion-filter toggle.
     modelRanks = Object.fromEntries(
-      aiModels.getCompatibleModels().map((m) => [m.model_id, m.rank]),
+      aiModels.getCompatibleModels().map((m) => [modelVariantKey(m), m.rank]),
     );
     try {
       cerebellumRows = await fetchAiCerebellum();
@@ -315,44 +317,53 @@
     <MachineCapabilitiesSection />
 
     <!-- AI Models catalog -->
-    <section class="space-y-3" data-testid="ai-settings-models-section">
+    <section class="space-y-1" data-testid="ai-settings-models-section">
     <div
-      class="sticky top-0 z-20 -mx-4 -mt-4 flex items-center justify-between gap-2 bg-background px-4 pb-2 pt-4"
+      class="sticky top-0 z-20 -mx-4 -mt-4 flex items-center justify-between gap-2 bg-background px-4 pb-0.5 pt-3"
       data-testid="ai-settings-models-sticky-header"
     >
       <div class="flex items-center gap-2">
         <BrainCircuit class="size-4 text-foreground/70" />
         <h2 class="text-sm font-semibold">{$t('system.settings.ai.models_section.title')}</h2>
       </div>
-      <!-- Toolbar: cerebellum assistant selector + create CTA + deletion filter + refresh -->
-      <div class="flex items-center gap-2">
-        <label
-          class="flex items-center gap-1.5 text-xs text-muted-foreground {machineRank === null ? 'opacity-50' : ''}"
-          title={$t('system.settings.ai.models_section.fits_machine')}
-        >
-          <Gauge class="size-3.5" />
-          <Switch
-            bind:checked={fitsMachineOnly}
+      <!-- Toolbar (card chrome): isolated groups | refresh | primary CTA -->
+      {#snippet fitsGroup()}
+        <ButtonGroup segmented aria-label={$t('system.settings.ai.models_section.fits_machine')}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            type="button"
+            class={cn(!fitsMachineOnly && 'bg-foreground/10 text-foreground shadow-xs')}
+            aria-pressed={!fitsMachineOnly}
+            title={$t('system.settings.ai.models_section.all_models')}
             disabled={machineRank === null}
-            aria-label={$t('system.settings.ai.models_section.fits_machine')}
+            onclick={() => (fitsMachineOnly = false)}
+          >
+            <Trophy class="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            type="button"
+            class={cn(fitsMachineOnly && 'bg-foreground/10 text-foreground shadow-xs')}
+            aria-pressed={fitsMachineOnly}
+            title={$t('system.settings.ai.models_section.fits_machine_only')}
+            disabled={machineRank === null}
             data-testid="ai-models-fits-machine-switch"
-          />
-          <span>
-            {fitsMachineOnly
-              ? $t('system.settings.ai.models_section.fits_machine_only')
-              : $t('system.settings.ai.models_section.all_models')}
-          </span>
-        </label>
-        <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <CircuitBoard class="size-3.5" />
-          <span>{$t('app.smart.ai.cerebellum.title')}</span>
-        </div>
+            onclick={() => (fitsMachineOnly = true)}
+          >
+            <Gauge class="size-4" />
+          </Button>
+        </ButtonGroup>
+      {/snippet}
+      {#snippet cerebellumGroup()}
+        <CircuitBoard class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <ComboSelect
+          variant="toolbar"
           mode="single"
           bind:value={selectedAssistantKey}
           options={[
-            { key: '', label: $t('app.smart.ai.cerebellum.model_defaults') },
+            { key: '', label: $t('app.smart.ai.cerebellum.model_default') },
             ...cerebellumAssistants.map((a) => ({ key: a.key, label: $t(a.name) })),
           ]}
           valueField="key"
@@ -360,9 +371,17 @@
           searchable={false}
           class="w-44"
           aria-label={$t('app.smart.ai.cerebellum.title')}
+          title={$t('app.smart.ai.cerebellum.title')}
           data-testid="ai-cerebellum-assistant-trigger"
         />
-        <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+      {/snippet}
+      {#snippet deletionGroup()}
+        <DeletionFilterToggle
+          deletionFilterMode={deletionFilterMode}
+          onDeletionFilterModeChange={onDeletionFilterModeChange}
+        />
+      {/snippet}
+      {#snippet createPrimary()}
         <Button
           variant="default"
           size="sm"
@@ -372,21 +391,27 @@
         >
           {$t('system.entities.ai_cerebellum.create')}
         </Button>
-        <DeletionFilterToggle
-          deletionFilterMode={deletionFilterMode}
-          onDeletionFilterModeChange={onDeletionFilterModeChange}
-        />
         <Button
-          variant="soft"
-          size="icon-sm"
-          disabled={aiModels.state.loading}
-          onclick={() => aiModels.reload()}
-          aria-label={$t('system.entities.list.refresh')}
-          title={$t('system.entities.list.refresh')}
+          variant="default"
+          size="sm"
+          type="button"
+          onclick={() =>
+            openSheet('shell.aiModelImport', {
+              existing_model_ids: aiModels.state.models.map((m) => m.model_id),
+              on_added: () => aiModels.reload(),
+            })}
+          data-testid="ai-model-import-cta"
         >
-          <RotateCcw class={aiModels.state.loading ? 'size-4 animate-spin' : 'size-4'} />
+          <Download class="size-4" />
+          {$t('system.entities.ai_model.add_model')}
         </Button>
-      </div>
+      {/snippet}
+      <Toolbar
+        groups={[fitsGroup, cerebellumGroup, deletionGroup]}
+        refresh={{ onclick: () => aiModels.reload(), loading: aiModels.state.loading }}
+        primary={createPrimary}
+        data-testid="ai-models-toolbar"
+      />
     </div>
 
     {#if aiModels.state.loading}
@@ -398,15 +423,27 @@
       <div class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
         {aiModels.state.error}
       </div>
+    {:else if allModels.length === 0}
+      <!-- Same empty state as EntityListTable (watermark + translated text) -->
+      <div class="grid min-h-56 place-items-center p-3">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <TriangleAlert class="size-20 text-warning" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t('system.entities.list.noRecords')}
+          </div>
+        </div>
+      </div>
     {:else}
       <div class="space-y-2">
         {#each allModels as model (model.uuid)}
-          {@const tuning = tuningFor(model.model_id)}
+          {@const tuning = tuningFor(modelVariantKey(model))}
           {@const eff = resolveEffectiveParams(model, tuning)}
           {@const overridden = tuningOverriddenKeys(tuning)}
           <div
             class="rounded-lg border border-border/60 p-3 {model.deleted_at ? 'opacity-50' : ''}"
-            data-testid={`ai-model-row-${model.model_id}`}
+            data-testid={`ai-model-row-${modelVariantKey(model)}`}
           >
             <div class="flex items-start gap-4 min-w-0">
               <!-- Column 1: title + metadata (34%) -->
@@ -424,11 +461,11 @@
                         <ShieldX class="size-3" />
                       </span>
                     {/if}
-                    {#if model.model_id === defaultModelId}
+                    {#if modelVariantKey(model) === defaultModelId}
                       <Badge
                         variant="outline"
                         class="border-sky-400/60 bg-gradient-to-r from-sky-400/15 to-indigo-500/15 text-sky-700 dark:text-sky-300"
-                        data-testid={`ai-model-default-${model.model_id}`}
+                        data-testid={`ai-model-default-${modelVariantKey(model)}`}
                       >
                         <Star class="size-3 fill-current" />
                         {$t('system.entities.ai_model.default')}
@@ -437,7 +474,7 @@
                     {#if tuning?.recommendation}
                       <CerebellumRecommendationBadge recommendation={tuning.recommendation} size="md" />
                     {:else if !selectedAssistantKey}
-                      {#each recommendationsFor(model.model_id) as rec (rec.recommendation)}
+                      {#each recommendationsFor(modelVariantKey(model)) as rec (rec.recommendation)}
                         <CerebellumRecommendationBadge recommendation={rec.recommendation} names={rec.names} size="md" />
                       {/each}
                     {/if}
@@ -494,12 +531,12 @@
                   <Popover.Trigger
                     class="inline-flex"
                     title={$t('system.entities.ai_model.fields.power_level')}
-                    data-testid={`ai-model-power-cta-${model.model_id}`}
+                    data-testid={`ai-model-power-cta-${modelVariantKey(model)}`}
                   >
                     <ScoreGauge value={model.power_level} label={$t('system.entities.ai_model.fields.power_level')} />
                   </Popover.Trigger>
                   <Popover.Content align="start" class="w-64 p-0">
-                    <div class="space-y-1 p-2" data-testid={`ai-model-power-dropdown-${model.model_id}`}>
+                    <div class="space-y-1 p-2" data-testid={`ai-model-power-dropdown-${modelVariantKey(model)}`}>
                       <div class="text-xs font-semibold border-b border-border/40 pb-1 mb-1">
                         {$t('system.entities.ai_model.fields.power_level')}
                       </div>
@@ -522,12 +559,12 @@
                   <Popover.Trigger
                     class="inline-flex"
                     title={$t('system.entities.ai_model.fields.speed')}
-                    data-testid={`ai-model-speed-cta-${model.model_id}`}
+                    data-testid={`ai-model-speed-cta-${modelVariantKey(model)}`}
                   >
                     <ScoreGauge value={tsSummary.speed} label={$t('system.entities.ai_model.fields.speed')} />
                   </Popover.Trigger>
                   <Popover.Content align="start" class="w-72 p-0">
-                    <div class="space-y-2 p-2" data-testid={`ai-model-speed-dropdown-${model.model_id}`}>
+                    <div class="space-y-2 p-2" data-testid={`ai-model-speed-dropdown-${modelVariantKey(model)}`}>
                       <div class="flex items-center justify-between border-b border-border/40 pb-1">
                         <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.speed')}</span>
                         <span class="text-sm font-bold">{tsSummary.speed?.toFixed(1) ?? '—'}</span>
@@ -578,12 +615,12 @@
                   <Popover.Trigger
                     class="inline-flex"
                     title={$t('system.entities.ai_model.fields.rank')}
-                    data-testid={`ai-model-rank-cta-${model.model_id}`}
+                    data-testid={`ai-model-rank-cta-${modelVariantKey(model)}`}
                   >
                     <ScoreGauge value={model.rank} label={$t('system.entities.ai_model.fields.rank')} />
                   </Popover.Trigger>
                   <Popover.Content align="start" class="w-56 p-0">
-                    <div class="space-y-1 p-2" data-testid={`ai-model-rank-dropdown-${model.model_id}`}>
+                    <div class="space-y-1 p-2" data-testid={`ai-model-rank-dropdown-${modelVariantKey(model)}`}>
                       <div class="text-xs font-semibold border-b border-border/40 pb-1 mb-1">
                         {$t('system.entities.ai_model.fields.rank')}
                       </div>
@@ -597,7 +634,7 @@
               </div>
 
               <!-- Column 3: actions (33%, right-aligned) -->
-              <div class="flex items-center shrink-0 justify-end gap-2 min-w-0" style="flex: 33 1 0%;" data-testid={`ai-model-actions-${model.model_id}`}>
+              <div class="flex items-center shrink-0 justify-end gap-2 min-w-0" style="flex: 33 1 0%;" data-testid={`ai-model-actions-${modelVariantKey(model)}`}>
                 {#if model.deleted_at}
                   <!-- Deleted: show restore button -->
                   <Button
@@ -606,7 +643,7 @@
                     onclick={() => handleRestore(model.uuid, model.version)}
                     disabled={aiModels.state.loading}
                     title={$t('app.common.restore')}
-                    data-testid={`ai-model-restore-${model.model_id}`}
+                    data-testid={`ai-model-restore-${modelVariantKey(model)}`}
                   >
                     <RotateCcw class="size-3.5" />
                     {$t('app.common.restore')}
@@ -616,7 +653,7 @@
                        persisted ai_assistant_model config entry). Hidden when an
                        assistant is selected — default selection only makes sense
                        on the model-defaults view. -->
-                  {#if selectedAssistantKey === '' && model.model_id !== defaultModelId && model.compatibility_status === 'COMPATIBLE'}
+                  {#if selectedAssistantKey === '' && modelVariantKey(model) !== defaultModelId && model.compatibility_status === 'COMPATIBLE'}
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -624,9 +661,9 @@
                       disabled={settingDefaultFor !== null}
                       title={$t('system.entities.ai_model.set_as_default')}
                       aria-label={$t('system.entities.ai_model.set_as_default')}
-                      data-testid={`ai-model-set-default-${model.model_id}`}
+                      data-testid={`ai-model-set-default-${modelVariantKey(model)}`}
                     >
-                      <Star class={settingDefaultFor === model.model_id ? 'size-4 animate-spin' : 'size-4'} />
+                      <Star class={settingDefaultFor === modelVariantKey(model) ? 'size-4 animate-spin' : 'size-4'} />
                     </Button>
                   {/if}
                   <!-- Active: contextual delete — model on defaults,
@@ -641,7 +678,7 @@
                       disabled={aiModels.state.loading}
                       title={$t('app.common.delete')}
                       aria-label={$t('app.common.delete')}
-                      data-testid={selectedAssistantKey === '' ? `ai-model-delete-${model.model_id}` : `ai-cerebellum-delete-${model.model_id}`}
+                      data-testid={selectedAssistantKey === '' ? `ai-model-delete-${modelVariantKey(model)}` : `ai-cerebellum-delete-${modelVariantKey(model)}`}
                     >
                       <Trash2 class="size-4" />
                     </Button>

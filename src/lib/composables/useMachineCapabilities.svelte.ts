@@ -73,8 +73,11 @@ const WGX = 65535; // == maxComputeWorkgroupsPerDimension
 const KNEE_LADDER_MB = [1024, 2048, 4096, 6144, 8192, 10240, 12288];
 /** Headroom reserved for OS/browser/KV overhead inside GPU memory (MB). */
 const HEADROOM_MB = 1536;
-/** Top working_set_mb of each model power_level bucket (from the catalog
- *  distribution: lvl2 <2.2GB, lvl3 <4GB, lvl4 <7GB, lvl5 ~9.5GB). */
+/** Top working_set_mb of each model power_level bucket. Canonical source:
+ *  BE `src/modules/ai-models/power-level.ts` (LEVEL_REQUIREMENT_MB) — the
+ *  same table drives powerLevelFromWorkingSet() on the BE write path, so
+ *  `power_level <= machineRank` is a direct fits-check on the same scale.
+ *  Keep in sync. */
 const LEVEL_REQUIREMENT_MB: Record<number, number> = { 1: 1200, 2: 2200, 3: 4000, 4: 7000, 5: 9500 };
 
 const _state = $state<{

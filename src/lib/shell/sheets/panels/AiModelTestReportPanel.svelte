@@ -14,7 +14,7 @@
   import { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import * as Accordion from '$lib/components/ui/accordion/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-  import type { AiModel } from '$lib/api-types';
+  import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { Component } from 'svelte';
   import { t, formatUiDate } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -68,7 +68,7 @@
     {$t('system.entities.ai_model.test_report.title')}
   {/snippet}
 
-  <div data-testid={`ai-model-test-sheet-${model.model_id}`}>
+  <div data-testid={`ai-model-test-sheet-${modelVariantKey(model)}`}>
     <!-- Model identity + aggregate metrics: metadata lives in CONTENT -->
     <div class="space-y-2 border-b border-border/40 px-4 py-3">
       <div>
@@ -98,7 +98,7 @@
     <Accordion.Root type="multiple" class="w-full">
       {#each tsSummary.cases as reportCase (reportCase.key)}
         {#if reportCase.turns.length || reportCase.load || reportCase.note || reportCase.load_ok === false}
-          <Accordion.Item value={reportCase.key} data-testid={`ai-model-test-report-${model.model_id}-${reportCase.key}`}>
+          <Accordion.Item value={reportCase.key} data-testid={`ai-model-test-report-${modelVariantKey(model)}-${reportCase.key}`}>
             <Accordion.Trigger class="px-4 hover:no-underline">
               {@const casePassed = countPassed(reportCase.turns)}
               <span class="flex flex-1 flex-col">

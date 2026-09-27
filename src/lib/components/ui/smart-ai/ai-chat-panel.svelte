@@ -32,7 +32,7 @@
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
-  import type { AiModel } from '$lib/api-types';
+  import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { ChatMessage } from './ai-assistant.types';
   import type { useAiAssistant } from './use-ai-assistant.svelte';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -167,14 +167,14 @@
               : 'idle'
   );
 
-  let currentModelCacheSize = $derived(currentModel ? modelCache.state.model_sizes[currentModel.model_id] ?? 0 : 0);
+  let currentModelCacheSize = $derived(currentModel ? modelCache.state.model_sizes[modelVariantKey(currentModel)] ?? 0 : 0);
 
   function refreshCurrentModelCache() {
     if (!currentModel) return;
     void aiModels.ensureCatalogLoaded().then(() =>
       modelCache.refreshCacheStatus(
-        [currentModel.model_id],
-        aiModels.getAllModels().map((m) => m.model_id),
+        [modelVariantKey(currentModel)],
+        aiModels.getAllModels().map(modelVariantKey),
       ),
     );
   }
@@ -650,7 +650,7 @@
                     <Popover.Content align="end" class="w-72 p-0">
                       <ModelCachePanel
                         active_model_id={ai?.state.model_id ?? modelId}
-                        model_ranks={Object.fromEntries(availableModels.map((m) => [m.model_id, m.rank]))}
+                        model_ranks={Object.fromEntries(availableModels.map((m) => [modelVariantKey(m), m.rank]))}
                       />
                     </Popover.Content>
                   </Popover.Root>

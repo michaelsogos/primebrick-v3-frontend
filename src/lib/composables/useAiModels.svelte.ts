@@ -22,8 +22,8 @@
  */
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { fetchAiModels, apiFetch } from '$lib/api';
-import type { AiModel } from '$lib/api-types';
-import { clearCachedETag } from '$lib/cache/fe-cache-store';
+import { modelVariantKey, type AiModel } from '$lib/api-types';
+import { clearCachedETagsByPrefix } from '$lib/cache/fe-cache-store';
 
 const AI_MODELS_URL = '/api/v1/entities/ai_model/list';
 
@@ -104,7 +104,7 @@ async function fetchVisibleModels(): Promise<void> {
  * UI filter changes do NOT go through here (see setDeletionFilterMode).
  */
 async function reload(): Promise<void> {
-  clearCachedETag(AI_MODELS_URL);
+  clearCachedETagsByPrefix(AI_MODELS_URL);
   _state.fetched = false;
   _catalog.fetched = false;
   await fetchVisibleModels();
@@ -146,7 +146,9 @@ export function useAiModels() {
       return _catalog.models;
     },
     getCatalogModelByModelId(model_id: string): AiModel | undefined {
-      return _catalog.models.find((m) => m.model_id === model_id);
+      // Accepts bare repo ids AND variant keys ('repo#dtype') — dtype disambiguates
+      // repos that carry multiple quantization rows.
+      return _catalog.models.find((m) => m.model_id === model_id || modelVariantKey(m) === model_id);
     },
     /**
      * Compatible-models snapshot — from the full catalog (INCLUDED), NOT
@@ -161,7 +163,8 @@ export function useAiModels() {
     ensureCatalogLoaded,
     getModelByModelId(model_id: string): AiModel | undefined {
       // Same as getVisibleModels — no ensureLoaded() call here.
-      return _state.models.find((m) => m.model_id === model_id);
+      // Accepts bare repo ids AND variant keys ('repo#dtype').
+      return _state.models.find((m) => m.model_id === model_id || modelVariantKey(m) === model_id);
     },
     ensureLoaded,
     reload,
@@ -190,7 +193,7 @@ export function useAiModels() {
       return true;
     },
     invalidate(): void {
-      clearCachedETag(AI_MODELS_URL);
+      clearCachedETagsByPrefix(AI_MODELS_URL);
       _state.fetched = false;
       _catalog.fetched = false;
     },

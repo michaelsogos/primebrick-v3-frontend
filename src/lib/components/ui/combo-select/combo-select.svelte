@@ -70,11 +70,33 @@
      */
     onCreate?: (value: string) => void;
     /**
+     * Called whenever the search text changes while the popover is open
+     * (fires once with `defaultSearch` on open). Lets the parent drive a
+     * remote/async options source — standard ComboSelect stays the same
+     * component, only `options` is refilled by the delegate.
+     */
+    onSearchInput?: (search: string) => void;
+    /**
+     * Infinite scroll: fired when the user scrolls near the bottom of the
+     * options list. The parent appends the next page into `options`.
+     * Pair with `loadingMore` to show the trailing spinner row.
+     */
+    onLoadMore?: () => void;
+    /** Shows a spinner row at the bottom of the list while more pages load. */
+    loadingMore?: boolean;
+    /**
      * Initial search text when the popover opens. Used to pre-filter
      * options (e.g. prefix-filter i18n keys by config.auth.{key}.).
      * The user can clear it via the X button to see all options.
      */
     defaultSearch?: string;
+    /**
+     * Trigger chrome: `default` = primary-gradient border on bg-background
+     * (forms). `toolbar` = plain neutral InputGroup-style chrome
+     * (border-foreground/25, transparent bg) for toolbar strips.
+     */
+    variant?: "default" | "toolbar";
+    class?: string;
     "aria-invalid"?: boolean | "true" | "false";
     "aria-describedby"?: string;
     "aria-required"?: boolean | "true" | "false";
@@ -105,11 +127,16 @@
     selectedSnippet,
     allowCreate = false,
     onCreate,
+    onSearchInput,
+    onLoadMore,
+    loadingMore = false,
     defaultSearch = '',
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
     "aria-required": ariaRequired,
     "data-fs-error": dataFsError,
+    variant = "default",
+    class: className,
     "data-testid": dataTestId,
     ...restProps
   }: Props = $props();
@@ -131,6 +158,14 @@
   $effect(() => {
     if (open) {
       search = defaultSearch;
+    }
+  });
+
+  // Remote-search delegate: notify the parent of every search change
+  // while open (including the initial open → prefetch call).
+  $effect(() => {
+    if (open) {
+      onSearchInput?.(search);
     }
   });
 
@@ -266,6 +301,13 @@
 
   let showCreateItem = $derived(allowCreate && search.trim() !== '' && !exactMatchExists);
 
+  // Infinite scroll — near-bottom hit fires the parent's next-page delegate.
+  function handleListScroll(e: Event) {
+    if (!onLoadMore || loadingMore) return;
+    const el = e.currentTarget as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) onLoadMore();
+  }
+
   function handleCreate() {
     const newKey = search.trim();
     if (!newKey) return;
@@ -291,11 +333,15 @@
         role="combobox"
         tabindex={disabled ? -1 : 0}
         class={cn(
-          "min-h-9 w-full rounded-md border-primary-gradient bg-background px-3 py-1 text-sm ring-offset-background outline-hidden transition-all hover:brightness-105",
+          "min-h-9 w-full rounded-md px-3 py-1 text-sm ring-offset-background outline-hidden transition-all",
+          variant === "toolbar"
+            ? "border border-foreground/25 bg-transparent hover:border-foreground/40 focus-within:border-foreground/50"
+            : "border-primary-gradient bg-background hover:brightness-105",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "cursor-pointer flex items-center text-left",
-          "aria-invalid:border-destructive-gradient aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
+          "aria-invalid:border-destructive-gradient aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+          className
         )}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
@@ -413,7 +459,7 @@
           }}
         />
       {/if}
-      <Command.List>
+      <Command.List onscroll={handleListScroll}>
         {#if showCreateItem}
           <Command.Item
             value={search.trim()}
@@ -500,6 +546,11 @@
               </div>
             </Command.Item>
           {/each}
+        {/if}
+        {#if loadingMore}
+          <div class="flex items-center justify-center py-2" aria-hidden="true">
+            <div class="size-4 animate-spin rounded-full border-2 border-muted border-t-foreground"></div>
+          </div>
         {/if}
       </Command.List>
     </Command.Root>

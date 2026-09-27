@@ -11,6 +11,7 @@
    *   - gemma               -> GemmaIcon
    *   - deepseek            -> DeepSeekIcon
    *   - smollm              -> HuggingFaceIcon
+   *   - gpt / openai        -> OpenAIIcon
    *   - anything else       -> Cpu (fallback)
    *
    * Usage: <ModelIcon model_id={model.model_id} class="size-5" />
@@ -23,6 +24,7 @@
   import GemmaIcon from '$lib/components/ui/smart-regex-input/GemmaIcon.svelte';
   import DeepSeekIcon from '$lib/components/ui/smart-regex-input/DeepSeekIcon.svelte';
   import HuggingFaceIcon from '$lib/components/ui/smart-regex-input/HuggingFaceIcon.svelte';
+  import OpenAIIcon from '$lib/components/ui/smart-regex-input/OpenAIIcon.svelte';
   import Cpu from '@lucide/svelte/icons/cpu';
 
   let {
@@ -43,6 +45,7 @@
     if (/gemma/i.test(id)) return 'gemma';
     if (/deepseek/i.test(id)) return 'deepseek';
     if (/smollm/i.test(id)) return 'huggingface';
+    if (/openai|gpt/i.test(id)) return 'openai';
     return 'generic';
   });
 </script>
@@ -63,6 +66,8 @@
   <DeepSeekIcon class={className} />
 {:else if family === 'huggingface'}
   <HuggingFaceIcon class={className} />
+{:else if family === 'openai'}
+  <OpenAIIcon class={className} />
 {:else}
   <Cpu class={className} />
 {/if}

@@ -14,7 +14,9 @@
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import GpuVendorIcon from '$lib/components/ui/smart-ai/gpu-vendor-icon.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Cpu, Gauge, MemoryStick, RotateCcw, Zap } from '@lucide/svelte';
+  import { Cpu, Gauge, Gpu, MemoryStick, RotateCcw, Zap } from '@lucide/svelte';
+  import { NumberTicker } from '$lib/components/ui/number-ticker';
+  import { StatCard } from '$lib/components/ui/stat-card';
 
   const machine = useMachineCapabilities();
 
@@ -22,6 +24,14 @@
   let measuring = $derived(machine.state.measuring);
   let probingVram = $derived(machine.state.probing_vram);
   let machineRank = $derived(machine.machineRank);
+
+  /** VRAM metric color: emerald ≥10GB, amber ≥4GB, red below. */
+  function vramClass(mb: number): string {
+    const gb = mb / 1024;
+    if (gb >= 10) return 'text-emerald-600 dark:text-emerald-400';
+    if (gb >= 4) return 'text-orange-600 dark:text-orange-400';
+    return 'text-red-600 dark:text-red-400';
+  }
 
   onMount(() => {
     if (!machine.state.caps) machine.hydrate();
@@ -72,61 +82,99 @@
     </div>
   {:else if caps}
     <div class="rounded-lg border border-border/60 p-3">
-      <div class="flex items-start gap-4 min-w-0">
-        <!-- Identity + measured metrics -->
-        <div class="min-w-0 flex-1 space-y-1">
+      <div class="flex items-center gap-4 min-w-0">
+        <!-- GPU identity -->
+        <div class="min-w-0 shrink-0 space-y-1">
           <div class="flex items-center gap-2">
-            <GpuVendorIcon vendor={caps.gpu_vendor} class="size-5 shrink-0" />
-            <span class="text-sm font-medium" data-testid="ai-machine-gpu-name">{caps.gpu_name ?? 'GPU'}</span>
+            <GpuVendorIcon vendor={caps.gpu_vendor} class="size-6 shrink-0" />
+            <span class="text-sm font-semibold" data-testid="ai-machine-gpu-name">{caps.gpu_name ?? 'GPU'}</span>
           </div>
           {#if caps.adapter_vendor}
             <div class="text-xs text-muted-foreground">{caps.adapter_vendor}</div>
           {/if}
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
-            {#if caps.bandwidth_gbs !== null}
-              <span class="flex items-center gap-1" title={$t('system.settings.ai.machine.bandwidth')} data-testid="ai-machine-bandwidth">
-                <Zap class="size-3" />
-                {Math.round(caps.bandwidth_gbs)} GB/s
-              </span>
-            {/if}
-            {#if caps.gflops !== null}
-              <span class="flex items-center gap-1" title={$t('system.settings.ai.machine.compute')} data-testid="ai-machine-gflops">
-                <Gauge class="size-3" />
-                {caps.gflops >= 1000 ? `${(caps.gflops / 1000).toFixed(1)} TFLOPS` : `${Math.round(caps.gflops)} GFLOPS`}
-              </span>
-            {/if}
-            {#if caps.vram_dedicated_mb !== null}
-              <span class="flex items-center gap-1" title={$t('system.settings.ai.machine.vram_dedicated')} data-testid="ai-machine-vram">
-                <MemoryStick class="size-3" />
-                {(caps.vram_dedicated_mb / 1024).toFixed(1)} GB VRAM
-              </span>
-            {:else if caps.memory_fast_mb !== null}
-              <span
-                class="flex items-center gap-1 {caps.memory_fits_catalog ? 'text-emerald-600 dark:text-emerald-400' : ''}"
-                title={$t('system.settings.ai.machine.fits_catalog')}
-                data-testid="ai-machine-vram"
-              >
-                <MemoryStick class="size-3" />
-                ≥{(caps.memory_fast_mb / 1024).toFixed(0)} GB
-              </span>
-            {/if}
-            {#if caps.system_memory_gb !== null}
-              <span class="flex items-center gap-1" title={$t('system.settings.ai.machine.system_memory')} data-testid="ai-machine-ram">
-                <Cpu class="size-3" />
-                {caps.system_memory_gb} GB RAM
-              </span>
-            {/if}
-            {#if caps.cpu_threads !== null}
-              <span class="flex items-center gap-1" title={$t('system.settings.ai.machine.cpu_threads')} data-testid="ai-machine-cpu">
-                <Cpu class="size-3" />
-                {caps.cpu_threads} {$t('system.settings.ai.machine.cpu_threads')}
-              </span>
-            {/if}
-          </div>
           {#if caps.errors.length > 0}
             <div class="text-[10px] text-amber-600 dark:text-amber-400 font-mono break-all">
               {caps.errors[0]}
             </div>
+          {/if}
+        </div>
+
+        <!-- KPI strip — content-sized StatCards centered in the free space
+             between GPU identity (left) and rank gauge (far right) -->
+        <div class="flex flex-1 items-stretch justify-center gap-3">
+          {#if caps.bandwidth_gbs !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.bandwidth')}
+              value={Math.round(caps.bandwidth_gbs)}
+              suffix=" GB/s"
+              class="text-amber-600 dark:text-amber-400"
+              title={$t('system.settings.ai.machine.bandwidth')}
+              data-testid="ai-machine-bandwidth"
+            >
+              {#snippet icon()}<Zap class="size-4 shrink-0" />{/snippet}
+            </StatCard>
+          {/if}
+          {#if caps.gflops !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.compute')}
+              value={caps.gflops >= 1000 ? caps.gflops / 1000 : caps.gflops}
+              decimals={caps.gflops >= 1000 ? 1 : 0}
+              suffix={caps.gflops >= 1000 ? ' TFLOPS' : ' GFLOPS'}
+              class="text-sky-600 dark:text-sky-400"
+              title={$t('system.settings.ai.machine.compute')}
+              data-testid="ai-machine-gflops"
+            >
+              {#snippet icon()}<Gauge class="size-4 shrink-0" />{/snippet}
+            </StatCard>
+          {/if}
+          {#if caps.vram_dedicated_mb !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.vram_dedicated')}
+              value={caps.vram_dedicated_mb / 1024}
+              decimals={1}
+              suffix=" GB"
+              class={vramClass(caps.vram_dedicated_mb)}
+              title={$t('system.settings.ai.machine.vram_dedicated')}
+              data-testid="ai-machine-vram"
+            >
+              {#snippet icon()}<Gpu class="size-4 shrink-0" />{/snippet}
+            </StatCard>
+          {:else if caps.memory_fast_mb !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.vram')}
+              value={caps.memory_fast_mb / 1024}
+              decimals={0}
+              prefix="≥"
+              suffix=" GB"
+              class={vramClass(caps.memory_fast_mb)}
+              title={$t('system.settings.ai.machine.fits_catalog')}
+              data-testid="ai-machine-vram"
+            >
+              {#snippet icon()}<Gpu class="size-4 shrink-0" />{/snippet}
+            </StatCard>
+          {/if}
+          {#if caps.system_memory_gb !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.system_memory')}
+              value={caps.system_memory_gb}
+              suffix=" GB"
+              class="text-zinc-700 dark:text-zinc-200"
+              title={$t('system.settings.ai.machine.system_memory')}
+              data-testid="ai-machine-ram"
+            >
+              {#snippet icon()}<MemoryStick class="size-4 shrink-0" />{/snippet}
+            </StatCard>
+          {/if}
+          {#if caps.cpu_threads !== null}
+            <StatCard
+              label={$t('system.settings.ai.machine.cpu_threads')}
+              value={caps.cpu_threads}
+              class="text-zinc-700 dark:text-zinc-200"
+              title={$t('system.settings.ai.machine.cpu_threads')}
+              data-testid="ai-machine-cpu"
+            >
+              {#snippet icon()}<Cpu class="size-4 shrink-0" />{/snippet}
+            </StatCard>
           {/if}
         </div>
 

@@ -343,8 +343,10 @@ export function useAiAssistant<TChoice = unknown>(
           vram_bytes: msg.vram_bytes ?? null,
           worker_nonce: msg.worker_nonce,
         };
-        // Persist the measured VRAM footprint — GPUBuffer tracking in the
-        // worker gives the real allocated bytes, stored as vram_mb.
+        // Persist the measured working set — GPUBuffer tracking in the
+        // worker gives the real allocated bytes (weights + KV + scratch).
+        // The total already includes KV, so it REPLACES working_set_mb
+        // entirely (source 'e2e_measured') — never re-adds kv bytes.
         if (msg.vram_bytes && msg.vram_bytes > 0) void persistVram(msg.vram_bytes);
         if (pending_load_resolver) {
           pending_load_resolver();
@@ -387,11 +389,13 @@ export function useAiAssistant<TChoice = unknown>(
         break;
       }
       case 'stream_complete': {
+        console.debug('[ai-raw]', (msg.text ?? '').slice(0, 200));
         _state.is_streaming = false;
         _state.ai_status = 'idle';
         break;
       }
       case 'stream_error': {
+        console.debug('[ai-err]', JSON.stringify(msg.error));
         _state.is_streaming = false;
         _state.ai_status = 'idle';
         _state.error = msg.error;
@@ -539,7 +543,12 @@ export function useAiAssistant<TChoice = unknown>(
       }
     }
 
-    const modelParams = aiModels.getModelByModelId(_state.model_id);
+    // The visible list may never have been fetched on this page — ensure it,
+    // then fall back to the full catalog (which the selector actually lists).
+    // A missing row yields 'q4f16' which 404s on fp32-only repos (e.g. gpt2).
+    await aiModels.ensureLoaded();
+    const modelParams =
+      aiModels.getModelByModelId(_state.model_id) ?? aiModels.getCatalogModelByModelId(_state.model_id);
     const dtype = modelParams?.dtype ?? 'q4f16';
     const kvCacheReuse = effective_params.execution_config?.kv_cache_reuse ?? false;
 
@@ -570,19 +579,34 @@ export function useAiAssistant<TChoice = unknown>(
   }
 
   /**
-   * Persist the worker-measured VRAM footprint (GPUBuffer tracking) onto the
-   * ai_models row. Best-effort: admin-only endpoint — a non-admin session or a
-   * stale version simply skips the write; the panel keeps working either way.
+   * Persist the worker-measured working set (GPUBuffer tracking) onto the
+   * ai_models row: the measured total already contains weights + KV +
+   * scratch, so it REPLACES working_set_mb with source 'e2e_measured'
+   * (vram_mb keeps its curated weight-estimate semantics). Best-effort:
+   * admin-only endpoint — a non-admin session or a stale version simply
+   * skips the write; the panel keeps working either way.
    */
   async function persistVram(vram_bytes: number): Promise<void> {
-    const vram_mb = Math.round(vram_bytes / (1024 * 1024));
+    const working_set_mb = Math.round(vram_bytes / (1024 * 1024));
     const row = aiModels.getModelByModelId(_state.model_id);
-    if (!row?.uuid || row.version == null || row.vram_mb === vram_mb) return;
+    if (!row?.uuid || row.version == null) return;
+    if (row.working_set_source === 'e2e_measured' && row.working_set_mb === working_set_mb) return;
     try {
       const res = await apiFetch(`/api/v1/entities/ai_model/${row.uuid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity: { vram_mb, version: row.version } }),
+        body: JSON.stringify({
+          entity: {
+            working_set_mb,
+            working_set_source: 'e2e_measured',
+            working_set_detail: {
+              measured_vram_bytes: vram_bytes,
+              measured_at: new Date().toISOString(),
+              measured_ctx_tokens: null, // measured at load — pre-generation KV
+            },
+            version: row.version,
+          },
+        }),
       });
       if (res.ok) aiModels.invalidate();
     } catch { /* measurement persistence is best-effort */ }

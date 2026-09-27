@@ -66,17 +66,28 @@ function caseScoreFromStored(caseObj: Record<string, unknown>): number | null {
  * same-phase turns are replaced, other phases are preserved, then the model
  * rank is recomputed as the mean of every `*_test_score` case score.
  * Returns the merged-turn metrics (all phases combined).
+ *
+ * When `measured` is passed (post-test `vram_bytes` from the worker's
+ * GPUBuffer tracking + the context length at measure time), the same atomic
+ * UPDATE also persists the REAL working set: the measured total already
+ * contains weights + KV + scratch, so it replaces `working_set_mb` entirely
+ * with `working_set_source='e2e_measured'` — kv bytes are never re-added.
  */
 export async function mergeTestScoreTurns(
   model_id: string,
   caseKey: string,
   phase: string,
   turns: E2ETurn[],
+  measured?: { vram_bytes: number; ctx_tokens: number | null },
 ): Promise<{ score: number; rank: number | undefined; total_turns: number }> {
   const pool = getPool();
+  // model_id param is a variant key ('repo#dtype') or a bare repo — resolve to
+  // the normalized (model_id, dtype) pair.
+  const [repo, dtype] = model_id.split('#');
   const { rows } = await pool.query<{ test_scores: Record<string, unknown> | null }>(
-    `SELECT test_scores FROM public.ai_models WHERE model_id = $1 AND deleted_at IS NULL`,
-    [model_id],
+    `SELECT test_scores FROM public.ai_models
+     WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $2 AND deleted_at IS NULL`,
+    [repo, dtype ?? null],
   );
   if (rows.length !== 1) throw new Error(`model ${model_id} not in ai_models`);
 
@@ -117,11 +128,30 @@ export async function mergeTestScoreTurns(
     ? Math.round((caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10) / 10
     : undefined;
 
+  const measuredSet = measured?.vram_bytes
+    ? `, working_set_mb = $4, working_set_source = 'e2e_measured', working_set_detail = $5::jsonb`
+    : '';
   const upd = await pool.query(
     `UPDATE public.ai_models
      SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
-     WHERE model_id = $1 AND deleted_at IS NULL`,
-    [model_id, JSON.stringify(nextScores), rank ?? null],
+     ${measuredSet}
+     WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $6 AND deleted_at IS NULL`,
+    [
+      repo,
+      JSON.stringify(nextScores),
+      rank ?? null,
+      ...(measured?.vram_bytes
+        ? [
+            Math.round(measured.vram_bytes / (1024 * 1024)),
+            JSON.stringify({
+              measured_vram_bytes: measured.vram_bytes,
+              measured_at: new Date().toISOString(),
+              measured_ctx_tokens: measured.ctx_tokens,
+            }),
+          ]
+        : [null, null]),
+      dtype ?? null,
+    ],
   );
   if (upd.rowCount !== 1) throw new Error(`update failed for ${model_id}`);
 

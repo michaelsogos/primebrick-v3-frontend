@@ -10,6 +10,7 @@
    * by a small icon button next to the model dropdown.
    */
   import { t } from '$lib/i18n';
+  import { modelVariantKey } from '$lib/api-types';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
@@ -34,8 +35,8 @@
     await aiModels.ensureLoaded();
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getCompatibleModels().map((m) => m.model_id),
-      aiModels.getAllModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map(modelVariantKey),
+      aiModels.getAllModels().map(modelVariantKey),
     );
   });
 
@@ -62,8 +63,8 @@
   async function handleRefresh() {
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getCompatibleModels().map((m) => m.model_id),
-      aiModels.getAllModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map(modelVariantKey),
+      aiModels.getAllModels().map(modelVariantKey),
     );
   }
 </script>
@@ -110,17 +111,17 @@
 
   <!-- Model list -->
   <div class="space-y-1.5">
-    {#each aiModels.getCompatibleModels() as model (model.model_id)}
-      {@const is_cached = cache.state.cache_status[model.model_id] ?? false}
-      {@const is_active = model.model_id === active_model_id}
-      {@const size = cache.state.model_sizes[model.model_id] ?? 0}
+    {#each aiModels.getCompatibleModels() as model (modelVariantKey(model))}
+      {@const is_cached = cache.state.cache_status[modelVariantKey(model)] ?? false}
+      {@const is_active = modelVariantKey(model) === active_model_id}
+      {@const size = cache.state.model_sizes[modelVariantKey(model)] ?? 0}
       <div class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 {is_active ? 'bg-accent/50' : ''}">
         <div class="flex items-center gap-2 min-w-0">
           <ModelIcon model_id={model.model_id} class="size-4 shrink-0" />
           <div class="min-w-0">
             <div class="text-xs font-medium truncate">{model.name}</div>
             <div class="flex items-center gap-1.5">
-              <RankMeter rank={model_ranks[model.model_id]} />
+              <RankMeter rank={model_ranks[modelVariantKey(model)]} />
               <span class="text-[9px] {is_cached ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}">
                 {#if is_cached}
                   {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
@@ -133,12 +134,12 @@
         </div>
         {#if is_cached}
           <button
-            onclick={() => handleDelete(model.model_id)}
+            onclick={() => handleDelete(modelVariantKey(model))}
             disabled={is_active || cache.state.is_deleting}
             class="shrink-0 rounded p-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             title={is_active ? $t('app.smart.regex.ai.cache.in_use') : $t('app.smart.regex.ai.cache.delete')}
             aria-label={$t('app.smart.regex.ai.cache.delete')}
-            data-testid={`cache-delete-${model.model_id}`}
+            data-testid={`cache-delete-${modelVariantKey(model)}`}
           >
             <Trash2 class="size-3" />
           </button>

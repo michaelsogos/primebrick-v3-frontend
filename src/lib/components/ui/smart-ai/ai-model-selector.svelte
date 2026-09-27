@@ -13,7 +13,7 @@
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import { summarizeTestScores, rankColor } from '$lib/ai/ai-model-test-scores';
-  import type { AiModel } from '$lib/api-types';
+  import { modelVariantKey, type AiModel } from '$lib/api-types';
   import { t } from '$lib/i18n';
   import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -55,10 +55,11 @@
 
   const modelScoreCache = new Map<string, ReturnType<typeof summarizeTestScores>>();
   function scoresFor(model: AiModel) {
-    let s = modelScoreCache.get(model.model_id);
+    const vkey = modelVariantKey(model);
+    let s = modelScoreCache.get(vkey);
     if (!s) {
       s = summarizeTestScores(model.test_scores);
-      modelScoreCache.set(model.model_id, s);
+      modelScoreCache.set(vkey, s);
     }
     return s;
   }
@@ -95,7 +96,9 @@
   }
 
   let currentModel = $derived(
-    current_model_id ? models.find((m) => m.model_id === current_model_id) : undefined
+    current_model_id
+      ? models.find((m) => m.model_id === current_model_id || modelVariantKey(m) === current_model_id)
+      : undefined
   );
   let modelDisplayName = $derived(currentModel?.name ?? '');
   let currentRank = $derived(currentModel?.rank ?? null);
@@ -142,15 +145,16 @@
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>
     <DropdownMenu.Separator />
-    {#each sortedModels as model (model.model_id)}
+    {#each sortedModels as model (modelVariantKey(model))}
+      {@const vkey = modelVariantKey(model)}
       <DropdownMenu.Item
-        onclick={() => on_switch(model.model_id)}
+        onclick={() => on_switch(vkey)}
         disabled={loading}
         class={dropdownMenuItemWithSelectedClass(
           'flex items-center justify-between gap-2 text-xs',
-          current_model_id === model.model_id
+          current_model_id === vkey
         )}
-        data-testid="{testid_prefix}-model-{model.model_id}"
+        data-testid="{testid_prefix}-model-{vkey}"
       >
         {@const metric = sortMetricValue(model)}
         <div class="flex items-center gap-2">

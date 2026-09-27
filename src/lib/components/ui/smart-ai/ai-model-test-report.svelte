@@ -11,7 +11,7 @@
   import { cn } from '$lib/utils.js';
   import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '$lib/ai/ai-model-test-scores';
-  import type { AiModel } from '$lib/api-types';
+  import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { Component } from 'svelte';
   import { t } from '$lib/i18n';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -59,12 +59,12 @@
   <Popover.Trigger
     class="inline-flex"
     title={$t('system.entities.ai_model.fields.test_scores')}
-    data-testid={`ai-model-test-scores-cta-${model.model_id}`}
+    data-testid={`ai-model-test-scores-cta-${modelVariantKey(model)}`}
   >
     <ScoreGauge value={tsSummary.score} label={$t('system.entities.ai_model.fields.test_scores')} />
   </Popover.Trigger>
   <Popover.Content align="start" class="w-72 p-0 overflow-visible">
-    <div class="space-y-2 p-2" data-testid={`ai-model-test-scores-dropdown-${model.model_id}`}>
+    <div class="space-y-2 p-2" data-testid={`ai-model-test-scores-dropdown-${modelVariantKey(model)}`}>
       <div class="flex items-center justify-between border-b border-border/40 pb-1">
         <span class="text-xs font-semibold">{$t('system.entities.ai_model.fields.test_scores')}</span>
         <span class="text-sm font-bold" style="color:{tsSummary.score !== null ? gaugeColor(tsSummary.score, 5) : undefined}">{tsSummary.score?.toFixed(1) ?? '—'}</span>
@@ -94,7 +94,7 @@
       <Popover.Close
         class={cn(buttonVariants({ variant: 'outline', size: 'xs', tone: 'primary' }), 'w-full')}
         onclick={openDetails}
-        data-testid={`ai-model-test-details-cta-${model.model_id}`}
+        data-testid={`ai-model-test-details-cta-${modelVariantKey(model)}`}
       >
         <Maximize2 class="size-3" />
         {$t('system.entities.ai_model.test_report.title')}

@@ -17,6 +17,7 @@
    *     [SelectableRow per orphaned model]
    */
   import { t } from '$lib/i18n';
+  import { modelVariantKey } from '$lib/api-types';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import { useSelection } from '$lib/composables/useSelection.svelte';
@@ -52,8 +53,8 @@
     await aiModels.ensureLoaded();
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getCompatibleModels().map((m) => m.model_id),
-      aiModels.getAllModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map(modelVariantKey),
+      aiModels.getAllModels().map(modelVariantKey),
     );
   });
 
@@ -127,8 +128,8 @@
   async function handleRefresh() {
     await aiModels.ensureCatalogLoaded();
     void cache.refreshCacheStatus(
-      aiModels.getCompatibleModels().map((m) => m.model_id),
-      aiModels.getAllModels().map((m) => m.model_id),
+      aiModels.getCompatibleModels().map(modelVariantKey),
+      aiModels.getAllModels().map(modelVariantKey),
     );
   }
 
@@ -137,18 +138,18 @@
   // The cache manager is for managing cached files — uncached models
   // have nothing to manage (no delete button, no size to show).
   const censusedModels = $derived(
-    aiModels.getCompatibleModels().filter((m) => cache.state.cache_status[m.model_id] === true),
+    aiModels.getCompatibleModels().filter((m) => cache.state.cache_status[modelVariantKey(m)] === true),
   );
 
   const censusedAllSelected = $derived(
-    censusedModels.length > 0 && censusedModels.every((m) => censusedSelection.isSelected(m.model_id)),
+    censusedModels.length > 0 && censusedModels.every((m) => censusedSelection.isSelected(modelVariantKey(m))),
   );
   const censusedSomeSelected = $derived(
     censusedSelection.selected_count > 0 && !censusedAllSelected,
   );
 
   function handleToggleSelectAllCensused(checked: boolean) {
-    censusedSelection.toggleSelectAll(censusedModels.map((m) => m.model_id), checked);
+    censusedSelection.toggleSelectAll(censusedModels.map(modelVariantKey), checked);
   }
 
   function handleBulkDeleteCensused() {
@@ -266,13 +267,13 @@
   <!-- Censused models fieldset (scrolls under the sticky cluster) -->
   <div class="-mt-2">
   <SelectableFieldset label={$t('app.smart.regex.ai.cache.censused_title')}>
-    {#each censusedModels as model (model.model_id)}
-      {@const is_cached = cache.state.cache_status[model.model_id] ?? false}
-      {@const is_active = model.model_id === active_model_id}
-      {@const is_selected = censusedSelection.isSelected(model.model_id)}
-      {@const size = cache.state.model_sizes[model.model_id] ?? 0}
+    {#each censusedModels as model (modelVariantKey(model))}
+      {@const is_cached = cache.state.cache_status[modelVariantKey(model)] ?? false}
+      {@const is_active = modelVariantKey(model) === active_model_id}
+      {@const is_selected = censusedSelection.isSelected(modelVariantKey(model))}
+      {@const size = cache.state.model_sizes[modelVariantKey(model)] ?? 0}
       <SelectableRow
-        id={model.model_id}
+        id={modelVariantKey(model)}
         selected={is_selected}
         on_toggle_select={(id, checked) => censusedSelection.toggleSelect(id, checked)}
         class="flex items-center justify-between gap-3"
@@ -280,14 +281,14 @@
         <div class="flex items-center gap-3 min-w-0">
           <Checkbox
             checked={is_selected}
-            onCheckedChange={(checked) => censusedSelection.toggleSelect(model.model_id, checked)}
-            data-testid="cache-censused-select-{model.model_id}"
+            onCheckedChange={(checked) => censusedSelection.toggleSelect(modelVariantKey(model), checked)}
+            data-testid="cache-censused-select-{modelVariantKey(model)}"
           />
-          <ModelIcon model_id={model.model_id} class="size-5 shrink-0" />
+          <ModelIcon model_id={modelVariantKey(model)} class="size-5 shrink-0" />
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{model.name}</div>
             <div class="flex items-center gap-2 mt-0.5">
-              <RankMeter rank={model_ranks[model.model_id]} />
+              <RankMeter rank={model_ranks[modelVariantKey(model)]} />
               <span class="text-xs {is_cached ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}">
                 {#if is_cached}
                   {$t('app.smart.regex.ai.cache.cached')} · {formatBytes(size)}
@@ -305,11 +306,11 @@
           <Button
             variant="ghost"
             size="icon"
-            onclick={() => handleDelete(model.model_id)}
+            onclick={() => handleDelete(modelVariantKey(model))}
             disabled={is_active || cache.state.is_deleting}
             class="shrink-0"
             title={is_active ? $t('app.smart.regex.ai.cache.in_use') : $t('app.smart.regex.ai.cache.delete')}
-            data-testid="cache-section-delete-{model.model_id}"
+            data-testid="cache-section-delete-{modelVariantKey(model)}"
           >
             <Trash2 class="size-4 text-destructive" />
           </Button>

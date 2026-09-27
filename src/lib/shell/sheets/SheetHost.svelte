@@ -25,6 +25,7 @@
   import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
   import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
   import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
+  import AiModelImportPanel from '$lib/shell/sheets/panels/AiModelImportPanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -43,7 +44,8 @@
     'shell.aiGuide': GuideAiChatPanel,
     'shell.aiModelTestReport': AiModelTestReportPanel,
     'shell.aiCerebellum': AiCerebellumPanel,
-    'shell.aiModelCache': AiModelCachePanel
+    'shell.aiModelCache': AiModelCachePanel,
+    'shell.aiModelImport': AiModelImportPanel
   };
 
   const panelId = $derived(sheetState.panelId);

@@ -58,7 +58,8 @@
   } = $props();
 </script>
 
-<Toolbar class="gap-3 rounded-t-none border-t text-xs">
+<Toolbar card={false} class="gap-3 rounded-t-none border-t text-xs">
+  {#snippet left()}
   <!-- Left side: Row range + Selection Counter -->
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
     <div class="text-muted-foreground">
@@ -81,6 +82,7 @@
       />
     {/if}
   </div>
+  {/snippet}
 
   <!-- Right side: Page size + Pagination controls -->
   <div class="flex items-center gap-2">

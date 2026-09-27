@@ -142,19 +142,55 @@ function post(message: Record<string, any>): void {
   self.postMessage(message);
 }
 
-async function detectExternalDataFiles(repo_id: string): Promise<Record<string, number> | null> {
+/** Dtype → ONNX file suffix, mirroring transformers.js DEFAULT_DTYPE_SUFFIX_MAPPING. */
+const DTYPE_SUFFIX: Record<string, string> = {
+  fp32: '',
+  fp16: '_fp16',
+  int8: '_int8',
+  uint8: '_uint8',
+  q8: '_quantized',
+  q4: '_q4',
+  q2: '_q2',
+  q1: '_q1',
+  q4f16: '_q4f16',
+  q2f16: '_q2f16',
+  q1f16: '_q1f16',
+  bnb4: '_bnb4',
+};
+
+interface RepoFiles {
+  external_data: Record<string, number> | null;
+  /** Base name for the `model` session when the default `model{suffix}.onnx`
+   *  is absent — legacy repos ship `decoder_model_merged{suffix}.onnx`
+   *  (e.g. openai-community/gpt2 fp32). Passed as `model_file_name`. */
+  model_file_name: string | null;
+}
+
+async function inspectRepoFiles(repo_id: string, dtype: string): Promise<RepoFiles> {
+  const empty: RepoFiles = { external_data: null, model_file_name: null };
   try {
     const res = await fetch(`https://huggingface.co/api/models/${repo_id}`);
-    if (!res.ok) return null;
+    if (!res.ok) return empty;
     const { siblings } = (await res.json()) as { siblings?: { rfilename: string }[] };
+    const names = new Set((siblings ?? []).map((f) => f.rfilename));
     const map: Record<string, number> = {};
-    for (const f of siblings ?? []) {
-      const m = /^onnx\/(.+\.onnx)_data(?:_\d+)?$/.exec(f.rfilename);
+    for (const name of names) {
+      const m = /^onnx\/(.+\.onnx)_data(?:_\d+)?$/.exec(name);
       if (m) map[m[1]] = (map[m[1]] ?? 0) + 1;
     }
-    return Object.keys(map).length > 0 ? map : null;
+    const suffix = DTYPE_SUFFIX[dtype] ?? '';
+    let model_file_name: string | null = null;
+    if (!names.has(`onnx/model${suffix}.onnx`)) {
+      for (const base of ['decoder_model_merged', 'decoder_model']) {
+        if (names.has(`onnx/${base}${suffix}.onnx`)) {
+          model_file_name = base;
+          break;
+        }
+      }
+    }
+    return { external_data: Object.keys(map).length > 0 ? map : null, model_file_name };
   } catch {
-    return null;
+    return empty;
   }
 }
 
@@ -232,7 +268,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       }
     });
 
-    const external_data = await detectExternalDataFiles(repo_id);
+    const { external_data, model_file_name } = await inspectRepoFiles(repo_id, dtype);
     post({ type: 'load_phase', phase: 'downloading', worker_nonce });
 
     let download_complete_notified = false;
@@ -276,6 +312,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       dtype: dtype as any,
       device: device as any,
       ...(external_data ? { use_external_data_format: external_data } : {}),
+      ...(model_file_name ? { model_file_name } : {}),
       progress_callback,
     };
 
@@ -520,8 +557,12 @@ async function generate(payload: GeneratePayload): Promise<void> {
       if (!suppress_tokens.length) suppress_tokens = undefined;
     }
 
+    // Tokenizers without a chat_template (base models like GPT-2) cannot
+    // take the messages array — the pipeline would call apply_chat_template
+    // and throw. Feed them the rendered plain-text prompt instead.
+    const pipeline_input = tokenizer.chat_template ? messages : prompt;
     const result = await Promise.race([
-      pipeline_generator(messages, {
+      pipeline_generator(pipeline_input, {
         max_new_tokens: payload.params.max_new_tokens,
         do_sample: payload.params.do_sample ?? (payload.params.temperature > 0),
         temperature: payload.params.temperature,

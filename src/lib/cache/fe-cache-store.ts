@@ -64,6 +64,16 @@ export function clearCachedETag(url: string): void {
   localStorage.removeItem(`${FE_CACHE_PREFIX}${url}`);
 }
 
+/** Clear cached ETags for every URL starting with `prefix` — list
+ *  endpoints paginate/filter (`?page=N&deleted_records=…`), so an exact
+ *  clear misses the real cache keys and stale 304 bodies survive writes. */
+export function clearCachedETagsByPrefix(prefix: string): void {
+  if (!browser) return;
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith(`${FE_CACHE_PREFIX}${prefix}`))
+    .forEach((k) => localStorage.removeItem(k));
+}
+
 /** Clear all cached ETags (e.g. on logout). */
 export function clearAllCachedETags(): void {
   if (!browser) return;

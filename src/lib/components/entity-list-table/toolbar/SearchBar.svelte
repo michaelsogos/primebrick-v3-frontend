@@ -49,7 +49,7 @@
     align="inline-start"
     class="bg-transparent border-none pr-0"
   >
-    <Search class="size-4 text-muted-foreground group-hover/input:text-sky-600 transition-colors" />
+    <Search class="size-4 text-muted-foreground group-hover/input:text-foreground transition-colors" />
   </InputGroupAddon>
 
   <HighlightedInput
@@ -75,7 +75,7 @@
   <InputGroupButton
     variant="ghost"
     size="xs"
-    class="h-full rounded-l-none rounded-r-md border-l border-foreground/25 transition-colors"
+    class="h-full rounded-l-none rounded-r-md border-l border-foreground/25 bg-foreground/5 transition-colors"
     onclick={() =>
       openSheet(
         'entity.searchIn',

@@ -1,4 +1,5 @@
 import Root from "./toolbar.svelte";
+import ToolbarDivider from "./toolbar-divider.svelte";
 import { Toolbar as ToolbarPrimitive } from "bits-ui";
 
 const ToolbarButton = ToolbarPrimitive.Button;
@@ -12,6 +13,7 @@ export {
   ToolbarLink,
   ToolbarGroup,
   ToolbarGroupItem,
+  ToolbarDivider,
   //
   Root as Toolbar,
 };

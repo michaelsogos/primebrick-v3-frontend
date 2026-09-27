@@ -54,7 +54,8 @@
   }: ToolbarProps = $props();
 </script>
 
-<Toolbar>
+<Toolbar card={false}>
+  {#snippet left()}
   <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
     <SearchBar
       search={search}
@@ -65,6 +66,7 @@
       toggleSearchKey={toggleSearchKey}
     />
   </div>
+  {/snippet}
 
   <div class="flex items-center justify-end gap-2">
     <ViewModeToggle
