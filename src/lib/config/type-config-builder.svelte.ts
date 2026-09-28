@@ -62,6 +62,10 @@ export function useTypeConfigBuilder(
     if (!_state.config.validation) {
       _state.config.validation = { required: false, rules: {} };
     }
+    // Raw JSON (advanced mode / AI-applied) may carry a validation object
+    // without `rules` — e.g. {"validation":{"required":true}}. Mutators write
+    // into v.rules.* and would crash on the missing bucket.
+    _state.config.validation.rules ??= {};
     return _state.config.validation;
   }
 

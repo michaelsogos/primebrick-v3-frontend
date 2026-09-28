@@ -25,7 +25,7 @@
  * Auth: dedicated Playwright-owned Edge profile (E2E_PROFILE — persists the
  *   Cache API so completed model files survive across runs; HF resume is
  *   per-file, a mid-file interruption restarts that file) + programmatic
- *   admin/admin login. Same convention as auth-mfa.spec.ts: admin MFA
+ *   E2E test-actor (test-admin) login. Same convention as auth-mfa.spec.ts: test actor MFA
  *   factors are deleted via DB in beforeAll so the password login cannot
  *   stall on an MFA challenge.
  * Requires WebGPU — skips cleanly when no adapter is present.
@@ -33,6 +33,7 @@
  */
 import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
@@ -297,10 +298,10 @@ test.describe("AI quality — json_editor_with_schema", () => {
   test.describe.configure({ timeout: 600_000 });
 
   test.beforeAll(async () => {
-    // Same convention as auth-mfa.spec.ts: strip admin MFA factors via DB so
+    // Same convention as auth-mfa.spec.ts: strip test actor MFA factors via DB so
     // the password login cannot stall on a challenge we cannot answer.
-    await deleteMfaFactorsByUsername("admin");
-    await setAuthMethodEnforcerDismissed("admin", true);
+    await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
+    await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true);
   });
 
   test("5-turn incremental schema edit → persist json_editor_with_schema_test_score", async () => {
@@ -333,7 +334,7 @@ test.describe("AI quality — json_editor_with_schema", () => {
       }
 
       if (!(await isAuthed())) {
-        log("session expired (auth/me → 401) — logging in as admin");
+        log("session expired (auth/me → 401) — logging in as E2E test admin");
         await page.goto(`${BASE_URL}/login`);
         // /login boots with a session check: if a refresh succeeds it
         // redirects away before the form ever renders; if the refresh fails
@@ -342,8 +343,8 @@ test.describe("AI quality — json_editor_with_schema", () => {
         for (let i = 0; i < 6 && page.url().includes("/login"); i++) {
           const input = page.getByTestId("login-username-input");
           if (!submitted && (await input.isVisible().catch(() => false))) {
-            await input.fill("admin");
-            await page.getByTestId("login-password-input").fill("admin");
+            await input.fill(E2E_ADMIN_USERNAME);
+            await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
             await page.getByTestId("login-submit-button").click();
             submitted = true;
             log("login form submitted");

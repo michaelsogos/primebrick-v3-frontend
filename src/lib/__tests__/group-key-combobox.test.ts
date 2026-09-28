@@ -99,38 +99,37 @@ vi.mock('svelte', async (importOriginal) => {
   };
 });
 
-// Top-level mock: apiFetch is a controllable mock function
-const mockApiFetch = vi.fn();
+// Top-level mock: useExistingGroupKeys delegates fetching to
+// useConfigEntries → fetchConfigEntries(). We mock at that boundary.
+const mockFetchConfigEntries = vi.fn();
 vi.mock('$lib/api', () => ({
-  apiFetch: mockApiFetch,
+  fetchConfigEntries: mockFetchConfigEntries,
 }));
 
 describe('useExistingGroupKeys composable', () => {
   beforeEach(() => {
-    mockApiFetch.mockReset();
+    mockFetchConfigEntries.mockReset();
   });
 
   async function loadComposable() {
+    // useConfigEntries keeps module-level singleton $state — reset modules
+    // so each test starts with a fresh, unfetched cache.
+    vi.resetModules();
     const mod = await import('$lib/composables/useExistingGroupKeys.svelte');
     return mod.useExistingGroupKeys();
   }
 
   it('extracts unique group_keys from API response', async () => {
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        rows: [
-          { group_key: 'idp_parameters' },
-          { group_key: 'security_parameters' },
-          { group_key: 'idp_parameters' }, // duplicate
-          { group_key: 'system_settings' },
-          { group_key: null },             // null — skipped
-          { group_key: '' },               // empty — skipped
-          { group_key: '  ' },             // whitespace — skipped
-          { group_key: 'advanced_features' },
-        ],
-      }),
-    });
+    mockFetchConfigEntries.mockResolvedValue([
+      { group_key: 'idp_parameters' },
+      { group_key: 'security_parameters' },
+      { group_key: 'idp_parameters' }, // duplicate
+      { group_key: 'system_settings' },
+      { group_key: null },             // null — skipped
+      { group_key: '' },               // empty — skipped
+      { group_key: '  ' },             // whitespace — skipped
+      { group_key: 'advanced_features' },
+    ]);
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -145,7 +144,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('handles API failure gracefully — empty list, not loading', async () => {
-    mockApiFetch.mockRejectedValue(new Error('Network error'));
+    mockFetchConfigEntries.mockRejectedValue(new Error('Network error'));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -154,8 +153,8 @@ describe('useExistingGroupKeys composable', () => {
     expect(c.loading).toBe(false);
   });
 
-  it('handles non-ok response — empty list, not loading', async () => {
-    mockApiFetch.mockResolvedValue({ ok: false, json: async () => ({}) });
+  it('handles empty response — empty list, not loading', async () => {
+    mockFetchConfigEntries.mockResolvedValue([]);
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -165,18 +164,16 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('updates groupKeys after a delayed fetch resolution', async () => {
-    let resolveJson: (v: unknown) => void = () => {};
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      json: () => new Promise((resolve) => { resolveJson = resolve; }),
-    });
+    let resolveRows: (v: unknown) => void = () => {};
+    mockFetchConfigEntries.mockImplementation(
+      () => new Promise((resolve) => { resolveRows = resolve; }),
+    );
 
     const c = await loadComposable();
-    // Allow the apiFetch promise to resolve (json() is still pending)
+    // Allow the fetch promise chain to start (still pending)
     await new Promise((r) => setTimeout(r, 0));
 
-    // Resolve the json() promise
-    resolveJson({ rows: [{ group_key: 'test_group' }] });
+    resolveRows([{ group_key: 'test_group' }]);
     await new Promise((r) => setTimeout(r, 0));
 
     expect(c.loading).toBe(false);
@@ -184,15 +181,10 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('trims whitespace from group_key values', async () => {
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        rows: [
-          { group_key: '  idp_parameters  ' },
-          { group_key: 'security_parameters' },
-        ],
-      }),
-    });
+    mockFetchConfigEntries.mockResolvedValue([
+      { group_key: '  idp_parameters  ' },
+      { group_key: 'security_parameters' },
+    ]);
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -201,10 +193,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('exposes state as DeepReadonly', async () => {
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ rows: [{ group_key: 'test' }] }),
-    });
+    mockFetchConfigEntries.mockResolvedValue([{ group_key: 'test' }]);
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));

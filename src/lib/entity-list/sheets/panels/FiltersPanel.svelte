@@ -36,8 +36,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import { cubicInOut } from "svelte/easing";
   import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 
-  interface $$Props {
-    content: any;
+  interface Props {
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
@@ -48,7 +47,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   }
 
   let {
-    content,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -56,7 +54,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     modal = true,
     advancedFilters = [],
     onAdvancedFiltersChange,
-  }: $$Props = $props();
+  }: Props = $props();
 
   // Temporary filter values (being edited by user)
   let tempFilterValues = $state<Record<string, any>>({});

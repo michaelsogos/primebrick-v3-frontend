@@ -2639,7 +2639,7 @@
           "column": 0
         },
         "end": {
-          "line": 402,
+          "line": 408,
           "column": 0
         }
       },
@@ -10627,7 +10627,7 @@
           "column": 0
         },
         "end": {
-          "line": 177,
+          "line": 179,
           "column": 0
         }
       },
@@ -15123,7 +15123,7 @@
           "column": 0
         },
         "end": {
-          "line": 177,
+          "line": 179,
           "column": 0
         }
       },
@@ -20945,420 +20945,6 @@
     }
   },
   {
-    "file": "src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte",
-    "component": "ColumnSelectorPanel",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 213,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "stickyColumns",
-          "kind": "let",
-          "type": "ColumnLike[]",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 26,
-              "column": 4
-            },
-            "end": {
-              "line": 26,
-              "column": 17
-            }
-          }
-        },
-        {
-          "name": "nonAuditingColumns",
-          "kind": "let",
-          "type": "ColumnLike[]",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 27,
-              "column": 4
-            },
-            "end": {
-              "line": 27,
-              "column": 22
-            }
-          }
-        },
-        {
-          "name": "auditingColumns",
-          "kind": "let",
-          "type": "ColumnLike[]",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 28,
-              "column": 4
-            },
-            "end": {
-              "line": 28,
-              "column": 19
-            }
-          }
-        },
-        {
-          "name": "visibleKeys",
-          "kind": "let",
-          "type": "string[]",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 29,
-              "column": 4
-            },
-            "end": {
-              "line": 29,
-              "column": 15
-            }
-          }
-        },
-        {
-          "name": "toggleColumnKey",
-          "kind": "let",
-          "type": "(key: string) => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 30,
-              "column": 4
-            },
-            "end": {
-              "line": 30,
-              "column": 19
-            }
-          }
-        },
-        {
-          "name": "onReorderKeys",
-          "kind": "let",
-          "type": "(group: 'sticky' | 'data' | 'auditing', keys: string[]) => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 31,
-              "column": 4
-            },
-            "end": {
-              "line": 31,
-              "column": 17
-            }
-          }
-        },
-        {
-          "name": "onResetColumnVisibility",
-          "kind": "let",
-          "type": "() => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 32,
-              "column": 4
-            },
-            "end": {
-              "line": 32,
-              "column": 27
-            }
-          }
-        },
-        {
-          "name": "t",
-          "kind": "let",
-          "type": "(key: string) => string",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 33,
-              "column": 4
-            },
-            "end": {
-              "line": 33,
-              "column": 5
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
-    "file": "src/lib/components/entity-list-table/panels/FiltersPanel.svelte",
-    "component": "FiltersPanel",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 961,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "content",
-          "kind": "let",
-          "type": "any",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 50,
-              "column": 4
-            },
-            "end": {
-              "line": 50,
-              "column": 11
-            }
-          }
-        },
-        {
-          "name": "filterableColumns",
-          "kind": "let",
-          "type": "MetaColumn[]",
-          "typeSource": "typescript",
-          "value": "[]",
-          "defaultValue": {
-            "raw": "[]",
-            "kind": "array",
-            "value": []
-          },
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 51,
-              "column": 4
-            },
-            "end": {
-              "line": 51,
-              "column": 26
-            }
-          }
-        },
-        {
-          "name": "filterValues",
-          "kind": "let",
-          "type": "Record<string, any>",
-          "typeSource": "typescript",
-          "value": "{}",
-          "defaultValue": {
-            "raw": "{}",
-            "kind": "object",
-            "value": {}
-          },
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 52,
-              "column": 4
-            },
-            "end": {
-              "line": 52,
-              "column": 21
-            }
-          }
-        },
-        {
-          "name": "onFilterValuesChange",
-          "kind": "let",
-          "type": "(values: Record<string, any>) => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 53,
-              "column": 4
-            },
-            "end": {
-              "line": 53,
-              "column": 24
-            }
-          }
-        },
-        {
-          "name": "onResetFilters",
-          "kind": "let",
-          "type": "() => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 54,
-              "column": 4
-            },
-            "end": {
-              "line": 54,
-              "column": 18
-            }
-          }
-        },
-        {
-          "name": "modal",
-          "kind": "let",
-          "type": "boolean",
-          "typeSource": "typescript",
-          "value": "true",
-          "defaultValue": {
-            "raw": "true",
-            "kind": "literal",
-            "value": true
-          },
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 55,
-              "column": 4
-            },
-            "end": {
-              "line": 55,
-              "column": 16
-            }
-          }
-        },
-        {
-          "name": "advancedFilters",
-          "kind": "let",
-          "type": "AdvancedFilter[]",
-          "typeSource": "typescript",
-          "value": "[]",
-          "defaultValue": {
-            "raw": "[]",
-            "kind": "array",
-            "value": []
-          },
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 56,
-              "column": 4
-            },
-            "end": {
-              "line": 56,
-              "column": 24
-            }
-          }
-        },
-        {
-          "name": "onAdvancedFiltersChange",
-          "kind": "let",
-          "type": "(filters: AdvancedFilter[], connector: 'AND' | 'OR') => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 57,
-              "column": 4
-            },
-            "end": {
-              "line": 57,
-              "column": 27
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
     "file": "src/lib/components/entity-list-table/panels/PreviewPanel.svelte",
     "component": "PreviewPanel",
     "data": {
@@ -21943,117 +21529,6 @@
         "TRow",
         "TRow extends Record<string, unknown>"
       ],
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
-    "file": "src/lib/components/entity-list-table/panels/SearchInPanel.svelte",
-    "component": "SearchInPanel",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 81,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "searchInKeys",
-          "kind": "let",
-          "type": "string[] | null | undefined",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 20,
-              "column": 8
-            },
-            "end": {
-              "line": 20,
-              "column": 20
-            }
-          }
-        },
-        {
-          "name": "searchableColumns",
-          "kind": "let",
-          "type": "ColumnLike[]",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 20,
-              "column": 22
-            },
-            "end": {
-              "line": 20,
-              "column": 39
-            }
-          }
-        },
-        {
-          "name": "onSearchInKeysChange",
-          "kind": "let",
-          "type": "(keys: string[] | null) => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 20,
-              "column": 41
-            },
-            "end": {
-              "line": 20,
-              "column": 61
-            }
-          }
-        },
-        {
-          "name": "toggleSearchKey",
-          "kind": "let",
-          "type": "(key: string) => void",
-          "typeSource": "typescript",
-          "isFunction": true,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 20,
-              "column": 63
-            },
-            "end": {
-              "line": 20,
-              "column": 78
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
       "contexts": [],
       "diagnostics": []
     }
@@ -22777,7 +22252,7 @@
           "column": 0
         },
         "end": {
-          "line": 135,
+          "line": 137,
           "column": 0
         }
       },
@@ -24135,54 +23610,6 @@
           }
         }
       ],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
-    "file": "src/lib/components/forms/FormLabelWithHelp.svelte",
-    "component": "FormLabelWithHelp",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 20,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "text",
-          "kind": "let",
-          "type": "string",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 5,
-              "column": 8
-            },
-            "end": {
-              "line": 5,
-              "column": 12
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
       "events": [],
       "typedefs": [],
       "generics": null,
@@ -30194,7 +29621,7 @@
           "column": 0
         },
         "end": {
-          "line": 508,
+          "line": 559,
           "column": 0
         }
       },
@@ -30213,11 +29640,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 86,
+              "line": 108,
               "column": 4
             },
             "end": {
-              "line": 86,
+              "line": 108,
               "column": 8
             }
           }
@@ -30235,11 +29662,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 87,
+              "line": 109,
               "column": 4
             },
             "end": {
-              "line": 87,
+              "line": 109,
               "column": 23
             }
           }
@@ -30256,11 +29683,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 88,
+              "line": 110,
               "column": 4
             },
             "end": {
-              "line": 88,
+              "line": 110,
               "column": 12
             }
           }
@@ -30277,11 +29704,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 89,
+              "line": 111,
               "column": 4
             },
             "end": {
-              "line": 89,
+              "line": 111,
               "column": 11
             }
           }
@@ -30298,11 +29725,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 90,
+              "line": 112,
               "column": 4
             },
             "end": {
-              "line": 90,
+              "line": 112,
               "column": 14
             }
           }
@@ -30319,11 +29746,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 91,
+              "line": 113,
               "column": 4
             },
             "end": {
-              "line": 91,
+              "line": 113,
               "column": 14
             }
           }
@@ -30346,11 +29773,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 92,
+              "line": 114,
               "column": 4
             },
             "end": {
-              "line": 92,
+              "line": 114,
               "column": 29
             }
           }
@@ -30373,11 +29800,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 93,
+              "line": 115,
               "column": 4
             },
             "end": {
-              "line": 93,
+              "line": 115,
               "column": 29
             }
           }
@@ -30400,11 +29827,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 94,
+              "line": 116,
               "column": 4
             },
             "end": {
-              "line": 94,
+              "line": 116,
               "column": 20
             }
           }
@@ -30427,11 +29854,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 95,
+              "line": 117,
               "column": 4
             },
             "end": {
-              "line": 95,
+              "line": 117,
               "column": 19
             }
           }
@@ -30448,11 +29875,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 96,
+              "line": 118,
               "column": 4
             },
             "end": {
-              "line": 96,
+              "line": 118,
               "column": 6
             }
           }
@@ -30475,11 +29902,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 97,
+              "line": 119,
               "column": 4
             },
             "end": {
-              "line": 97,
+              "line": 119,
               "column": 21
             }
           }
@@ -30502,11 +29929,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 98,
+              "line": 120,
               "column": 4
             },
             "end": {
-              "line": 98,
+              "line": 120,
               "column": 35
             }
           }
@@ -30529,11 +29956,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 99,
+              "line": 121,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 121,
               "column": 23
             }
           }
@@ -30556,11 +29983,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 100,
+              "line": 122,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 122,
               "column": 24
             }
           }
@@ -30577,11 +30004,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 101,
+              "line": 123,
               "column": 4
             },
             "end": {
-              "line": 101,
+              "line": 123,
               "column": 18
             }
           }
@@ -30598,11 +30025,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 103,
+              "line": 125,
               "column": 4
             },
             "end": {
-              "line": 103,
+              "line": 125,
               "column": 20
             }
           }
@@ -30619,11 +30046,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 104,
+              "line": 126,
               "column": 4
             },
             "end": {
-              "line": 104,
+              "line": 126,
               "column": 21
             }
           }
@@ -30646,11 +30073,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 106,
+              "line": 128,
               "column": 4
             },
             "end": {
-              "line": 106,
+              "line": 128,
               "column": 23
             }
           }
@@ -30667,12 +30094,81 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 107,
+              "line": 129,
               "column": 4
             },
             "end": {
-              "line": 107,
+              "line": 129,
               "column": 12
+            }
+          }
+        },
+        {
+          "name": "onSearchInput",
+          "kind": "let",
+          "type": "(search: string) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 130,
+              "column": 4
+            },
+            "end": {
+              "line": 130,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "onLoadMore",
+          "kind": "let",
+          "type": "() => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 131,
+              "column": 4
+            },
+            "end": {
+              "line": 131,
+              "column": 14
+            }
+          }
+        },
+        {
+          "name": "loadingMore",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "false",
+          "defaultValue": {
+            "raw": "false",
+            "kind": "literal",
+            "value": false
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 132,
+              "column": 4
+            },
+            "end": {
+              "line": 132,
+              "column": 23
             }
           }
         },
@@ -30694,11 +30190,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 108,
+              "line": 133,
               "column": 4
             },
             "end": {
-              "line": 108,
+              "line": 133,
               "column": 22
             }
           }
@@ -30716,11 +30212,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 109,
+              "line": 134,
               "column": 4
             },
             "end": {
-              "line": 109,
+              "line": 134,
               "column": 31
             }
           }
@@ -30738,11 +30234,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 110,
+              "line": 135,
               "column": 4
             },
             "end": {
-              "line": 110,
+              "line": 135,
               "column": 39
             }
           }
@@ -30760,11 +30256,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 111,
+              "line": 136,
               "column": 4
             },
             "end": {
-              "line": 111,
+              "line": 136,
               "column": 33
             }
           }
@@ -30782,12 +30278,61 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 112,
+              "line": 137,
               "column": 4
             },
             "end": {
-              "line": 112,
+              "line": 137,
               "column": 32
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "kind": "let",
+          "type": "\"default\" | \"toolbar\"",
+          "typeSource": "typescript",
+          "value": "\"default\"",
+          "defaultValue": {
+            "raw": "\"default\"",
+            "kind": "literal",
+            "value": "default"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 138,
+              "column": 4
+            },
+            "end": {
+              "line": 138,
+              "column": 23
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 139,
+              "column": 4
+            },
+            "end": {
+              "line": 139,
+              "column": 20
             }
           }
         },
@@ -30803,11 +30348,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 113,
+              "line": 140,
               "column": 4
             },
             "end": {
-              "line": 113,
+              "line": 140,
               "column": 29
             }
           }
@@ -30821,11 +30366,11 @@
           "slot_props": "{\n  option: any;\n  selected: any;\n  resolvedLabel: any;\n  resolvedValue: any;\n}",
           "source": {
             "start": {
-              "line": 479,
+              "line": 525,
               "column": 18
             },
             "end": {
-              "line": 484,
+              "line": 530,
               "column": 21
             }
           }
@@ -30836,11 +30381,11 @@
           "slot_props": "{\n  option: any;\n  resolvedLabel: any;\n  resolvedValue: any;\n}",
           "source": {
             "start": {
-              "line": 327,
+              "line": 373,
               "column": 14
             },
             "end": {
-              "line": 331,
+              "line": 377,
               "column": 17
             }
           }
@@ -30858,11 +30403,11 @@
           "message": "Prop \"data-testid\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 113,
+              "line": 140,
               "column": 4
             },
             "end": {
-              "line": 113,
+              "line": 140,
               "column": 29
             }
           }
@@ -38367,6 +37912,253 @@
           }
         }
       ]
+    }
+  },
+  {
+    "file": "src/lib/components/ui/form/prime-field.svelte",
+    "component": "prime-field",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 179,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "id",
+          "localName": "idProp",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 61,
+              "column": 4
+            },
+            "end": {
+              "line": 61,
+              "column": 14
+            }
+          }
+        },
+        {
+          "name": "label",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 62,
+              "column": 4
+            },
+            "end": {
+              "line": 62,
+              "column": 9
+            }
+          }
+        },
+        {
+          "name": "required",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "false",
+          "defaultValue": {
+            "raw": "false",
+            "kind": "literal",
+            "value": false
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 63,
+              "column": 4
+            },
+            "end": {
+              "line": 63,
+              "column": 20
+            }
+          }
+        },
+        {
+          "name": "hint",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 64,
+              "column": 4
+            },
+            "end": {
+              "line": 64,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "error",
+          "kind": "let",
+          "type": "string | string[]",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 65,
+              "column": 4
+            },
+            "end": {
+              "line": 65,
+              "column": 9
+            }
+          }
+        },
+        {
+          "name": "help",
+          "kind": "let",
+          "type": "PrimeFieldHelp",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 66,
+              "column": 4
+            },
+            "end": {
+              "line": 66,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "layout",
+          "kind": "let",
+          "type": "'stacked' | 'inline'",
+          "typeSource": "typescript",
+          "value": "'stacked'",
+          "defaultValue": {
+            "raw": "'stacked'",
+            "kind": "literal",
+            "value": "stacked"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 67,
+              "column": 4
+            },
+            "end": {
+              "line": 67,
+              "column": 22
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 69,
+              "column": 4
+            },
+            "end": {
+              "line": 69,
+              "column": 20
+            }
+          }
+        },
+        {
+          "name": "data-testid",
+          "localName": "dataTestId",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 70,
+              "column": 4
+            },
+            "end": {
+              "line": 70,
+              "column": 29
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [
+        {
+          "name": "control",
+          "default": false,
+          "slot_props": "{ id: string }",
+          "source": {
+            "start": {
+              "line": 169,
+              "column": 4
+            },
+            "end": {
+              "line": 169,
+              "column": 29
+            }
+          }
+        }
+      ],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
     }
   },
   {
@@ -50301,6 +50093,225 @@
     }
   },
   {
+    "file": "src/lib/components/ui/slider/range-slider.svelte",
+    "component": "range-slider",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 83,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "value",
+          "kind": "let",
+          "bindable": true,
+          "type": "[number, number]",
+          "typeSource": "typescript",
+          "value": "[0, 100]",
+          "defaultValue": {
+            "raw": "[0, 100]",
+            "kind": "array",
+            "value": [
+              0,
+              100
+            ]
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": true,
+          "source": {
+            "start": {
+              "line": 35,
+              "column": 4
+            },
+            "end": {
+              "line": 35,
+              "column": 49
+            }
+          }
+        },
+        {
+          "name": "min",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "0",
+          "defaultValue": {
+            "raw": "0",
+            "kind": "literal",
+            "value": 0
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 36,
+              "column": 4
+            },
+            "end": {
+              "line": 36,
+              "column": 11
+            }
+          }
+        },
+        {
+          "name": "max",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "100",
+          "defaultValue": {
+            "raw": "100",
+            "kind": "literal",
+            "value": 100
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 37,
+              "column": 4
+            },
+            "end": {
+              "line": 37,
+              "column": 13
+            }
+          }
+        },
+        {
+          "name": "step",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "1",
+          "defaultValue": {
+            "raw": "1",
+            "kind": "literal",
+            "value": 1
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 38,
+              "column": 4
+            },
+            "end": {
+              "line": 38,
+              "column": 12
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "false",
+          "defaultValue": {
+            "raw": "false",
+            "kind": "literal",
+            "value": false
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 39,
+              "column": 4
+            },
+            "end": {
+              "line": 39,
+              "column": 20
+            }
+          }
+        },
+        {
+          "name": "tone",
+          "kind": "let",
+          "type": "SliderTone",
+          "typeSource": "typescript",
+          "value": "'primary'",
+          "defaultValue": {
+            "raw": "'primary'",
+            "kind": "literal",
+            "value": "primary"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 40,
+              "column": 4
+            },
+            "end": {
+              "line": 40,
+              "column": 20
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 41,
+              "column": 4
+            },
+            "end": {
+              "line": 41,
+              "column": 20
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "rest_props": {
+        "type": "InlineComponent",
+        "name": "SliderPrimitive.Root"
+      },
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/ui/slider/slider.svelte",
     "component": "slider",
     "data": {
@@ -51416,7 +51427,7 @@
           "column": 0
         },
         "end": {
-          "line": 172,
+          "line": 176,
           "column": 0
         }
       },
@@ -52606,7 +52617,7 @@
           "column": 0
         },
         "end": {
-          "line": 208,
+          "line": 209,
           "column": 0
         }
       },
@@ -52625,11 +52636,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 24,
+              "line": 25,
               "column": 8
             },
             "end": {
-              "line": 24,
+              "line": 25,
               "column": 23
             }
           }
@@ -52646,11 +52657,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 24,
+              "line": 25,
               "column": 25
             },
             "end": {
-              "line": 24,
+              "line": 25,
               "column": 36
             }
           }
@@ -52675,7 +52686,7 @@
           "column": 0
         },
         "end": {
-          "line": 456,
+          "line": 457,
           "column": 0
         }
       },
@@ -52700,11 +52711,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 40,
               "column": 8
             },
             "end": {
-              "line": 39,
+              "line": 40,
               "column": 30
             }
           }
@@ -52727,11 +52738,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 40,
               "column": 32
             },
             "end": {
-              "line": 39,
+              "line": 40,
               "column": 48
             }
           }
@@ -52745,11 +52756,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 192,
+              "line": 193,
               "column": 2
             },
             "end": {
-              "line": 192,
+              "line": 193,
               "column": 22
             }
           }
@@ -52772,7 +52783,7 @@
           "column": 0
         },
         "end": {
-          "line": 69,
+          "line": 74,
           "column": 0
         }
       },
@@ -52791,11 +52802,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 29,
+              "line": 31,
               "column": 4
             },
             "end": {
-              "line": 29,
+              "line": 31,
               "column": 12
             }
           }
@@ -52819,11 +52830,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 30,
+              "line": 32,
               "column": 4
             },
             "end": {
-              "line": 30,
+              "line": 32,
               "column": 31
             }
           }
@@ -52880,6 +52891,62 @@
             },
             "end": {
               "line": 6,
+              "column": 35
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/ui/smart-regex-input/OpenAIIcon.svelte",
+    "component": "OpenAIIcon",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 16,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "description": "OpenAI brand logo icon — sourced from simpleicons (openai).\nMonochrome mark → `currentColor` so it follows the theme.\nUsed for gpt2 / openai-community model families.",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "'size-4'",
+          "defaultValue": {
+            "raw": "'size-4'",
+            "kind": "literal",
+            "value": "size-4"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 7,
+              "column": 8
+            },
+            "end": {
+              "line": 7,
               "column": 35
             }
           }
@@ -57596,7 +57663,7 @@
           "column": 0
         },
         "end": {
-          "line": 81,
+          "line": 104,
           "column": 0
         }
       },
@@ -57621,11 +57688,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 26,
+              "line": 30,
               "column": 4
             },
             "end": {
-              "line": 26,
+              "line": 30,
               "column": 25
             }
           }
@@ -57642,11 +57709,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 27,
+              "line": 31,
               "column": 4
             },
             "end": {
-              "line": 27,
+              "line": 31,
               "column": 20
             }
           }
@@ -57669,11 +57736,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 28,
+              "line": 32,
               "column": 4
             },
             "end": {
-              "line": 28,
+              "line": 32,
               "column": 15
             }
           }
@@ -57696,11 +57763,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 29,
+              "line": 34,
               "column": 4
             },
             "end": {
-              "line": 29,
+              "line": 34,
               "column": 15
             }
           }
@@ -57717,11 +57784,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 30,
+              "line": 35,
               "column": 4
             },
             "end": {
-              "line": 30,
+              "line": 35,
               "column": 11
             }
           }
@@ -57735,12 +57802,27 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 56,
-              "column": 2
+              "line": 70,
+              "column": 4
             },
             "end": {
-              "line": 56,
-              "column": 24
+              "line": 70,
+              "column": 26
+            }
+          }
+        },
+        {
+          "name": "left",
+          "default": false,
+          "slot_props": "Record<string, never>",
+          "source": {
+            "start": {
+              "line": 65,
+              "column": 6
+            },
+            "end": {
+              "line": 65,
+              "column": 22
             }
           }
         },
@@ -57750,11 +57832,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 78,
-              "column": 4
+              "line": 100,
+              "column": 6
             },
             "end": {
-              "line": 78,
+              "line": 100,
               "column": 25
             }
           }
@@ -57776,11 +57858,11 @@
           "message": "Prop \"ref\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 26,
+              "line": 30,
               "column": 4
             },
             "end": {
-              "line": 26,
+              "line": 30,
               "column": 25
             }
           }
@@ -57792,11 +57874,11 @@
           "message": "Prop \"class\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 27,
+              "line": 31,
               "column": 4
             },
             "end": {
-              "line": 27,
+              "line": 31,
               "column": 20
             }
           }

@@ -191,7 +191,7 @@
           <span class="bg-card px-2 text-muted-foreground">{$t('app.auth.login.or')}</span>
         </div>
       </div>
-      <PasskeyButton {onsuccess} {onerror} />
+      <PasskeyButton {onsuccess} {onerror} username={$form.username} />
     {/if}
 
     {#if !mfaChallenge && $message}

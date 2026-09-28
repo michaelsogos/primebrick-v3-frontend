@@ -12,5 +12,10 @@
 		"strict": true,
 		"moduleResolution": "bundler",
 		"types": ["unplugin-icons/types/svelte", "@testing-library/jest-dom"]
-	}
+	},
+	"exclude": [
+		"node_modules",
+		"**/*.bak.*",
+		"**/*.webllm.bak.ts"
+	]
 }

@@ -10,14 +10,14 @@
 
   type ColumnLike = { key: string; label_key: string };
 
-  interface $$Props {
+  interface Props {
     searchInKeys: string[] | null | undefined;
     searchableColumns: ColumnLike[];
     onSearchInKeysChange: (keys: string[] | null) => void;
     toggleSearchKey: (key: string) => void;
   }
 
-  let { searchInKeys, searchableColumns, onSearchInKeysChange, toggleSearchKey }: $$Props =
+  let { searchInKeys, searchableColumns, onSearchInKeysChange, toggleSearchKey }: Props =
     $props();
 </script>
 

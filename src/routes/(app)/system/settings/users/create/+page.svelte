@@ -97,7 +97,11 @@
         const res = await apiFetch('/api/v1/system/organizations/active');
         if (res.ok) {
           const data = await res.json();
-          availableOrgs = data.organizations ?? [];
+          // Only orgs backed by a real IdP org (idp_name) can host new users —
+          // without it the bound value would serialize to "[object Object]".
+          availableOrgs = (data.organizations ?? []).filter(
+            (org: Record<string, unknown>) => typeof org.idp_name === 'string' && org.idp_name,
+          );
         }
       } catch (e) {
         console.error('Failed to load active organizations:', e);
@@ -111,9 +115,14 @@
   const createSchema = z.object({
     idpUsername: idpNameSchema(z.string()),
     password: z.string()
-      .min(8, { message: minMsg(8) })
       .max(64, { message: maxMsg(64) })
       .superRefine((val, ctx) => {
+        // Min length applies only to a non-empty value — send_invitation mode
+        // legitimately leaves the password blank (required-ness is enforced
+        // by the root superRefine when send_invitation is false).
+        if (val && val.length < 8) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: minMsg(8) });
+        }
         // Validate against the active password policy regex.
         // This runs at validation time (onblur/submit), after onMount has loaded the policy.
         if (val && !passwordPolicy.regex.test(val)) {
@@ -156,18 +165,26 @@
   type CreateForm = z.infer<typeof createSchema>;
 
   // Superforms in SPA mode
+  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
     validators: zod4(createSchema),
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
-    async onChange() {
+    onChange() {
       // Force ALL errors to display on every change, regardless of taint.
       // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
       // bypassing all taint/event/previous-error checks.
       // This fulfils: "if a field is invalid, it must be coloured as it should."
-      await superFormObj.validateForm({ update: true, focusOnError: false });
+      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
+      // captured at validation start — overlapping validations resolving out of
+      // order would overwrite $form with stale data (typed chars lost).
+      clearTimeout(validateAllTimer);
+      validateAllTimer = setTimeout(() => {
+        void superFormObj.validateForm({ update: true, focusOnError: false });
+      }, 250);
     },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
@@ -220,6 +237,10 @@
 
         notifyParentRefresh();
         reset({ data: $form });
+        // Mark the form as saved before the programmatic goto — otherwise the
+        // unsaved-changes guard sees a still-tainted form and cancels the
+        // navigation with a spurious confirm() dialog.
+        justSaved = true;
         await goto(`/system/settings/users/${data.profile?.uuid}`);
       } catch (error) {
         console.error('Failed to create user:', error);
@@ -230,7 +251,8 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — getters freeze at initial values otherwise.
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
@@ -291,14 +313,17 @@
     }
   });
 
+  $effect(() => () => clearTimeout(validateAllTimer));
+
   function getColMeta(key: string) {
     return getColMetaUtil(meta, key);
   }
 
   const auditData = $derived(buildAuditData());
 
+  let justSaved = $state(false);
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
-    () => hasChanges,
+    () => !justSaved && formGuard.hasChanges,
     'system.settings.users.create.unsavedChanges',
   );
 </script>
@@ -605,7 +630,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
+                    <Checkbox {...props} bind:checked={$form.is_active} id="is_active" data-testid="admin-user-create-is-active-checkbox" />
                     <label for="is_active" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('system.settings.users.create.idpActive')}
                       {#if getColMeta('is_active')?.tooltip && getColMeta('is_active')?.show_form_tooltip !== false}
@@ -671,7 +696,16 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('app.common.cancel')}
       </Button>
-      <Button type="submit" form="user-create-form" data-testid="admin-user-create-submit-button" disabled={!canSave}>
+      <Button
+        type="submit"
+        form="user-create-form"
+        data-testid="admin-user-create-submit-button"
+        disabled={!formGuard.canSave}
+        data-can-save={formGuard.canSave}
+        data-has-changes={formGuard.hasChanges}
+        data-tainted={JSON.stringify($tainted ?? null)}
+        data-errors={JSON.stringify($errors ?? null)}
+      >
         {$t('app.common.save')}
       </Button>
     </div>

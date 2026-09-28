@@ -10,12 +10,12 @@
   import Check from '@lucide/svelte/icons/check';
   import Search from '@lucide/svelte/icons/search';
 
-  interface $$Props {
+  interface Props {
     currentCurrency: string;
     onCurrencyChange: (code: string) => void;
   }
 
-  let { currentCurrency, onCurrencyChange }: $$Props = $props();
+  let { currentCurrency, onCurrencyChange }: Props = $props();
 
   const config = useConfigEntries();
 

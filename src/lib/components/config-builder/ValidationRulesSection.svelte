@@ -36,7 +36,10 @@
   const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
   const errorKeyOptions = $derived(allI18nKeys.map((k: string) => ({ key: k })));
 
-  // Local state for inputs that don't map 1:1 to builder mutators
+  // Local state for inputs that don't map 1:1 to builder mutators.
+  // NOTE: bind:value on <input type="number"> yields `number | null` at
+  // runtime (Svelte auto-coercion) despite the declared string type — always
+  // read via `asTrimmed()` before calling string methods.
   let minInput = $state<string>('');
   let maxInput = $state<string>('');
   let minErrorKey = $state<string>('');
@@ -107,8 +110,15 @@
     }
   });
 
-  function handleMinChange() {
-    const val = (minInput ?? '').trim() === '' ? null : Number(minInput);
+  function asTrimmed(v: unknown): string {
+    return String(v ?? '').trim();
+  }
+
+  function handleMinChange(e?: Event) {
+    // Read the live DOM value — bind:value update ordering vs oninput is not
+    // guaranteed, and type=number binds coerce to number.
+    const raw = e ? (e.currentTarget as HTMLInputElement).value : asTrimmed(minInput);
+    const val = raw.trim() === '' ? null : Number(raw);
     builder.setMin(val, minErrorKey || undefined);
   }
 
@@ -117,8 +127,9 @@
     handleMinChange();
   }
 
-  function handleMaxChange() {
-    const val = (maxInput ?? '').trim() === '' ? null : Number(maxInput);
+  function handleMaxChange(e?: Event) {
+    const raw = e ? (e.currentTarget as HTMLInputElement).value : asTrimmed(maxInput);
+    const val = raw.trim() === '' ? null : Number(raw);
     builder.setMax(val, maxErrorKey || undefined);
   }
 
@@ -147,8 +158,9 @@
     handleRegexChange();
   }
 
-  function handleUrlProtocolsChange() {
-    const protocols = urlProtocols.split(',').map((p) => p.trim()).filter(Boolean);
+  function handleUrlProtocolsChange(e?: Event) {
+    const raw = e ? (e.currentTarget as HTMLInputElement).value : String(urlProtocols ?? '');
+    const protocols = raw.split(',').map((p) => p.trim()).filter(Boolean);
     builder.setUrlProtocols(protocols, urlErrorKey || undefined);
   }
 
@@ -193,6 +205,7 @@
       </Label>
       <ComboSelect
         id="tcb-required-error-key"
+        data-testid="tcb-required-error-key"
         mode="single"
         value={requiredErrorKey}
         onChange={handleRequiredErrorKeyComboChange}
@@ -244,7 +257,7 @@
         class="text-xs"
         data-testid="tcb-min"
       />
-      {#if (minInput ?? '').trim() !== ''}
+      {#if asTrimmed(minInput) !== ''}
         <Label for="tcb-min-error-key" class="text-xs text-muted-foreground">
           {$t('system.settings.config.typeConfig.minErrorLabelKey')}
           <FormLabelWithPriorityHelp
@@ -256,6 +269,7 @@
         </Label>
         <ComboSelect
           id="tcb-min-error-key"
+          data-testid="tcb-min-error-key"
           mode="single"
           value={minErrorKey}
           onChange={handleMinErrorKeyChange}
@@ -291,7 +305,7 @@
         class="text-xs"
         data-testid="tcb-max"
       />
-      {#if (maxInput ?? '').trim() !== ''}
+      {#if asTrimmed(maxInput) !== ''}
         <Label for="tcb-max-error-key" class="text-xs text-muted-foreground">
           {$t('system.settings.config.typeConfig.maxErrorLabelKey')}
           <FormLabelWithPriorityHelp
@@ -303,6 +317,7 @@
         </Label>
         <ComboSelect
           id="tcb-max-error-key"
+          data-testid="tcb-max-error-key"
           mode="single"
           value={maxErrorKey}
           onChange={handleMaxErrorKeyChange}
@@ -354,6 +369,7 @@
         </Label>
         <ComboSelect
           id="tcb-url-error-key"
+          data-testid="tcb-url-error-key"
           mode="single"
           value={urlErrorKey}
           onChange={handleUrlErrorKeyChange}
@@ -414,6 +430,7 @@
         </Label>
         <ComboSelect
           id="tcb-regex-error-key"
+          data-testid="tcb-regex-error-key"
           mode="single"
           value={regexErrorKey}
           onChange={handleRegexErrorKeyChange}

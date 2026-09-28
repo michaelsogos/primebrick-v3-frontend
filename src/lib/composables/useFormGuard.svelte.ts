@@ -17,12 +17,21 @@ export function useFormGuard(
 ) {
   const hasChanges = $derived(isTainted(tainted()));
 
+  const hasRealError = (v: unknown): boolean => {
+    if (v === undefined || v === null || v === '') return false;
+    if (Array.isArray(v)) return v.some(hasRealError);
+    if (typeof v === 'object') return Object.values(v).some(hasRealError);
+    return true;
+  };
+
   const canSave = $derived.by(() => {
     if (!hasChanges) return false;
     const errorsValue = errors() as Record<string, unknown>;
     for (const key in errorsValue) {
-      const err = errorsValue[key];
-      if (err && (Array.isArray(err) ? err.length > 0 : true)) return false;
+      // Array/object fields produce nested error containers — a node whose
+      // leaves are all empty (e.g. roles:{} after the last error cleared)
+      // carries no real error.
+      if (hasRealError(errorsValue[key])) return false;
     }
     return true;
   });

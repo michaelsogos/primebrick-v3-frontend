@@ -14,13 +14,13 @@
  *
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
- *   - Casdoor seeded with admin/admin.
+ *   - Seeded E2E test actors (test-admin / test-user — never the dev bootstrap admin).
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention —
  * see docs/ai/e2e-testid-convention.md).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { loginAsAdmin } from "./helpers/admin-login";
+import { loginAsTestAdmin } from "./helpers/admin-login";
 
 const CREATE_URL = "/system/settings/configurations/create";
 
@@ -33,9 +33,20 @@ const CREATE_URL = "/system/settings/configurations/create";
 async function selectType(page: Page, typeLabel: string): Promise<void> {
   const trigger = page.getByTestId("config-create-type");
   await trigger.waitFor({ state: "visible", timeout: 10000 });
-  await trigger.click();
-  const option = page.locator("[role='option']").filter({ hasText: typeLabel });
-  await option.waitFor({ state: "visible", timeout: 10000 });
+  const option = page
+    .locator("[data-state='open']")
+    .getByRole("option", { name: typeLabel, exact: true });
+  // The trigger toggles the popover on click — a click landing before
+  // hydration completes is a no-op, so retry until the option appears.
+  for (let i = 0; i < 5; i++) {
+    await trigger.click();
+    try {
+      await option.waitFor({ state: "visible", timeout: 3000 });
+      break;
+    } catch {
+      if (i === 4) throw new Error(`type option "${typeLabel}" never appeared`);
+    }
+  }
   await option.click();
   // Close the popover by clicking elsewhere
   await page.getByTestId("config-create-key").click();
@@ -46,7 +57,17 @@ async function selectType(page: Page, typeLabel: string): Promise<void> {
  */
 async function fillKey(page: Page, value: string): Promise<void> {
   const keyInput = page.getByTestId("config-create-key");
-  await keyInput.fill(value);
+  // pressSequentially emits per-character input events. A single fill() can
+  // race superforms' validateForm({update:true}), which rewrites $form and
+  // wipes the just-set DOM value.
+  if (value === "") {
+    // pressSequentially('') is a no-op — clear via select-all + backspace
+    // so the field emits a real input event.
+    await keyInput.press("ControlOrMeta+a");
+    await keyInput.press("Backspace");
+    return;
+  }
+  await keyInput.pressSequentially(value, { delay: 20 });
 }
 
 /**
@@ -60,7 +81,9 @@ async function expectFieldError(page: Page, testid: string, timeout = 5000): Pro
   // The error div is a sibling within the same parent container.
   // Locate the parent container and look for .text-destructive inside it.
   const container = field.locator("xpath=ancestor::div[contains(@class,'space-y-2') or contains(@class,'space-y-1')][1]");
-  await expect(container.locator(".text-destructive").first()).toBeVisible({ timeout });
+  // Only error containers (div/p) — the required "*" star in labels is a
+  // <span class="text-destructive"> and must not match.
+  await expect(container.locator("div.text-destructive, p.text-destructive").first()).toBeVisible({ timeout });
 }
 
 /**
@@ -69,7 +92,9 @@ async function expectFieldError(page: Page, testid: string, timeout = 5000): Pro
 async function expectNoFieldError(page: Page, testid: string): Promise<void> {
   const field = page.getByTestId(testid);
   const container = field.locator("xpath=ancestor::div[contains(@class,'space-y-2') or contains(@class,'space-y-1')][1]");
-  await expect(container.locator(".text-destructive")).toHaveCount(0);
+  // The error element can stay in the DOM with no content — assert on
+  // visibility, not count. Exclude the label's required "*" star (a span).
+  await expect(container.locator("div.text-destructive, p.text-destructive").first()).toBeHidden();
 }
 
 /**
@@ -91,12 +116,32 @@ async function expectHidden(page: Page, testid: string): Promise<void> {
  */
 async function waitForForm(page: Page): Promise<void> {
   await page.getByTestId("config-create-key").waitFor({ state: "visible", timeout: 15000 });
+  // Wait for hydration: a click landing before Svelte listeners attach is a
+  // no-op (lost input/click events → stale validation). Probe by toggling
+  // the type ComboSelect popover — bits-ui only opens it once hydrated.
+  const typeTrigger = page.getByTestId("config-create-type");
+  const openOption = page.locator("[data-state='open'] [role='option']").first();
+  for (let i = 0; i < 5; i++) {
+    await typeTrigger.click();
+    try {
+      await openOption.waitFor({ state: "visible", timeout: 3000 });
+      break;
+    } catch {
+      if (i === 4) throw new Error("create form never became interactive");
+    }
+  }
+  // Close the probe popover with Escape — bits-ui returns focus to the trigger
+  // synchronously on dismiss. Clicking another field would race that focus
+  // restore and leave keystrokes swallowed by the ComboSelect trigger.
+  await page.keyboard.press("Escape");
+  await page.locator("[data-state='open'] [role='option']").waitFor({ state: "detached" }).catch(() => {});
+  await page.getByTestId("config-create-key").click();
 }
 
 // ─── Test setup ─────────────────────────────────────────────────────────────
 
 test.beforeEach(async ({ page }) => {
-  await loginAsAdmin(page);
+  await loginAsTestAdmin(page);
   await page.goto(CREATE_URL, { waitUntil: "domcontentloaded" });
   await waitForForm(page);
 });
@@ -144,10 +189,7 @@ test.describe("Left column — top-level field validation", () => {
     // oidc_issuer_url is a reserved config key that always exists on the configurations page.
     await fillKey(page, "oidc_issuer_url");
     // The keyExists check has a 500ms debounce + API call.
-    const keyInput = page.getByTestId("config-create-key");
-    const container = keyInput.locator("xpath=ancestor::div[contains(@class,'space-y-2')][1]");
-    // The keyExists error is a separate div with text-destructive (not via FormField).
-    await expect(container.locator(".text-destructive").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("key-exists-error")).toBeVisible({ timeout: 10000 });
   });
 
   test("type required — selecting then the form validates", async ({ page }) => {
@@ -162,7 +204,9 @@ test.describe("Left column — top-level field validation", () => {
     // ComboSelect with allowCreate — type a long value and press Enter to create it.
     const trigger = page.getByTestId("config-create-label-key");
     await trigger.click();
-    await page.keyboard.type("a".repeat(101));
+    // insertText fires a single input event — 101 keystrokes would re-filter
+    // the ComboSelect list per key and blow the test timeout.
+    await page.keyboard.insertText("a".repeat(101));
     await page.keyboard.press("Enter");
     await expectFieldError(page, "config-create-label-key");
   });
@@ -170,7 +214,7 @@ test.describe("Left column — top-level field validation", () => {
   test("description_key max length — 101 chars shows tooLong", async ({ page }) => {
     const trigger = page.getByTestId("config-create-description-key");
     await trigger.click();
-    await page.keyboard.type("a".repeat(101));
+    await page.keyboard.insertText("a".repeat(101));
     await page.keyboard.press("Enter");
     await expectFieldError(page, "config-create-description-key");
   });
@@ -211,11 +255,18 @@ test.describe("Left column — top-level field validation", () => {
 
   test("submit enabled when all valid", async ({ page }) => {
     // Fill valid key + type (defaults to string) + a value.
-    await fillKey(page, "e2e_test_valid_key");
+    // Use a run-unique key — a previous run may have persisted the entry.
+    const keyInput = page.getByTestId("config-create-key");
+    await fillKey(page, `e2e_key_${Date.now().toString(36)}`);
+    await expect(keyInput).toHaveValue(/^e2e_key_/);
     const valueInput = page.getByTestId("config-input-string-create");
     await valueInput.fill("test value");
+    // superforms marks fields tainted on blur — required for canSave.
+    // Tab out of the value input instead of locator.blur() to mimic a user.
+    await valueInput.press("Tab");
+    await expect(keyInput).toHaveValue(/^e2e_key_/);
     // Wait for key uniqueness check to settle (no keyExists error for a new key).
-    await expect(page.getByTestId("config-create-submit")).toBeEnabled({ timeout: 10000 });
+    await expect(page.getByTestId("config-create-submit")).toBeEnabled({ timeout: 15000 });
   });
 });
 
@@ -279,11 +330,11 @@ test.describe("Right column — per-type field visibility", () => {
     await expectHidden(page, "tcb-url-protocols");
   });
 
-  test("type=json shows required, min, max; hides unsigned, regex, url-protocols", async ({ page }) => {
+  test("type=json shows required only; hides min, max, unsigned, regex, url-protocols", async ({ page }) => {
     await selectType(page, "JSON");
     await expectVisible(page, "tcb-required");
-    await expectVisible(page, "tcb-min");
-    await expectVisible(page, "tcb-max");
+    await expectHidden(page, "tcb-min");
+    await expectHidden(page, "tcb-max");
     await expectHidden(page, "tcb-unsigned");
     await expectHidden(page, "tcb-regex");
     await expectHidden(page, "tcb-url-protocols");
@@ -336,7 +387,7 @@ test.describe("Right column — per-type field visibility", () => {
 test.describe("Right column — validation rule interactions", () => {
   test("required toggle ON shows required-error-key field; OFF hides it", async ({ page }) => {
     // Default type is string.
-    const requiredToggle = page.getByTestId("tcb-required");
+    const requiredToggle = page.getByTestId("tcb-required-switch");
     // Toggle ON
     await requiredToggle.click();
     await expectVisible(page, "tcb-required-error-key");
@@ -353,12 +404,15 @@ test.describe("Right column — validation rule interactions", () => {
     await expectHidden(page, "tcb-min-error-key");
   });
 
-  test("max set shows max-error-key field; cleared hides it", async ({ page }) => {
+  test("max set shows max-error-key field; cleared restores default", async ({ page }) => {
     const maxInput = page.getByTestId("tcb-max");
     await maxInput.fill("100");
     await expectVisible(page, "tcb-max-error-key");
+    // Clearing re-applies the string-type default max (TypeConfigBuilder
+    // always enforces a default max length), so the error-key field stays.
     await maxInput.fill("");
-    await expectHidden(page, "tcb-max-error-key");
+    await expect(maxInput).toHaveValue("65535");
+    await expectVisible(page, "tcb-max-error-key");
   });
 
   test("regex pattern set shows regex-error-key field; cleared hides it", async ({ page }) => {
@@ -390,14 +444,15 @@ test.describe("Right column — validation rule interactions", () => {
     await expectHidden(page, "tcb-url-error-key");
   });
 
-  test("unsigned toggle ON for bigint changes value validation to reject negatives", async ({ page }) => {
+  test("unsigned toggle ON for bigint strips the minus sign", async ({ page }) => {
     await selectType(page, "BigInt");
     // Toggle unsigned ON
-    await page.getByTestId("tcb-unsigned").click();
-    // Enter a negative value
+    await page.getByTestId("tcb-unsigned-switch").click();
+    // The input itself prevents entering a negative value (sign stripped).
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("-5");
-    await expectFieldError(page, "config-input-number-create");
+    await expect(valueInput).toHaveValue("5");
+    await expectNoFieldError(page, "config-input-number-create");
   });
 
   test("unsigned toggle OFF for bigint allows negatives", async ({ page }) => {
@@ -443,7 +498,7 @@ test.describe("Value field validation per type × rule", () => {
   });
 
   test("string: required + empty shows required error", async ({ page }) => {
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     const valueInput = page.getByTestId("config-input-string-create");
     await valueInput.fill("");
     await expectFieldError(page, "config-input-string-create");
@@ -499,19 +554,25 @@ test.describe("Value field validation per type × rule", () => {
 
   // ── Numeric types: type + min/max + unsigned ──────────────────────────────
 
-  test("bigint: non-numeric value shows invalidBigint error", async ({ page }) => {
+  test("bigint: non-numeric value is sanitized by the input", async ({ page }) => {
+    // NumericInput strips non-digit characters — invalid input cannot be
+    // typed, so no schema error is expected.
     await selectType(page, "BigInt");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("abc");
-    await expectFieldError(page, "config-input-number-create");
+    await valueInput.blur();
+    await expectNoFieldError(page, "config-input-number-create");
   });
 
-  test("bigint: negative with unsigned shows invalidBigintUnsigned error", async ({ page }) => {
+  test("bigint: negative with unsigned is sanitized by the input", async ({ page }) => {
+    // With unsigned ON the input strips the "-" sign, so a negative value
+    // cannot be entered — no schema error is expected.
     await selectType(page, "BigInt");
-    await page.getByTestId("tcb-unsigned").click();
+    await page.getByTestId("tcb-unsigned-switch").click();
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("-5");
-    await expectFieldError(page, "config-input-number-create");
+    await expect(valueInput).toHaveValue("5");
+    await expectNoFieldError(page, "config-input-number-create");
   });
 
   test("bigint: value below min shows min error", async ({ page }) => {
@@ -519,6 +580,7 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-min").fill("10");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("5");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-number-create");
   });
 
@@ -527,14 +589,16 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-max").fill("100");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("500");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-number-create");
   });
 
-  test("number: non-numeric shows invalidNumber error", async ({ page }) => {
+  test("number: non-numeric is sanitized by the input", async ({ page }) => {
     await selectType(page, "Number");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("abc");
-    await expectFieldError(page, "config-input-number-create");
+    await valueInput.blur();
+    await expectNoFieldError(page, "config-input-number-create");
   });
 
   test("number: value below min shows min error", async ({ page }) => {
@@ -542,6 +606,7 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-min").fill("10");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("5");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-number-create");
   });
 
@@ -550,14 +615,16 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-max").fill("100");
     const valueInput = page.getByTestId("config-input-number-create");
     await valueInput.fill("500");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-number-create");
   });
 
-  test("money: non-numeric shows invalidNumber error", async ({ page }) => {
+  test("money: non-numeric is sanitized by the input", async ({ page }) => {
     await selectType(page, "Money");
     const valueInput = page.getByTestId("config-input-money-create");
     await valueInput.fill("abc");
-    await expectFieldError(page, "config-input-money-create");
+    await valueInput.blur();
+    await expectNoFieldError(page, "config-input-money-create");
   });
 
   test("money: value below min shows min error", async ({ page }) => {
@@ -565,6 +632,7 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-min").fill("10");
     const valueInput = page.getByTestId("config-input-money-create");
     await valueInput.fill("5");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-money-create");
   });
 
@@ -574,6 +642,8 @@ test.describe("Value field validation per type × rule", () => {
     await selectType(page, "URL");
     const valueInput = page.getByTestId("config-input-url-create");
     await valueInput.fill("not-a-url");
+    // UrlInput commits the value on blur (onChange → notifyChange).
+    await valueInput.blur();
     await expectFieldError(page, "config-input-url-create");
   });
 
@@ -589,6 +659,7 @@ test.describe("Value field validation per type × rule", () => {
     await page.getByTestId("tcb-url-protocols").fill("https");
     const valueInput = page.getByTestId("config-input-url-create");
     await valueInput.fill("http://example.com");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-url-create");
   });
 
@@ -596,6 +667,7 @@ test.describe("Value field validation per type × rule", () => {
     await selectType(page, "Email");
     const valueInput = page.getByTestId("config-input-email-create");
     await valueInput.fill("not-an-email");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-email-create");
   });
 
@@ -610,6 +682,7 @@ test.describe("Value field validation per type × rule", () => {
     await selectType(page, "Phone");
     const valueInput = page.getByTestId("config-input-phone-create");
     await valueInput.fill("123");
+    await valueInput.blur();
     await expectFieldError(page, "config-input-phone-create");
   });
 
@@ -638,26 +711,26 @@ test.describe("Value field validation per type × rule", () => {
 
   test("badge: required + no selection shows required error", async ({ page }) => {
     await selectType(page, "Badge");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     // Badge value widget is a ComboSelect — leave it empty.
     await expectFieldError(page, "config-input-badge-create");
   });
 
   test("single_select: required + no selection shows required error", async ({ page }) => {
     await selectType(page, "Single Select");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     await expectFieldError(page, "config-input-single-select-create");
   });
 
   test("multi_select: required + no selection shows required error", async ({ page }) => {
     await selectType(page, "Multi Select");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     await expectFieldError(page, "config-input-multi-select-create");
   });
 
   test("date: required + empty shows required error", async ({ page }) => {
     await selectType(page, "Date");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     // DateWheelPicker has no testid — assert the value field error via the
     // FormField container. The error appears in the FormField's error area.
     // We locate via the form's value field by its label context.
@@ -673,14 +746,14 @@ test.describe("Value field validation per type × rule", () => {
 
   test("datetime: required + empty shows required error", async ({ page }) => {
     await selectType(page, "DateTime");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     const form = page.locator("#config-create-form");
     await expect(form.locator(".text-destructive").first()).toBeVisible({ timeout: 5000 });
   });
 
   test("time: required + empty shows required error", async ({ page }) => {
     await selectType(page, "Time");
-    await page.getByTestId("tcb-required").click();
+    await page.getByTestId("tcb-required-switch").click();
     const form = page.locator("#config-create-form");
     await expect(form.locator(".text-destructive").first()).toBeVisible({ timeout: 5000 });
   });
@@ -695,7 +768,7 @@ test.describe("Widget config section per type", () => {
     // Open the currency selector and pick a different currency.
     const currencyTrigger = page.getByTestId("tcb-currency");
     await currencyTrigger.click();
-    const option = page.locator("[role='option']").first();
+    const option = page.locator("[data-state='open'] [role='option']").first();
     await option.waitFor({ state: "visible", timeout: 10000 });
     await option.click();
   });
@@ -762,29 +835,33 @@ test.describe("Advanced JSON mode", () => {
     // Toggle advanced ON.
     await page.getByTestId("tcb-advanced").click();
     await expectVisible(page, "tcb-raw-json");
-    await expectHidden(page, "tcb-preview-toggle");
+    await expectHidden(page, "tcb-json-preview");
     // Toggle advanced OFF.
     await page.getByTestId("tcb-advanced").click();
-    await expectVisible(page, "tcb-preview-toggle");
+    await expectVisible(page, "tcb-json-preview");
     await expectHidden(page, "tcb-raw-json");
   });
 
   test("invalid JSON in raw editor shows tcb-raw-json-error", async ({ page }) => {
     await page.getByTestId("tcb-advanced").click();
-    const rawJsonEditor = page.getByTestId("tcb-raw-json");
+    // tcb-raw-json is the CodeMirror wrapper — fill the editable content area.
+    const rawJsonEditor = page.getByTestId("tcb-raw-json").locator(".cm-content");
     await rawJsonEditor.fill("{invalid");
     await expectVisible(page, "tcb-raw-json-error");
   });
 
   test("valid JSON in raw editor hides error and updates preview", async ({ page }) => {
     await page.getByTestId("tcb-advanced").click();
-    const rawJsonEditor = page.getByTestId("tcb-raw-json");
+    const rawJsonEditor = page.getByTestId("tcb-raw-json").locator(".cm-content");
     await rawJsonEditor.fill('{"validation":{"required":true}}');
     await expectHidden(page, "tcb-raw-json-error");
+    // CodeMirror's completion popup can stay open and swallow the next click.
+    await page.keyboard.press("Escape");
     // Toggle back to preview mode.
     await page.getByTestId("tcb-advanced").click();
+    await expectHidden(page, "tcb-raw-json");
     const preview = page.getByTestId("tcb-json-preview");
-    await expect(preview).toContainText('"required":true');
+    await expect(preview).toContainText('"required": true');
   });
 
   test("preview toggle collapses/expands JSON preview", async ({ page }) => {

@@ -12,7 +12,7 @@
 
   type ColumnLike = { key: string; label_key: string; hideable?: boolean };
 
-  interface $$Props {
+  interface Props {
     stickyColumns: ColumnLike[];
     nonAuditingColumns: ColumnLike[];
     auditingColumns: ColumnLike[];
@@ -30,7 +30,7 @@
     toggleColumnKey,
     onReorderKeys,
     onResetColumnVisibility
-  }: $$Props = $props();
+  }: Props = $props();
 </script>
 
 {#snippet headerTitle()}

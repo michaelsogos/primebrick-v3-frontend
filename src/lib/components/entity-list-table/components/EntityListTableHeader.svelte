@@ -1,7 +1,7 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
-  import { FiltersPanel, ColumnSelectorPanel } from '../panels';
+
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 
@@ -121,18 +121,20 @@
         return;
       }
       onFiltersOpenChange(true);
-      openSheet('entity.filters', {
-        content: FiltersPanel,
-        props: {
-          content: {},
+      openSheet(
+        'entity.filters',
+        {
           filterableColumns,
           filterValues: filterValues ?? {},
           onFilterValuesChange,
-          onResetFilters
+          onResetFilters,
+          advancedFilters: advancedFilters ?? [],
+          onAdvancedFiltersChange
+        } as any,
+        {
+          modal: false
         }
-      } as any, {
-        modal: false
-      });
+      );
     } else {
       closeSheet();
       onFiltersOpenChange(false);

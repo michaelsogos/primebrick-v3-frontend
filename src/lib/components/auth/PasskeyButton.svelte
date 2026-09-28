@@ -19,9 +19,17 @@
   let {
     onsuccess,
     onerror,
+    username,
   }: {
     onsuccess?: (data: { success: boolean; user: any }) => void;
     onerror?: () => void;
+    // When the user already typed their username, forward it so Casdoor uses
+    // the non-discoverable signin path — the discoverable lookup
+    // (webauthnCredentials LIKE %<id>%) does not work on Postgres because the
+    // column is bytea and CAST(bytea AS text) yields \x-hex, so the LIKE never
+    // matches. Usernameless passkey login therefore requires the username to
+    // be filled in.
+    username?: string;
   } = $props();
 
   let loading = $state(false);
@@ -44,12 +52,12 @@
     loading = true;
     try {
       // Step 1: begin — ask the BE (→ Casdoor) for PublicKeyCredentialRequestOptions.
-      // No username → discoverable login (passkey-only, the OS prompts for
-      // which passkey to use).
+      // Forward the username when typed → Casdoor takes the non-discoverable
+      // path (the discoverable credential lookup is broken on Postgres).
       const beginResp = await apiFetch("/api/v1/auth/webauthn/signin/begin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(username?.trim() ? { username: username.trim() } : {}),
       });
 
       if (!beginResp.ok) {

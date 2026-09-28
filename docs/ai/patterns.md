@@ -44,6 +44,23 @@ with border/background classes.
 
 Prefer shared form building blocks (e.g. `FormField`, `MoneyInput`, `DateInput` under `src/lib/components/forms/` when present). Validation UX (errors, spacing, disabled) should stay consistent; promote to wrapper only after repetition.
 
+#### Field-row anatomy decision table
+
+Two field-row anatomies exist — pick by context, never hand-roll raw
+`<label>` markup in routes:
+
+| Context | Component | Association |
+|---|---|---|
+| Inside a `sveltekit-superforms` `form` | `ui/form` set (`FormField`/`FormControl`/`FormLabel`/`TranslatedFieldErrors`) | auto `for`/`id` via formsnap `props` |
+| Anywhere else (config entries, meta rows, settings widgets, sheet quick-forms) | `PrimeField` (`ui/form`) | real `<label for>`/`id` via the `control` snippet `{ id }` |
+| Read-only caption (badge, value) | plain `<span class="text-sm font-medium">` — never `<label>` | — |
+
+`PrimeField` supports `layout="stacked"` (default: label above control) and
+`layout="inline"` (control + label side by side — the `SwitchField` anatomy
+for boolean controls). `help` accepts a pre-mapped `{ text, priority?,
+title? }` or a raw `MetaColumn` (translation + `show_form_tooltip` gate
+handled internally). Docs: `docs/user-guide/components/prime-field.mdx`.
+
 #### Detail-page primary CTA placement
 
 A "detail page" is any non-table page (form page, settings sub-page, entity

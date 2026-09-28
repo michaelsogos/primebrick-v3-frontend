@@ -59,6 +59,7 @@ const ROUTES = [
   { path: "/system/settings/organizations/create", label: "Create organization" },
   { path: "/system/settings/email-providers", label: "Email providers" },
   { path: "/system/settings/modules", label: "Modules list" },
+  { path: "/system/settings/modules/showcase", label: "Module detail (config entries form)" },
   { path: "/system/settings/templates", label: "Templates" },
 ];
 

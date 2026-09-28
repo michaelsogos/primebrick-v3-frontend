@@ -17,6 +17,7 @@
 import { startFakeBrevoServer } from "./helpers/fake-brevo";
 import { upsertFakeBrevoProvider, getPool } from "./helpers/db";
 import { setFakeBrevo } from "./helpers/global-state";
+import { createE2eAdminActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -55,6 +56,16 @@ export default async function globalSetup(): Promise<void> {
   } catch (err) {
     await fakeBrevo.close();
     throw new Error(`[globalSetup] Failed to upsert fake Brevo provider row: ${err}`);
+  }
+
+  // 6. Mint the ephemeral E2E admin actor (random password, destroyed in
+  //    teardown) and publish its credentials to the test workers via env.
+  try {
+    const actor = await createE2eAdminActor();
+    console.log(`[globalSetup] Ephemeral E2E test actor created: ${actor.username}`);
+  } catch (err) {
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create E2E test actor: ${err}`);
   }
 
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");

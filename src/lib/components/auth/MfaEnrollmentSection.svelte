@@ -94,6 +94,11 @@
         scope: 'auth',
       });
 
+      // Clear the OTP before oncomplete() re-renders: bits-ui PinInput
+      // re-fires onComplete during the effect flush while the bound value is
+      // still complete → duplicate enroll/finish with a consumed token.
+      otp.reset();
+      enrollmentToken = "";
       oncomplete();
     } catch (error) {
       console.error('[MfaEnrollmentSection] Failed to finish enrollment:', error);

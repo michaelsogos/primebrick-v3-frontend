@@ -104,6 +104,10 @@
         message: $t('app.auth.mfaStepUp.stepUpAuthorized'),
         scope: 'auth',
       });
+      // Clear before the dialog close re-render: a complete OTP left bound
+      // makes PinInput re-fire onComplete in the effect flush → duplicate
+      // step-up verify with the consumed challenge token.
+      otp.reset();
       onauthorized?.(data.action_authorization_token);
       open = false;
     } catch (e) {

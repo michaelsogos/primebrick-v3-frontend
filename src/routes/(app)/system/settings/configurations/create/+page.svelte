@@ -105,13 +105,15 @@
 
   type CreateForm = z.infer<typeof createSchema>;
 
+  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
     validators: zod4(createSchema),
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
-    async onChange() {
+    onChange() {
       // Force ALL errors to display on every change, regardless of taint.
       // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
       // bypassing all taint/event/previous-error checks.
@@ -119,7 +121,14 @@
       // and type_config via root-level superRefine — field-level validation
       // alone (z.string().default('')) won't catch required/type errors.
       // Same pattern as users/create page.
-      await superFormObj.validateForm({ update: true, focusOnError: false });
+      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
+      // captured at validation start — overlapping validations resolving out of
+      // order would overwrite $form with stale data (typed chars lost, taint
+      // reset). One trailing validation per typing burst avoids the race.
+      clearTimeout(validateAllTimer);
+      validateAllTimer = setTimeout(() => {
+        void superFormObj.validateForm({ update: true, focusOnError: false });
+      }, 250);
     },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
@@ -169,20 +178,25 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — the getters must be invoked via property access
+  // or hasChanges/canSave freeze at their initial values (AGENTS.md rule #6).
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
   );
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
-    () => hasChanges,
+    () => formGuard.hasChanges,
     'system.settings.configurations.create.unsavedChanges',
   );
 
   // Leaving the page without saving must never persist queued translations —
   // the pending queue dies with the form (zero orphan rows).
-  $effect(() => () => clearPendingTranslations());
+  $effect(() => () => {
+    clearTimeout(validateAllTimer);
+    clearPendingTranslations();
+  });
 
   const isCreatePage = $derived(true);
   const auditData = $derived(buildAuditData());
@@ -192,11 +206,15 @@
   let keyExistsError = $state(false);
   let keyChecking = $state(false);
 
-  function handleKeyInput() {
+  function handleKeyInput(e?: Event) {
     keyExistsError = false;
     if (keyCheckTimer) clearTimeout(keyCheckTimer);
-    const keyValue = $form.key?.trim() ?? '';
-    if (!keyValue) return;
+    // Read the live DOM value — bind:value ordering vs oninput is not guaranteed.
+    const keyValue = (e ? (e.currentTarget as HTMLInputElement).value : ($form.key ?? '')).trim();
+    if (!keyValue) {
+      keyChecking = false;
+      return;
+    }
     keyChecking = true;
     keyCheckTimer = setTimeout(async () => {
       try {
@@ -226,7 +244,7 @@
       : [],
   );
 
-  let effectiveCanSave = $derived(canSave && !keyExistsError && !keyChecking);
+  let effectiveCanSave = $derived(formGuard.canSave && !keyExistsError && !keyChecking);
 
   // Existing group keys for the group_key ComboSelect (selectable suggestions)
   const { state: groupKeysState } = useExistingGroupKeys();
@@ -342,7 +360,7 @@
                     />
                     <TranslatedFormFieldErrors />
                     {#if keyExistsError}
-                      <div class="text-destructive text-xs font-medium">
+                      <div class="text-destructive text-xs font-medium" data-testid="key-exists-error">
                         {$t('system.settings.configurations.create.keyExists')}
                       </div>
                     {/if}
@@ -558,7 +576,12 @@
       <Button variant="outline" onclick={handleCancel} data-testid="config-create-cancel">
         {$t('app.common.cancel')}
       </Button>
-      <Button type="submit" form="config-create-form" disabled={!effectiveCanSave} data-testid="config-create-submit">
+      <Button
+        type="submit"
+        form="config-create-form"
+        disabled={!effectiveCanSave}
+        data-testid="config-create-submit"
+      >
         {$t('app.common.save')}
       </Button>
     </div>

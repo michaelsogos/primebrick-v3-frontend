@@ -50,14 +50,12 @@ export interface CapturedPasskey {
  */
 export async function installVirtualAuthenticator(
   context: BrowserContext,
-): Promise<CapturedPasskey> {
-  // Create a fresh passkey for the rpId. Playwright generates the keypair
-  // (ECDSA P-256) and returns the credential (id, privateKey, publicKey).
-  const credential = await context.credentials.create(WEBAUTHN_RP_ID);
-  // Install the interceptor — from now on, navigator.credentials.get/create
-  // in any page in this context are answered by the virtual authenticator.
+): Promise<void> {
+  // Install the interceptor only — NO pre-seeded credential. A seeded dummy
+  // would sit next to the credential the page registers and pollute
+  // captureEnrolledPasskey() (credentials.get() returns the seeded one first,
+  // and re-seeding it later fails allowCredentials matching at signin).
   await context.credentials.install();
-  return credential as unknown as CapturedPasskey;
 }
 
 /**
@@ -69,12 +67,16 @@ export async function installVirtualAuthenticatorWithPasskey(
   context: BrowserContext,
   passkey: CapturedPasskey,
 ): Promise<void> {
-  // Re-seed the saved credential (with its private key) into the authenticator.
+  // Normalize to strict base64url — captured ids may contain std-base64 chars
+  // ('+', '/', '=') which decode to different bytes under base64url and make
+  // allowCredentials matching fail with "No matching credential".
+  const toB64url = (v?: string) =>
+    v?.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   await context.credentials.create(passkey.rpId, {
-    id: passkey.id,
-    userHandle: passkey.userHandle,
-    privateKey: passkey.privateKey,
-    publicKey: passkey.publicKey,
+    id: toB64url(passkey.id)!,
+    userHandle: toB64url(passkey.userHandle),
+    privateKey: toB64url(passkey.privateKey)!,
+    publicKey: toB64url(passkey.publicKey)!,
   });
   await context.credentials.install();
 }

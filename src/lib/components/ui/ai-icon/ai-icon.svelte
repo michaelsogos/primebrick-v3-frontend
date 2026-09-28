@@ -13,7 +13,7 @@
    */
   import { cn } from '$lib/utils';
 
-  interface $$Props {
+  interface Props {
     /** Icon size in pixels. */
     size?: number;
     /** Stroke width. */
@@ -24,7 +24,7 @@
     no_animation?: boolean;
   }
 
-  let { size = 24, stroke_width = 2, class: className, no_animation = false }: $$Props = $props();
+  let { size = 24, stroke_width = 2, class: className, no_animation = false }: Props = $props();
 
   // Unique gradient ID to avoid collisions when multiple instances are on the same page.
   const gradient_id = `ai-icon-grad-${Math.random().toString(36).slice(2, 10)}`;

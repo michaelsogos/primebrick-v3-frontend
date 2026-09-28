@@ -9,8 +9,9 @@ import {
 
 describe("computeCaseMetrics — documented formulas on the fly", () => {
   it("quality = mean·0.6 + success·5·0.4, speed = mean buckets, score = q·0.8 + s·0.2", () => {
-    // Mirrors stored gemma-4-E2B evidence: turns [5,3,2,2,5],
-    // response_s [9.43,10.28,9.83,10.78,9.25] → stored quality 2.84, speed 0.6, score 2.39
+    // turns [5,3,2,2,5], response_s [9.43,10.28,9.83,10.78,9.25]:
+    // quality = 3.4·0.6 + 0.4·5·0.4 = 2.84; avg 9.914s → bucket(≤10) = 1;
+    // score = 2.84·0.8 + 1·0.2 = 2.472
     const metrics = computeCaseMetrics([
       { score: 5, response_s: 9.43 },
       { score: 3, response_s: 10.28 },
@@ -19,8 +20,8 @@ describe("computeCaseMetrics — documented formulas on the fly", () => {
       { score: 5, response_s: 9.25 },
     ]);
     expect(metrics.quality).toBeCloseTo(2.84, 2);
-    expect(metrics.speed).toBeCloseTo(0.6, 2);
-    expect(metrics.score).toBeCloseTo(2.392, 2);
+    expect(metrics.speed).toBe(1);
+    expect(metrics.score).toBeCloseTo(2.472, 2);
     expect(metrics.success).toBe("2/5");
     expect(metrics.avg_response_s).toBeCloseTo(9.914, 2);
   });

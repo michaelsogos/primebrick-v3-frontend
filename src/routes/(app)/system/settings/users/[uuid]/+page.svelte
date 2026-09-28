@@ -110,23 +110,33 @@
     }
   });
 
+  $effect(() => () => clearTimeout(validateAllTimer));
+
   function getColMeta(key: string) {
     return getColMetaUtil(meta, key);
   }
 
   // Superforms in SPA mode
+  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
     SPA: true,
     validators: zod4(updateSchema),
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
-    async onChange() {
+    onChange() {
       // Force ALL errors to display on every change, regardless of taint.
       // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
       // bypassing all taint/event/previous-error checks.
       // focusOnError: false prevents focus from jumping to the first invalid field.
-      await superFormObj.validateForm({ update: true, focusOnError: false });
+      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
+      // captured at validation start — overlapping validations resolving out of
+      // order would overwrite $form with stale data (typed chars lost).
+      clearTimeout(validateAllTimer);
+      validateAllTimer = setTimeout(() => {
+        void superFormObj.validateForm({ update: true, focusOnError: false });
+      }, 250);
     },
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid || !user) return;
@@ -175,7 +185,8 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — getters freeze at initial values otherwise.
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
@@ -215,7 +226,7 @@
   const auditData = $derived(buildAuditData(user));
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
-    () => hasChanges,
+    () => formGuard.hasChanges,
     'system.settings.users.update.unsavedChanges',
   );
 </script>
@@ -459,7 +470,7 @@
       <Button variant="outline" onclick={handleCancel}>
         {$t('app.common.cancel')}
       </Button>
-      <Button type="submit" form="user-update-form" disabled={!canSave}>
+      <Button type="submit" form="user-update-form" disabled={!formGuard.canSave}>
         {$t('app.common.save')}
       </Button>
     </div>

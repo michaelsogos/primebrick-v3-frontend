@@ -19,3 +19,9 @@ if (typeof globalThis.ResizeObserver !== "function") {
 if (typeof document !== "undefined" && typeof document.elementFromPoint !== "function") {
 	document.elementFromPoint = () => null;
 }
+
+// jsdom does not implement Element.scrollIntoView — used by bits-ui Command
+// (CommandPalette in AppTopbar) when a group header is selected.
+if (typeof Element !== "undefined" && typeof Element.prototype.scrollIntoView !== "function") {
+	Element.prototype.scrollIntoView = () => {};
+}

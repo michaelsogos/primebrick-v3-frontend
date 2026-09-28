@@ -9,13 +9,13 @@
   import Check from '@lucide/svelte/icons/check';
   import Search from '@lucide/svelte/icons/search';
 
-  interface $$Props {
+  interface Props {
     currentCountry: string;
     allowedCountries?: string[];
     onCountryChange: (country: string) => void;
   }
 
-  let { currentCountry, allowedCountries, onCountryChange }: $$Props = $props();
+  let { currentCountry, allowedCountries, onCountryChange }: Props = $props();
 
   let searchQuery = $state('');
 

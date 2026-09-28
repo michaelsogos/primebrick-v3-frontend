@@ -40,6 +40,15 @@
   in-flight flag.
 - **Reset on failure** — call `otp.reset()` in the error path so the user
   can retype immediately (all existing call sites do this).
+- **Duplicate completion is deduped in `OtpInput`** — bits-ui `onComplete`
+  lives in an `$effect` and can re-emit for the same value when the parent
+  re-renders with the code still bound (observed: `finish → GET /factors →
+  finish` → `MFA_ENROLLMENT_TOKEN_INVALID`). The wrapper emits each completed
+  value once and re-arms only when the code becomes incomplete. Do NOT add
+  per-site workarounds; if you see a duplicate submit, fix `OtpInput`.
+- **Reset on success is still good hygiene** — `otp.reset()` before
+  success callbacks keeps state clean, but is not required for correctness
+  (the wrapper dedupes).
 
 ## Styling
 

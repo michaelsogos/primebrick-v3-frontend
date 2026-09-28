@@ -41,6 +41,27 @@
 
 	let inputRef = $state<HTMLInputElement | null>(null);
 
+	/**
+	 * Dedupes bits-ui `onComplete`. The upstream handler lives in an $effect
+	 * (pin-input.svelte.js) keyed on value/prevValue — when the parent
+	 * re-renders while the bound value is still complete (e.g. after a
+	 * successful verify triggers a list reload), the effect can observe a
+	 * shorter prevValue → full value transition and emit onComplete a second
+	 * time, submitting a stale duplicate request. Emit once per completed
+	 * value; reset the latch as soon as the code becomes incomplete again.
+	 */
+	let lastCompletedValue = $state<string | null>(null);
+
+	function handleComplete(completed: string) {
+		if (disabled || completed === lastCompletedValue) return;
+		lastCompletedValue = completed;
+		onsubmit?.(completed);
+	}
+
+	$effect(() => {
+		if (value.length < maxlength) lastCompletedValue = null;
+	});
+
 	onMount(async () => {
 		if (autofocus) {
 			await tick();
@@ -68,7 +89,7 @@
 	{disabled}
 	pattern={REGEXP_ONLY_DIGITS}
 	{pasteTransformer}
-	onComplete={() => { if (!disabled) onsubmit?.(value); }}
+	onComplete={handleComplete}
 	onkeydown={handleKeydown}
 	inputId={id}
 	textalign="center"

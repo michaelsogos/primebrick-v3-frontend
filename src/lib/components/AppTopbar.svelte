@@ -103,11 +103,11 @@
     }
   }
 
-  interface $$Props {
+  interface Props {
     unreadNotifications?: number;
   }
 
-  let { unreadNotifications = 3 }: $$Props = $props();
+  let { unreadNotifications = 3 }: Props = $props();
 
   let ianaTimeZone = $state<string | null>(null);
 

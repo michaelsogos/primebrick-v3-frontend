@@ -24,11 +24,16 @@
   the form shell even with an expired session (401), so URL/DOM checks lie.
 - On 401: navigate to `/login` and treat it as a state machine — the login
   page auto-attempts a session refresh before showing the form; poll for the
-  form (`login-username-input`) OR a redirect, submit `admin`/`admin`, then
-  re-verify `/api/v1/auth/me`.
-- `beforeAll`: `deleteMfaFactorsByUsername("admin")` +
-  `setAuthMethodEnforcerDismissed("admin", true)` via `helpers/db.ts` so the
-  login cannot stall on an MFA challenge.
+  form (`login-username-input`) OR a redirect, submit the E2E test actor
+  credentials (`E2E_ADMIN_USERNAME`/`E2E_ADMIN_PASSWORD` from
+  `helpers/admin-login.ts`), then re-verify `/api/v1/auth/me`.
+  NEVER use the dev bootstrap `admin` user — tests authenticate as the seeded
+  E2E actors (`test-admin` / `test-user`) only.
+- `beforeAll`: `deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME)` +
+  `setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true)` via
+  `helpers/db.ts` so the login cannot stall on an MFA challenge. Both helpers
+  REFUSE to run against the dev `admin` user — its credentials/MFA state are
+  not test data and must never be destroyed/recreated by tests.
 
 ### Locale — pin before first load
 - `sessionStorage["pb.lang"] = "it-IT"` then reload once if it differed.

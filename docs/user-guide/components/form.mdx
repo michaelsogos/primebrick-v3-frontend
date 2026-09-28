@@ -94,11 +94,19 @@ Key exports (all re-exported from the barrel with `Form*` aliases):
 - `Fieldset` / `FormFieldset`, `Legend` / `FormLegend` — grouping primitives.
 - `ElementField` / `FormElementField` — field for a single form element.
 - `Button` / `FormButton` — form submit button.
+- `PrimeField` — standalone field-row wrapper for controls **outside** a superforms form. See the dedicated [PrimeField page](/docs/user-guide/components/prime-field).
+
+## When NOT to use this set
+
+Labeled field rows that are not inside a `sveltekit-superforms` `form` —
+config entries, dynamic meta rows, settings widgets, sheet-panel quick
+forms — use [PrimeField](/docs/user-guide/components/prime-field) instead.
+It provides the same row anatomy (label + help tooltip + control + hint +
+errors) without requiring formsnap context.
 
 ## Next steps
 
 - [Input](/docs/user-guide/components/input)
-- [FormLabelWithHelp](/docs/user-guide/components/form-label-with-help)
 - [FormPageLayout](/docs/user-guide/components/form-page-layout)
 - [Component catalog](/docs/user-guide/components)
 - [UI stack](/docs/user-guide/ui-stack)

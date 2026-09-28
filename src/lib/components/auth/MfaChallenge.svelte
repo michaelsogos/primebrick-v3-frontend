@@ -112,6 +112,10 @@
       if (data.success && data.user) {
         userProfileStore.set(data.user);
       }
+      // Clear before onsuccess triggers re-render/navigation: a complete
+      // OTP left bound makes PinInput re-fire onComplete in the effect
+      // flush → duplicate verify with the consumed challenge token.
+      otp.reset();
       onsuccess?.(data);
     } catch (error) {
       console.error('[MFA Verify Error]', error);

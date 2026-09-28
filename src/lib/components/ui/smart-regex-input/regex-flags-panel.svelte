@@ -6,13 +6,13 @@
   import { SwitchField } from '$lib/components/ui/switch-field';
   import XIcon from '@lucide/svelte/icons/x';
 
-  interface $$Props {
+  interface Props {
     current_flags: string;
     config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
     on_flags_change: (flags: string) => void;
   }
 
-  let { current_flags, config_type, on_flags_change }: $$Props = $props();
+  let { current_flags, config_type, on_flags_change }: Props = $props();
 
   // Parse current flags into individual toggles.
   // Panel is mounted fresh each time the sheet opens, so capturing the initial

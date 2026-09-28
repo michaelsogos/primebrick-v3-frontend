@@ -22,6 +22,7 @@
  */
 import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
@@ -201,8 +202,8 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
   test.describe.configure({ timeout: 600_000, mode: "serial" });
 
   test.beforeAll(async () => {
-    await deleteMfaFactorsByUsername("admin");
-    await setAuthMethodEnforcerDismissed("admin", true);
+    await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
+    await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true);
   });
 
   /**
@@ -252,14 +253,14 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
     }
 
     if (!(await isAuthed())) {
-      log("session expired (auth/me → 401) — logging in as admin");
+      log("session expired (auth/me → 401) — logging in as E2E test admin");
       await page.goto(`${BASE_URL}/login`);
       let submitted = false;
       for (let i = 0; i < 6 && page.url().includes("/login"); i++) {
         const input = page.getByTestId("login-username-input");
         if (!submitted && (await input.isVisible().catch(() => false))) {
-          await input.fill("admin");
-          await page.getByTestId("login-password-input").fill("admin");
+          await input.fill(E2E_ADMIN_USERNAME);
+          await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
           await page.getByTestId("login-submit-button").click();
           submitted = true;
           log("login form submitted");

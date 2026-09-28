@@ -152,7 +152,8 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — getters freeze at initial values otherwise.
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
@@ -186,7 +187,7 @@
 
   // Block internal navigation when there are changes
   const { handleBeforeUnload } = useUnsavedChangesGuard(
-    () => hasChanges,
+    () => formGuard.hasChanges,
     'system.settings.profile.unsavedChanges',
   );
 
@@ -551,7 +552,7 @@
   {/snippet}
 
   {#snippet footerActions()}
-    <Button type="submit" form="profile-form" disabled={!canSave}>
+    <Button type="submit" form="profile-form" disabled={!formGuard.canSave}>
       {$t('app.common.save')}
     </Button>
   {/snippet}

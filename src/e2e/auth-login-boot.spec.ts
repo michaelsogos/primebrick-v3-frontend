@@ -11,10 +11,10 @@
  *   6. Forced-login flow: 401 → "Go to login" preserves the page as
  *      `?redirect_path=` → post-login lands back on it.
  *
- * Preconditions: same as other auth suites (FE 5173, BE 3001, seeded admin).
+ * Preconditions: same as other auth suites (FE 5173, BE 3001, seeded E2E test actors).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { loginAsAdmin, ADMIN_USERNAME, ADMIN_PASSWORD } from "./helpers/admin-login";
+import { loginAsTestAdmin, E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
 /** Read the mirrored session user from sessionStorage. */
 async function sessionUser(page: Page) {
@@ -33,7 +33,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext();
     page = await context.newPage();
-    await loginAsAdmin(page);
+    await loginAsTestAdmin(page);
   });
 
   test.afterAll(async () => {
@@ -105,7 +105,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
     // session mirror so apiFetch takes the refresh path, which now fails →
     // the SessionExpiredDialog opens.
     await page.evaluate(() => {
-      sessionStorage.setItem("user", JSON.stringify({ username: "admin", expires_at: Date.now() - 1000 }));
+      sessionStorage.setItem("user", JSON.stringify({ username: "test-admin", expires_at: Date.now() - 1000 }));
     });
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
 
@@ -115,7 +115,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
     await dialog.waitFor({ state: "visible", timeout: 15000 });
 
     // A failed login attempt inside the dialog reveals "Go to login".
-    await dialog.getByTestId("login-username-input").fill(ADMIN_USERNAME);
+    await dialog.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
     await dialog.getByTestId("login-password-input").fill("definitely-wrong");
     await dialog.getByTestId("login-submit-button").click();
     await page.getByTestId("session-expired-goto-login").waitFor({ state: "visible", timeout: 10000 });
@@ -127,8 +127,8 @@ test.describe.serial("Login boot, redirect & logout", () => {
     expect(qs).toBe("/system/settings/profile");
 
     // Real login on the full page → lands back on the preserved path.
-    await page.getByTestId("login-username-input").fill(ADMIN_USERNAME);
-    await page.getByTestId("login-password-input").fill(ADMIN_PASSWORD);
+    await page.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
+    await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
     await page.getByTestId("login-submit-button").click();
     await page.waitForURL(/\/system\/settings\/profile/, { timeout: 15000 });
   });

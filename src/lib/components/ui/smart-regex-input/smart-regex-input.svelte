@@ -20,7 +20,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 
-  interface $$Props {
+  interface Props {
     /** The regex pattern string (bindable). */
     value?: string;
     /** The regex flags (bindable, e.g. 'gi'). */
@@ -57,7 +57,7 @@
     class: className,
     'data-testid': dataTestId = 'smart-regex-input',
     config_type = 'string',
-  }: $$Props = $props();
+  }: Props = $props();
 
   let regex_error = $state<string | null>(null);
 

@@ -129,6 +129,12 @@
         scope: "auth",
       });
       enrollDialogOpen = false;
+      // Clear the OTP before loadFactors() re-renders: bits-ui PinInput
+      // re-fires onComplete during the effect flush when the bound value is
+      // still complete, which would submit a second enroll/finish with the
+      // already-consumed token (MFA_ENROLLMENT_TOKEN_INVALID).
+      otp.reset();
+      enrollmentToken = "";
       await loadFactors();
     } catch (error) {
       console.error("[MfaManagement] Failed to finish enrollment:", error);

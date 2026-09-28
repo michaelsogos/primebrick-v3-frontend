@@ -62,10 +62,12 @@ const isAuthed = () => page.evaluate(async () => {
 On 401, `/login` is a **state machine**: `bootSessionCheck()` first tries the
 HttpOnly refresh cookie (`checking → refreshing → form`); a successful
 refresh redirects away before the form renders. So poll for EITHER the form
-(`login-username-input`) OR navigation, submit `admin`/`admin`, then re-verify
-`auth/me`. Strip admin MFA in `beforeAll` via `helpers/db.ts`
-(`deleteMfaFactorsByUsername`, `setAuthMethodEnforcerDismissed`) — the
-documented convention from `auth-mfa.spec.ts`.
+(`login-username-input`) OR navigation, submit the E2E test actor credentials (`E2E_ADMIN_USERNAME`/`E2E_ADMIN_PASSWORD` from `helpers/admin-login.ts`), then re-verify
+`auth/me`. Strip the TEST ACTOR's MFA in `beforeAll` via `helpers/db.ts`
+(`deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME)`, `setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, ...)`) — the
+documented convention from `auth-mfa.spec.ts`. These helpers refuse to run
+against the dev `admin` user — never destroy/recreate its credentials, MFA
+factors, or passkeys to bypass MFA in tests.
 
 ## Locale
 

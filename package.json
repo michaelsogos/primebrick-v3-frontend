@@ -87,7 +87,6 @@
     "@huggingface/transformers": "4.2.0",
     "@lezer/highlight": "1.2.3",
     "@microsoft/fetch-event-source": "2.0.1",
-    "@mlc-ai/web-llm": "0.2.85",
     "class-variance-authority": "0.7.1",
     "codemirror": "6.0.2",
     "countries-list": "3.4.1",

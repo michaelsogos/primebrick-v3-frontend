@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { PrimeField } from '$lib/components/ui/form';
   import { Badge } from '$lib/components/ui/badge';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -148,48 +149,55 @@
         <TabsContent value="service-info" class="flex-1 overflow-y-auto p-4">
           <form id="service-info-form" onsubmit={(e) => { e.preventDefault(); handleSaveServiceInfo(); }}>
             <div class="grid grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label for="name" class="text-sm font-medium">{$t('system.settings.modules.config.name')}</label>
-                <Input id="name" bind:value={formData.name} />
-              </div>
+              <PrimeField id="name" label={$t('system.settings.modules.config.name')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.name} />
+                {/snippet}
+              </PrimeField>
 
-              <div class="space-y-2">
-                <label for="base_url" class="text-sm font-medium">{$t('system.settings.modules.config.baseUrl')}</label>
-                <Input id="base_url" bind:value={formData.base_url} />
-              </div>
+              <PrimeField id="base_url" label={$t('system.settings.modules.config.baseUrl')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.base_url} />
+                {/snippet}
+              </PrimeField>
+
+              <PrimeField id="description" class="col-span-2" label={$t('system.settings.modules.config.description')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.description} />
+                {/snippet}
+              </PrimeField>
+
+              <PrimeField id="icon" label={$t('system.settings.modules.config.icon')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
+                {/snippet}
+              </PrimeField>
+
+              <PrimeField id="icon_type" label={$t('system.settings.modules.config.iconType')}>
+                {#snippet control({ id })}
+                  <select {id} bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
+                    <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
+                    <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
+                    <option value="svg">{$t('system.settings.modules.config.iconTypeSvg')}</option>
+                    <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
+                  </select>
+                {/snippet}
+              </PrimeField>
+
+              <PrimeField id="author" label={$t('system.settings.modules.config.author')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.author} />
+                {/snippet}
+              </PrimeField>
+
+              <PrimeField id="github_repo_url" label={$t('system.settings.modules.config.githubRepoUrl')}>
+                {#snippet control({ id })}
+                  <Input {id} bind:value={formData.github_repo_url} />
+                {/snippet}
+              </PrimeField>
 
               <div class="col-span-2 space-y-2">
-                <label for="description" class="text-sm font-medium">{$t('system.settings.modules.config.description')}</label>
-                <Input id="description" bind:value={formData.description} />
-              </div>
-
-              <div class="space-y-2">
-                <label for="icon" class="text-sm font-medium">{$t('system.settings.modules.config.icon')}</label>
-                <Input id="icon" bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
-              </div>
-
-              <div class="space-y-2">
-                <label for="icon_type" class="text-sm font-medium">{$t('system.settings.modules.config.iconType')}</label>
-                <select id="icon_type" bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
-                  <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
-                  <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
-                  <option value="svg">{$t('system.settings.modules.config.iconTypeSvg')}</option>
-                  <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
-                </select>
-              </div>
-
-              <div class="space-y-2">
-                <label for="author" class="text-sm font-medium">{$t('system.settings.modules.config.author')}</label>
-                <Input id="author" bind:value={formData.author} />
-              </div>
-
-              <div class="space-y-2">
-                <label for="github_repo_url" class="text-sm font-medium">{$t('system.settings.modules.config.githubRepoUrl')}</label>
-                <Input id="github_repo_url" bind:value={formData.github_repo_url} />
-              </div>
-
-              <div class="col-span-2 space-y-2">
-                <label class="text-sm font-medium">{$t('system.settings.modules.config.serviceVersion')}</label>
+                <span class="text-sm font-medium">{$t('system.settings.modules.config.serviceVersion')}</span>
                 <div class="flex items-center gap-2">
                   {#if service.service_version}
                     <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -221,21 +229,22 @@
           {:else}
             <div class="space-y-4">
               {#each configEntries as entry (entry.key)}
-                <div class="space-y-2">
-                  <label class="text-sm font-medium">
-                    {entry.label_key ? $t(entry.label_key) : entry.key}
-                  </label>
-                  {#if entry.description_key}
-                    <p class="text-xs text-muted-foreground">{$t(entry.description_key)}</p>
-                  {/if}
-                  <Input
-                    value={entry.value || ''}
-                    onchange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      handleSaveConfigKey(entry, target.value);
-                    }}
-                  />
-                </div>
+                <PrimeField
+                  id="cfg-{entry.key}"
+                  label={entry.label_key ? $t(entry.label_key) : entry.key}
+                  hint={entry.description_key ? $t(entry.description_key) : undefined}
+                >
+                  {#snippet control({ id })}
+                    <Input
+                      {id}
+                      value={entry.value || ''}
+                      onchange={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        handleSaveConfigKey(entry, target.value);
+                      }}
+                    />
+                  {/snippet}
+                </PrimeField>
               {/each}
             </div>
           {/if}

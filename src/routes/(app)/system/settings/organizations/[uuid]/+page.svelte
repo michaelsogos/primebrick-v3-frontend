@@ -137,7 +137,8 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — getters freeze at initial values otherwise.
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
@@ -185,7 +186,7 @@
   });
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
-    () => hasChanges,
+    () => formGuard.hasChanges,
     'system.settings.organizations.update.unsavedChanges',
   );
 </script>
@@ -321,9 +322,9 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {hasChanges ? $t('app.common.cancel') : $t('app.common.exit')}
+        {formGuard.hasChanges ? $t('app.common.cancel') : $t('app.common.exit')}
       </Button>
-      <Button type="submit" form="org-update-form" disabled={!canSave}>
+      <Button type="submit" form="org-update-form" disabled={!formGuard.canSave}>
         {$t('app.common.save')}
       </Button>
     </div>

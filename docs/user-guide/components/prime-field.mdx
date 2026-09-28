@@ -1,0 +1,162 @@
+---
+title: PrimeField
+description: Standalone field-row wrapper — label + tooltip + hint + error around any input, for controls outside a superforms form.
+---
+
+# PrimeField
+
+`src/lib/components/ui/form/prime-field.svelte`
+
+## Purpose
+
+`PrimeField` is **the standard anatomy for a labeled field row that is NOT
+inside a `sveltekit-superforms` form** — config entries, dynamic meta rows,
+settings widgets, sheet-panel quick forms. It owns the full row: label,
+optional help tooltip, the control, hint, and error lines — and it always
+renders a real `<label for>`/`id` pair.
+
+Inside a superforms `form`, use the formsnap set instead — see
+[form-fields (superforms anatomy)](/docs/user-guide/components/form-fields).
+Read-only captions (badges, values) use a plain `<span>`, never `<label>`.
+
+## Anatomy
+
+Two layouts — the same chrome used across the established pages:
+
+```
+layout="stacked" (default)        layout="inline" (bool controls)
+┌──────────────────────┐          ┌──────────────────────┐
+│ LABEL [*] [?help]    │          │ CONTROL LABEL [?help]│
+│ CONTROL              │          │  (switch/checkbox)   │
+│ hint / error         │          │ hint / error         │
+└──────────────────────┘          └──────────────────────┘
+```
+
+## Usage
+
+### Label only
+
+```svelte
+<PrimeField id="email" label={$t('fields.email')}>
+  {#snippet control({ id })}
+    <Input {id} bind:value={email} />
+  {/snippet}
+</PrimeField>
+```
+
+The `control` snippet receives `{ id }` — apply it to the control so the
+`<label for>`/`id` pair is real. When `id` is omitted, `PrimeField`
+generates a stable per-instance id via `$props.id()`.
+
+### Label + hint
+
+```svelte
+<PrimeField id="api_key" label={$t('fields.api_key')} hint={$t('fields.api_key_hint')}>
+  {#snippet control({ id })}
+    <PasswordInput {id} bind:value={key} />
+  {/snippet}
+</PrimeField>
+```
+
+### Required
+
+```svelte
+<PrimeField id="name" label={$t('fields.name')} required>
+  {#snippet control({ id })}
+    <Input {id} bind:value={name} />
+  {/snippet}
+</PrimeField>
+```
+
+### Label + help tooltip
+
+Pre-mapped (already translated) — the optional-tooltip pattern used by the
+configurations create page:
+
+```svelte
+<PrimeField
+  id="label_key"
+  label={$t('...labelKey')}
+  help={{ text: $t('app.common.optionalTooltipText'), priority: 'INFORMATION', title: $t('app.common.optionalTooltipTitle') }}
+>
+  {#snippet control({ id })}
+    <ComboSelect {id} ... />
+  {/snippet}
+</PrimeField>
+```
+
+### Meta-driven help (EntityMeta columns)
+
+`help` also accepts a raw `MetaColumn` — `tooltip`, `tooltip_priority`,
+`tooltip_title`, `show_form_tooltip` — with translation and the
+`show_form_tooltip` gate handled internally (same shape the profile page
+maps manually today):
+
+```svelte
+<PrimeField id="is_admin" label={$t('users.is_admin')} help={getColMeta('is_admin')}>
+  {#snippet control({ id })}
+    <Checkbox {id} bind:checked={isAdmin} />
+  {/snippet}
+</PrimeField>
+```
+
+### Errors
+
+```svelte
+<PrimeField id="key" label={$t('fields.key')} error={errors.key}>
+  {#snippet control({ id })}
+    <Input {id} bind:value={key} />
+  {/snippet}
+</PrimeField>
+```
+
+`error` accepts `string | string[]` (already translated).
+
+### Boolean controls — `layout="inline"`
+
+Same anatomy as `SwitchField` (control first, label beside it):
+
+```svelte
+<PrimeField layout="inline" id="send_invitation" label={$t('users.send_invitation')} help={...}>
+  {#snippet control({ id })}
+    <Checkbox {id} bind:checked={sendInvitation} />
+  {/snippet}
+</PrimeField>
+```
+
+### Other controls
+
+`ComboSelect`, `NumericInput`, `ConfigValueInput`, `SliderField`,
+`<select>` — anything that takes an `id` works through the `control`
+snippet (see `modules/[code]/+page.svelte` for the canonical page).
+
+### Anti-pattern
+
+Read-only values are **captions, not labels** — use `<span>`:
+
+```svelte
+<span class="text-sm font-medium">{$t('...serviceVersion')}</span>
+<Badge variant="outline">v{version}</Badge>
+```
+
+## Props
+
+| Prop | Type | Purpose |
+|---|---|---|
+| `id` | `string` | control id — defaults to `$props.id()` |
+| `label` | `string` | translated label text (omit for label-less rows) |
+| `required` | `boolean` | appends `*` marker |
+| `hint` | `string` | muted `text-xs` line under the control |
+| `error` | `string \| string[]` | translated error line(s), `text-destructive` |
+| `help` | `PrimeFieldHelp` | `{ text, priority?, title?, labelKey? }` or raw `MetaColumn` |
+| `layout` | `'stacked' \| 'inline'` | label above vs control-first row |
+| `control` | `Snippet<[{ id: string }]>` | the input — must apply `id` |
+| `class` | `string` | extra classes on the row |
+| `data-testid` | `string` | E2E testid |
+
+## Next steps
+
+- [form-fields — superforms anatomy](/docs/user-guide/components/form-fields)
+- [FormLabelWithPriorityHelp](/docs/user-guide/components/form-label-with-priority-help)
+- [SwitchField](/docs/user-guide/components/switch-field)
+- [Component catalog](/docs/user-guide/components)

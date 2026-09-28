@@ -71,14 +71,16 @@ describe("SmartRegexInput", () => {
     );
   });
 
-  it("shows flags badge when flags are set", () => {
+  it("shows flags text and highlights the flags CTA when flags are set", () => {
     render(SmartRegexInput, { props: { flags: "gi" } });
-    expect(screen.getByTestId("smart-regex-flags-badge")).toBeInTheDocument();
+    expect(screen.getByTestId("smart-regex-flags-text")).toHaveTextContent("/gi");
+    expect(screen.getByTestId("smart-regex-flags-cta")).toHaveClass("text-primary");
   });
 
-  it("does not show flags badge when no flags are set", () => {
+  it("does not highlight the flags CTA when no flags are set", () => {
     render(SmartRegexInput, { props: { flags: "" } });
-    expect(screen.queryByTestId("smart-regex-flags-badge")).not.toBeInTheDocument();
+    expect(screen.getByTestId("smart-regex-flags-cta")).not.toHaveClass("text-primary");
+    expect(screen.getByTestId("smart-regex-flags-text")).toHaveClass("text-foreground/50");
   });
 
   it("shows clear button when value is present", () => {

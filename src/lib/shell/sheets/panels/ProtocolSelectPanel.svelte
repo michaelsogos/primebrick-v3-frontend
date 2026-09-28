@@ -6,13 +6,13 @@
   import XIcon from '@lucide/svelte/icons/x';
   import Check from '@lucide/svelte/icons/check';
 
-  interface $$Props {
+  interface Props {
     currentProtocol: string;
     allowedProtocols: string[];
     onProtocolChange: (protocol: string) => void;
   }
 
-  let { currentProtocol, allowedProtocols, onProtocolChange }: $$Props = $props();
+  let { currentProtocol, allowedProtocols, onProtocolChange }: Props = $props();
 
   function selectProtocol(protocol: string) {
     onProtocolChange(protocol);

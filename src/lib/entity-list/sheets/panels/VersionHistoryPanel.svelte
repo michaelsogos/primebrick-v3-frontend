@@ -22,7 +22,7 @@
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
 
-  interface $$Props {
+  interface Props {
     entity: string;
     translationKey?: string;
     rowUuid: string;
@@ -34,7 +34,7 @@
     translationKey,
     rowUuid,
     columns = [],
-  }: $$Props = $props();
+  }: Props = $props();
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
   // Falls back to entity (snake_case plural) when not provided — back-compat.

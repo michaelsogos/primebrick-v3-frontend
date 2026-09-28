@@ -14,17 +14,17 @@
  *
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
- *   - Casdoor seeded with admin/admin.
+ *   - Seeded E2E test actors (test-admin / test-user — never the dev bootstrap admin).
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention —
  * see docs/ai/e2e-testid-convention.md).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { loginAsAdmin } from "./helpers/admin-login";
+import { loginAsTestAdmin } from "./helpers/admin-login";
 
 test.describe("Typed configuration values", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsTestAdmin(page);
   });
 
   test("configurations settings page loads and renders config rows", async ({ page }) => {

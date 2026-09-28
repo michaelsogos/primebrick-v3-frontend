@@ -15,7 +15,7 @@
    */
   import { cn } from '$lib/utils';
 
-  interface $$Props {
+  interface Props {
     /** Lucide path `d` attributes — the icon's inner nodes, in order. */
     paths: string[];
     /** Icon size in pixels. */
@@ -28,7 +28,7 @@
     animated?: boolean;
   }
 
-  let { paths, size = 24, stroke_width = 2, class: className, animated = false }: $$Props = $props();
+  let { paths, size = 24, stroke_width = 2, class: className, animated = false }: Props = $props();
 
   // Unique gradient ID to avoid collisions when multiple instances are on the same page.
   const gradient_id = `gradient-icon-${Math.random().toString(36).slice(2, 10)}`;
