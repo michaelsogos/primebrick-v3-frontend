@@ -173,7 +173,9 @@ MUST use `Password.PasswordInput` from `$lib/components/ui/password`.
 - Do NOT pass `type="password"` to `Password.PasswordInput` — the
   component manages the type dynamically based on toggle state.
 - OTP/code inputs (6-digit verification codes) are NOT password fields —
-  use plain `Input` with `inputmode="numeric" autocomplete="one-time-code"`.
+  use `OtpInput` + `useOtpInput` (segmented cells, auto-submit on complete).
+  Never a raw `Input`. See `.devin/rules/otp-input.md` — includes the
+  built-in duplicate-`onComplete` dedup contract.
 
 There are **three categories** of password input, with different
 validation requirements:
@@ -266,6 +268,28 @@ it inside `onMount(() => { void something.load(); })`. `onMount` only
 runs on the client — SSR skips it entirely.
 
 See `.devin/rules/ssr-safe-async-loads.md` for the enforcing rule.
+
+### Auth & E2E know-how (hard-won)
+
+Before touching auth flows or E2E specs, read the enforcing rules:
+
+- `.devin/rules/e2e-test-users.md` — ephemeral actors only; `admin` is
+  forbidden in tests (enforcers throw).
+- `.devin/rules/e2e-webauthn-auth.md` — Playwright virtual-authenticator
+  contract (install-only enrollment, base64url ids, never navigate during
+  a ceremony) and the auth-E2E pitfalls list.
+- **`primebrick-be-v3/.devin/rules/casdoor-integration.md`** — Casdoor
+  gotchas that cost hours: the two client credential pairs (`idp_*` vs
+  `oidc_*` — wrong pair → `invalid_grant: user does not exist`), role
+  membership lives in `role.users` (not `user.roles`), `update-role` is a
+  full replace (omitted fields are zeroed — a partial body disabled
+  `administrators` once), WebAuthn discoverable login is broken on
+  Postgres (`webauthnCredentials` is `bytea`, LIKE never matches →
+  passkey signin is non-discoverable via `?name=`).
+- `.devin/rules/otp-input.md` — OTP/PIN contract; `OtpInput` dedupes
+  bits-ui `onComplete` re-emissions (a stale complete value re-fires the
+  submit during the post-success effect flush → duplicate request with a
+  consumed token).
 
 ### Navigation / modules
 
