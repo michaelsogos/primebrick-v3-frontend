@@ -2,10 +2,10 @@
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
   import { SearchBar, ViewModeToggle, DeletionFilterToggle } from '.';
-  import RotateCw from '@lucide/svelte/icons/rotate-cw'
   import Columns3 from '@lucide/svelte/icons/columns-3'
   import Funnel from '@lucide/svelte/icons/funnel';
   import { Button } from '$lib/components/ui/button';
+  import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Toolbar } from '$lib/components/ui/toolbar';
   import type { ViewName } from '$lib/entity-list/types';
 
@@ -109,17 +109,11 @@
       </Button>
     {/if}
 
-    <Button
-      variant="ghost"
-      size="sm"
-      disabled={rowsLoading || refreshDisabled}
+    <RefreshButton
       onclick={onRefresh}
-      aria-label={$t('system.entities.list.refresh')}
-      title={$t('system.entities.list.refresh')}
-    >
-      <RotateCw class={rowsLoading ? 'size-4 animate-spin' : 'size-4'} />
-      <span class="hidden lg:inline">{$t('system.entities.list.refresh')}</span>
-    </Button>
+      loading={rowsLoading}
+      disabled={rowsLoading || refreshDisabled}
+    />
 
     {#if onCreateAction}
       <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>

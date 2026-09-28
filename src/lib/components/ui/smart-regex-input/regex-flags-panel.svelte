@@ -1,10 +1,8 @@
 <script lang="ts">
-  import * as Sheet from '$lib/components/ui/sheet';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import { SwitchField } from '$lib/components/ui/switch-field';
-  import XIcon from '@lucide/svelte/icons/x';
+  import Flag from '@lucide/svelte/icons/flag';
 
   interface Props {
     current_flags: string;
@@ -38,30 +36,15 @@
   function handleToggle() {
     on_flags_change(buildFlags());
   }
-
-  function handleClose() {
-    closeSheet();
-  }
 </script>
 
-{#snippet headerTitle()}
-  {$t('app.smart.regex.flags.title')}
-{/snippet}
-
-{#snippet headerActions()}
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('app.common.done')}
-    onclick={handleClose}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto p-4 space-y-4">
+<SheetPanelLayout contentClass="p-4 space-y-4">
+  {#snippet icon()}
+    <Flag class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('app.smart.regex.flags.title')}
+  {/snippet}
     <!-- Global flag -->
     <SwitchField
       bind:checked={flagG}
@@ -90,5 +73,4 @@
         data-testid="smart-regex-flag-m"
       />
     {/if}
-  </div>
-</div>
+</SheetPanelLayout>

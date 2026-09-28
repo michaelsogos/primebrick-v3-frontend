@@ -1,0 +1,66 @@
+---
+title: Icon Conventions
+description: Canonical Lucide icon per semantic action — refresh uses the RefreshButton component, clear/reset is Eraser, close/remove is X, restore is RotateCcw.
+---
+
+# Icon Conventions
+
+Primebrick assigns **one canonical Lucide icon per semantic action**. Always
+check this map before importing an icon — if the action is listed, use its
+icon (or the component that owns it).
+
+## Canonical map
+
+| Action | Icon | Notes |
+|--------|------|-------|
+| Refresh / reload | `RefreshCw` | Via the `RefreshButton` component — never hand-rolled |
+| Clear / reset | `Eraser` | Clear an input value, reset filters — **not** close |
+| Close / dismiss / remove | `X` | Sheet close, chip remove — **not** clear |
+| Restore deleted | `RotateCcw` | Undo soft-delete |
+| Delete | `Trash2` | |
+| Edit | `Pencil` | |
+| Add / create | `Plus` | |
+| Search | `Search` | |
+| Filters | `Funnel` | |
+| Show / hide secret | `Eye` / `EyeOff` | |
+| Copy | `Copy` | |
+| True / false | `CircleCheck` / `CircleX` | Never `CheckCircle` / `XCircle` |
+| Warning / empty | `TriangleAlert` | Never the `AlertTriangle` alias |
+| Loading | `Hourglass` | Watermark empty-state pattern |
+| In-flight spinner | `LoaderCircle` | With `animate-spin` |
+| Dropdown caret | `ChevronDown` | |
+| AI capability | `BrainCircuit` | |
+
+## RefreshButton
+
+`src/lib/components/ui/refresh-button/`
+
+The single canonical refresh CTA. Ghost `sm` button, `RefreshCw` icon that
+spins while `loading`, label `Refresh` hidden below `lg`.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onclick` | `() => void` | required | Refresh action |
+| `loading` | `boolean` | `false` | Spins the icon and disables the button |
+| `disabled` | `boolean` | `false` | Extra disable condition |
+| `compact` | `boolean` | `false` | Smaller, muted, uppercase-label chrome — for refresh CTAs pinned inside card wrappers (e.g. a section card's top-right corner) |
+| `label` | `string` | `"Refresh"` | Override accessible label |
+| `testid` | `string` | — | `data-testid` |
+
+```svelte
+<script>
+  import { RefreshButton } from '$lib/components/ui/refresh-button';
+</script>
+
+<!-- toolbar context -->
+<RefreshButton onclick={reload} loading={reloading} />
+
+<!-- inside a card wrapper, pinned top-right -->
+<div class="relative rounded-lg border p-3">
+  <RefreshButton compact onclick={reload} loading={reloading} />
+  …card content…
+</div>
+```
+
+`Toolbar` also exposes a `refresh` prop that renders this same atom — pass
+`refresh={{ onclick, loading }}` rather than rendering it yourself.

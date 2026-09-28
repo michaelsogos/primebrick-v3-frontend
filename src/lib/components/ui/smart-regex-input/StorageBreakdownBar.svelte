@@ -12,6 +12,7 @@
    * Used by ModelCacheSection (settings page) and ModelCachePanel (popover).
    */
   import { t } from '$lib/i18n';
+  import type { Snippet } from 'svelte';
 
   let {
     usage,
@@ -21,6 +22,7 @@
     other_cache_bytes,
     other_storage_bytes,
     compact = false,
+    legendAction,
   }: {
     usage: number;
     quota: number;
@@ -30,6 +32,8 @@
     other_storage_bytes: number;
     /** Compact = thinner bar + smaller legend text (popover variant). */
     compact?: boolean;
+    /** Optional CTA rendered on the legend row, right-aligned. */
+    legendAction?: Snippet;
   } = $props();
 
   function formatBytes(bytes: number | null | undefined): string {
@@ -70,14 +74,19 @@
       ></div>
     {/each}
   </div>
-  {#if segments.length > 0}
-    <div class="flex flex-wrap gap-x-3 gap-y-0.5 {compact ? 'text-[9px]' : 'text-[10px]'} text-muted-foreground">
-      {#each segments as seg (seg.key)}
-        <span class="inline-flex items-center gap-1">
-          <span class="inline-block size-2 rounded-full" style="background-color: {seg.color};"></span>
-          {seg.label} · {formatBytes(seg.bytes)}
-        </span>
-      {/each}
+  {#if segments.length > 0 || legendAction}
+    <div class="flex items-start gap-2">
+      <div class="flex flex-1 min-w-0 flex-wrap gap-x-3 gap-y-0.5 {compact ? 'text-[9px]' : 'text-[10px]'} text-muted-foreground">
+        {#each segments as seg (seg.key)}
+          <span class="inline-flex items-center gap-1">
+            <span class="inline-block size-2 rounded-full" style="background-color: {seg.color};"></span>
+            {seg.label} · {formatBytes(seg.bytes)}
+          </span>
+        {/each}
+      </div>
+      {#if legendAction}
+        <div class="shrink-0">{@render legendAction()}</div>
+      {/if}
     </div>
   {/if}
 </div>

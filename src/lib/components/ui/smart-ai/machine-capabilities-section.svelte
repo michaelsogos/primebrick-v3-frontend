@@ -13,8 +13,8 @@
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import GpuVendorIcon from '$lib/components/ui/smart-ai/gpu-vendor-icon.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Cpu, Gauge, Gpu, MemoryStick, RotateCcw, Zap } from '@lucide/svelte';
+  import { RefreshButton } from '$lib/components/ui/refresh-button';
+  import { Cpu, Gauge, Gpu, Hourglass, MemoryStick, TriangleAlert, Zap } from '@lucide/svelte';
   import { NumberTicker } from '$lib/components/ui/number-ticker';
   import { StatCard } from '$lib/components/ui/stat-card';
 
@@ -54,35 +54,43 @@
       <Cpu class="size-4 text-foreground/70" />
       <h2 class="text-sm font-semibold">{$t('system.settings.ai.machine.title')}</h2>
     </div>
-    <div class="flex items-center gap-2">
-      {#if caps?.available || !caps}
-        <Button
-          variant="soft"
-          size="icon-sm"
-          onclick={() => machine.refresh()}
-          disabled={probingVram || measuring}
-          aria-label={$t('system.entities.list.refresh')}
-          title={$t('system.entities.list.refresh')}
-          data-testid="ai-machine-refresh-cta"
-        >
-          <RotateCcw class={probingVram || measuring ? 'size-4 animate-spin' : 'size-4'} />
-        </Button>
-      {/if}
-    </div>
   </div>
 
-  {#if measuring && !caps}
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-      <div class="size-4 animate-spin rounded-full border-2 border-muted border-t-foreground"></div>
-      {$t('system.settings.ai.machine.measuring')}
+  <div class="relative rounded-lg border border-border/60 p-3">
+    <div class="absolute right-2 top-2 z-10">
+      <RefreshButton
+        compact
+        onclick={() => machine.refresh()}
+        loading={probingVram || measuring}
+        disabled={probingVram || measuring}
+        testid="ai-machine-refresh-cta"
+      />
     </div>
-  {:else if caps && !caps.available}
-    <div class="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground" data-testid="ai-machine-unavailable">
-      {$t('system.settings.ai.machine.unavailable')}
-    </div>
-  {:else if caps}
-    <div class="rounded-lg border border-border/60 p-3">
-      <div class="flex items-center gap-4 min-w-0">
+
+    {#if measuring && !caps}
+      <div class="grid min-h-32 place-items-center p-3" data-testid="ai-machine-measuring">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-loading">
+            <Hourglass class="size-20 text-info" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t('system.settings.ai.machine.measuring')}
+          </div>
+        </div>
+      </div>
+    {:else if !caps || !caps.available}
+      <div class="grid min-h-32 place-items-center p-3" data-testid="ai-machine-unavailable">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-empty">
+            <TriangleAlert class="size-20 text-warning" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">
+            {$t('system.settings.ai.machine.unavailable')}
+          </div>
+        </div>
+      </div>
+    {:else}
+      <div class="flex items-center gap-4 min-w-0 pt-8">
         <!-- GPU identity -->
         <div class="min-w-0 shrink-0 space-y-1">
           <div class="flex items-center gap-2">
@@ -184,6 +192,6 @@
           <ScoreGauge value={machineRank} label={$t('system.settings.ai.machine.machine_rank')} />
         </div>
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
 </section>

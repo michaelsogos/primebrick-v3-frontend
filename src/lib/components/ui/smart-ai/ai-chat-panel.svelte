@@ -29,7 +29,8 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
@@ -275,43 +276,32 @@
   }
 </script>
 
-{#snippet headerTitle()}
-  <div class="flex items-center gap-2">
-    <AiIcon size={16} />
-    <span class="text-primary-gradient font-semibold">{$t('app.common.ai.assistant_prefix')}</span>
-    <span>{$t(topic_key)}</span>
-  </div>
-{/snippet}
-
-{#snippet headerActions()}
-  <Button
-    variant="ghost"
-    size="icon"
-    class="size-7"
-    title={$t(`${i18n_ns}.newSession`)}
-    onclick={() => { void ai?.clearConversation(); }}
-    disabled={!ai || ai.state.messages.length === 0}
-    data-testid="{testid_prefix}-new-session"
-  >
-    <StickyNotePlus class="size-4" />
-  </Button>
-  <Button
-    variant="ghost"
-    size="icon"
-    class="size-7"
-    title={$t('app.common.close')}
-    onclick={() => closeSheet()}
-    data-testid="{testid_prefix}-close"
-  >
-    <X class="size-4" />
-  </Button>
-{/snippet}
-
 <div class="flex h-full flex-col" data-testid="{testid_prefix}-panel" data-ai-phase={aiPhase}>
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <!-- Body -->
-  <div class="flex min-h-0 flex-1 flex-col">
+  <SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+    {#snippet icon()}
+      <AiIcon size={16} />
+    {/snippet}
+    {#snippet title()}
+      <span class="text-primary-gradient font-semibold">{$t('app.common.ai.assistant_prefix')}</span>
+      <span>{$t(topic_key)}</span>
+    {/snippet}
+    {#snippet actions()}
+      <SheetHeaderAction
+        title={$t(`${i18n_ns}.newSession`)}
+        onclick={() => { void ai?.clearConversation(); }}
+        disabled={!ai || ai.state.messages.length === 0}
+        testid="{testid_prefix}-new-session"
+      >
+        <StickyNotePlus class="size-4" />
+      </SheetHeaderAction>
+      <SheetHeaderAction
+        title={$t('app.common.close')}
+        onclick={() => closeSheet()}
+        testid="{testid_prefix}-close"
+      >
+        <X class="size-4" />
+      </SheetHeaderAction>
+    {/snippet}
     {#if !ai}
       <!-- Config still loading (or missing) — show spinner -->
       <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
@@ -673,7 +663,7 @@
     </div>
     {/if}
     {/if}
-  </div>
+  </SheetPanelLayout>
 </div>
 
 <style>

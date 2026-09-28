@@ -24,7 +24,8 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
-  import { Trash2, RefreshCw, AlertTriangle } from '@lucide/svelte';
+  import { Trash2, AlertTriangle } from '@lucide/svelte';
+  import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -203,30 +204,27 @@
     </div>
   {/if}
 
-  <!-- Storage bar (stacked by attribution) with refresh CTA at the end -->
+  <!-- Storage bar (stacked by attribution) with compact refresh CTA below -->
   {#if cache.state.storage_usage !== null && cache.state.storage_quota !== null}
-    <div class="flex items-center gap-2">
-      <div class="flex-1 min-w-0">
-        <StorageBreakdownBar
-          usage={cache.state.storage_usage}
-          quota={cache.state.storage_quota}
-          cataloged_bytes={cache.state.cataloged_bytes}
-          orphaned_bytes={orphanedBytes}
-          other_cache_bytes={cache.state.non_model_cache_bytes}
-          other_storage_bytes={cache.state.other_storage_bytes}
+    <StorageBreakdownBar
+      usage={cache.state.storage_usage}
+      quota={cache.state.storage_quota}
+      cataloged_bytes={cache.state.cataloged_bytes}
+      orphaned_bytes={orphanedBytes}
+      other_cache_bytes={cache.state.non_model_cache_bytes}
+      other_storage_bytes={cache.state.other_storage_bytes}
+    >
+      {#snippet legendAction()}
+        <RefreshButton
+          compact
+          onclick={handleRefresh}
+          loading={cache.state.is_checking}
+          disabled={cache.state.is_checking}
+          label={$t('app.smart.regex.ai.cache.refresh')}
+          testid="cache-section-refresh"
         />
-      </div>
-      <button
-        onclick={handleRefresh}
-        disabled={cache.state.is_checking}
-        class="shrink-0 text-foreground/50 hover:text-foreground transition-colors"
-        title={$t('app.smart.regex.ai.cache.refresh')}
-        aria-label={$t('app.smart.regex.ai.cache.refresh')}
-        data-testid="cache-section-refresh"
-      >
-        <RefreshCw class="size-3.5 {cache.state.is_checking ? 'animate-spin' : ''}" />
-      </button>
-    </div>
+      {/snippet}
+    </StorageBreakdownBar>
   {/if}
 
   <!-- Censused select-all toolbar: part of the sticky cluster, hidden when cache is empty -->

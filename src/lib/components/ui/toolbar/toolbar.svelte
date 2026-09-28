@@ -21,9 +21,7 @@
   import type { ToolbarRootProps } from 'bits-ui';
   import { cn, type WithElementRef } from '$lib/utils.js';
   import type { Snippet } from 'svelte';
-  import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import RotateCw from '@lucide/svelte/icons/rotate-cw';
+  import { RefreshButton } from '$lib/components/ui/refresh-button';
   import ToolbarDivider from './toolbar-divider.svelte';
 
   let {
@@ -80,17 +78,11 @@
       {#if children || groups.length > 0}
         <ToolbarDivider />
       {/if}
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={refresh.disabled || refresh.loading}
+      <RefreshButton
         onclick={refresh.onclick}
-        aria-label={$t('system.entities.list.refresh')}
-        title={$t('system.entities.list.refresh')}
-      >
-        <RotateCw class={refresh.loading ? 'size-4 animate-spin' : 'size-4'} />
-        <span class="hidden lg:inline">{$t('system.entities.list.refresh')}</span>
-      </Button>
+        loading={refresh.loading}
+        disabled={refresh.disabled}
+      />
     {/if}
 
     {#if primary}

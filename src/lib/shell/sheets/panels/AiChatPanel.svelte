@@ -17,7 +17,8 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { aiChatStore } from '$lib/shell/ai-chat/use-ai-chat.svelte';
   import { registerBuiltinClientTools } from '$lib/shell/ai-chat/client-tool-registry';
   import MessageSquare from '@lucide/svelte/icons/message-square';
@@ -107,36 +108,74 @@
   }
 </script>
 
-<Sheet.Content showClose={false} side="right" class="flex flex-col p-0" style="height: 100vh;">
-  <!-- Header -->
-  <SheetHeader>
-    {#snippet title()}
-      <div class="flex items-center gap-2">
-        <MessageSquare class="size-4" />
-        <span>{$t('app.aiChat.title')}</span>
+<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+  {#snippet icon()}
+    <MessageSquare class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('app.aiChat.title')}
+  {/snippet}
+  {#snippet actions()}
+    <SheetHeaderAction title={$t('app.aiChat.newConversation')} onclick={handleNewConversation}>
+      <Plus class="size-4" />
+    </SheetHeaderAction>
+    <Sheet.Close
+      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      title={$t('app.common.done')}
+      onclick={() => closeSheet()}
+    >
+      <X class="size-4" />
+    </Sheet.Close>
+  {/snippet}
+  {#snippet footer()}
+    <!-- Pending tool call confirmation -->
+    {#if aiChatStore.pendingToolCall}
+      <div class="bg-muted/30 px-4 py-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs text-muted-foreground">
+            {$t('app.aiChat.navigateConfirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
+          </span>
+          <div class="flex gap-1">
+            <Button size="sm" variant="default" class="h-7 text-xs" onclick={handleConfirmToolCall}>
+              {$t('app.aiChat.yes')}
+            </Button>
+            <Button size="sm" variant="ghost" class="h-7 text-xs" onclick={handleDismissToolCall}>
+              {$t('app.aiChat.no')}
+            </Button>
+          </div>
+        </div>
       </div>
-    {/snippet}
-    {#snippet actions()}
-      <Button
-        variant="ghost"
-        size="icon"
-        class="size-7"
-        title={$t('app.aiChat.newConversation')}
-        onclick={handleNewConversation}
-      >
-        <Plus class="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="size-7"
-        title={$t('app.aiChat.title')}
-        onclick={() => closeSheet()}
-      >
-        <X class="size-4" />
-      </Button>
-    {/snippet}
-  </SheetHeader>
+    {/if}
+
+    <!-- Error banner -->
+    {#if aiChatStore.error}
+      <div class={cn('border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive', aiChatStore.pendingToolCall && 'border-t')}>
+        {aiChatStore.error}
+      </div>
+    {/if}
+
+    <!-- Input box -->
+    <div class={cn('p-3', (aiChatStore.pendingToolCall || aiChatStore.error) && 'border-t border-border')}>
+      <div class="flex items-end gap-2">
+        <Textarea
+          bind:value={inputText}
+          onkeydown={handleKeydown}
+          placeholder={$t('app.aiChat.placeholder')}
+          class="min-h-[40px] max-h-[120px] resize-none text-sm"
+          rows={1}
+        />
+        {#if aiChatStore.isStreaming}
+          <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('app.aiChat.stop')}>
+            <Square class="size-4" />
+          </Button>
+        {:else}
+          <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('app.aiChat.send')}>
+            <Send class="size-4" />
+          </Button>
+        {/if}
+      </div>
+    </div>
+  {/snippet}
 
   <!-- Body: conversations sidebar + message thread -->
   <div class="flex min-h-0 flex-1">
@@ -297,53 +336,6 @@
         {/if}
       </div>
 
-      <!-- Pending tool call confirmation -->
-      {#if aiChatStore.pendingToolCall}
-        <div class="border-t border-border bg-muted/30 px-4 py-2">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-xs text-muted-foreground">
-              {$t('app.aiChat.navigateConfirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
-            </span>
-            <div class="flex gap-1">
-              <Button size="sm" variant="default" class="h-7 text-xs" onclick={handleConfirmToolCall}>
-                {$t('app.aiChat.yes')}
-              </Button>
-              <Button size="sm" variant="ghost" class="h-7 text-xs" onclick={handleDismissToolCall}>
-                {$t('app.aiChat.no')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Error banner -->
-      {#if aiChatStore.error}
-        <div class="border-t border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive">
-          {aiChatStore.error}
-        </div>
-      {/if}
-
-      <!-- Input box -->
-      <div class="border-t border-border p-3">
-        <div class="flex items-end gap-2">
-          <Textarea
-            bind:value={inputText}
-            onkeydown={handleKeydown}
-            placeholder={$t('app.aiChat.placeholder')}
-            class="min-h-[40px] max-h-[120px] resize-none text-sm"
-            rows={1}
-          />
-          {#if aiChatStore.isStreaming}
-            <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('app.aiChat.stop')}>
-              <Square class="size-4" />
-            </Button>
-          {:else}
-            <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('app.aiChat.send')}>
-              <Send class="size-4" />
-            </Button>
-          {/if}
-        </div>
-      </div>
     </div>
   </div>
-</Sheet.Content>
+</SheetPanelLayout>

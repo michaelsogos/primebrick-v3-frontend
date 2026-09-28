@@ -8,6 +8,7 @@
     "settings",
     "ui-components",
     "ui-patterns",
+    "icon-conventions",
     "components/index",
     "entity-metadata",
     "components/entity-list-table",
