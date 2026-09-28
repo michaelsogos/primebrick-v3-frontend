@@ -12,6 +12,7 @@ Never mount `Sheet.Root` inside a page or component — there is exactly one
 | `src/lib/shell/sheets/sheet-manager.svelte.ts` | `sheetState`, `openSheet`, `replaceSheet`, `closeSheet`, `SheetPanelId`, `SheetPanelPropsMap` |
 | `src/lib/shell/sheets/SheetHost.svelte` | The only `Sheet.Root`. Panel registry `SheetPanelId → Svelte component`. Mounted once in `AppShell`. |
 | `src/lib/shell/sheets/SheetHeader.svelte` | HEAD chrome: `title` + `actions` snippets, `border-b`, `bg-sidebar-accent`, `px-2 py-2` |
+| `src/lib/shell/sheets/SheetHeaderAction.svelte` | The ONE CTA chrome for HEAD buttons (32px icon button). Use in the `actions` snippet. |
 | `src/lib/shell/sheets/SheetPanelLayout.svelte` | **Canonical panel anatomy** — HEAD / TOOLBAR / CONTENT / FOOT. Every panel MUST use it. |
 | `src/lib/shell/sheets/panels/*.svelte` | Shell panels (errors, versions, aiChat, aiModelTestReport, selects) |
 | `src/lib/entity-list/sheets/panels/*.svelte` | Entity-list panels (searchIn, columns, filters, versionHistory) |
@@ -105,6 +106,9 @@ Rules:
 </script>
 
 <SheetPanelLayout contentClass="px-4 py-3">
+  {#snippet icon()}
+    <Search class="size-4" />
+  {/snippet}
   {#snippet title()}
     <span>{$t('some.title.key')}</span>
   {/snippet}
@@ -120,8 +124,47 @@ Rules:
 </SheetPanelLayout>
 ```
 
-Optional snippets: `actions` (extra HEAD buttons), `toolbar` (below-HEAD
-strip), `footer` (bottom strip). Omit what you don't need.
+`icon` is MANDATORY (see rules above). Optional snippets: `actions` (extra
+HEAD buttons), `toolbar` (below-HEAD strip), `footer` (bottom strip). Omit
+what you don't need.
+
+### Extra HEAD CTAs (actions snippet)
+
+When a panel needs header CTAs beyond the close ✕ (reset, apply, …), pass
+the `actions` snippet with `SheetHeaderAction` for each CTA AND repeat the
+standard close — providing `actions` replaces the default close:
+
+```svelte
+<script lang="ts">
+  import * as Sheet from '$lib/components/ui/sheet';
+  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
+  import XIcon from '@lucide/svelte/icons/x';
+</script>
+
+<SheetPanelLayout>
+  {#snippet icon()}<Search class="size-4" />{/snippet}
+  {#snippet title()}{$t('some.title.key')}{/snippet}
+
+  {#snippet actions()}
+    <SheetHeaderAction title={$t('app.common.reset')} onclick={reset}>
+      <RotateCcw class="size-4" />
+    </SheetHeaderAction>
+    <Sheet.Close
+      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      title={$t('app.common.done')}
+      onclick={() => closeSheet()}
+    >
+      <XIcon class="size-4" />
+    </Sheet.Close>
+  {/snippet}
+
+  <!-- CONTENT -->
+</SheetPanelLayout>
+```
+
+`SheetHeaderAction` already carries the canonical chrome — never use
+`Button` in sheet HEADs.
 
 ## Adding a new panel — checklist
 

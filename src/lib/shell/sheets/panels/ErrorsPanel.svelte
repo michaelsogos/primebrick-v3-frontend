@@ -9,7 +9,9 @@
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import Eye from '@lucide/svelte/icons/eye';
@@ -80,134 +82,125 @@
   }
 </script>
 
-{#snippet headerTitle()}
-  {$t('app.errors.title')}
-{/snippet}
+<SheetPanelLayout>
+  {#snippet icon()}
+    <TriangleAlert class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('app.errors.title')}
+  {/snippet}
+  {#snippet actions()}
+    <SheetHeaderAction
+      title={$t('app.errors.clear')}
+      onclick={() => clearAppErrors()}
+      disabled={$appErrors.length === 0}
+    >
+      <Trash2 class="size-4" />
+    </SheetHeaderAction>
+    <Sheet.Close
+      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      title={$t('app.errors.close')}
+      onclick={() => closeSheet()}
+    >
+      <XIcon class="size-4" />
+    </Sheet.Close>
+  {/snippet}
 
-{#snippet headerActions()}
-  <Button
-    variant="ghost"
-    size="icon"
-    class="h-8 w-8"
-    disabled={$appErrors.length === 0}
-    onclick={() => clearAppErrors()}
-    aria-label={$t('app.errors.clear')}
-    title={$t('app.errors.clear')}
-  >
-    <Trash2 class="size-4" />
-  </Button>
-
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('app.errors.close')}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto p-2">
-    {#if $appErrors.length === 0}
-      <div class="grid h-full place-items-center p-3">
-        <div class="relative flex flex-col items-center gap-2 text-center">
-          <div class="pb-watermark-empty">
-            <ThumbsUp class="size-20 text-info" />
-          </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('app.errors.empty')}</div>
+  {#if $appErrors.length === 0}
+    <div class="grid h-full place-items-center p-3">
+      <div class="relative flex flex-col items-center gap-2 text-center">
+        <div class="pb-watermark-empty">
+          <ThumbsUp class="size-20 text-info" />
         </div>
+        <div class="text-sm font-medium text-muted-foreground">{$t('app.errors.empty')}</div>
       </div>
-    {:else}
-      <div class="space-y-2">
-        {#each $appErrors as e (e.id)}
-          {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
-          {@const eventColor = impactToEventColor(imp)}
-          {@const labelKey =
-            imp === 'CRITICAL'
-              ? 'app.common.impact.criticalError'
-              : imp === 'HIGH'
-                ? 'app.common.impact.error'
-                : imp === 'MEDIUM'
-                  ? 'app.common.impact.warning'
-                  : 'app.common.impact.information'}
+    </div>
+  {:else}
+    <div class="space-y-2">
+      {#each $appErrors as e (e.id)}
+        {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
+        {@const eventColor = impactToEventColor(imp)}
+        {@const labelKey =
+          imp === 'CRITICAL'
+            ? 'app.common.impact.criticalError'
+            : imp === 'HIGH'
+              ? 'app.common.impact.error'
+              : imp === 'MEDIUM'
+                ? 'app.common.impact.warning'
+                : 'app.common.impact.information'}
 
-          <EventCard.Root eventColor={eventColor}>
-            <EventCard.Label eventColor={eventColor}>{$t(labelKey)}</EventCard.Label>
+        <EventCard.Root eventColor={eventColor}>
+          <EventCard.Label eventColor={eventColor}>{$t(labelKey)}</EventCard.Label>
 
-            {#if (e as any).scopeKey || e.scope}
-              <EventCard.Title class="truncate">
-                {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
-              </EventCard.Title>
-            {/if}
+          {#if (e as any).scopeKey || e.scope}
+            <EventCard.Title class="truncate">
+              {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
+            </EventCard.Title>
+          {/if}
 
-            <EventCard.Message>
-              {(e as any).messageKey
-                ? $t((e as any).messageKey)
-                : ((e as any).message ?? e.message)}
-            </EventCard.Message>
+          <EventCard.Message>
+            {(e as any).messageKey
+              ? $t((e as any).messageKey)
+              : ((e as any).message ?? e.message)}
+          </EventCard.Message>
 
-            {#if (e as any).tags?.length}
-              <div class="mt-1 flex flex-wrap gap-1">
-                {#each (e as any).tags as tag (tag.label)}
-                  <Badge
-                    variant="outline"
-                    class={cn('h-auto border px-1.5 py-0.5 text-[10px] font-medium', errorTagBadgeClass(tag.tone))}
-                  >
-                    {tag.label}
-                  </Badge>
-                {/each}
-              </div>
-            {/if}
-
-            {#if (e as any).instance || (e as any).internalCode}
-              <div class="mt-1 flex flex-wrap gap-1">
-                {#if (e as any).internalCode}
-                  <Badge
-                    variant="outline"
-                    class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
-                  >
-                    {(e as any).internalCode}
-                  </Badge>
-                {/if}
-                {#if (e as any).instance}
-                  <Badge
-                    variant="outline"
-                    class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
-                  >
-                    {(e as any).instance}
-                  </Badge>
-                {/if}
-              </div>
-            {/if}
-
-            {#if e.detail}
-              <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
-            {/if}
-
-            <div class="mt-2 flex items-center justify-between gap-2">
-              <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
-              {#if hasExtraFields(e)}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onclick={() => openErrorDetails(e, eventColor)}
+          {#if (e as any).tags?.length}
+            <div class="mt-1 flex flex-wrap gap-1">
+              {#each (e as any).tags as tag (tag.label)}
+                <Badge
+                  variant="outline"
+                  class={cn('h-auto border px-1.5 py-0.5 text-[10px] font-medium', errorTagBadgeClass(tag.tone))}
                 >
-                  <Eye class="mr-1 size-3" />
-                  {$t('app.errors.viewDetails')}
-                </Button>
+                  {tag.label}
+                </Badge>
+              {/each}
+            </div>
+          {/if}
+
+          {#if (e as any).instance || (e as any).internalCode}
+            <div class="mt-1 flex flex-wrap gap-1">
+              {#if (e as any).internalCode}
+                <Badge
+                  variant="outline"
+                  class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
+                >
+                  {(e as any).internalCode}
+                </Badge>
+              {/if}
+              {#if (e as any).instance}
+                <Badge
+                  variant="outline"
+                  class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
+                >
+                  {(e as any).instance}
+                </Badge>
               {/if}
             </div>
-          </EventCard.Root>
-        {/each}
-      </div>
-    {/if}
-  </div>
-</div>
+          {/if}
+
+          {#if e.detail}
+            <EventCard.Message class="text-xs">{e.detail}</EventCard.Message>
+          {/if}
+
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+            {#if hasExtraFields(e)}
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                onclick={() => openErrorDetails(e, eventColor)}
+              >
+                <Eye class="mr-1 size-3" />
+                {$t('app.errors.viewDetails')}
+              </Button>
+            {/if}
+          </div>
+        </EventCard.Root>
+      {/each}
+    </div>
+  {/if}
+</SheetPanelLayout>
 
 <!-- Error details fullscreen dialog -->
 <RfcErrorDialog bind:open={errorDetailsDialogOpen} error={selectedErrorDetails} color={selectedErrorColor} />
-
-

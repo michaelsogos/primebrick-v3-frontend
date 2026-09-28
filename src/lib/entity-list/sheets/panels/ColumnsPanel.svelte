@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
   import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import * as Sortable from '$lib/components/ui/sortable';
   import * as Sheet from '$lib/components/ui/sheet';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
+  import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { t } from '$lib/i18n';
+  import Columns3 from '@lucide/svelte/icons/columns-3';
   import XIcon from '@lucide/svelte/icons/x';
-  import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
   type ColumnLike = { key: string; label_key: string; hideable?: boolean };
@@ -33,179 +34,84 @@
   }: Props = $props();
 </script>
 
-{#snippet headerTitle()}
-  {$t('system.entities.list.columns')}
+{#snippet columnRows(columns: ColumnLike[], group: 'sticky' | 'data' | 'auditing')}
+  <Sortable.Root
+    items={columns.map((c) => ({ id: c.key, col: c }))}
+    onSort={(items) => onReorderKeys?.(group, items.map((i) => i.id))}
+  >
+    {#snippet children()}
+      <div role="list" class="flex flex-col">
+        {#each columns as col (col.key)}
+          <Sortable.Item id={col.key}>
+            {#snippet children()}
+              <div
+                class={col.hideable === false
+                  ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
+                  : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
+              >
+                <Sortable.Handle />
+                <button
+                  type="button"
+                  disabled={col.hideable === false}
+                  class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
+                  onclick={() => toggleColumnKey(col.key)}
+                >
+                  <span class="pointer-events-none shrink-0" aria-hidden="true">
+                    <Checkbox
+                      checked={visibleKeys.includes(col.key)}
+                      disabled={col.hideable === false}
+                      class={checkboxVisualOnlyClass}
+                    />
+                  </span>
+                  <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
+                </button>
+              </div>
+            {/snippet}
+          </Sortable.Item>
+        {/each}
+      </div>
+    {/snippet}
+  </Sortable.Root>
 {/snippet}
 
-{#snippet headerActions()}
-  <Button
-    variant="ghost"
-    size="sm"
-    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-    onclick={() => onResetColumnVisibility()}
-    title={$t('app.common.reset')}
-  >
-    <RotateCcw class="size-4" />
-  </Button>
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('app.common.done')}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
+<SheetPanelLayout contentClass="p-0">
+  {#snippet icon()}
+    <Columns3 class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('system.entities.list.columns')}
+  {/snippet}
+  {#snippet actions()}
+    <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onResetColumnVisibility()}>
+      <RotateCcw class="size-4" />
+    </SheetHeaderAction>
+    <Sheet.Close
+      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      title={$t('app.common.done')}
+      onclick={() => closeSheet()}
+    >
+      <XIcon class="size-4" />
+    </Sheet.Close>
+  {/snippet}
 
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
+  {#if stickyColumns.length > 0}
+    <div>
+      <SheetSectionTitle>{$t('system.entities.list.stickyFields')}</SheetSectionTitle>
+      {@render columnRows(stickyColumns, 'sticky')}
+    </div>
+  {/if}
 
-  <div class="min-h-0 flex-1 overflow-auto">
-    {#if stickyColumns.length > 0}
-      <div class="my-2">
-        <div class="flex items-center gap-2">
-          <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.stickyFields')}</div>
-          <div class="h-px flex-1 bg-border"></div>
-        </div>
-      </div>
+  {#if nonAuditingColumns.length > 0}
+    <div>
+      <SheetSectionTitle>{$t('system.entities.list.dataFields')}</SheetSectionTitle>
+      {@render columnRows(nonAuditingColumns, 'data')}
+    </div>
+  {/if}
 
-      <Sortable.Root
-        items={stickyColumns.map((c) => ({ id: c.key, col: c }))}
-        onSort={(items) => onReorderKeys?.('sticky', items.map((i) => i.id))}
-      >
-        {#snippet children()}
-          <div role="list" class="flex flex-col">
-            {#each stickyColumns as col (col.key)}
-              <Sortable.Item id={col.key}>
-                {#snippet children()}
-                  <div
-                    class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
-                  >
-                    <Sortable.Handle />
-                    <button
-                      type="button"
-                      disabled={col.hideable === false}
-                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
-                      onclick={() => toggleColumnKey(col.key)}
-                    >
-                      <span class="pointer-events-none shrink-0" aria-hidden="true">
-                        <Checkbox
-                          checked={visibleKeys.includes(col.key)}
-                          disabled={col.hideable === false}
-                          class={checkboxVisualOnlyClass}
-                        />
-                      </span>
-                      <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
-                    </button>
-                  </div>
-                {/snippet}
-              </Sortable.Item>
-            {/each}
-          </div>
-        {/snippet}
-      </Sortable.Root>
-    {/if}
-
-    {#if nonAuditingColumns.length > 0}
-      <div class="my-2">
-        <div class="flex items-center gap-2">
-          <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.dataFields')}</div>
-          <div class="h-px flex-1 bg-border"></div>
-        </div>
-      </div>
-
-      <Sortable.Root
-        items={nonAuditingColumns.map((c) => ({ id: c.key, col: c }))}
-        onSort={(items) => onReorderKeys?.('data', items.map((i) => i.id))}
-      >
-        {#snippet children()}
-          <div role="list" class="flex flex-col">
-            {#each nonAuditingColumns as col (col.key)}
-              <Sortable.Item id={col.key}>
-                {#snippet children()}
-                  <div
-                    class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
-                  >
-                    <Sortable.Handle />
-                    <button
-                      type="button"
-                      disabled={col.hideable === false}
-                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
-                      onclick={() => toggleColumnKey(col.key)}
-                    >
-                      <span class="pointer-events-none shrink-0" aria-hidden="true">
-                        <Checkbox
-                          checked={visibleKeys.includes(col.key)}
-                          disabled={col.hideable === false}
-                          class={checkboxVisualOnlyClass}
-                        />
-                      </span>
-                      <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
-                    </button>
-                  </div>
-                {/snippet}
-              </Sortable.Item>
-            {/each}
-          </div>
-        {/snippet}
-      </Sortable.Root>
-    {/if}
-
-    {#if auditingColumns.length > 0}
-      <div class="my-2">
-        <div class="flex items-center gap-2">
-          <div class="h-px flex-1 bg-border"></div>
-          <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.auditingFields')}</div>
-          <div class="h-px flex-1 bg-border"></div>
-        </div>
-      </div>
-
-      {#each auditingColumns as col (col.key)}
-        <!-- rendered below via Sortable -->
-      {/each}
-      <Sortable.Root
-        items={auditingColumns.map((c) => ({ id: c.key, col: c }))}
-        onSort={(items) => onReorderKeys?.('auditing', items.map((i) => i.id))}
-      >
-        {#snippet children()}
-          <div role="list" class="flex flex-col">
-            {#each auditingColumns as col (col.key)}
-              <Sortable.Item id={col.key}>
-                {#snippet children()}
-                  <div
-                    class={col.hideable === false
-                      ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
-                      : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
-                  >
-                    <Sortable.Handle />
-                    <button
-                      type="button"
-                      disabled={col.hideable === false}
-                      class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
-                      onclick={() => toggleColumnKey(col.key)}
-                    >
-                      <span class="pointer-events-none shrink-0" aria-hidden="true">
-                        <Checkbox
-                          checked={visibleKeys.includes(col.key)}
-                          disabled={col.hideable === false}
-                          class={checkboxVisualOnlyClass}
-                        />
-                      </span>
-                      <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
-                    </button>
-                  </div>
-                {/snippet}
-              </Sortable.Item>
-            {/each}
-          </div>
-        {/snippet}
-      </Sortable.Root>
-    {/if}
-  </div>
-</div>
-
+  {#if auditingColumns.length > 0}
+    <div>
+      <SheetSectionTitle>{$t('system.entities.list.auditingFields')}</SheetSectionTitle>
+      {@render columnRows(auditingColumns, 'auditing')}
+    </div>
+  {/if}
+</SheetPanelLayout>

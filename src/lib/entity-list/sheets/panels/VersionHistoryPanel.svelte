@@ -3,10 +3,8 @@
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
-  import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
-  import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
-  import * as Sheet from "$lib/components/ui/sheet";
-  import XIcon from '@lucide/svelte/icons/x';
+  import SheetPanelLayout from "$lib/shell/sheets/SheetPanelLayout.svelte";
+  import History from '@lucide/svelte/icons/history';
   import Hourglass from '@lucide/svelte/icons/hourglass'
   import CircleX from '@lucide/svelte/icons/circle-x'
   import Info from '@lucide/svelte/icons/info'
@@ -389,24 +387,13 @@
 
 </script>
 
-{#snippet headerActions()}
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t("app.common.done")}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-{#snippet headerTitle()}
-  {$t('system.entities.versionHistory.title')}
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto p-2">
+<SheetPanelLayout>
+  {#snippet icon()}
+    <History class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('system.entities.versionHistory.title')}
+  {/snippet}
     {#if versionHistoryLoading && versionHistoryData.length === 0}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
@@ -589,6 +576,5 @@
         {/if}
       </div>
     {/if}
-  </div>
-</div>
+</SheetPanelLayout>
 

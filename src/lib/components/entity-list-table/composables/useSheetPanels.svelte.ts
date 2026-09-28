@@ -25,7 +25,6 @@ export interface UseSheetPanelsOptions {
   onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined;
   filtersOpen: () => boolean;
   setFiltersOpen: (open: boolean) => void;
-  checkboxVisualOnlyClass: string;
 }
 
 export function useSheetPanels(options: UseSheetPanelsOptions) {
@@ -115,9 +114,8 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
           }
           options.columnOrder.applyColumnVisibility(group, dedup);
         },
-        onResetColumnVisibility: () => options.onResetColumnVisibility()('table'),
-        sheetMenuCheckboxClass: options.checkboxVisualOnlyClass
-      } as any;
+        onResetColumnVisibility: () => options.onResetColumnVisibility()('table')
+      };
       return;
     }
     if (sheetState.panelId === 'entity.searchIn') {
@@ -125,9 +123,8 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
         searchInKeys: options.searchInKeys(),
         searchableColumns: options.searchableColumns(),
         onSearchInKeysChange: options.onSearchInKeysChange(),
-        toggleSearchKey,
-        sheetMenuCheckboxClass: options.checkboxVisualOnlyClass
-      } as any;
+        toggleSearchKey
+      };
     }
     if (sheetState.panelId === 'entity.filters') {
       sheetState.props = {
@@ -137,7 +134,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
         onResetFilters: options.onResetFilters?.(),
         advancedFilters: options.advancedFilters() ?? [],
         onAdvancedFiltersChange: options.onAdvancedFiltersChange?.()
-      } as any;
+      };
     }
   });
 

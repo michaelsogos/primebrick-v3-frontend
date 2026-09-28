@@ -16,8 +16,10 @@
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
-  import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
+  import SheetPanelLayout from "$lib/shell/sheets/SheetPanelLayout.svelte";
+  import SheetHeaderAction from "$lib/shell/sheets/SheetHeaderAction.svelte";
   import XIcon from '@lucide/svelte/icons/x';
+  import Funnel from '@lucide/svelte/icons/funnel';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import Play from '@lucide/svelte/icons/play'
@@ -41,7 +43,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     filterValues?: Record<string, any>;
     onFilterValuesChange?: (values: Record<string, any>) => void;
     onResetFilters?: () => void;
-    modal?: boolean;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
   }
@@ -51,7 +52,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
-    modal = true,
     advancedFilters = [],
     onAdvancedFiltersChange,
   }: Props = $props();
@@ -451,74 +451,61 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   }
 </script>
 
-{#snippet headerActions()}
-  <Button
-    variant="ghost"
-    size="sm"
-    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary gap-2"
-    onclick={applyFilters}
-    title={$t("app.common.apply")}
-  >
-    <Play class="size-4" />
-    <span>{$t("app.common.apply")}</span>
-  </Button>
-
-  <Button
-    variant="ghost"
-    size="sm"
-    class="mr-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-    onclick={resetAllFilters}
-    title={$t("app.common.reset")}
-  >
-    <RotateCcw class="size-4" />
-  </Button>
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t("app.common.done")}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-{#snippet headerTitle()}
-  {$t("system.entities.list.filters")}
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <Tabs bind:value={tabValue} class="flex-1 flex flex-col h-full  overflow-hidden">
-    <TabsList
-      class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0 rounded-none"
-    >
-      <TabsTrigger
-        value="standard"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
+<Tabs bind:value={tabValue} class="flex h-full flex-col overflow-hidden">
+  <SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+    {#snippet icon()}
+      <Funnel class="size-4" />
+    {/snippet}
+    {#snippet title()}
+      {$t("system.entities.list.filters")}
+    {/snippet}
+    {#snippet actions()}
+      <SheetHeaderAction title={$t("app.common.apply")} onclick={applyFilters}>
+        <Play class="size-4" />
+      </SheetHeaderAction>
+      <SheetHeaderAction title={$t("app.common.reset")} onclick={resetAllFilters}>
+        <RotateCcw class="size-4" />
+      </SheetHeaderAction>
+      <Sheet.Close
+        class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+        title={$t("app.common.done")}
+        onclick={() => closeSheet()}
       >
-        {#if tabValue === "standard"}
-          <div
-            in:receive={{ key: "active-pill" }}
-            out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
-          ></div>
-        {/if}
-        <span class="relative z-20">{$t("system.entities.list.standardFilters")}</span>
-      </TabsTrigger>
-      <TabsTrigger
-        value="advanced"
-        class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
+        <XIcon class="size-4" />
+      </Sheet.Close>
+    {/snippet}
+    {#snippet toolbar()}
+      <TabsList
+        class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0 rounded-none"
       >
-        {#if tabValue === "advanced"}
-          <div
-            in:receive={{ key: "active-pill" }}
-            out:send={{ key: "active-pill" }}
-            class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
-          ></div>
-        {/if}
-        <span class="relative z-20">{$t("system.entities.list.advancedFilters")}</span>
-      </TabsTrigger>
-    </TabsList>
+        <TabsTrigger
+          value="standard"
+          class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
+        >
+          {#if tabValue === "standard"}
+            <div
+              in:receive={{ key: "active-pill" }}
+              out:send={{ key: "active-pill" }}
+              class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
+            ></div>
+          {/if}
+          <span class="relative z-20">{$t("system.entities.list.standardFilters")}</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="advanced"
+          class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
+        >
+          {#if tabValue === "advanced"}
+            <div
+              in:receive={{ key: "active-pill" }}
+              out:send={{ key: "active-pill" }}
+              class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
+            ></div>
+          {/if}
+          <span class="relative z-20">{$t("system.entities.list.advancedFilters")}</span>
+        </TabsTrigger>
+      </TabsList>
+    {/snippet}
 
     <TabsContent value="standard" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-left data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-left data-[state=inactive]:fade-out">
       {#each filterableColumns as col (col.key)}
@@ -955,5 +942,5 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         </div>
       {/if}
     </TabsContent>
-  </Tabs>
-</div>
+  </SheetPanelLayout>
+</Tabs>

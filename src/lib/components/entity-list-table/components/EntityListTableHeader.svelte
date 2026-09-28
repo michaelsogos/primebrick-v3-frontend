@@ -29,7 +29,6 @@
     visibleKeys,
     toggleColumnKey,
     resetColumnsAndSorting,
-    checkboxVisualOnlyClass,
     onCreateAction,
     toolbarMode,
     hasAppliedFilters,
@@ -74,7 +73,6 @@
     visibleKeys: string[];
     toggleColumnKey: (key: string) => void;
     resetColumnsAndSorting: () => void;
-    checkboxVisualOnlyClass: string;
     onCreateAction?: () => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
@@ -130,7 +128,7 @@
           onResetFilters,
           advancedFilters: advancedFilters ?? [],
           onAdvancedFiltersChange
-        } as any,
+        },
         {
           modal: false
         }
@@ -149,9 +147,8 @@
         auditingColumns: auditingColumnsGroup,
         visibleKeys,
         toggleColumnKey,
-        onResetColumnVisibility: resetColumnsAndSorting,
-        sheetMenuCheckboxClass: checkboxVisualOnlyClass
-      } as any
+        onResetColumnVisibility: resetColumnsAndSorting
+      }
     )}
   onCreateAction={onCreateAction}
 />

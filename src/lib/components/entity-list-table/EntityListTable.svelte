@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
-  import { checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
   import EntityListTableDialogs from './components/EntityListTableDialogs.svelte';
   import EntityListTableContent from './components/EntityListTableContent.svelte';
@@ -201,7 +201,6 @@
     onAdvancedFiltersChange: () => onAdvancedFiltersChange,
     filtersOpen: () => filtersOpen,
     setFiltersOpen: (open) => { filtersOpen = open; },
-    checkboxVisualOnlyClass,
   });
   const toggleSearchKey = sheetPanels.toggleSearchKey;
   const toggleColumnKey = sheetPanels.toggleColumnKey;
@@ -587,7 +586,6 @@
     visibleKeys={visibleKeys}
     toggleColumnKey={toggleColumnKey}
     resetColumnsAndSorting={resetColumnsAndSorting}
-    checkboxVisualOnlyClass={checkboxVisualOnlyClass}
     onCreateAction={effectiveOnCreateAction}
     toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}

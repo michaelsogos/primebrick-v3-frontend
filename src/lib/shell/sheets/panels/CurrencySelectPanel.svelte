@@ -1,12 +1,11 @@
 <script lang="ts">
-  import * as Sheet from '$lib/components/ui/sheet';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import { getAllCurrencies } from '$lib/currency';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { onMount } from 'svelte';
-  import XIcon from '@lucide/svelte/icons/x';
+  import Coins from '@lucide/svelte/icons/coins';
   import Check from '@lucide/svelte/icons/check';
   import Search from '@lucide/svelte/icons/search';
 
@@ -73,25 +72,14 @@
   }
 </script>
 
-{#snippet headerTitle()}
-  {$t('system.settings.config.currencySelect.title')}
-{/snippet}
-
-{#snippet headerActions()}
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t('app.common.done')}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <!-- Search bar -->
-  <div class="border-b px-3 py-2">
+<SheetPanelLayout contentClass="p-0">
+  {#snippet icon()}
+    <Coins class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('system.settings.config.currencySelect.title')}
+  {/snippet}
+  {#snippet toolbar()}
     <div class="relative">
       <Search class="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <input
@@ -102,11 +90,9 @@
         data-testid="currency-select-search"
       />
     </div>
-  </div>
+  {/snippet}
 
-  <!-- Currency list -->
-  <div class="min-h-0 flex-1 overflow-auto">
-    {#if !searchQuery && favoriteCurrencies.length > 0}
+  {#if !searchQuery && favoriteCurrencies.length > 0}
       <!-- Favorite currencies section -->
       <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {$t('system.settings.config.currencySelect.favorites')}
@@ -156,10 +142,9 @@
           <Check class="size-4 text-primary shrink-0" />
         {/if}
       </button>
-    {:else}
-      <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-        {$t('system.settings.config.currencySelect.noResults')}
-      </div>
-    {/each}
-  </div>
-</div>
+  {:else}
+    <div class="px-3 py-8 text-center text-sm text-muted-foreground">
+      {$t('system.settings.config.currencySelect.noResults')}
+    </div>
+  {/each}
+</SheetPanelLayout>

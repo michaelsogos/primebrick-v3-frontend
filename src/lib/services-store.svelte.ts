@@ -37,6 +37,9 @@ export function startServicesStream(): void {
 
   closeSse = createSseConnection({
     url: '/api/v1/system/services/events',
+    // REST twin used as the session-expired probe — on re-login it is retried
+    // via apiFetch and the stream then reconnects (see createSseConnection).
+    authProbeUrl: '/api/v1/system/services',
     onMessage: (msg) => {
       if (msg.event === 'snapshot') {
         const data = parseSseData<{ services: ServiceInfo[] }>(msg.data);

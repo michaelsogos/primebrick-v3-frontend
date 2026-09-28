@@ -35,15 +35,31 @@ export type SheetPanelPropsMap = {
   'shell.versions': Record<string, never>;
   'shell.aiChat': Record<string, never>;
   'shell.aiGuide': Record<string, never>;
-  'entity.searchIn': Record<string, unknown>;
-  'entity.columns': Record<string, unknown>;
+  'entity.searchIn': {
+    searchInKeys: string[] | null;
+    searchableColumns: import('$lib/entity-list/types').MetaColumn[];
+    onSearchInKeysChange: (keys: string[] | null) => void;
+    toggleSearchKey: (key: string) => void;
+  };
+  'entity.columns': {
+    stickyColumns: import('$lib/entity-list/types').MetaColumn[];
+    nonAuditingColumns: import('$lib/entity-list/types').MetaColumn[];
+    auditingColumns: import('$lib/entity-list/types').MetaColumn[];
+    visibleKeys: string[];
+    toggleColumnKey: (key: string) => void;
+    onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
+    onResetColumnVisibility: () => void;
+  };
   'entity.filters': {
-    /**
-     * Arbitrary content provided by caller (e.g. EntityListTable `{#if filters}` slot).
-     * Use `Snippet` typing on the panel component; manager keeps it `unknown` to avoid
-     * leaking Snippet generics across the whole app.
-     */
-    content: unknown;
+    filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
+    filterValues?: Record<string, unknown>;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
+    onResetFilters?: () => void;
+    advancedFilters?: import('$lib/entity-list/types').AdvancedFilter[];
+    onAdvancedFiltersChange?: (
+      filters: import('$lib/entity-list/types').AdvancedFilter[],
+      connector: 'AND' | 'OR'
+    ) => void;
   };
   'entity.versionHistory': {
     entity: string;

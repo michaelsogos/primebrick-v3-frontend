@@ -1,19 +1,17 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
-  import * as Sheet from '$lib/components/ui/sheet';
   import * as Accordion from '$lib/components/ui/accordion/index.js';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { APP_VERSION } from '$lib/version';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import { servicesState, aggregateStatus, groupByCode } from '$lib/services-store.svelte';
   import type { ServiceInfo } from '$lib/api-types';
-  import XIcon from '@lucide/svelte/icons/x';
+  import Blocks from '@lucide/svelte/icons/blocks';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
@@ -65,27 +63,15 @@
   }
 </script>
 
-{#snippet headerTitle()}
-  {$t('app.health.versionsTitle')}
-{/snippet}
+<SheetPanelLayout contentClass="px-4 pb-4">
+  {#snippet icon()}
+    <Blocks class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('app.health.versionsTitle')}
+  {/snippet}
 
-{#snippet headerActions()}
-  <div class="flex items-center gap-2">
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
-  </div>
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto px-4 pb-4">
-    <Accordion.Root type="multiple" class="w-full" value={['core']}>
+  <Accordion.Root type="multiple" class="w-full" value={['core']}>
 
       <!-- 1. Core Modules -->
       <Accordion.Item value="core" data-testid="versions-accordion-core">
@@ -351,5 +337,4 @@
       </Accordion.Item>
 
     </Accordion.Root>
-  </div>
-</div>
+</SheetPanelLayout>
