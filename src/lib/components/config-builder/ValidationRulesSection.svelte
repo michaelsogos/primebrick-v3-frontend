@@ -5,6 +5,7 @@
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import { Label } from '$lib/components/ui/label';
+  import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import type { ConfigEntryType } from '$lib/api-types';
   import { autoErrorLabelKey } from '$lib/config/type-config-schema';
@@ -28,9 +29,15 @@
   onMount(() => void typeCapabilities.ensureLoaded());
   const caps = $derived(typeCapabilities.capabilitiesFor(type));
   const isNumericType = $derived(caps.validation.min === 'value');
-  const isStringType = $derived(caps.validation.min === 'length');
-  const isUrlType = $derived(caps.widget.url_protocols === true);
-  const hasMinMax = $derived(caps.validation.min !== undefined);
+  // email/phone have intrinsic format + length constraints (RFC 5321 / E.164)
+  // — min/max length and free regex would duplicate or conflict with the
+  // type's own validation, so they're hidden for those types.
+  const hasMinMax = $derived(
+    caps.validation.min !== undefined && type !== 'email' && type !== 'phone',
+  );
+  const hasRegex = $derived(
+    caps.validation.regex === true && !['url', 'email', 'phone'].includes(type),
+  );
 
   // All i18n keys for ComboSelect error_label_key selectors
   const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
@@ -48,8 +55,6 @@
   let regexFlags = $state<string>('');
   let regexErrorKey = $state<string>('');
   let regexPatternError = $state<string | null>(null);
-  let urlProtocols = $state<string>('');
-  let urlErrorKey = $state<string>('');
   let requiredErrorKey = $state<string>('');
 
   // Sync from builder state — error_label_keys fall back to auto-generated
@@ -93,13 +98,6 @@
       regexFlags = '';
       regexErrorKey = '';
       regexPatternError = null;
-    }
-    if (v?.rules?.url) {
-      urlProtocols = v.rules.url.protocols.join(', ');
-      urlErrorKey = v.rules.url.error_label_key ?? autoErrorLabelKey(configKey, 'url');
-    } else {
-      urlProtocols = '';
-      urlErrorKey = '';
     }
     if (v?.required_error_label_key) {
       requiredErrorKey = v.required_error_label_key;
@@ -158,17 +156,6 @@
     handleRegexChange();
   }
 
-  function handleUrlProtocolsChange(e?: Event) {
-    const raw = e ? (e.currentTarget as HTMLInputElement).value : String(urlProtocols ?? '');
-    const protocols = raw.split(',').map((p) => p.trim()).filter(Boolean);
-    builder.setUrlProtocols(protocols, urlErrorKey || undefined);
-  }
-
-  function handleUrlErrorKeyChange(value: string | string[]) {
-    urlErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
-    handleUrlProtocolsChange();
-  }
-
   function handleRequiredErrorKeyChange() {
     builder.setRequiredErrorLabelKey(requiredErrorKey);
   }
@@ -179,8 +166,7 @@
   }
 </script>
 
-<div class="space-y-4">
-  <h4 class="text-sm font-semibold text-muted-foreground">{$t('system.settings.config.typeConfig.validationRules')}</h4>
+<SelectableFieldset label={$t('system.settings.config.typeConfig.validationRules')}>
 
   <!-- Required -->
   <SwitchField
@@ -244,9 +230,9 @@
       <Label for="tcb-min">
         {isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
         <FormLabelWithPriorityHelp
-          text={$t('app.common.optionalTooltipText')}
+          text={$t('system.settings.config.typeConfig.minHelp')}
           priority="INFORMATION"
-          title={$t('app.common.optionalTooltipTitle')}
+          title={isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -292,9 +278,9 @@
       <Label for="tcb-max">
         {isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
         <FormLabelWithPriorityHelp
-          text={$t('app.common.optionalTooltipText')}
+          text={$t('system.settings.config.typeConfig.maxHelp')}
           priority="INFORMATION"
-          title={$t('app.common.optionalTooltipTitle')}
+          title={isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -339,69 +325,18 @@
   </div>
   {/if}
 
-  <!-- URL protocols (url type only) -->
-  {#if isUrlType}
-    <div class="space-y-1">
-      <Label for="tcb-url-protocols">
-        {$t('system.settings.config.typeConfig.urlProtocols')}
-        <FormLabelWithPriorityHelp
-          text={$t('app.common.optionalTooltipText')}
-          priority="INFORMATION"
-          title={$t('app.common.optionalTooltipTitle')}
-          labelKey="app.common.optional"
-        />
-      </Label>
-      <TextInput
-        id="tcb-url-protocols"
-        bind:value={urlProtocols}
-        oninput={handleUrlProtocolsChange}
-        placeholder="http, https"
-        class="text-xs"
-        data-testid="tcb-url-protocols"
-      />
-      {#if urlProtocols.trim() !== ''}
-        <Label for="tcb-url-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.urlErrorLabelKey')}
-          <FormLabelWithPriorityHelp
-            text={$t('app.common.optionalTooltipText')}
-            priority="INFORMATION"
-            title={$t('app.common.optionalTooltipTitle')}
-            labelKey="app.common.optional"
-          />
-        </Label>
-        <ComboSelect
-          id="tcb-url-error-key"
-          data-testid="tcb-url-error-key"
-          mode="single"
-          value={urlErrorKey}
-          onChange={handleUrlErrorKeyChange}
-          options={errorKeyOptions}
-          valueField="key"
-          labelField="key"
-          isLabelTranslated={true}
-          allowCreate={true}
-          defaultSearch={autoErrorLabelKey(configKey, 'url')}
-          placeholder={autoErrorLabelKey(configKey, 'url')}
-          searchPlaceholder={autoErrorLabelKey(configKey, 'url')}
-          class="text-xs"
-        display="detailed"
-      />
-      {/if}
-    </div>
-  {/if}
-
   <!-- Email validation rule is deprecated — email is now a TYPE with inherent validation -->
   <!-- No email rule switch needed for string/text types -->
 
-  <!-- Regex (string-derived types: string, text, secret, url, email, phone) -->
-  {#if isStringType}
+  <!-- Regex (plain string types only — url/email/phone have intrinsic format validation) -->
+  {#if hasRegex}
     <div class="space-y-1">
       <Label for="tcb-regex">
         {$t('system.settings.config.typeConfig.regexPattern')}
         <FormLabelWithPriorityHelp
-          text={$t('app.common.optionalTooltipText')}
-          priority="INFORMATION"
-          title={$t('app.common.optionalTooltipTitle')}
+          text={$t('system.settings.config.typeConfig.regexPatternHelp')}
+          priority="HINT"
+          title={$t('system.settings.config.typeConfig.regexPattern')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -410,7 +345,7 @@
         bind:value={regexPattern}
         bind:flags={regexFlags}
         on_change={() => handleRegexChange()}
-        placeholder="^[A-Z]{3}$"
+        placeholder={$t('system.settings.config.typeConfig.regexPatternPlaceholder')}
         class="font-mono text-xs"
         config_type={type as 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone'}
         data-testid="tcb-regex"
@@ -450,4 +385,4 @@
       {/if}
     </div>
   {/if}
-</div>
+</SelectableFieldset>

@@ -6,6 +6,33 @@ export const inputControlHoverClasses =
 	'hover:border-ring/40 hover:bg-sky-50/45 dark:hover:border-ring/40 dark:hover:bg-input/55';
 
 /**
+ * "Ghost" chrome — the FORMALIZED variant: a subtle always-visible neutral
+ * border on a transparent background (NOT the borderless button ghost).
+ * Same chrome as the entity-list toolbar SearchBar / ComboSelect
+ * `variant="toolbar"`: `border-foreground/25`, hover `foreground/40`,
+ * focus `foreground/50` + `ring-foreground/20`.
+ * Use for controls embedded inside an already-bordered container
+ * (color-picker footer, toolbar strips). For the rare truly borderless
+ * case use `inputBorderlessChromeClasses` below.
+ */
+export const inputGhostChromeClasses =
+	'border border-foreground/25 bg-transparent shadow-none ' +
+	'hover:border-foreground/40 ' +
+	'focus-visible:border-foreground/50 focus-visible:ring-2 focus-visible:ring-foreground/20 ' +
+	'focus-within:border-foreground/50';
+
+/**
+ * Truly borderless chrome — button-ghost equivalent for inputs: no border
+ * at rest, faint border only on hover/focus. Rarely appropriate (the control
+ * is hard to discover); prefer `inputGhostChromeClasses`.
+ */
+export const inputBorderlessChromeClasses =
+	'border border-transparent bg-transparent shadow-none ' +
+	'hover:border-foreground/15 hover:bg-muted/30 ' +
+	'focus-visible:border-foreground/15 focus-visible:ring-2 focus-visible:ring-ring/50 ' +
+	'dark:border-foreground/10';
+
+/**
  * Unified trailing-icon color/hover/focus classes for input trailing buttons.
  * - No background fill on hover (consistent across all trailing icons).
  * - Color shifts from muted-foreground → foreground on hover.

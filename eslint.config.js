@@ -28,6 +28,39 @@ export default ts.config(
     },
   },
   {
+    /**
+     * Sheets are a closed, typed system: every right/left panel goes through
+     * `openSheet('<panelId>', props)` (sheet-manager.svelte.ts) and renders
+     * inside `SheetPanelLayout`. Direct `ui/sheet` imports outside the
+     * sheets infrastructure bypass the panel registry, the standard
+     * header/layout anatomy, and modal/dirty-state handling — forbidden.
+     * Legit direct consumers (excluded below): the sheet primitives
+     * themselves, SheetHost/SheetPanelLayout, entity-list panels
+     * (Sheet.Close only), and the vendored sidebar.
+     */
+    files: ['src/**/*.{ts,svelte}'],
+    ignores: [
+      'src/lib/components/ui/sheet/**',
+      'src/lib/components/ui/sidebar/**',
+      'src/lib/shell/sheets/**',
+      'src/lib/entity-list/sheets/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/components/ui/sheet', '**/components/ui/sheet/*'],
+              message:
+                "Do not import ui/sheet directly. Register a panel in SheetPanelPropsMap + SheetHost and open it via openSheet() — panels must wrap content in SheetPanelLayout. See docs/ai/sheets.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Project-specific rule overrides
     rules: {
       // Align with AGENTS.md: prefer $derived() over $derived.by() when possible

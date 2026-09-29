@@ -9,8 +9,9 @@
   import Eraser from "@lucide/svelte/icons/eraser";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Check from "@lucide/svelte/icons/check";
-  import type { Snippet } from "svelte";
-  import { inputTrailingIconColorClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { tick, type Snippet } from "svelte";
+  import { inputTrailingIconColorClasses, inputGhostChromeClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { menuListSelectedSurfaceDropdownClasses } from "$lib/components/ui/menu-row-chrome.js";
   import DynamicIcon from "$lib/components/ui/dynamic-icon/DynamicIcon.svelte";
 
   type ComboSelectMode = "single" | "multi";
@@ -99,11 +100,23 @@
      */
     defaultSearch?: string;
     /**
-     * Trigger chrome: `default` = primary-gradient border on bg-background
-     * (forms). `toolbar` = plain neutral InputGroup-style chrome
-     * (border-foreground/25, transparent bg) for toolbar strips.
+     * Where the ellipsis goes when the selected value / option text
+     * overflows: `'end'` (default, classic `truncate`) or `'start'`
+     * (leading `…`, tail stays visible — for long keys whose meaningful
+     * part is at the end, e.g. i18n keys). Affects the selected display,
+     * the "Create" row, and default/detailed option rows.
      */
-    variant?: "default" | "toolbar";
+    truncateFrom?: 'end' | 'start';
+    /**
+     * Trigger chrome:
+     *   `default` — primary-gradient border on bg-background (forms).
+     *   `toolbar` — plain neutral InputGroup-style chrome
+     *               (border-foreground/25, transparent bg) for toolbar strips.
+     *   `ghost`   — the FORMALIZED ghost chrome: subtle always-visible
+     *               `border-foreground/25` on transparent bg (same as the
+     *               toolbar SearchBar). Shared via `inputGhostChromeClasses`.
+     */
+    variant?: "default" | "toolbar" | "ghost";
     class?: string;
     "aria-invalid"?: boolean | "true" | "false";
     "aria-describedby"?: string;
@@ -140,6 +153,7 @@
     onLoadMore,
     loadingMore = false,
     defaultSearch = '',
+    truncateFrom = 'end',
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
     "aria-required": ariaRequired,
@@ -162,6 +176,24 @@
 
   let open = $state(false);
   let search = $state("");
+  let listEl = $state<HTMLElement | null>(null);
+
+  // Scroll the first selected option into view when the popover opens —
+  // long lists should land on the current selection, not the top.
+  // NOTE: bits-ui Command.Item owns `aria-selected`/`data-selected`
+  // (keyboard highlight), so the real selection is marked with
+  // `data-combo-selected` — a non-colliding attribute.
+  $effect(() => {
+    if (!open) return;
+    void tick().then(() => {
+      // The popover mounts through a portal — wait one frame so the
+      // command list is laid out before measuring/scrolling.
+      requestAnimationFrame(() => {
+        const sel = listEl?.querySelector("[data-combo-selected]");
+        sel?.scrollIntoView({ block: "nearest" });
+      });
+    });
+  });
 
   // Reset search to defaultSearch whenever the popover opens
   $effect(() => {
@@ -351,7 +383,9 @@
           "min-h-9 w-full rounded-md px-3 py-1 text-sm ring-offset-background outline-hidden transition-all",
           variant === "toolbar"
             ? "border border-foreground/25 bg-transparent hover:border-foreground/40 focus-within:border-foreground/50"
-            : "border-primary-gradient bg-background hover:brightness-105",
+            : variant === "ghost"
+              ? inputGhostChromeClasses
+              : "border-primary-gradient bg-background hover:brightness-105",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "cursor-pointer flex items-center gap-2 text-left",
@@ -382,7 +416,7 @@
               {#if selIcon}
                 <DynamicIcon name={selIcon} size={16} class="shrink-0 text-muted-foreground" />
               {/if}
-              <span class="flex-1 truncate text-left">
+              <span class={cn("flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
                 {selectedNormalized.label}
               </span>
             {/if}
@@ -395,8 +429,10 @@
                 resolvedValue: value as string,
               })}
             {:else}
-              <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground">
-                {value as string}
+              <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 justify-start">
+                <span class={cn("min-w-0 flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
+                  {value as string}
+                </span>
               </Badge>
             {/if}
           {:else}
@@ -465,7 +501,11 @@
     {/snippet}
   </Popover.Trigger>
   <Popover.Content align="start" class="w-(--bits-popover-anchor-width) min-w-56 p-0">
-    <Command.Root shouldFilter={searchable}>
+    <!-- shouldFilter=false: filtering is owned by `filteredOptions` (label +
+         value + getSearchKeywords). bits-ui's internal filter only matches the
+         item `value` (+ keywords), which breaks searches by label — e.g. typing
+         "dollar" found nothing because the item value is "USD". -->
+    <Command.Root shouldFilter={false}>
       {#if searchable}
         <Command.Input
           bind:value={search}
@@ -478,7 +518,7 @@
           }}
         />
       {/if}
-      <Command.List onscroll={handleListScroll}>
+      <Command.List bind:ref={listEl} onscroll={handleListScroll}>
         {#if showCreateItem}
           <Command.Item
             value={search.trim()}
@@ -495,9 +535,15 @@
               {#if mode === "multi"}
                 <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0"></div>
               {/if}
-              <span class="flex-1 truncate text-left">
-                {$t('app.common.create')} <span class="font-medium">"{search.trim()}"</span>
-              </span>
+              {#if truncateFrom === 'start'}
+                <span class="flex min-w-0 flex-1 items-baseline whitespace-nowrap text-left">
+                  <span class="shrink-0">{$t('app.common.create')} "</span><span class="font-medium truncate-start min-w-0 flex-1">{search.trim()}</span><span class="shrink-0">"</span>
+                </span>
+              {:else}
+                <span class="flex-1 truncate text-left">
+                  {$t('app.common.create')} <span class="font-medium">"{search.trim()}"</span>
+                </span>
+              {/if}
             </div>
           </Command.Item>
         {/if}
@@ -506,12 +552,14 @@
         {:else if filteredOptions.length > 0}
           {#each filteredOptions as opt (opt.value)}
             {@const isDisabled = isOptionDisabled ? isOptionDisabled(opt.raw) : false}
+            {@const isSelected = mode === "single" ? (value as string) === opt.value : selectedValues.includes(opt.value)}
             <Command.Item
               value={opt.value}
               keywords={getSearchKeywords ? getSearchKeywords(opt.raw) : undefined}
               disabled={isDisabled}
+              data-combo-selected={isSelected || undefined}
               class={cn(
-                "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
+                "relative flex w-full cursor-default select-none items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm outline-hidden",
                 "data-highlighted:bg-muted data-highlighted:text-foreground",
                 "data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-60 data-disabled:text-muted-foreground data-disabled:data-highlighted:bg-transparent",
                 "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -519,6 +567,7 @@
                 // never data-checked here) → dead space on the right; hide it
                 // so trailing content (e.g. RankMeter) stays flush right.
                 "[&_.cn-command-item-indicator]:hidden",
+                isSelected && menuListSelectedSurfaceDropdownClasses,
               )}
               onSelect={() => {
                 if (isDisabled) return;
@@ -559,13 +608,13 @@
                     </Badge>
                   {:else if display === 'detailed'}
                     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span class="truncate font-medium">{opt.label}</span>
-                      <span class="truncate font-mono text-xs text-muted-foreground">
+                      <span class={cn("font-medium", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>{opt.label}</span>
+                      <span class={cn("font-mono text-xs text-muted-foreground", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
                         {secondaryField ? String(getByPath(opt.raw as Record<string, any>, secondaryField) ?? opt.value) : opt.value}
                       </span>
                     </div>
                   {:else}
-                    <span class="flex-1 truncate text-left">{opt.label}</span>
+                    <span class={cn("flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>{opt.label}</span>
                   {/if}
                 {/if}
               </div>

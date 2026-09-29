@@ -15,6 +15,7 @@ export type SheetPanelId =
   | 'config.regexFlags'
   | 'config.regexAiChat'
   | 'config.jsonAiChat'
+  | 'config.badgeValueEdit'
   | 'shell.aiModelTestReport'
   | 'shell.aiCerebellum'
   | 'shell.aiModelImport'
@@ -122,6 +123,17 @@ export type SheetPanelPropsMap = {
     existing_model_ids?: readonly string[];
     /** Called after a model row is created so the caller can reload. */
     on_added?: () => void;
+  };
+  'config.badgeValueEdit': {
+    /** 'add' = create a new badge value; 'edit' = mutate `value_key` live. */
+    mode: 'add' | 'edit';
+    /** Existing map key when mode='edit', null for add mode. */
+    value_key: string | null;
+    /** Row's config_key — scopes the label_key suggestion prefix. */
+    config_key: string;
+    /** The type-config builder instance — mutations are live (same object
+     *  the page reads), so edits appear without a save callback. */
+    builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
   };
   'shell.aiModelCache': {
     /** The model currently loaded in VRAM — its cache cannot be deleted. */

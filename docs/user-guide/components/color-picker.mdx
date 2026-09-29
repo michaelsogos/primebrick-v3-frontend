@@ -1,0 +1,129 @@
+---
+title: ColorPicker
+description: Free-form + Tailwind-palette color picker — saturation/hue area, format selector with icons, system mode with the full Tailwind swatch grid and searchable token dropdown.
+---
+
+# ColorPicker
+
+`src/lib/components/ui/color-picker/color-picker.svelte` (`ColorPicker.Root`)
+
+## Purpose
+
+The canonical color input for any place that needs a real color choice —
+badge colors, avatars, theme accents. It renders inside a `Popover`
+(`ColorSelector` wraps it with a labelled swatch trigger) and supports two
+interaction models selectable per instance:
+
+- **Free-form formats** — `hex`, `rgb`, `hsl`, `oklch`: the classic
+  saturation/brightness area + hue slider (+ alpha when `allowOpacity`)
+  and a text input that accepts typed CSS colors.
+- **`system`** — the Tailwind palette mode: a grid of every Tailwind
+  color family × shades `50–950`, plus a searchable `ComboSelect` of all
+  `family-shade` tokens. Selecting a swatch binds the token string
+  (e.g. `"emerald-500"`).
+
+## Usage
+
+```svelte
+<script>
+  import * as ColorPicker from '$lib/components/ui/color-picker';
+  let color = $state('emerald-500');
+</script>
+
+<Popover.Root>
+  <Popover.Trigger class="…swatch trigger…">{color}</Popover.Trigger>
+  <Popover.Content class="w-auto p-0">
+    <ColorPicker.Root bind:value={color} />
+  </Popover.Content>
+</Popover.Root>
+```
+
+### Restrict formats
+
+```svelte
+<!-- only the Tailwind grid -->
+<ColorPicker.Root bind:value formats={['system']} />
+
+<!-- free-form only, no token mode -->
+<ColorPicker.Root bind:value formats={['hex', 'rgb', 'hsl', 'oklch']} />
+```
+
+### With opacity
+
+```svelte
+<ColorPicker.Root bind:value allowOpacity defaultFormat="hex" />
+```
+
+## Formats
+
+| `format` | Body | Value emitted |
+|---|---|---|
+| `hex` | SV area + hue slider | `#RRGGBB` (`#RRGGBBAA` with `allowOpacity`) |
+| `rgb` | SV area + hue slider | `rgb(r, g, b)` / `rgba(…)` |
+| `hsl` | SV area + hue slider | `hsl(…)` / `hsla(…)` |
+| `oklch` | SV area + hue slider | `oklch(L C H)` |
+| `system` | **Tailwind swatch grid** | token `family-shade`, e.g. `sky-400` |
+
+The format selector (Popover + `Command` list) shows an icon per format:
+`Hash` hex · `Palette` rgb · `Droplets` hsl · `FlaskConical` oklch ·
+`LayoutGrid` system.
+
+## `system` mode details
+
+- **Grid** — one row per Tailwind family (all families including `taupe`,
+  `olive`, `mist`, `mauve`), columns are shades `50→950`. Swatches stretch
+  to fill the panel width (`aspect-square flex-1`); the selected swatch
+  carries a ring + check.
+- **Hover/focus readout** — a fixed strip under the grid shows
+  `swatch · token · #RRGGBB` for the hovered cell (falls back to the
+  current selection when idle).
+- **Token search** — a `ghost`-variant `ComboSelect` lists every token;
+  search is contains-based (`"emerald"`, `"500"`, `"sl-300"` all match).
+  Options render as `swatch + token + hex` rows.
+
+`system` is the **default format** — incoming `rgb()/hsl()/oklch()`/token
+values auto-detect their format; plain `#hex` values keep the system grid
+open so the palette stays one click away.
+
+## Ghost chrome
+
+Both footer controls (format selector and value input/combo) use
+`variant="ghost"` / `inputGhostChromeClasses` — the formalized ghost:
+always-visible `border-foreground/25` on transparent bg, hover
+`foreground/40`, focus `foreground/50` + `ring-foreground/20`. NOT the
+borderless button ghost (that exists as `inputBorderlessChromeClasses`
+for rare embeds).
+
+## Popover & layout rules
+
+`Popover.Content` **self-portals by default** — the shared wrapper wraps
+`PopoverPrimitive.Portal`, so popovers inside scrollable containers
+(sheet panels, cards) never expand the scroll region and shift the
+anchor's layout. Pass `portal={false}` only for deliberate in-flow
+rendering.
+
+## Props
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `string` (bindable) | `'#000000'` | CSS color or Tailwind token |
+| `defaultFormat` | `ColorFormat` | `'system'` | Used when the value gives no format hint |
+| `formats` | `ColorFormat[]` | all five | Restricts the format selector |
+| `allowOpacity` | `boolean` | `false` | Alpha slider + `%` input |
+| `class` | `string` | — | Panel wrapper classes |
+
+`ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'system'`.
+
+## Token resolution
+
+`badgeClassesFromToken(token)` (`$lib/colors/badge`) resolves **both**
+tokens (`emerald-500`) and raw CSS colors (`#hex`, `rgb()`, `oklch()`),
+so a badge preview/persisted value works regardless of the format the
+user picked. `tailwindSwatches` / `tailwindFamilies` are exported for
+other palette pickers.
+
+## Next steps
+
+- [ColorSelector](/docs/user-guide/components/color-selector) — labelled popover wrapper
+- [ComboSelect](/docs/user-guide/components/combo-select) — the token dropdown (ghost variant)
+- [Input anatomy](/docs/user-guide/input-anatomy) — ghost chrome token

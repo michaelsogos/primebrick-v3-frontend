@@ -60,6 +60,20 @@ settings area for role, permission, org, and module selection.
 />
 ```
 
+### Trigger variants (`variant`)
+
+The trigger chrome is a closed set, like `Button` variants:
+
+| `variant` | Chrome |
+|---|---|
+| `'default'` (default) | Primary-gradient border on `bg-background` — the standard form look |
+| `'toolbar'` | Neutral InputGroup-style chrome (`border-foreground/25`, transparent bg) for toolbar strips |
+| `'ghost'` | The formalized ghost chrome — subtle always-visible `border-foreground/25` on transparent bg (same as the toolbar SearchBar). Shared token: `inputGhostChromeClasses`. For controls embedded inside an already-bordered container (e.g. the color-picker footer) |
+
+```svelte
+<ComboSelect mode="single" bind:value options={tokens} variant="ghost" />
+```
+
 ### Display modes (`display`)
 
 Options are rendered through the typed `display` prop — a closed set, like

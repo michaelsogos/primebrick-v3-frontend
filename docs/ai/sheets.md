@@ -5,6 +5,13 @@ Never mount `Sheet.Root` inside a page or component — there is exactly one
 `Sheet.Root`/`Sheet.Content` in the app, owned by `SheetHost` and driven by
 `sheet-manager.svelte.ts`.
 
+**This is enforced by ESLint**: importing `$lib/components/ui/sheet` outside
+the sheets infrastructure (`components/ui/sheet`, `components/ui/sidebar`,
+`shell/sheets`, `entity-list/sheets`) fails lint with
+`no-restricted-imports`. If you need a sheet, register a panel id +
+typed props in `SheetPanelPropsMap`, add the component to the `SheetHost`
+registry, and open it with `openSheet()`.
+
 ## Files
 
 | File | Role |
@@ -81,6 +88,11 @@ Rules:
   FOOT content supplies its own padding (`p-3` for inputs, `px-4 py-2` for bars).
 - **TOOLBAR is for tools only** — CTAs, search inputs, tab bars. Metadata
   (scores, timestamps, subtitles) belongs in CONTENT, never in TOOLBAR.
+- **Floating UI inside panels**: `Popover.Content` self-portals to `body`
+  by default (the shared `ui/popover` wrapper). Never bypass it —
+  non-portaled content inside the CONTENT scroll region extends the
+  scrollable area and visibly shifts the anchor's layout when it opens.
+  Escape hatch exists (`portal={false}`) only for deliberate in-flow use.
 - **In-content sections are NOT standardized** — section titles, dividers,
   accordions, tabs are the panel's own domain. `SheetSectionTitle` exists
   as a convenience (`px-3 py-1.5 text-xs font-semibold uppercase

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -198,6 +198,33 @@
 }
 @utility bg-range-success-gradient {
   background: linear-gradient(to right, #34d399, #059669);
+}
+
+/**
+ * Selected-row shadow for menus/lists: keeps the outer `shadow-xs` drop and
+ * adds a subtle inner glow derived from the primary gradient
+ * (sky-400 top-left → indigo-400 bottom-right), so selected rows read as a
+ * Button `outline`-style surface with a faint branded inner rim.
+ * Use INSTEAD of `shadow-xs` on selected menu rows (this utility includes it).
+ */
+@utility shadow-selected-primary {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    inset 3px 3px 8px -3px rgba(56, 189, 248, 0.35),
+    inset -3px -3px 8px -3px rgba(129, 140, 248, 0.35);
+}
+
+/**
+ * Left-side truncation ("…badge.active"): the meaningful tail of long
+ * identifiers (i18n keys, codes) is at the END, so the ellipsis goes at
+ * the start. `direction: rtl` moves the overflow to the visual left.
+ */
+@utility truncate-start {
+  direction: rtl;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /**

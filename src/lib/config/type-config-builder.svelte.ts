@@ -239,6 +239,80 @@ export function useTypeConfigBuilder(
     sync();
   }
 
+  /**
+   * Allowed URL protocols — drives BOTH the widget prefix options
+   * (`allowed_protocols`) and the validation rule (`rules.url.protocols`).
+   * A single UI control owns both; the error_label_key is auto-generated
+   * at serialization time.
+   */
+  function setAllowedProtocols(protocols: string[]) {
+    if (protocols.length === 0) {
+      delete _state.config.allowed_protocols;
+      delete _state.config.default_protocol;
+      const v = ensureValidation();
+      delete v.rules.url;
+    } else {
+      _state.config.allowed_protocols = protocols;
+      // Default protocol must come from the allowed set.
+      const cur = _state.config.default_protocol;
+      if (!cur || !protocols.includes(cur)) {
+        _state.config.default_protocol = protocols[0];
+      }
+      const v = ensureValidation();
+      const existing = v.rules.url;
+      v.rules.url = {
+        protocols,
+        ...(existing?.error_label_key ? { error_label_key: existing.error_label_key } : {}),
+      };
+    }
+    sync();
+  }
+
+  function setDefaultProtocol(protocol: string | null) {
+    if (protocol) {
+      _state.config.default_protocol = protocol;
+    } else {
+      delete _state.config.default_protocol;
+    }
+    sync();
+  }
+
+  function setCountry(country: string | null) {
+    if (country) {
+      _state.config.country = country;
+    } else {
+      delete _state.config.country;
+    }
+    sync();
+  }
+
+  function setAllowedCountries(countries: string[]) {
+    if (countries.length === 0) {
+      delete _state.config.allowed_countries;
+    } else {
+      _state.config.allowed_countries = countries;
+      // Default country must come from the allowed set.
+      const cur = _state.config.country;
+      if (cur && !countries.includes(cur)) {
+        _state.config.country = countries[0];
+      }
+    }
+    sync();
+  }
+
+  function setAllowedCurrencies(currencies: string[]) {
+    if (currencies.length === 0) {
+      delete _state.config.allowed_currencies;
+    } else {
+      _state.config.allowed_currencies = currencies;
+      const cur = _state.config.currency;
+      if (cur && !currencies.includes(cur)) {
+        _state.config.currency = currencies[0];
+      }
+    }
+    sync();
+  }
+
   // ─── Badge values mutators ───────────────────────────────────
 
   function setBadgeValue(value: string, labelKey?: string, color?: string) {
@@ -255,6 +329,22 @@ export function useTypeConfigBuilder(
       delete _state.config.values[value];
       if (Object.keys(_state.config.values).length === 0) delete _state.config.values;
     }
+    sync();
+  }
+
+  /** Reorder badge values — the `values` map preserves insertion order in JSON. */
+  function reorderBadgeValues(orderedValues: string[]) {
+    const values = _state.config.values;
+    if (!values) return;
+    const next: Record<string, (typeof values)[string]> = {};
+    for (const v of orderedValues) {
+      if (values[v]) next[v] = values[v];
+    }
+    // Keep any keys not present in orderedValues (defensive).
+    for (const v of Object.keys(values)) {
+      if (!(v in next)) next[v] = values[v];
+    }
+    _state.config.values = next;
     sync();
   }
 
@@ -301,6 +391,18 @@ export function useTypeConfigBuilder(
 
   const values = $derived(_state.config.values);
 
+  const urlConfig = $derived({
+    allowed_protocols: _state.config.allowed_protocols,
+    default_protocol: _state.config.default_protocol,
+  });
+
+  const phoneConfig = $derived({
+    country: _state.config.country,
+    allowed_countries: _state.config.allowed_countries,
+  });
+
+  const allowedCurrencies = $derived(_state.config.allowed_currencies);
+
   const selectConfig = $derived({
     values_source: _state.config.values_source,
     api_url: _state.config.api_url,
@@ -316,6 +418,9 @@ export function useTypeConfigBuilder(
     get currency() { return currency; },
     get values() { return values; },
     get selectConfig() { return selectConfig; },
+    get urlConfig() { return urlConfig; },
+    get phoneConfig() { return phoneConfig; },
+    get allowedCurrencies() { return allowedCurrencies; },
     // Validation mutators
     setRequired,
     setRequiredErrorLabelKey,
@@ -332,9 +437,15 @@ export function useTypeConfigBuilder(
     setApiVerb,
     setValueField,
     setLabelField,
+    setAllowedProtocols,
+    setDefaultProtocol,
+    setCountry,
+    setAllowedCountries,
+    setAllowedCurrencies,
     // Badge mutators
     setBadgeValue,
     removeBadgeValue,
+    reorderBadgeValues,
     // Advanced mode
     setAdvancedMode,
     setRawJson,

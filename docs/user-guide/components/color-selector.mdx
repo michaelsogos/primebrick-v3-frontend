@@ -53,6 +53,20 @@ Props: `value` (bindable, `string | undefined`), `labelKey: string`,
 `placeholderKey?: string`, `fallbackColor?: string = "#000000"`,
 `triggerId?: string`.
 
+## Picker formats
+
+`ColorPicker.Root` accepts a `formats` prop (`hex`, `rgb`, `hsl`, `oklch`,
+`system`; default all five). The first four show the classic
+saturation/hue area plus a format selector and a free-form text input —
+all in `ghost` chrome (borderless at rest, faint border on hover).
+
+`system` mode swaps the fine-grain area for the full Tailwind palette
+grid (every family × shades 50–950) and replaces the text input with a
+searchable `ComboSelect` listing every `family-shade` token. Selecting a
+swatch or token binds the token string (e.g. `"emerald-500"`) as the
+value — consumers like `badgeClassesFromToken` resolve both tokens and
+raw CSS colors.
+
 ## Next steps
 
 - [Component catalog](/docs/user-guide/components)

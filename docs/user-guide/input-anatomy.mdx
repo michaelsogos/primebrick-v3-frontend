@@ -75,3 +75,12 @@ field — it owns clear/copy/trailing per this contract. Specialized inputs
 Use `InputGroup`/`InputGroupAddon` (flow-based) when the trailing element is
 a real inner button — e.g. a text CTA like "search in" or a `proto://`
 selector — rather than an icon.
+
+**Ghost chrome.** Inputs embedded inside an already-bordered container
+(color picker footer, toolbar strips) use `inputGhostChromeClasses` from
+`$lib/components/ui/input/input-chrome` — the formalized ghost: subtle
+always-visible `border-foreground/25` on a transparent background, hover
+`foreground/40`, focus `foreground/50` + `ring-foreground/20` (same as the
+toolbar SearchBar / `ComboSelect` `variant="ghost"`). It is NOT the
+borderless button ghost — that look exists as `inputBorderlessChromeClasses`
+but is almost never appropriate (undiscoverable control).

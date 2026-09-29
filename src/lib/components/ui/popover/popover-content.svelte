@@ -7,18 +7,37 @@
 		sideOffset = 4,
 		class: className,
 		align = "center",
+		/** Escape hatch: render in-flow instead of portaling to body.
+		 *  Default is Portal — without it, popover content inside a
+		 *  scrollable container (sheet panels, cards) expands the scroll
+		 *  region and shifts the anchor's layout. */
+		portal = true,
+		portalProps,
 		...restProps
-	}: PopoverPrimitive.ContentProps = $props();
+	}: PopoverPrimitive.ContentProps & {
+		portal?: boolean;
+		portalProps?: PopoverPrimitive.PortalProps;
+	} = $props();
 </script>
 
-<PopoverPrimitive.Content
-	bind:ref
-	data-slot="popover-content"
-	{sideOffset}
-	{align}
-	class={cn(
-		"bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-end-2 data-[side=right]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 z-120 min-w-32 origin-(--bits-popover-transform-origin) overflow-hidden rounded-md border p-4 shadow-md outline-hidden",
-		className
-	)}
-	{...restProps}
-/>
+{#snippet content()}
+	<PopoverPrimitive.Content
+		bind:ref
+		data-slot="popover-content"
+		{sideOffset}
+		{align}
+		class={cn(
+			"bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-end-2 data-[side=right]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 z-120 min-w-32 origin-(--bits-popover-transform-origin) overflow-hidden rounded-md border p-4 shadow-md outline-hidden",
+			className
+		)}
+		{...restProps}
+	/>
+{/snippet}
+
+{#if portal}
+	<PopoverPrimitive.Portal {...portalProps}>
+		{@render content()}
+	</PopoverPrimitive.Portal>
+{:else}
+	{@render content()}
+{/if}

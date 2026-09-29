@@ -1,0 +1,108 @@
+---
+title: BadgeValuesEditor
+description: TODO-style list editor for badge values — sortable rows on the page, add/edit form in the global right sheet with code mask, Tailwind/system color picker and i18n label key.
+---
+
+# BadgeValuesEditor
+
+`src/lib/components/config-builder/BadgeValuesEditor.svelte`
+
+## Purpose
+
+Edits the `type_config.values` map of a `badge`-typed configuration:
+`code → { label_key, color }`. The page owns the **list + ordering**;
+all field-level editing happens in the global right sheet
+(`config.badgeValueEdit` → `BadgeValuePanel`).
+
+## Anatomy
+
+**Page (in the type-config builder card):**
+
+```
+[grip][Badge preview] code · label_key …            [pencil] [trash]
+[grip][Badge preview] code · label_key …            [pencil] [trash]
+[ + Add badge value ]   ← opens the right sheet (add mode)
+```
+
+- Ordering is **only** possible here — `Sortable.Root/Item/Handle`,
+  `builder.reorderBadgeValues()` keeps `values` insertion order.
+- The leftmost element is always the live `Badge` preview
+  (translated label if `label_key` resolves, otherwise the code).
+- `pencil` opens the sheet in edit mode; `trash` deletes inline.
+
+**Right sheet (`BadgeValuePanel`):**
+
+```
+CODICE (PrimeField) | COLOR (ColorPicker popover) → [icon CTA]
+ETICHETTA (i18n key ComboSelect, spans 2 cols)    → [empty icon cell]
+[badge live preview]
+FOOT (add mode): [ + Add badge value ]  primary, full-width
+```
+
+- **Add mode** — footer primary CTA appends the value and resets the
+  draft, staying open for rapid multi-add. Edit commits live while the
+  sheet is open (color/label) except the code, which commits a rename on
+  blur/`Enter` — map keys cannot be renamed per keystroke. The icon CTA
+  in edit mode is `trash` (delete + close).
+
+## Code mask & validation
+
+Badge value codes are TOKEN_SNAKE across the whole codebase —
+`ACTIVE`, `NOT_COMPATIBLE`, `alpha_numeric`, `okta`, `1`, `true` —
+i.e. `/^[A-Za-z0-9]+(_[A-Za-z0-9]+)*$/`. Case is domain-specific and
+**not** normalized; the mask only normalizes separators.
+
+- **Live mask** (`onCodeInput`): space/`-`/`+`/`.` become `_`,
+  characters outside `[A-Za-z0-9_]` are dropped, `__` runs collapse.
+- **Validation**: non-conforming leftovers (`_leading`, `trailing_`)
+  → `badgeCodeInvalid` error; existing key → `badgeCodeDuplicate`.
+
+## Color field
+
+`ColorPicker.Root` inside a `Popover` trigger (swatch + current value).
+Default format is `system` — the full Tailwind palette grid with the
+searchable token dropdown; `hex/rgb/hsl/oklch` remain available.
+`badgeClassesFromToken` resolves tokens **and** raw CSS colors, so any
+format produces a valid badge color.
+
+## Label field
+
+`ComboSelect` (`display="detailed"`, `allowCreate`) listing translation
+keys under `system.settings.config.auth.*`, with a config-scoped
+suggestion prefix `system.settings.config.auth.{config_key}.badge.{code}`.
+
+## i18n keys
+
+`typeConfig.badgeCode`/`badgeCodeHelp`/`badgeColor`/`badgeColorHelp`/
+`badgeLabelKey`/`badgeLabelKeyHelp`/`badgeCodeDuplicate`/`badgeCodeInvalid`/
+`badgeAddTitle`/`badgeEditTitle`/`addValue`/`noBadgeValues` — seeded for
+all 7 languages via
+`primebrick-be-v3/db-meta/fire-and-forget/add_badge_editor_keys.sql`.
+
+## Why a sheet and not inline editing
+
+Create/edit forms MUST go through the typed sheet registry —
+`openSheet('config.badgeValueEdit', { mode, value_key, config_key,
+builder })`. Direct `ui/sheet` imports outside the sheets infrastructure
+fail ESLint (`no-restricted-imports`); panels render inside
+`SheetPanelLayout` (HEAD icon + title + auto close ✕).
+
+## Props
+
+| Prop | Type | Notes |
+|---|---|---|
+| `builder` | `ReturnType<typeof useTypeConfigBuilder>` | Mutations write straight to the form's `type_config` draft |
+| `configKey` | `string` | Scopes the `label_key` suggestion prefix |
+
+## Test IDs
+
+`tcb-badge-open-add` (page CTA) · `tcb-badge-edit` / `tcb-badge-remove`
+(row actions) · `tcb-badge-sheet` · `tcb-badge-value` / `tcb-badge-color`
+/ `tcb-badge-label` (sheet fields) · `tcb-badge-add` (footer CTA) ·
+`tcb-badge-delete` (edit CTA).
+
+## Next steps
+
+- [Sheet panel anatomy](/docs/user-guide/components/sheet-panel)
+- [ColorPicker](/docs/user-guide/components/color-picker)
+- [ComboSelect](/docs/user-guide/components/combo-select)

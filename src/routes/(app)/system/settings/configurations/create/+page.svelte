@@ -146,8 +146,10 @@
           value: updateForm.data.value,
           type: updateForm.data.type,
           type_config: updateForm.data.type_config?.trim() || null,
-          label_key: updateForm.data.label_key?.trim() || null,
-          description_key: updateForm.data.description_key?.trim() || null,
+          // Suggested keys are the committed value when left empty —
+          // the tooltip promises "suggested automatically".
+          label_key: updateForm.data.label_key?.trim() || labelKeyPlaceholder,
+          description_key: updateForm.data.description_key?.trim() || descriptionKeyPlaceholder,
           group_key: updateForm.data.group_key?.trim() || null,
           reserved: updateForm.data.reserved,
           ...(translations.length > 0 ? { translations } : {}),
@@ -482,6 +484,7 @@
                       placeholder={labelKeyPlaceholder}
                       searchPlaceholder={labelKeyPlaceholder}
                       display="detailed"
+                      truncateFrom="start"
                       data-testid="config-create-label-key"
                     />
                     <TranslatedFormFieldErrors />
@@ -517,6 +520,7 @@
                       placeholder={descriptionKeyPlaceholder}
                       searchPlaceholder={descriptionKeyPlaceholder}
                       display="detailed"
+                      truncateFrom="start"
                       data-testid="config-create-description-key"
                     />
                     <TranslatedFormFieldErrors />
@@ -556,22 +560,23 @@
                       placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
                       searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
                       display="custom"
+                      truncateFrom="start"
                       data-testid="config-create-group-key"
                     >
                       {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
                         {@const gk = (option as Record<string, any>).group_key ?? resolvedValue}
                         <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-                          <span class="font-medium truncate">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground truncate font-mono">{gk}</span>
+                          <span class="font-medium truncate-start">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate-start font-mono">{gk}</span>
                         </div>
                       {/snippet}
                       {#snippet selectedSnippet({ resolvedLabel, resolvedValue })}
                         {#if isGroupKeyNew(resolvedValue)}
-                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground">
+                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 truncate-start">
                             {resolvedLabel}
                           </Badge>
                         {:else}
-                          <span class="flex-1 truncate text-left">
+                          <span class="flex-1 truncate-start text-left">
                             {resolvedLabel}
                           </span>
                         {/if}
