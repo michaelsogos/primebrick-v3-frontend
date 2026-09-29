@@ -9,6 +9,7 @@
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import {
@@ -161,7 +162,13 @@
     <AnchorTabsContent value="details">
       <div class="space-y-6 max-w-2xl pt-6">
         <div class="space-y-2">
-          <Label for="idp_role">{$t('system.settings.roles.fieldIdpRole')}</Label>
+          <Label for="idp_role">
+            {$t('system.settings.roles.fieldIdpRole')}
+            <FormLabelWithPriorityHelp
+              text={$t('system.settings.roles.fieldIdpRoleHint')}
+              priority="HINT"
+            />
+          </Label>
           <TextInput
             id="idp_role"
             bind:value={idp_role}
@@ -173,11 +180,16 @@
           {#if errors.idp_role}
             <p class="text-sm text-destructive">{errors.idp_role}</p>
           {/if}
-          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpRoleHint')}</p>
         </div>
 
         <div class="space-y-2">
-          <Label for="idp_org">{$t('system.settings.roles.fieldIdpOrg')}</Label>
+          <Label for="idp_org">
+            {$t('system.settings.roles.fieldIdpOrg')}
+            <FormLabelWithPriorityHelp
+              text={$t('system.settings.roles.fieldIdpOrgHint')}
+              priority="INFORMATION"
+            />
+          </Label>
           <ComboSelect
             mode="single"
             value={idp_org}
@@ -193,11 +205,16 @@
           {#if errors.idp_org}
             <p class="text-sm text-destructive">{errors.idp_org}</p>
           {/if}
-          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpOrgHint')}</p>
         </div>
 
         <div class="space-y-2">
-          <Label for="label_key">{$t('system.settings.roles.fieldLabelKey')}</Label>
+          <Label for="label_key">
+            {$t('system.settings.roles.fieldLabelKey')}
+            <FormLabelWithPriorityHelp
+              text={$t('system.settings.roles.fieldLabelKeyHint')}
+              priority="HINT"
+            />
+          </Label>
           <TextInput
             id="label_key"
             bind:value={label_key}
@@ -205,7 +222,6 @@
             class="font-mono"
             data-testid="roles-form-label-key"
           />
-          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldLabelKeyHint')}</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -216,8 +232,11 @@
           />
           <Label for="is_admin" class="cursor-pointer">
             {$t('system.settings.roles.fieldIsAdmin')}
+            <FormLabelWithPriorityHelp
+              text={$t('system.settings.roles.fieldIsAdminHint')}
+              priority="INFORMATION"
+            />
           </Label>
-          <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIsAdminHint')}</p>
         </div>
       </div>
     </AnchorTabsContent>

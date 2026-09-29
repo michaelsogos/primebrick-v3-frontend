@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
@@ -36,25 +37,26 @@
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
-  // Config type options for the dropdown
-  const configTypeOptions: Array<{ value: string; label: string }> = [
-    { value: 'string', label: 'String' },
-    { value: 'text', label: 'Text' },
-    { value: 'boolean', label: 'Boolean' },
-    { value: 'bigint', label: 'BigInt' },
-    { value: 'number', label: 'Number' },
-    { value: 'money', label: 'Money' },
-    { value: 'badge', label: 'Badge' },
-    { value: 'single_select', label: 'Single Select' },
-    { value: 'multi_select', label: 'Multi Select' },
-    { value: 'url', label: 'URL' },
-    { value: 'secret', label: 'Secret' },
-    { value: 'json', label: 'JSON' },
-    { value: 'date', label: 'Date' },
-    { value: 'datetime', label: 'DateTime' },
-    { value: 'time', label: 'Time' },
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Phone' },
+  // Config type options for the dropdown — `icon` is a Lucide name rendered
+  // by ComboSelect's `iconField` (kept in sync with the value widget).
+  const configTypeOptions: Array<{ value: string; label: string; icon: string }> = [
+    { value: 'string', label: 'String', icon: 'type' },
+    { value: 'text', label: 'Text', icon: 'square-text' },
+    { value: 'boolean', label: 'Boolean', icon: 'toggle-left' },
+    { value: 'bigint', label: 'BigInt', icon: 'binary' },
+    { value: 'number', label: 'Number', icon: 'hash' },
+    { value: 'money', label: 'Money', icon: 'coins' },
+    { value: 'badge', label: 'Badge', icon: 'tag' },
+    { value: 'single_select', label: 'Single Select', icon: 'list-check' },
+    { value: 'multi_select', label: 'Multi Select', icon: 'list-checks' },
+    { value: 'url', label: 'URL', icon: 'link' },
+    { value: 'secret', label: 'Secret', icon: 'key-round' },
+    { value: 'json', label: 'JSON', icon: 'braces' },
+    { value: 'date', label: 'Date', icon: 'calendar' },
+    { value: 'datetime', label: 'DateTime', icon: 'calendar-clock' },
+    { value: 'time', label: 'Time', icon: 'clock' },
+    { value: 'email', label: 'Email', icon: 'mail' },
+    { value: 'phone', label: 'Phone', icon: 'phone' },
   ];
 
   // Zod schema for config create form
@@ -190,6 +192,23 @@
     () => formGuard.hasChanges,
     'system.settings.configurations.create.unsavedChanges',
   );
+
+  // TypeConfigBuilder writes auto-derived defaults (e.g. max_length=65535 for
+  // string types) into $form.type_config during mount. Those are internal
+  // normalizations, not user edits — re-baseline `tainted` after the initial
+  // render so the unsaved-changes guard stays clean (same reset({data})
+  // pattern used by profile/users/org pages).
+  onMount(async () => {
+    // Child $effects (the builder's auto-defaults) flush after this page's
+    // onMount — wait for a full frame + pending updates before re-baselining.
+    await new Promise((r) => requestAnimationFrame(r));
+    await tick();
+    // reset({data}) keeps values AND updates the internal "clean" baseline,
+    // but preserves the stale tainted record for fields passed in `data`;
+    // the identity update with 'untaint-all' clears that record.
+    reset({ data: $form });
+    form.update((f) => f, { taint: 'untaint-all' });
+  });
 
   // Leaving the page without saving must never persist queued translations —
   // the pending queue dies with the form (zero orphan rows).
@@ -347,7 +366,7 @@
 
   {#snippet children()}
     <div class="flex-1 overflow-auto">
-      <form id="config-create-form" use:enhance>
+      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
         <div class="grid grid-cols-2 gap-6 p-4">
           <!-- Column 1 -->
           <div class="space-y-4">
@@ -355,7 +374,13 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.key')}</FormLabel>
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.key')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.keyHelp')}
+                        priority="HINT"
+                      />
+                    </FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.key}
@@ -370,7 +395,6 @@
                         {$t('system.settings.configurations.create.keyExists')}
                       </div>
                     {/if}
-                    <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.keyHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -380,7 +404,13 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.type')}</FormLabel>
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.type')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.typeHelp')}
+                        priority="HINT"
+                      />
+                    </FormLabel>
                     <ComboSelect
                       mode="single"
                       value={$form.type}
@@ -388,11 +418,11 @@
                       options={configTypeOptions}
                       valueField="value"
                       labelField="label"
+                      iconField="icon"
                       placeholder={$t('app.common.selectValue')}
                       data-testid="config-create-type"
                     />
                     <TranslatedFormFieldErrors />
-                    <p class="text-xs text-muted-foreground">{$t('system.settings.configurations.create.typeHelp')}</p>
                   </div>
                 {/snippet}
               </FormControl>
@@ -403,7 +433,13 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     {#if $form.type !== 'boolean'}
-                      <FormLabel for={props.id}>{$t('system.settings.configurations.create.value')}</FormLabel>
+                      <FormLabel for={props.id}>
+                        {$t('system.settings.configurations.create.value')}
+                        <FormLabelWithPriorityHelp
+                          text={$t('system.settings.configurations.create.valueHelp')}
+                          priority="INFORMATION"
+                        />
+                      </FormLabel>
                     {/if}
                     <ConfigValueInput
                       type={$form.type as ConfigEntryType}
@@ -426,7 +462,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.labelKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('app.common.optionalTooltipText')}
+                        text={$t('system.settings.configurations.create.labelKeyHelp')}
                         priority="INFORMATION"
                         title={$t('app.common.optionalTooltipTitle')}
                         labelKey="app.common.optional"
@@ -461,7 +497,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.descriptionKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('app.common.optionalTooltipText')}
+                        text={$t('system.settings.configurations.create.descriptionKeyHelp')}
                         priority="INFORMATION"
                         title={$t('app.common.optionalTooltipTitle')}
                         labelKey="app.common.optional"
@@ -496,7 +532,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.groupKey')}
                       <FormLabelWithPriorityHelp
-                        text={$t('app.common.optionalTooltipText')}
+                        text={$t('system.settings.configurations.create.groupKeyHelp')}
                         priority="INFORMATION"
                         title={$t('app.common.optionalTooltipTitle')}
                         labelKey="app.common.optional"
@@ -551,7 +587,8 @@
               checked={$form.reserved}
               onCheckedChange={(checked) => { $form.reserved = checked; }}
               label={$t('system.settings.configurations.create.reserved')}
-              description={$t('system.settings.configurations.create.reservedHelp')}
+              tooltip={$t('system.settings.configurations.create.reservedHelp')}
+              tooltipPriority="INFORMATION"
               data-testid="config-create-reserved"
             />
           </div>

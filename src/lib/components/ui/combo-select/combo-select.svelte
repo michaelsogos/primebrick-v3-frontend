@@ -11,6 +11,7 @@
   import Check from "@lucide/svelte/icons/check";
   import type { Snippet } from "svelte";
   import { inputTrailingIconColorClasses } from "$lib/components/ui/input/input-chrome.js";
+  import DynamicIcon from "$lib/components/ui/dynamic-icon/DynamicIcon.svelte";
 
   type ComboSelectMode = "single" | "multi";
 
@@ -41,6 +42,12 @@
     colorField?: string;
     /** display='detailed': option field rendered under the label (mono, muted). Defaults to the resolved value. */
     secondaryField?: string;
+    /**
+     * Option field carrying a Lucide icon name — rendered via `DynamicIcon`
+     * before the label in option rows AND in the single-mode selected
+     * display. Ignored under display='custom' (the snippet owns rendering).
+     */
+    iconField?: string;
     itemSnippet?: Snippet<[{
       option: string | Record<string, any>;
       selected: boolean;
@@ -122,6 +129,7 @@
     display = 'default',
     colorField = 'color',
     secondaryField,
+    iconField,
     itemSnippet,
     isOptionDisabled,
     getSearchKeywords,
@@ -192,6 +200,12 @@
       return isLabelTranslated ? $t(rawStr) : rawStr;
     }
     return resolveValue(opt);
+  }
+
+  function resolveIcon(opt: string | Record<string, any>): string | null {
+    if (!iconField || typeof opt === 'string') return null;
+    const raw = getByPath(opt, iconField);
+    return raw != null && raw !== '' ? String(raw) : null;
   }
 
   function getByPath(obj: Record<string, any>, path: string): unknown {
@@ -340,7 +354,7 @@
             : "border-primary-gradient bg-background hover:brightness-105",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          "cursor-pointer flex items-center text-left",
+          "cursor-pointer flex items-center gap-2 text-left",
           "aria-invalid:border-destructive-gradient aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
           className
         )}
@@ -364,6 +378,10 @@
                 {selectedNormalized.label}
               </Badge>
             {:else}
+              {@const selIcon = resolveIcon(selectedNormalized.raw)}
+              {#if selIcon}
+                <DynamicIcon name={selIcon} size={16} class="shrink-0 text-muted-foreground" />
+              {/if}
               <span class="flex-1 truncate text-left">
                 {selectedNormalized.label}
               </span>
@@ -423,7 +441,7 @@
               aria-label={$t("app.common.clearSelection")}
               title={$t("app.common.clearSelection")}
             >
-              <Eraser class="h-3.5 w-3.5" />
+              <Eraser />
             </button>
           {/if}
           {#if mode === "multi" && selectedValues.length > 0 && !disabled}
@@ -434,7 +452,7 @@
               aria-label={$t("app.common.clearSelection")}
               title={$t("app.common.clearSelection")}
             >
-              <Eraser class="h-3.5 w-3.5" />
+              <Eraser />
             </button>
           {/if}
           {#if loading}
@@ -529,20 +547,26 @@
                     resolvedLabel: opt.label,
                     resolvedValue: opt.value,
                   })}
-                {:else if display === 'badge'}
-                  {@const c = badgeClassesFromToken(getByPath(opt.raw as Record<string, any>, colorField) as string ?? null)}
-                  <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
-                    {opt.label}
-                  </Badge>
-                {:else if display === 'detailed'}
-                  <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span class="truncate font-medium">{opt.label}</span>
-                    <span class="truncate font-mono text-xs text-muted-foreground">
-                      {secondaryField ? String(getByPath(opt.raw as Record<string, any>, secondaryField) ?? opt.value) : opt.value}
-                    </span>
-                  </div>
                 {:else}
-                  <span class="flex-1 truncate text-left">{opt.label}</span>
+                  {@const optIcon = resolveIcon(opt.raw)}
+                  {#if optIcon}
+                    <DynamicIcon name={optIcon} size={16} class="shrink-0 text-muted-foreground" />
+                  {/if}
+                  {#if display === 'badge'}
+                    {@const c = badgeClassesFromToken(getByPath(opt.raw as Record<string, any>, colorField) as string ?? null)}
+                    <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
+                      {opt.label}
+                    </Badge>
+                  {:else if display === 'detailed'}
+                    <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class="truncate font-medium">{opt.label}</span>
+                      <span class="truncate font-mono text-xs text-muted-foreground">
+                        {secondaryField ? String(getByPath(opt.raw as Record<string, any>, secondaryField) ?? opt.value) : opt.value}
+                      </span>
+                    </div>
+                  {:else}
+                    <span class="flex-1 truncate text-left">{opt.label}</span>
+                  {/if}
                 {/if}
               </div>
             </Command.Item>

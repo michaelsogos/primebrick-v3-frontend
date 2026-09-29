@@ -1,6 +1,6 @@
 ---
 title: SwitchField
-description: The mandatory labelled switch — switch + label + optional description sublabel + optional help tooltip.
+description: The mandatory labelled switch — switch + label + optional help tooltip on the label.
 ---
 
 # SwitchField
@@ -14,8 +14,10 @@ form. The canonical order is switch FIRST, label immediately after:
 
 ```
 [Switch] Label [?]
-description        (optional muted sublabel under the row)
 ```
+
+Field help goes in the label tooltip (`tooltip` props) — the optional
+`description` sublabel is deprecated (hint standard: no inline hint lines).
 
 Never use the label-left / switch-right (`justify-between`) layout, and never
 hand-roll `Switch + <span>` markup in a form — that is what `SwitchField`
@@ -32,7 +34,8 @@ labelling (`ConfigValueInput`, toolbar toggles like the AND/OR connector,
   id="enable-thinking"
   bind:checked={enable_thinking}
   label={$t('fields.enable_thinking')}
-  description={$t('fields.enable_thinking_help')}
+  tooltip={$t('fields.enable_thinking_help')}
+  tooltipPriority="INFORMATION"
   data-testid="cerebellum-thinking"
 />
 ```
@@ -45,7 +48,8 @@ For external stores that cannot use `bind:` (superForm, builders), use
   checked={$form.reserved}
   onCheckedChange={(c) => ($form.reserved = c)}
   label={$t('...reserved')}
-  description={$t('...reservedHelp')}
+  tooltip={$t('...reservedHelp')}
+  tooltipPriority="INFORMATION"
 />
 ```
 
@@ -56,7 +60,7 @@ For external stores that cannot use `bind:` (superForm, builders), use
 | `checked` | `boolean` (bindable) | switch state |
 | `onCheckedChange` | `(checked: boolean) => void` | alternative to `bind:` for external stores |
 | `label` | `string` | label rendered right after the switch |
-| `description` | `string` | optional muted `text-xs` sublabel under the row |
+| `description` | `string` | **deprecated** — muted sublabel under the row; use `tooltip` instead |
 | `tooltip` | `string` | optional help text; renders a `?` `FormLabelWithPriorityHelp` inside the label |
 | `tooltipTitle` | `string` | optional tooltip heading |
 | `tooltipPriority` | `TooltipPriority` | optional priority-styled tooltip content |

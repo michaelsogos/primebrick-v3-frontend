@@ -10,13 +10,17 @@ export const inputControlHoverClasses =
  * - No background fill on hover (consistent across all trailing icons).
  * - Color shifts from muted-foreground → foreground on hover.
  * - Same focus ring as the rest of the UI.
+ * - `[&>svg]:size-4` locks the icon glyph to 16px — the mandated size for ALL
+ *   inner icon-only controls (clear, eye toggle, copy, status, etc.).
+ *   Do NOT override the glyph size in individual components; only the hit
+ *   area (button box) may vary.
  *
  * Use this for trailing icons that are positioned by their parent (e.g. inside a flex row).
  * For absolutely-positioned trailing icons inside a `relative` wrapper, use
  * `inputTrailingIconButtonClasses` instead, which adds the positioning classes.
  */
 export const inputTrailingIconColorClasses =
-	'inline-flex items-center justify-center p-0.5 ' +
+	'inline-flex items-center justify-center p-0.5 [&>svg]:size-4 ' +
 	'text-muted-foreground hover:text-foreground hover:bg-transparent ' +
 	'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ' +
 	'transition-colors cursor-pointer';

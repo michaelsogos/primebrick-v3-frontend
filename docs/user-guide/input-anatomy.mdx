@@ -34,8 +34,36 @@ geometry for trailing actions.
 - **Overflow guard**: the input reserves trailing space via padding —
   `pr-9` for one CTA, `pr-14`/`pr-[4.5rem]` for two, `pr-24` for three.
   Text and cursor never slide under the CTAs.
+- **Glyph size = 16px, always.** Every inner icon-only control (clear
+  `Eraser`, `Eye`/`EyeOff`, `Copy`, `Check`/status, `X` remove) renders a
+  `size-4` glyph. This is enforced by `[&>svg]:size-4` inside the shared
+  `inputTrailingIconColorClasses` — do not set a size on the icon itself.
+  The button's hit area may vary independently of the glyph size. Excluded
+  from this rule: decorative glyphs that are part of a trigger's content
+  (e.g. the `size-3` caret inside a prefix selector CTA like phone/URL)
+  and leading icons.
 - Trailing buttons carry `tabindex={-1}` and `z-10` (the input's animated
   border wrapper is `z-1`).
+
+## Field hints
+
+Non-error help is never an inline line under the control — it lives in the
+label tooltip (`FormLabelWithPriorityHelp`): a `size-3.5` icon plus an
+optional italic qualifier (e.g. `(optional)`), opening a priority-aware
+tooltip on hover. The trigger icon mirrors `priority`: `WARNING` →
+`TriangleAlert`, `ERROR` → `OctagonX`, otherwise `HelpCircle`.
+
+- SuperForms pages: `FormLabelWithPriorityHelp` inside `FormLabel`.
+- Non-superforms rows: `PrimeField`'s `help` prop (accepts a `FieldHelp`
+  object or a raw `MetaColumn` for metadata-driven tooltips).
+- Switch rows: `SwitchField`'s `tooltip`/`tooltipTitle`/`tooltipPriority`
+  props (`description` is deprecated).
+
+Priorities: `HINT` = format guidance · `INFORMATION` = explainers/markers ·
+`WARNING` = irreversible semantics · `ERROR` = hard constraints.
+
+Every tooltip shows a priority-tinted title — pass `title` explicitly or the
+per-priority default (`app.common.tooltipTitle.<priority>`) is used.
 
 ## Components
 

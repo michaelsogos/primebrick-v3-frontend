@@ -39,3 +39,4 @@ export {
 };
 
 export type { PrimeFieldHelp } from "./prime-field.svelte";
+export type { FieldHelp } from "$lib/components/forms/field-help";

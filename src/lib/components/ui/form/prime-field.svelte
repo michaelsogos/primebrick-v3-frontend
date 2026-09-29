@@ -10,14 +10,14 @@
    *   ┌────────────────────────┐          ┌────────────────────────┐
    *   │ LABEL [req *] [?help]  │          │ CONTROL LABEL [?help]  │
    *   │ CONTROL                │          │ (switch/checkbox/…)    │
-   *   │ hint / error           │          │ hint / error           │
+   *   │ error                  │          │ error                  │
    *   └────────────────────────┘          └────────────────────────┘
    *
    * The `control` snippet always receives `id` — render a real
    * `<label for>`/`id` pair. For superforms pages use `ui/form`
    * (`FormField`/`FormControl`) instead.
    *
-   *   <PrimeField id="cfg-foo" label={$t('…')} hint={$t('…')}>
+   *   <PrimeField id="cfg-foo" label={$t('…')} help={{ text: $t('…') }}>
    *     {#snippet control({ id })}
    *       <Input {id} bind:value={v} />
    *     {/snippet}
@@ -26,36 +26,33 @@
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import type { FieldHelp } from '$lib/components/forms/field-help';
   import type { TooltipPriority } from '$lib/components/ui/tooltip';
   import type { Snippet } from 'svelte';
 
   /**
-   * Help tooltip — either a pre-mapped shape (`text` is already translated)
-   * or raw column meta fields (`tooltip*` are i18n keys, translated here and
-   * gated by `show_form_tooltip`). A `MetaColumn` (entity-list/types) is
-   * structurally assignable to the second variant.
+   * Help tooltip — either a pre-mapped `FieldHelp` (`text` already
+   * translated) or raw column meta fields (`tooltip*` are i18n keys,
+   * translated here and gated by `show_form_tooltip`). A `MetaColumn`
+   * (entity-list/types) is structurally assignable to the second variant.
    */
-  export type PrimeFieldHelp =
-    | {
-        /** Translated tooltip body. */
-        text: string;
-        /** Priority/severity of the tooltip icon + title. */
-        priority?: TooltipPriority;
-        /** Translated tooltip title. */
-        title?: string;
-        /** i18n key for the muted italic qualifier next to the icon. */
-        labelKey?: string;
-      }
-    | {
-        /** i18n key for tooltip content (translated internally). */
-        tooltip?: string;
-        /** Priority/severity from column meta. */
-        tooltip_priority?: TooltipPriority;
-        /** i18n key for tooltip title (translated internally). */
-        tooltip_title?: string;
-        /** Meta flag — tooltip hidden when `false`. */
-        show_form_tooltip?: boolean;
-      };
+  /** Raw column-meta help shape (MetaColumn-compatible). */
+  export interface MetaTooltipHelp {
+    /** i18n key for tooltip content (translated internally). */
+    tooltip?: string;
+    /** Priority/severity from column meta. */
+    tooltip_priority?: TooltipPriority;
+    /** i18n key for tooltip title (translated internally). */
+    tooltip_title?: string;
+    /** Meta flag — tooltip hidden when `false`. */
+    show_form_tooltip?: boolean;
+  }
+
+  export type PrimeFieldHelp = FieldHelp | MetaTooltipHelp;
+
+  function isMetaTooltipHelp(h: PrimeFieldHelp): h is MetaTooltipHelp {
+    return 'tooltip' in h || 'tooltip_title' in h || 'tooltip_priority' in h;
+  }
 
   let {
     id: idProp,
@@ -75,7 +72,11 @@
     label?: string;
     /** Append the required `*` marker. */
     required?: boolean;
-    /** Translated hint line under the control (`text-xs text-muted-foreground`). */
+    /**
+     * Translated hint line under the control (`text-xs text-muted-foreground`).
+     * @deprecated Inline hints are deprecated — use `help` (label tooltip)
+     * instead. See docs/ai/input-anatomy.md "Field hints".
+     */
     hint?: string;
     /** Translated error line(s) under the control (`text-destructive`). */
     error?: string | string[];
@@ -99,7 +100,7 @@
   const id = $derived(idProp ?? generatedId);
 
   interface ResolvedHelp {
-    text: string;
+    text?: string;
     priority?: TooltipPriority;
     title?: string;
     labelKey?: string;
@@ -107,22 +108,23 @@
 
   const resolvedHelp = $derived.by<ResolvedHelp | null>(() => {
     if (!help) return null;
-    if ('text' in help) {
-      return {
-        text: help.text,
-        priority: help.priority,
-        title: help.title,
-        labelKey: help.labelKey,
-      };
+    // MetaColumn-shaped help carries `tooltip*` keys; FieldHelp carries `text`.
+    if (isMetaTooltipHelp(help)) {
+      if (help.tooltip && help.show_form_tooltip !== false) {
+        return {
+          text: $t(help.tooltip),
+          priority: help.tooltip_priority,
+          title: help.tooltip_title ? $t(help.tooltip_title) : undefined,
+        };
+      }
+      return null;
     }
-    if (help.tooltip && help.show_form_tooltip !== false) {
-      return {
-        text: $t(help.tooltip),
-        priority: help.tooltip_priority,
-        title: help.tooltip_title ? $t(help.tooltip_title) : undefined,
-      };
-    }
-    return null;
+    return {
+      text: help.text,
+      priority: help.priority,
+      title: help.title,
+      labelKey: help.labelKey,
+    };
   });
 
   const errors = $derived(

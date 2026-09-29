@@ -10,6 +10,7 @@
     "ui-patterns",
     "icon-conventions",
     "input-anatomy",
+    "field-hints",
     "components/index",
     "entity-metadata",
     "components/entity-list-table",

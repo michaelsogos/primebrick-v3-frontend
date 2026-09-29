@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
   import { PrimeField } from '$lib/components/ui/form';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -197,7 +198,13 @@
               </PrimeField>
 
               <div class="col-span-2 space-y-2">
-                <span class="text-sm font-medium">{$t('system.settings.modules.config.serviceVersion')}</span>
+                <span class="inline-flex items-center gap-1 text-sm font-medium">
+                  {$t('system.settings.modules.config.serviceVersion')}
+                  <FormLabelWithPriorityHelp
+                    text={$t('system.settings.modules.config.serviceVersionHint')}
+                    priority="INFORMATION"
+                  />
+                </span>
                 <div class="flex items-center gap-2">
                   {#if service.service_version}
                     <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -206,7 +213,6 @@
                   {:else}
                     <span class="text-sm text-muted-foreground">—</span>
                   {/if}
-                  <span class="text-xs text-muted-foreground">{$t('system.settings.modules.config.serviceVersionHint')}</span>
                 </div>
               </div>
             </div>
@@ -232,7 +238,9 @@
                 <PrimeField
                   id="cfg-{entry.key}"
                   label={entry.label_key ? $t(entry.label_key) : entry.key}
-                  hint={entry.description_key ? $t(entry.description_key) : undefined}
+                  help={entry.description_key
+                    ? { text: $t(entry.description_key), priority: 'INFORMATION' }
+                    : undefined}
                 >
                   {#snippet control({ id })}
                     <TextInput

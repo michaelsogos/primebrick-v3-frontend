@@ -17,13 +17,15 @@ or an info note about a recommended value.
 ## Origin
 
 **Custom** — Primebrick-written. Wraps the shadcn-svelte™ `Tooltip` primitive,
-`PriorityTooltipContent`, and the Lucide™ `HelpCircle` icon.
+`PriorityTooltipContent`, and a priority-mapped Lucide™ trigger icon
+(`HelpCircle` default, `TriangleAlert`/`OctagonX` for `WARNING`/`ERROR`).
 
 ## Usage
 
 ### Default (no priority)
 
-Without a `priority`, it renders as a plain tooltip.
+Without an explicit `priority`, the tooltip still renders a title header —
+it defaults to `INFORMATION` styling and the `app.common.tooltipTitle.*` copy.
 
 ```svelte
 <label class="flex items-center gap-1">
@@ -35,27 +37,28 @@ Without a `priority`, it renders as a plain tooltip.
 ### With priority and title
 
 Pass `priority` to render a styled tooltip with an optional `title` header.
+The trigger icon mirrors the priority: `WARNING` → `TriangleAlert`,
+`ERROR` → `OctagonX`, anything else → `HelpCircle`.
 
 ```svelte
 <label class="flex items-center gap-1">
   {$t('settings.fields.deleteMode')}
   <FormLabelWithPriorityHelp
     text={$t('settings.fields.deleteModeWarning')}
-    priority="warning"
+    priority="WARNING"
     title={$t('settings.fields.deleteModeTitle')}
   />
 </label>
 ```
 
-### Info priority
+### Marker only (no tooltip body)
+
+`text` is optional — omit it for a pure qualifier marker:
 
 ```svelte
 <label class="flex items-center gap-1">
-  {$t('settings.fields.syncInterval')}
-  <FormLabelWithPriorityHelp
-    text={$t('settings.fields.syncIntervalHelp')}
-    priority="info"
-  />
+  {$t('settings.fields.labelKey')}
+  <FormLabelWithPriorityHelp labelKey="app.common.optional" />
 </label>
 ```
 
@@ -63,9 +66,11 @@ Pass `priority` to render a styled tooltip with an optional `title` header.
 
 Full prop table: see [API reference — formlabelwithpriorityhelp](/docs/user-guide/api-reference#formlabelwithpriorityhelp).
 
-Key props: `text: string` (tooltip body), `priority?: TooltipPriority`
-(`'info' | 'warning' | 'error'`, optional — when omitted a plain tooltip is
-shown), `title?: string` (optional header shown inside the priority tooltip).
+Key props: `text?: string` (tooltip body — optional), `priority?: TooltipPriority`
+(`'INFORMATION' | 'WARNING' | 'ERROR' | 'QUESTION' | 'HINT' | 'SUCCESS'` —
+when omitted the tooltip uses `INFORMATION` styling), `title?: string`
+(header inside the tooltip — defaults to `app.common.tooltipTitle.<priority>`),
+`labelKey?: string` (i18n key for the italic qualifier next to the icon).
 
 ## Next steps
 

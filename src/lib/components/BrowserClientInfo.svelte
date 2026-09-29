@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
   import { t } from '$lib/i18n';
+  import { cn } from '$lib/utils';
   import MapPin from '@lucide/svelte/icons/map-pin';
   import Languages from '@lucide/svelte/icons/languages';
   import Globe from '@lucide/svelte/icons/globe';
@@ -11,6 +12,13 @@
   import Clock from '@lucide/svelte/icons/clock';
   import Monitor from '@lucide/svelte/icons/monitor';
   import PanelTop from '@lucide/svelte/icons/panel-top';
+  import Gpu from '@lucide/svelte/icons/gpu';
+  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
+  import MemoryStick from '@lucide/svelte/icons/memory-stick';
+  import Cpu from '@lucide/svelte/icons/cpu';
+  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
+  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
 
   type Snapshot = {
     ianaTz: string;
@@ -28,8 +36,21 @@
 
   let snapshot = $state<Snapshot | null>(null);
 
+  // Machine capabilities — module-level singleton with 24h localStorage
+  // cache. Hydrate instantly; re-run the bench in background ONLY when the
+  // cache is stale (same policy as the /ai page). All GPU resources are
+  // released at the end of each bench (device.destroy() + WebGL loseContext).
+  const machine = useMachineCapabilities();
+  let caps = $derived(machine.state.caps);
+  let machineRank = $derived(machine.machineRank);
+  let measuring = $derived(machine.state.measuring || machine.state.probing_vram);
+
   onMount(() => {
     if (!browser) return;
+    if (!machine.state.caps) machine.hydrate();
+    if (machine.isStale() && !measuring) {
+      void machine.refresh();
+    }
     try {
       const ro = new Intl.DateTimeFormat().resolvedOptions();
       const ua = navigator.userAgent;
@@ -219,6 +240,65 @@
           <span>{$t('app.health.browser')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.browserName} ({snapshot.browserVersion})</div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Gpu class="size-4 shrink-0 text-primary" />
+          <span>{$t('app.health.gpu')}</span>
+        </div>
+        <div class="flex min-w-0 items-center justify-end gap-2 text-right text-xs">
+          <span class="truncate">{caps?.gpu_name ?? (measuring ? '…' : '—')}</span>
+          {#if machineRank !== null}
+            <ScoreGauge value={machineRank} size={28} label={$t('app.health.gpuRank')} />
+          {/if}
+        </div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <CircuitBoard class="size-4 shrink-0 text-primary" />
+          <span>{$t('app.health.gpuDriver')}</span>
+        </div>
+        <div class="min-w-0 break-all text-right text-xs">
+          {[caps?.adapter_description, caps?.adapter_vendor, caps?.adapter_architecture]
+            .filter(Boolean)
+            .join(' · ') || (measuring ? '…' : '—')}
+        </div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <Cpu class="size-4 shrink-0 text-primary" />
+          <span>{$t('app.health.cpuThreads')}</span>
+        </div>
+        <div class="min-w-0 text-right text-xs">{caps?.cpu_threads ?? (measuring ? '…' : '—')}</div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <MemoryStick class="size-4 shrink-0 text-primary" />
+          <span>{$t('app.health.systemRam')}</span>
+        </div>
+        <div class="min-w-0 text-right text-xs">
+          {caps?.system_memory_gb != null ? `~${caps.system_memory_gb} GB` : (measuring ? '…' : '—')}
+        </div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <MemoryStick class="size-4 shrink-0 text-primary" />
+          <span>{$t('app.health.vramEstimate')}</span>
+        </div>
+        <div class="min-w-0 text-right text-xs">
+          {caps?.memory_fast_mb != null
+            ? `~${(caps.memory_fast_mb / 1024).toFixed(1)} GB`
+            : (measuring ? '…' : '—')}
+        </div>
+      </div>
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
+          <BrainCircuit class={cn('size-4 shrink-0', caps?.available === false ? 'text-destructive' : 'text-primary')} />
+          <span>{$t('app.health.aiEnabled')}</span>
+        </div>
+        <div class={cn('min-w-0 text-right text-xs', caps?.available === false && 'text-destructive')}>
+          {caps === null ? '—' : caps.available ? $t('app.smart.regex.ai.yes') : $t('app.smart.regex.ai.no')}
+        </div>
       </div>
     </div>
   </div>

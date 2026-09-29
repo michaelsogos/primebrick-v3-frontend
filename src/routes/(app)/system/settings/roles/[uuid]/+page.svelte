@@ -10,6 +10,7 @@
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import {
     AnchorTabs,
@@ -184,7 +185,13 @@
       <AnchorTabsContent value="details">
         <div class="space-y-6 max-w-2xl pt-6">
           <div class="space-y-2">
-            <Label for="idp_role">{$t('system.settings.roles.fieldIdpRole')}</Label>
+            <Label for="idp_role">
+              {$t('system.settings.roles.fieldIdpRole')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIdpRoleImmutable')}
+                priority="WARNING"
+              />
+            </Label>
             <TextInput
               id="idp_role"
               value={role.idp_role}
@@ -192,11 +199,16 @@
               class="font-mono bg-muted/50"
               data-testid="roles-edit-idp-role"
             />
-            <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpRoleImmutable')}</p>
           </div>
 
           <div class="space-y-2">
-            <Label for="idp_org">{$t('system.settings.roles.fieldIdpOrg')}</Label>
+            <Label for="idp_org">
+              {$t('system.settings.roles.fieldIdpOrg')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIdpOrgImmutable')}
+                priority="WARNING"
+              />
+            </Label>
             <TextInput
               id="idp_org"
               value={role.idp_org ?? ''}
@@ -204,11 +216,16 @@
               class="font-mono bg-muted/50"
               data-testid="roles-edit-idp-org"
             />
-            <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIdpOrgImmutable')}</p>
           </div>
 
           <div class="space-y-2">
-            <Label for="label_key">{$t('system.settings.roles.fieldLabelKey')}</Label>
+            <Label for="label_key">
+              {$t('system.settings.roles.fieldLabelKey')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldLabelKeyHint')}
+                priority="HINT"
+              />
+            </Label>
             <TextInput
               id="label_key"
               bind:value={label_key}
@@ -216,7 +233,6 @@
               class="font-mono"
               data-testid="roles-edit-label-key"
             />
-            <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldLabelKeyHint')}</p>
           </div>
 
           <div class="flex items-center gap-3">
@@ -227,8 +243,11 @@
             />
             <Label for="is_admin" class="cursor-pointer">
               {$t('system.settings.roles.fieldIsAdmin')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIsAdminHint')}
+                priority="INFORMATION"
+              />
             </Label>
-            <p class="text-xs text-muted-foreground">{$t('system.settings.roles.fieldIsAdminHint')}</p>
           </div>
 
           {#if role.last_synced_at}

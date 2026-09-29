@@ -19,6 +19,7 @@ geometry and clear behavior across the whole product.
 | Element | Value | Notes |
 |---------|-------|-------|
 | Text left padding | `px-3` = 12px | input text starts 12px from left border |
+| **Icon glyph size** | **`size-4` = 16px, ALWAYS** | Enforced by `[&>svg]:size-4` inside `inputTrailingIconColorClasses`. Every inner icon-only control (Eraser, Eye/EyeOff, Copy, Check/status, X-remove, etc.) MUST render a 16px glyph — never `size-3`/`h-3.5`. Do not set a size class on the icon itself; let the chrome class own it. |
 | **Rightmost glyph edge** | **12px from right border** | Symmetric to `px-3`. `right-1.5` (6px) + size-7 btn (28px) → icon size-4 (16px) centered → glyph edge at 6+6=**12px** |
 | 2nd trailing slot | `right-10` (40px) | e.g. async status icon left of clear |
 | Text overflow guard | `pr-9` (36px) min | 1 CTA → `pr-9`; 2 CTAs → `pr-14`/`pr-[4.5rem]`; 3 CTAs → `pr-24` |
@@ -37,6 +38,12 @@ geometry and clear behavior across the whole product.
    `relative z-1` span (animated border); without z-10 the CTA renders under
    the input (this was a real bug).
 5. **tabindex={-1}** on trailing buttons — they must not steal Tab order.
+6. **Glyph = 16px, hit area separate** — the icon glyph is always `size-4`
+   (enforced via `[&>svg]:size-4` on the shared chrome classes); the button
+   hit area (`size-7`, `p-0.5`, or a flow addon) is independent and may vary.
+   This does NOT apply to decorative glyphs that are part of trigger content
+   (e.g. the `size-3` caret inside a prefix CTA like phone/URL/money
+   selectors, or leading icons) — only to standalone icon-only controls.
 
 ## Two positioning mechanisms
 
@@ -59,6 +66,36 @@ inner button (text CTA like "search in", protocol selector).
 | `password-input` | vendored: eye toggle + copy slots (`right-10`/`right-1.5`) |
 | `smart-regex-input` | 3 trailing CTAs in a flex row, `pr-24` on the input |
 | `combo-select`, `slider-field` | clear selection / reset-to-inherit → `Eraser` |
+
+## Field hints — single channel (label tooltip)
+
+> Full how-to, cases and code examples: [field-hints.md](./field-hints.md).
+> `PrimeField` `hint` and `SwitchField` `description` are `@deprecated` props.
+
+Non-error help NEVER renders as an inline line under the control. The only
+channel is the label tooltip (`FormLabelWithPriorityHelp`):
+
+- SuperForms pages: `FormLabelWithPriorityHelp` inside `FormLabel`.
+- Non-superforms rows: `PrimeField help={...}` (accepts `FieldHelp` or a
+  raw `MetaColumn` — `tooltip`/`tooltip_title`/`tooltip_priority`/
+  `show_form_tooltip` handled internally).
+- Switch rows: `SwitchField tooltip`/`tooltipTitle`/`tooltipPriority`
+  (`description` is deprecated).
+
+Trigger anatomy: `size-3.5` icon + optional italic qualifier (`labelKey`,
+e.g. `app.common.optional`). Icon mirrors `priority`: `WARNING` →
+`TriangleAlert` (text-warning), `ERROR` → `OctagonX` (text-destructive),
+otherwise `HelpCircle` (muted). The tooltip body is `PriorityTooltipContent`
+(priority icon + title + text).
+
+**Every tooltip MUST show a priority-tinted title** — an explicit `title`
+wins; when omitted, `FormLabelWithPriorityHelp` falls back to
+`app.common.tooltipTitle.<priority>` (INFORMATION default). A bare icon-only
+tooltip is not allowed.
+
+Priority vocabulary: `HINT` = format/usage guidance · `INFORMATION` =
+explainers and markers · `WARNING` = irreversible/risky semantics ·
+`ERROR` = hard constraints · `QUESTION`/`SUCCESS` = rare.
 
 ## Canonical semantics (see icon-conventions.md)
 

@@ -8,9 +8,11 @@
    *
    * - `label` is the visible text; `tooltip`/`tooltipTitle`/`tooltipPriority`
    *   render a FormLabelWithPriorityHelp (?) inside the label — same pattern as
-   *   the profile page.
-   * - `description` renders the muted `text-xs` sublabel under the row
-   *   (same pattern as configurations/create "Reserved").
+   *   the profile page. Hints/help MUST go through `tooltip*` (Part I
+   *   standard: no inline hint lines in forms).
+   * - `description` (deprecated): renders a muted `text-xs` sublabel under
+   *   the row. Kept for compatibility — do NOT use for new field help;
+   *   use `tooltip` + `tooltipPriority` instead.
    * - Raw <Switch> is only allowed inside composite components that own their
    *   own labelling (e.g. ConfigValueInput); every user-facing labelled switch
    *   in a form MUST be a SwitchField.
@@ -41,6 +43,11 @@
     /** Visible label text, rendered right after the switch. */
     label?: string;
     /** Optional muted sublabel under the row. */
+    /**
+     * @deprecated Inline sublabels are deprecated — use `tooltip` /
+     * `tooltipTitle` / `tooltipPriority` instead. See docs/ai/input-anatomy.md
+     * "Field hints".
+     */
     description?: string;
     /** Optional help text shown in a (?) tooltip inside the label. */
     tooltip?: string;

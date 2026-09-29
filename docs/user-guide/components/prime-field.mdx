@@ -1,6 +1,6 @@
 ---
 title: PrimeField
-description: Standalone field-row wrapper — label + tooltip + hint + error around any input, for controls outside a superforms form.
+description: Standalone field-row wrapper — label + help tooltip + error around any input, for controls outside a superforms form.
 ---
 
 # PrimeField
@@ -12,8 +12,12 @@ description: Standalone field-row wrapper — label + tooltip + hint + error aro
 `PrimeField` is **the standard anatomy for a labeled field row that is NOT
 inside a `sveltekit-superforms` form** — config entries, dynamic meta rows,
 settings widgets, sheet-panel quick forms. It owns the full row: label,
-optional help tooltip, the control, hint, and error lines — and it always
+optional help tooltip, the control, and error lines — and it always
 renders a real `<label for>`/`id` pair.
+
+> Non-error help lives ONLY in the label tooltip (`help` prop). Inline hint
+> lines under the control are deprecated — see
+> [Input Anatomy — Field hints](/docs/user-guide/input-anatomy).
 
 Inside a superforms `form`, use the formsnap set instead — see
 [form-fields (superforms anatomy)](/docs/user-guide/components/form-fields).
@@ -48,10 +52,14 @@ The `control` snippet receives `{ id }` — apply it to the control so the
 `<label for>`/`id` pair is real. When `id` is omitted, `PrimeField`
 generates a stable per-instance id via `$props.id()`.
 
-### Label + hint
+### Label + hint → use `help`
+
+Field help is a label tooltip, not an inline line:
 
 ```svelte
-<PrimeField id="api_key" label={$t('fields.api_key')} hint={$t('fields.api_key_hint')}>
+<PrimeField id="api_key" label={$t('fields.api_key')}
+  help={{ text: $t('fields.api_key_hint'), priority: 'HINT' }}
+>
   {#snippet control({ id })}
     <PasswordInput {id} bind:value={key} />
   {/snippet}
@@ -146,9 +154,9 @@ Read-only values are **captions, not labels** — use `<span>`:
 | `id` | `string` | control id — defaults to `$props.id()` |
 | `label` | `string` | translated label text (omit for label-less rows) |
 | `required` | `boolean` | appends `*` marker |
-| `hint` | `string` | muted `text-xs` line under the control |
+| `hint` | `string` | deprecated — muted `text-xs` line under the control; use `help` |
 | `error` | `string \| string[]` | translated error line(s), `text-destructive` |
-| `help` | `PrimeFieldHelp` | `{ text, priority?, title?, labelKey? }` or raw `MetaColumn` |
+| `help` | `PrimeFieldHelp` | `FieldHelp` (`{ text?, priority?, title?, labelKey? }`) or raw `MetaColumn` |
 | `layout` | `'stacked' \| 'inline'` | label above vs control-first row |
 | `control` | `Snippet<[{ id: string }]>` | the input — must apply `id` |
 | `class` | `string` | extra classes on the row |

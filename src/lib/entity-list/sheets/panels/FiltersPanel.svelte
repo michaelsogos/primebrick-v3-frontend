@@ -2,17 +2,12 @@
   import { browser } from "$app/environment";
   import { Button } from "$lib/components/ui/button";
   import { TextInput } from "$lib/components/ui/input";
+  import PrimeField from "$lib/components/ui/form/prime-field.svelte";
   import * as Sheet from "$lib/components/ui/sheet";
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Badge } from "$lib/components/ui/badge";
   import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
-  import {
-    Tabs,
-    TabsList,
-    TabsTrigger,
-    TabsContent,
-  } from "$lib/components/ui/tabs/index.js";
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -33,8 +28,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
-  import { crossfade } from "svelte/transition";
-  import { cubicInOut } from "svelte/easing";
   import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 
   interface Props {
@@ -84,20 +77,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   // Edit mode state
   let editingFilterId = $state<string | null>(null);
 
-  // Tab state
-  let tabValue = $state("standard");
-
-  const [send, receive] = crossfade({
-    duration: 300,
-    easing: cubicInOut,
-    fallback(node, params) {
-      return {
-        duration: 300,
-        easing: cubicInOut,
-        css: (t) => `opacity: ${t}`
-      };
-    }
-  });
+  // Filters mode: standard (quick per-column inputs) vs advanced (operator list)
+  let tabValue = $state<"standard" | "advanced">("standard");
 
   // Initialize temp values when component loads
   onMount(() => {
@@ -450,8 +431,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   }
 </script>
 
-<Tabs bind:value={tabValue} class="flex h-full flex-col overflow-hidden">
-  <SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
     {#snippet icon()}
       <Funnel class="size-4" />
     {/snippet}
@@ -474,49 +454,27 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       </Sheet.Close>
     {/snippet}
     {#snippet toolbar()}
-      <TabsList
-        class="relative w-full h-10 py-1 px-4 bg-gray-100 dark:bg-input flex-shrink-0 rounded-none"
-      >
-        <TabsTrigger
-          value="standard"
-          class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
-        >
-          {#if tabValue === "standard"}
-            <div
-              in:receive={{ key: "active-pill" }}
-              out:send={{ key: "active-pill" }}
-              class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
-            ></div>
-          {/if}
-          <span class="relative z-20">{$t("system.entities.list.standardFilters")}</span>
-        </TabsTrigger>
-        <TabsTrigger
-          value="advanced"
-          class="relative z-10 rounded-full bg-transparent transition-colors data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-0"
-        >
-          {#if tabValue === "advanced"}
-            <div
-              in:receive={{ key: "active-pill" }}
-              out:send={{ key: "active-pill" }}
-              class="absolute inset-0 z-[-1] rounded-full border border-neutral-300 bg-white shadow-sm dark:border-neutral-600 dark:bg-background dark:shadow-white/10"
-            ></div>
-          {/if}
-          <span class="relative z-20">{$t("system.entities.list.advancedFilters")}</span>
-        </TabsTrigger>
-      </TabsList>
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-1">
+        <span class="justify-self-end text-xs font-medium {tabValue === 'standard' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+          {$t("system.entities.list.standardFilters")}
+        </span>
+        <Switch
+          checked={tabValue === 'advanced'}
+          onCheckedChange={(checked) => tabValue = checked ? 'advanced' : 'standard'}
+          aria-label={$t("system.entities.list.advancedFilters")}
+          data-testid="filters-mode-switch"
+        />
+        <span class="justify-self-start text-xs font-medium {tabValue === 'advanced' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+          {$t("system.entities.list.advancedFilters")}
+        </span>
+      </div>
     {/snippet}
 
-    <TabsContent value="standard" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-left data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-left data-[state=inactive]:fade-out">
+    {#if tabValue === "standard"}
+    <div class="flex-1 overflow-y-auto p-4">
       {#each filterableColumns as col (col.key)}
-        <div class="mb-4">
-          <div class="mb-2">
-            <label
-              for="filter-{col.key}"
-              class="text-xs font-normal text-foreground"
-            >
-              {$t(col.label_key)}
-            </label>
-          </div>
+        <PrimeField id="filter-{col.key}" label={$t(col.label_key)} help={col} class="mb-4">
+          {#snippet control()}
 
           {#if renderFilterInput(col).type === "multiselect"}
             {@const filterConfig = renderFilterInput(col)}
@@ -627,7 +585,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
               class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
             />
           {/if}
-        </div>
+          {/snippet}
+        </PrimeField>
       {/each}
 
       {#if filterableColumns.length === 0}
@@ -637,23 +596,21 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
           <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
         </div>
       {/if}
-    </TabsContent>
-
-    <TabsContent value="advanced" class="flex-1 overflow-y-auto p-4 transition-all duration-400 ease-in-out data-[state=active]:animate-in data-[state=active]:slide-in-from-right data-[state=active]:fade-in data-[state=inactive]:animate-out data-[state=inactive]:slide-out-to-right data-[state=inactive]:fade-out">
-      <div class="flex justify-center items-center mb-4">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-            {$t('system.entities.list.allCriteria')}
-          </span>
-          <Switch
-            checked={globalConnector === 'OR'}
-            onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
-            aria-label={$t('system.entities.list.connector')}
-          />
-          <span class="text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-            {$t('system.entities.list.atLeastOneCriteria')}
-          </span>
-        </div>
+    </div>
+    {:else}
+    <div class="flex-1 overflow-y-auto p-4">
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-4">
+        <span class="justify-self-end text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+          {$t('system.entities.list.allCriteria')}
+        </span>
+        <Switch
+          checked={globalConnector === 'OR'}
+          onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
+          aria-label={$t('system.entities.list.connector')}
+        />
+        <span class="justify-self-start text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
+          {$t('system.entities.list.atLeastOneCriteria')}
+        </span>
       </div>
       {#if tempAdvancedFilters.length > 0}
         <div class="space-y-3 mb-4">
@@ -932,6 +889,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
           <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
         </div>
       {/if}
-    </TabsContent>
-  </SheetPanelLayout>
-</Tabs>
+    </div>
+    {/if}
+</SheetPanelLayout>

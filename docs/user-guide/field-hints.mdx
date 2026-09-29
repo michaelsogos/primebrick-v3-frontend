@@ -1,0 +1,106 @@
+---
+title: Field Hints & Tooltips
+description: How to attach help to form fields — the label tooltip is the only canonical channel; inline hint text is deprecated.
+---
+
+# Field Hints & Tooltips
+
+Non-error field help in Primebrick is delivered exclusively through **label
+tooltips** — a small icon next to the field label that reveals a titled,
+priority-colored tooltip on hover or focus. Inline hint text under the control
+is deprecated and must not be added to new code.
+
+## Why
+
+- Forms stay compact: help takes zero vertical space.
+- One consistent interaction everywhere — users learn it once.
+- Severity is visible at a glance via the trigger icon.
+
+## The building blocks
+
+| Context | API |
+|---|---|
+| Formsnap/SuperForms field | `FormLabelWithPriorityHelp` inside `FormLabel` |
+| `PrimeField` rows | `help` prop (`FieldHelp` or raw `MetaColumn`) |
+| `SwitchField` | `tooltip`, `tooltipTitle`, `tooltipPriority` props |
+| Table/card headers | `MetaColumn.tooltip*` + `show_form_tooltip` |
+
+## Examples
+
+### Hint on a form field
+
+```svelte
+<FormLabel for={props.id}>
+  {$t('create.key')}
+  <FormLabelWithPriorityHelp
+    text={$t('create.keyHelp')}
+    priority="HINT"
+  />
+</FormLabel>
+```
+
+### Warning about irreversible behaviour
+
+```svelte
+<FormLabelWithPriorityHelp
+  text={$t('fields.immutableWarning')}
+  priority="WARNING"
+/>
+```
+
+The trigger icon mirrors the priority: `WARNING` renders an amber
+`TriangleAlert`, `ERROR` a red `OctagonX`, everything else a muted
+`HelpCircle`. Inside the tooltip the title and icon follow the same priority.
+
+### Optional marker
+
+Optional fields show an icon + italic `(optional)` qualifier + tooltip:
+
+```svelte
+<FormLabelWithPriorityHelp
+  text={$t('create.labelKeyHelp')}
+  title={$t('app.common.optionalTooltipTitle')}
+  labelKey="app.common.optional"
+  priority="INFORMATION"
+/>
+```
+
+Omit `text` for a pure marker (icon + qualifier, no tooltip body).
+
+### SwitchField
+
+```svelte
+<SwitchField
+  label={$t('create.reserved')}
+  tooltip={$t('create.reservedHelp')}
+  tooltipPriority="INFORMATION"
+/>
+```
+
+## Titles
+
+Every tooltip with body text shows a colored title. If `title` is not passed,
+it defaults to `app.common.tooltipTitle.<priority>` (Info, Hint, Warning, …).
+Bare tooltips without a title are not allowed.
+
+## Writing the copy
+
+Aim at non-technical readers:
+
+- Explain in concrete terms ("a unique code that identifies this configuration"),
+  not implementation terms ("key/value pair", "placeholder", "widget").
+- Optional defaults are "suggested values", not "auto-generated" values.
+- Always via `$t()` translation keys — never hardcode text.
+- One or two short sentences.
+
+## Deprecated
+
+- `PrimeField` `hint` prop → use `help`.
+- `SwitchField` `description` prop → use `tooltip`.
+- Hand-written `&lt;p&gt;` hints under inputs → migrate to label tooltips.
+
+## Next steps
+
+- [FormLabelWithPriorityHelp](/docs/user-guide/components/form-label-with-priority-help)
+- [Input anatomy](/docs/user-guide/input-anatomy)
+- [PrimeField](/docs/user-guide/components/prime-field)

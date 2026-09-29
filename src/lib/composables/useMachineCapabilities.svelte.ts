@@ -52,6 +52,10 @@ export interface MachineCapabilities {
   gpu_vendor: string | null;
   adapter_vendor: string | null;
   adapter_architecture: string | null;
+  /** GPUAdapterInfo.device — backend device id / driver string when exposed. */
+  adapter_device: string | null;
+  /** GPUAdapterInfo.description — backend + driver description (e.g. "Direct3D12", "Vulkan"). */
+  adapter_description: string | null;
   /** System RAM reported by navigator.deviceMemory (GB, privacy-capped) — NOT VRAM. */
   system_memory_gb: number | null;
   /** Logical CPU threads (navigator.hardwareConcurrency). */
@@ -147,6 +151,8 @@ function emptyCaps(): MachineCapabilities {
     gpu_vendor: null,
     adapter_vendor: null,
     adapter_architecture: null,
+    adapter_device: null,
+    adapter_description: null,
     system_memory_gb: null,
     cpu_threads: null,
     raw: { bandwidth_runs: [], flops_runs: [], knee_points: [] },
@@ -210,11 +216,17 @@ function detectGpu(): { name: string; vendor: string } | null {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
     if (!gl) return null;
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!ext) return null;
-    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-    if (typeof renderer !== 'string' || !renderer) return null;
-    return parseGpuRenderer(renderer);
+    try {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if (!ext) return null;
+      const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+      if (typeof renderer !== 'string' || !renderer) return null;
+      return parseGpuRenderer(renderer);
+    } finally {
+      // Deterministic release — without this the WebGL context (and its GPU
+      // resources) linger until GC, which may take arbitrarily long.
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
   } catch {
     return null;
   }
@@ -446,21 +458,30 @@ async function measure(): Promise<void> {
     const info = (ctx.dev as unknown as { adapterInfo?: GPUAdapterInfo }).adapterInfo;
     caps.adapter_vendor = info?.vendor ?? null;
     caps.adapter_architecture = info?.architecture ?? null;
+    caps.adapter_device = info?.device ?? null;
+    caps.adapter_description = info?.description ?? null;
 
     caps.raw.bandwidth_runs = [];
     caps.raw.flops_runs = [];
-    for (let blk = 0; blk < 3; blk++) {
-      caps.raw.bandwidth_runs.push(await benchBandwidth(ctx));
-      await new Promise((r) => setTimeout(r, 300));
-    }
-    for (let blk = 0; blk < 3; blk++) {
-      caps.raw.flops_runs.push(await benchFlops(ctx));
-      await new Promise((r) => setTimeout(r, 300));
+    try {
+      for (let blk = 0; blk < 3; blk++) {
+        caps.raw.bandwidth_runs.push(await benchBandwidth(ctx));
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      for (let blk = 0; blk < 3; blk++) {
+        caps.raw.flops_runs.push(await benchFlops(ctx));
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    } finally {
+      // ALWAYS destroy the device — this releases every buffer/pipeline/
+      // bindgroup created from it, including any leaked by a mid-bench
+      // exception. Without this a thrown bench would leave the GPUDevice
+      // (and its VRAM) alive for the whole page session.
+      ctx.dev.destroy();
     }
     caps.bandwidth_gbs = median(caps.raw.bandwidth_runs.map((r) => r.gbs));
     caps.gflops = median(caps.raw.flops_runs.map((r) => r.gflops));
     caps.errors = ctx.errors;
-    ctx.dev.destroy();
     _state.caps = caps;
     _state.measured_at = Date.now();
     saveCached();
@@ -488,9 +509,14 @@ async function probeVram(): Promise<void> {
       caps.gpu_name = gpu?.name ?? null;
       caps.gpu_vendor = gpu?.vendor ?? null;
     }
-    await probeVramLadder(ctx, caps);
+    try {
+      await probeVramLadder(ctx, caps);
+    } finally {
+      // See measure() — device destroy frees all ladder buffers, including
+      // any left allocated by an early exception.
+      ctx.dev.destroy();
+    }
     caps.errors = [...caps.errors, ...ctx.errors].slice(0, 10);
-    ctx.dev.destroy();
     _state.caps = caps;
     _state.measured_at = Date.now();
     saveCached();

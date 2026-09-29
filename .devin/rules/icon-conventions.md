@@ -19,3 +19,11 @@
 7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
    `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons
    self-position left (`right-10` slot 2). Never invent positions.
+8. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
+   every standalone icon-only control inside an input (clear `Eraser`,
+   `Eye`/`EyeOff`, `Copy`, `Check`/status icons, X-remove). Enforced by
+   `[&>svg]:size-4` in `inputTrailingIconColorClasses` —
+   `src/lib/components/ui/input/input-chrome.ts`. Do NOT add size classes on
+   the icon; the chrome owns the glyph size. Excluded: decorative glyphs
+   inside trigger content (e.g. `size-3` carets in prefix selector CTAs)
+   and leading icons.

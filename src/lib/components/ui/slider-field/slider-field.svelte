@@ -13,6 +13,7 @@
   import Slider, { type SliderTone } from '$lib/components/ui/slider/slider.svelte';
   import { cn } from '$lib/utils.js';
   import { t } from '$lib/i18n';
+  import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
   import Eraser from '@lucide/svelte/icons/eraser';
 
   let {
@@ -89,7 +90,7 @@
       {label}
     </label>
   {/if}
-  <div class={cn('flex items-center gap-1', className)}>
+  <div class={cn('flex items-center gap-0.5', className)}>
   <Slider
     value={sliderPos}
     min={sliderMin}
@@ -104,7 +105,7 @@
   />
   <span
     class={cn(
-      'w-10 shrink-0 text-center font-mono text-xs font-medium',
+      'w-9 shrink-0 text-center font-mono text-xs font-medium',
       inheriting && 'italic text-muted-foreground',
     )}
     title={inheriting ? $t('app.common.inherit') : undefined}
@@ -114,17 +115,17 @@
   {#if !inheriting}
     <button
       type="button"
-      class="rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+      class={inputTrailingIconColorClasses}
       title={$t('app.common.inherit')}
       aria-label={$t('app.common.inherit')}
       onclick={() => (value = null)}
       data-testid={dataTestId ? `${dataTestId}-reset` : undefined}
     >
-      <Eraser class="size-3" />
+      <Eraser />
     </button>
   {:else}
     <!-- keep the row width stable when the clear CTA is hidden -->
-    <span class="w-3 shrink-0"></span>
+    <span class="w-5 shrink-0"></span>
   {/if}
   </div>
 </div>

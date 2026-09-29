@@ -188,7 +188,8 @@
     checked={builder.validation?.required ?? false}
     onCheckedChange={(checked: boolean) => builder.setRequired(checked)}
     label={$t('system.settings.config.typeConfig.required')}
-    description={$t('system.settings.config.typeConfig.requiredHelp')}
+    tooltip={$t('system.settings.config.typeConfig.requiredHelp')}
+    tooltipPriority="INFORMATION"
     data-testid="tcb-required"
   />
 
@@ -230,7 +231,8 @@
       checked={builder.validation?.unsigned === true}
       onCheckedChange={(checked: boolean) => builder.setUnsigned(checked)}
       label={$t('system.settings.config.typeConfig.unsigned')}
-      description={$t('system.settings.config.typeConfig.unsignedHelp')}
+      tooltip={$t('system.settings.config.typeConfig.unsignedHelp')}
+      tooltipPriority="INFORMATION"
       data-testid="tcb-unsigned"
     />
   {/if}

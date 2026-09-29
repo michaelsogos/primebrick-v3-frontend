@@ -50,7 +50,8 @@
       bind:checked={flagG}
       onCheckedChange={handleToggle}
       label={$t('app.smart.regex.flags.global')}
-      description={$t('app.smart.regex.flags.globalHelp')}
+      tooltip={$t('app.smart.regex.flags.globalHelp')}
+      tooltipPriority="INFORMATION"
       data-testid="smart-regex-flag-g"
     />
 
@@ -59,7 +60,8 @@
       bind:checked={flagI}
       onCheckedChange={handleToggle}
       label={$t('app.smart.regex.flags.ignoreCase')}
-      description={$t('app.smart.regex.flags.ignoreCaseHelp')}
+      tooltip={$t('app.smart.regex.flags.ignoreCaseHelp')}
+      tooltipPriority="INFORMATION"
       data-testid="smart-regex-flag-i"
     />
 
@@ -69,7 +71,8 @@
         bind:checked={flagM}
         onCheckedChange={handleToggle}
         label={$t('app.smart.regex.flags.multiline')}
-        description={$t('app.smart.regex.flags.multilineHelp')}
+        tooltip={$t('app.smart.regex.flags.multilineHelp')}
+        tooltipPriority="INFORMATION"
         data-testid="smart-regex-flag-m"
       />
     {/if}
