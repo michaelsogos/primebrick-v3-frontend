@@ -24,7 +24,7 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
-  import { Trash2, AlertTriangle } from '@lucide/svelte';
+  import { Trash2, TriangleAlert } from '@lucide/svelte';
   import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Button } from '$lib/components/ui/button';
   import { Checkbox } from '$lib/components/ui/checkbox';

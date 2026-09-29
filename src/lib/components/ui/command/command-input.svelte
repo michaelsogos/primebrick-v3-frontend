@@ -2,7 +2,7 @@
 	import { Command as CommandPrimitive } from "bits-ui";
 	import { cn } from "$lib/utils.js";
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import X from '@lucide/svelte/icons/x';
+	import Eraser from '@lucide/svelte/icons/eraser';
 	import { inputTrailingIconButtonClasses } from "$lib/components/ui/input/input-chrome.js";
 
 	let {
@@ -56,7 +56,7 @@
 				aria-label="Clear search"
 				data-testid="command-input-clear"
 			>
-				<X class="size-4" />
+				<Eraser class="size-4" />
 			</button>
 		{/if}
 	</div>

@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import XIcon from '@lucide/svelte/icons/x';
+  import EraserIcon from '@lucide/svelte/icons/eraser';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 
   interface FilterBarProps {
@@ -62,7 +63,7 @@
       size="xs"
       onclick={onResetFilters}
     >
-      <XIcon class="size-3.5" />
+      <EraserIcon class="size-3.5" />
       {$t('app.common.clearAll')}
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>

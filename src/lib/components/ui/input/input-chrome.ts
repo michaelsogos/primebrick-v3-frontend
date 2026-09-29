@@ -26,11 +26,13 @@ export const inputTrailingIconColorClasses =
  * Combines `inputTrailingIconColorClasses` with absolute positioning for use inside a
  * `<div class="relative">` wrapper around an input.
  * - size-7 to fit inside h-9 inputs with 1px border.
- * - Absolute-positioned at the right edge, vertically centered.
+ * - Absolute-positioned, vertically centered, at `right-1.5` → the icon glyph
+ *   sits 12px from the border, symmetric to the input's `px-3` left padding.
+ *   SECOND slot (when a rightmost clear/copy coexists) uses `right-10`.
  *
  * Usage: pass as the `class` prop to a button that sits inside a `<div class="relative">`
  * wrapping an input.
  */
 export const inputTrailingIconButtonClasses =
-	'absolute top-1/2 right-0 -translate-y-1/2 size-7 min-w-0 ' +
+	'absolute top-1/2 right-1.5 -translate-y-1/2 z-10 size-7 min-w-0 ' +
 	inputTrailingIconColorClasses;

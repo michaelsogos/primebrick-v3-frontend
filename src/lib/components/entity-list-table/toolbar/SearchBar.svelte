@@ -6,7 +6,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import Search from '@lucide/svelte/icons/search'
-  import X from '@lucide/svelte/icons/x';
+  import Eraser from '@lucide/svelte/icons/eraser';
 
   let {
     search,
@@ -63,12 +63,12 @@
     <InputGroupButton
       variant="ghost"
       size="icon-xs"
-      class="hover:bg-sky-100/50 dark:hover:bg-white/10"
+      class="mr-2.5 hover:bg-sky-100/50 dark:hover:bg-white/10"
       onclick={() => onSearchInput('')}
       aria-label={$t('app.common.reset')}
       title={$t('app.common.reset')}
     >
-      <X class="size-4" />
+      <Eraser class="size-4" />
     </InputGroupButton>
   {/if}
 

@@ -3,7 +3,7 @@
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
   import { Button } from "$lib/components/ui/button";
-  import { Input } from "$lib/components/ui/input";
+  import { TextInput } from "$lib/components/ui/input";
   import OtpInput from "$lib/components/otp-input/otp-input.svelte";
   import { useOtpInput } from "$lib/composables/useOtpInput.svelte";
   import { Label } from "$lib/components/ui/label";
@@ -358,7 +358,7 @@
         <div class="space-y-4">
           <div class="space-y-2">
             <Label for="mfa-enroll-label">{$t("app.auth.mfa.label")}</Label>
-            <Input
+            <TextInput
               id="mfa-enroll-label"
               type="text"
               maxlength={100}

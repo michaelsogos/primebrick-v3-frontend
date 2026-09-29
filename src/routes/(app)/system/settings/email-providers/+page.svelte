@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import * as Password from '$lib/components/ui/password';
   import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
@@ -266,7 +266,7 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <Label for="provider">{$t('system.settings.emailProviders.providerName')}</Label>
-          <Input id="provider" bind:value={formData.provider} placeholder="brevo" />
+          <TextInput id="provider" bind:value={formData.provider} placeholder="brevo" />
           {#if errors.provider}
             <p class="text-sm text-destructive">{errors.provider}</p>
           {/if}
@@ -283,13 +283,13 @@
 
         <div class="space-y-2">
           <Label for="api_endpoint">{$t('system.settings.emailProviders.apiEndpoint')}</Label>
-          <Input id="api_endpoint" bind:value={formData.api_endpoint}
+          <TextInput id="api_endpoint" bind:value={formData.api_endpoint}
             placeholder="https://api.brevo.com/v1" />
         </div>
 
         <div class="space-y-2">
           <Label for="from_email">{$t('system.settings.emailProviders.fromEmail')}</Label>
-          <Input id="from_email" type="email" bind:value={formData.from_email}
+          <TextInput id="from_email" type="email" bind:value={formData.from_email}
             placeholder="noreply@example.com" />
           {#if errors.from_email}
             <p class="text-sm text-destructive">{errors.from_email}</p>
@@ -298,13 +298,13 @@
 
         <div class="space-y-2">
           <Label for="from_name">{$t('system.settings.emailProviders.fromName')}</Label>
-          <Input id="from_name" bind:value={formData.from_name}
+          <TextInput id="from_name" bind:value={formData.from_name}
             placeholder="My Company" />
         </div>
 
         <div class="space-y-2">
           <Label for="reply_to">{$t('system.settings.emailProviders.replyTo')}</Label>
-          <Input id="reply_to" type="email" bind:value={formData.reply_to}
+          <TextInput id="reply_to" type="email" bind:value={formData.reply_to}
             placeholder="support@example.com" />
           {#if errors.reply_to}
             <p class="text-sm text-destructive">{errors.reply_to}</p>

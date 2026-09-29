@@ -8,7 +8,7 @@
   import * as Dock from '$lib/components/ui/dock';
   import Code from '@lucide/svelte/icons/code'
   import FileJson from '@lucide/svelte/icons/file-json'
-  import AlertTriangle from '@lucide/svelte/icons/alert-triangle'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import Info from '@lucide/svelte/icons/info'
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import JsonTableViewer from './JsonTableViewer.svelte';
@@ -144,7 +144,7 @@
                   <AlertCircle class="w-4 h-4 text-destructive" />
                   <p class="text-sm font-bold text-destructive">{error.impact || 'N/A'}</p>
                 {:else if color === 'warning'}
-                  <AlertTriangle class="w-4 h-4 text-yellow-600 dark:text-yellow-500" />
+                  <TriangleAlert class="w-4 h-4 text-yellow-600 dark:text-yellow-500" />
                   <p class="text-sm font-bold text-yellow-600 dark:text-yellow-500">{error.impact || 'N/A'}</p>
                 {:else}
                   <Info class="w-4 h-4 text-blue-600 dark:text-blue-500" />

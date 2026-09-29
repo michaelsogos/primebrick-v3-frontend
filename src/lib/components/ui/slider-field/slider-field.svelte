@@ -13,7 +13,7 @@
   import Slider, { type SliderTone } from '$lib/components/ui/slider/slider.svelte';
   import { cn } from '$lib/utils.js';
   import { t } from '$lib/i18n';
-  import X from '@lucide/svelte/icons/x';
+  import Eraser from '@lucide/svelte/icons/eraser';
 
   let {
     value = $bindable<number | null>(null),
@@ -120,7 +120,7 @@
       onclick={() => (value = null)}
       data-testid={dataTestId ? `${dataTestId}-reset` : undefined}
     >
-      <X class="size-3" />
+      <Eraser class="size-3" />
     </button>
   {:else}
     <!-- keep the row width stable when the clear CTA is hidden -->

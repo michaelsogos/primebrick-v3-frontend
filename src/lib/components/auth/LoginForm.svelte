@@ -7,7 +7,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -144,7 +144,7 @@
         {#snippet children({ props })}
           <div class="space-y-2">
             <FormLabel for={props.id}>{$t('app.auth.login.username')}</FormLabel>
-            <Input
+            <TextInput
               type="text"
               data-testid="login-username-input"
               placeholder={$t('app.auth.login.usernamePlaceholder')}

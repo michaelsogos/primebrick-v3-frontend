@@ -6,6 +6,7 @@
   import Badge from "$lib/components/ui/badge/badge.svelte";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import X from "@lucide/svelte/icons/x";
+  import Eraser from "@lucide/svelte/icons/eraser";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Check from "@lucide/svelte/icons/check";
   import type { Snippet } from "svelte";
@@ -422,7 +423,7 @@
               aria-label={$t("app.common.clearSelection")}
               title={$t("app.common.clearSelection")}
             >
-              <X class="h-3.5 w-3.5" />
+              <Eraser class="h-3.5 w-3.5" />
             </button>
           {/if}
           {#if mode === "multi" && selectedValues.length > 0 && !disabled}
@@ -433,7 +434,7 @@
               aria-label={$t("app.common.clearSelection")}
               title={$t("app.common.clearSelection")}
             >
-              <X class="h-3.5 w-3.5" />
+              <Eraser class="h-3.5 w-3.5" />
             </button>
           {/if}
           {#if loading}

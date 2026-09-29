@@ -4,13 +4,13 @@
   import { InputGroup, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { t } from "$lib/i18n";
+  import { uiLang } from "$lib/i18n/store.svelte";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
-  import { getCountryData } from "countries-list";
-  import type { TCountryCode } from "countries-list";
+
   import { AsYouType } from "libphonenumber-js";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
-  import X from "@lucide/svelte/icons/x";
+  import Eraser from "@lucide/svelte/icons/eraser";
   import Copy from "@lucide/svelte/icons/copy";
   import Check from "@lucide/svelte/icons/check";
 
@@ -48,31 +48,12 @@
   let displayValue = $state('');
 
   const parsedConfig = $derived(parseTypeConfig(type_config));
-  const country = $derived(parsedConfig?.country ?? 'US');
+  // Default country follows the UI language (region subtag = ISO country
+  // code, e.g. `it-IT` → `IT`); `US` only as last-resort fallback.
+  const country = $derived(parsedConfig?.country ?? $uiLang.split('-')[1] ?? 'US');
   const allowedCountries = $derived(parsedConfig?.allowed_countries);
 
-  // Country phone prefix for display in the CTA button
-  let countryPrefix = $derived.by(() => {
-    try {
-      const data = getCountryData(country as TCountryCode);
-      if (data?.phone && data.phone.length > 0) {
-        return `+${data.phone[0]}`;
-      }
-    } catch {
-      // ignore
-    }
-    return '+1';
-  });
 
-  let countryFlag = $derived.by(() => {
-    // Convert ISO 3166-1 alpha-2 to flag emoji
-    if (!country || country.length !== 2) return '';
-    const codePoints = country
-      .toUpperCase()
-      .split('')
-      .map((c) => 127397 + c.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
-  });
 
   let hasError = $derived(errors.length > 0);
   let firstError = $derived(errors.length > 0 ? errors[0] : "");
@@ -176,8 +157,9 @@
       disabled={disabled || readonly}
       data-testid="phone-input-prefix-cta"
     >
-      <span class="text-base">{countryFlag}</span>
-      <span class="font-mono text-sm ml-1">{countryPrefix}</span>
+      {#if country && country.length === 2}
+        <span class={`fi fi-${country.toLowerCase()} shrink-0 rounded-sm`} aria-hidden="true"></span>
+      {/if}
       {#if !readonly && !disabled}
         <ChevronDown class="size-3 ml-0.5 opacity-60" />
       {/if}
@@ -226,7 +208,7 @@
           title={$t('app.common.clear')}
           data-testid="phone-input-clear"
         >
-          <X class="size-4" />
+          <Eraser class="size-4" />
         </button>
       {/if}
     {/if}

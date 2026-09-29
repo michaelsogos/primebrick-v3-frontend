@@ -7,7 +7,7 @@
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
-  import X from "@lucide/svelte/icons/x";
+  import Eraser from "@lucide/svelte/icons/eraser";
   import Copy from "@lucide/svelte/icons/copy";
   import Check from "@lucide/svelte/icons/check";
 
@@ -201,7 +201,7 @@
             title={$t('app.common.clear')}
             data-testid="url-input-clear"
           >
-            <X class="size-4" />
+            <Eraser class="size-4" />
           </button>
         </InputGroupAddon>
       {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { Spinner } from '$lib/components/ui/spinner';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import OtpInput from '$lib/components/otp-input/otp-input.svelte';
   import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';
@@ -11,7 +11,7 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Smartphone from '@lucide/svelte/icons/smartphone';
-  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -137,7 +137,7 @@
   <!-- Warning — destructive tone (not primary) -->
   <div class="rounded-md bg-destructive/10 border border-destructive/20 p-3">
     <div class="flex items-start gap-2">
-      <AlertTriangle class="size-4 text-destructive mt-0.5 shrink-0" />
+      <TriangleAlert class="size-4 text-destructive mt-0.5 shrink-0" />
       <p class="text-xs text-muted-foreground">
         {$t('app.auth.authMethodEnforcer.warningMfa')}
       </p>
@@ -198,7 +198,7 @@
   <div class="space-y-4 py-2">
     <div class="space-y-2">
       <Label for="mfa-enroller-label">{$t('app.auth.mfa.label')}</Label>
-      <Input
+      <TextInput
         id="mfa-enroller-label"
         type="text"
         maxlength={100}

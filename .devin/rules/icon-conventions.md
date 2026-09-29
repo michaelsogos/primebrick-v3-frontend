@@ -16,3 +16,6 @@
    **Warnings**: `TriangleAlert` — never the legacy `AlertTriangle` alias.
 5. Prefer single-icon imports (`@lucide/svelte/icons/<name>`).
 6. Verify icon names empirically (lucide.dev) before importing.
+7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
+   `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons
+   self-position left (`right-10` slot 2). Never invent positions.

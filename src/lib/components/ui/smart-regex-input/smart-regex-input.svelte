@@ -16,7 +16,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
   import { AiIcon } from '$lib/components/ui/ai-icon';
-  import X from '@lucide/svelte/icons/x';
+  import Eraser from '@lucide/svelte/icons/eraser';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 
@@ -157,7 +157,7 @@
   />
 
   <!-- Trailing CTAs -->
-  <div class="absolute top-1/2 right-0 -translate-y-1/2 flex items-center gap-0.5 pr-1">
+  <div class="absolute top-1/2 right-0 -translate-y-1/2 flex items-center gap-0.5 pr-2.5">
     <!-- Flags CTA -->
     <button
       type="button"
@@ -210,7 +210,7 @@
         class={inputTrailingIconColorClasses}
         data-testid="smart-regex-clear"
       >
-        <X class="size-4" />
+        <Eraser class="size-4" />
       </button>
     {/if}
   </div>

@@ -2,6 +2,7 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { getAllCurrencies } from '$lib/currency';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { onMount } from 'svelte';
@@ -72,6 +73,26 @@
   }
 </script>
 
+{#snippet currencyRow(currency: { code: string; name: string; symbol: string })}
+  <button
+    type="button"
+    class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+    onclick={() => selectCurrency(currency.code)}
+    data-testid={`currency-select-item-${currency.code}`}
+  >
+    <span class="w-8 text-center font-mono text-base font-semibold text-primary">
+      {currency.symbol}
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="block font-medium">{currency.code}</span>
+      <span class="block truncate text-xs text-muted-foreground">{currency.name}</span>
+    </span>
+    {#if currency.code === currentCurrency}
+      <Check class="size-4 text-primary shrink-0" />
+    {/if}
+  </button>
+{/snippet}
+
 <SheetPanelLayout contentClass="p-0">
   {#snippet icon()}
     <Coins class="size-4" />
@@ -93,58 +114,33 @@
   {/snippet}
 
   {#if !searchQuery && favoriteCurrencies.length > 0}
-      <!-- Favorite currencies section -->
-      <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+    <div>
+      <SheetSectionTitle>
         {$t('system.settings.config.currencySelect.favorites')}
-      </div>
+      </SheetSectionTitle>
       {#each favoriteCurrencies as currency (currency.code)}
-        <button
-          type="button"
-          class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-          onclick={() => selectCurrency(currency.code)}
-          data-testid={`currency-select-item-${currency.code}`}
-        >
-          <span class="w-8 text-center font-mono text-base font-semibold text-primary">
-            {currency.symbol}
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block font-medium">{currency.code}</span>
-            <span class="block truncate text-xs text-muted-foreground">{currency.name}</span>
-          </span>
-          {#if currency.code === currentCurrency}
-            <Check class="size-4 text-primary shrink-0" />
-          {/if}
-        </button>
+        {@render currencyRow(currency)}
       {/each}
-      <!-- Separator -->
-      <div class="mx-3 my-2 h-px bg-border"></div>
-      <!-- All currencies section header -->
-      <div class="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {$t('system.settings.config.currencySelect.allCurrencies')}
-      </div>
-    {/if}
-
-    {#each nonFavoriteCurrencies as currency (currency.code)}
-      <button
-        type="button"
-        class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-        onclick={() => selectCurrency(currency.code)}
-        data-testid={`currency-select-item-${currency.code}`}
-      >
-        <span class="w-8 text-center font-mono text-base font-semibold text-primary">
-          {currency.symbol}
-        </span>
-        <span class="min-w-0 flex-1">
-          <span class="block font-medium">{currency.code}</span>
-          <span class="block truncate text-xs text-muted-foreground">{currency.name}</span>
-        </span>
-        {#if currency.code === currentCurrency}
-          <Check class="size-4 text-primary shrink-0" />
-        {/if}
-      </button>
-  {:else}
-    <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-      {$t('system.settings.config.currencySelect.noResults')}
     </div>
-  {/each}
+    <div>
+      <SheetSectionTitle>
+        {$t('system.settings.config.currencySelect.allCurrencies')}
+      </SheetSectionTitle>
+      {#each nonFavoriteCurrencies as currency (currency.code)}
+        {@render currencyRow(currency)}
+      {:else}
+        <div class="px-3 py-8 text-center text-sm text-muted-foreground">
+          {$t('system.settings.config.currencySelect.noResults')}
+        </div>
+      {/each}
+    </div>
+  {:else}
+    {#each filteredCurrencies as currency (currency.code)}
+      {@render currencyRow(currency)}
+    {:else}
+      <div class="px-3 py-8 text-center text-sm text-muted-foreground">
+        {$t('system.settings.config.currencySelect.noResults')}
+      </div>
+    {/each}
+  {/if}
 </SheetPanelLayout>

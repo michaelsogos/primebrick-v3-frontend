@@ -7,6 +7,7 @@
   import { useNumericInput } from "$lib/composables/useNumericInput.svelte";
   import { t } from "$lib/i18n";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
+  import ChevronDown from "@lucide/svelte/icons/chevron-down";
 
   type NumericType = "bigint" | "number" | "money";
 
@@ -107,6 +108,13 @@
     // Wait for Svelte to re-render displayValue, then restore cursor
     await tick();
     const newDisplay = num.displayValue;
+    // When the filter strips an invalid char without changing the canonical
+    // value, Svelte sees `value={num.displayValue}` as unchanged and does NOT
+    // rewrite the DOM — the rejected char would stay visible. Force the
+    // writeback so the input always shows the filtered display value.
+    if (input.value !== newDisplay) {
+      input.value = newDisplay;
+    }
     const newPos = num.computeCursorPosition(cursorPos, oldDisplay, newDisplay);
     if (inputRef) {
       inputRef.setSelectionRange(newPos, newPos);
@@ -162,12 +170,28 @@
     <InputGroup
       class="group/input border-primary-gradient hover:brightness-105 focus-within:ring-2 focus-within:ring-ring/50 rounded-md transition-all duration-200 {className}"
     >
-      <InputGroupAddon
-        align="inline-start"
-        class="bg-transparent border-none pr-0"
-      >
-        <span class="text-sm font-medium text-muted-foreground">{currencySymbol}</span>
-      </InputGroupAddon>
+      {#if currencyCode && onCurrencyChange}
+        <InputGroupButton
+          variant="ghost"
+          size="xs"
+          class="h-full rounded-l-md rounded-r-none border-right-primary-gradient-soft hover:brightness-105 transition-colors"
+          onclick={openCurrencySheet}
+          data-testid="numeric-input-currency-cta"
+        >
+          <span class="font-medium">{currencySymbol}</span>
+          {#if currencyCode !== currencySymbol}
+            <span class="font-mono text-sm ml-1">{currencyCode}</span>
+          {/if}
+          <ChevronDown class="size-3 ml-0.5 opacity-60" />
+        </InputGroupButton>
+      {:else}
+        <InputGroupAddon
+          align="inline-start"
+          class="bg-transparent border-none pr-0"
+        >
+          <span class="text-sm font-medium text-muted-foreground">{currencySymbol}</span>
+        </InputGroupAddon>
+      {/if}
 
       <InputGroupInput
         bind:ref={inputRef}
@@ -183,18 +207,6 @@
         id={restProps.id}
         name={restProps.name}
       />
-
-      {#if currencyCode && onCurrencyChange}
-        <InputGroupButton
-          variant="ghost"
-          size="xs"
-          class="h-full rounded-l-none rounded-r-md border-left-primary-gradient-soft hover:brightness-105 transition-colors"
-          onclick={openCurrencySheet}
-          data-testid="numeric-input-currency-cta"
-        >
-          {currencyCode}
-        </InputGroupButton>
-      {/if}
     </InputGroup>
   {:else}
     <Input

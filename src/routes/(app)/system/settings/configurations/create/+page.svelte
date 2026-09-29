@@ -232,7 +232,13 @@
   }
 
   function handleTypeChange(value: string | string[]) {
-    $form.type = Array.isArray(value) ? value[0] ?? '' : value;
+    const next = Array.isArray(value) ? value[0] ?? '' : value;
+    if (next !== $form.type) {
+      // A value typed under another type is meaningless for the new widget
+      // (e.g. text into NumericInput) — reset it on type switch.
+      $form.value = '';
+    }
+    $form.type = next;
   }
 
   // Extract SuperForms errors for the value field — ConfigValueInput expects string[]
@@ -396,7 +402,9 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.value')}</FormLabel>
+                    {#if $form.type !== 'boolean'}
+                      <FormLabel for={props.id}>{$t('system.settings.configurations.create.value')}</FormLabel>
+                    {/if}
                     <ConfigValueInput
                       type={$form.type as ConfigEntryType}
                       type_config={$form.type_config || null}
@@ -404,6 +412,7 @@
                       bind:value={$form.value}
                       errors={valueErrors}
                       onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
+                      boolean_label={$t('system.settings.configurations.create.value')}
                     />
                   </div>
                 {/snippet}

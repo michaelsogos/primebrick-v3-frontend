@@ -4,7 +4,7 @@
   import Input from "$lib/components/ui/input/input.svelte";
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { t } from "$lib/i18n";
-  import X from "@lucide/svelte/icons/x";
+  import Eraser from "@lucide/svelte/icons/eraser";
   import Copy from "@lucide/svelte/icons/copy";
   import Check from "@lucide/svelte/icons/check";
   import { inputTrailingIconButtonClasses } from "$lib/components/ui/input/input-chrome.js";
@@ -131,7 +131,7 @@
         title={$t('app.common.clear')}
         data-testid="email-input-clear"
       >
-        <X class="size-4" />
+        <Eraser class="size-4" />
       </button>
     {/if}
   {/if}

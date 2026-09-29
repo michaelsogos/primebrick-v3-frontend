@@ -1,0 +1,49 @@
+---
+title: Input Anatomy
+description: Internal design language for text inputs — trailing CTA geometry, clear/copy buttons, icon slots, and the 12px glyph-edge rule.
+---
+
+# Input Anatomy
+
+Every single-line text input in Primebrick shares the same internal
+geometry for trailing actions.
+
+## Anatomy
+
+```
+┌────────────────────────────────────────────────────┐
+│ [leading icon]  value text …            [CTAs]  ▮  │
+└────────────────────────────────────────────────────┘
+       ↑                              ↑      ↑
+   px-3 (12px)                 2nd slot  rightmost
+   from border                 right-10  right-1.5
+```
+
+## Rules
+
+- **Glyph edge = 12px** from the right border — symmetric to the input's
+  `px-3` left padding. Achieved via `right-1.5` on the shared
+  `inputTrailingIconButtonClasses` (28px button, 16px icon).
+- **Clear button** = `Eraser` icon, always the rightmost element. Rendered
+  only in `editable` mode with a non-empty value; hidden on `readonly`
+  (replaced by the copy button) and `disabled`. Opt out with
+  `clearable={false}`.
+- **Second slot** sits at `right-10` (e.g. an async-validation status icon
+  left of the clear button). `TextInput`'s `trailing` snippet must
+  self-position left of the clear zone.
+- **Overflow guard**: the input reserves trailing space via padding —
+  `pr-9` for one CTA, `pr-14`/`pr-[4.5rem]` for two, `pr-24` for three.
+  Text and cursor never slide under the CTAs.
+- Trailing buttons carry `tabindex={-1}` and `z-10` (the input's animated
+  border wrapper is `z-1`).
+
+## Components
+
+Use `TextInput` (`$lib/components/ui/input`) for any plain single-line text
+field — it owns clear/copy/trailing per this contract. Specialized inputs
+(`EmailInput`, `UrlInput`, `PhoneInput`, `Password` fields,
+`SmartRegexInput`) follow the same trailing geometry.
+
+Use `InputGroup`/`InputGroupAddon` (flow-based) when the trailing element is
+a real inner button — e.g. a text CTA like "search in" or a `proto://`
+selector — rather than an icon.

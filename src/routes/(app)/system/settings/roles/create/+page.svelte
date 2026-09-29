@@ -7,7 +7,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { ComboSelect } from '$lib/components/ui/combo-select';
@@ -162,7 +162,7 @@
       <div class="space-y-6 max-w-2xl pt-6">
         <div class="space-y-2">
           <Label for="idp_role">{$t('system.settings.roles.fieldIdpRole')}</Label>
-          <Input
+          <TextInput
             id="idp_role"
             bind:value={idp_role}
             placeholder="e.g. sales_manager"
@@ -198,7 +198,7 @@
 
         <div class="space-y-2">
           <Label for="label_key">{$t('system.settings.roles.fieldLabelKey')}</Label>
-          <Input
+          <TextInput
             id="label_key"
             bind:value={label_key}
             placeholder="e.g. app.auth.roles.sales_manager"

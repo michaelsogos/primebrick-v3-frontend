@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { Button } from "$lib/components/ui/button";
-  import { Input } from "$lib/components/ui/input";
+  import { TextInput } from "$lib/components/ui/input";
   import * as Sheet from "$lib/components/ui/sheet";
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -20,12 +20,11 @@
   import SheetHeaderAction from "$lib/shell/sheets/SheetHeaderAction.svelte";
   import XIcon from '@lucide/svelte/icons/x';
   import Funnel from '@lucide/svelte/icons/funnel';
-  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
+  import Eraser from '@lucide/svelte/icons/eraser'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import Play from '@lucide/svelte/icons/play'
   import Pencil from '@lucide/svelte/icons/pencil'
-  import FunnelX from '@lucide/svelte/icons/funnel-x'
-  import X from '@lucide/svelte/icons/x';
+  import X from '@lucide/svelte/icons/x'
 import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
@@ -464,7 +463,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         <Play class="size-4" />
       </SheetHeaderAction>
       <SheetHeaderAction title={$t("app.common.reset")} onclick={resetAllFilters}>
-        <RotateCcw class="size-4" />
+        <Eraser class="size-4" />
       </SheetHeaderAction>
       <Sheet.Close
         class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
@@ -616,27 +615,17 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
             {@const placeholder = filterConfig.placeholder}
             {@const value = filterConfig.value}
 
-            <div class="relative">
-              <Input
-                id="filter-{col.key}"
-                type={inputType}
-                {placeholder}
-                {value}
-                oninput={(e) =>
-                  updateTempFilterValue(col.key, e.currentTarget.value)}
-                class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs pr-8"
-              />
-              {#if value}
-                <button
-                  type="button"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  onclick={() => clearTempFilter(col.key)}
-                  title={$t("app.common.clear")}
-                >
-                  <XIcon class="size-3" />
-                </button>
-              {/if}
-            </div>
+            <TextInput
+              id="filter-{col.key}"
+              type={inputType}
+              {placeholder}
+              {value}
+              oninput={(e) =>
+                updateTempFilterValue(col.key, e.currentTarget.value)}
+              clearLabel={$t("app.common.clear")}
+              onClear={() => clearTempFilter(col.key)}
+              class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
+            />
           {/if}
         </div>
       {/each}
@@ -710,7 +699,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   onclick={() => removeAdvancedFilter(filter.id)}
                   title={$t("app.common.remove")}
                 >
-                  <FunnelX class="size-3" />
+                  <X class="size-3" />
                 </button>
               </div>
             </div>
@@ -882,10 +871,12 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                   />
                 {/if}
               {:else}
-                <Input
+                <TextInput
                   placeholder={$t("system.entities.list.filterPlaceholder")}
                   value={newFilterValue}
+                  clearLabel={$t("app.common.clear")}
                   oninput={(e) => (newFilterValue = e.currentTarget.value)}
+                  onClear={() => (newFilterValue = "")}
                   class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
                 />
               {/if}

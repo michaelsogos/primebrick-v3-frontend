@@ -9,6 +9,7 @@
     "ui-components",
     "ui-patterns",
     "icon-conventions",
+    "input-anatomy",
     "components/index",
     "entity-metadata",
     "components/entity-list-table",

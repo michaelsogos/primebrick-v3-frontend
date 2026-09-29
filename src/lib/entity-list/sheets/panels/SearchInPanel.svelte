@@ -7,7 +7,7 @@
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import Search from '@lucide/svelte/icons/search';
   import XIcon from '@lucide/svelte/icons/x';
-  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import Eraser from '@lucide/svelte/icons/eraser';
 
   type ColumnLike = { key: string; label_key: string };
 
@@ -31,7 +31,7 @@
   {/snippet}
   {#snippet actions()}
     <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onSearchInKeysChange(null)}>
-      <RotateCcw class="size-4" />
+      <Eraser class="size-4" />
     </SheetHeaderAction>
     <Sheet.Close
       class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"

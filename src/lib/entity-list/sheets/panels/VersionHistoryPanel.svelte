@@ -11,7 +11,7 @@
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
   import AlertCircle from '@lucide/svelte/icons/alert-circle'
-  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
   import { badgeClassesFromToken } from "$lib/colors/badge";
@@ -148,7 +148,7 @@
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return CircleCheckBig;
     } else if (actionLower === 'restore') {
-      return AlertTriangle;
+      return TriangleAlert;
     } else if (actionLower === 'update') {
       return Info;
     }

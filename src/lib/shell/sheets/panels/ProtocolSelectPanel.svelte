@@ -28,13 +28,20 @@
   {/snippet}
 
   {#each allowedProtocols as protocol (protocol)}
+    {@const descKey = `system.settings.config.protocolSelect.desc.${protocol}`}
+    {@const desc = $t(descKey)}
     <button
       type="button"
       class="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors"
       onclick={() => selectProtocol(protocol)}
       data-testid={`protocol-select-item-${protocol}`}
     >
-      <span class="min-w-0 flex-1 font-medium font-mono">{protocol}://</span>
+      <span class="min-w-0 flex-1">
+        <span class="block font-medium font-mono">{protocol}://</span>
+        {#if desc !== descKey}
+          <span class="block truncate text-xs text-muted-foreground">{desc}</span>
+        {/if}
+      </span>
       {#if protocol === currentProtocol}
         <Check class="size-4 text-primary shrink-0" />
       {/if}

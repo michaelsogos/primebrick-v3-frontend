@@ -8,7 +8,7 @@
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { Button } from '$lib/components/ui/button';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import {
@@ -185,7 +185,7 @@
         <div class="space-y-6 max-w-2xl pt-6">
           <div class="space-y-2">
             <Label for="idp_role">{$t('system.settings.roles.fieldIdpRole')}</Label>
-            <Input
+            <TextInput
               id="idp_role"
               value={role.idp_role}
               disabled
@@ -197,7 +197,7 @@
 
           <div class="space-y-2">
             <Label for="idp_org">{$t('system.settings.roles.fieldIdpOrg')}</Label>
-            <Input
+            <TextInput
               id="idp_org"
               value={role.idp_org ?? ''}
               disabled
@@ -209,7 +209,7 @@
 
           <div class="space-y-2">
             <Label for="label_key">{$t('system.settings.roles.fieldLabelKey')}</Label>
-            <Input
+            <TextInput
               id="label_key"
               bind:value={label_key}
               placeholder="e.g. app.auth.roles.sales_manager"

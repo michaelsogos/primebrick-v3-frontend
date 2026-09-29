@@ -19,7 +19,7 @@
 	} from "$lib/components/ui/tabs/index.js";
 	import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 	import { onMount } from "svelte";
-	import { Input } from "$lib/components/ui/input";
+	import { TextInput } from "$lib/components/ui/input";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { dropdownMenuItemWithSelectedClass } from "$lib/components/ui/dropdown-menu/dropdown-menu-item-selected";
 
@@ -337,7 +337,7 @@
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content align="start" class="w-full min-w-52 max-h-80 overflow-y-auto">
 								<div class="p-2 sticky top-0 bg-background border-b">
-									<Input
+									<TextInput
 										bind:value={timezoneSearch}
 										placeholder="Search timezone..."
 										class="text-sm"

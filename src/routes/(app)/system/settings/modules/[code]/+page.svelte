@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import { TextInput } from '$lib/components/ui/input';
   import { PrimeField } from '$lib/components/ui/form';
   import { Badge } from '$lib/components/ui/badge';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
@@ -151,25 +151,25 @@
             <div class="grid grid-cols-2 gap-6">
               <PrimeField id="name" label={$t('system.settings.modules.config.name')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.name} />
+                  <TextInput {id} bind:value={formData.name} />
                 {/snippet}
               </PrimeField>
 
               <PrimeField id="base_url" label={$t('system.settings.modules.config.baseUrl')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.base_url} />
+                  <TextInput {id} bind:value={formData.base_url} />
                 {/snippet}
               </PrimeField>
 
               <PrimeField id="description" class="col-span-2" label={$t('system.settings.modules.config.description')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.description} />
+                  <TextInput {id} bind:value={formData.description} />
                 {/snippet}
               </PrimeField>
 
               <PrimeField id="icon" label={$t('system.settings.modules.config.icon')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
+                  <TextInput {id} bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
                 {/snippet}
               </PrimeField>
 
@@ -186,13 +186,13 @@
 
               <PrimeField id="author" label={$t('system.settings.modules.config.author')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.author} />
+                  <TextInput {id} bind:value={formData.author} />
                 {/snippet}
               </PrimeField>
 
               <PrimeField id="github_repo_url" label={$t('system.settings.modules.config.githubRepoUrl')}>
                 {#snippet control({ id })}
-                  <Input {id} bind:value={formData.github_repo_url} />
+                  <TextInput {id} bind:value={formData.github_repo_url} />
                 {/snippet}
               </PrimeField>
 
@@ -235,7 +235,7 @@
                   hint={entry.description_key ? $t(entry.description_key) : undefined}
                 >
                   {#snippet control({ id })}
-                    <Input
+                    <TextInput
                       {id}
                       value={entry.value || ''}
                       onchange={(e) => {

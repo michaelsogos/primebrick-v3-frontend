@@ -4,7 +4,7 @@
 	import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
   import TicketX from '@lucide/svelte/icons/ticket-x'
   import LoaderCircle from '@lucide/svelte/icons/loader-circle'
-  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import type { ValidationResult, ValidationStatus } from "$lib/types/validation.js";
 	import type { HTMLInputTypeAttribute } from "svelte/elements";
 
@@ -81,7 +81,7 @@
 	// shifts left to avoid overlapping it. Padding adjusts accordingly.
 	let hasValue = $derived((value ?? "").length > 0 && !disabled);
 	let inputPadding = $derived(hasValue ? "pr-14" : "pr-10");
-	let statusIconPos = $derived(hasValue ? "right-9" : "right-3");
+	let statusIconPos = $derived(hasValue ? "right-10" : "right-3");
 
 	// Notify parent when status changes
 	$effect(() => {
@@ -187,7 +187,7 @@
 	onchange={handleChange}
 >
 	{#snippet trailing()}
-		<div class={cn("absolute top-1/2 -translate-y-1/2 pointer-events-none", statusIconPos)}>
+		<div class={cn("absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none", statusIconPos)}>
 			{#if uiStatus === "idle"}
 				<CircleCheckBig class="h-4 w-4 text-muted-foreground/50" />
 			{:else if uiStatus === "loading"}
@@ -197,7 +197,7 @@
 			{:else if uiStatus === "not-valid"}
 				<TicketX class="h-4 w-4 text-destructive" />
 			{:else if uiStatus === "api-error"}
-				<AlertTriangle class="h-4 w-4 text-yellow-500" />
+				<TriangleAlert class="h-4 w-4 text-yellow-500" />
 			{/if}
 		</div>
 	{/snippet}

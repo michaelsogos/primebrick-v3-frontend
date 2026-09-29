@@ -16,7 +16,7 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
-  import { Trash2, RefreshCw, HardDrive, AlertTriangle, PanelRightOpen } from '@lucide/svelte';
+  import { Trash2, RefreshCw, HardDrive, TriangleAlert, PanelRightOpen } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { onMount } from 'svelte';
@@ -152,7 +152,7 @@
   {#if Object.keys(cache.state.orphaned_models).length > 0}
     <div class="space-y-1 pt-2 border-t border-border/40">
       <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <AlertTriangle class="size-3 text-yellow-500" />
+        <TriangleAlert class="size-3 text-yellow-500" />
         <span>{$t('app.smart.regex.ai.cache.orphaned_title')}</span>
       </div>
       {#each Object.entries(cache.state.orphaned_models) as [model_id, size] (model_id)}
