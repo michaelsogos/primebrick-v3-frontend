@@ -17,7 +17,7 @@
   import MemoryStick from '@lucide/svelte/icons/memory-stick';
   import Cpu from '@lucide/svelte/icons/cpu';
   import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
 
   type Snapshot = {
@@ -246,10 +246,10 @@
           <Gpu class="size-4 shrink-0 text-primary" />
           <span>{$t('app.health.gpu')}</span>
         </div>
-        <div class="flex min-w-0 items-center justify-end gap-2 text-right text-xs">
+        <div class="flex min-w-0 flex-col items-end gap-1 text-right text-xs">
           <span class="truncate">{caps?.gpu_name ?? (measuring ? '…' : '—')}</span>
           {#if machineRank !== null}
-            <ScoreGauge value={machineRank} size={28} label={$t('app.health.gpuRank')} />
+            <RankMeter rank={machineRank} label={$t('app.health.gpuRank')} />
           {/if}
         </div>
       </div>
