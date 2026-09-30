@@ -268,7 +268,10 @@
   const allSelectedDeleted = $derived(clientSelection.allSelectedDeleted);
   const clientSelectedTotalPages = $derived(clientSelection.clientSelectedTotalPages);
   const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
-  const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : page);
+  // `page` arrives from extJsonParse as native bigint — normalize to number
+  // once here so every downstream consumer (footer math, PreviewPanel)
+  // stays in plain-number land.
+  const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : Number(page));
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
   const footerRangeTotal = $derived(footerUsesClientPaging ? orderedSelectedRows.length : Number(total));
   const footerRangeStart = $derived(

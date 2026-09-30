@@ -570,7 +570,7 @@
   {/snippet}
 
   <EntityListTable
-    entity="user_profiles"
+    entity={meta?.entity ?? 'user_profile'}
     translationKey={meta?.translation_key && isSnakeCaseSingular(meta.translation_key) ? meta.translation_key : 'user_profile'}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick

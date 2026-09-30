@@ -491,7 +491,7 @@
   {/snippet}
 
   <EntityListTable
-    entity="role_mappings"
+    entity={meta?.entity ?? 'role_mapping'}
     translationKey={meta?.translation_key && isSnakeCaseSingular(meta.translation_key) ? meta.translation_key : 'role_mapping'}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick

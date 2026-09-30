@@ -92,6 +92,14 @@
   const rowDeleted = $derived(isRowDeleted(row));
   const shownColumns = $derived([...(stickyColumns || []), ...(dataColumns || [])]);
 
+  // extJsonParse turns every integer into native bigint — the props below can
+  // legitimately arrive as bigint. Normalize once; arithmetic on mixed
+  // bigint/number operands throws "Cannot mix BigInt and other types".
+  const currentPageN = $derived(Number(currentPage));
+  const pageSizeN = $derived(Number(pageSize));
+  const totalRecordsN = $derived(Number(totalRecords));
+  const previewRowIndexN = $derived(Number(previewRowIndex));
+
   function listDefaultCellValue(row: TRow, col: MetaColumn) {
     const value = row[col.key];
     if (col.type === 'boolean') {
@@ -138,20 +146,20 @@
         size="icon-sm"
         variant="secondary-outline"
         onclick={() => onNavigatePreview(-1)}
-        disabled={previewRowIndex === 0 && currentPage === 1}
+        disabled={previewRowIndexN === 0 && currentPageN === 1}
         aria-label="Previous record"
         class="pointer-events-auto hover:scale-105 transition-all"
       >
         <ChevronLeft class="w-4 h-4" />
       </Button>
       <span class="text-xs font-medium w-16 text-center">
-        {(currentPage - 1) * pageSize + previewRowIndex + 1} / {totalRecords}
+        {(currentPageN - 1) * pageSizeN + previewRowIndexN + 1} / {totalRecordsN}
       </span>
       <Button
         size="icon-sm"
         variant="secondary-outline"
         onclick={() => onNavigatePreview(1)}
-        disabled={previewRowIndex >= columns.length - 1 && currentPage >= Math.ceil(totalRecords / pageSize)}
+        disabled={previewRowIndexN >= columns.length - 1 && currentPageN >= Math.ceil(totalRecordsN / pageSizeN)}
         aria-label="Next record"
         class="pointer-events-auto hover:scale-105 transition-all"
       >

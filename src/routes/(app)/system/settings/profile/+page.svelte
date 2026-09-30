@@ -278,7 +278,7 @@
 
 {#if !metadata.state.loading}
   <FormPageLayout
-    entity="user_profiles"
+    entity={(metadata.state.meta as EntityMetadata | null)?.entity ?? 'user_profile'}
     rowUuid={userUuid}
     meta={(metadata.state.meta as EntityMetadata | null) || undefined}
     auditData={auditData}

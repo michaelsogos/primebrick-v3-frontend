@@ -234,7 +234,7 @@
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
 <FormPageLayout
-  entity="user_profiles"
+  entity={meta?.entity ?? 'user_profile'}
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
