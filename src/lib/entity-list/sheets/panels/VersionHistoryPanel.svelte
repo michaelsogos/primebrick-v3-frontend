@@ -12,6 +12,7 @@
   import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
   import AlertCircle from '@lucide/svelte/icons/alert-circle'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import Copy from '@lucide/svelte/icons/copy';
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
   import { badgeClassesFromToken } from "$lib/colors/badge";
@@ -113,6 +114,8 @@
       return 'text-red-700 dark:text-red-300';
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return 'text-red-600 dark:text-red-400';
+    } else if (actionLower === 'clone') {
+      return 'text-violet-600 dark:text-violet-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return 'text-emerald-600 dark:text-emerald-400';
     } else if (actionLower === 'restore') {
@@ -129,6 +132,8 @@
       return 'border-red-700 dark:border-red-300';
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return 'border-red-600 dark:border-red-400';
+    } else if (actionLower === 'clone') {
+      return 'border-violet-600 dark:border-violet-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return 'border-emerald-600 dark:border-emerald-400';
     } else if (actionLower === 'restore') {
@@ -145,6 +150,8 @@
       return CircleX;
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return AlertCircle;
+    } else if (actionLower === 'clone') {
+      return Copy;
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return CircleCheckBig;
     } else if (actionLower === 'restore') {
@@ -301,7 +308,7 @@
         }
       }
 
-      const isCreateOrInsert = action === 'CREATE' || action === 'INSERT';
+      const isCreateOrInsert = action === 'CREATE' || action === 'INSERT' || action === 'CLONE';
 
       if (oldValue == null && newValue != null) {
         descriptions.push({
@@ -428,7 +435,7 @@
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
-            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
+            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE' || entry.action === 'CLONE'}
             {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('system.entities.versionHistory.recordHardDeleted')]
               : formatAuditDelta(entry.delta, entry.action)}
 
