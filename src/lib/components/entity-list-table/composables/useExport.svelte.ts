@@ -2,6 +2,7 @@ import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 interface ExportOptions {
@@ -120,77 +121,11 @@ export function useExport(options: ExportOptions) {
       if (sortKey) params.append('sort_key', sortKey);
       if (sortDir) params.append('sort_dir', sortDir);
 
-      let filterIdx = 0;
-
-      if (filterValues && Object.keys(filterValues).length > 0) {
-        for (const [field, value] of Object.entries(filterValues)) {
-          if (value !== undefined && value !== null && value !== '') {
-            const col = columns.find(c => c.key === field);
-            const op = col?.type === 'text' ? 'ILIKE' : '=';
-
-            if (col?.type === 'badge' && Array.isArray(value)) {
-              for (let i = 0; i < value.length; i++) {
-                params.set(`filters[${filterIdx}][field]`, field);
-                params.set(`filters[${filterIdx}][op]`, op);
-                params.set(`filters[${filterIdx}][value]`, String(value[i]));
-                const connector = i < value.length - 1 ? 'OR' : 'AND';
-                params.set(`filters[${filterIdx}][connector]`, connector);
-                filterIdx++;
-              }
-            } else {
-              params.set(`filters[${filterIdx}][field]`, field);
-              params.set(`filters[${filterIdx}][op]`, op);
-              params.set(`filters[${filterIdx}][value]`, String(value));
-              params.set(`filters[${filterIdx}][connector]`, 'AND');
-              filterIdx++;
-            }
-          }
-        }
-      }
-
-      if (advancedFilters && advancedFilters.length > 0) {
-        for (const filter of advancedFilters) {
-          if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
-            params.set(`filters[${filterIdx}][field]`, filter.field);
-
-            let operator: string = filter.operator;
-            let value = filter.value;
-
-            if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
-              params.set(`filters[${filterIdx}][op]`, operator);
-              params.set(`filters[${filterIdx}][value][start]`, String(value.start));
-              params.set(`filters[${filterIdx}][value][end]`, String(value.end));
-              filterIdx++;
-              continue;
-            }
-
-            if (Array.isArray(value)) {
-              operator = operator === '!=' ? 'NOT IN' : 'IN';
-            } else if (operator === 'startsWith') {
-              operator = 'ILIKE';
-              value = `${value}%`;
-            } else if (operator === 'endsWith') {
-              operator = 'ILIKE';
-              value = `%${value}`;
-            } else if (operator === 'contains') {
-              operator = 'ILIKE';
-              value = `%${value}%`;
-            }
-
-            params.set(`filters[${filterIdx}][op]`, operator);
-
-            if (Array.isArray(value)) {
-              for (const val of value) {
-                params.append(`filters[${filterIdx}][value][]`, String(val));
-              }
-            } else {
-              params.set(`filters[${filterIdx}][value]`, String(value));
-            }
-
-            filterIdx++;
-          }
-        }
-      }
+      const filterIdx = appendListFilterParams(params, {
+        filterValues,
+        columns,
+        advancedFilters,
+      });
 
       if (_state.exportScope === 'selected' && selectedKeys.length > 0) {
         params.set(`filters[${filterIdx}][field]`, uid);

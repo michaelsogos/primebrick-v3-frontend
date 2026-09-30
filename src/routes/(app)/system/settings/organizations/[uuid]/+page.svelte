@@ -116,17 +116,16 @@
           return;
         }
 
-        const data = await response.json();
-        if (data.success) {
-          console.log('Organization updated successfully');
-          // Refresh the organization data to show updated audit info
-          await loadOrganization();
-          // Notify parent window to refresh
-          notifyParentRefresh();
-          // Close popup if opened as child window
-          if (window.opener) {
-            window.close();
-          }
+        // The response IS the updated entity (DAL RETURNING), not a wrapper.
+        await response.json();
+        console.log('Organization updated successfully');
+        // Refresh the organization data to show updated audit info
+        await loadOrganization();
+        // Notify parent window to refresh
+        notifyParentRefresh();
+        // Close popup if opened as child window
+        if (window.opener) {
+          window.close();
         }
       } catch (error) {
         console.error('Failed to update organization:', error);

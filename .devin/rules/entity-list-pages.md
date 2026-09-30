@@ -44,6 +44,22 @@ custom CTAs come from `meta.table.row_custom_actions`.
 - `EntityAction.sentinel` values are the BE strings verbatim:
   `_public`, `_authenticated_user`, `_authenticated_admin`.
 
+### Soft vs hard delete (automatic)
+
+The delete CTA and endpoint are derived from `meta.actions` — never
+hardcoded per page:
+
+- `delete.single` enabled → soft delete via `DELETE /entities/{e}/:uuid?version=`.
+- `purge.single` enabled (and `delete.single` disabled) → the table calls
+  `DELETE /entities/{e}/:uuid/purge?version=` automatically
+  (`usePurgeDelete` inside `useRowActions`).
+- `restore.single` enabled → restore CTA + deleted-filter toolbar appear.
+
+For non-table delete flows (e.g. a detail-page delete button) mirror the
+same rule: pick `/purge` when `isEntityOpAllowed(actions, 'purge.single')`
+is true and `'delete.single'` is false — see
+`useRoleMappings.remove` for the pattern.
+
 ## Exceptions
 Introducing a new list layout that does NOT use `EntityListTable` requires explicit user approval in the plan step. The approval must document why `EntityListTable` is insufficient.
 

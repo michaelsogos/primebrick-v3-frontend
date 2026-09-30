@@ -87,8 +87,9 @@
           return;
         }
 
-        const data = await response.json();
-        if (data.success && data.organization) {
+        // The response IS the created entity (DAL RETURNING), not a wrapper.
+        const organization = await response.json();
+        if (organization?.uuid) {
           console.log('Organization created successfully');
 
           // Notify parent BEFORE navigating away; after goto the component may unmount and close the channel
@@ -96,7 +97,7 @@
           // Reset taint baseline so hasChanges becomes false before navigation
           reset({ data: $form });
           // Navigate to the update page for the newly created organization
-          await goto(`/system/settings/organizations/${data.organization.uuid}`);
+          await goto(`/system/settings/organizations/${organization.uuid}`);
         }
       } catch (error) {
         console.error('Failed to create organization:', error);

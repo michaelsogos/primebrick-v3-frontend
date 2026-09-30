@@ -9,6 +9,7 @@
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
   import {
     defaultVisibleColumnKeys,
     orderedColumns,
@@ -283,10 +284,12 @@
       if (sortDir) params.set('sort_dir', sortDir);
       params.set('page', page.toString());
       params.set('page_size', pageSize.toString());
-      if (advancedFilters.length > 0) {
-        params.set('filters', JSON.stringify(advancedFilters));
-        params.set('connector', globalConnector);
-      }
+      appendListFilterParams(params, {
+        filterValues,
+        columns,
+        advancedFilters,
+        connector: globalConnector,
+      });
       if (deletionFilterMode === 'deleted') {
         params.set('deleted_records', 'ONLY');
       } else if (deletionFilterMode === 'all') {

@@ -431,7 +431,7 @@
     edit: opAllowed('update.single'),
     duplicate: opAllowed('duplicate.bulk'),
     preview: opAllowed('get'),
-    delete: opAllowed('delete.single'),
+    delete: opAllowed('delete.single') || opAllowed('purge.single'),
     restore: opAllowed('restore.single'),
     versionHistory: opAllowed('read.audit'),
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
@@ -459,6 +459,9 @@
     onEditAction: () => onEditAction,
     onRefresh: () => onRefresh,
     isRowDeleted: isRowDeleted,
+    // Hard-delete-only entities (meta.actions: purge.single enabled,
+    // delete.single disabled) target `DELETE /:uuid/purge` automatically.
+    usePurgeDelete: () => !opAllowed('delete.single') && opAllowed('purge.single'),
     rowKey: rowKey,
     onPreviewRow: (row) => {
       previewPanel.openPreview(row);

@@ -29,6 +29,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   import { cn } from "$lib/utils";
   import { onMount } from "svelte";
   import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
+  import { formatListCellValue } from "$lib/i18n/date-format";
 
   interface Props {
     filterableColumns?: MetaColumn[];
@@ -151,30 +152,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
         $t(value.label_key || `system.entities.customer.status.${key}`),
       color: value.color,
     }));
-  }
-
-  // Format ISO date string for display in advanced filter preview
-  function formatFilterDateValue(isoString: string): string {
-    if (!isoString) return "";
-    try {
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return isoString;
-
-      // Detect if string is datetime (has T and time) or just date
-      const isDateTime = isoString.includes('T') || isoString.includes(':');
-      const options: Intl.DateTimeFormatOptions = isDateTime
-        ? { dateStyle: "long", timeStyle: "medium" }
-        : { dateStyle: "long" };
-
-      return new Intl.DateTimeFormat($uiLang, options).format(date);
-    } catch {
-      return isoString;
-    }
-  }
-
-  // Check if a string looks like an ISO date
-  function isIsoDateString(value: string): boolean {
-    return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(value);
   }
 
   // Conversione da stringa ISO a CalendarDate o CalendarDateTime
@@ -431,7 +408,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
   }
 </script>
 
-<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0" footer={applyFooter}>
     {#snippet icon()}
       <Funnel class="size-4" />
     {/snippet}
@@ -439,9 +416,6 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
       {$t("system.entities.list.filters")}
     {/snippet}
     {#snippet actions()}
-      <SheetHeaderAction title={$t("app.common.apply")} onclick={applyFilters}>
-        <Play class="size-4" />
-      </SheetHeaderAction>
       <SheetHeaderAction title={$t("app.common.reset")} onclick={resetAllFilters}>
         <Eraser class="size-4" />
       </SheetHeaderAction>
@@ -632,12 +606,8 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           $t(column?.badge?.values?.[v]?.label_key || `system.entities.customer.status.${v}`)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
-                      ? (() => {
-                          const startFormatted = formatFilterDateValue(String(filter.value.start));
-                          const endFormatted = formatFilterDateValue(String(filter.value.end));
-                          return `${startFormatted} e ${endFormatted}`;
-                        })()
-                      : formatFilterDateValue(String(filter.value))}
+                      ? `${formatListCellValue(column ?? { type: 'text' }, filter.value.start, $uiLang)} e ${formatListCellValue(column ?? { type: 'text' }, filter.value.end, $uiLang)}`
+                      : formatListCellValue(column ?? { type: 'text' }, filter.value, $uiLang)}
                   </span>
                 </div>
               </div>
@@ -892,3 +862,19 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     </div>
     {/if}
 </SheetPanelLayout>
+
+<!-- Primary CTA lives in FOOT (form-panel convention), not in HEAD. -->
+{#snippet applyFooter()}
+  <div class="p-3">
+    <Button
+      type="button"
+      variant="default"
+      class="w-full"
+      onclick={applyFilters}
+      data-testid="filters-apply"
+    >
+      <Play class="size-4" />
+      {$t("app.common.apply")}
+    </Button>
+  </div>
+{/snippet}

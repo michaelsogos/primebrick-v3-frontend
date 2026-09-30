@@ -22,6 +22,7 @@
   import type { AppErrorTag } from '$lib/errors/app-errors';
   import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
   import {
     defaultVisibleColumnKeys,
     formatDatetimeCellDisplay,
@@ -348,87 +349,12 @@
     if (appliedSearch.trim()) qs.set('search', appliedSearch.trim());
     if (appliedSearch.trim() && effectiveSearchInKeys.length) qs.set('search_in', effectiveSearchInKeys.join(','));
     if (statusFilter) qs.set('status', statusFilter);
-    // Convert filterValues to backend filters array format using bracket notation
-    // Format: filters[0][field]=status&filters[0][op]==&filters[0][value]=ACTIVE
-    // For multi-select (badge) fields, values should be in OR among themselves
-    // Different fields should be in AND
-    let filterIdx = 0;
-    for (const [field, value] of Object.entries(filterValues)) {
-      if (value !== undefined && value !== null && value !== '') {
-        const col = columns.find(c => c.key === field);
-        const op = col?.type === 'text' ? 'ILIKE' : '=';
-
-        // Handle multi-select (array) values for badge fields
-        if (col?.type === 'badge' && Array.isArray(value)) {
-          for (let i = 0; i < value.length; i++) {
-            qs.set(`filters[${filterIdx}][field]`, field);
-            qs.set(`filters[${filterIdx}][op]`, op);
-            qs.set(`filters[${filterIdx}][value]`, String(value[i]));
-            // Use OR for values within the same field, AND for the last one to connect to next field
-            const connector = i < value.length - 1 ? 'OR' : 'AND';
-            qs.set(`filters[${filterIdx}][connector]`, connector);
-            filterIdx++;
-          }
-        } else {
-          qs.set(`filters[${filterIdx}][field]`, field);
-          qs.set(`filters[${filterIdx}][op]`, op);
-          qs.set(`filters[${filterIdx}][value]`, String(value));
-          qs.set(`filters[${filterIdx}][connector]`, 'AND');
-          filterIdx++;
-        }
-      }
-    }
-    // Add advanced filters to the same filters structure
-    const advancedFiltersArray = Array.isArray(advancedFilters) ? advancedFilters : [];
-    for (const filter of advancedFiltersArray) {
-      if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
-        qs.set(`filters[${filterIdx}][field]`, filter.field);
-
-        let operator: string = filter.operator;
-        let value = filter.value;
-
-        // Handle BETWEEN operator with start/end values
-        if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
-          qs.set(`filters[${filterIdx}][op]`, operator);
-          qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
-          qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
-          filterIdx++;
-          continue;
-        }
-
-        // Map frontend operators to backend-supported operators
-        if (Array.isArray(value)) {
-          operator = operator === '!=' ? 'NOT IN' : 'IN';
-        } else if (operator === 'startsWith') {
-          operator = 'ILIKE';
-          value = `${value}%`;
-        } else if (operator === 'endsWith') {
-          operator = 'ILIKE';
-          value = `%${value}`;
-        } else if (operator === 'contains') {
-          operator = 'ILIKE';
-          value = `%${value}%`;
-        }
-
-        qs.set(`filters[${filterIdx}][op]`, operator);
-
-        // Handle array values for badge fields
-        if (Array.isArray(value)) {
-          for (const val of value) {
-            qs.append(`filters[${filterIdx}][value][]`, String(val));
-          }
-        } else {
-          qs.set(`filters[${filterIdx}][value]`, String(value));
-        }
-
-        filterIdx++;
-      }
-    }
-
-    // Add global connector parameter
-    if (advancedFiltersArray.length > 0) {
-      qs.set('connector', globalConnector);
-    }
+    appendListFilterParams(qs, {
+      filterValues,
+      columns,
+      advancedFilters,
+      connector: globalConnector,
+    });
 
     // Add deletion filter parameter
     if (deletionFilterMode === 'deleted') {

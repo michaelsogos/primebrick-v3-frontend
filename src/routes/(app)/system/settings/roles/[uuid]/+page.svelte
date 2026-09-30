@@ -108,7 +108,7 @@
   async function handleDelete() {
     if (!role) return;
     deleting = true;
-    const ok = await roleMappings.remove(role.uuid);
+    const ok = await roleMappings.remove(role.uuid, role.version);
     deleting = false;
     if (ok) {
       deleteOpen = false;

@@ -366,17 +366,20 @@ export async function fetchAiCerebellum(filters?: {
 }): Promise<AiCerebellum[]> {
   const params = new URLSearchParams();
   params.set('page_size', '100');
-  const conditions: Array<{ field: string; op: string; value: string }> = [];
-  if (filters?.assistant_key) {
-    conditions.push({ field: 'assistant_key', op: '=', value: filters.assistant_key });
+  // Canonical qs bracket notation — parsed by Express qs into objects the DAL
+  // filter translator consumes directly (no JSON.stringify anywhere).
+  let i = 0;
+  for (const [field, value] of [
+    ['assistant_key', filters?.assistant_key],
+    ['model_id', filters?.model_id],
+  ] as const) {
+    if (!value) continue;
+    params.set(`filters[${i}][field]`, field);
+    params.set(`filters[${i}][op]`, '=');
+    params.set(`filters[${i}][value]`, value);
+    i++;
   }
-  if (filters?.model_id) {
-    conditions.push({ field: 'model_id', op: '=', value: filters.model_id });
-  }
-  if (conditions.length) {
-    params.set('filters', JSON.stringify(conditions));
-    params.set('connector', 'AND');
-  }
+  if (i > 0) params.set('connector', 'AND');
   const url = `/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
   const res = await apiFetch(url);
   if (!res.ok) throw new Error(`AI cerebellum fetch failed (${res.status})`);

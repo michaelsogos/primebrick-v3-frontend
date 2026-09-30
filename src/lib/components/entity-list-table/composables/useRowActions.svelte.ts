@@ -14,6 +14,13 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   onRowActionError?: (error: Error) => void;
   onRefresh?: () => (() => void) | undefined;
   isRowDeleted?: (row: TRow) => boolean;
+  /**
+   * When true, row delete targets the hard-delete endpoint
+   * `DELETE /entities/{entity}/:uuid/purge?version=` instead of the soft
+   * `DELETE /entities/{entity}/:uuid?version=`. Derived from `meta.actions`:
+   * `purge.single` enabled ⇒ hard-delete-only entity (e.g. role_mapping).
+   */
+  usePurgeDelete?: () => boolean;
   rowKey?: (row: TRow) => string;
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
@@ -46,6 +53,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     onRowActionError,
     onRefresh: getOnRefresh,
     isRowDeleted,
+    usePurgeDelete,
     rowKey,
     onPreviewRow,
     closeRowDropdown,
@@ -108,7 +116,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isDeleting = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}?version=${(row as Record<string, unknown>).version}`, {
+      const purge = usePurgeDelete?.() ? '/purge' : '';
+      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}${purge}?version=${(row as Record<string, unknown>).version}`, {
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
