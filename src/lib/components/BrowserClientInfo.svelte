@@ -249,7 +249,7 @@
         <div class="flex min-w-0 flex-col items-end gap-1 text-right text-xs">
           <span class="truncate">{caps?.gpu_name ?? (measuring ? '…' : '—')}</span>
           {#if machineRank !== null}
-            <RankMeter rank={machineRank} label={$t('app.health.gpuRank')} />
+            <RankMeter rank={machineRank} label={$t('app.health.gpuRank')} class="w-24" />
           {/if}
         </div>
       </div>

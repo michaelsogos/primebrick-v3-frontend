@@ -12,21 +12,25 @@
    * are stacked so the bars sit adjacent in the middle.
    */
   import { rankColor } from '$lib/ai/ai-model-test-scores';
+  import { cn } from '$lib/utils';
 
   let {
     rank,
     label,
     score_below = false,
+    class: klass,
   }: {
     rank: number | null | undefined;
     label?: string;
     score_below?: boolean;
+    /** Optional width/layout override for the meter wrapper (e.g. 'w-24'). */
+    class?: string;
   } = $props();
 
   const pct = $derived(rank != null && rank > 0 ? Math.min(100, (rank / 5) * 100) : 0);
 </script>
 
-<div class="flex shrink-0 flex-col gap-[3px] {label ? 'w-16' : 'w-12'}" data-testid="rank-meter">
+<div class={cn('flex shrink-0 flex-col gap-[3px]', label ? 'w-16' : 'w-12', klass)} data-testid="rank-meter">
   {#if !score_below}
     {@render score_row()}
   {/if}
