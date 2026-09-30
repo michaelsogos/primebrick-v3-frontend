@@ -55,7 +55,7 @@
   </span>
 {/snippet}
 
-<Popover.Root>
+<Popover.RootCloseOnScroll>
   <Popover.Trigger
     class="inline-flex"
     title={$t('system.entities.ai_model.fields.test_scores')}
@@ -101,4 +101,4 @@
       </Popover.Close>
     </div>
   </Popover.Content>
-</Popover.Root>
+</Popover.RootCloseOnScroll>

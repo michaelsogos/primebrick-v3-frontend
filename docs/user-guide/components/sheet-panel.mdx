@@ -55,22 +55,49 @@ Every panel uses `SheetPanelLayout`, which enforces a fixed anatomy:
   as the CTA that opens the sheet. When `actions` is omitted a standard
   close button renders. AI-assistant sheets share one convention: `AiIcon`
   + "AI Assistant" + a topic qualifier (`global`, `guide`, `regex`, `json`).
+  HEAD carries **secondary icon-only utilities** (reset, clear, new) plus
+  the close ✕ — never the panel's primary action.
 - **TOOLBAR** — optional below-head strip (`border-b px-3 py-2`) for tools
-  only: search inputs, tab bars, action chips. Metadata belongs in CONTENT.
+  only: search inputs, tab bars, sort segmented controls. No commit CTAs.
 - **CONTENT** — `min-h-0 flex-1 overflow-auto`; the only region that
   scrolls. Default padding `p-2`, override with `contentClass`. How the
   content is sectioned (labels, dividers, accordions, tabs) is the panel's
-  own domain — no enforced standard.
-- **FOOT** — optional fixed bottom strip (`border-t`) for action buttons or
-  input boxes; never scrolls.
+  own domain — no enforced standard. Per-row actions and inline sub-form
+  CTAs (e.g. "Add filter") belong here.
+- **FOOT** — optional fixed bottom strip (`border-t`); never scrolls. This
+  is where a **FORM panel's primary CTA** lives: a `Button` with a text
+  label, `class="w-full"` for single actions (no Cancel — the close ✕ and
+  outside-click already dismiss). Pickers and viewers have no footer.
 
 ### Header action styles
 
 Every CTA in the header uses **one** shared chrome — the same as close:
 `inline-flex size-8` icon button, `text-muted-foreground opacity-70`,
 `hover:bg-accent hover:opacity-100`, icon `size-4`. Close renders it via
-`Sheet.Close`; other CTAs render it via a plain `<button>`. No `Button`
+`Sheet.Close`; other CTAs render it via `SheetHeaderAction`. No `Button`
 component variants, no tinted pills — the header is symmetric by rule.
+HEAD actions are secondary utilities only; the primary action of a form
+panel always sits in FOOT as a labeled `Button`.
+
+## Panel behaviors — three archetypes
+
+Every panel fits one of three commit behaviors:
+
+| Archetype | Commit | CTA placement | Examples |
+|-----------|--------|---------------|----------|
+| **Picker** | Immediate — click a row/toggle → commit → close | The row itself is the CTA; no footer | `CurrencySelectPanel`, `PhonePrefixSelectPanel`, `ProtocolSelectPanel`, `ColumnsPanel` |
+| **Form** | Explicit — draft fields, primary CTA commits (and usually closes) | FOOT: `Button w-full` (or `flex justify-end` for multi-action) | `BadgeValuePanel` (add & edit), `FiltersPanel` (Apply), `AiCerebellumPanel` (Save), `AiModelImportPanel` (Add) |
+| **Viewer** | None — read-only or per-row actions | CONTENT row buttons; HEAD may carry a destructive reset (e.g. `ErrorsPanel` clear) | `ErrorsPanel`, `VersionsPanel`, `VersionHistoryPanel`, `AiModelCachePanel` |
+
+Rules of thumb:
+
+- Form panels **never live-commit** while the user edits — they stage a
+  draft and write once on the footer CTA. (A previous live-commit `$effect`
+  in `BadgeValuePanel` produced an `effect_update_depth_exceeded` loop.)
+- HEAD is never the home of a primary action — icon-only buttons carry no
+  label, so a primary CTA there is invisible. If it commits, it goes in FOOT.
+- A single-CTA footer uses `class="w-full"`; do not add a Cancel button —
+  the standard close ✕ and outside-click dismissal already cover "abort".
 
 ### Sheet width
 
@@ -88,8 +115,8 @@ central change to `Sheet.Content`, not a per-call override.
   <p>Scrollable content…</p>
 
   {#snippet footer()}
-    <div class="flex justify-end gap-2 p-3">
-      <button>Apply</button>
+    <div class="p-3">
+      <Button class="w-full">{$t('app.common.apply')}</Button>
     </div>
   {/snippet}
 </SheetPanelLayout>

@@ -549,10 +549,10 @@
   </div>
 
   {#snippet footer()}
-    <div class="flex justify-end gap-2 p-3">
+    <div class="p-3">
       <Button
         variant="default"
-        size="sm"
+        class="w-full"
         type="button"
         disabled={!selected || adding}
         onclick={addModel}

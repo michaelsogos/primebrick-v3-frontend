@@ -527,7 +527,7 @@
               <!-- Column 2: gauges (33%, vertically centered) -->
               <div class="flex items-center gap-3 shrink-0 justify-center" style="flex: 33 1 0%;">
                 <!-- Power level gauge with explanation popover -->
-                <Popover.Root>
+                <Popover.RootCloseOnScroll>
                   <Popover.Trigger
                     class="inline-flex"
                     title={$t('system.entities.ai_model.fields.power_level')}
@@ -549,12 +549,12 @@
                       </div>
                     </div>
                   </Popover.Content>
-                </Popover.Root>
+                </Popover.RootCloseOnScroll>
 
                 <!-- Test scores gauge: minimal popover + details CTA → side sheet -->
                 <AiModelTestReport {model} />
 
-                <Popover.Root>
+                <Popover.RootCloseOnScroll>
                   {@const tsSummary = summarizeTestScores(model.test_scores)}
                   <Popover.Trigger
                     class="inline-flex"
@@ -608,10 +608,10 @@
                       </div>
                     </div>
                   </Popover.Content>
-                </Popover.Root>
+                </Popover.RootCloseOnScroll>
 
                 <!-- Rank gauge with explanation popover -->
-                <Popover.Root>
+                <Popover.RootCloseOnScroll>
                   <Popover.Trigger
                     class="inline-flex"
                     title={$t('system.entities.ai_model.fields.rank')}
@@ -630,7 +630,7 @@
                       </div>
                     </div>
                   </Popover.Content>
-                </Popover.Root>
+                </Popover.RootCloseOnScroll>
               </div>
 
               <!-- Column 3: actions (33%, right-aligned) -->

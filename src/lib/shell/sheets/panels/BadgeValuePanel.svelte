@@ -146,12 +146,12 @@
     }
   }
 
-  // Live-commit in edit mode: color/label changes write straight to the
-  // builder while the sheet is open. The first run rewrites identical
-  // values — a harmless no-op.
-  $effect(() => {
-    if (mode === 'edit') commitEdit(draftColor, draftLabelKey);
-  });
+  // Explicit commit in edit mode — multi-field forms write only on the
+  // footer CTA (standard form-panel behavior, no live commits).
+  function saveEdit() {
+    commitEdit(draftColor, draftLabelKey);
+    closeSheet();
+  }
 
   function previewText(row: { value: string; label_key: string }) {
     if (row.label_key.trim()) {
@@ -162,7 +162,7 @@
   }
 </script>
 
-<SheetPanelLayout contentClass="p-4" footer={mode === 'add' ? addFooter : undefined}>
+<SheetPanelLayout contentClass="p-4" footer={mode === 'add' ? addFooter : saveFooter}>
   {#snippet icon()}
     {#if mode === 'add'}
       <Plus class="size-4" />
@@ -192,9 +192,8 @@
             placeholder="active"
             class="text-xs"
             aria-invalid={draftCodeError ? 'true' : undefined}
-            onblur={() => mode === 'edit' && commitEdit()}
             onkeydown={(e) => {
-              if (mode === 'edit' && e.key === 'Enter') commitEdit();
+              if (mode === 'edit' && e.key === 'Enter') saveEdit();
             }}
             data-testid="tcb-badge-value"
           />
@@ -276,7 +275,6 @@
               value={draftLabelKey}
               onChange={(v) => {
                 draftLabelKey = Array.isArray(v) ? v[0] ?? '' : v;
-                if (mode === 'edit') commitEdit();
               }}
               options={labelKeyOptions}
               valueField="key"
@@ -321,6 +319,20 @@
     >
       <Plus class="h-4 w-4" />
       {$t('system.settings.config.typeConfig.addValue')}
+    </Button>
+  </div>
+{/snippet}
+
+{#snippet saveFooter()}
+  <div class="p-3">
+    <Button
+      type="button"
+      class="w-full"
+      onclick={saveEdit}
+      disabled={!draftCode.trim() || !!draftCodeError}
+      data-testid="tcb-badge-save"
+    >
+      {$t('app.common.save')}
     </Button>
   </div>
 {/snippet}

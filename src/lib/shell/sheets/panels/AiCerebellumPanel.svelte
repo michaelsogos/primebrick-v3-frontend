@@ -51,6 +51,7 @@
 
   let assistant_key = $state('');
   let model_id = $state('');
+  let dtype = $state('');
   let enable_thinking = $state(false);
   let temperature = $state<number | null>(null);
   let top_p = $state<number | null>(null);
@@ -69,13 +70,37 @@
 
   const assistantOptions = $derived(assistants.map((a) => ({ key: a.key, label: $t(a.name) })));
 
+  // Models are keyed by `model_id` transversally across dtypes — the catalog
+  // has one row per (model_id, dtype) variant, so the model select must
+  // dedupe by model_id and a separate dtype selector picks the variant.
+  const modelOptions = $derived.by<AiModel[]>(() => {
+    const seen = new Set<string>();
+    return models.filter((m) => (seen.has(m.model_id) ? false : (seen.add(m.model_id), true)));
+  });
+
+  /** dtype variants available for the selected model. */
+  const dtypeOptions = $derived(
+    models.filter((m) => m.model_id === model_id && m.dtype).map((m) => m.dtype as string),
+  );
+
+  /** Variant identity stored in `ai_cerebellum.model_id` ("<model_id>#<dtype>"). */
+  const variantModelId = $derived(modelVariantKey({ model_id, dtype: dtype || null }));
+
+  // Default/reset dtype when the selected model changes.
+  $effect(() => {
+    const opts = dtypeOptions;
+    dtype = opts.length === 1 ? opts[0] : (opts.includes(dtype) ? dtype : '');
+  });
+
   /** Existing row for the selected pair — non-null = edit mode. */
   const existing = $derived(
-    rows.find((r) => r.assistant_key === assistant_key && r.model_id === model_id) ?? null,
+    rows.find((r) => r.assistant_key === assistant_key && r.model_id === variantModelId) ?? null,
   );
 
   /** Selected model — its defaults are the values inherited when a field is NULL. */
-  const selectedModel = $derived(models.find((m) => modelVariantKey(m) === model_id || m.model_id === model_id) ?? null);
+  const selectedModel = $derived(
+    models.find((m) => modelVariantKey(m) === variantModelId) ?? null,
+  );
 
   // Prepopulate when the selected pair matches an existing row (edit mode).
   $effect(() => {
@@ -104,7 +129,7 @@
       ?? `app.smart.${assistant_key}.ai.cerebellum_name`;
     const entity = {
       assistant_key,
-      model_id,
+      model_id: variantModelId,
       name: existing?.name ?? storedName,
       enable_thinking,
       temperature,
@@ -184,7 +209,7 @@
           id="cerebellum-model"
           mode="single"
           bind:value={model_id}
-          options={models as AiModel[]}
+          options={modelOptions}
           valueField="model_id"
           labelField="name"
           placeholder={$t(`${fieldNs}.model_id`)}
@@ -207,6 +232,23 @@
           {/snippet}
         </ComboSelect>
       </div>
+
+      {#if model_id && dtypeOptions.length > 0}
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-muted-foreground" for="cerebellum-dtype">
+            {$t('system.entities.ai_model.fields.dtype')}
+          </label>
+          <ComboSelect
+            id="cerebellum-dtype"
+            mode="single"
+            bind:value={dtype}
+            options={dtypeOptions}
+            placeholder={$t('system.entities.ai_model.fields.dtype')}
+            searchable={false}
+            data-testid="ai-cerebellum-dtype"
+          />
+        </div>
+      {/if}
 
       <div class="grid grid-cols-2 gap-3">
         <SliderField size="sm" id="cerebellum-temperature" bind:value={temperature} label={$t(`${fieldNs}.temperature`)} defaultValue={selectedModel?.temperature ?? CREATE_DEFAULTS.temperature} min={0} max={2} step={0.1} decimals={1} data-testid="ai-cerebellum-temperature" />
@@ -275,11 +317,8 @@
     </div>
 
   {#snippet footer()}
-    <div class="flex items-center justify-end gap-2 border-t border-border/60 px-4 py-3">
-      <Button variant="outline" tone="primary" size="sm" onclick={closeSheet} disabled={saving} data-testid="ai-cerebellum-cancel">
-        {$t('app.common.cancel')}
-      </Button>
-      <Button variant="default" size="sm" onclick={save} disabled={saving || !assistant_key || !model_id} data-testid="ai-cerebellum-save">
+    <div class="p-3">
+      <Button variant="default" class="w-full" onclick={save} disabled={saving || !assistant_key || !model_id} data-testid="ai-cerebellum-save">
         {$t('app.common.save')}
       </Button>
     </div>

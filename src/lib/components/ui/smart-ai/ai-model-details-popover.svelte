@@ -64,7 +64,7 @@
   }
 </script>
 
-<Popover.Root>
+<Popover.RootCloseOnScroll>
   <Popover.Trigger
     class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
     title={$t(`${i18n_ns}.model_details.title`)}
@@ -203,4 +203,4 @@
       </div>
     {/if}
   </Popover.Content>
-</Popover.Root>
+</Popover.RootCloseOnScroll>

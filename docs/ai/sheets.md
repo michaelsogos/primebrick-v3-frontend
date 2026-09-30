@@ -83,6 +83,24 @@ Rules:
   `<button type="button">` with the same class string. No `Button`
   component, no tinted-primary pill, no `size-7` — perfect symmetry,
   one visual language for the whole header.
+- **HEAD never hosts the primary action** — icon-only buttons have no
+  label, so a primary CTA there is invisible. HEAD = close ✕ + secondary
+  icon utilities only (reset, clear, new).
+- **FOOT owns the primary CTA of FORM panels** — `Button` with a text
+  label. Single actions use `class="w-full"`; never add a Cancel button
+  (the close ✕ and outside-click dismissal already cover "abort").
+- **CTA placement by zone**: HEAD → secondary icon utilities + ✕ ·
+  TOOLBAR → tools only (search, tabs, sort) · CONTENT → per-row actions
+  and inline sub-form CTAs · FOOT → primary labeled commit button.
+- **Three panel archetypes**:
+  - **PICKER** — immediate commit: click a row/toggle → commit → close.
+    No footer (CurrencySelect, PhonePrefixSelect, ProtocolSelect, Columns).
+  - **FORM** — draft + explicit commit on the footer CTA (BadgeValue,
+    Filters/Apply, AiCerebellum/Save, AiModelImport/Add). **Never
+    live-commit from `$effect`** — a previous BadgeValuePanel loop hit
+    `effect_update_depth_exceeded`.
+  - **VIEWER** — read-only + per-row actions, no commit footer
+    (Errors, Versions, VersionHistory, AiModelCache).
 - Padding: CONTENT default `p-2`; override via `contentClass` (e.g.
   `px-4 py-3`). HEAD uses SheetHeader's `px-2 py-2`. TOOLBAR `px-3 py-2`.
   FOOT content supplies its own padding (`p-3` for inputs, `px-4 py-2` for bars).
@@ -129,8 +147,8 @@ Rules:
   <p>{someProp}</p>
 
   {#snippet footer()}
-    <div class="flex justify-end gap-2 p-3">
-      <button onclick={() => on_pick?.('x')}>{$t('app.common.apply')}</button>
+    <div class="p-3">
+      <Button class="w-full" onclick={() => on_pick?.('x')}>{$t('app.common.apply')}</Button>
     </div>
   {/snippet}
 </SheetPanelLayout>

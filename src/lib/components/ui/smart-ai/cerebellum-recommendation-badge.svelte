@@ -12,6 +12,7 @@
    * this recommendation.
    */
   import * as Popover from '$lib/components/ui/popover/index.js';
+
   import { t } from '$lib/i18n';
   import CircuitBoard from '@lucide/svelte/icons/circuit-board';
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
@@ -40,6 +41,8 @@
       ? 'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold'
       : 'inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium',
   );
+
+
   let toneClass = $derived(
     recommendation === 'RECOMMENDED'
       ? size === 'md'
@@ -53,7 +56,7 @@
 
 {#if recommendation}
   {#if names && names.length > 0}
-    <Popover.Root>
+    <Popover.RootCloseOnScroll>
       <Popover.Trigger
         class="{chipClass} {toneClass} cursor-pointer hover:brightness-110 transition"
         title={label}
@@ -67,7 +70,17 @@
         {/if}
         {label}
       </Popover.Trigger>
-      <Popover.Content align="start" class="w-52 p-2">
+      <Popover.Content
+        align="start"
+        class="w-52 p-2"
+        onCloseAutoFocus={(e) => {
+          // Prevent bits-ui's focus-return to the trigger: focusing the chip
+          // scrolls it back into view (visible page jump) right before the
+          // popover unmounts. This popover is display-only — focus correctly
+          // goes wherever the user clicked.
+          e.preventDefault();
+        }}
+      >
         <ul class="space-y-1">
           {#each names as name (name)}
             <li class="flex items-center gap-1.5 text-[11px]">
@@ -77,7 +90,7 @@
           {/each}
         </ul>
       </Popover.Content>
-    </Popover.Root>
+    </Popover.RootCloseOnScroll>
   {:else}
     <span class="{chipClass} {toneClass}">
       {#if size === 'md'}
