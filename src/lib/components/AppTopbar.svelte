@@ -194,6 +194,7 @@
         class="relative"
         aria-label={$t('app.aiGuide.aria')}
         title={$t('app.aiGuide.aria')}
+        data-testid="app-topbar-guide-ai-cta"
         onclick={() => openSheet('shell.aiGuide', {})}
       >
         <GradientIcon

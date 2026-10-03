@@ -8,8 +8,8 @@
  * Cleanup of test data (users, invitations, sender_log rows) is handled by
  * each suite's `afterAll` hook, not here — suites own their own data.
  */
-import { getFakeBrevo } from "./helpers/global-state";
-import { closePool } from "./helpers/db";
+import { getBrevoProviderSnapshot, getFakeBrevo } from "./helpers/global-state";
+import { closePool, restoreBrevoProvider } from "./helpers/db";
 import { destroyE2eAdminActor } from "./helpers/test-users";
 
 export default async function globalTeardown(): Promise<void> {
@@ -23,7 +23,14 @@ export default async function globalTeardown(): Promise<void> {
   }
 
   const fakeBrevo = getFakeBrevo();
-  if (fakeBrevo) {
+  const providerSnapshot = getBrevoProviderSnapshot();
+  if (fakeBrevo && providerSnapshot) {
+    try {
+      await restoreBrevoProvider(providerSnapshot, fakeBrevo.url);
+      console.log("[globalTeardown] Previous Brevo provider configuration restored.");
+    } catch (e) {
+      console.error("[globalTeardown] Brevo provider changed during E2E; refused to overwrite it:", e);
+    }
     await fakeBrevo.close();
     console.log("[globalTeardown] Fake Brevo server stopped.");
   }

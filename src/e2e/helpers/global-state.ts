@@ -7,8 +7,10 @@
  */
 
 import type { FakeBrevoServer } from "./fake-brevo";
+import type { FakeBrevoProviderSnapshot } from "./db";
 
 let fakeBrevo: FakeBrevoServer | null = null;
+let brevoProviderSnapshot: FakeBrevoProviderSnapshot | null = null;
 
 export function setFakeBrevo(server: FakeBrevoServer | null): void {
   fakeBrevo = server;
@@ -16,4 +18,12 @@ export function setFakeBrevo(server: FakeBrevoServer | null): void {
 
 export function getFakeBrevo(): FakeBrevoServer | null {
   return fakeBrevo;
+}
+
+export function setBrevoProviderSnapshot(snapshot: FakeBrevoProviderSnapshot): void {
+  brevoProviderSnapshot = snapshot;
+}
+
+export function getBrevoProviderSnapshot(): FakeBrevoProviderSnapshot | null {
+  return brevoProviderSnapshot;
 }

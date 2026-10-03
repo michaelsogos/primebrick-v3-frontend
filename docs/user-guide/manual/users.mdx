@@ -1,0 +1,76 @@
+---
+title: Managing users
+description: How to list, create, edit, and administer users in Settings → Users — including the invitation flow and role assignment.
+---
+
+The **Users** page (`/system/settings/users`) lists all user profiles in the
+current installation. Each row shows the user's identity fields (display name,
+email, organization code) plus status flags such as **active**, **admin**, and
+**verified**.
+
+From the list you can:
+
+- **Search and filter** rows by any visible text column.
+- **Create** a user — the create page opens in a new browser tab.
+- **Edit** a user — opens the user's detail page in a new tab.
+- **Change password** — opens a dialog that validates the new password
+  against the active password policy.
+- **Delete / restore** a user — delete is soft: deleted rows can be shown
+  and restored from the list's deletion filter.
+
+## Creating a user
+
+1. Go to **Settings → Users**.
+2. Click the create action — a new tab opens on
+   `/system/settings/users/create`.
+3. Fill the form (fields below) and click **Save**. You are redirected to
+   the new user's detail page.
+
+### Fields
+
+| Field | Meaning |
+|-------|---------|
+| **Organization** | The organization the user belongs to. Only organizations backed by a real identity-provider organization are listed. Required — and it must be chosen first, because username availability is checked per organization. |
+| **Username** | The user's login name in the identity provider. Checked for availability in the selected organization while you type; a taken name blocks the form. |
+| **Display name** | How the user appears in the UI (avatar initials, lists, audit entries). |
+| **Email** | The user's email address. Required — also used for the invitation flow. |
+| **Send invitation** | When enabled, no password is required: the user receives an invitation email with a one-time link and completes their own onboarding (setting the password themselves). When disabled, you must set a password manually. |
+| **Password** | The initial password. Required unless *Send invitation* is on; validated against the active password policy (a live checklist is shown while typing). |
+| **Roles** | One or more roles assigned to the user. At least one is required. Roles flagged as administrator show a *System Administrator* badge; roles that carry no permissions and are not admin are marked *not valid* and cannot be selected. |
+| **Avatar color** | The color used for the user's avatar when no image is set. |
+| **Admin** | Grants administrator privileges at creation time. |
+| **Active** | Whether the user can sign in. |
+| **Verified / Email verified** | Verification flags shown in lists and audit views. |
+
+## Editing a user
+
+Open a user row to reach `/system/settings/users/{uuid}`. The edit page lets
+you update display name, email, and **roles**, and shows the user's status
+flags. The **Change password** action is available from the list and opens a
+dialog enforcing the current password policy.
+
+## Making a user administrator
+
+A user is an administrator when either condition holds:
+
+- the **Admin** flag was set when the user was created, or
+- the user is assigned a **role flagged as administrator** (shown with a
+  *System Administrator* badge in the roles picker).
+
+To grant administrator rights to an existing user, open their edit page and
+assign an admin-flagged role in the **Roles** field. Roles are defined in
+[Roles and permissions](/docs/user-guide/manual/roles-and-permissions).
+
+## Invitations
+
+When *Send invitation* is enabled, the backend creates an invitation record
+(`user_invitations`) with an expiry date and a one-time token, and the user
+receives an email with the onboarding link. No manual password is needed —
+the invited user sets it during onboarding.
+
+## Next steps
+
+- [Roles and permissions](/docs/user-guide/manual/roles-and-permissions) —
+  how roles map to permissions and how to mark a role as admin.
+- [Organizations](/docs/user-guide/manual/organizations) — creating and
+  managing the organizations users belong to.

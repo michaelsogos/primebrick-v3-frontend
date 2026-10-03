@@ -2,6 +2,7 @@
   import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t, formatUiDateTime } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
@@ -220,10 +221,10 @@
             t: (key) => $t(key)
           }),
           { label: $t('system.settings.tabs.organizations'), href: '/system/settings/organizations' },
-          { label: $t('system.settings.organizations.create.title') }
+          { label: entityPageTitle(meta, 'create', $t) }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.organizations.create.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'create', $t)}</h1>
     </div>
   {/snippet}
 

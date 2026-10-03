@@ -4,8 +4,9 @@
  * Separate from ai-worker.ts: the chat model owns WebGPU, this worker runs
  * the embedding model on WASM/CPU — no VRAM contention. Model MUST match
  * the ingestion embedder used by the ai microservice pipeline
- * (Xenova/all-MiniLM-L6-v2, 384-dim, mean-pooled, normalized) — a different
- * model would produce vectors in an incompatible space.
+ * (Xenova/paraphrase-multilingual-MiniLM-L12-v2, 384-dim, mean-pooled,
+ * normalized) — a different model would produce vectors in an incompatible
+ * space. Multilingual so Italian queries retrieve English docs directly.
  *
  * Protocol:
  *   → { type: 'embed', seq, text }
@@ -20,7 +21,7 @@ env.allowLocalModels = false;
 env.useBrowserCache = true;
 env.fetch = resumableFetch; // sharded, Range-resumable downloads (see resumable-fetch.ts)
 
-const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+const MODEL_ID = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 
 let extractor: any = null;
 let loading: Promise<any> | null = null;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
@@ -122,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('system.settings.roles.editTitle')} · Primebrick</title>
+  <title>{entityPageTitle('role_mapping', 'edit', $t)} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -141,7 +142,7 @@
       />
       <div class="flex items-center justify-between gap-4">
         <h1 class="truncate text-xl font-semibold leading-tight">
-          {$t('system.settings.roles.editTitle')}
+          {entityPageTitle('role_mapping', 'edit', $t)}
           {#if role}
             <span class="font-mono text-base text-muted-foreground">{role.idp_role}</span>
           {/if}

@@ -73,6 +73,39 @@ function caseScoreFromStored(caseObj: Record<string, unknown>): number | null {
  * contains weights + KV + scratch, so it replaces `working_set_mb` entirely
  * with `working_set_source='e2e_measured'` — kv bytes are never re-added.
  */
+export function buildTestScoreUpdate(
+  repo: string,
+  nextScores: Record<string, unknown>,
+  rank: number | null,
+  dtype: string | null,
+  measured?: { vram_bytes: number; ctx_tokens: number | null },
+): { query: string; values: unknown[] } {
+  const measuredSet = measured?.vram_bytes
+    ? `, working_set_mb = $4, working_set_source = 'e2e_measured', working_set_detail = $5::jsonb`
+    : '';
+  const values: unknown[] = [repo, JSON.stringify(nextScores), rank];
+  if (measured?.vram_bytes) {
+    values.push(
+      Math.round(measured.vram_bytes / (1024 * 1024)),
+      JSON.stringify({
+        measured_vram_bytes: measured.vram_bytes,
+        measured_at: new Date().toISOString(),
+        measured_ctx_tokens: measured.ctx_tokens,
+      }),
+    );
+  }
+  values.push(dtype);
+  const dtype_param = values.length;
+
+  return {
+    query: `UPDATE public.ai_models
+     SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
+     ${measuredSet}
+     WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $${dtype_param} AND deleted_at IS NULL`,
+    values,
+  };
+}
+
 export async function mergeTestScoreTurns(
   model_id: string,
   caseKey: string,
@@ -128,31 +161,8 @@ export async function mergeTestScoreTurns(
     ? Math.round((caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10) / 10
     : undefined;
 
-  const measuredSet = measured?.vram_bytes
-    ? `, working_set_mb = $4, working_set_source = 'e2e_measured', working_set_detail = $5::jsonb`
-    : '';
-  const upd = await pool.query(
-    `UPDATE public.ai_models
-     SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
-     ${measuredSet}
-     WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $6 AND deleted_at IS NULL`,
-    [
-      repo,
-      JSON.stringify(nextScores),
-      rank ?? null,
-      ...(measured?.vram_bytes
-        ? [
-            Math.round(measured.vram_bytes / (1024 * 1024)),
-            JSON.stringify({
-              measured_vram_bytes: measured.vram_bytes,
-              measured_at: new Date().toISOString(),
-              measured_ctx_tokens: measured.ctx_tokens,
-            }),
-          ]
-        : [null, null]),
-      dtype ?? null,
-    ],
-  );
+  const update = buildTestScoreUpdate(repo, nextScores, rank ?? null, dtype ?? null, measured);
+  const upd = await pool.query(update.query, update.values);
   if (upd.rowCount !== 1) throw new Error(`update failed for ${model_id}`);
 
   const m = caseMetrics(

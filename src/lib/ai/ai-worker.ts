@@ -430,8 +430,13 @@ async function loadModel(payload: LoadPayload): Promise<void> {
 
 async function generate(payload: GeneratePayload): Promise<void> {
   const has_model = !!model && !!pipeline_generator;
-  if (!has_model || !tokenizer || is_generating) {
-    post({ type: 'stream_error', model_id: current_model_id, error: 'Model not loaded or already generating' });
+  if (!has_model || !tokenizer) {
+    post({ type: 'stream_error', model_id: current_model_id, error: 'Model not loaded' });
+    post({ type: 'generation_idle' });
+    return;
+  }
+  if (is_generating) {
+    post({ type: 'stream_error', model_id: current_model_id, error: 'Already generating' });
     return;
   }
 
@@ -670,6 +675,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
   } finally {
     current_stopping = null;
     is_generating = false;
+    post({ type: 'generation_idle' });
   }
 }
 
@@ -805,6 +811,17 @@ self.addEventListener('message', async (event: MessageEvent) => {
     case 'invalidate_cache': {
       cache_valid = false;
       cache_len_before_gen = 0;
+      // Also RESET the cache object itself: one-off generations (query
+      // rewrites, examples) populate past_key_values with an unrelated
+      // prompt. A flag-only invalidate leaves stale entries → generate()
+      // passes a non-empty cache → transformers.js slices the new prompt
+      // as if the prefix were already computed → shape mismatch crash.
+      if (past_key_values) {
+        try {
+          await past_key_values.dispose();
+        } catch { /* noop */ }
+        past_key_values = null;
+      }
       post({ type: 'cache_invalidated' });
       break;
     }

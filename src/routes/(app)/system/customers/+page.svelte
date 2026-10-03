@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page as appPage } from '$app/state';
   import { t, formatListCellValue } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
@@ -99,7 +100,7 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const title = $derived($t(meta?.title_key ?? 'system.entities.customer.title'));
+  const title = $derived(entityPageTitle(meta, 'list', $t));
   const columns = $derived(orderedColumns(meta?.columns));
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);

@@ -21,6 +21,9 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/users` | List users (entity list table) |
 | `/system/settings/users/[uuid]` | Edit a user (with change-password dialog) |
 | `/system/settings/users/create` | Create a user |
+| `/system/settings/roles` | List role mappings (IdP role → permissions) |
+| `/system/settings/roles/create` | Create a role mapping |
+| `/system/settings/roles/[uuid]` | Edit a role mapping |
 | `/system/settings/profile` | Edit the current user's profile |
 | `/system/settings/ai` | Manage browser-local AI models, cache/storage, and test scores |
 | `/system/settings/configurations` | Security settings |
@@ -85,6 +88,8 @@ page (`/system/settings/organizations/create`) and edit page
 (`/system/settings/organizations/[uuid]`) use `FormPageLayout` and
 SuperForms with the form guards described in
 [Authentication & sessions](/docs/user-guide/authentication#form-guards).
+For the end-user procedure see
+[Organizations](/docs/user-guide/manual/organizations).
 
 ```svelte
 <script lang="ts">
@@ -113,7 +118,14 @@ and validates against it (see
 
 The user edit page (`/system/settings/users/[uuid]`) and create page
 (`/system/settings/users/create`) use SuperForms with `useFormGuard` and
-`useUnsavedChangesGuard`.
+`useUnsavedChangesGuard`. The create form supports an optional
+**invitation flow** (no manual password — the user onboards via an email
+link) and per-organization username availability checks.
+
+For the end-user procedures (create user, invitation flow, making a user
+admin), see [Managing users](/docs/user-guide/manual/users). Role mappings
+are managed under `/system/settings/roles` — see
+[Roles and permissions](/docs/user-guide/manual/roles-and-permissions).
 
 ## Profile
 
@@ -123,9 +135,10 @@ SuperForms with the form guards and includes avatar preview/color selection
 
 ## AI models
 
-`/system/settings/ai` manages the browser-local AI models used by the smart
-assistants (e.g. the JSON-schema assistant in the config builder). Models run
-in the browser via WebGPU — there is no server-side inference.
+`/system/settings/ai` manages the browser-local AI models used by the Guide/User
+Manual assistant and the Regex and JSON assistant panels. Models run in the
+browser via WebGPU — there is no server-side generation. The Guide CTA in the
+top bar retrieves documentation excerpts for grounded answers and citations.
 
 - **Storage bar** — stacked breakdown of `navigator.storage.estimate().usage`
   into cataloged models, orphaned cached models (in Cache API but not in the

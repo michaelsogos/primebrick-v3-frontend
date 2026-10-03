@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page as appPage } from '$app/state';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
@@ -565,7 +566,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.tabs.users')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
     </div>
   {/snippet}
 

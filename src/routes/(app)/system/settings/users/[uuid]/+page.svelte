@@ -28,7 +28,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
@@ -248,10 +248,10 @@
           { label: $t('app.system') },
           { label: $t('system.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
-          { label: $t('system.settings.users.update.title') }
+          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('system.settings.users.update.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
     </div>
   {/snippet}
 

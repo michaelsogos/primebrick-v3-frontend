@@ -198,6 +198,8 @@ export type ExecutionConfig = {
   sliding_window: boolean;
   max_history_turns: number;
   intent_detection: boolean;
+  /** RAG assistants only: min cosine similarity for a retrieved chunk to enter the prompt. */
+  min_similarity?: number;
 };
 
 export type AiModel = {

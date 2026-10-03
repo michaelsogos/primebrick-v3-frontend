@@ -356,6 +356,7 @@ export function useRegexAi(
     resolveChoice: ai.resolveChoice,
     addLocalAssistantMessage: ai.addLocalAssistantMessage,
     addLocalUserMessage: ai.addLocalUserMessage,
+    setError: ai.setError,
     generateOneOff: ai.generateOneOff,
     testRegex,
     generateExamples,

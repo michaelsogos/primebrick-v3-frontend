@@ -23,7 +23,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -211,10 +211,10 @@
             t: (key) => $t(key)
           }),
           { label: $t('system.settings.tabs.organizations'), href: '/system/settings/organizations' },
-          { label: $t('system.settings.organizations.update.title') }
+          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('app.common.loading')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
     </div>
   {/snippet}
 

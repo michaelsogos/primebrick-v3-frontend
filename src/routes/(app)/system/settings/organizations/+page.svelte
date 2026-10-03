@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page as appPage } from '$app/state';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
@@ -662,7 +663,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.tabs.organizations')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
     </div>
   {/snippet}
 

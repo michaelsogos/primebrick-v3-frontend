@@ -412,6 +412,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     resolveChoice: ai.resolveChoice,
     addLocalAssistantMessage: ai.addLocalAssistantMessage,
     addLocalUserMessage: ai.addLocalUserMessage,
+    setError: ai.setError,
     proposeCandidate,
     generateOneOff: ai.generateOneOff,
     clearConversation: ai.clearConversation,

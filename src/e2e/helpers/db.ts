@@ -95,6 +95,71 @@ export async function deleteEmailLogsForRecipient(recipientEmail: string): Promi
  * Called by global setup before the test run starts. The emailsender reads
  * this row to construct its BrevoClient.
  */
+export type FakeBrevoProviderSnapshot =
+  | { exists: false }
+  | {
+      exists: true;
+      api_key: string;
+      api_endpoint: string | null;
+      from_email: string | null;
+      version: number;
+    };
+
+export async function snapshotBrevoProvider(): Promise<FakeBrevoProviderSnapshot> {
+  const { rows } = await getPool().query<{
+    api_key: string;
+    api_endpoint: string | null;
+    from_email: string | null;
+    version: number;
+  }>(
+    `SELECT api_key, api_endpoint, from_email, version
+     FROM emailsender.providers
+     WHERE provider = 'brevo'`,
+  );
+  const row = rows[0];
+  return row ? { exists: true, ...row } : { exists: false };
+}
+
+/** Restore only if the provider row is still the fixture value this run wrote. */
+export async function restoreBrevoProvider(
+  snapshot: FakeBrevoProviderSnapshot,
+  fakeEndpoint: string,
+): Promise<void> {
+  const pool = getPool();
+  if (!snapshot.exists) {
+    const deleted = await pool.query(
+      `DELETE FROM emailsender.providers
+       WHERE provider = 'brevo'
+         AND api_key = 'fake'
+         AND api_endpoint = $1
+         AND from_email = 'test@primebrick.local'
+         AND updated_by = 'system'
+         AND version = 1`,
+      [fakeEndpoint],
+    );
+    if (deleted.rowCount !== 1) {
+      throw new Error('E2E Brevo provider fixture changed before cleanup; refusing to delete it');
+    }
+    return;
+  }
+
+  const restored = await pool.query(
+    `UPDATE emailsender.providers
+     SET api_key = $1, api_endpoint = $2, from_email = $3,
+         updated_at = now(), updated_by = 'system', version = version + 1
+     WHERE provider = 'brevo'
+       AND api_key = 'fake'
+       AND api_endpoint = $4
+       AND from_email = 'test@primebrick.local'
+       AND updated_by = 'system'
+       AND version = $5`,
+    [snapshot.api_key, snapshot.api_endpoint, snapshot.from_email, fakeEndpoint, snapshot.version + 1],
+  );
+  if (restored.rowCount !== 1) {
+    throw new Error('E2E Brevo provider fixture changed before cleanup; refusing to overwrite it');
+  }
+}
+
 export async function upsertFakeBrevoProvider(
   fakeEndpoint: string,
   apiKey = "fake",

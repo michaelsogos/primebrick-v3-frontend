@@ -35,10 +35,13 @@
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { ChatMessage } from './ai-assistant.types';
+  import { marked } from 'marked';
+  import DOMPurify from 'dompurify';
   import type { useAiAssistant } from './use-ai-assistant.svelte';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import ModelCachePanel from '$lib/components/ui/smart-regex-input/ModelCachePanel.svelte';
   import { useModelCache } from '$lib/ai/use-model-cache.svelte';
+  import AiActionChips from './ai-action-chips.svelte';
   import AiModelSelector from './ai-model-selector.svelte';
   import AiModelDetailsPopover from './ai-model-details-popover.svelte';
   import AiCerebellumSelector from './ai-cerebellum-selector.svelte';
@@ -64,7 +67,17 @@
 
   /** Build the docs site URL for a citation (path like "guide/overview.mdx"). */
   function sourceUrl(source: AiSource): string {
-    return `https://docs.primebrick.dev/en/${source.path.replace(/\.mdx?$/, '')}`;
+    return `https://docs.primebrick.dev/${source.path.replace(/\.mdx?$/, '')}`;
+  }
+
+  /**
+   * Render assistant markdown to sanitized HTML. `breaks` maps single
+   * newlines to <br> (chat prose convention); DOMPurify strips any HTML
+   * injection coming from the model output.
+   */
+  function mdToHtml(text: string): string {
+    const html = marked.parse(text, { async: false, breaks: true, gfm: true });
+    return DOMPurify.sanitize(html as string);
   }
 
   type AiHandle = ReturnType<typeof useAiAssistant<TChoice>>;
@@ -211,8 +224,9 @@
       modelId = switchModelId ?? configuredId;
 
       // 2. Load the model catalog from the BE entity — selectable models
-      // are the alive+compatible snapshot rows.
-      await aiModels.ensureCatalogLoaded();
+      // are the alive+compatible snapshot rows. Best-effort: a catalog
+      // failure must not block assistant initialization.
+      await aiModels.ensureCatalogLoaded().catch(() => {});
       availableModels = aiModels.getAliveCompatibleModels();
 
       // 3. Create the AI composable with the resolved model ID.
@@ -454,8 +468,8 @@
                 <Bot class="size-4 text-primary" />
               </div>
               <div class="max-w-[80%] space-y-1.5">
-                <div class="rounded-lg px-3 py-2 text-xs bg-muted">
-                  {message.content}
+                <div class="ai-md rounded-lg px-3 py-2 text-xs bg-muted" data-testid="{testid_prefix}-answer-{msg_idx}">
+                  {@html mdToHtml(message.content)}
                 </div>
                 {#if message.sources && message.sources.length > 0}
                   <!-- RAG citations — any assistant can attach sources to an answer -->
@@ -474,6 +488,13 @@
                       </a>
                     {/each}
                   </div>
+                {/if}
+                {#if message.actions && message.actions.length > 0}
+                  <!-- Actionable steps (navigate / MCP tool) proposed by the answer -->
+                  <AiActionChips
+                    actions={message.actions}
+                    onResult={(text) => ai?.addLocalAssistantMessage(text)}
+                  />
                 {/if}
               </div>
             </div>
@@ -504,6 +525,15 @@
             </div>
           </div>
         {/if}
+      {/if}
+
+      {#if ai.state.error && ai.state.messages.length > 0 && ai.state.error !== 'webgpu_required'}
+        <!-- Recoverable generation error — inline banner, keeps the
+             conversation visible (was: full-screen replaced all messages). -->
+        <div class="mx-1 mt-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive" data-testid="{testid_prefix}-error-banner">
+          <AlertCircle class="size-3.5 shrink-0 mt-0.5" />
+          <span class="min-w-0 break-words">{ai.state.error}</span>
+        </div>
       {/if}
     </div>
 
@@ -712,4 +742,35 @@
     75% { transform: translateX(3px); }
   }
   :global(.ai-icon-shake) { animation: ai-shake 0.4s ease-in-out 2; }
+
+  /* Markdown rendered inside assistant bubbles — compact chat density */
+  .ai-md :global(p) { margin: 0 0 0.5em; }
+  .ai-md :global(p:last-child) { margin-bottom: 0; }
+  .ai-md :global(ul), .ai-md :global(ol) {
+    margin: 0.25em 0 0.5em;
+    padding-left: 1.25em;
+  }
+  .ai-md :global(li) { margin: 0.15em 0; }
+  .ai-md :global(code) {
+    background: color-mix(in oklch, var(--foreground) 10%, transparent);
+    padding: 0 0.3em;
+    border-radius: 0.25rem;
+    font-size: 0.95em;
+  }
+  .ai-md :global(pre) {
+    background: color-mix(in oklch, var(--foreground) 8%, transparent);
+    padding: 0.5em 0.75em;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    margin: 0.5em 0;
+  }
+  .ai-md :global(pre code) { background: transparent; padding: 0; }
+  .ai-md :global(a) { color: var(--primary); text-decoration: underline; }
+  .ai-md :global(strong) { font-weight: 600; }
+  .ai-md :global(blockquote) {
+    border-left: 2px solid var(--border);
+    padding-left: 0.75em;
+    margin: 0.5em 0;
+    color: var(--muted-foreground);
+  }
 </style>

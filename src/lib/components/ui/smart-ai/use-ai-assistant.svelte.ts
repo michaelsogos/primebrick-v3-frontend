@@ -32,6 +32,8 @@ import type { AiCerebellum } from '$lib/api-types';
 import type {
   AiAssistantHooks,
   ChatMessage,
+  OneOffGenerationOptions,
+  ProcessedResponse,
 } from './ai-assistant.types';
 
 /**
@@ -69,6 +71,7 @@ type WorkerMessage =
   | { type: 'stream'; token: string }
   | { type: 'stream_complete'; text: string; model_id?: string; dtype?: string }
   | { type: 'stream_error'; error: string; model_id?: string }
+  | { type: 'generation_idle' }
   | { type: 'interrupted' }
   | { type: 'reset_complete' }
   | { type: 'dispose_complete'; disposed_model_id?: string; worker_nonce?: string }
@@ -202,6 +205,13 @@ export function useAiAssistant<TChoice = unknown>(
 
   // Web Worker instance (lazy-created on init)
   let worker: Worker | null = null;
+  let turn_in_progress = false;
+  let worker_generation_in_progress = false;
+  let active_generation: {
+    resolve: (text: string) => void;
+    reject: (error: Error) => void;
+    error?: Error;
+  } | null = null;
   /** Resolvers for one-shot worker messages (load_complete, reset_complete, etc.). */
   let pending_load_resolver: (() => void) | null = null;
   let pending_load_rejecter: ((err: Error) => void) | null = null;
@@ -213,6 +223,24 @@ export function useAiAssistant<TChoice = unknown>(
   let vram_start_time = 0;
   let vram_interval_id: ReturnType<typeof setInterval> | null = null;
 
+  function finishWorkerGeneration(error?: Error): void {
+    worker_generation_in_progress = false;
+    const pending = active_generation;
+    active_generation = null;
+
+    if (turn_in_progress) {
+      _state.ai_status = 'thinking';
+    } else {
+      _state.is_streaming = false;
+      _state.ai_status = 'idle';
+    }
+
+    if (!pending) return;
+    const failure = error ?? pending.error;
+    if (failure) pending.reject(failure);
+    else pending.resolve(_state.streaming_text);
+  }
+
   /**
    * Create the Web Worker. Vite handles `new Worker(new URL(...))` natively.
    * The worker file is the shared src/lib/ai/ai-worker.ts.
@@ -223,7 +251,9 @@ export function useAiAssistant<TChoice = unknown>(
     });
     w.addEventListener('message', handleWorkerMessage);
     w.addEventListener('error', (e) => {
-      _state.error = `Worker error: ${e.message}`;
+      const error = new Error(`Worker error: ${e.message}`);
+      _state.error = error.message;
+      finishWorkerGeneration(error);
     });
     return w;
   }
@@ -390,20 +420,21 @@ export function useAiAssistant<TChoice = unknown>(
       }
       case 'stream_complete': {
         console.debug('[ai-raw]', (msg.text ?? '').slice(0, 200));
-        _state.is_streaming = false;
-        _state.ai_status = 'idle';
         break;
       }
       case 'stream_error': {
         console.debug('[ai-err]', JSON.stringify(msg.error));
-        _state.is_streaming = false;
-        _state.ai_status = 'idle';
+        const error = new Error(msg.error);
         _state.error = msg.error;
+        if (active_generation) active_generation.error = error;
+        else finishWorkerGeneration(error);
         break;
       }
       case 'interrupted': {
-        _state.is_streaming = false;
-        _state.ai_status = 'idle';
+        break;
+      }
+      case 'generation_idle': {
+        finishWorkerGeneration();
         break;
       }
       case 'reset_complete': {
@@ -438,11 +469,32 @@ export function useAiAssistant<TChoice = unknown>(
   }
 
   /**
-   * Send a message to the worker.
+   * Send a control message to the worker.
    */
   function postToWorker(message: Record<string, any>): void {
     if (!worker) return;
     worker.postMessage(message);
+  }
+
+  function runWorkerGeneration(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    params: Record<string, unknown>,
+  ): Promise<string> {
+    const current_worker = worker;
+    if (!current_worker) return Promise.reject(new Error('AI worker unavailable'));
+    if (worker_generation_in_progress) {
+      return Promise.reject(new Error('AI worker is already generating'));
+    }
+
+    worker_generation_in_progress = true;
+    return new Promise<string>((resolve, reject) => {
+      active_generation = { resolve, reject };
+      try {
+        current_worker.postMessage({ type: 'generate', messages, params });
+      } catch (e) {
+        finishWorkerGeneration(e instanceof Error ? e : new Error(String(e)));
+      }
+    });
   }
 
   /**
@@ -457,6 +509,9 @@ export function useAiAssistant<TChoice = unknown>(
 
     const workerRef = worker;
     worker = null;
+    if (worker_generation_in_progress) {
+      finishWorkerGeneration(new Error('AI worker disposed during generation'));
+    }
     pending_load_resolver = null;
     pending_load_rejecter = null;
     pending_webgpu_resolver = null;
@@ -721,33 +776,72 @@ export function useAiAssistant<TChoice = unknown>(
     void vram_after_destroy;
   }
 
-  /**
-   * Run one generation round against the worker and resolve with the
-   * accumulated streamed text. Caller is responsible for is_streaming.
-   */
+  /** Run one generation round; completion is tracked independently of turn busy state. */
   function runGeneration(
     modelMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   ): Promise<string> {
-    postToWorker({
-      type: 'generate',
-      messages: modelMessages,
-      params: {
-        max_new_tokens: effective_params.max_tokens,
-        temperature: effective_params.temperature,
-        top_p: effective_params.top_p,
-        repetition_penalty: effective_params.repetition_penalty,
-        do_sample: effective_params.temperature > 0,
-        enable_thinking: effective_params.enable_thinking,
-      },
+    return runWorkerGeneration(modelMessages, {
+      max_new_tokens: effective_params.max_tokens,
+      temperature: effective_params.temperature,
+      top_p: effective_params.top_p,
+      repetition_penalty: effective_params.repetition_penalty,
+      do_sample: effective_params.temperature > 0,
+      enable_thinking: effective_params.enable_thinking,
     });
+  }
 
-    return new Promise<string>((resolve) => {
-      const check = () => {
-        if (!_state.is_streaming) resolve(_state.streaming_text);
-        else setTimeout(check, 50);
-      };
-      setTimeout(check, 50);
-    });
+  function appendAssistantResponse(processed: ProcessedResponse<TChoice>): void {
+    const choices = processed.choices ?? null;
+    if (choices && choices.length > 0) _state.pending_choices = choices;
+    _state.messages = [
+      ..._state.messages,
+      {
+        uuid: crypto.randomUUID(),
+        role: 'assistant',
+        content: processed.content,
+        model_content: processed.model_content,
+        display_content: processed.display_content,
+        choices: choices ?? undefined,
+        sources: processed.sources,
+        actions: processed.actions,
+      },
+    ];
+  }
+
+  /**
+   * One-off generation available only to a transform running inside the
+   * current turn. The turn stays busy for the UI, while the worker itself
+   * remains serialized: this generation completes before answer generation.
+   */
+  async function generatePreflightOneOff(
+    system_prompt: string,
+    user_prompt: string,
+    params?: OneOffGenerationOptions,
+  ): Promise<string> {
+    if (!worker || !_state.is_ready || !turn_in_progress || !_state.is_streaming) {
+      throw new Error('Preflight generation requires an active assistant turn');
+    }
+    _state.streaming_text = '';
+    try {
+      return await runWorkerGeneration(
+        [
+          { role: 'system', content: system_prompt },
+          { role: 'user', content: user_prompt },
+        ],
+        {
+          max_new_tokens: params?.max_new_tokens ?? 256,
+          temperature: params?.temperature ?? 0.5,
+          top_p: params?.top_p ?? 0.9,
+          repetition_penalty: params?.repetition_penalty ?? 1.1,
+          do_sample: (params?.temperature ?? 0.5) > 0,
+          enable_thinking: effective_params.enable_thinking,
+        },
+      );
+    } finally {
+      _state.streaming_text = '';
+      _state.ai_status = 'thinking';
+      postToWorker({ type: 'invalidate_cache' });
+    }
   }
 
   /**
@@ -758,6 +852,7 @@ export function useAiAssistant<TChoice = unknown>(
     if (!worker || _state.is_streaming || !text.trim()) return;
     if (!_state.is_ready) return;
 
+    turn_in_progress = true;
     _state.is_streaming = true;
     _state.streaming_text = '';
     _state.error = null;
@@ -782,22 +877,33 @@ export function useAiAssistant<TChoice = unknown>(
       const useSlidingWindow = execConfig?.sliding_window ?? true;
       const maxHistoryTurns = execConfig?.max_history_turns ?? MAX_HISTORY_TURNS;
 
-      // Assistant hook: transform the raw user text into model content
-      // (context injection, reminders, modify-vs-new intent handling).
-      const userContentForModel = hooks.transform_user_content
-        ? hooks.transform_user_content(text, {
-            messages: _state.messages,
-            exec_config: execConfig,
-          })
-        : text;
-
+      // Append the user message BEFORE the transform hook: async transforms
+      // (e.g. documentation retrieval) take real time — the bubble + typing
+      // indicator must be on screen for the whole wait. On transform failure
+      // the bubble stays and the error banner explains it.
+      const priorMessages = _state.messages;
       const userMessage: ChatMessage<TChoice> = {
         uuid: crypto.randomUUID(),
         role: 'user',
-        content: userContentForModel,
+        content: text,
         display_content: text,
       };
       _state.messages = [..._state.messages, userMessage];
+
+      // Assistant hook: transform the raw user text into model content
+      // (context injection, reminders, modify-vs-new intent handling).
+      const transform_result = hooks.transform_user_content
+        ? await hooks.transform_user_content(text, {
+            messages: priorMessages,
+            exec_config: execConfig,
+            generate_preflight: generatePreflightOneOff,
+          })
+        : text;
+      if (typeof transform_result !== 'string') {
+        appendAssistantResponse(transform_result.response);
+        return;
+      }
+      userMessage.content = transform_result;
 
       // Build messages array with sliding window. Keep the system prompt always,
       // then keep only the last maxHistoryTurns user+assistant pairs.
@@ -821,7 +927,7 @@ export function useAiAssistant<TChoice = unknown>(
         if (m.role === 'user') {
           modelMessages.push({ role: 'user', content: m.content });
         } else if (m.role === 'assistant') {
-          modelMessages.push({ role: 'assistant', content: m.content });
+          modelMessages.push({ role: 'assistant', content: m.model_content ?? m.content });
         }
       }
 
@@ -854,27 +960,21 @@ export function useAiAssistant<TChoice = unknown>(
         ? await hooks.process_response(responseText, regenerate)
         : { content: responseText, choices: null };
 
-      const choices = processed.choices ?? null;
-      if (choices && choices.length > 0) {
-        _state.pending_choices = choices;
-      }
+      // A generation that errored mid-flight (stream_error resolves with
+      // empty text) must not append an empty assistant bubble — it looks
+      // like the answer "disappeared". Keep the user message; the error
+      // banner communicates the failure.
+      if (!processed.content && _state.error) return;
 
       // Store the RAW model response as the assistant message content.
       // This is critical for KV cache prefix reuse: the next turn must pass
       // the exact same tokenized assistant content as part of the conversation
       // prefix.
-      const assistantMessage: ChatMessage<TChoice> = {
-        uuid: crypto.randomUUID(),
-        role: 'assistant',
-        content: processed.content,
-        display_content: processed.display_content,
-        choices: choices ?? undefined,
-        sources: processed.sources,
-      };
-      _state.messages = [..._state.messages, assistantMessage];
+      appendAssistantResponse(processed);
     } catch (err) {
       _state.error = err instanceof Error ? err.message : 'Failed to generate response';
     } finally {
+      turn_in_progress = false;
       _state.is_streaming = false;
       _state.streaming_text = '';
       _state.ai_status = 'idle';
@@ -937,23 +1037,21 @@ export function useAiAssistant<TChoice = unknown>(
   async function generateOneOff(
     system_prompt: string,
     user_prompt: string,
-    params?: { max_new_tokens?: number; temperature?: number; top_p?: number; repetition_penalty?: number },
+    params?: OneOffGenerationOptions,
   ): Promise<string> {
-    // A one-off while another generation is in flight hits the worker's
-    // `is_generating` guard → stream_error → _state.error (the panel shows
-    // a hard error). Bail early instead of poisoning the UI state.
-    if (!worker || !_state.is_ready || _state.is_streaming) return '';
+    // Public one-offs cannot enter an active turn. Assistant preflight hooks
+    // receive a separate serialized capability and never bypass this guard.
+    if (!worker || !_state.is_ready || _state.is_streaming || worker_generation_in_progress) return '';
 
     _state.is_streaming = true;
     _state.streaming_text = '';
     try {
-      postToWorker({
-        type: 'generate',
-        messages: [
+      return await runWorkerGeneration(
+        [
           { role: 'system', content: system_prompt },
           { role: 'user', content: user_prompt },
         ],
-        params: {
+        {
           max_new_tokens: params?.max_new_tokens ?? 256,
           temperature: params?.temperature ?? 0.5,
           top_p: params?.top_p ?? 0.9,
@@ -961,23 +1059,13 @@ export function useAiAssistant<TChoice = unknown>(
           do_sample: (params?.temperature ?? 0.5) > 0,
           enable_thinking: effective_params.enable_thinking,
         },
-      });
-
-      await new Promise<void>((resolve) => {
-        const check = () => {
-          if (!_state.is_streaming) resolve();
-          else setTimeout(check, 50);
-        };
-        setTimeout(check, 50);
-      });
-      return _state.streaming_text;
+      );
     } finally {
       _state.is_streaming = false;
       _state.streaming_text = '';
+      _state.ai_status = 'idle';
       // The one-off overwrote past_key_values with its own prompt's KV.
-      // The next conversation turn does blind prefix slicing on the SAME
-      // system prompt (no invalidate trigger) — a stale prefix would be
-      // served silently. Force a full re-prefill.
+      // Force a full re-prefill for the next worker generation.
       postToWorker({ type: 'invalidate_cache' });
     }
   }
@@ -1024,6 +1112,15 @@ export function useAiAssistant<TChoice = unknown>(
     _state.streaming_text = '';
     _state.error = null;
     last_system_prompt = null;
+  }
+
+  /**
+   * Surface an error produced OUTSIDE generation (e.g. a retrieval failure in
+   * an assistant wrapper): shows the inline error banner while keeping the
+   * conversation visible and retryable. Pass null to clear.
+   */
+  function setError(message: string | null): void {
+    _state.error = message;
   }
 
   /**
@@ -1111,6 +1208,7 @@ export function useAiAssistant<TChoice = unknown>(
     addLocalAssistantMessage,
     addLocalUserMessage,
     clearConversation,
+    setError,
     interrupt,
     cancelLoad,
     dispose,

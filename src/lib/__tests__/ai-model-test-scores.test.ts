@@ -6,6 +6,33 @@ import {
   summarizeTestScores,
   testCaseLabel,
 } from "$lib/ai/ai-model-test-scores";
+import { buildTestScoreUpdate } from "../../e2e/helpers/test-scores";
+
+describe("E2E test-score update parameter binding", () => {
+  it("uses a contiguous parameter list without a VRAM measurement", () => {
+    const { query, values } = buildTestScoreUpdate("model", { regex_test_score: {} }, 4.2, "q4f16");
+    expect(values).toHaveLength(4);
+    expect(query).toContain("dtype IS NOT DISTINCT FROM $4");
+    expect(query).not.toContain("$5");
+    expect(query).not.toContain("$6");
+  });
+
+  it("uses a contiguous parameter list with a VRAM measurement", () => {
+    const { query, values } = buildTestScoreUpdate(
+      "model",
+      { regex_test_score: {} },
+      4.2,
+      "q4f16",
+      { vram_bytes: 2 * 1024 * 1024, ctx_tokens: 128 },
+    );
+    expect(values).toHaveLength(6);
+    expect(query).toContain("working_set_mb = $4");
+    expect(query).toContain("working_set_detail = $5::jsonb");
+    expect(query).toContain("dtype IS NOT DISTINCT FROM $6");
+    expect(values[3]).toBe(2);
+    expect(JSON.parse(values[4] as string).measured_ctx_tokens).toBe(128);
+  });
+});
 
 describe("computeCaseMetrics — documented formulas on the fly", () => {
   it("quality = mean·0.6 + success·5·0.4, speed = mean buckets, score = q·0.8 + s·0.2", () => {

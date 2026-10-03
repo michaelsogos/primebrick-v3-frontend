@@ -1,0 +1,49 @@
+---
+title: Roles and permissions
+description: How role mappings connect identity-provider roles to Primebrick permissions — creating roles, assigning permissions, and the admin flag.
+---
+
+Primebrick permissions are role-based (RBAC). A **role** is a named set of
+permissions; users receive permissions through the roles assigned to them.
+Technically each entry on this page is a *role mapping*: it links a role name
+coming from the identity provider to a set of Primebrick permissions inside
+one organization.
+
+The **Roles** page (`/system/settings/roles`) lists all role mappings with
+their permission summary, admin flag, and last sync time.
+
+## Creating a role
+
+1. Go to **Settings → Roles**.
+2. Click **New role** — `/system/settings/roles/create`.
+3. Fill the form and save. You return to the roles list.
+
+### Fields
+
+| Field | Meaning |
+|-------|---------|
+| **Role name** | The role identifier as it exists in the identity provider — lowercase letters, digits and underscores only (e.g. `sales_manager`). |
+| **Organization** | The organization this mapping applies to. Required. |
+| **Label key** | Optional translation key used to show a friendly name in the UI. |
+| **Admin** | Marks the role as administrator: users holding it bypass permission checks and get full access. Use sparingly. |
+| **Permissions** | The permission tree grouped by module. Each module header can be toggled to select/deselect all of its permissions at once. |
+
+## How permissions are checked
+
+Every API call and UI action declares the permission it requires (e.g.
+`customers.read.all`). At runtime the user's roles are resolved into a
+permission set; a role flagged **admin** grants everything (`*.*.*`), a
+regular role grants only the selected permissions.
+
+## Assigning roles to users
+
+Roles are assigned to a user on the user's create/edit page — see
+[Managing users](/docs/user-guide/manual/users#making-a-user-administrator)
+for how an admin-flagged role makes a user an administrator.
+
+## Next steps
+
+- [Managing users](/docs/user-guide/manual/users) — assign roles, invitation
+  flow.
+- [Organizations](/docs/user-guide/manual/organizations) — roles are scoped
+  to an organization.

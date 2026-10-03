@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -124,7 +125,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('system.settings.roles.createTitle')} · Primebrick</title>
+  <title>{entityPageTitle('role_mapping', 'create', $t)} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -141,7 +142,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.roles.createTitle')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle('role_mapping', 'create', $t)}</h1>
     </div>
   {/snippet}
 

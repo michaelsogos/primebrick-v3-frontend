@@ -436,6 +436,48 @@ export async function searchDocs(params: {
   return data.results;
 }
 
+export interface CensusRoute {
+  route: string;
+  kind: 'list' | 'detail' | 'create' | 'page';
+  module: string;
+  entity?: string;
+  label_key?: string;
+}
+
+/** Runtime FE route census — aggregated on the BE from module meta. */
+export async function fetchRoutesCensus(): Promise<CensusRoute[]> {
+  const res = await apiFetch('/api/v1/system/routes');
+  if (!res.ok) throw new Error(`Routes census failed (${res.status})`);
+  const data = (await res.json()) as { routes: CensusRoute[] };
+  return data.routes;
+}
+
+/** Response of POST /api/v1/system/mcp/call. */
+export interface McpCallResponse {
+  ok: boolean;
+  result?: unknown;
+  error?: string;
+}
+
+/**
+ * Invoke a generic MCP tool over REST (`POST /api/v1/system/mcp/call`).
+ * Used by the Guide assistant action CTAs — the BE dispatches through the
+ * SAME handlers as the MCP server (validation + RBAC included).
+ */
+export async function callMcpTool(
+  tool: string,
+  args: Record<string, unknown>,
+): Promise<McpCallResponse> {
+  const res = await apiFetch('/api/v1/system/mcp/call', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tool, args }),
+  });
+  const data = (await res.json()) as McpCallResponse;
+  if (!res.ok) return { ok: false, error: data.error ?? `Tool call failed (${res.status})` };
+  return data;
+}
+
 export async function createConfigEntry(params: {
   key: string;
   value: string | bigint | number;

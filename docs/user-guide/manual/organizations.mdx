@@ -1,0 +1,46 @@
+---
+title: Organizations
+description: How to list, create, and edit organizations in Settings → Organizations, and what their fields mean.
+---
+
+The **Organizations** page (`/system/settings/organizations`) lists the
+organizations registered in the installation. Users and role mappings are
+scoped to an organization, and the sidebar organization switcher lets users
+move between the organizations they belong to.
+
+## Creating an organization
+
+1. Go to **Settings → Organizations**.
+2. Click the create action — `/system/settings/organizations/create`.
+3. Fill the form and save. You are redirected to the new organization's
+   detail page.
+
+### Fields
+
+| Field | Meaning |
+|-------|---------|
+| **Display name** | How the organization appears in the UI (sidebar switcher, lists). |
+| **Organization name (IdP)** | The organization's identifier in the identity provider. It is auto-suggested from the display name — editing the display name regenerates the slug until you override it manually. |
+| **Owner** | The identity-provider user that owns the organization (defaults to `admin`). |
+| **Website URL** | Optional organization website. Must be a valid URL. |
+
+## Editing an organization
+
+Open an organization row to reach
+`/system/settings/organizations/{uuid}`. The detail page shows the same
+fields and lets you update them.
+
+## How organizations relate to users and roles
+
+- A **user** always belongs to an organization: the user create form only
+  lists organizations that are backed by a real identity-provider
+  organization, and username availability is checked inside that scope.
+- A **role mapping** is defined per organization — the same role name can
+  carry different permissions in different organizations.
+
+## Next steps
+
+- [Managing users](/docs/user-guide/manual/users) — creating users inside an
+  organization.
+- [Roles and permissions](/docs/user-guide/manual/roles-and-permissions) —
+  roles are organization-scoped.

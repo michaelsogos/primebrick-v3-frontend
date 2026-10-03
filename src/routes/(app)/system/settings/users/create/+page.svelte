@@ -47,7 +47,7 @@
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { entityPageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
@@ -345,10 +345,10 @@
           { label: $t('app.system') },
           { label: $t('system.settings.title'), href: '/system/settings' },
           settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
-          { label: $t('system.settings.users.create.title') }
+          { label: entityPageTitle(meta, 'create', $t) }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.users.create.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'create', $t)}</h1>
     </div>
   {/snippet}
 
