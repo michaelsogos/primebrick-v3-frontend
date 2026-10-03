@@ -63,6 +63,8 @@ interface DocHit {
   content: string;
   similarity: number;
   score: number;
+  /** Structural hit from doc-graph expansion — bypasses the similarity floor. */
+  graph_expanded?: boolean;
 }
 
 const DECOMPOSE_SYSTEM = `/no_think
@@ -130,13 +132,15 @@ export async function runGuideRetrievalLoop(
     const perQuery = await Promise.all(
       qs.map(async (q) => {
         const embedding = await deps.embed(q);
-        return searchDocs({ embedding, keywords, limit: MAX_CONTEXT_CHUNKS });
+        return searchDocs({ embedding, keywords, limit: MAX_CONTEXT_CHUNKS, min_similarity: minSimilarity });
       }),
     );
     let added = 0;
     for (const rows of perQuery) {
       for (const h of rows) {
-        if (seen.has(h.path) || h.similarity < minSimilarity) continue;
+        // Graph-expanded chunks are structurally related to a top hit
+        // (outbound doc links) — the similarity floor doesn't apply to them.
+        if (seen.has(h.path) || (h.similarity < minSimilarity && !h.graph_expanded)) continue;
         seen.add(h.path);
         hits.push(h as DocHit);
         added++;

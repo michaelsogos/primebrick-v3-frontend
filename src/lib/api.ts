@@ -418,6 +418,9 @@ export interface DocsSearchHit {
   similarity: number;
   keyword_hits: number;
   score: number;
+  /** Doc-graph expansion hit (outbound link of a top page) — real similarity
+   *  but structural provenance; bypasses the min_similarity floor. */
+  graph_expanded?: boolean;
 }
 
 export async function searchDocs(params: {
@@ -425,6 +428,8 @@ export async function searchDocs(params: {
   keywords?: string[];
   limit?: number;
   repo?: string;
+  /** Caller floor — the BE only expands the doc graph off hits above it. */
+  min_similarity?: number;
 }): Promise<DocsSearchHit[]> {
   const res = await apiFetch('/api/v1/system/docs/search', {
     method: 'POST',
