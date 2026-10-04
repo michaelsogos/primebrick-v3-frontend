@@ -452,6 +452,23 @@ export async function searchDocs(params: {
   return data.results;
 }
 
+/** Full document fetch for the `docs_fetch` agent tool — the model
+ *  dereferences a path seen in an excerpt and reads the whole page. */
+export async function fetchDoc(params: {
+  path: string;
+  repo?: string;
+}): Promise<{ repo: string; path: string; title: string; content: string } | null> {
+  const res = await apiFetch('/api/v1/system/docs/document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
+  const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string } };
+  return data.document;
+}
+
 export interface CensusRoute {
   route: string;
   kind: 'list' | 'detail' | 'create' | 'page';

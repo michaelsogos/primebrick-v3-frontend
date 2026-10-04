@@ -478,7 +478,7 @@ export function useAiAssistant<TChoice = unknown>(
   }
 
   function runWorkerGeneration(
-    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>,
     params: Record<string, unknown>,
   ): Promise<string> {
     const current_worker = worker;
@@ -846,6 +846,36 @@ export function useAiAssistant<TChoice = unknown>(
   }
 
   /**
+   * Agent-loop one-off: same serialized preflight slot as
+   * generatePreflightOneOff but takes a full message array (tool turns)
+   * and forwards tool schemas to the chat template via params.tools.
+   */
+  async function generateAgentOneOff(
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>,
+    params?: OneOffGenerationOptions & { tools?: unknown[] },
+  ): Promise<string> {
+    if (!worker || !_state.is_ready || !turn_in_progress || !_state.is_streaming) {
+      throw new Error('Agent generation requires an active assistant turn');
+    }
+    _state.streaming_text = '';
+    try {
+      return await runWorkerGeneration(messages, {
+        max_new_tokens: params?.max_new_tokens ?? 256,
+        temperature: params?.temperature ?? 0.5,
+        top_p: params?.top_p ?? 0.9,
+        repetition_penalty: params?.repetition_penalty ?? 1.1,
+        do_sample: (params?.temperature ?? 0.5) > 0,
+        enable_thinking: effective_params.enable_thinking,
+        ...(params?.tools ? { tools: params.tools } : {}),
+      });
+    } finally {
+      _state.streaming_text = '';
+      _state.ai_status = 'thinking';
+      postToWorker({ type: 'invalidate_cache' });
+    }
+  }
+
+  /**
    * Send a user message to the LLM and stream the response.
    * The assistant's hooks shape the prompt and post-process the output.
    */
@@ -898,6 +928,7 @@ export function useAiAssistant<TChoice = unknown>(
             messages: priorMessages,
             exec_config: execConfig,
             generate_preflight: generatePreflightOneOff,
+            generate_agent: generateAgentOneOff,
           })
         : text;
       if (typeof transform_result !== 'string') {

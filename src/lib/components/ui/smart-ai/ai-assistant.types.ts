@@ -116,6 +116,32 @@ export interface TransformContext<TChoice = unknown> {
     user_prompt: string,
     params?: OneOffGenerationOptions,
   ) => Promise<string>;
+  /**
+   * Multi-turn one-off generation for the agentic tool loop: accepts a full
+   * message array (including `tool` role messages carrying tool results) and
+   * optional tool schemas rendered by the chat template.
+   */
+  generate_agent: (
+    messages: AgentTurnMessage[],
+    params?: OneOffGenerationOptions & { tools?: AgentToolSpec[] },
+  ) => Promise<string>;
+}
+
+export interface AgentTurnMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  /** Tool name on `tool` role messages (dialect renders it inside the block). */
+  name?: string;
+}
+
+/** JSON-schema–shaped tool declaration handed to the chat template. */
+export interface AgentToolSpec {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
 }
 
 /** Assistant-specific behavior injected into the generic composable. */

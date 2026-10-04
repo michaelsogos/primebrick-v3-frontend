@@ -23,10 +23,11 @@ import { resumableFetch, setByteReporter } from './resumable-fetch';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
-type Role = 'system' | 'user' | 'assistant';
+type Role = 'system' | 'user' | 'assistant' | 'tool';
 interface ChatMessage {
   role: Role;
   content: string;
+  name?: string;
 }
 
 type DType = 'auto' | 'fp32' | 'fp16' | 'q8' | 'int8' | 'uint8' | 'q4' | 'q4f16' | 'bnb4' | 'q2' | 'q2f16' | 'q1' | 'q1f16';
@@ -38,6 +39,8 @@ interface GenerateParams {
   repetition_penalty: number;
   do_sample?: boolean;
   enable_thinking?: boolean;
+  /** Agentic loop: tool schemas forwarded to the chat template. */
+  tools?: unknown[];
 }
 
 interface LoadPayload {
@@ -471,6 +474,9 @@ async function generate(payload: GeneratePayload): Promise<void> {
             add_generation_prompt: true,
             tokenize: false,
             enable_thinking: payload.params.enable_thinking ?? false,
+            // Agentic loop: tool schemas are rendered by the chat template
+            // itself (Qwen dialect — XML tool_call instructions in system).
+            ...(payload.params.tools ? { tools: payload.params.tools } : {}),
           }))
         : messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
     } catch {
@@ -577,7 +583,10 @@ async function generate(payload: GeneratePayload): Promise<void> {
         suppress_tokens,
         // The pipeline re-renders the chat template internally — enable_thinking
         // must travel through tokenizer_kwargs or it is lost (default: thinking on).
-        tokenizer_kwargs: { enable_thinking: payload.params.enable_thinking },
+        tokenizer_kwargs: {
+          enable_thinking: payload.params.enable_thinking,
+          ...(payload.params.tools ? { tools: payload.params.tools } : {}),
+        },
         stopping_criteria: interruptable,
         // Always pass past_key_values when kv_cache_reuse is enabled, even on T1
         // with an empty cache. The library's getPastKeyValues() mutates the

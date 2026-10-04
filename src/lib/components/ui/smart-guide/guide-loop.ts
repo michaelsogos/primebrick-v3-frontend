@@ -1,24 +1,25 @@
 /**
- * guide-loop — bounded agentic retrieval loop for the Guide assistant.
+ * guide-loop — model-driven agentic retrieval loop for the Guide assistant.
  *
- * Replaces the passive single-shot "rewrite→embed→inject" preflight with a
- * staged loop where the MODEL selects and our code executes:
+ * The MODEL drives retrieval via native chat-template tool calls
+ * (`<tool_call>{name,arguments}</tool_call>` — bare-JSON dialect also
+ * parsed); this module only executes and feeds results back:
  *
- *   S0 decompose   — preflight JSON: {queries[≤3], keywords[≤8], lang}
- *   S1 retrieve    — deterministic: embed each query → docs search, deduped
- *   S2 coverage    — preflight JSON: {sufficient, missing[≤2]} — deepens S1,
- *                    bounded by MAX_RETRIEVAL_ITERATIONS + early-exit when a
- *                    deepening round adds zero new chunks
- *   (S3 answer     — runs as the MAIN streaming generation, outside this file)
- *   S4 actions     — selection from a deterministic candidate set (route
- *                    census + entity tools), output: {action_ids:[≤3]}
+ *   agent turn  — generate_agent(messages, tools) → tool_call? → execute
+ *                 (docs_search / docs_fetch / list_routes) → append
+ *                 {assistant, tool} messages → repeat until the model
+ *                 emits text (bounded by max_agent_turns/max_agent_calls)
+ *   (S3 answer  — runs as the MAIN streaming generation on the collected
+ *                excerpts, outside this file)
+ *   S4 actions  — selection from a deterministic candidate set (route
+ *                 census), output validated against the census
  *
- * Every model stage returns closed-space JSON; parsing failures degrade
- * gracefully (retrieval keeps working, actions just end up empty).
+ * Tool-call parse failures degrade gracefully — a non-call output ends
+ * the loop and the answer composes from whatever evidence was gathered.
  */
 import type { TransformContext } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import type { AiAction, AiSource } from '$lib/components/ui/smart-ai/ai-assistant.types';
-import { searchDocs, fetchRoutesCensus, type CensusRoute } from '$lib/api';
+import { searchDocs, fetchRoutesCensus, fetchDoc, type CensusRoute } from '$lib/api';
 
 /** Loop knobs — all overridable per cerebellum tuning via execution_config
  *  keys of the same name; values below are the built-in defaults. The
@@ -49,6 +50,10 @@ export interface GuideLoopConfig {
   inspect_digest_size: number;
   /** S2 follow-up search cap per iteration. */
   max_searches: number;
+  /** Agent-loop generation rounds (each may emit ≤2 tool calls). */
+  max_agent_turns: number;
+  /** Hard cap on tool executions per user question. */
+  max_agent_calls: number;
 }
 
 const LOOP_DEFAULTS: GuideLoopConfig = {
@@ -63,6 +68,8 @@ const LOOP_DEFAULTS: GuideLoopConfig = {
   max_keywords: 8,
   inspect_digest_size: 6,
   max_searches: 3,
+  max_agent_turns: 4,
+  max_agent_calls: 6,
 };
 
 function resolveLoopConfig(exec_config: Record<string, any> | null): GuideLoopConfig {
@@ -119,27 +126,108 @@ interface DocHit {
   lexical_match?: boolean;
 }
 
-const DECOMPOSE_SYSTEM = (maxQueries: number, maxKeywords: number) => `/no_think
-You decompose user questions for a documentation search engine. The docs are
-mostly English. Output ONLY JSON:
-{"queries":["search query variants, max ${maxQueries}"],"keywords":["literal identifiers, config keys, technical terms — keep exact casing, max ${maxKeywords}"],"lang":"<user language code>","intent":"create|edit|delete|list|explain"}
-lang is the language of the USER QUESTION, never the language you translate to.
-queries MUST always be written in English — the docs are English, so search
-terms are translated to English even when the question is not.
-intent: "create" only when the user explicitly wants to CREATE a new entity;
-"edit"/"delete" for changes to existing records; "list" for browsing/finding;
-"explain" for meanings, procedures on existing things, how-it-works questions.
-Examples: "creo un utente"→create; "rendo admin un utente"→edit;
-"assegno un ruolo a X"→edit; "nuovo ruolo"→create; "come funziona X"→explain.
-No markdown, no explanation.`;
+const AGENT_SYSTEM = `/no_think
+You are the Primebrick documentation research agent. The user asked a
+question about the application. Your job is to GATHER evidence from the
+documentation using the provided tools — you do NOT write the final answer.
 
-const COVERAGE_SYSTEM = (maxSearches: number) => `/no_think
-You inspect retrieved documentation excerpts and decide if they answer the user question.
-Read the excerpt contents. Output ONLY JSON:
-{"sufficient":true|false,"searches":["new search queries to run, max ${maxSearches}"]}
-- sufficient=true when the excerpts contain the procedure or facts asked.
-- When sufficient=false, searches MUST be full standalone search queries for the
-  documentation engine — never document names, paths, or topic labels.`;
+Rules:
+- Always start with docs_search. Search queries MUST be in English (the
+  docs are English) even when the question is not.
+- Call docs_fetch to read a full page when an excerpt names a doc whose
+  content you need — prefer fetch over repeating searches.
+- Call list_routes only if you need the list of app pages.
+- When you have gathered enough evidence (or the docs clearly do not cover
+  the question), answer with the single word: DONE
+- Never answer the user's question yourself. Either call a tool or say DONE.`;
+
+const AGENT_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'docs_search',
+      description:
+        'Search the Primebrick user-guide documentation. Returns ranked excerpts with doc paths you can open via docs_fetch.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'English search query' },
+          keywords: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Literal identifiers/config keys, exact casing',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'docs_fetch',
+      description:
+        'Fetch the full text of a documentation page by path (e.g. manual/users). Use after docs_search when an excerpt is not enough.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Doc path from search results' },
+          repo: { type: 'string', description: 'Optional repo qualifier from search results' },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_routes',
+      description: 'List the application pages (routes) the user can navigate to.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+];
+
+/** Multi-dialect tool-call parser — the Qwen chat template instructs
+ *  `<tool_call>{json}</tool_call>` but small variants often emit the bare
+ *  `{name, arguments}` JSON with no wrapper, or several calls in one turn. */
+function parseToolCalls(raw: string): Array<{ name: string; arguments: Record<string, unknown> }> {
+  const calls: Array<{ name: string; arguments: Record<string, unknown> }> = [];
+  const wrapped = raw.match(/<tool_call>\s*([\s\S]*?)(?:<\/tool_call>|$)/gi);
+  const bodies: string[] = wrapped?.length
+    ? wrapped.map((w) => w.replace(/<\/?tool_call>/gi, ''))
+    : [raw];
+  for (const body of bodies) {
+    const j = parseJson<{ name?: unknown; arguments?: unknown }>(body);
+    if (j && typeof j.name === 'string') {
+      calls.push({
+        name: j.name,
+        arguments:
+          typeof j.arguments === 'object' && j.arguments !== null
+            ? (j.arguments as Record<string, unknown>)
+            : {},
+      });
+    }
+  }
+  if (calls.length) return calls;
+  // Shorthand dialect (fp16 quirk): the model emits `docs_search "query"`
+  // or `docs_fetch(path)` — natural-language call syntax, no JSON. Map the
+  // single argument onto the tool's required parameter.
+  const SHORTHAND_ARG: Record<string, string> = {
+    docs_search: 'query',
+    docs_fetch: 'path',
+    list_routes: '',
+  };
+  const m = raw.trim().match(/^(\w+)\s*[("`]?\s*([^)"`]*?)\s*[)"`]?\s*$/);
+  if (m && m[1] in SHORTHAND_ARG) {
+    const argName = SHORTHAND_ARG[m[1]];
+    calls.push({
+      name: m[1],
+      arguments: argName && m[2] ? { [argName]: m[2].replace(/^["'`]|["'`]$/g, '') } : {},
+    });
+  }
+  return calls;
+}
 
 
 function parseJson<T>(raw: string): T | null {
@@ -162,100 +250,164 @@ function parseJson<T>(raw: string): T | null {
  */
 export async function runGuideRetrievalLoop(
   text: string,
-  ctx: Pick<TransformContext, 'generate_preflight' | 'exec_config'>,
+  ctx: Pick<TransformContext, 'generate_preflight' | 'generate_agent' | 'exec_config'>,
   deps: GuideLoopDeps,
   minSimilarity: number,
 ): Promise<GuideLoopResult> {
   const cfg = resolveLoopConfig(ctx.exec_config);
-  // Route census is fetched in parallel with S0 — independent input.
-  const [census, s0raw] = await Promise.all([
-    fetchRoutesCensus().catch(() => [] as CensusRoute[]),
-    timed('s0_decompose', () =>
-      ctx.generate_preflight(DECOMPOSE_SYSTEM(cfg.max_queries, cfg.max_keywords), text, {
-        max_new_tokens: cfg.preflight_max_tokens,
-        temperature: cfg.preflight_temperature,
-      }),
-    ),
-  ]);
-
-  const s0 = parseJson<{ queries?: string[]; keywords?: string[]; intent?: string }>(s0raw);
-  const queries = (s0?.queries ?? []).filter((q) => typeof q === 'string' && q.trim()).slice(0, cfg.max_queries);
-  if (!queries.length) queries.push(text);
-  // Keywords are picked by the model inside the same S0 call (free
-  // byproduct) and passed verbatim to the search boost — no FE/BE
-  // extraction, no stopword lists.
-  const keywords = (s0?.keywords ?? []).filter((k) => typeof k === 'string').slice(0, cfg.max_keywords);
+  // Route census is fetched in parallel with the first agent turn.
+  const censusPromise = fetchRoutesCensus().catch(() => [] as CensusRoute[]);
 
   const seen = new Set<string>();
   const hits: DocHit[] = [];
-  const collect = async (qs: string[], stage: string): Promise<number> => {
+
+  /** docs_search executor — model-driven queries, deterministic ranking. */
+  const execSearch = async (query: string, keywords: string[]): Promise<string> => {
     const t0 = performance.now();
-    const perQuery = await Promise.all(
-      qs.map(async (q) => {
-        const embedding = await deps.embed(q);
-        return searchDocs({
-          embedding,
-          keywords,
-          limit: cfg.max_context_chunks,
-          min_similarity: minSimilarity,
-          keyword_boost: ctx.exec_config?.keyword_boost,
-          lexical_boost: ctx.exec_config?.lexical_boost,
-          lex_match_min: ctx.exec_config?.lex_match_min,
-          oversample: ctx.exec_config?.oversample,
-          graph_max_paths: ctx.exec_config?.graph_max_paths,
-        });
-      }),
-    );
+    const embedding = await deps.embed(query);
+    const rows = await searchDocs({
+      embedding,
+      keywords: keywords.length ? keywords : undefined,
+      limit: cfg.max_context_chunks,
+      min_similarity: minSimilarity,
+      keyword_boost: ctx.exec_config?.keyword_boost,
+      lexical_boost: ctx.exec_config?.lexical_boost,
+      lex_match_min: ctx.exec_config?.lex_match_min,
+      oversample: ctx.exec_config?.oversample,
+      graph_max_paths: ctx.exec_config?.graph_max_paths,
+    });
     let added = 0;
-    for (const rows of perQuery) {
-      for (const h of rows) {
-        // Graph-expanded and strong lexical-recall chunks are structurally/
-        // textually related — the similarity floor doesn't apply to them.
-        if (seen.has(h.path) || (h.similarity < minSimilarity && !h.graph_expanded && !h.lexical_match)) continue;
-        seen.add(h.path);
-        hits.push(h as DocHit);
-        added++;
-      }
+    for (const h of rows) {
+      // Graph-expanded and strong lexical-recall chunks are structurally/
+      // textually related — the similarity floor doesn't apply to them.
+      if (seen.has(h.path) || (h.similarity < minSimilarity && !h.graph_expanded && !h.lexical_match)) continue;
+      seen.add(h.path);
+      hits.push(h as DocHit);
+      added++;
     }
-    stageLog(stage, {
+    stageLog('tool_docs_search', {
       ms: Math.round(performance.now() - t0),
-      queries: qs,
-      returned: perQuery.map((r) => r.length),
+      query,
+      returned: rows.length,
       new_chunks: added,
     });
-    return added;
+    // What the model sees: a compact digest, not the full hit payload.
+    return JSON.stringify(
+      rows.slice(0, 6).map((h) => ({
+        path: h.path,
+        title: h.title,
+        similarity: Number(h.similarity.toFixed(3)),
+        excerpt: h.content.slice(0, cfg.inspect_chunk_chars),
+      })),
+    );
   };
 
+  /** docs_fetch executor — full-document dereference, capped for prompt size. */
+  const execFetch = async (path: string, repo?: string): Promise<string> => {
+    const t0 = performance.now();
+    const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: String(e) }));
+    stageLog('tool_docs_fetch', { ms: Math.round(performance.now() - t0), path, found: !!doc && !('error' in doc) });
+    if (!doc || 'error' in doc) return JSON.stringify({ error: 'document not found' });
+    // Fetched docs count as evidence too — the model explicitly asked for them.
+    if (!seen.has(doc.path)) {
+      seen.add(doc.path);
+      hits.push({
+        repo: doc.repo,
+        path: doc.path,
+        title: doc.title,
+        content: doc.content,
+        similarity: 1,
+        score: 1,
+      });
+    }
+    const content = doc.content.length > cfg.max_chunk_chars * 2
+      ? doc.content.slice(0, cfg.max_chunk_chars * 2) + '\n…[truncated]'
+      : doc.content;
+    return JSON.stringify({ path: doc.path, title: doc.title, content });
+  };
+
+  const execRoutes = async (): Promise<string> => {
+    const census = await censusPromise;
+    return JSON.stringify(census.map((r) => ({ route: r.route, kind: r.kind, entity: r.entity })));
+  };
+
+  const executeTool = async (name: string, args: Record<string, unknown>): Promise<string> => {
+    if (name === 'docs_search') {
+      const query = typeof args.query === 'string' ? args.query : '';
+      const kws = Array.isArray(args.keywords) ? args.keywords.filter((k): k is string => typeof k === 'string') : [];
+      if (!query.trim()) return JSON.stringify({ error: 'missing query' });
+      return execSearch(query, kws.slice(0, cfg.max_keywords));
+    }
+    if (name === 'docs_fetch') {
+      const path = typeof args.path === 'string' ? args.path : '';
+      if (!path.trim()) return JSON.stringify({ error: 'missing path' });
+      return execFetch(path, typeof args.repo === 'string' ? args.repo : undefined);
+    }
+    if (name === 'list_routes') return execRoutes();
+    return JSON.stringify({ error: `unknown tool "${name}"` });
+  };
+
+  // ── Agent loop: the MODEL decides what to look up; we only execute. ──
+  const messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }> = [
+    { role: 'system', content: AGENT_SYSTEM },
+    { role: 'user', content: text },
+  ];
+  let toolCallsTotal = 0;
   try {
-    await collect(queries, 's1_retrieve');
+    for (let round = 0; round < cfg.max_agent_turns; round++) {
+      const raw = await timed(`agent_turn_${round}`, () =>
+        ctx.generate_agent(messages, {
+          tools: AGENT_TOOLS,
+          max_new_tokens: cfg.preflight_max_tokens,
+          temperature: cfg.preflight_temperature,
+        }),
+      );
+      const calls = parseToolCalls(raw);
+      stageLog('agent_decision', { round, calls: calls.map((c) => c.name), raw_head: raw.slice(0, 120) });
+      if (!calls.length) {
+        // Premature-done repair (bounded, once): on fp16 the model can emit
+        // DONE at turn 0 without ever searching — a verdict on coverage it
+        // cannot legitimately make. Reject it and reprompt; if it still
+        // refuses, the loop exits and the deterministic seed search runs.
+        if (round === 0 && toolCallsTotal === 0) {
+          stageLog('agent_premature_done', { raw_head: raw.slice(0, 80) });
+          messages.push(
+            { role: 'assistant', content: raw },
+            { role: 'user', content: 'You have not searched yet. Call docs_search now — never declare coverage before looking.' },
+          );
+          continue;
+        }
+        break; // model emitted text (DONE or an answer) — loop over
+      }
+      messages.push({ role: 'assistant', content: raw });
+      for (const call of calls.slice(0, 2)) {
+        if (toolCallsTotal >= cfg.max_agent_calls) break;
+        toolCallsTotal++;
+        const result = await executeTool(call.name, call.arguments);
+        messages.push({ role: 'tool', name: call.name, content: result });
+      }
+    }
   } catch (e) {
     throw new Error(
       `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
 
-  // S2 — inspect: the model READS excerpt content and issues its own search
-  // calls (free-form queries, executed in parallel by the orchestrator).
-  // Bounded by MAX_RETRIEVAL_ITERATIONS + early exit on zero new chunks.
-  for (let iter = 0; iter < cfg.max_retrieval_iterations && hits.length > 0; iter++) {
-    const digest = hits
-      .slice(0, cfg.inspect_digest_size)
-      .map((h, i) => `[${i}] ${h.title} (${h.path})\n${h.content.slice(0, cfg.inspect_chunk_chars)}`)
-      .join('\n\n');
-    const s2raw = await timed(`s2_inspect_${iter}`, () =>
-      ctx.generate_preflight(COVERAGE_SYSTEM(cfg.max_searches), `QUESTION: ${text}\nEXCERPTS:\n${digest}`, {
-        max_new_tokens: cfg.preflight_max_tokens,
-        temperature: cfg.preflight_temperature,
-      }),
-    );
-    const s2 = parseJson<{ sufficient?: boolean; searches?: string[] }>(s2raw);
-    stageLog('s2_decision', { iter, raw_ok: s2 !== null, sufficient: s2?.sufficient, searches: s2?.searches });
-    const searches = (s2?.searches ?? [])
-      .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
-      .slice(0, cfg.max_searches);
-    if (!s2 || s2.sufficient !== false || !searches.length) break;
-    if ((await collect(searches, `s2_search_${iter}`)) === 0) break;
+  // Lazy-done guard: the model may emit DONE/text on turn 0 without ever
+  // looking (observed on uncovered questions). Declaring "no coverage"
+  // without a single real search would risk false negatives on covered
+  // questions — run one deterministic seed search on the raw question.
+  if (toolCallsTotal === 0 && !hits.length) {
+    stageLog('agent_lazy_done', { question: text });
+    try {
+      await execSearch(text, []);
+    } catch (e) {
+      throw new Error(
+        `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   }
+  const census = await censusPromise;
 
   if (!hits.length)
     return { found: false, block: '', sources: [], question: text, route_candidates: census, max_actions: cfg.max_actions };
@@ -281,11 +433,13 @@ export async function runGuideRetrievalLoop(
   const entities = new Set(
     hits.map((h) => h.metadata?.entity).filter((e): e is string => typeof e === 'string'),
   );
-  // Intent gate: `*/create` candidates are only offered when S0 classifies
-  // the question as an explicit create intent. Unknown/missing intent keeps
-  // the full entity set (graceful degradation, same as before).
-  const intent = typeof s0?.intent === 'string' ? s0.intent.toLowerCase() : null;
-  const dropCreate = intent !== null && intent !== 'create';
+  // Intent gate: `*/create` candidates are only offered on explicit create
+  // intent. Deterministic keyword check — no LLM needed; an unknown intent
+  // drops create candidates (create routes are the risky mis-picks).
+  const intent = /\b(crea|creare|create|new|aggiungi|aggiungere|add|insert|nuov[oaie])\b/i.test(text)
+    ? 'create'
+    : null;
+  const dropCreate = intent !== 'create';
   const route_candidates = entities.size
     ? census.filter(
         (r) => r.entity && entities.has(r.entity) && !(dropCreate && r.kind === 'create'),
