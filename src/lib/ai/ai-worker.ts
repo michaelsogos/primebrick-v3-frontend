@@ -482,7 +482,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
     } catch {
       prompt = messages.map((m) => `${m.role}: ${m.content}`).join('\n') + '\nassistant:';
     }
-    post({ type: 'debug', step: 'prompt_tail', len: prompt.length, tail: prompt.slice(-150), kv_cache_reuse: current_kv_cache_reuse });
+    post({ type: 'debug', step: 'prompt_tail', len: prompt.length, tail: prompt.slice(-150), has_tools: prompt.includes('# Tools'), kv_cache_reuse: current_kv_cache_reuse });
 
     const cache_len_at_start = cache_valid && past_key_values
       ? past_key_values.get_seq_length()

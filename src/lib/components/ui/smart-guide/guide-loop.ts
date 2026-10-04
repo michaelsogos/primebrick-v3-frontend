@@ -132,13 +132,17 @@ question about the application. Your job is to GATHER evidence from the
 documentation using the provided tools — you do NOT write the final answer.
 
 Rules:
-- Always start with docs_search. Search queries MUST be in English (the
-  docs are English) even when the question is not.
+- Your FIRST response MUST be a docs_search call. The query argument MUST
+  be in English — translate the question's intent, never pass the user's
+  words verbatim (the docs are English).
+- After each docs_search result, CHECK the excerpts: if they are off-topic
+  or about a different entity than the question, call docs_search again
+  with a different English query. Two or three different queries are normal.
 - Call docs_fetch to read a full page when an excerpt names a doc whose
-  content you need — prefer fetch over repeating searches.
+  content you need — prefer fetch over repeating the same search.
 - Call list_routes only if you need the list of app pages.
-- When you have gathered enough evidence (or the docs clearly do not cover
-  the question), answer with the single word: DONE
+- Only AFTER at least one tool result has been returned to you may you
+  answer with the single word: DONE
 - Never answer the user's question yourself. Either call a tool or say DONE.`;
 
 const AGENT_TOOLS = [
@@ -218,13 +222,16 @@ function parseToolCalls(raw: string): Array<{ name: string; arguments: Record<st
     docs_fetch: 'path',
     list_routes: '',
   };
-  const m = raw.trim().match(/^(\w+)\s*[("`]?\s*([^)"`]*?)\s*[)"`]?\s*$/);
+  // Observed shorthand forms (WebGPU): `docs_search "q"`, `docs_search(q)`,
+  // `docs_search: "q"`, `docs_search(query="q")` — name, a `:`/`(`/space
+  // separator, then a bare or key=value argument.
+  const m = raw.trim().match(/^(\w+)\s*([\s\S]*)$/);
   if (m && m[1] in SHORTHAND_ARG) {
     const argName = SHORTHAND_ARG[m[1]];
-    calls.push({
-      name: m[1],
-      arguments: argName && m[2] ? { [argName]: m[2].replace(/^["'`]|["'`]$/g, '') } : {},
-    });
+    let rest = (m[2] ?? '').replace(/^[:(\s]+/, '').replace(/[\)\s]+$/, '');
+    const kv = rest.match(/^(\w+)\s*=\s*["'`]([\s\S]*?)["'`]?$/);
+    const value = (kv ? kv[2] : rest.replace(/^["'`]|["'`]$/g, '')).trim();
+    calls.push({ name: m[1], arguments: argName && value ? { [argName]: value } : {} });
   }
   return calls;
 }

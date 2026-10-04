@@ -285,6 +285,8 @@ test.describe("AI quality — guide_test_score", () => {
                 `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} tail=…${JSON.stringify(d.raw_tail)}`,
               );
               if (typeof d.raw_text === "string") log(`[raw] ${JSON.stringify(d.raw_text)}`);
+            } else if (d && d.step === "prompt_tail") {
+              log(`[prompt] len=${d.len} has_tools=${d.has_tools} tail=…${JSON.stringify(d.tail)}`);
             } else if (d && (d.step === "kv_cache_pipeline" || d.step === "gen_enter" || d.prompt_token_count)) {
               log(
                 `[tok] step=${d.step ?? "measure"} prompt=${d.prompt_token_count ?? "?"} gen=${d.tokens_generated ?? "?"} tps=${d.tokens_per_second ?? "?"} cache=${d.kv_cache_seq_length ?? d.cache_len_before_gen ?? "?"} msgs=${d.num_messages ?? "?"}`,
