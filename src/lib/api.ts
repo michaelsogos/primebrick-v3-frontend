@@ -457,7 +457,7 @@ export async function searchDocs(params: {
 export async function fetchDoc(params: {
   path: string;
   repo?: string;
-}): Promise<{ repo: string; path: string; title: string; content: string } | null> {
+}): Promise<{ repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } | null> {
   const res = await apiFetch('/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -465,7 +465,7 @@ export async function fetchDoc(params: {
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
-  const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string } };
+  const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } };
   return data.document;
 }
 

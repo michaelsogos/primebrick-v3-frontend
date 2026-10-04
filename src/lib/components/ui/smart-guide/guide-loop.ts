@@ -128,22 +128,41 @@ interface DocHit {
 
 const AGENT_SYSTEM = `/no_think
 You are the Primebrick documentation research agent. The user asked a
-question about the application. Your job is to GATHER evidence from the
-documentation using the provided tools — you do NOT write the final answer.
+question about the application. Your ONLY job is to GATHER evidence —
+another agent writes the final answer from what you collect.
 
-Rules:
-- Your FIRST response MUST be a docs_search call. The query argument MUST
-  be in English — translate the question's intent, never pass the user's
-  words verbatim (the docs are English).
-- After each docs_search result, CHECK the excerpts: if they are off-topic
-  or about a different entity than the question, call docs_search again
-  with a different English query. Two or three different queries are normal.
-- Call docs_fetch to read a full page when an excerpt names a doc whose
-  content you need — prefer fetch over repeating the same search.
-- Call list_routes only if you need the list of app pages.
-- Only AFTER at least one tool result has been returned to you may you
-  answer with the single word: DONE
-- Never answer the user's question yourself. Either call a tool or say DONE.`;
+You must be empirical and deep-dive before concluding. A single search
+result is almost never enough evidence.
+
+Mandatory workflow — follow the sequence EXACTLY:
+1. FIRST response: a docs_search call. The query argument MUST be in
+   English — translate the question's intent, never pass the user's words
+   verbatim (the docs are English).
+2. SECOND response: a docs_fetch call on the most relevant doc path from
+   the search results. This step is REQUIRED — excerpts alone are never
+   enough evidence. If the first search returned only irrelevant paths,
+   call docs_search again with a different English query instead.
+3. THIRD response: read the fetched page. CHECK the entity field and the
+   content: if the page is about a different subject than the question, it
+   was the wrong pick — go back to step 1 with a different English query.
+   For "what is X" questions, a second docs_search with an explanatory
+   query (e.g. "X definition", "X meaning") is REQUIRED — never settle on
+   the literal term alone.
+4. If the fetched page fully answers the question, say DONE. Otherwise
+   keep gathering: another docs_fetch on a related path, or another
+   docs_search for missing details. Two or three fetches are normal.
+5. Prefer pages under frontend/guide/manual/ — they are the user guide.
+   backend/guide/ and api/ pages are developer references: fetch them only
+   when no manual page covers the question.
+6. Call list_routes only if you need the list of app pages.
+
+The single word DONE is FORBIDDEN until you have received at least one
+docs_fetch result. After a search you are NOT done — you must fetch.
+If searches keep returning only unrelated topics, do NOT fetch irrelevant
+pages — say DONE (that means "nothing useful found").
+
+Never answer the user's question yourself. Never describe what you found.
+Every response is either ONE tool call or the word DONE.`;
 
 const AGENT_TOOLS = [
   {
@@ -266,6 +285,12 @@ export async function runGuideRetrievalLoop(
   const censusPromise = fetchRoutesCensus().catch(() => [] as CensusRoute[]);
 
   const seen = new Set<string>();
+  const fetchedPaths = new Set<string>();
+  /** Entities surfaced by docs_search hits — the relevance yardstick a
+   *  fetched doc is checked against before becoming a primary source. */
+  const searchEntities = new Set<string>();
+  /** Fetched path → declared entity (undefined when the doc has none). */
+  const fetchedEntities = new Map<string, string | undefined>();
   const hits: DocHit[] = [];
 
   /** docs_search executor — model-driven queries, deterministic ranking. */
@@ -275,7 +300,9 @@ export async function runGuideRetrievalLoop(
     const rows = await searchDocs({
       embedding,
       keywords: keywords.length ? keywords : undefined,
-      limit: cfg.max_context_chunks,
+      // The agent needs a real candidate set to choose a fetch target —
+      // limiting to the S3 context budget would hide alternative docs.
+      limit: 12,
       min_similarity: minSimilarity,
       keyword_boost: ctx.exec_config?.keyword_boost,
       lexical_boost: ctx.exec_config?.lexical_boost,
@@ -283,27 +310,56 @@ export async function runGuideRetrievalLoop(
       oversample: ctx.exec_config?.oversample,
       graph_max_paths: ctx.exec_config?.graph_max_paths,
     });
+    // User-guide policy: this assistant answers from the USER GUIDE corpus
+    // only — dev/API references (backend/guide, api/, sdk/) are out of
+    // scope for UI questions (observed: "RBAC" query pulls the dev doc,
+    // and the model always picks the literal title match over the manual
+    // page). Product scoping, not a hidden re-rank.
+    const guideRows = rows.filter((h) => h.path.startsWith('frontend/guide/'));
+    const boosted = guideRows
+      .map((h) => ({
+        ...h,
+        score: h.score + (h.path.startsWith('frontend/guide/manual/') ? 0.25 : 0),
+      }))
+      .sort((a, b) => b.score - a.score);
     let added = 0;
-    for (const h of rows) {
+    for (const h of boosted) {
       // Graph-expanded and strong lexical-recall chunks are structurally/
       // textually related — the similarity floor doesn't apply to them.
       if (seen.has(h.path) || (h.similarity < minSimilarity && !h.graph_expanded && !h.lexical_match)) continue;
       seen.add(h.path);
       hits.push(h as DocHit);
       added++;
+      if (typeof h.metadata?.entity === 'string') searchEntities.add(h.metadata.entity);
     }
+    searchHitCount += added;
     stageLog('tool_docs_search', {
       ms: Math.round(performance.now() - t0),
       query,
       returned: rows.length,
       new_chunks: added,
+      paths: boosted.slice(0, 6).map((h) => `${h.path}#${h.score.toFixed(3)}`),
     });
-    // What the model sees: a compact digest, not the full hit payload.
+    // What the model sees: one row per DOCUMENT — 6 chunks of the same file
+    // (observed on "RBAC permissions") would hide every alternative doc and
+    // take the fetch choice away from the model.
+    const digestRows = [];
+    const digestSeen = new Set<string>();
+    for (const h of boosted) {
+      if (digestSeen.has(h.path)) continue;
+      digestSeen.add(h.path);
+      digestRows.push(h);
+      if (digestRows.length >= 12) break;
+    }
     return JSON.stringify(
-      rows.slice(0, 6).map((h) => ({
+      digestRows.map((h) => ({
         path: h.path,
+        repo: h.repo,
+        entity: h.metadata?.entity,
         title: h.title,
-        similarity: Number(h.similarity.toFixed(3)),
+        // No raw similarity here: the array order IS the ranking — showing
+        // the score made the model pick the highest number over the
+        // user-guide policy ordering (observed: rbac dev doc over manual).
         excerpt: h.content.slice(0, cfg.inspect_chunk_chars),
       })),
     );
@@ -315,7 +371,10 @@ export async function runGuideRetrievalLoop(
     const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: String(e) }));
     stageLog('tool_docs_fetch', { ms: Math.round(performance.now() - t0), path, found: !!doc && !('error' in doc) });
     if (!doc || 'error' in doc) return JSON.stringify({ error: 'document not found' });
-    // Fetched docs count as evidence too — the model explicitly asked for them.
+    // Fetched docs count as evidence too — the model explicitly asked for
+    // them — and they're flagged so S3 treats them as primary sources.
+    fetchedPaths.add(doc.path);
+    fetchedEntities.set(doc.path, typeof doc.metadata?.entity === 'string' ? doc.metadata.entity : undefined);
     if (!seen.has(doc.path)) {
       seen.add(doc.path);
       hits.push({
@@ -323,6 +382,7 @@ export async function runGuideRetrievalLoop(
         path: doc.path,
         title: doc.title,
         content: doc.content,
+        metadata: doc.metadata,
         similarity: 1,
         score: 1,
       });
@@ -330,7 +390,7 @@ export async function runGuideRetrievalLoop(
     const content = doc.content.length > cfg.max_chunk_chars * 2
       ? doc.content.slice(0, cfg.max_chunk_chars * 2) + '\n…[truncated]'
       : doc.content;
-    return JSON.stringify({ path: doc.path, title: doc.title, content });
+    return JSON.stringify({ path: doc.path, title: doc.title, entity: doc.metadata?.entity, content });
   };
 
   const execRoutes = async (): Promise<string> => {
@@ -348,6 +408,7 @@ export async function runGuideRetrievalLoop(
     if (name === 'docs_fetch') {
       const path = typeof args.path === 'string' ? args.path : '';
       if (!path.trim()) return JSON.stringify({ error: 'missing path' });
+      fetchCallCount++;
       return execFetch(path, typeof args.repo === 'string' ? args.repo : undefined);
     }
     if (name === 'list_routes') return execRoutes();
@@ -360,6 +421,9 @@ export async function runGuideRetrievalLoop(
     { role: 'user', content: text },
   ];
   let toolCallsTotal = 0;
+  let searchHitCount = 0;
+  let fetchCallCount = 0;
+  let shallowDoneReprompts = 0;
   try {
     for (let round = 0; round < cfg.max_agent_turns; round++) {
       const raw = await timed(`agent_turn_${round}`, () =>
@@ -381,6 +445,25 @@ export async function runGuideRetrievalLoop(
           messages.push(
             { role: 'assistant', content: raw },
             { role: 'user', content: 'You have not searched yet. Call docs_search now — never declare coverage before looking.' },
+          );
+          continue;
+        }
+        // Shallow-done guard (bounded): the protocol the model agreed to in
+        // the system prompt requires opening a page before DONE when search
+        // produced hits — the 3B complies intermittently, so the orchestrator
+        // enforces the contract once: it never picks WHAT to open, only
+        // THAT a page must be opened.
+        if (
+          fetchCallCount === 0 &&
+          searchHitCount > 0 &&
+          shallowDoneReprompts < 1 &&
+          /^\s*DONE\b/i.test(raw)
+        ) {
+          shallowDoneReprompts++;
+          stageLog('agent_shallow_done', { round });
+          messages.push(
+            { role: 'assistant', content: raw },
+            { role: 'user', content: 'You have search results but have not opened any page. Call docs_fetch on the most relevant path.' },
           );
           continue;
         }
@@ -416,18 +499,55 @@ export async function runGuideRetrievalLoop(
   }
   const census = await censusPromise;
 
-  if (!hits.length)
+  // Coverage is anchored to docs_search hits only: a docs_fetch can enrich
+  // the context but can never CREATE coverage on its own — otherwise an
+  // irrelevant page fetched on an uncovered question (observed: "torta" →
+  // app-page-layout.mdx) would defeat the no-documentation fallback.
+  if (searchHitCount === 0 || !hits.length)
     return { found: false, block: '', sources: [], question: text, route_candidates: census, max_actions: cfg.max_actions };
 
   hits.sort((a, b) => b.score - a.score);
-  const block = `DOCUMENTATION EXCERPTS:\n\n${hits
+  // Pages the researcher explicitly fetched are the verified evidence: they
+  // lead the S3 block as PRIMARY SOURCE so the answer quotes the right
+  // procedure instead of blending sibling excerpts.
+  // A fetched doc earns the PRIMARY SOURCE flag only when its declared
+  // entity matches what the searches surfaced (or it declares none): a
+  // wrong pick (observed: "IDP Code" → components/input.mdx) must not be
+  // promoted over the real search evidence.
+  const confirmedFetched = new Set(
+    [...fetchedPaths].filter((p) => {
+      const e = fetchedEntities.get(p);
+      return e === undefined || searchEntities.has(e);
+    }),
+  );
+  const scopedEntities = new Set(
+    [...confirmedFetched]
+      .map((p) => fetchedEntities.get(p))
+      .filter((e): e is string => typeof e === 'string'),
+  );
+  const ordered = [
+    ...hits.filter((h) => confirmedFetched.has(h.path)),
+    ...hits.filter((h) => !confirmedFetched.has(h.path)),
+  ];
+  // Entity scoping: once the researcher has opened a doc that declares an
+  // entity consistent with the search evidence, sibling excerpts about
+  // OTHER entities are noise — the 3B blends their procedures into the
+  // answer (observed: "create user" answered with the organizations page).
+  const scoped = scopedEntities.size
+    ? ordered.filter(
+        (h) =>
+          confirmedFetched.has(h.path) ||
+          (typeof h.metadata?.entity === 'string' && scopedEntities.has(h.metadata.entity)),
+      )
+    : ordered;
+  const block = `DOCUMENTATION EXCERPTS:\n\n${scoped
     .slice(0, cfg.max_context_chunks)
-    .map((h, i) => `[${i + 1}] "${h.title}" (${h.path})\n${h.content.slice(0, cfg.max_chunk_chars)}`)
+    .map((h, i) => `[${i + 1}]${confirmedFetched.has(h.path) ? ' [PRIMARY SOURCE — full page fetched]' : ''} "${h.title}" (${h.path})\n${h.content.slice(0, cfg.max_chunk_chars)}`)
     .join('\n\n')}`;
 
   const seenPaths = new Set<string>();
   const sources: AiSource[] = [];
-  for (const h of hits.slice(0, cfg.max_context_chunks)) {
+  for (const h of scoped.slice(0, cfg.max_context_chunks)) {
     if (seenPaths.has(h.path)) continue;
     seenPaths.add(h.path);
     sources.push({ repo: h.repo, path: h.path, title: h.title, similarity: h.similarity });
@@ -438,7 +558,7 @@ export async function runGuideRetrievalLoop(
   // entity evidence → empty candidate set → deterministically no action,
   // instead of the model picking a salient-but-wrong route every turn.
   const entities = new Set(
-    hits.map((h) => h.metadata?.entity).filter((e): e is string => typeof e === 'string'),
+    scoped.map((h) => h.metadata?.entity).filter((e): e is string => typeof e === 'string'),
   );
   // Intent gate: `*/create` candidates are only offered on explicit create
   // intent. Deterministic keyword check — no LLM needed; an unknown intent
