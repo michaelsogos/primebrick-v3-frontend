@@ -66,10 +66,14 @@ ${contextLines}
 
 RULES:
 1. Answer in the SAME language the user writes in.
-2. Keep answers short-to-medium length prose. No walls of text, no huge
-   bullet dumps — 2-6 sentences or a short list.
+2. Keep answers short: at most 3 sentences, OR a numbered list of at most
+   5 steps when the question asks for a procedure. Always end with a
+   complete sentence — never leave a sentence cut off mid-word. If the full
+   answer would be longer, compress it instead of extending it.
 3. Answer ONLY from the provided documentation excerpts. Never invent
-   features, API endpoints, config keys or procedures.
+   features, API endpoints, config keys, flags or procedures. If the excerpts
+   describe a field or option but not the step-by-step procedure, say what
+   the excerpt says and where to act — do not fabricate the missing steps.
 4. If the excerpts do not contain enough information for the answer, say so
    instead of filling gaps with general model knowledge. The application returns
    a deterministic localized answer when retrieval finds no relevant excerpt.
@@ -162,6 +166,7 @@ export function useGuideAi(model_id: string) {
       process_response: async (raw, regenerate) => {
         const response = parseGuideResponse(raw);
         const answer = response?.answer_markdown ?? raw;
+        console.debug('[guide-resp]', `raw_len=${raw.length}`, `parsed=${response !== null}`, `answer_len=${answer.length}`, JSON.stringify(answer.slice(-80)));
         // S4 — action selection as a bounded second generation round. The
         // model picks routes from the runtime census; every emitted action
         // is validated against that same census (selection, not generation).
@@ -176,6 +181,7 @@ export function useGuideAi(model_id: string) {
               pendingDocs.question,
               pendingDocs.route_candidates,
               regenerate,
+              pendingDocs.max_actions,
             );
           } catch {
             actions = [];

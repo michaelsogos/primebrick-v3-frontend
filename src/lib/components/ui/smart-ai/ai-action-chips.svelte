@@ -87,6 +87,7 @@
           : 'border-primary/40 bg-primary/5 text-primary hover:bg-primary/10'}
         {actions.length > 1 ? 'w-full justify-start' : ''}"
       data-testid="ai-action-{idx}"
+      data-route={action.kind === 'navigate' ? action.route : undefined}
     >
       {#if pendingIdx === idx}
         <Loader2 class="size-3 shrink-0 animate-spin" />

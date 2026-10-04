@@ -615,6 +615,19 @@ async function generate(payload: GeneratePayload): Promise<void> {
       post({ type: 'debug', step: 'kv_cache_post_gen', cache_seq_len_before, cache_seq_len_after, cache_valid });
     }
 
+    // Diagnose WHY generation stopped: budget, model EOS, our stop-string
+    // interrupt, or timeout. The raw tail (pre-trim) reveals whether the model
+    // closed its output cleanly or the text was sliced.
+    post({
+      type: 'debug',
+      step: 'gen_done',
+      streamer_interrupted: interruptable.interrupted,
+      raw_tail: fullText.slice(-120),
+      raw_text: fullText,
+      raw_len: fullText.length,
+      requested_max_new_tokens: payload.params.max_new_tokens,
+    });
+
     // Trim stop markers
     for (const s of STOP_STRINGS) {
       const idx = fullText.indexOf(s);

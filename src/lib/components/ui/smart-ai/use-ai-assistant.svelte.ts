@@ -456,6 +456,7 @@ export function useAiAssistant<TChoice = unknown>(
       }
       case 'measure': {
         _state.measurements = msg.data;
+        console.debug('[ai-worker]', 'measure', msg.data);
         break;
       }
       case 'debug': {
@@ -939,6 +940,7 @@ export function useAiAssistant<TChoice = unknown>(
       _state.is_streaming = true;
       _state.streaming_text = '';
       const responseText = await runGeneration(modelMessages);
+      console.debug('[ai-resp]', responseText.length, JSON.stringify(responseText.slice(-80)));
 
       /**
        * regenerate(): sends another generation round with an appended repair

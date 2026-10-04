@@ -417,10 +417,15 @@ export interface DocsSearchHit {
   metadata: Record<string, unknown>;
   similarity: number;
   keyword_hits: number;
+  /** ts_rank_cd of the full-text lexical channel (0 when absent). */
+  lexical_score: number;
   score: number;
   /** Doc-graph expansion hit (outbound link of a top page) — real similarity
    *  but structural provenance; bypasses the min_similarity floor. */
   graph_expanded?: boolean;
+  /** Lexical-only recall (strong FTS match, absent from the vector top-N) —
+   *  bypasses the min_similarity floor like graph_expanded. */
+  lexical_match?: boolean;
 }
 
 export async function searchDocs(params: {
@@ -430,6 +435,12 @@ export async function searchDocs(params: {
   repo?: string;
   /** Caller floor — the BE only expands the doc graph off hits above it. */
   min_similarity?: number;
+  /** Rank-tuning overrides forwarded to the DAL (per-assistant balance). */
+  keyword_boost?: number;
+  lexical_boost?: number;
+  lex_match_min?: number;
+  oversample?: number;
+  graph_max_paths?: number;
 }): Promise<DocsSearchHit[]> {
   const res = await apiFetch('/api/v1/system/docs/search', {
     method: 'POST',

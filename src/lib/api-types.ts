@@ -266,6 +266,9 @@ export type AiCerebellum = {
   uuid: string;
   assistant_key: string;
   model_id: string;
+  /** Model variant dtype (e.g. 'q4f16'); null/undefined = WebLLM variant.
+   *  Runtime variant key = `${model_id}#${dtype}` (modelVariantKey()). */
+  dtype?: string | null;
   /** Tuning name shown in the chat footer dropdown (e.g. 'default', 'precise'). */
   name: string;
   description_key?: string | null;

@@ -12,7 +12,7 @@
  */
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { fetchAiCerebellum } from '$lib/api';
-import type { AiCerebellum } from '$lib/api-types';
+import { modelVariantKey, type AiCerebellum } from '$lib/api-types';
 import { clearCachedETag } from '$lib/cache/fe-cache-store';
 
 const AI_CEREBELLUM_URL = '/api/v1/entities/ai_cerebellum/list';
@@ -75,13 +75,16 @@ export function useAiCerebellum(assistant_key: string) {
     },
     ensureLoaded,
     /**
-     * Tunings for a model (at most one — the (assistant, model) pair
-     * is unique in the DB; the BE already excludes soft-deleted rows).
-     * Pure read — call ensureLoaded() in onMount first.
+     * Tunings for a model (at most one — the (assistant, model, dtype)
+     * triple is unique in the DB; the BE already excludes soft-deleted rows).
+     * Accepts a bare repo id or a variant key 'repo#dtype'; rows store the
+     * normalized pair (model_id, dtype) — the variant key is recomposed via
+     * modelVariantKey() for comparison. Pure read — call ensureLoaded() in
+     * onMount first.
      */
     getTuningsForModel(model_id: string): AiCerebellum[] {
       return getCache(assistant_key).tunings
-        .filter((t) => t.model_id === model_id);
+        .filter((t) => t.model_id === model_id || modelVariantKey(t) === model_id);
     },
     async invalidate(): Promise<void> {
       clearCachedETag(AI_CEREBELLUM_URL);

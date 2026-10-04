@@ -69,6 +69,15 @@ type TurnSpec = {
   keywords: string[];
   /** True → the correct answer is the no-documentation fallback. */
   uncovered?: boolean;
+  /** Retrieval quality baseline: outer array = required groups, inner =
+   *  alternates (any substring match on a cited source href counts as a
+   *  hit). Evidence only — recorded in the turn's `source_hits`, does not
+   *  change the score formula. */
+  expected_sources?: string[][];
+  /** Routes a navigate action may legitimately point to (prefix match).
+   *  An action outside this set is flagged in `action_off`; no assertion on
+   *  count — zero actions is always acceptable. */
+  allowed_actions?: string[];
 };
 
 const TURNS: TurnSpec[] = [
@@ -76,21 +85,29 @@ const TURNS: TurnSpec[] = [
     prompt: "come faccio a creare un utente?",
     expected: "UI procedure to create a user under /system/settings/users",
     keywords: ["utent", "crea"],
+    expected_sources: [["manual/users-create", "manual/users"]],
+    allowed_actions: ["/system/settings/users"],
   },
   {
     prompt: "cosa significa IDP Code?",
     expected: "IDP Code is the identity-provider subject (JWT sub) identifier",
     keywords: ["idp"],
+    expected_sources: [["api-reference", "entity-field-reference", "manual/users"]],
+    allowed_actions: ["/system/settings/users"],
   },
   {
     prompt: "come funzionano i permessi e la RBAC?",
     expected: "Wildcard-based RBAC permission system with roles and admin bypass",
     keywords: ["permess", "ruol"],
+    expected_sources: [["rbac", "authentication"]],
+    allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/settings/ai"],
   },
   {
     prompt: "come rendo un utente admin?",
     expected: "Assign the administrators role to the user",
     keywords: ["admin|amministr"],
+    expected_sources: [["manual/users", "manual/roles", "rbac", "entity-field-reference"]],
+    allowed_actions: ["/system/settings/users", "/system/settings/roles"],
   },
   {
     prompt: "come faccio una torta?",
@@ -141,26 +158,42 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
 }
 
 /** Text + citation chips + action chips of the last assistant answer bubble. */
-async function lastAnswer(page: Page): Promise<{ text: string; sources: number; actions: number }> {
+async function lastAnswer(page: Page): Promise<{
+  text: string; sources: number; actions: number; source_hrefs: string[]; action_routes: string[];
+}> {
   const answers = page.locator(`[data-testid^="${PREFIX}-answer-"]`);
   const count = await answers.count();
-  if (!count) return { text: "", sources: 0, actions: 0 };
+  if (!count) return { text: "", sources: 0, actions: 0, source_hrefs: [], action_routes: [] };
   const last = answers.last();
   const text = ((await last.textContent()) ?? "").trim();
+  // Debug: dump the bubble's inner HTML so we can compare DOM content vs
+  // the parsed message content (markdown render vs truncation upstream).
+  const html = await last.innerHTML().catch(() => "");
+  if (html) log(`    [dom] ${html.slice(0, 400)}`);
   // Sources/actions are siblings of the answer bubble — scope to the last
   // answer's wrapper or the previous turn's citations leak in.
   const wrap = last.locator("xpath=..");
-  const sources = await wrap.locator(`[data-testid="${PREFIX}-sources"] a`).count().catch(() => 0);
-  const actions = await wrap.locator('[data-testid="ai-actions"] [data-testid^="ai-action-"]')
-    .count().catch(() => 0);
-  return { text, sources, actions };
+  const sourceEls = wrap.locator(`[data-testid="${PREFIX}-sources"] a`);
+  const source_hrefs = await sourceEls.evaluateAll(
+    (els) => els.map((a) => a.getAttribute("href") ?? "").filter(Boolean),
+  ).catch(() => [] as string[]);
+  const sources = source_hrefs.length || await sourceEls.count().catch(() => 0);
+  const actionEls = wrap.locator('[data-testid="ai-actions"] [data-testid^="ai-action-"]');
+  const action_routes = await actionEls.evaluateAll(
+    (els) => els.map((a) => a.getAttribute("data-route") ?? "").filter(Boolean),
+  ).catch(() => [] as string[]);
+  const actions = (await actionEls.count().catch(() => 0)) || action_routes.length;
+  return { text, sources, actions, source_hrefs, action_routes };
 }
 
 /**
  * Send one turn; wait ≤30s for the typing indicator to disappear after it
  * appeared (or for a new answer bubble to land). Records wall-clock latency.
  */
-async function sendTurn(page: Page, prompt: string): Promise<{ response_s: number; answer: string; sources: number; actions: number; timed_out: boolean }> {
+async function sendTurn(page: Page, prompt: string): Promise<{
+  response_s: number; answer: string; sources: number; actions: number;
+  source_hrefs: string[]; action_routes: string[]; timed_out: boolean;
+}> {
   const input = page.locator(`[data-testid="${PREFIX}-input"]`);
   const send = page.locator(`[data-testid="${PREFIX}-send"]`);
   const typing = page.locator(`[data-testid="${PREFIX}-typing"]`);
@@ -184,8 +217,8 @@ async function sendTurn(page: Page, prompt: string): Promise<{ response_s: numbe
   } catch {
     timed_out = true;
   }
-  const { text, sources, actions } = await lastAnswer(page);
-  return { response_s: (Date.now() - t0) / 1000, answer: text, sources, actions, timed_out };
+  const { text, sources, actions, source_hrefs, action_routes } = await lastAnswer(page);
+  return { response_s: (Date.now() - t0) / 1000, answer: text, sources, actions, source_hrefs, action_routes, timed_out };
 }
 
 function scoreTurn(spec: TurnSpec, answer: string, sources: number, timed_out: boolean): Pick<E2ETurn, "score" | "verdict" | "reason"> {
@@ -229,6 +262,38 @@ test.describe("AI quality — guide_test_score", () => {
       if (req.url().includes("/api/v1/system/docs/search")) log("→ docs/search request");
     });
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
+    // Worker telemetry: capture prompt/generated token counts so answer
+    // truncation can be attributed to the token budget vs model EOS.
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") {
+        log(`[console.${msg.type()}] ${msg.text().slice(0, 300)}`);
+        return;
+      }
+      // console.debug('[ai-worker]', step, obj) — inspect args, not text().
+      for (const arg of msg.args()) {
+        void arg
+          .jsonValue()
+          .then((v) => {
+            if (typeof v === "string" && v.length > 60) {
+              log(`[str] ${JSON.stringify(v)}`);
+              return;
+            }
+            const j = v as Record<string, unknown> | null;
+            const d = (j?.data ?? j) as Record<string, unknown> | null;
+            if (d && d.step === "gen_done") {
+              log(
+                `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} tail=…${JSON.stringify(d.raw_tail)}`,
+              );
+              if (typeof d.raw_text === "string") log(`[raw] ${JSON.stringify(d.raw_text)}`);
+            } else if (d && (d.step === "kv_cache_pipeline" || d.step === "gen_enter" || d.prompt_token_count)) {
+              log(
+                `[tok] step=${d.step ?? "measure"} prompt=${d.prompt_token_count ?? "?"} gen=${d.tokens_generated ?? "?"} tps=${d.tokens_per_second ?? "?"} cache=${d.kv_cache_seq_length ?? d.cache_len_before_gen ?? "?"} msgs=${d.num_messages ?? "?"}`,
+              );
+            }
+          })
+          .catch(() => undefined);
+      }
+    });
     {
       // 0. Auth gate: /api/v1/auth/me is the deterministic signal.
       const isAuthed = () =>
@@ -332,14 +397,31 @@ test.describe("AI quality — guide_test_score", () => {
       // 2. Turns — live RAG, no interception.
       const turns: E2ETurn[] = [];
       for (const [i, spec] of TURNS.entries()) {
-        const { response_s, answer, sources, actions, timed_out } = await sendTurn(page, spec.prompt);
+        const { response_s, answer, sources, actions, source_hrefs, action_routes, timed_out } =
+          await sendTurn(page, spec.prompt);
         const verdict = scoreTurn(spec, answer, sources, timed_out);
+        // Retrieval-quality evidence (baseline, non-scoring): how many
+        // expected source-groups were actually cited, and whether emitted
+        // action routes stay inside the allowed set for this turn.
+        const src_hits = (spec.expected_sources ?? [])
+          .filter((alts) => alts.some((a) => source_hrefs.some((h) => h.includes(a)))).length;
+        const src_total = spec.expected_sources?.length ?? 0;
+        const action_off = action_routes.filter(
+          (r) => !(spec.allowed_actions ?? []).some((p) => r.startsWith(p)),
+        );
         log(
           `  turn ${i + 1}: ${verdict.verdict} score=${verdict.score} ` +
-          `${response_s.toFixed(1)}s sources=${sources} actions=${actions} — ${verdict.reason}`,
+          `${response_s.toFixed(1)}s sources=${sources} actions=${actions} ` +
+          `src_hits=${src_hits}/${src_total} action_off=[${action_off}] — ${verdict.reason}`,
         );
-        log(`    answer: ${answer.slice(0, 220).replace(/\n/g, " ")}`);
-        turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: answer.slice(0, 2000), response_s, ...verdict });
+        log(`    answer (${answer.length} chars): ${answer.replace(/\n/g, " ")}`);
+        log(`    sources: ${source_hrefs.join(", ")}`);
+        log(`    actions: ${action_routes.join(", ")}`);
+        turns.push({
+          n: i + 1, prompt: spec.prompt, expected: spec.expected,
+          actual: answer.slice(0, 2000), response_s, ...verdict,
+          source_hrefs, action_routes, src_hits, src_total, action_off,
+        } as E2ETurn);
       }
 
       // 3. Persist measured turns (aggregates are computed at read time).
