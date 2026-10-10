@@ -12,11 +12,14 @@
  * while data-ai-phase is a `loading_*` phase the wait extends to 8min max,
  * still polling every 5s to catch `ready` ASAP.
  *
- * Scoring (same formulas as the other AI quality cases):
- *   turn score: 5=correct (all expected keywords + ≥1 citation for covered
- *   turns), 3=partial (some keywords or no citations), 0=fail (no answer,
- *   timeout, or a confident answer on an uncovered question)
- *   For the uncovered turn: 5 = explicit "Non lo so", 0 = fabricated answer.
+ * Scoring v2 — semantic blend + deterministic flags (calibrated on 6 runs,
+ * see ai-plans/guide-score-recalibration-and-retests.md):
+ *   covered answered : clamp(1.8 + 4.5·(0.35·faithfulness + 0.45·corr_max
+ *                      + 0.20·entity_precision) − penalties, 0, 5)
+ *   penalties        : 1.2·protocol_debris + 1.0·spurious_citation
+ *                      + 0.6·language_mix + 0.5·over_prose
+ *   uncovered        : fabricated→0 | "Non lo so"→5 | idk+spurious cites→3.5
+ *   covered "Non lo so" (false-IDK) → 1.0
  *   quality = mean(scores)·0.6 + (success/total)·5·0.4
  *   speed   = bucket(mean response_s); score = quality·0.8 + speed·0.2
  *
@@ -28,10 +31,12 @@ import { test, expect, chromium, type BrowserContext, type Page } from "@playwri
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
+import { semanticScore } from "./helpers/semantic-scorer";
+import { getPool } from "./helpers/db";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
-const CASE_KEY = "guide_test_score";
+const CASE_KEY = "guide_react_test_score";
 const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 const CDP_URL = "http://127.0.0.1:9333";
 
@@ -211,7 +216,7 @@ async function sendTurn(page: Page, prompt: string): Promise<{
       const count = await page.locator(`[data-testid^="${PREFIX}-answer-"]`).count();
       if (count > before && (await typing.count()) === 0) return "answer";
       return null;
-    }, "guide answer", 12); // the agentic loop serializes S0→S4 — allow 60s
+    }, "guide answer", 36); // the agentic loop serializes model turns; each worker gen has a 90s internal cap — allow 180s
     // Let actions/sources finish rendering (same bounded slot).
     await new Promise((r) => setTimeout(r, 1500));
   } catch {
@@ -221,28 +226,141 @@ async function sendTurn(page: Page, prompt: string): Promise<{
   return { response_s: (Date.now() - t0) / 1000, answer: text, sources, actions, source_hrefs, action_routes, timed_out };
 }
 
-function scoreTurn(spec: TurnSpec, answer: string, sources: number, timed_out: boolean): Pick<E2ETurn, "score" | "verdict" | "reason"> {
+/** Load the cited docs' chunk contents — the context faithfulness is
+ *  measured against. Citation hrefs are `https://docs.primebrick.dev/<path>`
+ *  (no extension); docs_kb rows are keyed by `<path>.mdx`. */
+async function citedContexts(source_hrefs: string[]): Promise<string[]> {
+  const paths = source_hrefs
+    .map((h) => h.replace(/^https?:\/\/[^/]+\//, ""))
+    .map((p) => (p.endsWith(".mdx") ? p : `${p}.mdx`));
+  if (!paths.length) return [];
+  const { rows } = await getPool().query<{ content: string }>(
+    "SELECT content FROM ai.docs_kb WHERE path = ANY($1) ORDER BY path, chunk_idx",
+    [paths],
+  );
+  return rows.map((r) => r.content);
+}
+
+// ─── Scoring v2 — deterministic flags + recalibrated blend ──────────────────
+// Calibrated offline on 6 persisted runs (see ai-plans/guide-score-recalibration-
+// and-retests.md). All signals are deterministic; no LLM judge.
+//
+//   covered answered : clamp(1.8 + 4.5·(0.35·faith + 0.45·corrM + 0.20·ent)
+//                            − 1.2·debris − 1.0·spuria − 0.6·lang − 0.5·prose, 0, 5)
+//   uncovered        : fabricated→0 | "Non lo so"→5 | idk+spurious sources→3.5
+//   covered "Non lo so" (false-IDK) → 1.0
+
+let translationVocab: string | null = null;
+/** All translation values — ground truth for UI labels cited in answers. */
+async function uiLabelVocab(): Promise<string> {
+  if (translationVocab === null) {
+    const { rows } = await getPool().query<{ value: string }>(
+      "SELECT DISTINCT value FROM system.translations WHERE value IS NOT NULL AND value <> ''",
+    );
+    translationVocab = rows.map((r) => r.value).join("\n").toLowerCase();
+  }
+  return translationVocab;
+}
+
+/** Trailing JSON residue / leaked ReAct protocol keywords in the final answer. */
+function protocolDebris(answer: string): number {
+  const tail = answer.trim().slice(-80);
+  const trailing = /["}]\s*$/.test(tail) && /[{"]/.test(tail) ? 1 : 0;
+  const leak = /\b(Thought|Action|Observation|Action Input|Final)\s*:/i.test(answer) ? 1 : 0;
+  return Math.min(trailing + leak, 1);
+}
+
+/** Entity-like spans: quoted/bolded labels ≤3 words, /paths, CamelCase, ALLCAPS,
+ *  mid-sentence capitalized words. Sentence fragments excluded. */
+function extractEntities(answer: string): string[] {
+  const ents = new Set<string>();
+  const add = (x: string) => {
+    const t = x.trim().replace(/[.,;:]+$/, "");
+    if (t.split(/\s+/).length <= 3 && t.length <= 40 && t.length >= 2) ents.add(t);
+  };
+  for (const m of answer.matchAll(/\*\*([^*\n]{2,60})\*\*/g)) add(m[1]);
+  for (const m of answer.matchAll(/["'`]([^"'`\n]{2,60})["'`]/g)) add(m[1]);
+  for (const m of answer.matchAll(/\/[\w\-/.]{4,60}/g)) add(m[0]);
+  for (const m of answer.matchAll(/\b[A-Z][a-zA-Z0-9]*(?:[A-Z][a-zA-Z0-9]*)+\b/g)) add(m[0]);
+  for (const m of answer.matchAll(/\b[A-Z]{2,}\b/g)) add(m[0]);
+  for (const m of answer.matchAll(/(?<= )[A-ZÀÈÉÌÒÙ][a-zàèéìòù]{3,}(?=[ ,.;:]|$)/gm)) {
+    if (!/[.!?\n]\s*$/.test(answer.slice(Math.max(0, m.index - 3), m.index))) add(m[0]);
+  }
+  return [...ents];
+}
+
+/** Fraction of extracted entities found in cited chunks + UI translations. */
+function entityPrecision(answer: string, groundTruth: string): { p: number; missing: string[] } | null {
+  const ents = extractEntities(answer);
+  if (!ents.length) return null;
+  const gt = groundTruth.toLowerCase();
+  const missing = ents.filter((e) => !gt.includes(e.toLowerCase()));
+  return { p: (ents.length - missing.length) / ents.length, missing };
+}
+
+/** EN function-word ratio outside quoted spans (UI labels whitelisted by quote-strip). */
+function languageMix(answer: string): number {
+  const bare = answer.replace(/["'`*][^"'`\n]*["'`*]/g, " ");
+  const en = (bare.match(/\b(the|is|are|to|and|with|for|click|button|field|list|page|save|new|name|email)\b/gi) ?? []).length;
+  const it = (bare.match(/\b(il|lo|la|di|da|in|con|su|per|tra|fra|clicca|pulsante|campo|ruolo|utente|lista|pagina|salva|nuovo|nome|seleziona)\b/gi) ?? []).length;
+  return en + it === 0 ? 0 : en / (en + it);
+}
+
+const overProse = (a: string) => (a.length > 600 ? 1 : a.length > 400 ? 0.5 : 0);
+
+async function scoreTurn(
+  spec: TurnSpec,
+  answer: string,
+  sources: number,
+  timed_out: boolean,
+  source_hrefs: string[],
+): Promise<Pick<E2ETurn, "score" | "verdict" | "reason">> {
   if (timed_out) return { score: 0, verdict: "fail", reason: "response_timeout" };
   const lower = answer.toLowerCase();
   // Match explicit no-knowledge phrases — NOT the bare word "documentazione"
   // (a correct grounded answer may legitimately mention the docs).
-  const noDoc = /non lo so|i don't know|documentazione non contiene|non è (?:presente|disponibile) nella documentazione|documentation does not contain|not covered by (?:the )?documentation/.test(lower);
+  const noDoc = /non lo so|i don't know|documentazione non contiene|non è (?:presente|disponibile) nella documentazione|non posso aiutarti|documentation does not contain|not covered by (?:the )?documentation/.test(lower);
+  // Did the rendered citations hit any expected source group? (spurious
+  // citations = sources shown but none on-target).
+  const srcHits = (spec.expected_sources ?? []).filter((alts) =>
+    alts.some((a) => source_hrefs.some((h) => h.includes(a))),
+  ).length;
+  const spuria = sources > 0 && (spec.expected_sources?.length ?? 0) > 0 && srcHits === 0 ? 1 : 0;
+
   if (spec.uncovered) {
-    return noDoc
-      ? { score: 5, verdict: "pass", reason: "correct no-documentation fallback" }
-      : { score: 0, verdict: "fail", reason: `fabricated answer on uncovered question (${sources} sources)` };
+    if (!noDoc)
+      return { score: 0, verdict: "fail", reason: `fabricated answer on uncovered question (${sources} sources)` };
+    if (sources > 0)
+      return { score: 3.5, verdict: "partial", reason: `correct no-documentation fallback but spurious citations (${sources})` };
+    return { score: 5, verdict: "pass", reason: "correct no-documentation fallback" };
   }
   if (!answer) return { score: 0, verdict: "fail", reason: "empty answer" };
-  if (noDoc) return { score: 0, verdict: "fail", reason: "no-documentation fallback on a covered question" };
-  // `|` inside a keyword = alternates ("admin|amministr" matches either).
+  if (noDoc)
+    return { score: 1, verdict: "fail", reason: "false no-documentation fallback on a covered question" };
+
+  // Semantic sub-scores + deterministic flags.
+  const ctx = await citedContexts(source_hrefs);
+  const sem = await semanticScore(spec.prompt, answer, spec.expected, ctx);
+  const vocab = await uiLabelVocab();
+  const ent = entityPrecision(answer, ctx.join("\n") + "\n" + vocab);
+  const debris = protocolDebris(answer);
+  const lang = languageMix(answer);
+  const prose = overProse(answer);
+
+  const base = 0.35 * sem.faithfulness + 0.45 * sem.correctness_max + 0.2 * (ent?.p ?? 1);
+  const pen = 1.2 * debris + 1.0 * spuria + 0.6 * lang + 0.5 * prose;
+  const score = Math.max(0, Math.min(5, Math.round((1.8 + 4.5 * base - pen) * 100) / 100));
+
   const hits = spec.keywords.filter((k) => k.split("|").some((alt) => lower.includes(alt)));
-  if (hits.length === spec.keywords.length && sources > 0) {
-    return { score: 5, verdict: "pass", reason: `all keywords + ${sources} citation(s)` };
-  }
-  if (hits.length > 0) {
-    return { score: 3, verdict: "partial", reason: `keywords ${hits.length}/${spec.keywords.length}, sources=${sources}` };
-  }
-  return { score: 0, verdict: "fail", reason: `no expected keywords, sources=${sources}` };
+  const reason =
+    `rel=${sem.relevance.toFixed(2)} faith=${sem.faithfulness.toFixed(2)} ` +
+    `corrM=${sem.correctness_max.toFixed(2)} ent=${ent ? ent.p.toFixed(2) : "n/a"}` +
+    `${ent?.missing.length ? ` miss:[${ent.missing.slice(0, 4).join(",")}]` : ""} ` +
+    `debris=${debris} spuria=${spuria} lang=${lang.toFixed(2)} prose=${prose} ` +
+    `kw=${hits.length}/${spec.keywords.length} src=${sources} ctx=${ctx.length}`;
+  if (score >= 4) return { score, verdict: "pass", reason };
+  if (score >= 2) return { score, verdict: "partial", reason };
+  return { score, verdict: "fail", reason };
 }
 
 // ─── Suite ───────────────────────────────────────────────────────────────────
@@ -262,6 +380,8 @@ test.describe("AI quality — guide_test_score", () => {
       if (req.url().includes("/api/v1/system/docs/search")) log("→ docs/search request");
     });
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
+    let pendingGuideStage: string | null = null;
+    let turnTrace: Array<Record<string, unknown>> = [];
     // Worker telemetry: capture prompt/generated token counts so answer
     // truncation can be attributed to the token budget vs model EOS.
     page.on("console", (msg) => {
@@ -270,10 +390,24 @@ test.describe("AI quality — guide_test_score", () => {
         return;
       }
       // console.debug('[ai-worker]', step, obj) — inspect args, not text().
+      // [guide-loop] stage logs pair a stage marker with a JSON payload arg;
+      // capture them into the per-turn agent trace persisted in test_scores.
       for (const arg of msg.args()) {
         void arg
           .jsonValue()
           .then((v) => {
+            if (typeof v === "string" && v.startsWith("[guide-loop] ")) {
+              pendingGuideStage = v.slice(13).trim();
+              return;
+            }
+            if (pendingGuideStage) {
+              try {
+                turnTrace.push({ stage: pendingGuideStage, ...JSON.parse(v as string) });
+              } catch {
+                turnTrace.push({ stage: pendingGuideStage, raw_arg: String(v).slice(0, 2000) });
+              }
+              pendingGuideStage = null;
+            }
             if (typeof v === "string" && v.length > 60) {
               log(`[str] ${JSON.stringify(v)}`);
               return;
@@ -282,9 +416,13 @@ test.describe("AI quality — guide_test_score", () => {
             const d = (j?.data ?? j) as Record<string, unknown> | null;
             if (d && d.step === "gen_done") {
               log(
-                `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} tail=…${JSON.stringify(d.raw_tail)}`,
+                `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} reason=${d.reason_chars} tail=…${JSON.stringify(d.raw_tail)}`,
               );
               if (typeof d.raw_text === "string") log(`[raw] ${JSON.stringify(d.raw_text)}`);
+            } else if (d && d.step === "prof_env") {
+              log(`[prof_env] ${JSON.stringify(d)}`);
+            } else if (d && d.step === "profile_stats") {
+              log(`[prof] fwd_calls=${d.fwd_calls} fwd_ms=${d.fwd_ms} kernels=${d.kernels} gpu_ms=${d.gpu_ms}`);
             } else if (d && d.step === "prompt_tail") {
               log(`[prompt] len=${d.len} has_tools=${d.has_tools} tail=…${JSON.stringify(d.tail)}`);
             } else if (d && (d.step === "kv_cache_pipeline" || d.step === "gen_enter" || d.prompt_token_count)) {
@@ -399,9 +537,10 @@ test.describe("AI quality — guide_test_score", () => {
       // 2. Turns — live RAG, no interception.
       const turns: E2ETurn[] = [];
       for (const [i, spec] of TURNS.entries()) {
+        turnTrace = [];
         const { response_s, answer, sources, actions, source_hrefs, action_routes, timed_out } =
           await sendTurn(page, spec.prompt);
-        const verdict = scoreTurn(spec, answer, sources, timed_out);
+        const verdict = await scoreTurn(spec, answer, sources, timed_out, source_hrefs);
         // Retrieval-quality evidence (baseline, non-scoring): how many
         // expected source-groups were actually cited, and whether emitted
         // action routes stay inside the allowed set for this turn.
@@ -423,6 +562,7 @@ test.describe("AI quality — guide_test_score", () => {
           n: i + 1, prompt: spec.prompt, expected: spec.expected,
           actual: answer.slice(0, 2000), response_s, ...verdict,
           source_hrefs, action_routes, src_hits, src_total, action_off,
+          agent_trace: turnTrace,
         } as E2ETurn);
       }
 

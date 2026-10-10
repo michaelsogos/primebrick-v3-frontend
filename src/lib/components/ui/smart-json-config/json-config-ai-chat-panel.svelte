@@ -355,6 +355,7 @@
 
 <AiChatPanel
   assistant_id="smart_json_config"
+  assistant_key="json_config"
   i18n_ns="app.smart.json.ai"
   topic_key="app.smart.json.ai.topic"
   testid_prefix="smart-json-ai"

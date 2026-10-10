@@ -35,8 +35,17 @@
  * Requires WebGPU — skips cleanly when no adapter is present.
  * Locators: data-testid only (brittle-on-purpose convention).
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import {
+  test,
+  expect,
+  chromium,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
+import {
+  deleteMfaFactorsByUsername,
+  setAuthMethodEnforcerDismissed,
+} from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 
@@ -48,7 +57,8 @@ const PREFIX = "smart-regex-ai";
 const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 const CDP_URL = "http://127.0.0.1:9333";
 
-const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
+const log = (m: string) =>
+  console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
 const TARGET_MODEL_IDS = (process.env.AI_E2E_MODEL_IDS ?? "")
   .split(",")
@@ -133,7 +143,11 @@ const TURNS: TurnSpec[] = [
 // ─── Bounded evidence waits (≤5s slots) ──────────────────────────────────────
 
 /** Poll a predicate in ≤5s slots for up to maxRetries (default 6 → 30s). */
-async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6): Promise<T> {
+async function poll<T>(
+  fn: () => Promise<T | null>,
+  what: string,
+  maxRetries = 6,
+): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     const out = await fn().catch(() => null);
     if (out !== null && out !== false) return out;
@@ -143,13 +157,18 @@ async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6
   throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
 }
 
-async function waitVisible(locator: ReturnType<Page["locator"]>, what: string, maxRetries = 6): Promise<void> {
+async function waitVisible(
+  locator: ReturnType<Page["locator"]>,
+  what: string,
+  maxRetries = 6,
+): Promise<void> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await locator.waitFor({ state: "visible", timeout: 5000 });
       return;
     } catch {
-      if (i === maxRetries - 1) throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
+      if (i === maxRetries - 1)
+        throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
       log(`  still waiting: ${what} (${(i + 1) * 5}s)`);
     }
   }
@@ -165,9 +184,11 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
   let lastPhase = "";
   let stuck = 0;
   for (let slot = 0; slot < 96; slot++) {
-    const phase = (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
+    const phase =
+      (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
     if (phase === want) return phase;
-    if (phase === "webgpu_required" || phase === "error") throw new Error(`panel phase "${phase}"`);
+    if (phase === "webgpu_required" || phase === "error")
+      throw new Error(`panel phase "${phase}"`);
     // Empty phase = panel re-mounting/re-initing (attribute momentarily
     // unset) — transitional, never a "stuck" state.
     if (phase === "") {
@@ -185,11 +206,14 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
       if (!phase.startsWith("loading") && stuck >= 6) {
         throw new Error(`panel stuck at phase "${phase}" for 30s`);
       }
-      if (stuck % 4 === 3) log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
+      if (stuck % 4 === 3)
+        log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
     }
     await new Promise((r) => setTimeout(r, 5000));
   }
-  throw new Error(`Timeout waiting for data-ai-phase=${want} (8min download cap)`);
+  throw new Error(
+    `Timeout waiting for data-ai-phase=${want} (8min download cap)`,
+  );
 }
 
 /**
@@ -205,7 +229,9 @@ function splitPattern(text: string): string {
 
 /** Latest produced candidate pattern, from a single preview or choice A. */
 async function lastCandidatePattern(page: Page): Promise<string | null> {
-  const preview = page.locator(`[data-testid="${PREFIX}-preview"] .font-mono`).last();
+  const preview = page
+    .locator(`[data-testid="${PREFIX}-preview"] .font-mono`)
+    .last();
   if ((await preview.count()) > 0) {
     const text = await preview.textContent();
     if (text?.trim()) return splitPattern(text.trim());
@@ -223,7 +249,10 @@ async function lastCandidatePattern(page: Page): Promise<string | null> {
  * without one (prose, or a classifier-resolved pending action that only emits
  * an ack bubble). Returns the extracted pattern.
  */
-async function sendTurn(page: Page, prompt: string): Promise<{ response_s: number; pattern: string | null; timed_out: boolean }> {
+async function sendTurn(
+  page: Page,
+  prompt: string,
+): Promise<{ response_s: number; pattern: string | null; timed_out: boolean }> {
   const input = page.locator(`[data-testid="${PREFIX}-input"]`);
   const send = page.locator(`[data-testid="${PREFIX}-send"]`);
   const typing = page.locator(`[data-testid="${PREFIX}-typing"]`);
@@ -243,23 +272,33 @@ async function sendTurn(page: Page, prompt: string): Promise<{ response_s: numbe
 
   let timed_out = false;
   try {
-    await poll(async () => {
-      const evidenceNow =
-        (await preview.count()) + (await choices.count()) + (await applied.count());
-      if (evidenceNow > evidenceBefore) return "evidence";
-      // Turn ended without a candidate (prose or classifier ack). is_streaming
-      // flickers false in the classifier→generation gap, so a hidden typing
-      // indicator must persist across a second check.
-      if ((await typing.count()) === 0) {
-        await new Promise((r) => setTimeout(r, 1500));
-        if ((await typing.count()) === 0) return "done-no-card";
-      }
-      return null;
-    }, "turn response", 6);
+    await poll(
+      async () => {
+        const evidenceNow =
+          (await preview.count()) +
+          (await choices.count()) +
+          (await applied.count());
+        if (evidenceNow > evidenceBefore) return "evidence";
+        // Turn ended without a candidate (prose or classifier ack). is_streaming
+        // flickers false in the classifier→generation gap, so a hidden typing
+        // indicator must persist across a second check.
+        if ((await typing.count()) === 0) {
+          await new Promise((r) => setTimeout(r, 1500));
+          if ((await typing.count()) === 0) return "done-no-card";
+        }
+        return null;
+      },
+      "turn response",
+      6,
+    );
   } catch {
     timed_out = true;
   }
-  return { response_s: (Date.now() - t0) / 1000, pattern: await lastCandidatePattern(page), timed_out };
+  return {
+    response_s: (Date.now() - t0) / 1000,
+    pattern: await lastCandidatePattern(page),
+    timed_out,
+  };
 }
 
 /**
@@ -279,7 +318,8 @@ async function resolvePending(page: Page, accept: boolean): Promise<void> {
     return;
   }
   const choice0 = page.locator(`[data-testid="${PREFIX}-choice-0"]`);
-  if (await choice0.isVisible().catch(() => false)) await choice0.click({ timeout: 5000 });
+  if (await choice0.isVisible().catch(() => false))
+    await choice0.click({ timeout: 5000 });
 }
 
 /**
@@ -289,25 +329,40 @@ async function resolvePending(page: Page, accept: boolean): Promise<void> {
  * (over-permissive charset). 2 = valid regex that rejects ≥1 positive or is
  * over-restrictive. 0 = none/invalid/timeout.
  */
-function scoreTurn(spec: TurnSpec, pattern: string | null, timed_out: boolean): Pick<TurnResult, "score" | "verdict" | "reason"> {
-  if (timed_out) return { score: 0, verdict: "fail", reason: "generation_timeout" };
-  if (!pattern) return { score: 0, verdict: "fail", reason: "no regex candidate produced" };
+function scoreTurn(
+  spec: TurnSpec,
+  pattern: string | null,
+  timed_out: boolean,
+): Pick<TurnResult, "score" | "verdict" | "reason"> {
+  if (timed_out)
+    return { score: 0, verdict: "fail", reason: "generation_timeout" };
+  if (!pattern)
+    return { score: 0, verdict: "fail", reason: "no regex candidate produced" };
   let re: RegExp;
   try {
     re = new RegExp(pattern);
   } catch {
     return { score: 0, verdict: "fail", reason: "invalid regex syntax" };
   }
-  if (pattern === spec.expected) return { score: 5, verdict: "pass", reason: "exact" };
+  if (pattern === spec.expected)
+    return { score: 5, verdict: "pass", reason: "exact" };
   const posOk = spec.positives.filter((v) => re.test(v)).length;
   const negLeak = spec.negatives.filter((v) => re.test(v)).length;
   if (posOk === spec.positives.length && negLeak === 0) {
     return { score: 5, verdict: "pass", reason: "probe-equivalent" };
   }
   if (posOk === spec.positives.length) {
-    return { score: 3, verdict: "partial", reason: `accepts all positives but leaks ${negLeak} negative(s)` };
+    return {
+      score: 3,
+      verdict: "partial",
+      reason: `accepts all positives but leaks ${negLeak} negative(s)`,
+    };
   }
-  return { score: 2, verdict: "fail", reason: `rejects ${spec.positives.length - posOk} positive(s), leaks ${negLeak}` };
+  return {
+    score: 2,
+    verdict: "fail",
+    reason: `rejects ${spec.positives.length - posOk} positive(s), leaks ${negLeak}`,
+  };
 }
 
 // ─── Suite ───────────────────────────────────────────────────────────────────
@@ -328,12 +383,18 @@ test.describe("AI quality — regex_test_score", () => {
       // 0. Auth gate: /api/v1/auth/me is the deterministic signal.
       const isAuthed = () =>
         page.evaluate(async () => {
-          try { return (await fetch("/api/v1/auth/me")).ok; } catch { return false; }
+          try {
+            return (await fetch("/api/v1/auth/me")).ok;
+          } catch {
+            return false;
+          }
         });
       await page.goto(PAGE_URL);
       log("landed: " + page.url());
 
-      const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+      const langNow = await page.evaluate(() =>
+        sessionStorage.getItem("pb.lang"),
+      );
       if (langNow !== "it-IT") {
         await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
         await page.reload();
@@ -348,14 +409,19 @@ test.describe("AI quality — regex_test_score", () => {
           const input = page.getByTestId("login-username-input");
           if (!submitted && (await input.isVisible().catch(() => false))) {
             await input.fill(E2E_ADMIN_USERNAME);
-            await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+            await page
+              .getByTestId("login-password-input")
+              .fill(E2E_ADMIN_PASSWORD);
             await page.getByTestId("login-submit-button").click();
             submitted = true;
             log("login form submitted");
           }
           await page.waitForTimeout(5000);
         }
-        await poll(async () => ((await isAuthed()) ? true : null), "auth/me authenticated");
+        await poll(
+          async () => ((await isAuthed()) ? true : null),
+          "auth/me authenticated",
+        );
         log("login OK — re-navigating to target page");
         await page.goto(PAGE_URL);
       } else {
@@ -365,52 +431,103 @@ test.describe("AI quality — regex_test_score", () => {
       // 1. Form + regex field must mount (type defaults to 'string' →
       //    ValidationRulesSection renders SmartRegexInput immediately).
       test.skip(
-        !(await page.evaluate(async () => "gpu" in navigator && (await navigator.gpu.requestAdapter()) !== null)),
+        !(await page.evaluate(
+          async () =>
+            "gpu" in navigator &&
+            (await navigator.gpu.requestAdapter()) !== null,
+        )),
         "WebGPU adapter not available",
       );
-      await waitVisible(page.locator('[data-testid="smart-regex-brain-cta"]'), "smart-regex-brain-cta");
-      await waitVisible(page.locator('a[href^="/system/"]').first(), "sidebar nav (app interactive)");
+      await waitVisible(
+        page.locator('[data-testid="smart-regex-brain-cta"]'),
+        "smart-regex-brain-cta",
+      );
+      await waitVisible(
+        page.locator('a[href^="/system/"]').first(),
+        "sidebar nav (app interactive)",
+      );
       log("app hydrated");
+
+      // MFA-enforcer prompt ("Proteggi il tuo account") can survive the DB
+      // factor cleanup (session-level flag) and overlays the page — dismiss it
+      // before clicking any assistant CTA.
+      const enforcerDismiss = page.getByTestId(
+        "auth-method-enforcer-dismiss-button",
+      );
+      try {
+        await enforcerDismiss.waitFor({ state: "visible", timeout: 5000 });
+        await enforcerDismiss.click({ timeout: 5000 });
+        await enforcerDismiss.waitFor({ state: "hidden", timeout: 5000 });
+        log("MFA enforcer dismissed");
+      } catch {
+        await enforcerDismiss
+          .waitFor({ state: "hidden", timeout: 5000 })
+          .catch(() => undefined);
+      }
 
       // 2. Open the regex assistant and PROVE the panel mounted (≤30s).
       const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
       for (let i = 0; i < 6; i++) {
-        await page.locator('[data-testid="smart-regex-brain-cta"]').click().catch(() => {});
+        await page
+          .locator('[data-testid="smart-regex-brain-cta"]')
+          .click()
+          .catch(() => {});
         try {
           await panel.waitFor({ state: "visible", timeout: 5000 });
           break;
         } catch {
-          if (i === 5) throw new Error(`Timeout waiting for ${PREFIX}-panel (sheet open) (30s)`);
+          if (i === 5)
+            throw new Error(
+              `Timeout waiting for ${PREFIX}-panel (sheet open) (30s)`,
+            );
           log(`  sheet not mounted yet — retrying CTA click (${(i + 1) * 5}s)`);
         }
       }
       log("regex assistant sheet mounted — panel in DOM");
 
       // 3. Per-model loop (same contract as the json spec).
-      const targets: (string | null)[] = TARGET_MODEL_IDS.length ? TARGET_MODEL_IDS : [null];
+      const targets: (string | null)[] = TARGET_MODEL_IDS.length
+        ? TARGET_MODEL_IDS
+        : [null];
       const summary: { model_id: string; passed: number; total: number }[] = [];
 
       for (const target of targets) {
         if (target) {
           await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
-          const item = page.locator(`[role="menuitem"][data-testid="${PREFIX}-model-${target}"]`);
+          const item = page.locator(
+            `[role="menuitem"][data-testid="${PREFIX}-model-${target}"]`,
+          );
           if ((await item.count()) === 0) {
             await page.keyboard.press("Escape");
-            log(`SKIP ${target} — not in model selector (disabled/incompatible?)`);
+            log(
+              `SKIP ${target} — not in model selector (disabled/incompatible?)`,
+            );
             continue;
           }
-          await item.click();
-          log(`switching model → ${target}`);
-          // waitPanelPhase("ready") would return instantly while the switch
-          // has not started transitioning yet — wait for the phase to LEAVE
-          // ready first, then for it to come back.
-          await poll(async () => {
-            const ph = await page
-              .locator(`[data-testid="${PREFIX}-panel"]`)
-              .getAttribute("data-ai-phase")
-              .catch(() => null);
-            return ph !== null && ph !== "ready" ? ph : null;
-          }, "model switch start", 3);
+          const alreadyActive = (
+            (await item.getAttribute("class")) ?? ""
+          ).includes("font-semibold");
+          if (alreadyActive) {
+            await page.keyboard.press("Escape");
+            log(`model ${target} already active — skipping switch`);
+          } else {
+            await item.click();
+            log(`switching model → ${target}`);
+            // waitPanelPhase("ready") would return instantly while the switch
+            // has not started transitioning yet — wait for the phase to LEAVE
+            // ready first, then for it to come back.
+            await poll(
+              async () => {
+                const ph = await page
+                  .locator(`[data-testid="${PREFIX}-panel"]`)
+                  .getAttribute("data-ai-phase")
+                  .catch(() => null);
+                return ph !== null && ph !== "ready" ? ph : null;
+              },
+              "model switch start",
+              3,
+            );
+          }
         }
 
         const phase = await waitPanelPhase(page, "ready");
@@ -419,7 +536,9 @@ test.describe("AI quality — regex_test_score", () => {
         // new-session stays DISABLED on a fresh session — isVisible alone is
         // not enough, a disabled button would hang the click actionability
         // wait for the whole test timeout.
-        const newSession = page.locator(`[data-testid="${PREFIX}-new-session"]`);
+        const newSession = page.locator(
+          `[data-testid="${PREFIX}-new-session"]`,
+        );
         if (await newSession.isEnabled().catch(() => false)) {
           await newSession.click();
           await waitPanelPhase(page, "ready");
@@ -427,36 +546,70 @@ test.describe("AI quality — regex_test_score", () => {
         }
 
         await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
-        const model_id = await poll(async () => {
-          const items = page.locator(`[role="menuitem"][data-testid^="${PREFIX}-model-"]`);
-          for (const menuItem of await items.all()) {
-            const cls = await menuItem.getAttribute("class");
-            if ((cls ?? "").includes("font-semibold")) {
-              return (await menuItem.getAttribute("data-testid"))!.replace(`${PREFIX}-model-`, "");
+        const model_id = await poll(
+          async () => {
+            const items = page.locator(
+              `[role="menuitem"][data-testid^="${PREFIX}-model-"]`,
+            );
+            for (const menuItem of await items.all()) {
+              const cls = await menuItem.getAttribute("class");
+              if ((cls ?? "").includes("font-semibold")) {
+                return (await menuItem.getAttribute("data-testid"))!.replace(
+                  `${PREFIX}-model-`,
+                  "",
+                );
+              }
             }
-          }
-          return null;
-        }, "selected model id", 6);
+            return null;
+          },
+          "selected model id",
+          6,
+        );
         await page.keyboard.press("Escape");
         log(`model_id=${model_id}`);
         if (target && model_id !== target) {
-          throw new Error(`model switch mismatch: requested ${target}, selected ${model_id}`);
+          throw new Error(
+            `model switch mismatch: requested ${target}, selected ${model_id}`,
+          );
         }
 
         const turns: TurnResult[] = [];
         try {
           for (const [i, spec] of TURNS.entries()) {
-            const { response_s, pattern, timed_out } = await sendTurn(page, spec.prompt);
+            const { response_s, pattern, timed_out } = await sendTurn(
+              page,
+              spec.prompt,
+            );
             const verdict = scoreTurn(spec, pattern, timed_out);
-            turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: pattern, response_s, ...verdict });
-            log(`  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}${pattern ? ` (got ${pattern})` : ""}`);
+            turns.push({
+              n: i + 1,
+              prompt: spec.prompt,
+              expected: spec.expected,
+              actual: pattern,
+              response_s,
+              ...verdict,
+            });
+            log(
+              `  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}${pattern ? ` (got ${pattern})` : ""}`,
+            );
             await resolvePending(page, verdict.score >= 4);
           }
         } finally {
           if (turns.length) {
-            const res = await mergeTestScoreTurns(model_id, "regex_test_score", "conversation", turns);
-            log(`[regex_test_score] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
-            summary.push({ model_id, passed: turns.filter((t) => t.score >= 4).length, total: turns.length });
+            const res = await mergeTestScoreTurns(
+              model_id,
+              "regex_test_score",
+              "conversation",
+              turns,
+            );
+            log(
+              `[regex_test_score] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`,
+            );
+            summary.push({
+              model_id,
+              passed: turns.filter((t) => t.score >= 4).length,
+              total: turns.length,
+            });
           }
         }
       }

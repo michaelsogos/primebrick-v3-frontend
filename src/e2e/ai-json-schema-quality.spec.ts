@@ -31,8 +31,17 @@
  * Requires WebGPU — skips cleanly when no adapter is present.
  * Locators: data-testid only (brittle-on-purpose convention).
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
+import {
+  test,
+  expect,
+  chromium,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
+import {
+  deleteMfaFactorsByUsername,
+  setAuthMethodEnforcerDismissed,
+} from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 
@@ -46,7 +55,8 @@ const PREFIX = "smart-json-ai";
 const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 const CDP_URL = "http://127.0.0.1:9333";
 
-const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
+const log = (m: string) =>
+  console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
 /**
  * Multi-model mode: `AI_E2E_MODEL_IDS="id1,id2"` runs the full 5-turn
@@ -106,7 +116,15 @@ type TurnSpec = {
 };
 
 const getPath = (json: Record<string, unknown>, path: string): unknown =>
-  path.split(".").reduce<unknown>((acc, k) => (acc && typeof acc === "object" ? (acc as Record<string, unknown>)[k] : undefined), json);
+  path
+    .split(".")
+    .reduce<unknown>(
+      (acc, k) =>
+        acc && typeof acc === "object"
+          ? (acc as Record<string, unknown>)[k]
+          : undefined,
+      json,
+    );
 
 const TURNS: TurnSpec[] = [
   {
@@ -152,7 +170,11 @@ const TURNS: TurnSpec[] = [
 // ─── Bounded evidence waits (≤5s slots) ──────────────────────────────────────
 
 /** Poll a predicate in ≤5s slots for up to maxRetries (default 6 → 30s). */
-async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6): Promise<T> {
+async function poll<T>(
+  fn: () => Promise<T | null>,
+  what: string,
+  maxRetries = 6,
+): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     const out = await fn().catch(() => null);
     if (out !== null && out !== false) return out;
@@ -167,13 +189,18 @@ async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6
  * each ≤5s slot, retried ≤6 times (30s cap). Fails fast with the testid in
  * the error instead of hanging on an unbounded wait.
  */
-async function waitVisible(locator: ReturnType<Page["locator"]>, what: string, maxRetries = 6): Promise<void> {
+async function waitVisible(
+  locator: ReturnType<Page["locator"]>,
+  what: string,
+  maxRetries = 6,
+): Promise<void> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await locator.waitFor({ state: "visible", timeout: 5000 });
       return;
     } catch {
-      if (i === maxRetries - 1) throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
+      if (i === maxRetries - 1)
+        throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
       log(`  still waiting: ${what} (${(i + 1) * 5}s)`);
     }
   }
@@ -191,9 +218,11 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
   let lastPhase = "";
   let stuck = 0;
   for (let slot = 0; slot < 96; slot++) {
-    const phase = (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
+    const phase =
+      (await panel.getAttribute("data-ai-phase").catch(() => null)) ?? "";
     if (phase === want) return phase;
-    if (phase === "webgpu_required" || phase === "error") throw new Error(`panel phase "${phase}"`);
+    if (phase === "webgpu_required" || phase === "error")
+      throw new Error(`panel phase "${phase}"`);
     // Empty phase = panel re-mounting/re-initing (attribute momentarily
     // unset) — transitional, never a "stuck" state.
     if (phase === "") {
@@ -213,11 +242,14 @@ async function waitPanelPhase(page: Page, want: string): Promise<string> {
       if (!phase.startsWith("loading") && stuck >= 6) {
         throw new Error(`panel stuck at phase "${phase}" for 30s`);
       }
-      if (stuck % 4 === 3) log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
+      if (stuck % 4 === 3)
+        log(`  still waiting: phase="${phase}" (${(slot + 1) * 5}s)`);
     }
     await new Promise((r) => setTimeout(r, 5000));
   }
-  throw new Error(`Timeout waiting for data-ai-phase=${want} (8min download cap)`);
+  throw new Error(
+    `Timeout waiting for data-ai-phase=${want} (8min download cap)`,
+  );
 }
 
 /** Extract the last config-card JSON produced by the assistant, if any. */
@@ -231,11 +263,16 @@ async function lastCandidateJson(page: Page): Promise<string | null> {
 }
 
 /** Send one turn; wait ≤30s for a new config card OR the turn ending without one. */
-async function sendTurn(page: Page, prompt: string): Promise<{ response_s: number; json: string | null; timed_out: boolean }> {
+async function sendTurn(
+  page: Page,
+  prompt: string,
+): Promise<{ response_s: number; json: string | null; timed_out: boolean }> {
   const input = page.locator(`[data-testid="${PREFIX}-input"]`);
   const send = page.locator(`[data-testid="${PREFIX}-send"]`);
   const typing = page.locator(`[data-testid="${PREFIX}-typing"]`);
-  const cardsBefore = await page.locator(`[data-testid="${PREFIX}-config-card"]`).count();
+  const cardsBefore = await page
+    .locator(`[data-testid="${PREFIX}-config-card"]`)
+    .count();
 
   await input.fill(prompt);
   // A previous turn may still be generating past its evidence cap — wait
@@ -250,35 +287,52 @@ async function sendTurn(page: Page, prompt: string): Promise<{ response_s: numbe
 
   let timed_out = false;
   try {
-    await poll(async () => {
-      const cardsNow = await page.locator(`[data-testid="${PREFIX}-config-card"]`).count();
-      if (cardsNow > cardsBefore) return "card";
-      // Turn ended without a card (prose answer OR classifier-resolved
-      // pending action like a topic pick — no card is produced either way).
-      // is_streaming flickers false in the classifier→generation gap, so a
-      // hidden typing indicator must persist across a second check.
-      if ((await typing.count()) === 0) {
-        await new Promise((r) => setTimeout(r, 1500));
-        if ((await typing.count()) === 0) return "done-no-card";
-      }
-      return null;
-    }, "turn response", 6);
+    await poll(
+      async () => {
+        const cardsNow = await page
+          .locator(`[data-testid="${PREFIX}-config-card"]`)
+          .count();
+        if (cardsNow > cardsBefore) return "card";
+        // Turn ended without a card (prose answer OR classifier-resolved
+        // pending action like a topic pick — no card is produced either way).
+        // is_streaming flickers false in the classifier→generation gap, so a
+        // hidden typing indicator must persist across a second check.
+        if ((await typing.count()) === 0) {
+          await new Promise((r) => setTimeout(r, 1500));
+          if ((await typing.count()) === 0) return "done-no-card";
+        }
+        return null;
+      },
+      "turn response",
+      6,
+    );
   } catch {
     timed_out = true;
   }
-  return { response_s: (Date.now() - t0) / 1000, json: await lastCandidateJson(page), timed_out };
+  return {
+    response_s: (Date.now() - t0) / 1000,
+    json: await lastCandidateJson(page),
+    timed_out,
+  };
 }
 
 async function applyLastCandidate(page: Page): Promise<boolean> {
   const btn = page.locator(`[data-testid="${PREFIX}-apply"]`).last();
-  if ((await btn.count()) === 0 || !(await btn.isVisible().catch(() => false))) return false;
+  if ((await btn.count()) === 0 || !(await btn.isVisible().catch(() => false)))
+    return false;
   await btn.click();
   return true;
 }
 
-function scoreTurn(spec: TurnSpec, json: string | null, timed_out: boolean): Pick<TurnResult, "score" | "verdict" | "reason"> {
-  if (timed_out) return { score: 0, verdict: "fail", reason: "generation_timeout" };
-  if (!json) return { score: 0, verdict: "fail", reason: "no JSON candidate produced" };
+function scoreTurn(
+  spec: TurnSpec,
+  json: string | null,
+  timed_out: boolean,
+): Pick<TurnResult, "score" | "verdict" | "reason"> {
+  if (timed_out)
+    return { score: 0, verdict: "fail", reason: "generation_timeout" };
+  if (!json)
+    return { score: 0, verdict: "fail", reason: "no JSON candidate produced" };
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(json);
@@ -287,7 +341,11 @@ function scoreTurn(spec: TurnSpec, json: string | null, timed_out: boolean): Pic
   }
   if (spec.check(parsed)) return { score: 5, verdict: "pass", reason: "exact" };
   if ("validation" in parsed || "widget" in parsed) {
-    return { score: 2, verdict: "fail", reason: "schema-shaped but expectation not met" };
+    return {
+      score: 2,
+      verdict: "fail",
+      reason: "schema-shaped but expectation not met",
+    };
   }
   return { score: 0, verdict: "fail", reason: "unrelated JSON" };
 }
@@ -318,7 +376,11 @@ test.describe("AI quality — json_editor_with_schema", () => {
       //    or DOM checks alone can lie.
       const isAuthed = () =>
         page.evaluate(async () => {
-          try { return (await fetch("/api/v1/auth/me")).ok; } catch { return false; }
+          try {
+            return (await fetch("/api/v1/auth/me")).ok;
+          } catch {
+            return false;
+          }
         });
       await page.goto(PAGE_URL);
       log("landed: " + page.url());
@@ -326,7 +388,9 @@ test.describe("AI quality — json_editor_with_schema", () => {
       // Pin UI language: fresh profiles may resolve to a language with no
       // dictionary (e.g. en-US; DB ships en-GB/it-IT/…), rendering raw keys.
       // pb.lang is read at app boot → reload once after setting it.
-      const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+      const langNow = await page.evaluate(() =>
+        sessionStorage.getItem("pb.lang"),
+      );
       if (langNow !== "it-IT") {
         await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
         await page.reload();
@@ -344,14 +408,19 @@ test.describe("AI quality — json_editor_with_schema", () => {
           const input = page.getByTestId("login-username-input");
           if (!submitted && (await input.isVisible().catch(() => false))) {
             await input.fill(E2E_ADMIN_USERNAME);
-            await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+            await page
+              .getByTestId("login-password-input")
+              .fill(E2E_ADMIN_PASSWORD);
             await page.getByTestId("login-submit-button").click();
             submitted = true;
             log("login form submitted");
           }
           await page.waitForTimeout(5000);
         }
-        await poll(async () => ((await isAuthed()) ? true : null), "auth/me authenticated");
+        await poll(
+          async () => ((await isAuthed()) ? true : null),
+          "auth/me authenticated",
+        );
         log("login OK — re-navigating to target page");
         await page.goto(PAGE_URL);
       } else {
@@ -360,22 +429,53 @@ test.describe("AI quality — json_editor_with_schema", () => {
 
       // 1. Form must mount: ≤5s slots, ≤6 retries (30s cap).
       test.skip(
-        !(await page.evaluate(async () => "gpu" in navigator && (await navigator.gpu.requestAdapter()) !== null)),
+        !(await page.evaluate(
+          async () =>
+            "gpu" in navigator &&
+            (await navigator.gpu.requestAdapter()) !== null,
+        )),
         "WebGPU adapter not available",
       );
-      await waitVisible(page.locator('[data-testid="config-create-key"]'), "config-create-key");
+      await waitVisible(
+        page.locator('[data-testid="config-create-key"]'),
+        "config-create-key",
+      );
       log("form mounted");
 
       // Hydration gate: sidebar nav links render only after onMount +
       // module-nav fetch, i.e. handlers are attached and the page is
       // interactive. Clicking before this point hits dead SSR DOM.
-      await waitVisible(page.locator('a[href^="/system/"]').first(), "sidebar nav (app interactive)");
+      await waitVisible(
+        page.locator('a[href^="/system/"]').first(),
+        "sidebar nav (app interactive)",
+      );
       log("app hydrated");
 
-      await page.locator('[data-testid="config-create-key"]').fill("e2e_json_quality_probe");
+      // MFA-enforcer prompt ("Proteggi il tuo account") can survive the DB
+      // factor cleanup (session-level flag) and overlays the page — dismiss it
+      // before clicking any assistant CTA.
+      const enforcerDismiss = page.getByTestId(
+        "auth-method-enforcer-dismiss-button",
+      );
+      try {
+        await enforcerDismiss.waitFor({ state: "visible", timeout: 5000 });
+        await enforcerDismiss.click({ timeout: 5000 });
+        await enforcerDismiss.waitFor({ state: "hidden", timeout: 5000 });
+        log("MFA enforcer dismissed");
+      } catch {
+        await enforcerDismiss
+          .waitFor({ state: "hidden", timeout: 5000 })
+          .catch(() => undefined);
+      }
+
+      await page
+        .locator('[data-testid="config-create-key"]')
+        .fill("e2e_json_quality_probe");
       // type defaults to 'string' → TypeConfigBuilder/JsonPreviewEditor render
       // immediately, no ComboSelect interaction needed.
-      await expect(page.locator('[data-testid="tcb-ai-assistant-cta"]')).toBeVisible({ timeout: 5000 });
+      await expect(
+        page.locator('[data-testid="tcb-ai-assistant-cta"]'),
+      ).toBeVisible({ timeout: 5000 });
       log("AI CTA visible");
 
       // 2. Open the assistant sheet and PROVE the panel mounted (≤30s)
@@ -384,12 +484,18 @@ test.describe("AI quality — json_editor_with_schema", () => {
       //    land on not-yet-hydrated SSR DOM — retry it inside the poll.
       const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
       for (let i = 0; i < 6; i++) {
-        await page.locator('[data-testid="tcb-ai-assistant-cta"]').click().catch(() => {});
+        await page
+          .locator('[data-testid="tcb-ai-assistant-cta"]')
+          .click()
+          .catch(() => {});
         try {
           await panel.waitFor({ state: "visible", timeout: 5000 });
           break;
         } catch {
-          if (i === 5) throw new Error(`Timeout waiting for ${PREFIX}-panel (sheet open) (30s)`);
+          if (i === 5)
+            throw new Error(
+              `Timeout waiting for ${PREFIX}-panel (sheet open) (30s)`,
+            );
           log(`  sheet not mounted yet — retrying CTA click (${(i + 1) * 5}s)`);
         }
       }
@@ -398,7 +504,9 @@ test.describe("AI quality — json_editor_with_schema", () => {
       // 3. Per-model loop: each entry of TARGET_MODEL_IDS is selected live via
       //    the assistant's own selector (worker-per-model, no browser restart).
       //    Empty list → single run on the configured default model.
-      const targets: (string | null)[] = TARGET_MODEL_IDS.length ? TARGET_MODEL_IDS : [null];
+      const targets: (string | null)[] = TARGET_MODEL_IDS.length
+        ? TARGET_MODEL_IDS
+        : [null];
       const summary: { model_id: string; passed: number; total: number }[] = [];
 
       for (const target of targets) {
@@ -406,24 +514,40 @@ test.describe("AI quality — json_editor_with_schema", () => {
           // Switch model through the selector. A missing item means the model
           // is disabled/incompatible — skip it, never fake a score row.
           await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
-          const item = page.locator(`[role="menuitem"][data-testid="${PREFIX}-model-${target}"]`);
+          const item = page.locator(
+            `[role="menuitem"][data-testid="${PREFIX}-model-${target}"]`,
+          );
           if ((await item.count()) === 0) {
             await page.keyboard.press("Escape");
-            log(`SKIP ${target} — not in model selector (disabled/incompatible?)`);
+            log(
+              `SKIP ${target} — not in model selector (disabled/incompatible?)`,
+            );
             continue;
           }
-          await item.click();
-          log(`switching model → ${target}`);
-          // waitPanelPhase("ready") would return instantly while the switch
-          // has not started transitioning yet — wait for the phase to LEAVE
-          // ready first, then for it to come back.
-          await poll(async () => {
-            const ph = await page
-              .locator(`[data-testid="${PREFIX}-panel"]`)
-              .getAttribute("data-ai-phase")
-              .catch(() => null);
-            return ph !== null && ph !== "ready" ? ph : null;
-          }, "model switch start", 3);
+          const alreadyActive = (
+            (await item.getAttribute("class")) ?? ""
+          ).includes("font-semibold");
+          if (alreadyActive) {
+            await page.keyboard.press("Escape");
+            log(`model ${target} already active — skipping switch`);
+          } else {
+            await item.click();
+            log(`switching model → ${target}`);
+            // waitPanelPhase("ready") would return instantly while the switch
+            // has not started transitioning yet — wait for the phase to LEAVE
+            // ready first, then for it to come back.
+            await poll(
+              async () => {
+                const ph = await page
+                  .locator(`[data-testid="${PREFIX}-panel"]`)
+                  .getAttribute("data-ai-phase")
+                  .catch(() => null);
+                return ph !== null && ph !== "ready" ? ph : null;
+              },
+              "model switch start",
+              3,
+            );
+          }
         }
 
         // Model readiness: `loading_*` phases get the 8min download budget
@@ -437,7 +561,9 @@ test.describe("AI quality — json_editor_with_schema", () => {
         // new-session stays DISABLED on a fresh session — isVisible alone is
         // not enough, a disabled button would hang the click actionability
         // wait for the whole test timeout.
-        const newSession = page.locator(`[data-testid="${PREFIX}-new-session"]`);
+        const newSession = page.locator(
+          `[data-testid="${PREFIX}-new-session"]`,
+        );
         if (await newSession.isEnabled().catch(() => false)) {
           await newSession.click();
           await waitPanelPhase(page, "ready");
@@ -447,23 +573,34 @@ test.describe("AI quality — json_editor_with_schema", () => {
         // Discover the model_id via the selector's selected menu item — also
         // PROVES the requested model actually got selected in multi mode.
         await page.locator(`[data-testid="${PREFIX}-model-trigger"]`).click();
-        const model_id = await poll(async () => {
-          // Model entries are DropdownMenu.Item → role="menuitem" (excludes the
-          // `*-trigger` elements sharing the testid prefix). The selected row is
-          // marked by menuListSelectedSurfaceDropdownClasses → `font-semibold`.
-          const items = page.locator(`[role="menuitem"][data-testid^="${PREFIX}-model-"]`);
-          for (const menuItem of await items.all()) {
-            const cls = await menuItem.getAttribute("class");
-            if ((cls ?? "").includes("font-semibold")) {
-              return (await menuItem.getAttribute("data-testid"))!.replace(`${PREFIX}-model-`, "");
+        const model_id = await poll(
+          async () => {
+            // Model entries are DropdownMenu.Item → role="menuitem" (excludes the
+            // `*-trigger` elements sharing the testid prefix). The selected row is
+            // marked by menuListSelectedSurfaceDropdownClasses → `font-semibold`.
+            const items = page.locator(
+              `[role="menuitem"][data-testid^="${PREFIX}-model-"]`,
+            );
+            for (const menuItem of await items.all()) {
+              const cls = await menuItem.getAttribute("class");
+              if ((cls ?? "").includes("font-semibold")) {
+                return (await menuItem.getAttribute("data-testid"))!.replace(
+                  `${PREFIX}-model-`,
+                  "",
+                );
+              }
             }
-          }
-          return null;
-        }, "selected model id", 6);
+            return null;
+          },
+          "selected model id",
+          6,
+        );
         await page.keyboard.press("Escape");
         log(`model_id=${model_id}`);
         if (target && model_id !== target) {
-          throw new Error(`model switch mismatch: requested ${target}, selected ${model_id}`);
+          throw new Error(
+            `model switch mismatch: requested ${target}, selected ${model_id}`,
+          );
         }
 
         // Run the 5 deterministic turns (each capped at 60s evidence wait).
@@ -472,10 +609,22 @@ test.describe("AI quality — json_editor_with_schema", () => {
         const turns: TurnResult[] = [];
         try {
           for (const [i, spec] of TURNS.entries()) {
-            const { response_s, json, timed_out } = await sendTurn(page, spec.prompt);
+            const { response_s, json, timed_out } = await sendTurn(
+              page,
+              spec.prompt,
+            );
             const verdict = scoreTurn(spec, json, timed_out);
-            turns.push({ n: i + 1, prompt: spec.prompt, expected: spec.expected, actual: json, response_s, ...verdict });
-            log(`  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}`);
+            turns.push({
+              n: i + 1,
+              prompt: spec.prompt,
+              expected: spec.expected,
+              actual: json,
+              response_s,
+              ...verdict,
+            });
+            log(
+              `  T${i + 1}: score=${verdict.score} ${response_s.toFixed(1)}s — ${verdict.reason}`,
+            );
             if (verdict.score >= 4) await applyLastCandidate(page);
 
             // Form-level assertion after the "remove min" turn: the applied
@@ -485,8 +634,14 @@ test.describe("AI quality — json_editor_with_schema", () => {
             if (i === 3 && verdict.score >= 4) {
               const minInput = page.getByTestId("tcb-min");
               const maxInput = page.getByTestId("tcb-max");
-              expect(await minInput.inputValue(), "min rule re-appeared after removal").toBe("");
-              expect(await maxInput.inputValue(), "max rule lost after min removal").toBe("10");
+              expect(
+                await minInput.inputValue(),
+                "min rule re-appeared after removal",
+              ).toBe("");
+              expect(
+                await maxInput.inputValue(),
+                "max rule lost after min removal",
+              ).toBe("10");
               log("  form check: min empty, max=10 preserved");
             }
           }
@@ -496,9 +651,20 @@ test.describe("AI quality — json_editor_with_schema", () => {
           // contribute their own phase turns to the SAME case — aggregates
           // cover ALL turns across sessions.
           if (turns.length) {
-            const res = await mergeTestScoreTurns(model_id, "json_editor_with_schema_test_score", "conversation", turns);
-            log(`[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`);
-            summary.push({ model_id, passed: turns.filter((t) => t.score >= 4).length, total: turns.length });
+            const res = await mergeTestScoreTurns(
+              model_id,
+              "json_editor_with_schema_test_score",
+              "conversation",
+              turns,
+            );
+            log(
+              `[json_editor_with_schema] ${model_id}: merged score=${res.score.toFixed(2)} rank=${res.rank} (total turns=${res.total_turns})`,
+            );
+            summary.push({
+              model_id,
+              passed: turns.filter((t) => t.score >= 4).length,
+              total: turns.length,
+            });
           }
         }
         // A model with zero passing turns still records its turns — the score

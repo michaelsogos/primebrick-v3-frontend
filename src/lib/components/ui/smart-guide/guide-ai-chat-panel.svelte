@@ -11,6 +11,7 @@
 
 <AiChatPanel
   assistant_id="guide"
+  assistant_key="guide"
   i18n_ns="app.smart.guide.ai"
   topic_key="app.smart.guide.ai.topic"
   testid_prefix="smart-guide-ai"

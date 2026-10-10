@@ -617,6 +617,12 @@ export function useAiAssistant<TChoice = unknown>(
         model_id: _state.model_id,
         dtype,
         kv_cache_reuse: kvCacheReuse,
+        // JSON round-trip: execution_config is a $state proxy — structured
+        // clone (postMessage) rejects it with "could not be cloned".
+        session_options: effective_params.execution_config?.ort_session_options
+          ? JSON.parse(JSON.stringify(effective_params.execution_config.ort_session_options))
+          : undefined,
+        wasm_num_threads: effective_params.execution_config?.ort_num_threads,
       });
       // Timeout after 8 minutes (model download can be slow)
       pending_load_timeout_id = setTimeout(() => {
@@ -871,7 +877,10 @@ export function useAiAssistant<TChoice = unknown>(
     } finally {
       _state.streaming_text = '';
       _state.ai_status = 'thinking';
-      postToWorker({ type: 'invalidate_cache' });
+      // No cache invalidation here: agent rounds only APPEND messages to the
+      // same trajectory, so the KV prefix stays valid across the whole loop.
+      // Invalidating every round forced a full re-prefill each time (the
+      // exact case KV reuse exists for — multi-step tool loops).
     }
   }
 
@@ -931,11 +940,17 @@ export function useAiAssistant<TChoice = unknown>(
             generate_agent: generateAgentOneOff,
           })
         : text;
+      let history_content: string | undefined;
       if (typeof transform_result !== 'string') {
-        appendAssistantResponse(transform_result.response);
-        return;
+        if (transform_result.kind === 'local_response') {
+          appendAssistantResponse(transform_result.response);
+          return;
+        }
+        history_content = transform_result.history_content;
+        userMessage.content = transform_result.content;
+      } else {
+        userMessage.content = transform_result;
       }
-      userMessage.content = transform_result;
 
       // Build messages array with sliding window. Keep the system prompt always,
       // then keep only the last maxHistoryTurns user+assistant pairs.
@@ -963,6 +978,20 @@ export function useAiAssistant<TChoice = unknown>(
         }
       }
 
+      // Compact history: the model already consumed the injected block via
+      // modelMessages (snapshot above) — store the small form so later turns
+      // don't re-prefill stale excerpts/labels. Without this, each guide
+      // turn grows the prompt by a full documentation block. The element is
+      // REPLACED (not mutated in place): userMessage is the raw object while
+      // _state.messages holds a state proxy — writes to the raw reference do
+      // not reach the stored value.
+      if (history_content !== undefined) {
+        userMessage.content = history_content;
+        _state.messages = _state.messages.map((m) =>
+          m.uuid === userMessage.uuid ? { ...m, content: history_content } : m,
+        );
+      }
+
       // If the sliding window dropped messages, invalidate the KV cache.
       if (droppedTurns > 0) {
         postToWorker({ type: 'invalidate_cache' });
@@ -976,16 +1005,28 @@ export function useAiAssistant<TChoice = unknown>(
       /**
        * regenerate(): sends another generation round with an appended repair
        * user message — used by validate-and-repair loops in process_response.
+       * `isolate: true` drops the turn's context (injected docs block etc.)
+       * and sends only system + the new user message — for stages like action
+       * selection that don't need the retrieved context. Keeps the prompt
+       * under the WebGPU single-prefill limit (~3.4k tokens).
        */
-      const regenerate = async (extra_user_content: string): Promise<string> => {
+      const regenerate = async (
+        extra_user_content: string,
+        opts?: { isolate?: boolean },
+      ): Promise<string> => {
         _state.is_streaming = true;
         _state.ai_status = 'generating';
         _state.streaming_text = '';
-        const repairMessages = [
-          ...modelMessages,
-          { role: 'assistant' as const, content: responseText },
-          { role: 'user' as const, content: extra_user_content },
-        ];
+        const repairMessages = opts?.isolate
+          ? [
+              { role: 'system' as const, content: systemPrompt },
+              { role: 'user' as const, content: extra_user_content },
+            ]
+          : [
+              ...modelMessages,
+              { role: 'assistant' as const, content: responseText },
+              { role: 'user' as const, content: extra_user_content },
+            ];
         return runGeneration(repairMessages);
       };
 

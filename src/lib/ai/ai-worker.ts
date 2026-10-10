@@ -21,6 +21,54 @@ import {
 } from '@huggingface/transformers';
 import { resumableFetch, setByteReporter } from './resumable-fetch';
 
+// ─── TEMP: WebGPU kernel profiling instrumentation ───────────────────────
+// Collects per-kernel GPU execution time via onnxruntime-web's
+// env.webgpu.profiling.ondata. Aggregated per generation and posted with
+// 'profile_stats' at stream end — used to attribute decode latency between
+// GPU kernel time and JS/dispatch/logits overhead. TEMPORARY (speed probe).
+const prof = {
+  kernels: 0,
+  total_ns: 0,
+  kernelRuns: 0,
+  fwd_calls: 0,
+  fwd_ms: 0,
+  top: new Map<string, { n: number; ns: number }>(),
+};
+function profReset() {
+  prof.kernels = 0;
+  prof.total_ns = 0;
+  prof.kernelRuns = 0;
+  prof.fwd_calls = 0;
+  prof.fwd_ms = 0;
+  prof.top.clear();
+}
+let profInstalled = false;
+function profInstall(): boolean {
+  if (profInstalled) return true;
+  try {
+    const ortEnv = (env as unknown as { backends?: { onnx?: { webgpu?: { profiling?: unknown } } } }).backends?.onnx;
+    if (ortEnv?.webgpu) {
+      ortEnv.webgpu.profiling = {
+        mode: 'default',
+        ondata: (d: { kernelName?: string; programName?: string; startTime?: number; endTime?: number }) => {
+          const dt = (d.endTime ?? 0) - (d.startTime ?? 0);
+          prof.kernels++;
+          prof.total_ns += dt;
+          const k = `${d.kernelName ?? '?'}|${d.programName ?? '?'}`;
+          const e = prof.top.get(k) ?? { n: 0, ns: 0 };
+          e.n++;
+          e.ns += dt;
+          prof.top.set(k, e);
+        },
+      };
+      profInstalled = true;
+    } else {
+      post({ type: 'debug', step: 'prof_env', keys: ortEnv ? Object.keys(ortEnv) : null });
+    }
+  } catch (e) { post({ type: 'debug', step: 'prof_env', err: String(e) }); }
+  return profInstalled;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────
 
 type Role = 'system' | 'user' | 'assistant' | 'tool';
@@ -48,6 +96,13 @@ interface LoadPayload {
   dtype: string;
   device?: string;
   kv_cache_reuse?: boolean;
+  /** ORT session options from cerebellum execution_config.ort_session_options
+   *  (snake_case keys → camelized before hitting InferenceSession.create). */
+  session_options?: Record<string, unknown>;
+  /** env.wasm.numThreads override — pthread workers share the wasm heap and
+   *  are a known source of `table index is out of bounds` traps on big
+   *  prefills; forcing 1 removes the concurrent-allocator path entirely. */
+  wasm_num_threads?: number;
 }
 
 interface GeneratePayload {
@@ -101,6 +156,16 @@ let last_byte_tick = 0;
 
 let past_key_values: DynamicCache | null = null;
 let cache_valid = false;
+// The rendered prompt the live DynamicCache was built on. KV reuse is only
+// sound for strict append-only continuations (agent tool-loop rounds append
+// assistant/tool messages to the SAME trajectory). Any other divergence —
+// different stage, system prompt, or tool set — must reset the cache:
+// transformers.js blind-prefix slicing decodes the new prompt against a
+// mismatched prefix, which produces progressive token-soup corruption and
+// unbounded cache growth.
+let last_prompt: string | null = null;
+// Divergence-swapped caches awaiting a safe dispose point.
+const retired_caches: DynamicCache[] = [];
 let cache_len_before_gen = 0;
 let prev_gen_time_ms: number | null = null;
 
@@ -252,6 +317,21 @@ async function loadModel(payload: LoadPayload): Promise<void> {
   try {
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+    // WASM thread pool cap from cerebellum — must be set BEFORE the ONNX
+    // session is created (the thread pool spawns at session init).
+    const onnxEnv = (env as unknown as { backends?: { onnx?: { wasm?: { numThreads?: number } } } }).backends?.onnx;
+    if (onnxEnv?.wasm && typeof payload.wasm_num_threads === 'number' && payload.wasm_num_threads > 0) {
+      onnxEnv.wasm.numThreads = Math.floor(payload.wasm_num_threads);
+    }
+    const sessionOptions =
+      payload.session_options && typeof payload.session_options === 'object'
+        ? Object.fromEntries(
+            Object.entries(payload.session_options).map(([k, v]) => [
+              k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()),
+              v,
+            ]),
+          )
+        : undefined;
     // Install GPUBuffer tracking BEFORE the ONNX session allocates weights —
     // the captured byte total at load_complete is the model's real VRAM size.
     installVramTracking();
@@ -316,10 +396,35 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       device: device as any,
       ...(external_data ? { use_external_data_format: external_data } : {}),
       ...(model_file_name ? { model_file_name } : {}),
+      ...(sessionOptions ? { session_options: sessionOptions } : {}),
       progress_callback,
     };
 
-    pipeline_generator = await pipeline('text-generation', repo_id, load_kwargs);
+    const pl = pipeline('text-generation', repo_id, load_kwargs);
+    // TEMP: install WebGPU kernel profiling as soon as initONNX populates
+    // env.backends.onnx — must be set BEFORE the session is created or the
+    // backend's queryType is already baked to "none".
+    const profPoll = setInterval(() => {
+      if (profInstall()) clearInterval(profPoll);
+    }, 5);
+    pipeline_generator = await pl;
+    clearInterval(profPoll);
+    // TEMP: wrap model.forward — total GPU session time per decode step
+    // (ORT run + logits materialization). gen_wall - fwd = JS/dispatch cost.
+    const mdl: any = pipeline_generator?.model;
+    if (mdl?.forward && !mdl.__fwd_wrapped) {
+      const orig = mdl.forward.bind(mdl);
+      mdl.forward = async (...args: any[]) => {
+        const t0 = performance.now();
+        try {
+          return await orig(...args);
+        } finally {
+          prof.fwd_calls++;
+          prof.fwd_ms += performance.now() - t0;
+        }
+      };
+      mdl.__fwd_wrapped = true;
+    }
     tokenizer = pipeline_generator.tokenizer;
     model = pipeline_generator.model;
 
@@ -456,11 +561,25 @@ async function generate(payload: GeneratePayload): Promise<void> {
     // <think></think> block — this export ignores it and opens a fresh
     // <think> anyway. The /no_think directive in the last user message is
     // the documented suppression for hybrid-thinking Qwen3 checkpoints.
+    //
+    // KV-reuse alignment: transformers.js slices the new input_ids purely by
+    // LENGTH (decoder_prepare_inputs_for_generation case 2/3 — no token-id
+    // comparison). Everything the cache absorbed must re-render byte-identical:
+    //   - /no_think belongs on EVERY user message, not just the last — the
+    //     previous turn's user message carried it when its KV was written;
+    //   - the empty <think></think> generation-tail block must NOT be
+    //     injected: history assistant messages re-render without it (the
+    //     Qwen3 template strips think from non-last messages), so the cache
+    //     stream diverged by ~8 tokens per assistant boundary (observed:
+    //     cache_len > prompt_len → positional misalignment → ỉ/+=
+    //     /<tool_response> artifacts + double prefills). With suppress_tokens
+    //     banning the think-tag ids, the tail is just 'assistant\n' — which
+    //     is exactly what history re-renders.
     const noThink =
       payload.params.enable_thinking === false && /qwen3/i.test(current_model_id ?? '');
     const messages = noThink
-      ? payload.messages.map((m, i) =>
-          i === payload.messages.length - 1 && m.role === 'user'
+      ? payload.messages.map((m) =>
+          m.role === 'user'
             ? { ...m, content: m.content + '\n/no_think' }
             : m,
         )
@@ -473,7 +592,9 @@ async function generate(payload: GeneratePayload): Promise<void> {
         ? String(tokenizer.apply_chat_template(messages, {
             add_generation_prompt: true,
             tokenize: false,
-            enable_thinking: payload.params.enable_thinking ?? false,
+            // noThink: omit enable_thinking so the template does NOT inject
+            // the empty <think></think> tail — see KV-reuse note above.
+            ...(noThink ? {} : { enable_thinking: payload.params.enable_thinking ?? false }),
             // Agentic loop: tool schemas are rendered by the chat template
             // itself (Qwen dialect — XML tool_call instructions in system).
             ...(payload.params.tools ? { tools: payload.params.tools } : {}),
@@ -533,12 +654,31 @@ async function generate(payload: GeneratePayload): Promise<void> {
     // ONNX Expand node crashes on multi-token prefill (LeftShape M×M vs
     // RightShape M×N where M≠N).
     if (current_kv_cache_reuse) {
-      if (!past_key_values) {
+      // The rendered prompt ends with the generation marker
+      // ("<|im_start|>assistant\n..."), which the NEXT prompt replaces rather
+      // than extends — comparing full strings would never match. Compare the
+      // stem instead: everything up to the trailing assistant generation
+      // prompt. Stem-equal means the entire message prefix is identical and
+      // the library's own prefix-slicing handles the rest.
+      const stemOf = (p: string): string => {
+        const i = p.lastIndexOf('<|im_start|>assistant');
+        return i === -1 ? p : p.slice(0, i);
+      };
+      const extends_last =
+        !!last_prompt && prompt.length > last_prompt.length && prompt.startsWith(stemOf(last_prompt));
+      if (!past_key_values || !extends_last) {
+        // Swap without dispose(): releasing KV GPU buffers while OrtRun
+        // work may still be queued poisons the WebGPU device ("Invalid
+        // Buffer ... previous error"). Retire to a list disposed at the
+        // next safe point (reset/dispose).
+        if (past_key_values) retired_caches.push(past_key_values);
         past_key_values = new DynamicCache();
+        cache_valid = false;
       }
     } else {
       past_key_values = null;
       cache_valid = false;
+      last_prompt = null;
     }
 
     const cache_seq_len_before = past_key_values ? past_key_values.get_seq_length() : 0;
@@ -572,6 +712,8 @@ async function generate(payload: GeneratePayload): Promise<void> {
     // take the messages array — the pipeline would call apply_chat_template
     // and throw. Feed them the rendered plain-text prompt instead.
     const pipeline_input = tokenizer.chat_template ? messages : prompt;
+    profInstall();
+    profReset();
     const result = await Promise.race([
       pipeline_generator(pipeline_input, {
         max_new_tokens: payload.params.max_new_tokens,
@@ -584,7 +726,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
         // The pipeline re-renders the chat template internally — enable_thinking
         // must travel through tokenizer_kwargs or it is lost (default: thinking on).
         tokenizer_kwargs: {
-          enable_thinking: payload.params.enable_thinking,
+          ...(noThink ? {} : { enable_thinking: payload.params.enable_thinking }),
           ...(payload.params.tools ? { tools: payload.params.tools } : {}),
         },
         stopping_criteria: interruptable,
@@ -621,6 +763,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
       // The pipeline mutates past_key_values in-place via DynamicCache.update().
       const cache_seq_len_after = past_key_values ? past_key_values.get_seq_length() : 0;
       cache_valid = cache_seq_len_after > 0;
+      last_prompt = prompt;
       post({ type: 'debug', step: 'kv_cache_post_gen', cache_seq_len_before, cache_seq_len_after, cache_valid });
     }
 
@@ -635,6 +778,14 @@ async function generate(payload: GeneratePayload): Promise<void> {
       raw_text: fullText,
       raw_len: fullText.length,
       requested_max_new_tokens: payload.params.max_new_tokens,
+      // Reasoning waste: chars emitted before the first structural token
+      // (JSON start, tool name, or DONE). 0 = model went straight to output.
+      reason_chars: (() => {
+        const idx = [fullText.indexOf('{'), fullText.indexOf('docs_search'),
+          fullText.indexOf('docs_fetch'), fullText.indexOf('list_routes'),
+          fullText.indexOf('DONE')].filter((i) => i >= 0).sort((a, b) => a - b)[0];
+        return idx === undefined ? fullText.length : idx;
+      })(),
     });
 
     // Trim stop markers
@@ -643,6 +794,23 @@ async function generate(payload: GeneratePayload): Promise<void> {
       if (idx !== -1) fullText = fullText.slice(0, idx);
     }
     fullText = fullText.trimEnd();
+
+    // TEMP: post aggregated WebGPU kernel profiling for this generation.
+    // gpu_ms = total kernel execution time; the gap vs wall time is
+    // JS dispatch + logits download + sampling + framework overhead.
+    const topKernels = [...prof.top.entries()]
+      .sort((a, b) => b[1].ns - a[1].ns)
+      .slice(0, 12)
+      .map(([k, v]) => ({ kernel: k, runs: v.n, ms: Math.round(v.ns / 1e6 * 10) / 10 }));
+    post({
+      type: 'debug',
+      step: 'profile_stats',
+      kernels: prof.kernels,
+      gpu_ms: Math.round(prof.total_ns / 1e6 * 10) / 10,
+      fwd_calls: prof.fwd_calls,
+      fwd_ms: Math.round(prof.fwd_ms * 10) / 10,
+      top_kernels: topKernels,
+    });
 
     const genTime = performance.now() - genStart;
     // tokenCount counts streamer callbacks, not tokens — TextStreamer batches.
@@ -717,7 +885,13 @@ async function reset(): Promise<void> {
     } catch { /* noop */ }
     past_key_values = null;
   }
+  while (retired_caches.length) {
+    try {
+      await retired_caches.pop()!.dispose();
+    } catch { /* noop */ }
+  }
   cache_valid = false;
+  last_prompt = null;
   cache_len_before_gen = 0;
   prev_gen_time_ms = null;
   post({ type: 'reset_complete' });
@@ -732,7 +906,13 @@ async function disposeModel(): Promise<void> {
     } catch { /* noop */ }
     past_key_values = null;
   }
+  while (retired_caches.length) {
+    try {
+      await retired_caches.pop()!.dispose();
+    } catch { /* noop */ }
+  }
   cache_valid = false;
+  last_prompt = null;
   cache_len_before_gen = 0;
   prev_gen_time_ms = null;
 
@@ -832,6 +1012,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
     }
     case 'invalidate_cache': {
       cache_valid = false;
+      last_prompt = null;
       cache_len_before_gen = 0;
       // Also RESET the cache object itself: one-off generations (query
       // rewrites, examples) populate past_key_values with an unrelated

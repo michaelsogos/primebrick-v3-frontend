@@ -297,7 +297,7 @@
             model_id: hit.id,
             name: hit.name,
             engine_type: 'onnx',
-            compatibility_status: 'COMPATIBLE',
+            is_compatible: true,
             enable_thinking,
             temperature: temperature ?? 0,
             top_p: top_p ?? hfTopP ?? 0.9,

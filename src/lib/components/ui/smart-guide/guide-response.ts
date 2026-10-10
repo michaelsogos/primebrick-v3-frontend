@@ -69,6 +69,7 @@ export function parseGuideResponse(raw: string, grounding_context?: string): Gui
     if (!m) return null;
     const salvaged = m[1]
       .replace(/"\s*,?\s*"actions"[\s\S]*$/, '')
+      .replace(/"[\s\n]*\}[\s\S]*$/, '"')
       .replace(/"[\s\n]*$/, '')
       .replace(/\\n/g, '\n')
       .replace(/\\"/g, '"')

@@ -101,8 +101,21 @@ export interface LocalAssistantResponse<TChoice = unknown> {
   response: ProcessedResponse<TChoice>;
 }
 
+/**
+ * Transformed user content for the model this turn. `history_content`
+ * optionally stores a compact form in conversation history instead — the
+ * model gets the full injected block now, but prior turns keep only the
+ * small variant so context does not accumulate injected material.
+ */
+export interface TransformContent {
+  kind: 'content';
+  content: string;
+  history_content?: string;
+}
+
 export type UserContentTransformResult<TChoice = unknown> =
   | string
+  | TransformContent
   | LocalAssistantResponse<TChoice>;
 
 /** Context passed to transform_user_content — lets the hook read history + model config. */
@@ -168,6 +181,9 @@ export interface AiAssistantHooks<TChoice = unknown> {
    */
   process_response?: (
     raw: string,
-    regenerate: (extra_user_content: string) => Promise<string>,
+    regenerate: (
+      extra_user_content: string,
+      opts?: { isolate?: boolean },
+    ) => Promise<string>,
   ) => Promise<ProcessedResponse<TChoice>> | ProcessedResponse<TChoice>;
 }

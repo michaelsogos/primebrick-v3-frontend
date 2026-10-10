@@ -418,6 +418,7 @@
 
 <AiChatPanel
   assistant_id="smart_regex"
+  assistant_key="regex"
   i18n_ns="app.smart.regex.ai"
   topic_key="app.smart.regex.ai.topic"
   testid_prefix="smart-regex-ai"

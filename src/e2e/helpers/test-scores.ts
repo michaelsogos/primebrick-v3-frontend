@@ -53,9 +53,15 @@ export function caseMetrics(scores: number[], times: number[]) {
 
 /** Aggregate any *_test_score case from stored turns (same formulas). */
 function caseScoreFromStored(caseObj: Record<string, unknown>): number | null {
-  const turns = Array.isArray(caseObj.turns) ? (caseObj.turns as { score?: number; response_s?: number }[]) : [];
-  const scores = turns.map((t) => t.score).filter((s): s is number => typeof s === "number");
-  const times = turns.map((t) => t.response_s).filter((s): s is number => typeof s === "number");
+  const turns = Array.isArray(caseObj.turns)
+    ? (caseObj.turns as { score?: number; response_s?: number }[])
+    : [];
+  const scores = turns
+    .map((t) => t.score)
+    .filter((s): s is number => typeof s === "number");
+  const times = turns
+    .map((t) => t.response_s)
+    .filter((s): s is number => typeof s === "number");
   if (!scores.length) return null;
   const m = caseMetrics(scores, times.length ? times : scores.map(() => 1));
   return m.score;
@@ -82,7 +88,7 @@ export function buildTestScoreUpdate(
 ): { query: string; values: unknown[] } {
   const measuredSet = measured?.vram_bytes
     ? `, working_set_mb = $4, working_set_source = 'e2e_measured', working_set_detail = $5::jsonb`
-    : '';
+    : "";
   const values: unknown[] = [repo, JSON.stringify(nextScores), rank];
   if (measured?.vram_bytes) {
     values.push(
@@ -99,7 +105,7 @@ export function buildTestScoreUpdate(
 
   return {
     query: `UPDATE public.ai_models
-     SET test_scores = $2::jsonb, rank = $3, updated_at = now(), updated_by = 'e2e', version = version + 1
+     SET test_scores = $2::jsonb, rank = COALESCE($3, rank), updated_at = now(), updated_by = 'e2e', version = version + 1
      ${measuredSet}
      WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $${dtype_param} AND deleted_at IS NULL`,
     values,
@@ -116,8 +122,10 @@ export async function mergeTestScoreTurns(
   const pool = getPool();
   // model_id param is a variant key ('repo#dtype') or a bare repo — resolve to
   // the normalized (model_id, dtype) pair.
-  const [repo, dtype] = model_id.split('#');
-  const { rows } = await pool.query<{ test_scores: Record<string, unknown> | null }>(
+  const [repo, dtype] = model_id.split("#");
+  const { rows } = await pool.query<{
+    test_scores: Record<string, unknown> | null;
+  }>(
     `SELECT test_scores FROM public.ai_models
      WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $2 AND deleted_at IS NULL`,
     [repo, dtype ?? null],
@@ -125,15 +133,39 @@ export async function mergeTestScoreTurns(
   if (rows.length !== 1) throw new Error(`model ${model_id} not in ai_models`);
 
   const prevCase =
-    (rows[0].test_scores?.[caseKey] as Record<string, unknown> | undefined) ?? {};
-  const prevTurns = Array.isArray(prevCase.turns) ? (prevCase.turns as E2ETurn[]) : [];
+    (rows[0].test_scores?.[caseKey] as Record<string, unknown> | undefined) ??
+    {};
+  const prevTurns = Array.isArray(prevCase.turns)
+    ? (prevCase.turns as E2ETurn[])
+    : [];
   // Legacy turns written before phase tagging count as "conversation".
   const kept = prevTurns.filter((t) => (t.phase ?? "conversation") !== phase);
-  const merged = [...kept, ...turns.map((t) => ({ ...t, phase }))].sort((a, b) => {
-    const pa = a.phase === "conversation" ? 0 : 1;
-    const pb = b.phase === "conversation" ? 0 : 1;
-    return pa - pb || a.n - b.n;
-  });
+  const merged = [...kept, ...turns.map((t) => ({ ...t, phase }))].sort(
+    (a, b) => {
+      const pa = a.phase === "conversation" ? 0 : 1;
+      const pb = b.phase === "conversation" ? 0 : 1;
+      return pa - pb || a.n - b.n;
+    },
+  );
+
+  // Score history: before overwriting the case, snapshot the previous run so
+  // regression comparison survives across campaigns. `history[]` is
+  // newest-first, capped at 5; rank reads only `turns` (unaffected).
+  const prevHistory = Array.isArray(prevCase.history)
+    ? (prevCase.history as unknown[])
+    : [];
+  const history = prevTurns.length
+    ? [
+        {
+          tested_at: prevCase.tested_at ?? null,
+          turns: prevTurns,
+          success_count: prevCase.success_count ?? null,
+          total_turns: prevCase.total_turns ?? prevTurns.length,
+          phases: prevCase.phases ?? null,
+        },
+        ...prevHistory,
+      ].slice(0, 5)
+    : prevHistory;
 
   const nextScores = {
     ...(rows[0].test_scores ?? {}),
@@ -144,8 +176,11 @@ export async function mergeTestScoreTurns(
       load_ok: true,
       generation_ok: true,
       turns: merged,
+      history,
       phases: {
-        ...(typeof prevCase.phases === "object" && prevCase.phases !== null ? prevCase.phases : {}),
+        ...(typeof prevCase.phases === "object" && prevCase.phases !== null
+          ? prevCase.phases
+          : {}),
         [phase]: { tested_at: new Date().toISOString(), turns: turns.length },
       },
       success_count: merged.filter((t) => t.score >= 4).length,
@@ -153,15 +188,31 @@ export async function mergeTestScoreTurns(
     },
   };
 
+  // Rank-eligible cases: regex + json + guide_react (ReAct is the chosen
+  // engine). guide_orch stays excluded — historical orchestrator data only.
   const caseScores = Object.entries(nextScores)
-    .filter(([k, v]) => k.endsWith("_test_score") && v && typeof v === "object")
+    .filter(
+      ([k, v]) =>
+        k.endsWith("_test_score") &&
+        k !== "guide_orch_test_score" &&
+        v &&
+        typeof v === "object",
+    )
     .map(([, v]) => caseScoreFromStored(v as Record<string, unknown>))
     .filter((s): s is number => s !== null);
   const rank = caseScores.length
-    ? Math.round((caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10) / 10
+    ? Math.round(
+        (caseScores.reduce((a, b) => a + b, 0) / caseScores.length) * 10,
+      ) / 10
     : undefined;
 
-  const update = buildTestScoreUpdate(repo, nextScores, rank ?? null, dtype ?? null, measured);
+  const update = buildTestScoreUpdate(
+    repo,
+    nextScores,
+    rank ?? null,
+    dtype ?? null,
+    measured,
+  );
   const upd = await pool.query(update.query, update.values);
   if (upd.rowCount !== 1) throw new Error(`update failed for ${model_id}`);
 

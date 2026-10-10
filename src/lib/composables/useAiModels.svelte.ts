@@ -132,7 +132,7 @@ export function useAiModels() {
      */
     getAliveCompatibleModels(): AiModel[] {
       return _catalog.models
-        .filter((m) => m.compatibility_status === 'COMPATIBLE' && !m.deleted_at)
+        .filter((m) => m.is_compatible && !m.deleted_at)
         .sort((a, b) => a.sort_order - b.sort_order);
     },
     /**
@@ -158,7 +158,7 @@ export function useAiModels() {
      * never on UI deletion-filter changes.
      */
     getCompatibleModels(): AiModel[] {
-      return _catalog.models.filter((m) => m.compatibility_status === 'COMPATIBLE');
+      return _catalog.models.filter((m) => m.is_compatible);
     },
     ensureCatalogLoaded,
     getModelByModelId(model_id: string): AiModel | undefined {

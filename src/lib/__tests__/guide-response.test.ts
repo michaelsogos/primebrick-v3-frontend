@@ -116,4 +116,14 @@ describe('parseGuideResponse', () => {
       actions: [],
     });
   });
+
+  it('strips trailing "} residue emitted after the answer envelope', () => {
+    // Observed: Qwen3-4B emits {"answer_markdown":"..."} then extra `"} ` —
+    // JSON.parse fails and the salvage kept the residue inside the answer.
+    const dirty = '{"answer_markdown":"Clicca su Salva per creare l\'utente."} "} ';
+    expect(parseGuideResponse(dirty)).toEqual({
+      answer_markdown: "Clicca su Salva per creare l'utente.",
+      actions: [],
+    });
+  });
 });

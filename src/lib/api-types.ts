@@ -200,6 +200,21 @@ export type ExecutionConfig = {
   intent_detection: boolean;
   /** RAG assistants only: min cosine similarity for a retrieved chunk to enter the prompt. */
   min_similarity?: number;
+  /** ORT InferenceSession options (snake_case keys, camelized by the worker) —
+   *  e.g. { enable_mem_pattern: false, enable_cpu_mem_arena: false } reduces
+   *  wasm-heap pressure on fp32-activation dtypes. */
+  ort_session_options?: Record<string, unknown>;
+  /** env.wasm.numThreads override — 1 removes the pthread allocator path. */
+  ort_num_threads?: number;
+  /** Guide ReAct cerebellums only: agent prompt/tool-response dialect.
+   *  'react_classic' (default) = Thought/Action/Action Input + Observation;
+   *  'qwen_tool_call' = <tool_call>{json}</tool_call> + tool-role responses. */
+  agent_dialect?: 'react_classic' | 'qwen_tool_call';
+  /** Guide cerebellums only: 'in_context' (default) collapses answer+action
+   *  stages into the agent conversation (delta-prefill); 'separate_prompt'
+   *  restores the classic fresh-conversation S3/S4 (smaller prompts, needed
+   *  for models that cannot reuse the KV cache). */
+  answer_mode?: 'in_context' | 'separate_prompt';
 };
 
 export type AiModel = {
@@ -237,7 +252,7 @@ export type AiModel = {
     measured_at?: string;
     measured_ctx_tokens?: number | null;
   } | null;
-  compatibility_status: string;
+  is_compatible: boolean;
   execution_config?: ExecutionConfig | null;
   created_at: string;
   created_by: string;
@@ -284,6 +299,11 @@ export type AiCerebellum = {
   test_scores?: Record<string, unknown> | null;
   /** Visual recommendation badge — cosmetic only, no effect on selection/execution. */
   recommendation?: 'RECOMMENDED' | 'NOT_RECOMMENDED' | null;
+  /** Per-assistant compatibility — false hides this (assistant, model, dtype)
+   *  from that assistant's model picker. Mandatory, defaults true. */
+  is_compatible: boolean;
+  /** Per-assistant default model — at most one row per assistant_key. */
+  is_default: boolean;
   created_at: string;
   created_by: string;
   updated_at: string;

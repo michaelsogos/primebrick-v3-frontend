@@ -452,11 +452,11 @@
                 <div class="min-w-0 space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-medium">{model.name}</span>
-                    {#if model.compatibility_status === 'COMPATIBLE'}
+                    {#if model.is_compatible}
                       <span class="flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400" title={$t('system.entities.ai_model.compatibility.COMPATIBLE')}>
                         <ShieldCheck class="size-3" />
                       </span>
-                    {:else if model.compatibility_status === 'NOT_COMPATIBLE'}
+                    {:else}
                       <span class="flex items-center gap-0.5 text-[10px] text-rose-600 dark:text-rose-400" title={$t('system.entities.ai_model.compatibility.NOT_COMPATIBLE')}>
                         <ShieldX class="size-3" />
                       </span>
@@ -653,7 +653,7 @@
                        persisted ai_assistant_model config entry). Hidden when an
                        assistant is selected — default selection only makes sense
                        on the model-defaults view. -->
-                  {#if selectedAssistantKey === '' && modelVariantKey(model) !== defaultModelId && model.compatibility_status === 'COMPATIBLE'}
+                  {#if selectedAssistantKey === '' && modelVariantKey(model) !== defaultModelId && model.is_compatible}
                     <Button
                       variant="ghost"
                       size="icon-sm"

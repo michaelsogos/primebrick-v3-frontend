@@ -429,10 +429,17 @@ export interface DocsSearchHit {
 }
 
 export async function searchDocs(params: {
-  embedding: number[];
+  /** Raw query text — the BE embeds it via the AI microservice. The FE
+   *  never computes embeddings (embed-worker was removed by design). */
+  query: string;
+  /** Legacy path: precomputed embedding (internal callers/tests only). */
+  embedding?: number[];
   keywords?: string[];
   limit?: number;
   repo?: string;
+  /** Corpus scoping applied inside the SQL candidate window — filtering
+   *  client-side after top-N lets out-of-scope docs saturate the window. */
+  path_prefix?: string;
   /** Caller floor — the BE only expands the doc graph off hits above it. */
   min_similarity?: number;
   /** Rank-tuning overrides forwarded to the DAL (per-assistant balance). */

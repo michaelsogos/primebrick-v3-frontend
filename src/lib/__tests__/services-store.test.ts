@@ -4,7 +4,7 @@ import type { ServiceInfo } from "$lib/api-types";
 
 function makeService(overrides: Partial<ServiceInfo> = {}): ServiceInfo {
   return {
-    code: "EMAILSENDER",
+    code: "emailsender",
     base_url: "http://localhost:3003",
     endpoints: {},
     is_behind_scaler: false,
@@ -49,29 +49,29 @@ describe("aggregateStatus", () => {
 describe("groupByCode", () => {
   it("groups instances by code", () => {
     const services = [
-      makeService({ code: "EMAILSENDER", base_url: "http://a:3003" }),
-      makeService({ code: "EMAILSENDER", base_url: "http://b:3003" }),
+      makeService({ code: "emailsender", base_url: "http://a:3003" }),
+      makeService({ code: "emailsender", base_url: "http://b:3003" }),
     ];
     const map = groupByCode(services);
     expect(map.size).toBe(1);
-    expect(map.get("EMAILSENDER")?.length).toBe(2);
+    expect(map.get("emailsender")?.length).toBe(2);
   });
 
   it("single instance → map with 1 entry", () => {
-    const services = [makeService({ code: "EMAILSENDER" })];
+    const services = [makeService({ code: "emailsender" })];
     const map = groupByCode(services);
     expect(map.size).toBe(1);
-    expect(map.get("EMAILSENDER")?.length).toBe(1);
+    expect(map.get("emailsender")?.length).toBe(1);
   });
 
   it("multiple codes → multiple map entries", () => {
     const services = [
-      makeService({ code: "EMAILSENDER" }),
+      makeService({ code: "emailsender" }),
       makeService({ code: "AUTHSERVICE" }),
     ];
     const map = groupByCode(services);
     expect(map.size).toBe(2);
-    expect(map.has("EMAILSENDER")).toBe(true);
+    expect(map.has("emailsender")).toBe(true);
     expect(map.has("AUTHSERVICE")).toBe(true);
   });
 

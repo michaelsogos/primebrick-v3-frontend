@@ -33,6 +33,7 @@
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
+  import { useAiCerebellum } from '$lib/composables/useAiCerebellum.svelte';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { ChatMessage } from './ai-assistant.types';
   import { marked } from 'marked';
@@ -84,6 +85,7 @@
 
   let {
     assistant_id,
+    assistant_key,
     i18n_ns,
     topic_key,
     testid_prefix,
@@ -92,6 +94,10 @@
   }: {
     /** Stable assistant identifier (sessionStorage keys, cerebellum). */
     assistant_id: string;
+    /** Cerebellum namespace ('guide' | 'regex' | 'json_config'). When set, the
+     *  model picker hides (assistant, model) combos flagged is_compatible=false
+     *  and the default model resolves from the cerebellum is_default row. */
+    assistant_key?: string;
     /** i18n namespace, e.g. 'app.smart.regex.ai'. */
     i18n_ns: string;
     /** Header topic translation key (full key). */
@@ -111,6 +117,7 @@
 
   const config = useConfigEntries();
   const aiModels = useAiModels();
+  const cerebellum = assistant_key ? useAiCerebellum(assistant_key) : null;
 
   let ai = $state<AiHandle | null>(null);
   let modelId = $state<string | null>(null);
@@ -214,6 +221,13 @@
         return;
       }
 
+      // Per-assistant cerebellum: drives both the default model (is_default
+      // row) and the picker filter (is_compatible=false rows are hidden).
+      // Best-effort: a cerebellum failure must not block initialization.
+      await cerebellum?.ensureLoaded().catch(() => {});
+      const defaultTuning = cerebellum?.state.tunings.find((t) => t.is_default);
+      const defaultModelId = defaultTuning ? modelVariantKey(defaultTuning) : null;
+
       // Check for a pending model switch from sessionStorage.
       let switchModelId: string | null = null;
       try {
@@ -221,13 +235,18 @@
         if (switchModelId) sessionStorage.removeItem(`${assistant_id}-switch-model`);
       } catch { /* sessionStorage unavailable */ }
 
-      modelId = switchModelId ?? configuredId;
+      modelId = switchModelId ?? defaultModelId ?? configuredId;
 
       // 2. Load the model catalog from the BE entity — selectable models
-      // are the alive+compatible snapshot rows. Best-effort: a catalog
-      // failure must not block assistant initialization.
+      // are the alive+compatible snapshot rows, minus combos this
+      // assistant's cerebellum flags as incompatible. Missing row = allowed
+      // (compatible-by-default; the block must be an explicit decision).
       await aiModels.ensureCatalogLoaded().catch(() => {});
-      availableModels = aiModels.getAliveCompatibleModels();
+      availableModels = aiModels.getAliveCompatibleModels().filter((m) => {
+        const key = modelVariantKey(m);
+        const row = cerebellum?.state.tunings.find((t) => modelVariantKey(t) === key);
+        return row?.is_compatible !== false;
+      });
 
       // 3. Create the AI composable with the resolved model ID.
       ai = create_composable(modelId);
