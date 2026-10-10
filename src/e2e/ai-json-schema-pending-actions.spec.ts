@@ -288,7 +288,7 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
         const out: Record<string, unknown> = {};
         try { out.health = (await fetch("/api/v1/health")).status; } catch (err) { out.health = String(err); }
         try { out.config_meta = (await fetch("/api/v1/entities/config_entry/meta")).status; } catch (err) { out.config_meta = String(err); }
-        try { out.models = (await fetch("/api/v1/entities/ai_model")).status; } catch (err) { out.models = String(err); }
+        try { out.models = (await fetch("/ws/ai/api/v1/entities/ai_model")).status; } catch (err) { out.models = String(err); }
         out.online = navigator.onLine;
         return out;
       }).catch((err) => ({ evaluate_failed: String(err) })),

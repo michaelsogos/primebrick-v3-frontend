@@ -15,7 +15,7 @@ import { fetchAiCerebellum } from '$lib/api';
 import { modelVariantKey, type AiCerebellum } from '$lib/api-types';
 import { clearCachedETag } from '$lib/cache/fe-cache-store';
 
-const AI_CEREBELLUM_URL = '/api/v1/entities/ai_cerebellum/list';
+const AI_CEREBELLUM_URL = '/ws/ai/api/v1/entities/ai_cerebellum/list';
 
 interface AssistantCache {
   tunings: AiCerebellum[];

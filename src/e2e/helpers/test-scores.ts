@@ -104,7 +104,7 @@ export function buildTestScoreUpdate(
   const dtype_param = values.length;
 
   return {
-    query: `UPDATE public.ai_models
+    query: `UPDATE ai.ai_models
      SET test_scores = $2::jsonb, rank = COALESCE($3, rank), updated_at = now(), updated_by = 'e2e', version = version + 1
      ${measuredSet}
      WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $${dtype_param} AND deleted_at IS NULL`,
@@ -126,7 +126,7 @@ export async function mergeTestScoreTurns(
   const { rows } = await pool.query<{
     test_scores: Record<string, unknown> | null;
   }>(
-    `SELECT test_scores FROM public.ai_models
+    `SELECT test_scores FROM ai.ai_models
      WHERE model_id = $1 AND dtype IS NOT DISTINCT FROM $2 AND deleted_at IS NULL`,
     [repo, dtype ?? null],
   );

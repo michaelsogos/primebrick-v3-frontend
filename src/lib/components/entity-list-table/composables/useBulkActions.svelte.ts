@@ -1,4 +1,4 @@
-import { apiFetch } from '$lib/api';
+import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
@@ -62,7 +62,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         const row = rowByKey?.(k);
         return { uuid: k, version: row?.version as number };
       });
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
+      const res = await apiFetch(`${entityApiBase(entity)}/bulk-delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -146,7 +146,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         const row = rowByKey?.(k);
         return { uuid: k, version: row?.version as number };
       });
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
+      const res = await apiFetch(`${entityApiBase(entity)}/bulk-restore`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -232,7 +232,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isDuplicating = true;
       onBulkActionStart?.();
 
-      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
+      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: selectedKeys })

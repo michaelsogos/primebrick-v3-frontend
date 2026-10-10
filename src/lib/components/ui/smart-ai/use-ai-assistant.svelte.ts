@@ -654,7 +654,7 @@ export function useAiAssistant<TChoice = unknown>(
     if (!row?.uuid || row.version == null) return;
     if (row.working_set_source === 'e2e_measured' && row.working_set_mb === working_set_mb) return;
     try {
-      const res = await apiFetch(`/api/v1/entities/ai_model/${row.uuid}`, {
+      const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/${row.uuid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

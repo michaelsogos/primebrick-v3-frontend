@@ -4,7 +4,7 @@
  * Runs a 5-turn documentation Q&A session against the smart-guide assistant
  * (global Lighthouse CTA in the app top bar — no feature page required),
  * against the REAL live RAG pipeline (no route interception): Italian question
- * → English rewrite → embedding worker → /api/v1/system/docs/search →
+ * → English rewrite → embedding worker → /ws/ai/api/v1/system/docs/search →
  * grounded answer with source citations.
  *
  * Determinism: NO blind sleeps — every step polls DOM evidence in ≤5s slots,
@@ -377,7 +377,7 @@ test.describe("AI quality — guide_test_score", () => {
     const context = await getSharedContext();
     const page = context.pages()[0] ?? (await context.newPage());
     page.on("request", (req) => {
-      if (req.url().includes("/api/v1/system/docs/search")) log("→ docs/search request");
+      if (req.url().includes("/ws/ai/api/v1/system/docs/search")) log("→ docs/search request");
     });
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
     let pendingGuideStage: string | null = null;

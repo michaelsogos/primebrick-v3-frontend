@@ -9,7 +9,7 @@
  *   - every model stage's raw output is captured via the composable's
  *     `[ai-raw]` console.debug (fires per stream_complete — preflights too)
  *   - worker postMessage hook counts `generate` calls + embed queries
- *   - real /api/v1/system/docs/search + /api/v1/system/routes (no mocks)
+ *   - real /ws/ai/api/v1/system/docs/search + /api/v1/system/routes (no mocks)
  *   - per-stage wall time = delta between `generate` post and next [ai-raw]
  *
  * Parity assertions vs baseline v1 (`guide-loop-baseline-v1-results.md`):
@@ -178,7 +178,7 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
       const origFetch = window.fetch;
       window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
-        if (url.includes("/api/v1/system/docs/search")) {
+        if (url.includes("/ws/ai/api/v1/system/docs/search")) {
           w.__loop_debug!.docs_search_calls++;
           try {
             const body = JSON.parse((init?.body as string) ?? "{}");

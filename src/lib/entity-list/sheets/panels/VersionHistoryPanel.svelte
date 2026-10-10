@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { apiFetch } from "$lib/api";
+  import { apiFetch, entityApiBase } from "$lib/api";
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
@@ -66,7 +66,7 @@
     versionHistoryData = [];
 
     try {
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -91,7 +91,7 @@
     versionHistoryPage += 1;
 
     try {
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');

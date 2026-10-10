@@ -25,7 +25,7 @@ import { fetchAiModels, apiFetch } from '$lib/api';
 import { modelVariantKey, type AiModel } from '$lib/api-types';
 import { clearCachedETagsByPrefix } from '$lib/cache/fe-cache-store';
 
-const AI_MODELS_URL = '/api/v1/entities/ai_model/list';
+const AI_MODELS_URL = '/ws/ai/api/v1/entities/ai_model/list';
 
 type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
 
@@ -176,7 +176,7 @@ export function useAiModels() {
       void fetchVisibleModels();
     },
     async deleteModel(uuid: string, version: number, mfaToken?: string): Promise<boolean> {
-      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}?version=${version}`, {
+      const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/${uuid}?version=${version}`, {
         method: 'DELETE',
         headers: mfaToken ? { 'X-MFA-Action-Authorization': mfaToken } : {},
       });
@@ -185,7 +185,7 @@ export function useAiModels() {
       return true;
     },
     async restoreModel(uuid: string, version: number): Promise<boolean> {
-      const res = await apiFetch(`/api/v1/entities/ai_model/${uuid}/restore?version=${version}`, {
+      const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/${uuid}/restore?version=${version}`, {
         method: 'POST',
       });
       if (!res.ok) return false;

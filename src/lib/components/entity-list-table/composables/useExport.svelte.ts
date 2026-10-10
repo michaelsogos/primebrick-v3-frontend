@@ -1,4 +1,4 @@
-import { apiFetch } from '$lib/api';
+import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
@@ -143,7 +143,7 @@ export function useExport(options: ExportOptions) {
       }
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
-      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      const response = await apiFetch(`${entityApiBase(entity)}/export?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -248,7 +248,7 @@ export function useExport(options: ExportOptions) {
         params.append(key, value);
       });
 
-      const response = await apiFetch(`/api/v1/entities/${entity}/export?${params.toString()}`);
+      const response = await apiFetch(`${entityApiBase(entity)}/export?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();

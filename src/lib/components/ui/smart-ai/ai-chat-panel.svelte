@@ -117,6 +117,8 @@
 
   const config = useConfigEntries();
   const aiModels = useAiModels();
+  // svelte-ignore state_referenced_locally — assistant_key is a static
+  // prop for the lifetime of the panel (the chat is remounted on change).
   const cerebellum = assistant_key ? useAiCerebellum(assistant_key) : null;
 
   let ai = $state<AiHandle | null>(null);

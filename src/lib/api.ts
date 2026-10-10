@@ -30,6 +30,22 @@ export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableEr
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
 
+/**
+ * Entities owned by a microservice are reached through the BE proxy
+ * (`/ws/<service>/api/v1/entities/<entity>`); BE-owned entities use the
+ * direct path. Single source of truth for every generic entity layer
+ * (entity-list-table composables, version history, dialogs).
+ */
+const ENTITY_SERVICE_MAP: Record<string, string> = {
+  ai_model: 'ai',
+  ai_cerebellum: 'ai',
+};
+
+export function entityApiBase(entity: string): string {
+  const service = ENTITY_SERVICE_MAP[entity];
+  return service ? `/ws/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
+}
+
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
 // live in $lib/auth/session-check — shared with the login page boot.
 
@@ -358,7 +374,7 @@ export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: Type
   return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
 }
 
-// === AI models (BE ai_models entity — WebLLM model catalog) ===
+// === AI models (AI-owned ai_models entity — WebLLM model catalog, via /ws/ai proxy) ===
 
 export async function fetchAiCerebellum(filters?: {
   assistant_key?: string;
@@ -380,7 +396,7 @@ export async function fetchAiCerebellum(filters?: {
     i++;
   }
   if (i > 0) params.set('connector', 'AND');
-  const url = `/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
+  const url = `/ws/ai/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
   const res = await apiFetch(url);
   if (!res.ok) throw new Error(`AI cerebellum fetch failed (${res.status})`);
   const data = (await res.json()) as { rows: AiCerebellum[] };
@@ -395,7 +411,7 @@ export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCL
   for (;;) {
     const params = new URLSearchParams({ page_size: '100', page: String(page) });
     if (deletedRecords) params.set('deleted_records', deletedRecords);
-    const res = await apiFetch(`/api/v1/entities/ai_model/list?${params}`);
+    const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/list?${params}`);
     if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
     const data = (await res.json()) as { rows: AiModel[]; total?: number };
     rows.push(...data.rows);
@@ -449,7 +465,7 @@ export async function searchDocs(params: {
   oversample?: number;
   graph_max_paths?: number;
 }): Promise<DocsSearchHit[]> {
-  const res = await apiFetch('/api/v1/system/docs/search', {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -465,7 +481,7 @@ export async function fetchDoc(params: {
   path: string;
   repo?: string;
 }): Promise<{ repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } | null> {
-  const res = await apiFetch('/api/v1/system/docs/document', {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),

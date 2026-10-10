@@ -10,7 +10,7 @@
    * (RAG, prompts, etc.) can live here without a rename.
    *
    * Full admin CRUD for ai_model rows is handled by the BE entity API
-   * (/api/v1/entities/ai_model/*). This page shows the current catalog
+   * (`/ws/ai/api/v1/entities/ai_model/*` — AI microservice via the BE proxy).
    * and the browser cache management UI.
    */
   import { t } from '$lib/i18n';
@@ -225,7 +225,7 @@
     // executeWithToken: first attempt without token → BE 403 → dialog opens →
     // user verifies → retry with X-MFA-Action-Authorization header → DELETE succeeds.
     const resp = await stepUp.executeWithToken(
-      (token) => apiFetch(`/api/v1/entities/${target.entity}/${target.uuid}?version=${target.version}`, {
+      (token) => apiFetch(`/ws/ai/api/v1/entities/${target.entity}/${target.uuid}?version=${target.version}`, {
         method: 'DELETE',
         headers: token ? { 'X-MFA-Action-Authorization': token } : {},
       }),

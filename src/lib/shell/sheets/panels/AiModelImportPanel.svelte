@@ -289,7 +289,7 @@
     if (!hit || adding) return;
     adding = true;
     try {
-      const res = await apiFetch('/api/v1/entities/ai_model', {
+      const res = await apiFetch('/ws/ai/api/v1/entities/ai_model', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

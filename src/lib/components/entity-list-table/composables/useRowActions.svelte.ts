@@ -1,4 +1,4 @@
-import { apiFetch } from '$lib/api';
+import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn } from '$lib/entity-list/types';
@@ -117,7 +117,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       _state.isDeleting = true;
       const uuidValue = row[uid] as string;
       const purge = usePurgeDelete?.() ? '/purge' : '';
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}${purge}?version=${(row as Record<string, unknown>).version}`, {
+      await apiFetch(`${entityApiBase(entity)}/${uuidValue}${purge}?version=${(row as Record<string, unknown>).version}`, {
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
@@ -159,7 +159,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isRestoring = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore?version=${(row as Record<string, unknown>).version}`, {
+      await apiFetch(`${entityApiBase(entity)}/${uuidValue}/restore?version=${(row as Record<string, unknown>).version}`, {
         method: 'POST'
       });
       // Refresh the list after successful restore
@@ -201,7 +201,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isDuplicating = true;
       const uuidValue = row[uid] as string;
-      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
+      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: [uuidValue] })
