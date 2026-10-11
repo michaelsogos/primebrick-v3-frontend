@@ -26,3 +26,7 @@
 - AI agent MUST NOT introduce new callers that send flat entity bodies.
 - AI agent MUST reuse `EntityWritePayload<E>` rather than redeclaring the
   shape inline.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/entity-metadata.mdx` — link, do not duplicate.

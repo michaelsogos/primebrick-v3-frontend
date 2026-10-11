@@ -67,3 +67,7 @@ Introducing a new list layout that does NOT use `EntityListTable` requires expli
 - AI agent MUST use `EntityListTable` for any new entity list page.
 - AI agent MUST NOT create custom table markup for entity list pages.
 - AI agent MUST flag any existing custom table list page as a candidate for migration to `EntityListTable`.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/components/entity-list-table.mdx` — link, do not duplicate.

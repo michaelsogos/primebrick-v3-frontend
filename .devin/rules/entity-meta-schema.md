@@ -68,3 +68,7 @@ type EntityMeta = {
 `sticky_columns`, `auditing_columns`, `view_visibility`, `enable_create_action`,
 `row_actions` (booleans), `list.*` (columns/actions_overrides under `list`),
 `EntityListMeta` (renamed `EntityMeta`).
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/entity-metadata.mdx` — link, do not duplicate.

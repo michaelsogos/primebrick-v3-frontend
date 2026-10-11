@@ -73,3 +73,7 @@ Consequences:
 When creating a new page, verify: which module prefix owns its URL, and which
 schema holds its keys. If they don't line up, either place the route under an
 existing prefix or register a module + schema mapping on the BE.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/i18n.mdx` — link, do not duplicate.

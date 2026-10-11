@@ -46,3 +46,7 @@
 - ❌ Marketing language or superlatives
 - ❌ `<url>` angle-bracket autolinks (MDX parses `<` as JSX — use `[url](url)`)
 - ❌ Unescaped `<`, `{`, `}` in TS type names in table cells
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/overview.mdx` — link, do not duplicate.

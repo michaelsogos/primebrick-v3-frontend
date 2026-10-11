@@ -113,3 +113,7 @@ Everything else MUST use `pushNotification` from `$lib/errors/app-errors`.
 - AI agent MUST NOT call `toast.error(...)` / `toast.success(...)` / `toast.warning(...)` / `toast.info(...)` / `toast.critical(...)` directly in components, routes, or composables.
 - AI agent MUST NOT use `pushAppError`, `pushImpactError`, or `pushRFC7807Error` — these functions have been removed. Use `pushNotification` instead.
 - When reviewing existing code, flag any direct `toast.*()` calls outside `src/lib/errors/` as violations.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/error-handling.mdx` — link, do not duplicate.

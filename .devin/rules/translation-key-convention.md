@@ -102,3 +102,7 @@ $t('entities.user_profiles.fields.is_admin')
 - AI agent MUST NOT use camelCase or PascalCase in translation key entity segments.
 - AI agent MUST NOT use snake_case plural in translation key entity segments.
 - When reviewing existing code, flag any camelCase or plural entity segments in translation keys as violations.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/i18n.mdx` — link, do not duplicate.

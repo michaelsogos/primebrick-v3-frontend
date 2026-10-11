@@ -99,3 +99,7 @@ relying on web search or memory.
 - [Svelte 5 `$effect` docs](https://svelte.dev/docs/svelte/$effect) — "When not to use `$effect`"
 - [Extended patterns doc](../../docs/ai/svelte-runes.md)
 - [AGENTS.md § "Svelte 5 & TypeScript Mandatory Rules"](../../AGENTS.md)
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/ui-stack.mdx` — link, do not duplicate.

@@ -43,3 +43,7 @@ trigger: always_on
 - AI agent MUST NOT add fallback string-literal defaults (`|| "..."`, `?? ""`) for configuration data.
 - AI agent MUST use raw response shapes directly instead of field-by-field rebuilding, unless a field needs a real type conversion.
 - When reviewing existing code, flag any camelCase field names in entity-shaped TS types or JSON responses as violations.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/entity-metadata.mdx` — link, do not duplicate.

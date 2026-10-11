@@ -27,3 +27,7 @@
    the icon; the chrome owns the glyph size. Excluded: decorative glyphs
    inside trigger content (e.g. `size-3` carets in prefix selector CTAs)
    and leading icons.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/icon-conventions.mdx` — link, do not duplicate.

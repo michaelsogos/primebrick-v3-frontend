@@ -32,3 +32,7 @@ All AI-powered components MUST use the `Smart` prefix:
 - AI agent MUST use the `Smart` prefix for any new AI-powered component.
 - AI agent MUST NOT create AI-powered components without the `Smart` prefix.
 - AI agent MUST follow the lazy-loading and resource-cleanup requirements.
+
+## Deep dive
+
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/ai-tool-loop.mdx` — link, do not duplicate.
