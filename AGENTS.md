@@ -279,17 +279,19 @@ $derived(something.state.items.length) // tracked (deep)
 something.open();                      // only path to mutation
 ```
 
-## User-facing documentation
+## Documentation (3 tiers — see `.devin/rules/docs-audience.md`)
 
-User-facing developer documentation lives in `docs/user-guide/` as MDX files.
-These are synced to `docs.primebrick.dev` by the docs repo's CI pipeline.
+- `docs/user-guide/` — **end-user manual** (`manual/*.mdx`, non-developers).
+  Synced to `docs.primebrick.dev` AND ingested into the AI knowledge base.
+- `docs/dev-guide/` — **developer documentation** (components, APIs,
+  architecture, conventions) as MDX files. Synced to `docs.primebrick.dev`
+  under the dev section; never ingested into the end-user AI KB.
+- `docs/ai/`, `docs/skills/`, `docs/gitflow.md` — **agent/internal docs**,
+  never synced or ingested.
 
-- **Location**: `docs/user-guide/*.mdx` — one file per topic
-- **Ordering**: `docs/user-guide/_order.json` defines the sidebar page order
-- **Conventions**: see `.devin/rules/docs-user-guide.md` for editorial rules
+- **Ordering**: each dir has its own `_order.json` defining sidebar page order
+- **Conventions**: see `.devin/rules/docs-dev-guide.md` for editorial rules
 - **Mermaid**: use `<Mermaid chart={...} />`, never ` ```Code ` or ` ```mermaid `
 - **Component extraction**: run `pnpm extract-docs` to generate
-  `docs/user-guide/_extracted/components.json` from Svelte™ components
+  `docs/dev-guide/_extracted/components.json` from Svelte™ components
 - **Do NOT hand-edit** files in `docs/ai/` or `docs/skills/` — those are internal
-- **Internal docs** (`docs/ai/`, `docs/skills/`, `docs/gitflow.md`) are NOT synced
-  to the docs site — they stay in this repo for AI agents only

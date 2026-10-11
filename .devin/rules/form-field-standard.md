@@ -75,6 +75,6 @@ of the two sanctioned anatomies:
 
 ## References
 
-- `docs/user-guide/components/prime-field.mdx` — wrapper anatomy + examples
-- `docs/user-guide/components/form-fields.mdx` — superforms anatomy
+- `docs/dev-guide/components/prime-field.mdx` — wrapper anatomy + examples
+- `docs/dev-guide/components/form-fields.mdx` — superforms anatomy
 - Canonical pilot: `src/routes/(app)/system/settings/modules/[code]/+page.svelte`

@@ -28,5 +28,5 @@
    the standard dialogs loses the convention-driven copy.
 
 ## Reference
-- Docs: `docs/user-guide/components/entity-confirm-dialogs.mdx`
+- Docs: `docs/dev-guide/components/entity-confirm-dialogs.mdx`
 - Canonical usage: `src/routes/(app)/system/settings/ai/+page.svelte`

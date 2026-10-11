@@ -77,7 +77,7 @@ test.describe("Typed configuration values", () => {
       timeout: 10000,
     });
 
-    // Secret-typed entries (oidc_client_secret, gateway_secret) render as password inputs
+    // Secret-typed entries (oidc_client_secret, service_client_shield_secret) render as password inputs
     const secretInputs = page.locator("[data-testid^='config-input-secret-']");
     const count = await secretInputs.count();
     if (count > 0) {

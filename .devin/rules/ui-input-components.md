@@ -24,7 +24,7 @@ creativity, no re-styled primitives, no ad-hoc markup for inputs.
 | OTP | OTP input component (see `otp-input` rule) |
 | Phone / numeric / url with AI | `phone-input`, `numeric-input`, `url-input`, Smart* components |
 
-Docs for each component live in `docs/user-guide/components/*.mdx` — read the
+Docs for each component live in `docs/dev-guide/components/*.mdx` — read the
 relevant page before using a component you haven't used in this session.
 
 ## ComboSelect display modes (typed, closed set)

@@ -59,7 +59,7 @@ Two field-row anatomies exist — pick by context, never hand-roll raw
 `layout="inline"` (control + label side by side — the `SwitchField` anatomy
 for boolean controls). `help` accepts a pre-mapped `{ text, priority?,
 title? }` or a raw `MetaColumn` (translation + `show_form_tooltip` gate
-handled internally). Docs: `docs/user-guide/components/prime-field.mdx`.
+handled internally). Docs: `docs/dev-guide/components/prime-field.mdx`.
 
 #### Detail-page primary CTA placement
 
@@ -159,7 +159,7 @@ icon+number+label markup.
   for inline numbers without the label/icon stat chrome.
 - Canonical example: machine-capabilities strip in
   `src/lib/components/ui/smart-ai/machine-capabilities-section.svelte`.
-- User docs: `docs/user-guide/components/stat-card.mdx`,
+- User docs: `docs/dev-guide/components/stat-card.mdx`,
   `components/number-ticker.mdx`.
 
 #### Password inputs
@@ -246,7 +246,7 @@ component **enforces** the presentation order — do not reorder manually:
 Canonical example: `/ai` models header in
 `src/routes/(app)/system/settings/ai/+page.svelte`
 (`data-testid="ai-models-toolbar"`). User docs:
-`docs/user-guide/components/toolbar.mdx`.
+`docs/dev-guide/components/toolbar.mdx`.
 
 ### Tables / lists
 
