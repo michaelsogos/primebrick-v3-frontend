@@ -508,6 +508,29 @@ export async function fetchRoutesCensus(): Promise<CensusRoute[]> {
   return data.routes;
 }
 
+/** A generic MCP tool definition (GET /api/v1/system/mcp/tools). */
+export interface McpToolDef {
+  name: string;
+  title?: string;
+  description: string;
+  input_schema: unknown;
+  /** Safe to auto-execute — write tools need user confirmation client-side. */
+  read_only: boolean;
+}
+
+/**
+ * List the generic MCP tool catalog (GET /api/v1/system/mcp/tools).
+ * Used by the AI chat agentic loop — the FE is the loop driver (B3): it
+ * passes these defs to /api/v1/ai/chat, executes model tool calls via
+ * callMcpTool, and resubmits the updated history.
+ */
+export async function listMcpTools(): Promise<McpToolDef[]> {
+  const res = await apiFetch('/api/v1/system/mcp/tools');
+  if (!res.ok) return [];
+  const data = (await res.json()) as { tools: McpToolDef[] };
+  return data.tools ?? [];
+}
+
 /** Response of POST /api/v1/system/mcp/call. */
 export interface McpCallResponse {
   ok: boolean;
