@@ -2,7 +2,7 @@
 
 ## Trigger
 - Applies when closing a GitFlow branch (feature, release, or hotfix).
-- Fires BEFORE the merge step of the closing procedure in docs/gitflow.md.
+- Fires BEFORE the merge step of the closing procedure in .devin/rules/gitflow.md.
 
 ## Diff base per branch type
 
@@ -93,7 +93,7 @@ git commit -m "docs: update dev-guide for <branch-name> changes"
 ```
 
 ### 6. Proceed with normal close
-Continue with the standard GitFlow closing procedure from docs/gitflow.md
+Continue with the standard GitFlow closing procedure from .devin/rules/gitflow.md
 (merge --no-ff, push, delete branch, etc.).
 
 ## What NOT to do

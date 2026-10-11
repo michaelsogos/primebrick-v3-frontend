@@ -35,6 +35,13 @@ Every documentation file belongs to exactly ONE tier:
    dev-guide deep-dive) but knowledge lives in ONE place — link, don't
    duplicate.
 
+## This repository is dev-only
+
+The FE is the presentation layer: it speaks only to developers, like the
+DAL and SDK repos. **No `docs/user-guide/` may be created here.** End-user
+documentation (manuals, entity pages, narrative overviews) lives in the
+owning domain repo (BE / US microservices).
+
 ## Microservice variant (if applicable)
 
 Per-service docs live in `<service>/docs/<tier>/` so each service ships

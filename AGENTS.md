@@ -6,7 +6,7 @@
 
 - **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
 - This applies to ALL situations - no exceptions
-- See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules including commit rules
+- See [.devin/rules/gitflow.md](./.devin/rules/gitflow.md) for complete GitFlow rules including commit rules
 
 
 ## Svelte™ 5 & TypeScript® Mandatory Rules
@@ -146,7 +146,7 @@ Table pages.
 
 This repository follows GitFlow. AI agents MUST follow these rules.
 
-**See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
+**See [.devin/rules/gitflow.md](./.devin/rules/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
 
 ## Error notifications — NEVER use toast directly (MANDATORY)
 
@@ -281,12 +281,13 @@ something.open();                      // only path to mutation
 
 ## Documentation (3 tiers — see `.devin/rules/docs-audience.md`)
 
-- `docs/user-guide/` — **end-user manual** (`manual/*.mdx`, non-developers).
-  Synced to `docs.primebrick.dev` AND ingested into the AI knowledge base.
+- This repo is **dev-only**: the FE is the presentation layer and speaks
+  only to developers (like DAL and SDK). There is **no `docs/user-guide/`**
+  here — end-user manuals live in the owning domain repo (BE/US).
 - `docs/dev-guide/` — **developer documentation** (components, APIs,
   architecture, conventions) as MDX files. Synced to `docs.primebrick.dev`
   under the dev section; never ingested into the end-user AI KB.
-- `docs/ai/`, `docs/skills/`, `docs/gitflow.md` — **agent/internal docs**,
+- `docs/ai/`, `docs/skills/`, `.devin/rules/gitflow.md` — **agent/internal docs**,
   never synced or ingested.
 
 - **Ordering**: each dir has its own `_order.json` defining sidebar page order

@@ -6,7 +6,7 @@
 
 ## Golden Rule
 **Only documented `variant`/`tone` combinations are allowed.** The matrix in
-`docs/button-styles.md` is a closed set — no free creativity, no invented
+`docs/dev-guide/button-styles.mdx` is a closed set — no free creativity, no invented
 roles, no manual styling.
 
 ## Allowed without asking

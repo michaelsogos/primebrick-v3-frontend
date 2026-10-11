@@ -13,7 +13,7 @@ Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer p
 Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 
 Buttons: always go through the `variant × tone` matrix of `ui/button` —
-see [`docs/button-styles.md`](../button-styles.md) for the full standard
+see [`docs/dev-guide/button-styles.mdx`](../dev-guide/button-styles.mdx) for the full standard
 (gradient roles, tones, sizes, hard rules). Never hand-style a `Button`
 with border/background classes.
 
