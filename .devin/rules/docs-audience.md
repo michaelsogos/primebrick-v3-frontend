@@ -46,3 +46,24 @@ owning domain repo (BE / US microservices).
 
 Per-service docs live in `<service>/docs/<tier>/` so each service ships
 its own documentation pack. The same audience rules apply.
+
+## Docs pack — how user docs reach the AI KB (standard, no copy-paste)
+
+Every deployable service ships `dist/docs-pack/` via `pnpm generate:docs`,
+which calls the SDK `buildDocsPack({ repo, docsDir?, outDir, openapi? })`:
+
+- `docsDir` = `docs/user-guide` — omitted entirely for dev-only services
+  (their pack is openapi-only; dev-guide content never enters a pack).
+- `openapi` = the runtime spec object produced by SDK
+  `buildOpenApiSpec` / `entityCrudSpec` / `rpcSpec` from the route table —
+  never a hand-maintained JSON file, so the pack always matches what the
+  service actually serves.
+- The pack is served at `GET /api/v1/system/docs/pack` via SDK
+  `docsPackRouteHandler(packDir)` (s2s-shielded); `ServiceRegistrar`
+  auto-advertises the `docs_pack` capability when a manifest exists.
+- The AI service pulls each pack on `service.register` / `gateway_online`
+  and deletes the repo's docs on `service.unregister` — the KB always
+  mirrors currently-live services.
+- Filesystem ingestion (`docs_path`) is a dev-only fallback gated by the
+  `docs_fs_pipeline` config key; `openapi_path` is retired — specs come
+  from packs.

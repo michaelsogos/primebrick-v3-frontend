@@ -1,0 +1,73 @@
+---
+title: i18n — Translations on the Frontend
+description: "How the FE consumes module-scoped translation dicts — the flat-dict store, t() interpolation, pending translations for AI-authored candidates, per-module loading, and fallback behavior."
+---
+
+# i18n — translations on the frontend
+
+The FE renders **zero hardcoded UI strings**. Everything flows through
+`src/lib/i18n/` — the client half of the platform translations pipeline
+(the storage side is documented in the BE
+[translations](../be/dev/translations) page; the dict contract in the SDK
+[translations](../sdk/dev/translations) page).
+
+## The dict store
+
+`i18n/index.ts` holds the merged flat dict for the active language and
+exposes `t(key, params?)`:
+
+```ts
+t("system.entities.customer.singular")            // "Customer"
+t("system.entities.customer.delete.confirm", { name: "ACME" })
+// "Delete customer ACME?"
+```
+
+- **Flat dict, dot-path keys** — `{ "app.auth.login.title": "..." }`,
+  never nested objects.
+- **`{param}` interpolation** — single-brace placeholders filled from
+  `params`; a missing param leaves the literal `{name}` visible.
+- **Missing keys render the raw key** — deliberate: a translation gap is
+  visible in the UI (`system.entities.foo.singular`) instead of silently
+  falling back to another language.
+- **en-GB fallback dict** — a bundled baseline used only while/where the
+  BE dict is unreachable.
+
+## Module-scoped loading — `use-module-translations`
+
+Module pages pull their own dict: `use-module-translations.svelte.ts`
+fetches `GET /api/v1/translations/{module}/{lang}` and **merges** the
+module dict over the base `app.*`/`system.*` dict — flat merge, module
+keys win their namespace. A page that only declares its module gets its
+strings; no global preload of every module's vocabulary.
+
+`languages.ts` holds the supported locale list; `date-format.ts` formats
+dates per locale; `lang-select` (component doc) is the user-facing
+switcher.
+
+## Pending translations — AI-authored candidates
+
+`pending-translations.svelte.ts` is a `$state` map of **staged
+translations that don't exist in the DB yet**:
+
+```ts
+addPendingTranslation("app.guide.step1.title", { "en-GB": "..." });
+hasPendingTranslation(key)          // → badge in form fields
+getPendingTranslation(key)          // → preview what the user will see
+dropPendingTranslation(key)         // → candidate discarded
+```
+
+When the assistant or a form generates a new label (e.g. a smart-guide
+step title across 7 languages), the strings queue here — the UI can
+preview them and the form submits them piggyback on the entity write
+(`{entity, translations}` envelope) or the translations API.
+`PendingTranslationRow` is the row shape; `form-label-with-priority-help`
+surfaces the pending state to the user.
+
+## Non-goals
+
+- **No ICU/plural rules** — plural selection is by *convention*
+  (`.singular` / `.plural` keys), not grammar engines.
+- **No nested dicts** — flattening happened server-side
+  (`jsonb_object_agg`); the FE never un-merges.
+- **`{{handlebars}}` is not this system** — that's the emailsender's
+  template engine, server-side.

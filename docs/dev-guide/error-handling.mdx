@@ -1,0 +1,45 @@
+---
+title: Error Handling
+description: "How API errors surface — RFC 7807 problem+json parsing, the app-errors layer, http-status mapping, and the toast/dialog presentation split."
+---
+
+# Error handling
+
+Every backend error arrives as an **RFC 7807 `application/problem+json`**
+body (the BE's errorHandler guarantees it — see the BE api-conventions
+page). `src/lib/errors/` is the single path that parses, classifies and
+presents those problems. Components never inspect `res.status` raw and
+never string-match `error.message`.
+
+## The pipeline
+
+```
+fetch/api call → non-2xx
+  → rfc7807.ts        parse body → ProblemDetails { type, title, status, detail, errors? }
+  → rfc7807-mapper.ts classify → AppError { code, user_message, ... }
+  → app-errors.ts     typed error taxonomy
+  → toast.ts          non-blocking surfacing   OR
+    rfc-error-dialog  blocking, structured dialog (component)
+```
+
+| Layer | Owns |
+|---|---|
+| `rfc7807.ts` | wire shape — `ProblemDetails`, safe parse of problem+json |
+| `rfc7807-mapper.ts` | problem → domain error mapping (field errors, codes) |
+| `app-errors.ts` | the FE error taxonomy — typed `AppError` surfaces |
+| `http-status.ts` | status constants/semantics used by api.ts |
+| `toast.ts` | transient error toasts for non-blocking operations |
+| `rfc-error-dialog` (component) | blocking problems — shows `title`/`detail` + per-field `errors[]` |
+
+## Contract rules
+
+- **Parse, don't guess** — always go through the rfc7807 parser; a 500
+  with a non-problem body still degrades to a generic `AppError`.
+- **Field errors ride the problem** — validation failures carry
+  `errors[]`; forms display them inline rather than toasting the raw
+  `detail`.
+- **Toast for transient, dialog for blocking** — a failed save the user
+  can retry → toast; a permission/validation wall → `rfc-error-dialog`.
+- **`detail` is developer-facing** — user copy comes from the mapped
+  `AppError`, optionally translated through `t()`; never render raw
+  server `detail` as the primary message.

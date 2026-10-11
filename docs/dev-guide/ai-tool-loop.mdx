@@ -1,0 +1,78 @@
+---
+title: The AI Tool Loop (caller-driven)
+description: "How the FE drives the agentic loop — /ai/chat SSE stream, client-tool-call events, read_only auto-execution via /system/mcp/call, write-tool confirmation gating, resubmit with tool_results, and the local client-tool registry."
+---
+
+# The AI tool loop (caller-driven)
+
+The AI microservice is **inference-only** — it never calls application
+tools. The **caller drives the loop**: the in-app chat
+(`src/lib/shell/ai-chat/use-ai-chat.svelte.ts`) is the reference
+implementation of the contract described server-side in the BE
+[MCP gateway](../be/dev/mcp) page.
+
+## The turn
+
+1. `openChatStream` → `POST /api/v1/ai/chat` (SSE) with the message,
+   the assembled `history` (`toLlmHistory`) and any `tool_results`
+   pending from the previous step.
+2. The stream emits events; `client-tool-call` is the interesting one —
+   the model asked for a tool and **stopped**. Each call lands in
+   `pendingToolCalls`.
+3. On stream end, `finishStreamStep` commits the streamed text
+   (`commitStreamingText`, preserving `tool_calls` for the transcript)
+   and decides: execute pending calls or finish the turn.
+4. Each call executes:
+   - **server tool + `read_only: true`** → `POST /system/mcp/call`
+     immediately, no user prompt.
+   - **server write tool** → gated behind a user confirmation (the
+     action card shows what will run); on approve, same `/system/mcp/call`
+     — the BE enforces RBAC on the call itself.
+   - **local client tool** → `invokeClientTool` against the
+     client-tool registry (below).
+5. `resubmitLoop` re-opens `/ai/chat` with `history` + `tool_results` —
+   repeat until the model emits a plain `finish`. The loop is bounded
+   (max steps) so a misbehaving model can't spin forever.
+
+Results persist per-message: `AiMessage.content.tool_results` /
+`tool_calls` are the durable transcript — the same shape resubmitted on
+continuation.
+
+## Local client tools — `client-tool-registry.ts`
+
+Not every tool is a server operation. `registerClientTool` lets the FE
+offer **UI-native tools** executed locally:
+
+```ts
+registerClientTool("navigate", handler);   // NavigateToolArgs → { path }
+invokeClientTool<TResult>(name, args)      // → ClientToolResult
+registerBuiltinClientTools();              // wired at boot
+clearClientTools();                        // tests
+```
+
+The built-in example is **navigate** — the model can send the user to a
+route it discovered via the routes census. Local tools still produce a
+`tool_results` entry and participate in the same resubmit contract.
+
+## Where this runs
+
+- **`shell/ai-chat/`** — the platform assistant (sidebar panel).
+- **`components/ui/smart-ai/`** — `ai-chat-panel` + `chat-actions` for
+  embedded assistant surfaces.
+- **`components/ui/smart-guide/`** — `guide-ai-chat-panel` +
+  `guide-loop.ts` (`runGuideRetrievalLoop`, `selectActions`): a *separate
+  retrieval loop* — staged LLM calls for guide generation with its own
+  `exec_config`-driven `GuideLoopConfig`, census-route candidates and
+  action validation. Not the MCP tool loop; same caller-drives
+  philosophy.
+- **`components/ui/smart-regex-input/`** + `smart-json-config/` — scoped
+  chat panels reusing the same stream plumbing.
+
+## Rules of thumb
+
+- **Never auto-run a write** — `read_only` from the tool declaration is
+  the gate; the FE must not guess.
+- **The model proposes, the caller disposes** — anything emitted is
+  untrusted input: validate args before `/system/mcp/call` just as the
+  guide loop validates `AiAction`s against census candidates.
+- **Bound every loop** — resubmit always carries an explicit step cap.
