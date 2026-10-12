@@ -720,8 +720,10 @@ export async function runGuideRetrievalLoop(
           // not enough (observed: RBAC question → model repeated NO_MATCH
           // with manual/roles.mdx and rbac.mdx as top hits): open the
           // top-ranked page FOR it and let it judge on real content —
-          // DONE ("this answers it") vs NO_MATCH ("off-topic").
-          if (fetchCallCount === 0 && searchHitCount > 0 && noMatchAfterFetchReprompts < 1 && hits.length) {
+          // DONE ("this answers it") vs NO_MATCH ("off-topic"). On the last
+          // round the seeded verdict would never be read — honoring the
+          // refusal is safer than injecting unjudged content.
+          if (fetchCallCount === 0 && searchHitCount > 0 && noMatchAfterFetchReprompts < 1 && hits.length && round + 1 < cfg.max_agent_turns) {
             noMatchAfterFetchReprompts++;
             const top = [...hits].sort((a, b) => b.score - a.score)[0];
             stageLog('agent_no_match_blind_seed', { round, path: top.path });
@@ -771,11 +773,14 @@ export async function runGuideRetrievalLoop(
         // the system prompt requires opening a page before DONE when search
         // produced hits — the 3B complies intermittently, so the orchestrator
         // enforces the contract once: it never picks WHAT to open, only
-        // THAT a page must be opened.
+        // THAT a page must be opened. A reprompt needs a next round to be
+        // read — on the last round fall through to the auto-seed fetch, which
+        // still enriches the answer context even with no rounds left.
         if (
           fetchCallCount === 0 &&
           searchHitCount > 0 &&
           shallowDoneReprompts < 1 &&
+          round + 1 < cfg.max_agent_turns &&
           /\bDONE\b[\s.]*$/im.test(head)
         ) {
           shallowDoneReprompts++;
@@ -794,7 +799,8 @@ export async function runGuideRetrievalLoop(
         if (
           fetchCallCount === 0 &&
           !/\bDONE\b[\s.]*$/im.test(head) &&
-          bareProseReprompts < 1
+          bareProseReprompts < 1 &&
+          round + 1 < cfg.max_agent_turns
         ) {
           bareProseReprompts++;
           stageLog('agent_bare_prose', { round });
@@ -985,7 +991,7 @@ export async function runGuideRetrievalLoop(
     new Intl.DisplayNames(['en'], { type: 'language' }).of(userLang.split('-')[0]) ?? userLang;
   const answerInstruction =
     'Research is complete — the pages you fetched answer the question. Now write the FINAL ANSWER using ONLY the documentation above.\n' +
-    'Rules: at most 3 sentences, OR a numbered list of at most 5 steps for procedures. Name UI buttons/fields/titles with the exact labels listed below — quote them verbatim, never translate them, never invent English names.\n\n' +
+    'Rules: at most 3 sentences, OR a numbered list of at most 5 steps for procedures. Name UI buttons/fields/titles with the exact labels listed below — quote them verbatim in **bold**, never translate them, never invent English names.\n\n' +
     (labelsBlock ? `${labelsBlock}\n\n` : '') +
     'OUTPUT: reply with ONLY this JSON object — no Thought line, no tool calls, no markdown fences:\n' +
     '{"answer_markdown":"<the answer>"}\n\n' +

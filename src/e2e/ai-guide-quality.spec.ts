@@ -90,28 +90,28 @@ const TURNS: TurnSpec[] = [
     prompt: "come faccio a creare un utente?",
     expected: "UI procedure to create a user under /system/settings/users",
     keywords: ["utent", "crea"],
-    expected_sources: [["manual/users-create", "manual/users"]],
+    expected_sources: [["generated/users-create", "generated/users"]],
     allowed_actions: ["/system/settings/users"],
   },
   {
     prompt: "cosa significa IDP Code?",
     expected: "IDP Code is the identity-provider subject (JWT sub) identifier",
     keywords: ["idp"],
-    expected_sources: [["api-reference", "entity-field-reference", "manual/users"]],
+    expected_sources: [["generated/entity-field-reference", "generated/users"]],
     allowed_actions: ["/system/settings/users"],
   },
   {
     prompt: "come funzionano i permessi e la RBAC?",
     expected: "Wildcard-based RBAC permission system with roles and admin bypass",
     keywords: ["permess", "ruol"],
-    expected_sources: [["rbac", "authentication"]],
+    expected_sources: [["rbac", "authentication", "generated/roles"]],
     allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/settings/ai"],
   },
   {
     prompt: "come rendo un utente admin?",
     expected: "Assign the administrators role to the user",
     keywords: ["admin|amministr"],
-    expected_sources: [["manual/users", "manual/roles", "rbac", "entity-field-reference"]],
+    expected_sources: [["generated/users", "generated/roles", "rbac", "generated/entity-field-reference"]],
     allowed_actions: ["/system/settings/users", "/system/settings/roles"],
   },
   {
@@ -232,6 +232,9 @@ async function sendTurn(page: Page, prompt: string): Promise<{
 async function citedContexts(source_hrefs: string[]): Promise<string[]> {
   const paths = source_hrefs
     .map((h) => h.replace(/^https?:\/\/[^/]+\//, ""))
+    // Citation hrefs are `docs.primebrick.dev/<repo>/guide/<path>`; docs_kb
+    // rows are keyed by the pack-relative `<path>.mdx`.
+    .map((p) => p.replace(/^[a-z0-9_-]+\/guide\//, ""))
     .map((p) => (p.endsWith(".mdx") ? p : `${p}.mdx`));
   if (!paths.length) return [];
   const { rows } = await getPool().query<{ content: string }>(
