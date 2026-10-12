@@ -499,12 +499,16 @@ export interface DocsIndexRepoRow {
   docs: string;
   chunks: string;
   unembedded_chunks: string;
+  content_bytes: string;
+  vector_bytes: string;
 }
 
 export interface DocsIndexDrift {
   service: string;
   repo?: string;
   error?: string;
+  expected_docs?: number;
+  expected_chunks?: number;
   missing_from_index?: string[];
   stale?: string[];
   orphans?: string[];

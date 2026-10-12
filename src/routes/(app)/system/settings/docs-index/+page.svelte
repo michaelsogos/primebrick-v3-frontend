@@ -163,6 +163,8 @@
                   <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.docs')}</th>
                   <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.chunks')}</th>
                   <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.unembedded')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.contentSize')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.vectorSize')}</th>
                   <th class="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -173,9 +175,11 @@
                     <td class="px-3 py-2 text-right tabular-nums">{repo.docs}</td>
                     <td class="px-3 py-2 text-right tabular-nums">{repo.chunks}</td>
                     <td class="px-3 py-2 text-right tabular-nums" class:text-destructive={Number(repo.unembedded_chunks) > 0}>{repo.unembedded_chunks}</td>
+                    <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">{formatBytes(repo.content_bytes)}</td>
+                    <td class="px-3 py-2 text-right tabular-nums text-muted-foreground">{formatBytes(repo.vector_bytes)}</td>
                     <td class="px-3 py-2 text-right">
-                      <Button variant="ghost" size="sm" disabled={reindexing !== null} onclick={() => reindex(repo.repo)}>
-                        {#if reindexing === repo.repo}{$t('system.settings.docsIndex.reindexing')}{:else}<RefreshCw class="size-3.5" />{$t('system.settings.docsIndex.reindex')}{/if}
+                      <Button variant="ghost" size="icon" disabled={reindexing !== null} onclick={() => reindex(repo.repo)} title={$t('system.settings.docsIndex.reindex')}>
+                        <RefreshCw class={cn('size-3.5', reindexing === repo.repo && 'animate-spin')} />
                       </Button>
                     </td>
                   </tr>
@@ -190,32 +194,39 @@
           <h2 class="text-sm font-semibold">{$t('system.settings.docsIndex.section.drift')}</h2>
           <div class="rounded-lg border">
             <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                  <th class="px-3 py-2 font-medium">{$t('system.settings.docsIndex.col.service')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.expectedDocs')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.expectedChunks')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.missing')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.stale')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.orphans')}</th>
+                  <th class="px-3 py-2 font-medium text-right">{$t('system.settings.docsIndex.col.status')}</th>
+                </tr>
+              </thead>
               <tbody>
                 {#each status.drift as d (d.service)}
                   <tr class="border-b last:border-0 align-top">
                     <td class="px-3 py-2 font-mono text-xs whitespace-nowrap">{d.service}</td>
-                    <td class="px-3 py-2">
+                    <td class="px-3 py-2 text-right tabular-nums">{d.expected_docs ?? '—'}</td>
+                    <td class="px-3 py-2 text-right tabular-nums">{d.expected_chunks ?? '—'}</td>
+                    <td class="px-3 py-2 text-right tabular-nums" class:text-destructive={(d.missing_from_index?.length ?? 0) > 0}>{d.missing_from_index?.length ?? 0}</td>
+                    <td class="px-3 py-2 text-right tabular-nums" class:text-warning={(d.stale?.length ?? 0) > 0}>{d.stale?.length ?? 0}</td>
+                    <td class="px-3 py-2 text-right tabular-nums" class:text-muted-foreground={(d.orphans?.length ?? 0) > 0}>{d.orphans?.length ?? 0}</td>
+                    <td class="px-3 py-2 text-right">
                       {#if d.error}
-                        <Badge variant="outline" class="gap-1 border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
+                        <Badge variant="outline" title={d.error} class="gap-1 border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
                           <XCircle class="size-3.5" />{$t('system.settings.docsIndex.packError')}
                         </Badge>
-                        <div class="mt-1 text-xs text-muted-foreground">{d.error}</div>
                       {:else if driftIssueCount(d) === 0}
                         <Badge variant="outline" class="gap-1 border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
                           <CheckCircle2 class="size-3.5" />{$t('system.settings.docsIndex.aligned')}
                         </Badge>
                       {:else}
-                        <div class="space-y-1 text-xs">
-                          {#if d.missing_from_index?.length}
-                            <div><span class="font-medium text-destructive">{$t('system.settings.docsIndex.missing')}:</span> {d.missing_from_index.join(', ')}</div>
-                          {/if}
-                          {#if d.stale?.length}
-                            <div><span class="font-medium text-warning">{$t('system.settings.docsIndex.stale')}:</span> {d.stale.join(', ')}</div>
-                          {/if}
-                          {#if d.orphans?.length}
-                            <div><span class="font-medium text-muted-foreground">{$t('system.settings.docsIndex.orphans')}:</span> {d.orphans.join(', ')}</div>
-                          {/if}
-                        </div>
+                        <Badge variant="outline" title={[...(d.missing_from_index ?? []), ...(d.stale ?? []), ...(d.orphans ?? [])].join('\n')} class="gap-1 border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300">
+                          <TriangleAlert class="size-3.5" />{$t('system.settings.docsIndex.driftDetected')}
+                        </Badge>
                       {/if}
                     </td>
                   </tr>
