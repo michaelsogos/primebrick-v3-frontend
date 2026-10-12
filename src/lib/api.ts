@@ -496,27 +496,27 @@ export async function fetchDoc(params: {
 
 export interface DocsIndexRepoRow {
   repo: string;
-  docs: string;
-  chunks: string;
-  unembedded_chunks: string;
-  content_bytes: string;
-  vector_bytes: string;
+  docs: bigint;
+  chunks: bigint;
+  unembedded_chunks: bigint;
+  content_bytes: bigint;
+  vector_bytes: bigint;
 }
 
 export interface DocsIndexDrift {
   service: string;
   repo?: string;
   error?: string;
-  expected_docs?: number;
-  expected_chunks?: number;
+  expected_docs?: bigint;
+  expected_chunks?: bigint;
   missing_from_index?: string[];
   stale?: string[];
   orphans?: string[];
-  unembedded_chunks?: number;
+  unembedded_chunks?: bigint;
 }
 
 export interface DocsIngestLogRow {
-  id: number;
+  id: bigint;
   repo: string | null;
   service_code: string;
   trigger_source: string;
@@ -538,7 +538,7 @@ export interface DocsIndexStatus {
   drift: DocsIndexDrift[];
   history: DocsIngestLogRow[];
   probes?: DocsIndexProbe[];
-  storage: { total_bytes: string } | null;
+  storage: { total_bytes: bigint } | null;
 }
 
 export async function fetchDocsIndexStatus(probe = false): Promise<DocsIndexStatus> {

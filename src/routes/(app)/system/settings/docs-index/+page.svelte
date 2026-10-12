@@ -48,7 +48,7 @@
     return (d.missing_from_index?.length ?? 0) + (d.stale?.length ?? 0) + (d.orphans?.length ?? 0);
   }
 
-  function formatBytes(bytes: string | number | undefined): string {
+  function formatBytes(bytes: string | number | bigint | undefined): string {
     const n = Number(bytes ?? 0);
     if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`;
