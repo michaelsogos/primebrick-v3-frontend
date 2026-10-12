@@ -492,6 +492,76 @@ export async function fetchDoc(params: {
   return data.document;
 }
 
+// ─── Docs index admin (/system/settings/docs-index) ─────────────────────────
+
+export interface DocsIndexRepoRow {
+  repo: string;
+  docs: string;
+  chunks: string;
+  unembedded_chunks: string;
+}
+
+export interface DocsIndexDrift {
+  service: string;
+  repo?: string;
+  error?: string;
+  missing_from_index?: string[];
+  stale?: string[];
+  orphans?: string[];
+  unembedded_chunks?: number;
+}
+
+export interface DocsIngestLogRow {
+  id: number;
+  repo: string | null;
+  service_code: string;
+  trigger_source: string;
+  ok: boolean;
+  stats: Record<string, unknown>;
+  error: string | null;
+  created_at: string;
+}
+
+export interface DocsIndexProbe {
+  query: string;
+  expect_path_includes: string;
+  ok: boolean;
+  top: Array<{ repo: string; path: string; similarity: number }>;
+}
+
+export interface DocsIndexStatus {
+  repos: DocsIndexRepoRow[];
+  drift: DocsIndexDrift[];
+  history: DocsIngestLogRow[];
+  probes?: DocsIndexProbe[];
+  storage: { total_bytes: string } | null;
+}
+
+export async function fetchDocsIndexStatus(probe = false): Promise<DocsIndexStatus> {
+  const res = await apiFetch(`/ws/ai/api/v1/ai/docs/index-status${probe ? '?probe=1' : ''}`);
+  if (!res.ok) throw new Error(`Docs index status failed (${res.status})`);
+  return (await res.json()) as DocsIndexStatus;
+}
+
+export interface DocsReindexResult {
+  service: string;
+  repo?: string;
+  ok: boolean;
+  stats?: Record<string, unknown>;
+  error?: string;
+}
+
+export async function reindexDocsPacks(repo?: string): Promise<DocsReindexResult[]> {
+  const res = await apiFetch('/ws/ai/api/v1/ai/reindex', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'packs', ...(repo ? { repo } : {}) }),
+  });
+  if (!res.ok) throw new Error(`Reindex failed (${res.status})`);
+  const data = (await res.json()) as { results: DocsReindexResult[] };
+  return data.results;
+}
+
 export interface CensusRoute {
   route: string;
   kind: 'list' | 'detail' | 'create' | 'page';
