@@ -36,9 +36,9 @@
 
   /** Build the docs site URL for a citation. */
   function citationUrl(c: AiCitation): string {
-    // path is like "frontend/guide/overview.mdx" → "/en/frontend/guide/overview"
+    // Pack-layout path ("manual/users.mdx") + repo → "/en/backend/guide/manual/users"
     const stripped = c.path.replace(/\.mdx?$/, '');
-    return `https://docs.primebrick.dev/en/${stripped}`;
+    return `https://docs.primebrick.dev/en/${c.repo}/guide/${stripped}`;
   }
 
   function handleFeedback(messageUuid: string, rating: 'up' | 'down') {

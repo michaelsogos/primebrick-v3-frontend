@@ -68,7 +68,7 @@
 
   /** Build the docs site URL for a citation (path like "guide/overview.mdx"). */
   function sourceUrl(source: AiSource): string {
-    return `https://docs.primebrick.dev/${source.path.replace(/\.mdx?$/, '')}`;
+    return `https://docs.primebrick.dev/${source.repo}/guide/${source.path.replace(/\.mdx?$/, '')}`;
   }
 
   /**

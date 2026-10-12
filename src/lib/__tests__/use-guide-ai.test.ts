@@ -113,8 +113,8 @@ function stubAgent(script: string[]) {
 
 const SEARCH_HIT = {
   id: 1,
-  repo: 'frontend',
-  path: 'frontend/guide/manual/rbac.mdx',
+  repo: 'backend',
+  path: 'manual/rbac.mdx',
   title: 'RBAC',
   chunk_idx: 4,
   content: 'Default role administrators has admin privileges. Open /system/settings/users to edit user roles.',
@@ -125,8 +125,8 @@ const SEARCH_HIT = {
 };
 
 const FETCHED_DOC = {
-  repo: 'frontend',
-  path: 'frontend/guide/manual/rbac.mdx',
+  repo: 'backend',
+  path: 'manual/rbac.mdx',
   title: 'RBAC',
   content: 'Default role administrators has admin privileges. Open /system/settings/users to edit user roles.',
   metadata: { entity: 'user_profiles' },
@@ -134,7 +134,7 @@ const FETCHED_DOC = {
 
 const SUCCESS_SCRIPT = [
   'Action: docs_search\nAction Input: {"query":"assign administrator role to user","keywords":["administrators","user_profile"]}',
-  'Action: docs_fetch\nAction Input: {"path":"frontend/guide/manual/rbac.mdx"}',
+  'Action: docs_fetch\nAction Input: {"path":"manual/rbac.mdx"}',
   'DONE',
   '{"answer_markdown":"Default role administrators has admin privileges."}',
   '{"actions":[{"kind":"navigate","route":"/system/settings/users","label":"Apri Utenti"}]}',
@@ -177,16 +177,15 @@ describe('useGuideAi RAG preflight', () => {
       query: 'assign administrator role to user',
       keywords: ['administrators', 'user_profile'],
       limit: 12,
-      path_prefix: 'frontend/guide/',
-    });
+          });
     expect(mocks.fetch_doc).toHaveBeenCalledOnce();
-    expect(mocks.fetch_doc.mock.calls[0][0]).toMatchObject({ path: 'frontend/guide/manual/rbac.mdx' });
+    expect(mocks.fetch_doc.mock.calls[0][0]).toMatchObject({ path: 'manual/rbac.mdx' });
     expect(transformed).toMatchObject({
       kind: 'local_response',
       response: {
         content: 'Default role administrators has admin privileges.',
         actions: [{ kind: 'navigate', route: '/system/settings/users', label: 'Apri Utenti' }],
-        sources: [{ path: 'frontend/guide/manual/rbac.mdx' }],
+        sources: [{ path: 'manual/rbac.mdx' }],
       },
     });
     await guide.dispose();
@@ -216,7 +215,7 @@ describe('useGuideAi RAG preflight', () => {
     expect(response.actions).toEqual([
       { kind: 'navigate', route: '/system/settings/users', label: 'Apri Utenti' },
     ]);
-    expect(response.sources?.[0].path).toBe('frontend/guide/manual/rbac.mdx');
+    expect(response.sources?.[0].path).toBe('manual/rbac.mdx');
     await guide.dispose();
   });
 

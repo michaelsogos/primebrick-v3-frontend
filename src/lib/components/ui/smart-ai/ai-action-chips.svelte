@@ -18,6 +18,7 @@
   } from '$lib/shell/ai-chat/client-tool-registry';
   import { callMcpTool } from '$lib/api';
   import AiActionConfirmDialog from './ai-action-confirm-dialog.svelte';
+  import { Button } from '$lib/components/ui/button';
   import type { AiAction } from './ai-assistant.types';
 
   const NS = 'app.smart.guide.ai.action';
@@ -70,38 +71,37 @@
 </script>
 
 <div
-  class="mt-1 {actions.length > 1 ? 'flex flex-col gap-1' : 'flex flex-wrap gap-1'}"
+  class="mt-1 flex justify-end {actions.length > 1 ? 'flex-col items-end gap-1.5' : 'flex-wrap gap-2'}"
   data-testid="ai-actions"
 >
   {#each actions as action, idx (idx)}
     {@const done = doneStates[idx]}
-    <button
-      type="button"
+    <Button
+      size="sm"
+      variant={idx === 0 ? 'default' : 'outline'}
       disabled={pendingIdx !== null || !!done}
       onclick={() => void execute(action, idx)}
-      class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors
-        {done === 'ok'
-        ? 'border-green-600/40 bg-green-500/10 text-green-700 dark:text-green-400'
+      class="{done === 'ok'
+        ? 'border-green-600/40 bg-green-500/10 text-green-700 hover:bg-green-500/10 dark:text-green-400'
         : done === 'error'
-          ? 'border-destructive/40 bg-destructive/10 text-destructive'
-          : 'border-primary/40 bg-primary/5 text-primary hover:bg-primary/10'}
-        {actions.length > 1 ? 'w-full justify-start' : ''}"
+          ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/10'
+          : ''}"
       data-testid="ai-action-{idx}"
       data-route={action.kind === 'navigate' ? action.route : undefined}
     >
       {#if pendingIdx === idx}
-        <Loader2 class="size-3 shrink-0 animate-spin" />
+        <Loader2 class="size-3.5 shrink-0 animate-spin" />
       {:else if done === 'ok'}
-        <CircleCheck class="size-3 shrink-0" />
+        <CircleCheck class="size-3.5 shrink-0" />
       {:else if done === 'error'}
-        <CircleX class="size-3 shrink-0" />
+        <CircleX class="size-3.5 shrink-0" />
       {:else if action.kind === 'navigate'}
-        <Navigation class="size-3 shrink-0" />
+        <Navigation class="size-3.5 shrink-0" />
       {:else}
-        <Wrench class="size-3 shrink-0" />
+        <Wrench class="size-3.5 shrink-0" />
       {/if}
       <span class="truncate">{action.label}</span>
-    </button>
+    </Button>
   {/each}
 </div>
 

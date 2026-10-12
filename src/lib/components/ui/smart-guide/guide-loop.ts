@@ -270,9 +270,9 @@ Mandatory workflow — follow the sequence EXACTLY:
    When several candidate paths look equally relevant, you may emit up to
    TWO docs_fetch calls in the same response — they run in parallel and
    save a round.
-5. Prefer pages under frontend/guide/manual/ — they are the user guide.
-   backend/guide/ and api/ pages are developer references: fetch them only
-   when no manual page covers the question.
+5. Prefer generated/ and manual/ pages — they are the end-user guide.
+   Entries named <repo>-openapi#METHOD /path are API references: fetch
+   them only when no manual page covers the question.
 6. Call list_routes only if you need the list of app pages.
 
 DONE and NO_MATCH mean different things — pick the right one:
@@ -281,6 +281,8 @@ DONE and NO_MATCH mean different things — pick the right one:
 - NO_MATCH = "nothing in this documentation is relevant to the question"
   (explicit refusal). Say NO_MATCH only when the hits are about a
   different subject — never just because a page is imperfect.
+  NO_MATCH is FORBIDDEN once you have received a successful docs_fetch
+  result — if the page you fetched is on-topic, say DONE.
 
 Response format (strict): your reply is exactly two lines —
   Thought: <one short sentence, MAX 12 words>
@@ -324,16 +326,17 @@ Mandatory workflow — follow the sequence EXACTLY:
    "X definition", "X meaning") is REQUIRED.
 4. If the fetched page fully answers the question, emit Final: DONE.
    Otherwise keep gathering. Two or three fetches are normal.
-5. Prefer pages under frontend/guide/manual/ — backend/guide/ and api/
-   pages are developer references: fetch them only when no manual page
-   covers the question.
+5. Prefer generated/ and manual/ pages — they are the end-user guide.
+   Entries named <repo>-openapi#METHOD /path are API references: fetch
+   them only when no manual page covers the question.
 
 DONE and NO_MATCH mean different things — pick the right one:
 - DONE = "the pages I gathered answer the question". DONE is FORBIDDEN
   until you have received at least one docs_fetch Observation.
 - NO_MATCH = "nothing in this documentation is relevant". Only when the
   hits are about a different subject — never just because a page is
-  imperfect.
+  imperfect. NO_MATCH is FORBIDDEN once you have received a successful
+  docs_fetch Observation — if the page is on-topic, say DONE.
 
 Response format (strict) — classic ReAct, exactly three lines:
   Thought: <one short sentence, MAX 12 words>
@@ -530,10 +533,11 @@ export async function runGuideRetrievalLoop(
       // The agent needs a real candidate set to choose a fetch target —
       // limiting to the S3 context budget would hide alternative docs.
       limit: 12,
-      // Corpus scope must live INSIDE the SQL window — post-filtering here
-      // left an empty set whenever dev/API docs outranked manual pages
-      // (observed: "RBAC" query → top-12 all backend/api/sdk → 0 rows).
-      path_prefix: 'frontend/guide/',
+      // Corpus scope: docs packs carry USER-GUIDE docs only (dev-guide is
+      // never packed), so every mdx row in the KB is already in-scope — the
+      // old `frontend/guide/` FS-layout prefix is gone. OpenAPI chunks
+      // (content_type=api) are score-penalized server-side instead.
+      path_prefix: undefined,
       min_similarity: minSimilarity,
       keyword_boost: ctx.exec_config?.keyword_boost,
       lexical_boost: ctx.exec_config?.lexical_boost,
@@ -541,16 +545,14 @@ export async function runGuideRetrievalLoop(
       oversample: ctx.exec_config?.oversample,
       graph_max_paths: ctx.exec_config?.graph_max_paths,
     });
-    // User-guide policy: this assistant answers from the USER GUIDE corpus
-    // only — dev/API references (backend/guide, api/, sdk/) are out of
-    // scope for UI questions (observed: "RBAC" query pulls the dev doc,
-    // and the model always picks the literal title match over the manual
-    // page). Product scoping, not a hidden re-rank.
-    const guideRows = rows.filter((h) => h.path.startsWith('frontend/guide/'));
+    // User-guide policy: docs packs carry user-guide docs only, so every
+    // mdx row in the KB is in scope — OpenAPI chunks (`<repo>-openapi#…`)
+    // are the only out-of-scope records for UI questions.
+    const guideRows = rows.filter((h) => !h.path.includes('#'));
     const boosted = guideRows
       .map((h) => ({
         ...h,
-        score: h.score + (h.path.startsWith('frontend/guide/manual/') ? 0.25 : 0),
+        score: h.score + (h.path.startsWith('generated/') || h.path.startsWith('manual/') ? 0.25 : 0),
       }))
       .sort((a, b) => b.score - a.score);
     let added = 0;
@@ -649,8 +651,8 @@ export async function runGuideRetrievalLoop(
       // Dedup guard: a repeated fetch of an already-open page wastes a full
       // agent round (observed: users-create.mdx fetched twice in a row).
       // Reply instantly and steer the model to a different page or DONE.
-      if (fetchedPaths.has(path) || fetchedPaths.has(`frontend/guide/${path}`)) {
-        return JSON.stringify({ already_fetched: true, path, hint: 'You already opened this page — do NOT fetch it again. Fetch a different path or say DONE.' });
+      if (fetchedPaths.has(path)) {
+        return JSON.stringify({ already_fetched: true, path, hint: 'You already hold this page — it IS your evidence. Fetch a different path or say DONE. NO_MATCH is not allowed now.' });
       }
       fetchCallCount++;
       const out = await execFetch(path, typeof args.repo === 'string' ? args.repo : undefined);
@@ -676,6 +678,7 @@ export async function runGuideRetrievalLoop(
   let failedFetchCount = 0;
   let shallowDoneReprompts = 0;
   let bareProseReprompts = 0;
+  let noMatchAfterFetchReprompts = 0;
   let autoSeedFetchCount = 0;
   let noMatch = false;
   try {
@@ -708,6 +711,42 @@ export async function runGuideRetrievalLoop(
             messages.push(
               { role: 'assistant', content: head },
               { role: 'user', content: 'Your fetch failed and you have not searched yet — you cannot judge coverage. Call docs_search now with an English query.' },
+            );
+            continue;
+          }
+          // Blind NO_MATCH (bounded, once): the model refused on search
+          // excerpts alone without opening any page — the same illegitimate
+          // verdict the auto-seed fetch fixes for DONE. A text reprompt is
+          // not enough (observed: RBAC question → model repeated NO_MATCH
+          // with manual/roles.mdx and rbac.mdx as top hits): open the
+          // top-ranked page FOR it and let it judge on real content —
+          // DONE ("this answers it") vs NO_MATCH ("off-topic").
+          if (fetchCallCount === 0 && searchHitCount > 0 && noMatchAfterFetchReprompts < 1 && hits.length) {
+            noMatchAfterFetchReprompts++;
+            const top = [...hits].sort((a, b) => b.score - a.score)[0];
+            stageLog('agent_no_match_blind_seed', { round, path: top.path });
+            const result = await executeTool('docs_fetch', { path: top.path });
+            messages.push(
+              { role: 'assistant', content: head },
+              dialect === 'react_classic'
+                ? { role: 'user', content: `Observation: ${result}` }
+                : { role: 'tool', name: 'docs_fetch', content: result },
+              { role: 'user', content: 'I opened the top-ranked page for you. Judge IT: if it is on-topic say DONE, if it is off-topic say NO_MATCH.' },
+            );
+            continue;
+          }
+          // Post-fetch NO_MATCH (bounded, once): the model fetched a real
+          // page, then declared no coverage — observed: Qwen-Coder re-fetches
+          // the same page, gets the already_fetched guard, and flips to
+          // NO_MATCH with evidence in hand. Force it to judge the page it
+          // opened: DONE if on-topic, keep gathering if not. If it insists
+          // after the reprompt, the refusal is honored.
+          if (fetchCallCount > 0 && noMatchAfterFetchReprompts < 1) {
+            noMatchAfterFetchReprompts++;
+            stageLog('agent_no_match_after_fetch', { round });
+            messages.push(
+              { role: 'assistant', content: head },
+              { role: 'user', content: 'You already fetched a page — judge IT, not the whole corpus. If the page you opened is on-topic say DONE. If it is off-topic, keep gathering with docs_search or docs_fetch. NO_MATCH is only valid when nothing fetched was relevant.' },
             );
             continue;
           }
