@@ -28,7 +28,10 @@
   import Square from '@lucide/svelte/icons/square';
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Bot from '@lucide/svelte/icons/bot';
-  import User from '@lucide/svelte/icons/user';
+  import { BotIcon } from '$lib/components/ui/bot-icon';
+  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { AI_BUBBLE_STYLE, chatAvatarChrome } from '$lib/components/ui/smart-ai/chat-avatar-chrome';
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
   import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
   import FileText from '@lucide/svelte/icons/file-text';
@@ -47,6 +50,11 @@
 
   let inputText = $state('');
   let scrollContainer: HTMLElement | null = null;
+
+  // User/AI message chrome — shared via chat-avatar-chrome.ts with every
+  // assistant panel (avatar identity = sidebar profile menu).
+  const chrome = $derived(chatAvatarChrome(userProfileStore.current));
+  const aiBubbleStyle = AI_BUBBLE_STYLE;
 
   onMount(() => {
     registerBuiltinClientTools();
@@ -229,15 +237,28 @@
             {#each aiChatStore.messages as msg (msg.uuid)}
               {#if msg.role !== 'tool'}
               <div class={cn('flex gap-2.5', msg.role === 'user' && 'flex-row-reverse')}>
-                <div class={cn('flex size-7 shrink-0 items-center justify-center rounded-full', msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-                  {#if msg.role === 'user'}
-                    <User class="size-4" />
-                  {:else}
-                    <Bot class="size-4" />
-                  {/if}
-                </div>
-                <div class="flex max-w-[80%] flex-col gap-1.5">
-                  <div class={cn('rounded-lg px-3 py-2 text-sm', msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                {#if msg.role === 'user'}
+                  <Avatar class="size-7 shrink-0 rounded-none avatar-hex">
+                    {#if chrome.avatarStyle}
+                      <AvatarFallback class={chrome.avatarStyle.class} style={chrome.avatarStyle.style}>
+                        {chrome.avatarSeed}
+                      </AvatarFallback>
+                    {:else}
+                      <AvatarFallback class={cn('rounded-none text-xs font-semibold', chrome.fallbackClass)}>
+                        {chrome.avatarSeed}
+                      </AvatarFallback>
+                    {/if}
+                  </Avatar>
+                {:else}
+                  <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
+                {/if}
+                <div class="flex min-w-0 max-w-full flex-col gap-1.5">
+                  <div
+                    class="rounded-lg px-3 py-2 text-sm gradient-ring"
+                    class:bg-primary={msg.role === 'user' && !chrome.bubbleStyle}
+                    class:text-primary-foreground={msg.role === 'user' && !chrome.bubbleStyle}
+                    style={msg.role === 'user' ? chrome.bubbleStyle : aiBubbleStyle}
+                  >
                     {msg.content.text}
                   </div>
 
@@ -298,11 +319,9 @@
             <!-- Streaming message (in progress) -->
             {#if aiChatStore.streamingText}
               <div class="flex gap-2.5">
-                <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                  <Bot class="size-4" />
-                </div>
-                <div class="flex max-w-[80%] flex-col gap-1.5">
-                  <div class="rounded-lg bg-muted px-3 py-2 text-sm">
+                <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
+                <div class="flex min-w-0 max-w-full flex-col gap-1.5">
+                  <div class="rounded-lg px-3 py-2 text-sm gradient-ring" style={aiBubbleStyle}>
                     {aiChatStore.streamingText}
                     <span class="ml-0.5 inline-block h-3 w-1 animate-pulse bg-foreground/40 align-middle"></span>
                   </div>
@@ -330,10 +349,8 @@
             <!-- Loading indicator (streaming but no text yet) -->
             {#if aiChatStore.isStreaming && !aiChatStore.streamingText}
               <div class="flex gap-2.5">
-                <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                  <Bot class="size-4" />
-                </div>
-                <div class="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+                <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
+                <div class="rounded-lg px-3 py-2 text-sm text-muted-foreground gradient-ring" style={aiBubbleStyle}>
                   {$t('app.aiChat.loading')}
                 </div>
               </div>

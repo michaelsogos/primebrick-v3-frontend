@@ -161,6 +161,35 @@
 }
 
 /**
+ * Gradient ring — paints the gradient in `--gb` as a 1px border ring while
+ * leaving the element's own background untouched. This is the ONLY technique
+ * that allows a TRANSPARENT fill under a gradient border: the
+ * padding-box/border-box double-background used by border-primary-gradient
+ * requires an opaque fill layer, otherwise the full-strength border layer
+ * bleeds through. The mask-composite keeps the gradient inside the 1px ring;
+ * border-radius is honored via `inherit`.
+ *
+ * Usage: `class="gradient-ring"` + `style="--gb: linear-gradient(...)"`.
+ */
+.gradient-ring {
+  position: relative;
+}
+.gradient-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gb);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/**
  * Vertical gradient divider (sky-400 → indigo-400 at 50% opacity, top → bottom).
  * Branded replacement for `bg-border/60` on 1px-wide vertical separators in
  * toolbars/footers. Same visual weight as the old grey divider but with the

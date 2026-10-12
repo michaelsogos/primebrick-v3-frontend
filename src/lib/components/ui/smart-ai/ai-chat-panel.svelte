@@ -48,11 +48,13 @@
   import AiCerebellumSelector from './ai-cerebellum-selector.svelte';
   import { RealtimeMeter } from '$lib/components/ui/realtime-meter';
   import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { BotIcon } from '$lib/components/ui/bot-icon';
+  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { AI_BUBBLE_STYLE, chatAvatarChrome } from './chat-avatar-chrome';
   import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
   import Send from '@lucide/svelte/icons/send';
   import X from '@lucide/svelte/icons/x';
-  import Bot from '@lucide/svelte/icons/bot';
-  import User from '@lucide/svelte/icons/user';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -131,6 +133,16 @@
   // model callouts grow in background instead.
   let stickToBottom = $state(true);
   const SCROLL_STICK_PX = 50;
+
+  // ─── User message avatar + bubble chrome ─────────────────────────────────
+  // Shared with every assistant panel via chat-avatar-chrome.ts — same
+  // avatar identity as the sidebar profile menu.
+  const chrome = $derived(chatAvatarChrome(userProfileStore.current));
+  const userAvatarStyle = $derived(chrome.avatarStyle);
+  const userAvatarSeed = $derived(chrome.avatarSeed);
+  const userAvatarFallbackClass = $derived(chrome.fallbackClass);
+  const userBubbleStyle = $derived(chrome.bubbleStyle);
+  const aiBubbleStyle = AI_BUBBLE_STYLE;
 
   function handleScroll() {
     if (!scrollContainer) return;
@@ -466,12 +478,26 @@
           {#if message.role === 'user'}
             <!-- User message bubble -->
             <div class="flex gap-2 justify-end">
-              <div class="max-w-[80%] rounded-lg px-3 py-2 text-xs bg-primary text-primary-foreground">
+              <div
+                class={cn(
+                  'min-w-0 max-w-full rounded-lg px-3 py-2 text-xs gradient-ring',
+                  !userBubbleStyle && 'bg-primary text-primary-foreground'
+                )}
+                style={userBubbleStyle}
+              >
                 {message.display_content ?? message.content}
               </div>
-              <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                <User class="size-4" />
-              </div>
+              <Avatar class="size-7 shrink-0 rounded-none avatar-hex">
+                {#if userAvatarStyle}
+                  <AvatarFallback class={userAvatarStyle.class} style={userAvatarStyle.style}>
+                    {userAvatarSeed}
+                  </AvatarFallback>
+                {:else}
+                  <AvatarFallback class={cn('rounded-none text-xs font-semibold', userAvatarFallbackClass)}>
+                    {userAvatarSeed}
+                  </AvatarFallback>
+                {/if}
+              </Avatar>
             </div>
           {:else if message.role === 'assistant' && message.choices && message.choices.length > 0 && choices}
             <!-- Assistant message with structured choices — rendered by the
@@ -485,11 +511,9 @@
           {:else if message.role === 'assistant'}
             <!-- Assistant message without choices (fallback text) -->
             <div class="flex gap-2 justify-start">
-              <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Bot class="size-4 text-primary" />
-              </div>
-              <div class="max-w-[80%] space-y-1.5">
-                <div class="ai-md rounded-lg px-3 py-2 text-xs bg-muted" data-testid="{testid_prefix}-answer-{msg_idx}">
+              <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
+              <div class="min-w-0 max-w-full space-y-1.5">
+                <div class="ai-md rounded-lg px-3 py-2 text-xs gradient-ring" style={aiBubbleStyle} data-testid="{testid_prefix}-answer-{msg_idx}">
                   {@html mdToHtml(message.content)}
                 </div>
                 {#if message.sources && message.sources.length > 0}
@@ -525,10 +549,8 @@
         <!-- ─── Streaming indicator: Bot + three-dot typing animation + status ─── -->
         {#if ai.state.is_streaming}
           <div class="flex gap-2 justify-start">
-            <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Bot class="size-4 text-primary" />
-            </div>
-            <div class="bg-muted rounded-lg px-4 py-3 text-xs flex items-center gap-2">
+            <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
+            <div class="rounded-lg px-4 py-3 text-xs flex items-center gap-2 gradient-ring" style={aiBubbleStyle}>
               {#if ai.state.ai_status === 'thinking'}
                 <span class="text-xs text-muted-foreground" data-testid="{testid_prefix}-status">
                   {$t(`${i18n_ns}.thinking`)}
