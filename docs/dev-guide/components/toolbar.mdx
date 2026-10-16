@@ -1,0 +1,113 @@
+---
+title: Toolbar
+description: Standard action strip for pages and lists. Enforces CTA ordering — isolated groups with auto dividers, refresh before primary CTAs, primaries always rightmost. Card or bare chrome.
+---
+
+# Toolbar
+
+`src/lib/components/ui/toolbar/`
+
+## Purpose
+
+The standard action strip. Beyond the visual chrome, it **enforces the
+CTA presentation order** so every toolbar in the product looks and reads
+the same:
+
+```
+[left]                              [children] | [group] | refresh | [primary]
+```
+
+The whole CTA zone is pushed to the far right via `ml-auto` — CTAs are
+always right-aligned whether or not `left` is used. `left` is the only
+way to pin content to the far left (search bars, row counters, …).
+
+## Origin
+
+**Vendored** — `bits-ui` `Toolbar` primitive + Primebrick structural
+rules (groups/refresh/primary props, `ToolbarDivider`).
+
+## Usage
+
+```svelte
+<script>
+  import { Toolbar, ToolbarDivider } from '$lib/components/ui/toolbar';
+  import { Button } from '$lib/components/ui/button';
+  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { LayoutGrid, Gauge } from '@lucide/svelte';
+</script>
+```
+
+### Card (default) — full strip
+
+```svelte
+{#snippet viewToggle()}
+  <ButtonGroup segmented aria-label="View mode">
+    <Button variant="ghost" size="icon-sm" aria-pressed={true}><LayoutGrid class="size-4" /></Button>
+    <Button variant="ghost" size="icon-sm" aria-pressed={false}><Gauge class="size-4" /></Button>
+  </ButtonGroup>
+{/snippet}
+
+{#snippet create()}
+  <Button variant="default" size="sm">New model</Button>
+{/snippet}
+
+<Toolbar
+  groups={[viewToggle]}
+  refresh={{ onclick: reload, loading }}
+  primary={create}
+/>
+```
+
+Each `groups` entry is auto-separated by a divider — a `ButtonGroup` is
+always visually isolated from the rest.
+
+### Bare — embedded in a list/table header
+
+```svelte
+<Toolbar
+  card={false}
+  groups={[viewToggle]}
+  refresh={{ onclick: reload }}
+  primary={create}
+/>
+```
+
+`card={false}` drops the border (keeps the muted chrome) — this is the
+EntityListTable look, for toolbars embedded inside an already-framed
+list/table area. `card={true}` gives the standalone bordered card.
+
+## Ordering contract
+
+| Rule | Enforced by |
+|------|-------------|
+| Primary CTA(s) always rightmost, divider before | `primary` snippet |
+| Refresh sits right before the primaries (ghost icon + label) | `refresh` prop |
+| Every isolated island gets its own dividers | `groups` array |
+| Section titles live **outside** the toolbar | — (layout convention) |
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `card` | `boolean` | `true` | `true` = `bg-muted/30` + border, compact padding; `false` = borderless `bg-muted/30`, looser padding (entity-list look). |
+| `left` | `Snippet` | — | Optional far-left zone (search, counters) — `flex-1 min-w-0`. |
+| `groups` | `Snippet[]` | `[]` | Control islands — each auto-separated by a divider. |
+| `refresh` | `&lbrace; onclick: () => void; loading?: boolean; disabled?: boolean &rbrace;` | — | Standard refresh button, right before primaries. |
+| `primary` | `Snippet` | — | Primary CTA(s) — always last (rightmost). |
+| `children` | `Snippet` | — | Free-form controls rendered first (leftmost zone). |
+
+`ToolbarDivider` is exported separately for manual separators inside
+`children` (`h-6 w-px divider-primary-gradient`).
+
+## Reference
+
+<!-- AUTO-GENERATED:reference -->
+```json
+{"component":"toolbar","file":"src/lib/components/ui/toolbar/toolbar.svelte","props":["card","groups","refresh","primary","children","class"]}
+```
+<!-- END -->
+
+## Next steps
+
+- [UI components](./ui-components) — component inventory
+- [StatCard](./stat-card) — KPI card (same card/bare convention)

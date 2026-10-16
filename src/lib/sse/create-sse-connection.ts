@@ -23,10 +23,23 @@
 
 import { fetchEventSource, type EventSourceMessage } from '@microsoft/fetch-event-source';
 import { extJsonParse } from '$lib/api-ext';
+import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
+import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
+import { userProfileStore } from '$lib/user-profile-store.svelte';
+import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 
 export interface SseConnectionOptions {
   /** Full URL of the SSE endpoint (e.g. '/api/v1/system/services/events'). */
   url: string;
+  /**
+   * Lightweight REST probe enqueued into the session-expired dialog when the
+   * stream gets a 401 and the session cannot be silently refreshed. After the
+   * user re-authenticates, the dialog retries this probe via apiFetch and the
+   * stream reconnects. MUST be a plain JSON endpoint — never the SSE URL
+   * itself (a retried GET on a stream endpoint would dangle). If omitted,
+   * `url` is used as a last resort.
+   */
+  authProbeUrl?: string;
   /** Called for each SSE event. The `data` field is parsed via extJsonParse. */
   onMessage: (msg: EventSourceMessage) => void;
   /** Called when the connection is opened (including reconnects). */
@@ -61,6 +74,8 @@ export function createSseConnection(opts: SseConnectionOptions): () => void {
 
   let closed = false;
   let retryMs = 1000;
+  let attempt = 0;
+  let hasConnected = false;
   const MAX_RETRY_MS = 30_000;
   let visible = true;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -88,6 +103,7 @@ export function createSseConnection(opts: SseConnectionOptions): () => void {
     }
 
     const ctrl = new AbortController();
+    attempt += 1;
 
     try {
       await fetchEventSource(url, {
@@ -97,9 +113,23 @@ export function createSseConnection(opts: SseConnectionOptions): () => void {
 
         onopen: async (res) => {
           if (res.ok) {
+            if (hasConnected) {
+              console.info(`[SSE] reconnected to ${url} (attempt ${attempt})`);
+            } else {
+              console.info(`[SSE] connected to ${url}`);
+            }
+            hasConnected = true;
             // Reset backoff on successful connection
             retryMs = 1000;
+            attempt = 0;
             onOpen?.();
+            return;
+          }
+          // 401 mirrors the apiFetch flow: silent refresh when the local
+          // token expired, otherwise park the stream behind the
+          // session-expired dialog instead of hammering the BE every 30s.
+          if (res.status === 401) {
+            await handleUnauthorized();
             return;
           }
           // Non-OK status — throw to trigger onerror
@@ -135,6 +165,47 @@ export function createSseConnection(opts: SseConnectionOptions): () => void {
       if (!closed && !reconnectTimer) {
         scheduleReconnect();
       }
+    }
+  }
+
+  /**
+   * Handle a 401 on stream open. Mirrors the apiFetch 401 path:
+   * - local session + expired token → silent triggerRefresh, then reconnect;
+   * - otherwise → open the session-expired dialog (probe enqueued like any
+   *   failed request) and resume the stream once re-login resolves it.
+   * No reconnect is scheduled while waiting — a dead session no longer
+   * produces a 401 every 30s.
+   */
+  async function handleUnauthorized(): Promise<void> {
+    if (closed) return;
+
+    if (hasLocalSession() && isTokenExpired()) {
+      try {
+        await triggerRefresh();
+        if (closed) return;
+        retryMs = 1000;
+        scheduleReconnect();
+        return;
+      } catch {
+        // Refresh failed — fall through to the session-expired dialog.
+      }
+    }
+
+    if (typeof window === 'undefined') return;
+    userProfileStore.clear();
+    saveRedirectUrl(window.location.pathname + window.location.search);
+    try {
+      await sessionExpiredStore.enqueue(opts.authProbeUrl ?? url, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      // Re-login succeeded and the probe was retried — resume the stream.
+      if (closed) return;
+      retryMs = 1000;
+      scheduleReconnect();
+    } catch {
+      // Probe retry failed (or still 401) — stay parked; the next user-driven
+      // apiFetch 401 will reopen the dialog anyway.
     }
   }
 

@@ -1,28 +1,27 @@
 <script lang="ts">
-  import { apiFetch } from "$lib/api";
+  import { apiFetch, entityApiBase } from "$lib/api";
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
-  import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
-  import SheetHeader from "$lib/shell/sheets/SheetHeader.svelte";
-  import * as Sheet from "$lib/components/ui/sheet";
-  import XIcon from '@lucide/svelte/icons/x';
+  import SheetPanelLayout from "$lib/shell/sheets/SheetPanelLayout.svelte";
+  import History from '@lucide/svelte/icons/history';
   import Hourglass from '@lucide/svelte/icons/hourglass'
   import CircleX from '@lucide/svelte/icons/circle-x'
   import Info from '@lucide/svelte/icons/info'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
   import AlertCircle from '@lucide/svelte/icons/alert-circle'
-  import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import Copy from '@lucide/svelte/icons/copy';
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
   import { badgeClassesFromToken } from "$lib/colors/badge";
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
   import * as Tooltip from "$lib/components/ui/tooltip";
-  import { createHighlighter } from 'shiki';
+  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
 
-  interface $$Props {
+  interface Props {
     entity: string;
     translationKey?: string;
     rowUuid: string;
@@ -34,7 +33,7 @@
     translationKey,
     rowUuid,
     columns = [],
-  }: $$Props = $props();
+  }: Props = $props();
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
   // Falls back to entity (snake_case plural) when not provided — back-compat.
@@ -50,36 +49,6 @@
   let versionHistoryHasMore = $state<boolean>(false);
   let expandedEntries = $state<Set<number>>(new Set());
 
-  // Shiki highlighter for JSONB values — lazily initialized, reused across renders.
-  // Same pattern as rfc-error-dialog.svelte.
-  let shikiHighlighter: any = $state(null);
-  const jsonHighlightCache = new Map<string, string>();
-
-  async function getShikiHighlighter() {
-    if (!shikiHighlighter) {
-      shikiHighlighter = await createHighlighter({
-        themes: ['light-plus'],
-        langs: ['json'],
-      });
-    }
-    return shikiHighlighter;
-  }
-
-  async function highlightJson(value: any): Promise<string> {
-    const jsonString = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-    if (jsonHighlightCache.has(jsonString)) return jsonHighlightCache.get(jsonString)!;
-    try {
-      const hl = await getShikiHighlighter();
-      const html = hl.codeToHtml(jsonString, { lang: 'json', theme: 'light-plus' });
-      jsonHighlightCache.set(jsonString, html);
-      return html;
-    } catch {
-      return `<pre class="text-xs font-mono whitespace-pre-wrap">${jsonString}</pre>`;
-    }
-  }
-
-  // Track highlighted HTML per delta entry — keyed by entry.id + field name + old/new
-  let jsonHtmlCache = $state<Record<string, string>>({});
 
   function toggleEntryExpanded(entryId: number) {
     if (expandedEntries.has(entryId)) {
@@ -97,7 +66,7 @@
     versionHistoryData = [];
 
     try {
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -108,7 +77,7 @@
       versionHistoryTotal = data.pagination?.total || 0n;
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('entities.versionHistory.error');
+      versionHistoryError = $t('system.entities.versionHistory.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -122,7 +91,7 @@
     versionHistoryPage += 1;
 
     try {
-      const res = await apiFetch(`/api/v1/entities/${entity}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -132,7 +101,7 @@
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('entities.versionHistory.error');
+      versionHistoryError = $t('system.entities.versionHistory.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -145,6 +114,8 @@
       return 'text-red-700 dark:text-red-300';
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return 'text-red-600 dark:text-red-400';
+    } else if (actionLower === 'clone') {
+      return 'text-violet-600 dark:text-violet-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return 'text-emerald-600 dark:text-emerald-400';
     } else if (actionLower === 'restore') {
@@ -161,6 +132,8 @@
       return 'border-red-700 dark:border-red-300';
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return 'border-red-600 dark:border-red-400';
+    } else if (actionLower === 'clone') {
+      return 'border-violet-600 dark:border-violet-400';
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return 'border-emerald-600 dark:border-emerald-400';
     } else if (actionLower === 'restore') {
@@ -177,10 +150,12 @@
       return CircleX;
     } else if (actionLower === 'delete' || actionLower === 'soft_delete') {
       return AlertCircle;
+    } else if (actionLower === 'clone') {
+      return Copy;
     } else if (actionLower === 'create' || actionLower === 'insert') {
       return CircleCheckBig;
     } else if (actionLower === 'restore') {
-      return AlertTriangle;
+      return TriangleAlert;
     } else if (actionLower === 'update') {
       return Info;
     }
@@ -197,7 +172,7 @@
   }
 
   function getAuditActionLabel(action: string): string {
-    const key = `entities.versionHistory.actions.${action.toUpperCase()}`;
+    const key = `system.entities.versionHistory.actions.${action.toUpperCase()}`;
     const translated = $t(key);
     return translated === key ? action : translated;
   }
@@ -246,10 +221,10 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      let fieldLabel = $t(`entities.versionHistory.field.${field}`);
-      if (fieldLabel === `entities.versionHistory.field.${field}`) {
+      let fieldLabel = $t(`system.entities.versionHistory.field.${field}`);
+      if (fieldLabel === `system.entities.versionHistory.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
-        fieldLabel = $t(`entities.${i18nEntity}.fields.${field}`) || field;
+        fieldLabel = $t(`system.entities.${i18nEntity}.fields.${field}`) || field;
       }
       // Use display_name for audit fields if available, otherwise use raw value
       const oldValue = change.old_display_name || change.from || change.old;
@@ -290,9 +265,9 @@
       const isDateField = column?.type === 'date' || (!column && /_at$/.test(field));
       const isDateTimeField = column?.type === 'datetime' || (!column && /(_at|changed_at|last_synced_at)$/.test(field));
       function formatValue(value: any): string {
-        if (value === null || value === undefined) return $t('entities.versionHistory.null');
-        if (Array.isArray(value) && value.length === 0) return $t('entities.versionHistory.emptyList');
-        if (value === '') return $t('entities.versionHistory.null');
+        if (value === null || value === undefined) return $t('system.entities.versionHistory.null');
+        if (Array.isArray(value) && value.length === 0) return $t('system.entities.versionHistory.emptyList');
+        if (value === '') return $t('system.entities.versionHistory.null');
         if (column?.type === 'date' || isDateField) {
           return formatUiDate(value, $uiLang);
         }
@@ -315,14 +290,14 @@
         if (newValue) {
           const newBadgeConfig = column.badge.values[newValue as string];
           badgeColor = newBadgeConfig?.color;
-          badgeLabelText = newBadgeConfig?.labelText;
-          badgeLabelKey = newBadgeConfig?.labelKey;
+          badgeLabelText = newBadgeConfig?.label_text;
+          badgeLabelKey = newBadgeConfig?.label_key;
         }
         if (oldValue) {
           const oldBadgeConfig = column.badge.values[oldValue as string];
           oldBadgeColor = oldBadgeConfig?.color;
-          oldBadgeLabelText = oldBadgeConfig?.labelText;
-          oldBadgeLabelKey = oldBadgeConfig?.labelKey;
+          oldBadgeLabelText = oldBadgeConfig?.label_text;
+          oldBadgeLabelKey = oldBadgeConfig?.label_key;
         }
       } else if (isColor) {
         if (newValue) {
@@ -333,14 +308,14 @@
         }
       }
 
-      const isCreateOrInsert = action === 'CREATE' || action === 'INSERT';
+      const isCreateOrInsert = action === 'CREATE' || action === 'INSERT' || action === 'CLONE';
 
       if (oldValue == null && newValue != null) {
         descriptions.push({
           field: fieldLabel,
-          operator: isCreateOrInsert ? $t('entities.versionHistory.set') : $t('entities.versionHistory.changedFrom'),
-          toOperator: isCreateOrInsert ? undefined : $t('entities.versionHistory.to'),
-          oldValue: isCreateOrInsert ? undefined : $t('entities.versionHistory.null'),
+          operator: isCreateOrInsert ? $t('system.entities.versionHistory.set') : $t('system.entities.versionHistory.changedFrom'),
+          toOperator: isCreateOrInsert ? undefined : $t('system.entities.versionHistory.to'),
+          oldValue: isCreateOrInsert ? undefined : $t('system.entities.versionHistory.null'),
           newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
           badgeColor,
@@ -354,10 +329,10 @@
       } else if (oldValue != null && newValue == null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.versionHistory.changedFrom'),
-          toOperator: $t('entities.versionHistory.to'),
+          operator: $t('system.entities.versionHistory.changedFrom'),
+          toOperator: $t('system.entities.versionHistory.to'),
           oldValue: isJson ? undefined : formatValue(oldValue),
-          newValue: $t('entities.versionHistory.null'),
+          newValue: $t('system.entities.versionHistory.null'),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -373,8 +348,8 @@
       } else if (oldValue != newValue) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.versionHistory.changedFrom'),
-          toOperator: $t('entities.versionHistory.to'),
+          operator: $t('system.entities.versionHistory.changedFrom'),
+          toOperator: $t('system.entities.versionHistory.to'),
           oldValue: isJson ? undefined : formatValue(oldValue),
           newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
@@ -395,8 +370,8 @@
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
         descriptions.push({
           field: fieldLabel,
-          operator: $t('entities.versionHistory.unchanged'),
-          newValue: newValue == null ? $t('entities.versionHistory.null') : (isJson ? undefined : formatValue(newValue)),
+          operator: $t('system.entities.versionHistory.unchanged'),
+          newValue: newValue == null ? $t('system.entities.versionHistory.null') : (isJson ? undefined : formatValue(newValue)),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -417,62 +392,22 @@
     loadVersionHistory();
   });
 
-  // Highlight JSONB values with shiki when version history data changes.
-  // Populates jsonHtmlCache with highlighted HTML for each JSON field in each entry.
-  $effect(() => {
-    if (versionHistoryData.length === 0) return;
-    for (const entry of versionHistoryData) {
-      if (entry.action === 'HARD_DELETE') continue;
-      const descs = formatAuditDelta(entry.delta, entry.action);
-      for (let i = 0; i < descs.length; i++) {
-        const d = descs[i] as any;
-        if (!d.isJson) continue;
-        if (d.jsonValue !== undefined) {
-          const key = `${entry.id}:${i}:new`;
-          if (!jsonHtmlCache[key]) {
-            highlightJson(d.jsonValue).then((html) => {
-              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
-            });
-          }
-        }
-        if (d.oldJsonValue !== undefined) {
-          const key = `${entry.id}:${i}:old`;
-          if (!jsonHtmlCache[key]) {
-            highlightJson(d.oldJsonValue).then((html) => {
-              jsonHtmlCache = { ...jsonHtmlCache, [key]: html };
-            });
-          }
-        }
-      }
-    }
-  });
 </script>
 
-{#snippet headerActions()}
-  <Sheet.Close
-    class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    title={$t("common.done")}
-    onclick={() => closeSheet()}
-  >
-    <XIcon class="size-4" />
-  </Sheet.Close>
-{/snippet}
-
-{#snippet headerTitle()}
-  {$t('entities.versionHistory.title')}
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto p-2">
+<SheetPanelLayout>
+  {#snippet icon()}
+    <History class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('system.entities.versionHistory.title')}
+  {/snippet}
     {#if versionHistoryLoading && versionHistoryData.length === 0}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
           <div class="pb-watermark-loading">
             <Hourglass class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('entities.versionHistory.loading')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.versionHistory.loading')}</div>
         </div>
       </div>
     {:else if versionHistoryError}
@@ -490,7 +425,7 @@
           <div class="pb-watermark-empty">
             <Info class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('entities.versionHistory.empty')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.versionHistory.empty')}</div>
         </div>
       </div>
     {:else}
@@ -500,8 +435,8 @@
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
-            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE'}
-            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('entities.versionHistory.recordHardDeleted')]
+            {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE' || entry.action === 'CLONE'}
+            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('system.entities.versionHistory.recordHardDeleted')]
               : formatAuditDelta(entry.delta, entry.action)}
 
             <Timeline.Item>
@@ -527,7 +462,7 @@
                       onclick={() => toggleEntryExpanded(entry.id)}
                     >
                       <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
-                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('entities.versionHistory.hideDetails') : $t('entities.versionHistory.showDetails')}</span>
+                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('system.entities.versionHistory.hideDetails') : $t('system.entities.versionHistory.showDetails')}</span>
                     </Button>
                   </div>
                 {/if}
@@ -550,7 +485,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `entities.customer.status.${delta.oldValue}`)}
+                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `system.entities.customer.status.${delta.oldValue}`)}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -569,14 +504,11 @@
                                 {/if}
                               {/if}
                               {#if delta.isJson && delta.oldJsonValue !== undefined}
-                                {@const cacheKey = `${entry.id}:${i}:old`}
-                                {#if jsonHtmlCache[cacheKey]}
-                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
-                                    {@html jsonHtmlCache[cacheKey]}
-                                  </div>
-                                {:else}
-                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
-                                {/if}
+                                <JsonCodeBlock
+                                  code={delta.oldJsonValue}
+                                  maxHeight="15rem"
+                                  class="w-full mt-1"
+                                />
                               {/if}
                               {#if delta.toOperator}
                                 <span class="text-primary">{delta.toOperator}</span>
@@ -588,7 +520,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `entities.customer.status.${delta.newValue}`)}
+                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `system.entities.customer.status.${delta.newValue}`)}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>
@@ -607,14 +539,11 @@
                                 {/if}
                               {/if}
                               {#if delta.isJson && delta.jsonValue !== undefined}
-                                {@const cacheKey = `${entry.id}:${i}:new`}
-                                {#if jsonHtmlCache[cacheKey]}
-                                  <div class="w-full mt-1 rounded-md overflow-auto max-h-60 border border-muted">
-                                    {@html jsonHtmlCache[cacheKey]}
-                                  </div>
-                                {:else}
-                                  <div class="w-full mt-1 text-xs text-muted-foreground italic">Loading…</div>
-                                {/if}
+                                <JsonCodeBlock
+                                  code={delta.jsonValue}
+                                  maxHeight="15rem"
+                                  class="w-full mt-1"
+                                />
                               {/if}
                             </div>
                           </div>
@@ -648,12 +577,11 @@
               {:else}
                 <ChevronDown class="size-4 mr-2" />
               {/if}
-              {$t('entities.versionHistory.viewMore')}
+              {$t('system.entities.versionHistory.viewMore')}
             </Button>
           </div>
         {/if}
       </div>
     {/if}
-  </div>
-</div>
+</SheetPanelLayout>
 

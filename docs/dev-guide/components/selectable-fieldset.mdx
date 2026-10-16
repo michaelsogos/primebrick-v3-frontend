@@ -1,0 +1,53 @@
+---
+title: SelectableFieldset
+description: Grouped content box — gradient uppercase label overlapping a gradient border container.
+---
+
+# SelectableFieldset
+
+`src/lib/components/ui/selectable-fieldset/SelectableFieldset.svelte`
+
+## Purpose
+
+The **standard visual container** for grouping related content inside cards
+and sheets: an uppercase gradient label (sky→indigo) sits on top of a
+`border-primary-gradient` rounded container.
+
+```svelte
+<SelectableFieldset label={$t('...execution_config')}>
+  <div class="grid grid-cols-2 gap-3">…</div>
+</SelectableFieldset>
+```
+
+```
+        ┌ LABEL (gradient, uppercase, over the border)
+   ╭────┴──────────────────────╮
+   │  grouped content          │
+   ╰───────────────────────────╯
+```
+
+## Props
+
+| Prop | Type | Purpose |
+|---|---|---|
+| `label` | `string` | uppercase gradient label overlapping the top border |
+| `children` | `Snippet` | boxed content (`space-y-3`, `px-3 pt-3 pb-3`) |
+| `class` | `string` | extra classes merged on the inner container |
+
+## When to use
+
+- Grouping fields inside a sheet/card (e.g. `AiCerebellumPanel` "Esecuzione").
+- Grouped list sections (`ConfigList` groups, `ModelCacheSection`
+  censused/orphaned model lists).
+
+Do NOT hand-roll `border` + `<span>` label boxes — that produces divergent
+chrome; `SelectableFieldset` is the single pattern.
+
+## Fieldset family
+
+| Component | Role |
+|---|---|
+| `SelectableFieldset` | visual group box (this page) |
+| `SelectableRow` | selectable row inside a fieldset list |
+| `SelectableToolbar` | select-all/bulk toolbar for a fieldset list |
+| `form-fieldset` (`ui/form`) | **semantic** formsnap fieldset for superforms — accessibility grouping, not visual chrome |

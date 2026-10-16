@@ -4,10 +4,22 @@ export type SheetPanelId =
   | 'shell.errors'
   | 'shell.versions'
   | 'shell.aiChat'
+  | 'shell.aiGuide'
   | 'entity.searchIn'
   | 'entity.columns'
   | 'entity.filters'
-  | 'entity.versionHistory';
+  | 'entity.versionHistory'
+  | 'config.currencySelect'
+  | 'config.protocolSelect'
+  | 'config.phonePrefixSelect'
+  | 'config.regexFlags'
+  | 'config.regexAiChat'
+  | 'config.jsonAiChat'
+  | 'config.badgeValueEdit'
+  | 'shell.aiModelTestReport'
+  | 'shell.aiCerebellum'
+  | 'shell.aiModelImport'
+  | 'shell.aiModelCache';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -23,21 +35,111 @@ export type SheetPanelPropsMap = {
   'shell.errors': Record<string, never>;
   'shell.versions': Record<string, never>;
   'shell.aiChat': Record<string, never>;
-  'entity.searchIn': Record<string, unknown>;
-  'entity.columns': Record<string, unknown>;
+  'shell.aiGuide': Record<string, never>;
+  'entity.searchIn': {
+    searchInKeys: string[] | null;
+    searchableColumns: import('$lib/entity-list/types').MetaColumn[];
+    onSearchInKeysChange: (keys: string[] | null) => void;
+    toggleSearchKey: (key: string) => void;
+  };
+  'entity.columns': {
+    stickyColumns: import('$lib/entity-list/types').MetaColumn[];
+    nonAuditingColumns: import('$lib/entity-list/types').MetaColumn[];
+    auditingColumns: import('$lib/entity-list/types').MetaColumn[];
+    visibleKeys: string[];
+    toggleColumnKey: (key: string) => void;
+    onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
+    onResetColumnVisibility: () => void;
+  };
   'entity.filters': {
-    /**
-     * Arbitrary content provided by caller (e.g. EntityListTable `{#if filters}` slot).
-     * Use `Snippet` typing on the panel component; manager keeps it `unknown` to avoid
-     * leaking Snippet generics across the whole app.
-     */
-    content: unknown;
+    filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
+    filterValues?: Record<string, unknown>;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
+    onResetFilters?: () => void;
+    advancedFilters?: import('$lib/entity-list/types').AdvancedFilter[];
+    onAdvancedFiltersChange?: (
+      filters: import('$lib/entity-list/types').AdvancedFilter[],
+      connector: 'AND' | 'OR'
+    ) => void;
   };
   'entity.versionHistory': {
     entity: string;
     translationKey?: string;
     rowUuid: string;
     columns?: any[];
+  };
+  'config.currencySelect': {
+    currentCurrency: string;
+    onCurrencyChange: (code: string) => void;
+  };
+  'config.protocolSelect': {
+    currentProtocol: string;
+    allowedProtocols: string[];
+    onProtocolChange: (protocol: string) => void;
+  };
+  'config.phonePrefixSelect': {
+    currentCountry: string;
+    allowedCountries?: string[];
+    onCountryChange: (country: string) => void;
+  };
+  'config.regexFlags': {
+    current_flags: string;
+    config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
+    on_flags_change: (flags: string) => void;
+  };
+  'config.regexAiChat': {
+    on_apply_regex: (pattern: string, flags: string) => void;
+    config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
+    current_regex?: string;
+    current_flags?: string;
+  };
+  'config.jsonAiChat': {
+    on_apply_json: (json: string) => void;
+    /** Live getter — the builder mutates after each apply, so a snapshot
+     *  string would go stale inside the assistant's system prompt. */
+    current_json?: string | (() => string);
+    /** Row's config_key — needed to auto-generate error_label_key values.
+     *  String or live getter (a snapshot goes stale if the user edits the
+     *  key field while the sheet is open). */
+    config_key?: string | (() => string);
+    config_type: import('$lib/api-types').ConfigEntryType;
+  };
+  'shell.aiModelTestReport': {
+    /** The ai_model row whose test_scores report is rendered. */
+    model: import('$lib/api-types').AiModel;
+  };
+  'shell.aiCerebellum': {
+    /** Enabled ai_model rows for the model ComboSelect. */
+    models: readonly import('$lib/api-types').AiModel[];
+    /** Known assistants: key + stored `name` i18n key for that assistant. */
+    assistants: readonly { key: string; name: string }[];
+    /** Existing cerebellum rows — a matching (assistant, model) pair turns the sheet into edit mode. */
+    rows?: readonly import('$lib/api-types').AiCerebellum[];
+    /** Called after a successful save so the caller can reload rows. */
+    onCreated?: () => void;
+  };
+  'shell.aiModelImport': {
+    /** model_id values already in the catalog — excluded from HF results. */
+    existing_model_ids?: readonly string[];
+    /** Called after a model row is created so the caller can reload. */
+    on_added?: () => void;
+  };
+  'config.badgeValueEdit': {
+    /** 'add' = create a new badge value; 'edit' = mutate `value_key` live. */
+    mode: 'add' | 'edit';
+    /** Existing map key when mode='edit', null for add mode. */
+    value_key: string | null;
+    /** Row's config_key — scopes the label_key suggestion prefix. */
+    config_key: string;
+    /** The type-config builder instance — mutations are live (same object
+     *  the page reads), so edits appear without a save callback. */
+    builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
+  };
+  'shell.aiModelCache': {
+    /** The model currently loaded in VRAM — its cache cannot be deleted. */
+    active_model_id?: string | null;
+    /** model_id → quality rank, from the compatible catalog snapshot. */
+    model_ranks?: Record<string, number | null>;
   };
 };
 
@@ -69,7 +171,7 @@ export const sheetState = $state<SheetState>({
   panelId: null,
   props: null,
   side: 'right',
-  contentClass: 'w-[420px] p-0',
+  contentClass: 'p-0',
   keepMountedState: false,
   modal: true
 });

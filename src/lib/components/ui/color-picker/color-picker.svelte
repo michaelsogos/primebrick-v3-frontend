@@ -4,23 +4,49 @@
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import { Input } from '$lib/components/ui/input';
+	import { ComboSelect } from '$lib/components/ui/combo-select';
+	import { inputGhostChromeClasses } from '$lib/components/ui/input/input-chrome';
+	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '$lib/colors/badge';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import Check from '@lucide/svelte/icons/check';
+	import Hash from '@lucide/svelte/icons/hash';
+	import Palette from '@lucide/svelte/icons/palette';
+	import Droplets from '@lucide/svelte/icons/droplets';
+	import FlaskConical from '@lucide/svelte/icons/flask-conical';
+	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 
-	type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch';
+	type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'system';
+
+	const TAILWIND_TOKEN_RE = /^([a-z]+)-(\d{2,3})$/;
+
+	/** Icon per format — hex=Hash, rgb=Palette, hsl=Droplets,
+	 *  oklch=FlaskConical, system=LayoutGrid (the Tailwind swatch grid). */
+	const FORMAT_ICONS = {
+		hex: Hash,
+		rgb: Palette,
+		hsl: Droplets,
+		oklch: FlaskConical,
+		system: LayoutGrid,
+	} as const;
+	const swatchByToken = new Map(tailwindSwatches.map((sw) => [sw.token, sw]));
 
 	let {
-		value = $bindable('#000000'),
+		value = $bindable<string | undefined>(undefined),
 		class: className,
 		allowOpacity = false,
-		defaultFormat = 'hex',
-		formats = ['hex', 'rgb', 'hsl', 'oklch']
+		defaultFormat = 'system',
+		formats = ['hex', 'rgb', 'hsl', 'oklch', 'system'],
+		onselect
 	}: {
-		value?: string;
+		value?: string | undefined;
 		class?: string;
 		allowOpacity?: boolean;
 		defaultFormat?: ColorFormat;
 		formats?: ColorFormat[];
+		/** Called when the user picks a Tailwind token in `system` mode —
+		 *  lets the host close the wrapping popover on selection. */
+		onselect?: (token: string) => void;
 	} = $props();
 
 	let h = $state(0);
@@ -30,6 +56,26 @@
 	let userFormat = $state<ColorFormat | null>(null);
 	let activeFormat = $derived<ColorFormat>(userFormat ?? defaultFormat ?? 'hex');
 	let isDragging = $state(false);
+	/** Last picked Tailwind token in "system" mode — kept so switching back to
+	 *  system restores the previous selection instead of a default. */
+	let systemToken = $state<TailwindColorToken>('zinc-300');
+	/** Swatch currently hovered in the Tailwind grid — drives the token
+	 *  name + rgb readout shown under the grid. */
+	let hoveredSwatch = $state<TailwindSwatch | null>(null);
+	/** Token currently bound to `value` (null when the picker is empty or
+	 *  bound to a non-token CSS color). Drives grid highlight, the token
+	 *  combobox and the readout — so an undefined value shows "nothing
+	 *  selected" instead of a fake default. */
+	let selectedToken = $derived(
+		value?.trim().toLowerCase().match(TAILWIND_TOKEN_RE)
+			? value.trim().toLowerCase()
+			: null
+	);
+
+	/** oklch css → "#RRGGBB" via the precomputed swatch hex. */
+	function swatchHexLabel(sw: TailwindSwatch): string {
+		return sw.hex;
+	}
 
 	let sbRef: HTMLDivElement | undefined = $state();
 	let hueRef: HTMLDivElement | undefined = $state();
@@ -38,7 +84,7 @@
 
 	$effect(() => {
 		if (!isDragging) {
-			const parsed = parseColor(value);
+			const parsed = value ? parseColor(value) : null;
 			if (parsed) {
 				const currentStr = formatOutput(h, s, v, a, activeFormat);
 				const parsedStr = formatOutput(parsed.h, parsed.s, parsed.v, parsed.a, activeFormat);
@@ -48,13 +94,22 @@
 					s = parsed.s;
 					v = parsed.v;
 					a = parsed.a;
+					// parsed non-null ⇒ value is a non-empty string
+					const trimmed = value?.trim().toLowerCase() ?? '';
 					// Only auto-detect format from the incoming value when the user hasn't
 					// explicitly chosen one yet — otherwise we'd fight the user's selection.
 					if (userFormat === null) {
-						if (value.startsWith('rgb')) userFormat = 'rgb';
-						else if (value.startsWith('hsl')) userFormat = 'hsl';
-						else if (value.startsWith('oklch')) userFormat = 'oklch';
-						else userFormat = 'hex';
+						if (trimmed.match(TAILWIND_TOKEN_RE)) {
+							userFormat = 'system';
+							systemToken = trimmed as TailwindColorToken;
+						} else if (trimmed.startsWith('rgb')) userFormat = 'rgb';
+						else if (trimmed.startsWith('hsl')) userFormat = 'hsl';
+						else if (trimmed.startsWith('oklch')) userFormat = 'oklch';
+						// hex values keep userFormat null → defaultFormat wins
+						// (system shows the fine-grain color's closest token anyway).
+					} else if (activeFormat === 'system') {
+						// Keep the token state in sync when an external token value arrives.
+						if (trimmed.match(TAILWIND_TOKEN_RE)) systemToken = trimmed as TailwindColorToken;
 					}
 				}
 			}
@@ -71,8 +126,23 @@
 		formatOpen = false;
 	}
 
-	function parseColor(str: string) {
+	function pickSystemToken(token: string) {
+		if (!token.match(TAILWIND_TOKEN_RE)) return;
+		systemToken = token as TailwindColorToken;
+		value = token;
+		onselect?.(token);
+	}
+
+	function parseColor(str: string | undefined): { h: number; s: number; v: number; a: number } | null {
+		if (!str) return null;
 		str = str.trim().toLowerCase();
+		const tokenMatch = str.match(TAILWIND_TOKEN_RE);
+		if (tokenMatch) {
+			// Tailwind system token (e.g. "emerald-500") — resolve to its oklch
+			// CSS value so the fine-grain state stays in sync for previews.
+			const css = swatchByToken.get(str as `${string}-${number}`)?.css;
+			return css ? parseColor(css) : null;
+		}
 		if (str.startsWith('#')) {
 			let hex = str.replace('#', '');
 			let r = 0,
@@ -123,6 +193,7 @@
 	}
 
 	function formatOutput(h: number, s: number, v: number, a: number, format: ColorFormat): string {
+		if (format === 'system') return systemToken;
 		if (format === 'hex') return hsvToHex(h, s, v, a);
 		if (format === 'rgb') return hsvToRgbString(h, s, v, a);
 		if (format === 'hsl') return hsvToHslString(h, s, v, a);
@@ -354,8 +425,9 @@
 </script>
 
 <div
-	class={cn('flex w-[350px] flex-col gap-3 p-3 border rounded-lg shadow-sm bg-popover', className)}
+	class={cn('flex w-[350px] flex-col gap-4 p-3 border rounded-lg shadow-sm bg-popover', className)}
 >
+	{#if activeFormat !== 'system'}
 	<div
 		bind:this={sbRef}
 		class="relative h-56 w-full cursor-crosshair rounded-md shadow-sm overflow-hidden touch-none"
@@ -375,7 +447,63 @@
 			style:top={`${100 - v}%`}
 		></div>
 	</div>
+	{:else}
+	<!-- "system" mode: classic Tailwind palette grid — families as rows,
+	     shades 50→950 as columns. Clicking a swatch emits the token
+	     (e.g. "emerald-500") as the bound value. -->
+	<ScrollArea class="h-56 w-full rounded-md border bg-muted/20">
+		<div class="flex flex-col gap-1.5 p-2">
+			{#each tailwindFamilies as family}
+				<div class="flex gap-1.5">
+					{#each tailwindSwatches.filter((sw) => sw.family === family) as sw (sw.token)}
+						<button
+							type="button"
+							class={cn(
+								'relative aspect-square flex-1 min-w-0 rounded-sm transition-transform hover:scale-110 hover:z-10',
+								'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring',
+								selectedToken === sw.token &&
+									'ring-2 ring-foreground ring-offset-1 ring-offset-popover scale-110 z-10'
+							)}
+							style:background-color={sw.css}
+							title={sw.token}
+							aria-label={sw.token}
+							aria-pressed={selectedToken === sw.token}
+							onclick={() => pickSystemToken(sw.token)}
+							onmouseenter={() => (hoveredSwatch = sw)}
+							onmouseleave={() => (hoveredSwatch = null)}
+							onfocus={() => (hoveredSwatch = sw)}
+							onblur={() => (hoveredSwatch = null)}
+						>
+							{#if selectedToken === sw.token}
+								<Check
+									class={cn(
+										'absolute inset-0 m-auto h-3 w-3',
+										sw.shade >= 400 ? 'text-white' : 'text-black'
+									)}
+								/>
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</ScrollArea>
+	<!-- Token readout under the grid — hovered swatch wins, otherwise the
+	     current selection. Fixed height so the layout never shifts. -->
+	{@const infoSwatch = hoveredSwatch ?? (selectedToken ? swatchByToken.get(selectedToken as TailwindColorToken) : undefined)}
+	<div class="flex h-5 items-center gap-2 px-1 font-mono text-[10px] text-muted-foreground">
+		{#if infoSwatch}
+			<span
+				class="size-3 shrink-0 rounded-sm border"
+				style:background-color={infoSwatch.css}
+			></span>
+			<span class="truncate">{infoSwatch.token}</span>
+			<span class="ml-auto shrink-0">{swatchHexLabel(infoSwatch)}</span>
+		{/if}
+	</div>
+	{/if}
 
+	{#if activeFormat !== 'system'}
 	<div class="flex gap-3 items-center">
 		<div
 			class="h-5 w-5 shrink-0 rounded-md border shadow-sm relative overflow-hidden mt-1 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')]"
@@ -422,33 +550,41 @@
 			{/if}
 		</div>
 	</div>
+	{/if}
 
-	<ButtonGroup.Root class="w-full">
+	<!-- Format selector + value input: plain flex row (NOT ButtonGroup —
+	     the joined chrome hid the gap) with a real gap between the two
+	     ghost controls. -->
+	<div class="flex w-full items-center gap-3">
 		{#if formats.length > 1}
 			<Popover.Root bind:open={formatOpen}>
 				<Popover.Trigger>
 					{#snippet child({ props })}
 						<Button
 							{...props}
-							variant="outline"
-							class="max-w-[5rem] px-2 text-[10px] justify-between h-9"
+							variant="ghost"
+							class={cn('px-3 text-xs justify-between h-9 w-auto shrink-0', inputGhostChromeClasses)}
 						>
-							{activeFormat.toUpperCase()}
+							{@const FmtIcon = FORMAT_ICONS[activeFormat]}
+							<FmtIcon class="h-3 w-3 opacity-70" />
+							{activeFormat === 'system' ? 'SYSTEM' : activeFormat.toUpperCase()}
 							<ChevronDown class="h-3 w-3 opacity-50" />
 						</Button>
 					{/snippet}
 				</Popover.Trigger>
-				<Popover.Content class="w-[4.5rem] p-0" align="start">
+				<Popover.Content class="w-24 p-0" align="start">
 					<Command.Root>
 						<Command.List>
 							<Command.Group>
-								{#each ['hex', 'rgb', 'hsl', 'oklch'] as fmt}
+								{#each formats as fmt}
 									<Command.Item
 										value={fmt}
 										onSelect={() => setFormat(fmt as ColorFormat)}
-										class="text-[10px] h-7 flex justify-center"
+										class="text-xs h-8 flex items-center gap-2 justify-start"
 									>
-										{fmt.toUpperCase()}
+										{@const FmtIcon = FORMAT_ICONS[fmt]}
+										<FmtIcon class="h-3 w-3 opacity-70" />
+										{fmt === 'system' ? 'SYSTEM' : fmt.toUpperCase()}
 									</Command.Item>
 								{/each}
 							</Command.Group>
@@ -457,32 +593,81 @@
 				</Popover.Content>
 			</Popover.Root>
 		{:else}
-			<Button variant="outline" class="max-w-[5rem] px-2 text-[10px] justify-between h-9">
-				{activeFormat.toUpperCase()}
+			<Button
+				variant="ghost"
+				class={cn('px-3 text-xs justify-between h-9 w-auto shrink-0', inputGhostChromeClasses)}
+			>
+				{activeFormat === 'system' ? 'SYSTEM' : activeFormat.toUpperCase()}
 			</Button>
 		{/if}
-		<Input
-			class="h-9 font-mono text-[10px] uppercase flex-1"
-			{value}
-			oninput={(e) => {
-				const parsed = parseColor(e.currentTarget.value);
-				if (parsed) {
-					h = parsed.h;
-					s = parsed.s;
-					v = parsed.v;
-					a = parsed.a;
-					updateExternal();
-				}
-			}}
-		/>
-
-		{#if allowOpacity}
+		{#if activeFormat === 'system'}
+			<!-- System mode: searchable token dropdown — each option shows the
+			     swatch, the token name and its hex value. -->
+			<div class="flex-1 min-w-0">
+				<ComboSelect
+					mode="single"
+					options={tailwindSwatches}
+					valueField="token"
+					labelField="token"
+					value={selectedToken ?? ''}
+					searchable
+					searchPlaceholder="Search color…"
+					variant="ghost"
+					display="custom"
+					class="h-9"
+					onChange={(v) => pickSystemToken(typeof v === 'string' ? v : (v[0] ?? ''))}
+				>
+					{#snippet itemSnippet({ option, selected })}
+						{@const sw = option as TailwindSwatch}
+						<span class="flex w-full items-center gap-2">
+							<span
+								class="size-4 shrink-0 rounded-sm border border-foreground/10"
+								style:background-color={sw.css}
+							></span>
+							<span class="flex-1 truncate text-left font-medium">{sw.token}</span>
+							<span class="shrink-0 font-mono text-xs text-muted-foreground">{sw.hex}</span>
+						</span>
+					{/snippet}
+					{#snippet selectedSnippet({ option })}
+						{@const sw = option as TailwindSwatch}
+						<span class="flex items-center gap-2 min-w-0">
+							<span
+								class="size-4 shrink-0 rounded-sm border border-foreground/10"
+								style:background-color={sw.css}
+							></span>
+							<span class="truncate font-medium">{sw.token}</span>
+						</span>
+					{/snippet}
+				</ComboSelect>
+			</div>
+		{:else}
 			<Input
-				class="h-9 font-mono text-[10px] text-right max-w-[4.2rem]"
+				class={cn('h-9 flex-1', inputGhostChromeClasses)}
+				value={value ?? ''}
+				oninput={(e) => {
+					const parsed = parseColor(e.currentTarget.value);
+					if (parsed) {
+						h = parsed.h;
+						s = parsed.s;
+						v = parsed.v;
+						a = parsed.a;
+						updateExternal();
+					} else if (!e.currentTarget.value.trim()) {
+						// Clearing the input clears the value — the picker
+						// supports undefined as "no color selected".
+						value = undefined;
+					}
+				}}
+			/>
+		{/if}
+
+		{#if allowOpacity && activeFormat !== 'system'}
+			<Input
+				class={cn('h-9 text-right max-w-[4.2rem]', inputGhostChromeClasses)}
 				value={Math.round(a * 100) + '%'}
 				oninput={handleAlphaInput}
 				maxlength={3}
 			/>
 		{/if}
-	</ButtonGroup.Root>
+	</div>
 </div>

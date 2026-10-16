@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page as appPage } from '$app/state';
   import { goto } from '$app/navigation';
   import { EntityListTable } from '$lib/components/entity-list-table';
@@ -7,12 +8,14 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
   import {
     defaultVisibleColumnKeys,
-    orderedColumnsFromListMeta,
+    orderedColumns,
     sanitizeVisibleKeys,
+    searchableTextColumns,
     isSnakeCaseSingular
   } from '$lib/entity-list';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -22,13 +25,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
-  type RoleMappingMeta = {
-    entity: 'role_mappings';
-    translationKey?: string;
-    titleKey?: string;
-    uid: string;
-    list: EntityListListMeta;
-  };
+  type RoleMappingMeta = EntityMeta;
 
   type RoleMappingListRow = {
     uuid: string;
@@ -70,8 +67,7 @@
 
   let filtersOpen = $state(false);
 
-  const viewMode: ViewName = 'table';
-  const viewVisibility = $derived(meta?.list.viewVisibility);
+  const viewMode = $derived(meta?.table?.default_view ?? 'table');
 
   let filterValues = $state<Record<string, any>>({});
   let advancedFilters: AdvancedFilter[] = $state([]);
@@ -90,21 +86,20 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const columns = $derived(orderedColumnsFromListMeta(meta?.list));
-  const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
-  const dataColumns = $derived(
-    (meta?.list.columns ?? []).filter((c: MetaColumn) => {
-      const stickyKeys = new Set((meta?.list.stickyColumns ?? []).map((c) => c.key));
-      const auditingKeys = new Set((meta?.list.auditingColumns ?? []).map((c) => c.key));
-      return !stickyKeys.has(c.key) && !auditingKeys.has(c.key);
-    })
-  );
-  const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
+  const columns = $derived(orderedColumns(meta?.columns));
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
   const rowsLoading = $derived(metaLoaded && loading);
-  const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'idp_role');
-  const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
+  const defaultSortKey = $derived(meta?.table?.default_sort?.key ?? 'idp_role');
+  const defaultSortDir = $derived(meta?.table?.default_sort?.dir ?? 'asc');
+  /** Effective `search_in` keys — explicit scope wins; default is visible ∩ searchable text columns. */
+  const effectiveSearchInKeys = $derived(
+    searchInKeys && searchInKeys.length
+      ? searchInKeys
+      : searchableTextColumns(columns)
+          .filter((c) => visibleKeys.includes(c.key))
+          .map((c) => c.key)
+  );
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_roles_sync', {
     mode: 'receiver',
@@ -113,11 +108,11 @@
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
+      visibleKeys = defaultVisibleColumnKeys(columns);
       return;
     }
     if (!columns.length) return;
-    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
   }
 
   function arrayEq(a: string[] | null, b: string[] | null): boolean {
@@ -262,31 +257,31 @@
     const cached = getMetaCache();
     if (cached) {
       meta = cached;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
     const inFlight = getMetaInFlight();
     if (inFlight) {
       meta = await inFlight;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
 
     setMetaInFlight(
       (async () => {
-        const metaRes = await apiFetchWithTimeout('/api/v1/entities/role_mappings/meta', undefined, 30_000);
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/role_mapping/meta', undefined, 30_000);
         if (!metaRes.ok) {
           const apiDetails = await readApiErrorDetails(metaRes);
           const code = apiDetails.code ?? 'GET_METADATA_FAILED';
@@ -301,12 +296,12 @@
     try {
       const p = getMetaInFlight();
       meta = p ? await p : null;
-      const defSort = meta?.list.defaultSort;
+      const defSort = meta?.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta?.list.defaultPageSize ?? pageSize;
+      pageSize = meta?.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
     } catch (e) {
       setMetaInFlight(null);
@@ -320,17 +315,19 @@
     try {
       const params = new URLSearchParams();
       if (appliedSearch) params.set('search', appliedSearch);
-      if (searchInKeys && searchInKeys.length > 0) params.set('search_in', searchInKeys.join(','));
+      if (appliedSearch && effectiveSearchInKeys.length > 0) params.set('search_in', effectiveSearchInKeys.join(','));
       if (sortKey) params.set('sort_key', sortKey);
       if (sortDir) params.set('sort_dir', sortDir);
       params.set('page', page.toString());
       params.set('page_size', pageSize.toString());
-      if (advancedFilters.length > 0) {
-        params.set('filters', JSON.stringify(advancedFilters));
-        params.set('connector', globalConnector);
-      }
+      appendListFilterParams(params, {
+        filterValues,
+        columns,
+        advancedFilters,
+        connector: globalConnector,
+      });
 
-      const res = await apiFetchWithTimeout(`/api/v1/entities/role_mappings/list?${params.toString()}`, undefined, 30_000);
+      const res = await apiFetchWithTimeout(`/api/v1/entities/role_mapping/list?${params.toString()}`, undefined, 30_000);
       if (!res.ok) {
         const apiDetails = await readApiErrorDetails(res);
         const code = apiDetails.code ?? 'LIST_FAILED';
@@ -351,7 +348,7 @@
         if (isBackendGatewayUnreachable(apiErr.code, apiErr.status)) {
           pushNotification({
             impact: 'HIGH',
-            message: $t('shell.settings.roles.title') + ': ' + apiErr.code,
+            message: $t('system.settings.roles.title') + ': ' + apiErr.code,
             scope: 'role_mappings.list',
             tags: backendOfflineTags(apiErr.status),
           });
@@ -420,7 +417,7 @@
 
   function onResetColumnVisibility() {
     if (columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
+      visibleKeys = defaultVisibleColumnKeys(columns);
     }
   }
 
@@ -473,7 +470,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('shell.settings.roles.title')} · Primebrick</title>
+  <title>{$t('system.settings.roles.title')} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -481,8 +478,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -490,30 +487,28 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.roles.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
     </div>
   {/snippet}
 
   <EntityListTable
-    entity="role_mappings"
-    translationKey={meta?.translationKey && isSnakeCaseSingular(meta.translationKey) ? meta.translationKey : 'role_mapping'}
+    entity={meta?.entity ?? 'role_mapping'}
+    translationKey={meta?.translation_key && isSnakeCaseSingular(meta.translation_key) ? meta.translation_key : 'role_mapping'}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick
     uid={meta?.uid ?? 'uuid'}
-    {stickyColumns}
-    {dataColumns}
-    {auditingColumns}
     columnOrderStorageKey={skColumnOrder}
     {columns}
     rowActionsEnabled
-    entityRowActions={meta?.list.rowActions}
+    entityCustomActions={meta?.table?.row_custom_actions}
+    entityActions={meta?.actions}
     onCreateAction={openCreate}
     onEditAction={openEdit}
-    defaultSort={meta?.list.defaultSort}
-    pageSizeOptions={meta?.list.pageSizeOptions}
-    searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.role_mapping.singular"
-    selectionLabelKey="entities.role_mapping.plural"
+    defaultView={viewMode}
+    defaultSort={meta?.table?.default_sort}
+    pageSizeOptions={meta?.table?.page_size_options}
+    selectionLabelSingularKey="system.entities.role_mapping.singular"
+    selectionLabelKey="system.entities.role_mapping.plural"
     {rows}
     {total}
     {metaLoading}

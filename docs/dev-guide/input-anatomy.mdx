@@ -1,0 +1,86 @@
+---
+title: Input Anatomy
+description: Internal design language for text inputs — trailing CTA geometry, clear/copy buttons, icon slots, and the 12px glyph-edge rule.
+---
+
+# Input Anatomy
+
+Every single-line text input in Primebrick shares the same internal
+geometry for trailing actions.
+
+## Anatomy
+
+```
+┌────────────────────────────────────────────────────┐
+│ [leading icon]  value text …            [CTAs]  ▮  │
+└────────────────────────────────────────────────────┘
+       ↑                              ↑      ↑
+   px-3 (12px)                 2nd slot  rightmost
+   from border                 right-10  right-1.5
+```
+
+## Rules
+
+- **Glyph edge = 12px** from the right border — symmetric to the input's
+  `px-3` left padding. Achieved via `right-1.5` on the shared
+  `inputTrailingIconButtonClasses` (28px button, 16px icon).
+- **Clear button** = `Eraser` icon, always the rightmost element. Rendered
+  only in `editable` mode with a non-empty value; hidden on `readonly`
+  (replaced by the copy button) and `disabled`. Opt out with
+  `clearable={false}`.
+- **Second slot** sits at `right-10` (e.g. an async-validation status icon
+  left of the clear button). `TextInput`'s `trailing` snippet must
+  self-position left of the clear zone.
+- **Overflow guard**: the input reserves trailing space via padding —
+  `pr-9` for one CTA, `pr-14`/`pr-[4.5rem]` for two, `pr-24` for three.
+  Text and cursor never slide under the CTAs.
+- **Glyph size = 16px, always.** Every inner icon-only control (clear
+  `Eraser`, `Eye`/`EyeOff`, `Copy`, `Check`/status, `X` remove) renders a
+  `size-4` glyph. This is enforced by `[&>svg]:size-4` inside the shared
+  `inputTrailingIconColorClasses` — do not set a size on the icon itself.
+  The button's hit area may vary independently of the glyph size. Excluded
+  from this rule: decorative glyphs that are part of a trigger's content
+  (e.g. the `size-3` caret inside a prefix selector CTA like phone/URL)
+  and leading icons.
+- Trailing buttons carry `tabindex={-1}` and `z-10` (the input's animated
+  border wrapper is `z-1`).
+
+## Field hints
+
+Non-error help is never an inline line under the control — it lives in the
+label tooltip (`FormLabelWithPriorityHelp`): a `size-3.5` icon plus an
+optional italic qualifier (e.g. `(optional)`), opening a priority-aware
+tooltip on hover. The trigger icon mirrors `priority`: `WARNING` →
+`TriangleAlert`, `ERROR` → `OctagonX`, otherwise `HelpCircle`.
+
+- SuperForms pages: `FormLabelWithPriorityHelp` inside `FormLabel`.
+- Non-superforms rows: `PrimeField`'s `help` prop (accepts a `FieldHelp`
+  object or a raw `MetaColumn` for metadata-driven tooltips).
+- Switch rows: `SwitchField`'s `tooltip`/`tooltipTitle`/`tooltipPriority`
+  props (`description` is deprecated).
+
+Priorities: `HINT` = format guidance · `INFORMATION` = explainers/markers ·
+`WARNING` = irreversible semantics · `ERROR` = hard constraints.
+
+Every tooltip shows a priority-tinted title — pass `title` explicitly or the
+per-priority default (`app.common.tooltipTitle.<priority>`) is used.
+
+## Components
+
+Use `TextInput` (`$lib/components/ui/input`) for any plain single-line text
+field — it owns clear/copy/trailing per this contract. Specialized inputs
+(`EmailInput`, `UrlInput`, `PhoneInput`, `Password` fields,
+`SmartRegexInput`) follow the same trailing geometry.
+
+Use `InputGroup`/`InputGroupAddon` (flow-based) when the trailing element is
+a real inner button — e.g. a text CTA like "search in" or a `proto://`
+selector — rather than an icon.
+
+**Ghost chrome.** Inputs embedded inside an already-bordered container
+(color picker footer, toolbar strips) use `inputGhostChromeClasses` from
+`$lib/components/ui/input/input-chrome` — the formalized ghost: subtle
+always-visible `border-foreground/25` on a transparent background, hover
+`foreground/40`, focus `foreground/50` + `ring-foreground/20` (same as the
+toolbar SearchBar / `ComboSelect` `variant="ghost"`). It is NOT the
+borderless button ghost — that look exists as `inputBorderlessChromeClasses`
+but is almost never appropriate (undiscoverable control).

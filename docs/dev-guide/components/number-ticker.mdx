@@ -1,0 +1,76 @@
+---
+title: NumberTicker
+description: Animated count-up number for KPI values. Duration proportional to the travelled distance; optional prefix/suffix keeps the unit of measure attached to the number.
+---
+
+# NumberTicker
+
+`src/lib/components/ui/number-ticker/`
+
+## Purpose
+
+Renders a number that animates from 0 (or the previous value) to `value`
+with an eased count-up — the pattern behind KPI dashboards. The animation
+duration is proportional to the distance travelled, so a large value counts
+visibly while a small one settles quickly. `prefix`/`suffix` keep the unit
+of measure attached to the number itself instead of as a separate caption.
+
+## Origin
+
+**Custom** — Svelte™ port of the more-shadcn Number Ticker pattern
+([number-ticker.json](https://more-shadcn.noair.fun/r/number-ticker.json)).
+Built on `Tween` from `svelte/motion` with `cubicOut` easing. Not vendored.
+
+## Usage
+
+### Basic
+
+```svelte
+<script>
+  import { NumberTicker } from '$lib/components/ui/number-ticker';
+</script>
+
+<NumberTicker value={142} suffix=" GB/s" class="text-xl font-semibold" />
+```
+
+### With prefix and decimals
+
+```svelte
+<NumberTicker value={8.31} decimals={1} prefix="≥" suffix=" GB" />
+```
+
+### Custom speed
+
+```svelte
+<NumberTicker value={8192} speed={200} suffix=" MB" />
+```
+
+`speed` is measured in **value-units per second**: the animation takes
+`distance / speed` seconds (with an 800 ms floor so small values don't
+flash). All tickers that share the same `speed` count at the same visual
+rate — prefer the default unless a metric has a very different scale.
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | `0` | Target number. Re-animates on change. |
+| `decimals` | `number` | `0` | Digits after the decimal point. |
+| `prefix` | `string` | `''` | Static text before the number (e.g. `≥`). |
+| `suffix` | `string` | `''` | Text after the number — use it for the UoM (` GB/s`). |
+| `speed` | `number` | `100` | Value-units per second — duration = distance / speed (min 800 ms). |
+| `class` | `string` | — | Merged onto the wrapper `span` (inherits font size/color). |
+
+The component spreads the rest of `HTMLAttributes<HTMLSpanElement>` onto
+the root element (`data-testid`, `title`, …).
+
+## Notes
+
+- The output is a plain `span` — font size, weight and color are inherited
+  from the parent or set via `class`.
+- `tabular-nums` is always applied so digits don't shift while counting.
+
+## Next steps
+
+- [StatCard](./stat-card) — KPI card wrapper that embeds a NumberTicker
+- [UI components](./ui-components) — component inventory

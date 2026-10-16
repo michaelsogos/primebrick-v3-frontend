@@ -1,13 +1,13 @@
 /**
  * useRoleMappings — composable that provides CRUD operations for role mappings.
  *
- * The list page uses the entity-pattern endpoints (`/api/v1/entities/role_mappings/...`)
+ * The list page uses the entity-pattern endpoints (`/api/v1/entities/role_mapping/...`)
  * directly via EntityListTable. This composable is used by the create/edit pages
  * for single-record CRUD.
  *
  * Exposes:
  *   - state: { roles, loading, error } (DeepReadonly)
- *   - list(): refresh the roles list (legacy system endpoint)
+ *   - list(): refresh the roles list (entity list endpoint)
  *   - get(uuid): fetch a single role by uuid (entity endpoint)
  *   - create(input): create a new role (entity endpoint)
  *   - update(uuid, input): update a role by uuid (entity endpoint)
@@ -49,6 +49,7 @@ export interface UpdateRoleInput {
   label_key?: string;
   is_admin?: boolean;
   permissions?: string[];
+  version: number;
 }
 
 export function useRoleMappings() {
@@ -62,10 +63,12 @@ export function useRoleMappings() {
     _state.loading = true;
     _state.error = null;
     try {
-      const res = await apiFetch("/api/v1/system/role-mappings");
+      const res = await apiFetch(
+        "/api/v1/entities/role_mapping/list?page=1&page_size=100&sort_key=created_at&sort_dir=desc",
+      );
       if (res.ok) {
         const data = await res.json();
-        _state.roles = (data.roles ?? []) as RoleMapping[];
+        _state.roles = (data.rows ?? []) as RoleMapping[];
       } else {
         const body = await res.json().catch(() => null);
         _state.error = body?.detail ?? `HTTP ${res.status}`;
@@ -81,7 +84,7 @@ export function useRoleMappings() {
 
   async function get(uuid: string): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`);
+      const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`);
       if (res.ok) {
         return (await res.json()) as RoleMapping;
       }
@@ -97,16 +100,16 @@ export function useRoleMappings() {
 
   async function create(input: CreateRoleInput): Promise<RoleMapping | null> {
     try {
-      const res = await apiFetch("/api/v1/entities/role_mappings", {
+      const res = await apiFetch("/api/v1/entities/role_mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ entity: input }),
       });
       if (res.ok) {
-        const data = (await res.json()) as { success: boolean; role: RoleMapping };
+        const role = (await res.json()) as RoleMapping;
         await list();
         pushNotification({ impact: "NONE", message: "Role created", scope: "roles" });
-        return data.role;
+        return role;
       }
       const body = await res.json().catch(() => null);
       pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
@@ -120,10 +123,10 @@ export function useRoleMappings() {
 
   async function update(uuid: string, input: UpdateRoleInput): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
+      const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ entity: input }),
       });
       if (res.ok) {
         await list();
@@ -140,11 +143,12 @@ export function useRoleMappings() {
     }
   }
 
-  async function remove(uuid: string): Promise<boolean> {
+  async function remove(uuid: string, version: number): Promise<boolean> {
     try {
-      const res = await apiFetch(`/api/v1/entities/role_mappings/${encodeURIComponent(uuid)}`, {
-        method: "DELETE",
-      });
+      const res = await apiFetch(
+        `/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}/purge?version=${version}`,
+        { method: "DELETE" },
+      );
       if (res.ok) {
         await list();
         pushNotification({ impact: "NONE", message: "Role deleted", scope: "roles" });

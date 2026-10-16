@@ -27,17 +27,17 @@
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
-      const fallback = $t('shell.errors.unhandledRejectionFallback');
+      const fallback = $t('app.errors.unhandledRejectionFallback');
       const msg = reason instanceof Error ? reason.message : String(reason ?? fallback);
-      pushNotification({ impact: 'HIGH', message: msg, scope: $t('shell.errors.unhandledRejection') });
+      pushNotification({ impact: 'HIGH', message: msg, scope: $t('app.errors.unhandledRejection') });
     };
     const onWindowError = (e: ErrorEvent) => {
-      const fallback = $t('shell.errors.unhandledErrorFallback');
+      const fallback = $t('app.errors.unhandledErrorFallback');
       const msg = e.error instanceof Error ? e.error.message : e.message;
       pushNotification({
         impact: 'HIGH',
         message: msg || fallback,
-        scope: $t('shell.errors.unhandledError')
+        scope: $t('app.errors.unhandledError')
       });
     };
     window.addEventListener('unhandledrejection', onUnhandledRejection);

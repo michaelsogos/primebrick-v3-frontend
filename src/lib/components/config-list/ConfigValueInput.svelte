@@ -1,50 +1,79 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Switch } from '$lib/components/ui/switch';
-  import { Input } from '$lib/components/ui/input';
+  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { TextInput } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
-  import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
-  import type { ConfigEntry } from '$lib/api-types';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
+  import { UrlInput } from '$lib/components/ui/url-input';
+  import { EmailInput } from '$lib/components/ui/email-input';
+  import { PhoneInput } from '$lib/components/ui/phone-input';
+  import type { ConfigEntryType } from '$lib/api-types';
+  import { currencySymbol, getAllCurrencies } from '$lib/currency';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { parseTypeConfig, serializeTypeConfig } from '$lib/config/type-config-schema';
+  import { apiFetch } from '$lib/api';
+  import {
+    CalendarDate,
+    CalendarDateTime,
+    parseDate,
+    parseDateTime,
+    today,
+    getLocalTimeZone,
+  } from '@internationalized/date';
 
   let {
-    entry,
-    value,
+    type,
+    type_config = null,
+    fieldKey = 'field',
+    value = $bindable(''),
     errors = [],
     onChange,
+    onTypeConfigChange,
+    boolean_label,
   }: {
-    entry: ConfigEntry;
-    value: string;
+    type: ConfigEntryType;
+    type_config?: string | null;
+    fieldKey?: string;
+    value: string | bigint | number;
     errors?: string[];
-    onChange: (value: string) => void;
+    onChange?: (value: string | bigint | number) => void;
+    /** Called when the user changes the currency via the currency selection sheet. */
+    onTypeConfigChange?: (typeConfig: string) => void;
+    /**
+     * Optional inline label rendered next to the boolean Switch (SwitchField
+     * anatomy: `[switch] Label`). Leave undefined in list rows where the
+     * row title already labels the field.
+     */
+    boolean_label?: string;
   } = $props();
 
   // Local editing state — synced from prop, used for bind:value in inputs.
-  // The parent (ConfigList) owns the authoritative form state via taint tracking.
+  // The parent owns the authoritative form state (ConfigList via taint tracking,
+  // or SuperForms via $form.value in the create page).
+  // For bigint/number types, the BE sends native types; we convert to string
+  // for display in text inputs, and convert back to native on change.
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
-  let localValue = $state(value);
+  let localValue = $state<string>(String(value));
 
-  // Sync local value when the prop changes (e.g. after bulk save reset)
+  // Sync local value when the prop changes (e.g. after bulk save reset, or
+  // when SuperForms resets the form). Supports both bind:value and value+onChange modes.
   // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
-  let lastValue = $state(value);
+  let lastValue = $state<string | bigint | number>(value);
   $effect(() => {
     if (value !== lastValue) {
-      localValue = value;
+      localValue = String(value);
       lastValue = value;
     }
   });
 
   // Parse type_config for badge type
   let badgeOptions = $derived.by<Record<string, { label_key?: string; color?: string }>>(() => {
-    if (entry.type !== 'badge' || !entry.type_config) return {};
-    try {
-      const config = JSON.parse(entry.type_config);
-      return config.values ?? {};
-    } catch {
-      return {};
-    }
+    if (type !== 'badge') return {};
+    return parseTypeConfig(type_config)?.values ?? {};
   });
 
   // Build ComboSelect options for badge type
@@ -56,50 +85,100 @@
     })),
   );
 
-  // Parse type_config for list type
-  let listConfig = $derived.by<{
+  // Parse type_config for single_select / multi_select types
+  let selectConfig = $derived.by<{
+    values_source?: string;
     api_url?: string;
     api_verb?: string;
     value_field?: string;
     label_field?: string;
   } | null>(() => {
-    if (entry.type !== 'list' || !entry.type_config) return null;
-    try {
-      return JSON.parse(entry.type_config);
-    } catch {
-      return null;
+    if (type !== 'single_select' && type !== 'multi_select') return null;
+    return parseTypeConfig(type_config);
+  });
+
+  // Select options loaded from values_source, BE API, or static values
+  let selectOptions = $state<Record<string, any>[]>([]);
+  let selectLoading = $state(false);
+
+  // Money: extract currency from type_config and derive symbol
+  let moneyCurrency = $derived.by<string>(() => {
+    if (type !== 'money') return 'EUR';
+    return parseTypeConfig(type_config)?.currency ?? 'EUR';
+  });
+
+  let moneyCurrencySymbol = $derived.by<string>(() => {
+    if (type !== 'money') return '';
+    return currencySymbol(moneyCurrency);
+  });
+
+  // Handle currency change from the currency selection sheet.
+  // Updates type_config JSON with the new currency code and notifies the parent.
+  function handleCurrencyChange(code: string) {
+    if (!onTypeConfigChange) return;
+    const config = parseTypeConfig(type_config) ?? {};
+    config.currency = code;
+    onTypeConfigChange(serializeTypeConfig(config));
+  }
+
+  // String representation of value for display in select/input components
+  // that expect string (ComboSelect, Switch, etc.)
+  let stringValue = $derived(String(value ?? ''));
+
+  // Load select options when the entry is a single_select / multi_select type
+  $effect(() => {
+    if (type !== 'single_select' && type !== 'multi_select') return;
+
+    // 1. values_source: "currencies" → load directly from countries-list (no API)
+    if (selectConfig?.values_source === 'currencies') {
+      selectOptions = getAllCurrencies() as unknown as Record<string, any>[];
+      return;
+    }
+
+    // 2. api_url → fetch from BE API (via apiFetch for auth + ETag support)
+    if (selectConfig?.api_url) {
+      selectLoading = true;
+      apiFetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
+        .then((res) => res.json())
+        .then((data) => {
+          const arr: Record<string, string>[] = Array.isArray(data)
+            ? data
+            : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
+          selectOptions = arr as Record<string, any>[];
+        })
+        .catch(() => {
+          selectOptions = [];
+        })
+        .finally(() => {
+          selectLoading = false;
+        });
     }
   });
 
-  // List options loaded from BE API
-  let listOptions = $state<Record<string, string>[]>([]);
-  let listLoading = $state(false);
-
-  // Load list options when the entry is a list type
-  $effect(() => {
-    if (entry.type !== 'list' || !listConfig?.api_url) return;
-    listLoading = true;
-    fetch(listConfig.api_url, { method: listConfig.api_verb ?? 'GET' })
-      .then((res) => res.json())
-      .then((data) => {
-        const arr: Record<string, string>[] = Array.isArray(data)
-          ? data
-          : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
-        listOptions = arr as Record<string, string>[];
-      })
-      .catch(() => {
-        listOptions = [];
-      })
-      .finally(() => {
-        listLoading = false;
-      });
+  // For multi_select: convert comma-separated DB string → string[] for ComboSelect
+  let multiSelectValue = $derived.by<string[]>(() => {
+    if (type !== 'multi_select') return [];
+    const v = String(value ?? '');
+    return v.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
   });
 
-  // Notify parent of value changes
+  // Notify parent of value changes — works for both bind:value and onChange modes.
+  // Writes to `value` (the bindable) for bind:value mode, and calls `onChange`
+  // if provided for the value+onChange mode.
+  // For bigint/number/money types, converts the string display value to the
+  // native JS type before notifying the parent.
   function notifyChange(newValue: string) {
-    if (newValue !== lastValue) {
-      lastValue = newValue;
-      onChange(newValue);
+    let nativeValue: string | bigint | number = newValue;
+    if (type === 'bigint' && newValue !== '') {
+      try { nativeValue = BigInt(newValue); } catch { /* keep as string */ }
+    } else if ((type === 'number' || type === 'money') && newValue !== '') {
+      const n = Number(newValue);
+      if (!isNaN(n)) nativeValue = n;
+    }
+    if (nativeValue !== lastValue) {
+      lastValue = nativeValue;
+      value = nativeValue;
+      onChange?.(nativeValue);
     }
   }
 
@@ -117,25 +196,32 @@
     notifyChange(v);
   }
 
-  // List: change immediately
-  function handleListChange(val: string | string[]) {
+  // single_select: change immediately
+  function handleSingleSelectChange(val: string | string[]) {
     const v = Array.isArray(val) ? val[0] ?? '' : val;
     localValue = v;
     notifyChange(v);
   }
 
-  // Text/number/url/date: notify on blur
-  function handleBlur() {
-    // Ensure string — Svelte's bind:value with type="number" converts to number,
-    // but the DAL stores everything as string and validation expects string.
-    const v = typeof localValue === 'number' ? String(localValue) : localValue;
-    notifyChange(v);
+  // multi_select: convert string[] → comma-separated string for DB storage
+  function handleMultiSelectChange(val: string | string[]) {
+    const arr = Array.isArray(val) ? val : [val];
+    const csv = arr.join(',');
+    localValue = csv;
+    notifyChange(csv);
   }
 
-  // For inputs that update localValue on input
+  // Text-like inputs: notify on every keystroke so SuperForms validates
+  // in real-time (matching how the KEY field works with bind:value={$form.key}).
+  // Without this, $form.value only updates on blur, and SuperForms' onChange
+  // callback never fires during typing — validation appears broken.
   function handleInput() {
-    // Don't notify on every keystroke — wait for blur
-    // But do update localValue via bind:value
+    notifyChange(localValue);
+  }
+
+  // Also notify on blur (catches programmatic changes, DateWheelPicker button, etc.)
+  function handleBlur() {
+    notifyChange(localValue);
   }
 
   // First error message for this field — uses the same `key|jsonParams` format
@@ -156,130 +242,186 @@
   }
 
   let translatedError = $derived(firstError ? translateError(firstError) : '');
+
+  // ─── date / datetime / time ───────────────────────────────────────────
+  // DateWheelPicker works on CalendarDate/CalendarDateTime objects while the
+  // form stores a plain string (date `YYYY-MM-DD`, datetime ISO, time
+  // `HH:mm:ss`). `dateValue` mirrors `localValue` in DateValue form — the
+  // pair of effects below is guarded by serialization equality so they
+  // cannot ping-pong.
+  function parseDateValue(str: string): CalendarDate | CalendarDateTime | undefined {
+    if (!str) return undefined;
+    try {
+      if (type === 'time') {
+        const [h = 0, m = 0, s = 0] = str.split(':').map(Number);
+        const d = today(getLocalTimeZone());
+        return new CalendarDateTime(d.year, d.month, d.day, h, m, s);
+      }
+      return type === 'date' ? parseDate(str) : parseDateTime(str);
+    } catch {
+      return undefined;
+    }
+  }
+
+  function serializeDateValue(dv: CalendarDate | CalendarDateTime | undefined): string {
+    if (!dv) return '';
+    if (type === 'time') {
+      const p = (n: number) => String(n).padStart(2, '0');
+      const t = dv as CalendarDateTime;
+      return `${p(t.hour)}:${p(t.minute)}:${p(t.second)}`;
+    }
+    return dv.toString();
+  }
+
+  // svelte-ignore state_referenced_locally — synced mirror of the string value, initialized once
+  let dateValue = $state<CalendarDate | CalendarDateTime | undefined>(parseDateValue(String(value)));
+
+  let isDateType = $derived(type === 'date' || type === 'datetime' || type === 'time');
+
+  $effect(() => {
+    if (!isDateType) return;
+    const parsed = parseDateValue(localValue);
+    if (serializeDateValue(parsed) === serializeDateValue(dateValue)) return;
+    dateValue = parsed;
+  });
+
+  $effect(() => {
+    if (!isDateType) return;
+    const str = serializeDateValue(dateValue);
+    if (str === localValue) return;
+    localValue = str;
+    notifyChange(str);
+  });
 </script>
 
-{#if entry.type === 'boolean'}
-  <Switch
-    checked={value === 'true'}
-    onCheckedChange={handleBooleanChange}
-    data-testid={`config-input-boolean-${entry.key}`}
-  />
-{:else if entry.type === 'badge'}
+{#if type === 'boolean'}
+  {#if boolean_label}
+    <SwitchField
+      checked={stringValue === 'true'}
+      onCheckedChange={handleBooleanChange}
+      label={boolean_label}
+      data-testid={`config-input-boolean-${fieldKey}`}
+    />
+  {:else}
+    <Switch
+      checked={stringValue === 'true'}
+      onCheckedChange={handleBooleanChange}
+      data-testid={`config-input-boolean-${fieldKey}`}
+    />
+  {/if}
+{:else if type === 'badge'}
   <div class="w-full">
     <ComboSelect
       mode="single"
-      value={value}
+      value={stringValue}
       onChange={handleBadgeChange}
       options={badgeComboOptions}
       valueField="value"
       labelField="label_key"
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
-      data-testid={`config-input-badge-${entry.key}`}
+      placeholder={$t('app.common.selectValue')}
+      data-testid={`config-input-badge-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'list'}
+{:else if type === 'single_select'}
   <div class="w-full">
     <ComboSelect
       mode="single"
-      value={value}
-      onChange={handleListChange}
-      options={listOptions}
-      valueField={listConfig?.value_field ?? 'value'}
-      labelField={listConfig?.label_field ?? 'label_key'}
+      value={stringValue}
+      onChange={handleSingleSelectChange}
+      options={selectOptions}
+      valueField={selectConfig?.value_field ?? 'value'}
+      labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
-      disabled={listLoading}
-      loading={listLoading}
-      data-testid={`config-input-list-${entry.key}`}
-    />
+      placeholder={$t('app.common.selectValue')}
+      disabled={selectLoading}
+      loading={selectLoading}
+      display="custom"
+      data-testid={`config-input-single-select-${fieldKey}`}
+    >
+      {#snippet itemSnippet({ option, resolvedLabel, selected })}
+        {@const descKey = (option as Record<string, any>).description_key}
+        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+          <span class="truncate text-left font-medium">{resolvedLabel}</span>
+          {#if descKey}
+            <span class="truncate text-left text-xs text-muted-foreground">{$t(descKey)}</span>
+          {/if}
+        </div>
+      {/snippet}
+    </ComboSelect>
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'integer' || entry.type === 'number'}
+{:else if type === 'multi_select'}
   <div class="w-full">
-    <Input
-      type="number"
-      bind:value={localValue}
-      onblur={handleBlur}
+    <ComboSelect
+      mode="multi"
+      value={multiSelectValue}
+      onChange={handleMultiSelectChange}
+      options={selectOptions}
+      valueField={selectConfig?.value_field ?? 'value'}
+      labelField={selectConfig?.label_field ?? 'label_key'}
+      isLabelTranslated
       aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-number-${entry.key}`}
+      placeholder={$t('app.common.selectValue')}
+      disabled={selectLoading}
+      loading={selectLoading}
+      data-testid={`config-input-multi-select-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'date'}
+{:else if type === 'bigint' || type === 'number'}
+  <NumericInput
+    type={type as 'bigint' | 'number' | 'money'}
+    {type_config}
+    bind:value
+    errors={errors}
+    {onChange}
+    lang={$uiLang}
+    data-testid={`config-input-number-${fieldKey}`}
+  />
+{:else if type === 'money'}
+  <NumericInput
+    type="money"
+    {type_config}
+    bind:value
+    errors={errors}
+    {onChange}
+    lang={$uiLang}
+    currencySymbol={moneyCurrencySymbol}
+    currencyCode={moneyCurrency}
+    onCurrencyChange={onTypeConfigChange ? handleCurrencyChange : undefined}
+    data-testid={`config-input-money-${fieldKey}`}
+  />
+{:else if type === 'date' || type === 'datetime' || type === 'time'}
   <div class="w-full">
     <DateWheelPicker
-      bind:value={localValue}
-      includeTime={false}
-      placeholder={$t('common.selectDate')}
-    />
-    {#if localValue}
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={handleBlur}
-        class="ml-2"
-      >
-        {$t('common.save')}
-      </Button>
-    {/if}
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
-{:else if entry.type === 'datetime'}
-  <div class="w-full">
-    <DateWheelPicker
-      bind:value={localValue}
-      includeTime={true}
-      placeholder={$t('common.selectDate')}
-    />
-    {#if localValue}
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={handleBlur}
-        class="ml-2"
-      >
-        {$t('common.save')}
-      </Button>
-    {/if}
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
-{:else if entry.type === 'time'}
-  <div class="w-full">
-    <Input
-      type="time"
-      bind:value={localValue}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-time-${entry.key}`}
+      bind:value={dateValue}
+      includeTime={type === 'datetime'}
+      timeOnly={type === 'time'}
+      placeholder={type === 'time' ? $t('app.common.selectTime') : $t('app.common.selectDate')}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'secret'}
+{:else if type === 'secret'}
   <div class="w-full">
     <Password.Root class="w-full">
       <Password.Input
         bind:value={localValue}
+        oninput={handleInput}
         onblur={handleBlur}
         class="w-full"
-        data-testid={`config-input-secret-${entry.key}`}
+        data-testid={`config-input-secret-${fieldKey}`}
       >
         <Password.ToggleVisibility />
       </Password.Input>
@@ -288,28 +430,38 @@
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
   </div>
-{:else if entry.type === 'url'}
-  <div class="w-full">
-    <Input
-      type="url"
-      bind:value={localValue}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-url-${entry.key}`}
-    />
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
-{:else if entry.type === 'text' || entry.type === 'json'}
+{:else if type === 'url'}
+  <UrlInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-url-${fieldKey}`}
+  />
+{:else if type === 'email'}
+  <EmailInput
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-email-${fieldKey}`}
+  />
+{:else if type === 'phone'}
+  <PhoneInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-phone-${fieldKey}`}
+  />
+{:else if type === 'text' || type === 'json'}
   <div class="w-full">
     <Textarea
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full min-h-[80px]"
-      data-testid={`config-input-text-${entry.key}`}
+      data-testid={`config-input-text-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
@@ -317,13 +469,15 @@
   </div>
 {:else}
   <div class="w-full">
-    <Input
+    <TextInput
       type="text"
       bind:value={localValue}
+      oninput={handleInput}
       onblur={handleBlur}
+      onClear={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
-      data-testid={`config-input-string-${entry.key}`}
+      data-testid={`config-input-string-${fieldKey}`}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>

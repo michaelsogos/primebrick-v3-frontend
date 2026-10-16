@@ -5,6 +5,12 @@
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
 
   interface BulkDeleteDialogProps {
+    /**
+     * Entity translation key (e.g. 'ai_model', 'customer'). The title is
+     * auto-built as `app.common.deleteEntitiesTitle` + `system.entities.{entity}.plural`
+     * — NEVER pass a custom title.
+     */
+    entity: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
@@ -14,6 +20,7 @@
   }
 
   let {
+    entity,
     open = $bindable(),
     onOpenChange,
     selectedCount,
@@ -21,13 +28,17 @@
     onConfirm,
     onCancel
   }: BulkDeleteDialogProps = $props();
+
+  let entityPlural = $derived($t(`system.entities.${entity}.plural`));
 </script>
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('entities.list.bulkActions.deleteConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>
+      {$t('app.common.deleteEntitiesTitle', { entity: entityPlural })}
+    </Dialog.Title>
     <Dialog.Description>
-      Sei sicuro di voler eliminare {selectedCount} elementi?
+      {$t('app.common.deleteEntitiesConfirm', { count: selectedCount, entity: entityPlural })}
     </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
@@ -37,7 +48,7 @@
       onclick={onCancel}
       disabled={isDeleting}
     >
-      {$t('common.cancel')}
+      {$t('app.common.cancel')}
     </Button>
     <Button
       variant="destructive"
@@ -46,9 +57,9 @@
       disabled={isDeleting}
     >
       {#if isDeleting}
-        {$t('common.deleting')}
+        {$t('app.common.deleting')}
       {:else}
-        {$t('common.delete')}
+        {$t('app.common.delete')}
       {/if}
     </Button>
   </Dialog.Footer>

@@ -107,9 +107,22 @@
   async function copyEmailHtmlToClipboard() {
     await exportComposable.copyEmailHtmlToClipboard();
   }
+
+  // Best-effort record name for the delete/restore confirm question — picks
+  // the first non-empty of the common identifier fields.
+  function recordName(row: Record<string, unknown> | null): string | undefined {
+    if (!row) return undefined;
+    for (const key of ['name', 'username', 'email', 'code', 'key', 'model_id']) {
+      const v = row[key];
+      if (typeof v === 'string' && v.trim()) return v;
+    }
+    return undefined;
+  }
 </script>
 
 <DeleteDialog
+  entity={translationKey ?? entity}
+  recordName={recordName(dialogs.state.rowToDelete)}
   open={dialogs.state.deleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
   isDeleting={rowActionsComposable.state.isDeleting}
@@ -118,6 +131,8 @@
 />
 
 <RestoreDialog
+  entity={translationKey ?? entity}
+  recordName={recordName(dialogs.state.rowToRestore)}
   open={dialogs.state.restoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
   isRestoring={rowActionsComposable.state.isRestoring}
@@ -126,6 +141,7 @@
 />
 
 <BulkDeleteDialog
+  entity={translationKey ?? entity}
   open={dialogs.state.bulkDeleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
   selectedCount={selectedKeys.length}
@@ -135,6 +151,7 @@
 />
 
 <BulkRestoreDialog
+  entity={translationKey ?? entity}
   open={dialogs.state.bulkRestoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
   selectedCount={selectedKeys.length}

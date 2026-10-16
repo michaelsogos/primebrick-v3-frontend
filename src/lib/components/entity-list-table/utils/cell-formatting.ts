@@ -40,7 +40,7 @@ export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
   const r = row as Record<string, unknown>;
   const raw = r[col.key];
 
-  if (col.type === 'datetime' && col.datetimeIanaToggle) {
+  if (col.type === 'datetime' && col.datetime_iana_toggle) {
     const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
     const parts = formatDatetimeCellDisplayFn(col, r, uiLang, mode);
     const textEmpty = parts.text.trim().length === 0;

@@ -17,7 +17,8 @@
   import Info from '@lucide/svelte/icons/info'
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import XIcon from '@lucide/svelte/icons/x';
-  import MessageSquare from '@lucide/svelte/icons/message-square';
+  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -102,11 +103,11 @@
     }
   }
 
-  interface $$Props {
+  interface Props {
     unreadNotifications?: number;
   }
 
-  let { unreadNotifications = 3 }: $$Props = $props();
+  let { unreadNotifications = 3 }: Props = $props();
 
   let ianaTimeZone = $state<string | null>(null);
 
@@ -122,19 +123,30 @@
   <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
   <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
     <div class="flex min-w-0 justify-start">
-      <Sidebar.Trigger aria-label={$t('shell.nav.open')} class="shrink-0" />
+      <Sidebar.Trigger aria-label={$t('app.nav.open')} class="shrink-0" />
     </div>
 
-    <div class="flex min-w-0 justify-center">
+    <div class="flex min-w-0 items-center justify-center gap-2">
       <CommandPalette />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="relative shrink-0"
+        aria-label={$t('app.aiChat.aria')}
+        title={$t('app.aiChat.aria')}
+        onclick={() => openSheet('shell.aiChat', {})}
+      >
+        <AiIcon size={16} />
+      </Button>
     </div>
 
     <div class="flex min-w-0 shrink-0 items-center justify-end gap-2">
       {#if ianaTimeZone}
         <span
           class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-56"
-          title={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
-          aria-label={`${$t('shell.health.ianaTimezone')}: ${ianaTimeZone}`}
+          title={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
+          aria-label={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
         >
           <Globe class="size-4 shrink-0 text-muted-foreground opacity-80" aria-hidden="true" />
           <span class="truncate text-xs text-muted-foreground">{ianaTimeZone}</span>
@@ -147,9 +159,9 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.errors.aria')}
-        title={$t('shell.errors.aria')}
-        onclick={() => openSheet('shell.errors', {}, { contentClass: 'w-[420px] p-0' })}
+        aria-label={$t('app.errors.aria')}
+        title={$t('app.errors.aria')}
+        onclick={() => openSheet('shell.errors', {})}
       >
         <TriangleAlert class="size-4" />
         {#if $appErrors.length > 0}
@@ -165,7 +177,7 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.notifications.aria')}
+        aria-label={$t('app.notifications.aria')}
       >
         <Bell class="size-4" />
         {#if unreadNotifications > 0}
@@ -180,11 +192,28 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('shell.aiChat.aria')}
-        title={$t('shell.aiChat.aria')}
-        onclick={() => openSheet('shell.aiChat', {}, { contentClass: 'w-[600px] p-0' })}
+        aria-label={$t('app.aiGuide.aria')}
+        title={$t('app.aiGuide.aria')}
+        data-testid="app-topbar-guide-ai-cta"
+        onclick={() => openSheet('shell.aiGuide', {})}
       >
-        <MessageSquare class="size-4" />
+        <GradientIcon
+          size={16}
+          paths={[
+            'M12 3V2',
+            'M16.066 16.865 7 22l2-11V6a3 3 0 016 0v5l2 11',
+            'm19.792 4.5.866-.5',
+            'm19.797 13.5.866.5',
+            'M21 9h1',
+            'M3 9H2',
+            'm4.203 13.5-.866.5',
+            'M4.208 4.5 3.342 4',
+            'M5.5 22h13',
+            'm7.932 16.875 7.377-4.178',
+            'M8 11h8',
+            'M8 7h8',
+          ]}
+        />
       </Button>
 
       <ThemeToggle />

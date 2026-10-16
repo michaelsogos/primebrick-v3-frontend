@@ -1,0 +1,640 @@
+<script lang="ts">
+  import { page } from '$app/state';
+  import { onMount, tick } from 'svelte';
+  import { t, dict } from '$lib/i18n';
+  import { Button } from '$lib/components/ui/button';
+  import { TextInput } from '$lib/components/ui/input';
+  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import FormPageLayout from '$lib/components/FormPageLayout.svelte';
+  import {
+    FormField,
+    FormLabel,
+    FormControl,
+    FormFieldErrors,
+    TranslatedFormFieldErrors,
+  } from '$lib/components/ui/form';
+  import { superForm, defaults } from 'sveltekit-superforms';
+  import { zod4 } from 'sveltekit-superforms/adapters';
+  import { z } from 'zod';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { apiFetch, createConfigEntry } from '$lib/api';
+  import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
+  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
+  import { useExistingGroupKeys } from '$lib/composables/useExistingGroupKeys.svelte';
+  import { buildAuditData } from '$lib/utils/audit-data';
+  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { buildConfigValueSchema } from '$lib/validation/config-validation';
+  import type { ConfigEntryType } from '$lib/api-types';
+  import { pushNotification } from '$lib/errors/app-errors';
+  import ConfigValueInput from '$lib/components/config-list/ConfigValueInput.svelte';
+  import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import Badge from '$lib/components/ui/badge/badge.svelte';
+
+  const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
+
+  // Config type options for the dropdown — `icon` is a Lucide name rendered
+  // by ComboSelect's `iconField` (kept in sync with the value widget).
+  const configTypeOptions: Array<{ value: string; label: string; icon: string }> = [
+    { value: 'string', label: 'String', icon: 'type' },
+    { value: 'text', label: 'Text', icon: 'square-text' },
+    { value: 'boolean', label: 'Boolean', icon: 'toggle-left' },
+    { value: 'bigint', label: 'BigInt', icon: 'binary' },
+    { value: 'number', label: 'Number', icon: 'hash' },
+    { value: 'money', label: 'Money', icon: 'coins' },
+    { value: 'badge', label: 'Badge', icon: 'tag' },
+    { value: 'single_select', label: 'Single Select', icon: 'list-check' },
+    { value: 'multi_select', label: 'Multi Select', icon: 'list-checks' },
+    { value: 'url', label: 'URL', icon: 'link' },
+    { value: 'secret', label: 'Secret', icon: 'key-round' },
+    { value: 'json', label: 'JSON', icon: 'braces' },
+    { value: 'date', label: 'Date', icon: 'calendar' },
+    { value: 'datetime', label: 'DateTime', icon: 'calendar-clock' },
+    { value: 'time', label: 'Time', icon: 'clock' },
+    { value: 'email', label: 'Email', icon: 'mail' },
+    { value: 'phone', label: 'Phone', icon: 'phone' },
+  ];
+
+  // Zod schema for config create form
+  const createSchema = z.object({
+    key: z.string()
+      .min(1, { message: 'app.common.validation.required' })
+      .max(100, { message: maxMsg(100) })
+      .regex(/^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
+      .default(''),
+    type: z.string()
+      .min(1, { message: 'app.common.validation.required' })
+      .default('string'),
+    value: z.string()
+      .default(''),
+    type_config: z.string()
+      .default(''),
+    label_key: z.string()
+      .max(100, { message: maxMsg(100) })
+      .default(''),
+    description_key: z.string()
+      .max(100, { message: maxMsg(100) })
+      .default(''),
+    group_key: z.string()
+      .max(100, { message: maxMsg(100) })
+      .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
+      .default(''),
+    reserved: z.boolean()
+      .default(false),
+  }).superRefine((data, ctx) => {
+    // Dynamic validation: validate value based on type and type_config.
+    // Same pattern as users/create superRefine for password policy.
+    // buildConfigValueSchema reads type_config.validation at validation time.
+    const valueSchema = buildConfigValueSchema(
+      data.type as ConfigEntryType,
+      data.type_config || null,
+    );
+    const result = valueSchema.safeParse(data.value);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['value'],
+          message: issue.message,
+        });
+      }
+    }
+  });
+
+  type CreateForm = z.infer<typeof createSchema>;
+
+  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const superFormObj = superForm(defaults(zod4(createSchema)), {
+    SPA: true,
+    validators: zod4(createSchema),
+    validationMethod: 'oninput',
+    invalidateAll: false,
+    resetForm: false,
+    onChange() {
+      // Force ALL errors to display on every change, regardless of taint.
+      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
+      // bypassing all taint/event/previous-error checks.
+      // This is required because the value field's validation depends on type
+      // and type_config via root-level superRefine — field-level validation
+      // alone (z.string().default('')) won't catch required/type errors.
+      // Same pattern as users/create page.
+      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
+      // captured at validation start — overlapping validations resolving out of
+      // order would overwrite $form with stale data (typed chars lost, taint
+      // reset). One trailing validation per typing burst avoids the race.
+      clearTimeout(validateAllTimer);
+      validateAllTimer = setTimeout(() => {
+        void superFormObj.validateForm({ update: true, focusOnError: false });
+      }, 250);
+    },
+    async onUpdate({ form: updateForm, cancel }) {
+      if (!updateForm.valid) return;
+
+      // Drained OUTSIDE the try so the catch can re-queue them on failure.
+      const translations = takePendingTranslations();
+      try {
+        // Flush queued translation rows into the SAME write — the BE inserts
+        // them in the entity's transaction (atomic). Rows queued by the AI
+        // assistant's key_picker only land here, never at propose time.
+        const params = {
+          key: updateForm.data.key,
+          value: updateForm.data.value,
+          type: updateForm.data.type,
+          type_config: updateForm.data.type_config?.trim() || null,
+          // Suggested keys are the committed value when left empty —
+          // the tooltip promises "suggested automatically".
+          label_key: updateForm.data.label_key?.trim() || labelKeyPlaceholder,
+          description_key: updateForm.data.description_key?.trim() || descriptionKeyPlaceholder,
+          group_key: updateForm.data.group_key?.trim() || null,
+          reserved: updateForm.data.reserved,
+          ...(translations.length > 0 ? { translations } : {}),
+        };
+        const data = await createConfigEntry(params);
+        console.log('Config entry created successfully');
+
+        notifyParentRefresh();
+        reset({ data: $form });
+
+        pushNotification({
+          impact: 'NONE',
+          message: $t('system.settings.configurations.create.createSuccess'),
+          scope: 'config_entry',
+        });
+
+        if (window.opener) {
+          window.close();
+        }
+      } catch (error) {
+        console.error('Failed to create config entry:', error);
+        // Re-queue drained translations so a retry can still flush them.
+        for (const row of translations) {
+          addPendingTranslation(row.key, { [row.language]: row.value });
+        }
+        cancel();
+      }
+    },
+  });
+
+  const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
+
+  // NOTE: do NOT destructure — the getters must be invoked via property access
+  // or hasChanges/canSave freeze at their initial values (AGENTS.md rule #6).
+  const formGuard = useFormGuard(
+    () => $tainted,
+    () => $errors as Record<string, unknown>,
+    isTainted as (path?: unknown) => boolean,
+  );
+
+  const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
+    () => formGuard.hasChanges,
+    'system.settings.configurations.create.unsavedChanges',
+  );
+
+  // TypeConfigBuilder writes auto-derived defaults (e.g. max_length=65535 for
+  // string types) into $form.type_config during mount. Those are internal
+  // normalizations, not user edits — re-baseline `tainted` after the initial
+  // render so the unsaved-changes guard stays clean (same reset({data})
+  // pattern used by profile/users/org pages).
+  onMount(async () => {
+    // Child $effects (the builder's auto-defaults) flush after this page's
+    // onMount — wait for a full frame + pending updates before re-baselining.
+    await new Promise((r) => requestAnimationFrame(r));
+    await tick();
+    // reset({data}) keeps values AND updates the internal "clean" baseline,
+    // but preserves the stale tainted record for fields passed in `data`;
+    // the identity update with 'untaint-all' clears that record.
+    reset({ data: $form });
+    form.update((f) => f, { taint: 'untaint-all' });
+  });
+
+  // Leaving the page without saving must never persist queued translations —
+  // the pending queue dies with the form (zero orphan rows).
+  $effect(() => () => {
+    clearTimeout(validateAllTimer);
+    clearPendingTranslations();
+  });
+
+  const isCreatePage = $derived(true);
+  const auditData = $derived(buildAuditData());
+
+  // Check key uniqueness via API
+  let keyCheckTimer: ReturnType<typeof setTimeout> | null = null;
+  let keyExistsError = $state(false);
+  let keyChecking = $state(false);
+
+  function handleKeyInput(e?: Event) {
+    keyExistsError = false;
+    if (keyCheckTimer) clearTimeout(keyCheckTimer);
+    // Read the live DOM value — bind:value ordering vs oninput is not guaranteed.
+    const keyValue = (e ? (e.currentTarget as HTMLInputElement).value : ($form.key ?? '')).trim();
+    if (!keyValue) {
+      keyChecking = false;
+      return;
+    }
+    keyChecking = true;
+    keyCheckTimer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/v1/entities/config_entry/list`);
+        if (res.ok) {
+          const data = (await res.json()) as { rows: Array<{ key: string }> };
+          keyExistsError = data.rows.some((r) => r.key === keyValue);
+        }
+      } catch {
+        // ignore — BE will catch duplicates on submit
+      } finally {
+        keyChecking = false;
+      }
+    }, 500);
+  }
+
+  function handleTypeChange(value: string | string[]) {
+    const next = Array.isArray(value) ? value[0] ?? '' : value;
+    if (next !== $form.type) {
+      // A value typed under another type is meaningless for the new widget
+      // (e.g. text into NumericInput) — reset it on type switch.
+      $form.value = '';
+    }
+    $form.type = next;
+  }
+
+  // Extract SuperForms errors for the value field — ConfigValueInput expects string[]
+  let valueErrors = $derived(
+    $errors?.value
+      ? Array.isArray($errors.value)
+        ? $errors.value.map(String)
+        : [String($errors.value)]
+      : [],
+  );
+
+  let effectiveCanSave = $derived(formGuard.canSave && !keyExistsError && !keyChecking);
+
+  // Existing group keys for the group_key ComboSelect (selectable suggestions)
+  const { state: groupKeysState } = useExistingGroupKeys();
+  const existingGroupKeys = $derived([...groupKeysState.groupKeys]);
+  const groupKeysLoading = $derived(groupKeysState.loading);
+
+  // Build ComboSelect options: each group_key becomes an object with the
+  // raw key as value and the full i18n key as label (translated at render time)
+  const groupKeyOptions = $derived(
+    existingGroupKeys.map((gk) => ({
+      group_key: gk,
+      label_key: `system.settings.config.auth.group.${gk}`,
+    })),
+  );
+
+  // Check if the current group_key value is new (not in existing options)
+  function isGroupKeyNew(val: string) {
+    return val.trim() !== '' && !existingGroupKeys.includes(val.trim());
+  }
+
+  function handleGroupKeyChange(value: string | string[]) {
+    $form.group_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
+
+  // Reactive i18n key placeholders based on the config key being typed.
+  // Uses 'my_custom_setting' as fallback when key is empty (same convention as the builder).
+  const labelKeyPlaceholder = $derived(
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
+  );
+  const descriptionKeyPlaceholder = $derived(
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
+  );
+
+  // ─── i18n key options for label_key / description_key ComboSelects ──────
+  // The dict is flat (keys are dot-paths), so Object.keys() gives us all keys.
+  // Filter to system.settings.config.auth.*.label / .description leaves.
+  // These are the selectable options; the user can also type a new key (allowCreate).
+  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
+  const labelKeyOptions = $derived(
+    allI18nKeys
+      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
+      .map((k) => ({ key: k })),
+  );
+  const descriptionKeyOptions = $derived(
+    allI18nKeys
+      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
+      .map((k) => ({ key: k })),
+  );
+
+  // Pre-filter prefix: when the popover opens, only show keys matching the
+  // current config key. User can clear the search (X button) to see all.
+  const labelKeyDefaultSearch = $derived(
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+  );
+  const descriptionKeyDefaultSearch = $derived(
+    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
+  );
+
+  function handleLabelKeyChange(value: string | string[]) {
+    $form.label_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
+  function handleDescriptionKeyChange(value: string | string[]) {
+    $form.description_key = Array.isArray(value) ? value[0] ?? '' : value;
+  }
+</script>
+
+<svelte:window onbeforeunload={handleBeforeUnload} />
+
+<FormPageLayout
+  entity="config_entry"
+  rowUuid=""
+  auditData={auditData}
+  auditingColumns={[]}
+  isCreatePage={isCreatePage}
+>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings' },
+          settingsTabMenuSegment({
+            pathname: page.url.pathname,
+            searchParams: page.url.searchParams,
+            t: $t,
+          }),
+          { label: $t('system.settings.configurations.create.title') }
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.configurations.create.title')}</h1>
+      <p class="text-sm text-muted-foreground">{$t('system.settings.configurations.create.description')}</p>
+    </div>
+  {/snippet}
+
+  {#snippet children()}
+    <div class="flex-1 overflow-auto">
+      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
+        <div class="grid grid-cols-2 gap-6 p-4">
+          <!-- Column 1 -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="key">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.key')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.keyHelp')}
+                        priority="HINT"
+                      />
+                    </FormLabel>
+                    <TextInput
+                      {...props}
+                      bind:value={$form.key}
+                      oninput={handleKeyInput}
+                      placeholder={$t('system.settings.configurations.create.keyPlaceholder')}
+                      aria-invalid={keyExistsError || props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
+                      data-testid="config-create-key"
+                    />
+                    <TranslatedFormFieldErrors />
+                    {#if keyExistsError}
+                      <div class="text-destructive text-xs font-medium" data-testid="key-exists-error">
+                        {$t('system.settings.configurations.create.keyExists')}
+                      </div>
+                    {/if}
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="type">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.type')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.typeHelp')}
+                        priority="HINT"
+                      />
+                    </FormLabel>
+                    <ComboSelect
+                      mode="single"
+                      value={$form.type}
+                      onChange={handleTypeChange}
+                      options={configTypeOptions}
+                      valueField="value"
+                      labelField="label"
+                      iconField="icon"
+                      placeholder={$t('app.common.selectValue')}
+                      data-testid="config-create-type"
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="value">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    {#if $form.type !== 'boolean'}
+                      <FormLabel for={props.id}>
+                        {$t('system.settings.configurations.create.value')}
+                        <FormLabelWithPriorityHelp
+                          text={$t('system.settings.configurations.create.valueHelp')}
+                          priority="INFORMATION"
+                        />
+                      </FormLabel>
+                    {/if}
+                    <ConfigValueInput
+                      type={$form.type as ConfigEntryType}
+                      type_config={$form.type_config || null}
+                      fieldKey="create"
+                      bind:value={$form.value}
+                      errors={valueErrors}
+                      onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
+                      boolean_label={$t('system.settings.configurations.create.value')}
+                    />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="label_key">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.labelKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.labelKeyHelp')}
+                        priority="INFORMATION"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
+                      {...props}
+                      mode="single"
+                      value={$form.label_key}
+                      onChange={handleLabelKeyChange}
+                      options={labelKeyOptions}
+                      valueField="key"
+                      labelField="key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      defaultSearch={labelKeyDefaultSearch}
+                      placeholder={labelKeyPlaceholder}
+                      searchPlaceholder={labelKeyPlaceholder}
+                      display="detailed"
+                      truncateFrom="start"
+                      data-testid="config-create-label-key"
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="description_key">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.descriptionKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.descriptionKeyHelp')}
+                        priority="INFORMATION"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
+                      {...props}
+                      mode="single"
+                      value={$form.description_key}
+                      onChange={handleDescriptionKeyChange}
+                      options={descriptionKeyOptions}
+                      valueField="key"
+                      labelField="key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      defaultSearch={descriptionKeyDefaultSearch}
+                      placeholder={descriptionKeyPlaceholder}
+                      searchPlaceholder={descriptionKeyPlaceholder}
+                      display="detailed"
+                      truncateFrom="start"
+                      data-testid="config-create-description-key"
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <FormField form={superFormObj} name="group_key">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>
+                      {$t('system.settings.configurations.create.groupKey')}
+                      <FormLabelWithPriorityHelp
+                        text={$t('system.settings.configurations.create.groupKeyHelp')}
+                        priority="INFORMATION"
+                        title={$t('app.common.optionalTooltipTitle')}
+                        labelKey="app.common.optional"
+                      />
+                    </FormLabel>
+                    <ComboSelect
+                      {...props}
+                      mode="single"
+                      value={$form.group_key}
+                      onChange={handleGroupKeyChange}
+                      options={groupKeyOptions}
+                      valueField="group_key"
+                      labelField="label_key"
+                      isLabelTranslated={true}
+                      allowCreate={true}
+                      loading={groupKeysLoading}
+                      getSearchKeywords={(opt) => {
+                        const gk = (opt as Record<string, any>).group_key;
+                        return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
+                      }}
+                      placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
+                      searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
+                      display="custom"
+                      truncateFrom="start"
+                      data-testid="config-create-group-key"
+                    >
+                      {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
+                        {@const gk = (option as Record<string, any>).group_key ?? resolvedValue}
+                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+                          <span class="font-medium truncate-start">{resolvedLabel}</span>
+                          <span class="text-xs text-muted-foreground truncate-start font-mono">{gk}</span>
+                        </div>
+                      {/snippet}
+                      {#snippet selectedSnippet({ resolvedLabel, resolvedValue })}
+                        {#if isGroupKeyNew(resolvedValue)}
+                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 truncate-start">
+                            {resolvedLabel}
+                          </Badge>
+                        {:else}
+                          <span class="flex-1 truncate-start text-left">
+                            {resolvedLabel}
+                          </span>
+                        {/if}
+                      {/snippet}
+                    </ComboSelect>
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+
+            <SwitchField
+              checked={$form.reserved}
+              onCheckedChange={(checked) => { $form.reserved = checked; }}
+              label={$t('system.settings.configurations.create.reserved')}
+              tooltip={$t('system.settings.configurations.create.reservedHelp')}
+              tooltipPriority="INFORMATION"
+              data-testid="config-create-reserved"
+            />
+          </div>
+
+          <!-- Column 2: Type Config Builder -->
+          <div class="space-y-4">
+            <FormField form={superFormObj} name="type_config">
+              <FormControl>
+                {#snippet children({ props })}
+                  <div class="space-y-2">
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.typeConfig')}</FormLabel>
+                    <TypeConfigBuilder
+                      type={$form.type as ConfigEntryType}
+                      configKey={$form.key ?? ''}
+                      type_config={$form.type_config || null}
+                      onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
+                    />
+                    <TranslatedFormFieldErrors />
+                  </div>
+                {/snippet}
+              </FormControl>
+            </FormField>
+          </div>
+        </div>
+      </form>
+    </div>
+  {/snippet}
+
+  {#snippet footerActions()}
+    <div class="flex gap-2">
+      <Button variant="outline" onclick={handleCancel} data-testid="config-create-cancel">
+        {$t('app.common.cancel')}
+      </Button>
+      <Button
+        type="submit"
+        form="config-create-form"
+        disabled={!effectiveCanSave}
+        data-testid="config-create-submit"
+      >
+        {$t('app.common.save')}
+      </Button>
+    </div>
+  {/snippet}
+</FormPageLayout>

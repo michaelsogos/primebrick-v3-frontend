@@ -2,12 +2,12 @@ import type { MetaColumn } from '$lib/entity-list/types';
 
 /** Top-align cells that stack datetime value + IANA badge. */
 export function entityListDataCellValignClass(col: MetaColumn): string | undefined {
-  return col.datetimeIanaToggle ? 'align-top' : undefined;
+  return col.datetime_iana_toggle ? 'align-top' : undefined;
 }
 
 /** Amber tint only when showing the record's stored IANA timezone; browser/local mode uses default neutral like other columns. */
 export function isDatetimeIanaRecordMode(col: MetaColumn, datetimeIanaModeByKey: Record<string, 'browser' | 'record'>): boolean {
-  if (col.type !== 'datetime' || !col.datetimeIanaToggle) return false;
+  if (col.type !== 'datetime' || !col.datetime_iana_toggle) return false;
   return (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record';
 }
 

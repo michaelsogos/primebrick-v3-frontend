@@ -1,16 +1,17 @@
 /**
  * Shared menu list chrome (dropdown, command palette, sidebar items):
  * - **Hover / keyboard highlight**: neutral pill — `zinc-200` light, `zinc-700` on dark surfaces
- * - **Selected**: sky fill in light, neutral fill in dark — **no outline border** (`border-transparent`),
- *   same surface as single-select `DropdownMenu` rows (`menuListSelectedSurfaceDropdownClasses`).
+ * - **Selected**: Button `outline`-style surface — `border-primary-gradient`,
+ *   white/`input` background, `font-semibold`, `shadow-selected-primary`
+ *   (outer drop + subtle sky→indigo inner glow).
  * Inactive rows keep `border border-transparent` so highlight/selection does not reflow.
  */
 
 /** `DropdownMenu.Item` when selected (unprefixed; merged last on the item). */
 export const menuListSelectedSurfaceDropdownClasses = [
-	'border-primary-gradient-soft font-semibold text-foreground shadow-xs',
+	'border-primary-gradient bg-background font-semibold text-foreground shadow-selected-primary',
 	'data-highlighted:brightness-105',
-	'dark:border-primary-gradient-soft dark:text-foreground dark:shadow-xs',
+	'dark:bg-input/30 dark:text-foreground',
 ].join(' ');
 
 /** Sidebar buttons & menu links: same neutral hover as list rows */
@@ -45,8 +46,8 @@ export const menuSoftFocusKeyboard = [
 ].join(' ');
 
 export const menuSoftAriaSelected = [
-	'aria-selected:border-primary-gradient-soft aria-selected:font-semibold aria-selected:text-foreground aria-selected:shadow-xs',
-	'dark:aria-selected:border-primary-gradient-soft dark:aria-selected:text-foreground',
+	'aria-selected:border-primary-gradient aria-selected:bg-background aria-selected:font-semibold aria-selected:text-foreground aria-selected:shadow-selected-primary',
+	'dark:aria-selected:bg-input/30 dark:aria-selected:text-foreground',
 	'aria-selected:data-highlighted:brightness-105',
 ].join(' ');
 
@@ -61,7 +62,7 @@ export const commandMenuItemClassName = [
 
 /** Sidebar: active route row — same selected surface as dropdowns / command list */
 export const menuSidebarActiveChrome = [
-	'data-[active=true]:border-primary-gradient-soft data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:shadow-xs',
-	'dark:data-[active=true]:border-primary-gradient-soft dark:data-[active=true]:text-foreground',
+	'data-[active=true]:border-primary-gradient data-[active=true]:bg-background data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:shadow-selected-primary',
+	'dark:data-[active=true]:bg-input/30 dark:data-[active=true]:text-foreground',
 	'data-[active=true]:hover:brightness-105',
 ].join(' ');

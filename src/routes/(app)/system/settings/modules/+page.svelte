@@ -13,6 +13,9 @@
   import Store from '@lucide/svelte/icons/store';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Hourglass from '@lucide/svelte/icons/hourglass';
+  import Clock from '@lucide/svelte/icons/clock';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
@@ -24,7 +27,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
-  import { fetchServices, toggleModule, deleteModule } from '$lib/api';
+  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
@@ -38,7 +41,9 @@
 
   let deleteDialogOpen = $state(false);
   let deleteTarget = $state<ServiceInfo | null>(null);
+  let deleteIsInstance = $state(false);
   let isDeleting = $state(false);
+  let expanded = $state<Record<string, boolean>>({});
 
   const groupedServices = $derived(groupByCode(services));
   const healthChip = $derived(backendState.healthChip as HealthChip);
@@ -51,6 +56,8 @@
         return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       case 'going_live':
         return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300';
+      case 'stale':
+        return 'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300';
       case 'offline':
         return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
       default:
@@ -71,8 +78,8 @@
       error = e instanceof Error ? e.message : 'Failed to load modules';
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.loadFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.loadFailed',
+        scope: $t('system.settings.modules.title'),
         detail: error,
       });
     } finally {
@@ -83,16 +90,16 @@
   function handleImportModule() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'shell.settings.modules.notImplemented',
-      scope: $t('shell.settings.modules.importModule'),
+      messageKey: 'system.settings.modules.notImplemented',
+      scope: $t('system.settings.modules.importModule'),
     });
   }
 
   function handleOpenMarketplace() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'shell.settings.modules.notImplemented',
-      scope: $t('shell.settings.modules.openMarketplace'),
+      messageKey: 'system.settings.modules.notImplemented',
+      scope: $t('system.settings.modules.openMarketplace'),
     });
   }
 
@@ -105,15 +112,15 @@
       pushNotification({
         impact: 'NONE',
         messageKey: result.is_enabled
-          ? 'shell.settings.modules.moduleEnabled'
-          : 'shell.settings.modules.moduleDisabled',
-        scope: $t('shell.settings.modules.title'),
+          ? 'system.settings.modules.moduleEnabled'
+          : 'system.settings.modules.moduleDisabled',
+        scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.toggleFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.toggleFailed',
+        scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
     }
@@ -121,27 +128,45 @@
 
   function openDeleteDialog(module: ServiceInfo) {
     deleteTarget = module;
+    deleteIsInstance = false;
     deleteDialogOpen = true;
+  }
+
+  function openInstanceDeleteDialog(instance: ServiceInfo) {
+    deleteTarget = instance;
+    deleteIsInstance = true;
+    deleteDialogOpen = true;
+  }
+
+  function formatLastSeen(iso?: string): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     isDeleting = true;
     try {
-      await deleteModule(deleteTarget.code);
-      services = services.filter((s) => s.code !== deleteTarget!.code);
+      if (deleteIsInstance) {
+        await deleteServiceInstance(deleteTarget.uuid!);
+        services = services.filter((s) => s.uuid !== deleteTarget!.uuid);
+      } else {
+        await deleteModule(deleteTarget.code);
+        services = services.filter((s) => s.code !== deleteTarget!.code);
+      }
       deleteDialogOpen = false;
       deleteTarget = null;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'shell.settings.modules.moduleDeleted',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.moduleDeleted',
+        scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'shell.settings.modules.deleteFailed',
-        scope: $t('shell.settings.modules.title'),
+        messageKey: 'system.settings.modules.deleteFailed',
+        scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -163,8 +188,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -172,7 +197,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.modules.title')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>
     </div>
   {/snippet}
 
@@ -185,7 +210,7 @@
                   <Hourglass class="size-20 text-info" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('common.loading')}
+                  {$t('app.common.loading')}
                 </div>
               </div>
             </div>
@@ -196,7 +221,7 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('shell.settings.modules.loadFailed')}
+                  {$t('system.settings.modules.loadFailed')}
                 </div>
               </div>
             </div>
@@ -207,10 +232,10 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('shell.settings.modules.noModules')}
+                  {$t('system.settings.modules.noModules')}
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  {$t('shell.settings.modules.noModulesHint')}
+                  {$t('system.settings.modules.noModulesHint')}
                 </div>
               </div>
             </div>
@@ -222,8 +247,24 @@
                 {@const behindScaler = instances[0].is_behind_scaler}
                 {@const healthyCount = instances.filter((i) => i.status === 'online').length}
                 {@const module = instances[0]}
-                <div class="flex items-center justify-between rounded-lg border p-3">
+                <div class="rounded-lg border">
+                <div class="flex items-center justify-between p-3">
                   <div class="flex items-center gap-3 min-w-0">
+                    {#if !isReserved}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        onclick={() => { expanded[code] = !expanded[code]; }}
+                        title={$t('system.settings.modules.instances')}
+                      >
+                        {#if expanded[code]}
+                          <ChevronDown class="size-4" />
+                        {:else}
+                          <ChevronRight class="size-4" />
+                        {/if}
+                      </Button>
+                    {/if}
                     {#if module.icon && module.icon_type === 'icon'}
                       <DynamicIcon name={module.icon} size={20} class="text-primary shrink-0" />
                     {:else if module.icon && module.icon_type === 'url'}
@@ -246,7 +287,7 @@
                         {/if}
                         {#if isReserved}
                           <Badge variant="outline" class="text-[11px] font-medium">
-                            {$t('shell.settings.modules.reserved')}
+                            {$t('system.settings.modules.reserved')}
                           </Badge>
                         {/if}
                       </div>
@@ -283,12 +324,14 @@
                           <Cloud class="size-3.5 opacity-90" />
                         {:else if aggStatus === 'going_live'}
                           <AlertCircle class="size-3.5 opacity-90" />
+                        {:else if aggStatus === 'stale'}
+                          <Clock class="size-3.5 opacity-90" />
                         {:else if aggStatus === 'unknown'}
                           <CircleQuestionMark class="size-3.5 opacity-90" />
                         {:else}
                           <CloudOff class="size-3.5 opacity-90" />
                         {/if}
-                        <span>{$t(`shell.health.${aggStatus}`)}</span>
+                        <span>{$t(`app.health.${aggStatus}`)}</span>
                       </Badge>
                     {/if}
 
@@ -301,9 +344,9 @@
 
                     <!-- Scaler indicator -->
                     {#if !isReserved && behindScaler}
-                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('shell.settings.modules.behindScaler')}>
+                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('system.settings.modules.behindScaler')}>
                         <Layers class="size-3.5 opacity-90" />
-                        <span>{$t('shell.settings.modules.behindScaler')}</span>
+                        <span>{$t('system.settings.modules.behindScaler')}</span>
                       </Badge>
                     {/if}
 
@@ -316,7 +359,7 @@
                         variant="ghost"
                         size="icon"
                         onclick={() => openConfigPage(module)}
-                        title={$t('shell.settings.modules.configure')}
+                        title={$t('system.settings.modules.configure')}
                       >
                         <Settings class="size-4" />
                       </Button>
@@ -324,12 +367,48 @@
                         variant="ghost"
                         size="icon"
                         onclick={() => openDeleteDialog(module)}
-                        title={$t('common.delete')}
+                        title={$t('app.common.delete')}
                       >
                         <Trash2 class="size-4 text-destructive" />
                       </Button>
                     {/if}
                   </div>
+                </div>
+                {#if expanded[code] && !isReserved}
+                  <div class="border-t px-3 py-2">
+                    {#each instances as instance (instance.uuid ?? instance.base_url)}
+                      <div class="flex items-center justify-between gap-3 py-1.5">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <span class="font-mono text-xs text-muted-foreground truncate">
+                            {instance.base_url}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          <span class="text-[11px] text-muted-foreground tabular-nums"
+                            title={$t('system.settings.modules.lastSeen')}>
+                            {formatLastSeen(instance.last_health_check_at)}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            class={cn('font-mono text-[11px] font-medium', statusBadgeClass(instance.status))}
+                          >
+                            {$t(`app.health.${instance.status}`)}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-7"
+                            onclick={() => openInstanceDeleteDialog(instance)}
+                            title={$t('app.common.delete')}
+                            disabled={!instance.uuid}
+                          >
+                            <Trash2 class="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
                 </div>
               {/each}
             </div>
@@ -342,17 +421,19 @@
         <div class="flex items-center justify-end gap-2">
           <Button variant="default" onclick={handleImportModule}>
             <Download class="size-4" />
-            {$t('shell.settings.modules.importModule')}
+            {$t('system.settings.modules.importModule')}
           </Button>
           <Button variant="outline" onclick={handleOpenMarketplace}>
             <Store class="size-4" />
-            {$t('shell.settings.modules.openMarketplace')}
+            {$t('system.settings.modules.openMarketplace')}
           </Button>
         </div>
       </div>
 </AppPageScaffold>
 
 <DeleteDialog
+  entity="service_registry"
+  recordName={deleteIsInstance ? deleteTarget?.base_url : deleteTarget?.code}
   open={deleteDialogOpen}
   onOpenChange={(open) => { if (!open) { deleteDialogOpen = false; deleteTarget = null; } }}
   isDeleting={isDeleting}

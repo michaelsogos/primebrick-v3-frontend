@@ -29,10 +29,6 @@
 	type Props = WithElementRef<HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
 		size?: LoadingBarSize;
 		variant?: LoadingBarVariant;
-		/** CSS variable time (e.g. `"1.2s"`). */
-		duration?: string;
-		/** CSS variable easing (e.g. `"ease-in-out"`). */
-		easing?: string;
 		barClass?: string;
 	};
 
@@ -41,8 +37,6 @@
 		class: className,
 		size = "xs",
 		variant = "muted",
-		duration = "1.2s",
-		easing = "ease-in-out",
 		barClass,
 		...restProps
 	}: Props = $props();
@@ -52,25 +46,17 @@
 	bind:this={ref}
 	data-slot="loading-bar"
 	class={cn(loadingBarVariants({ size, variant }), className)}
-	style={`--pb-loading-bar-duration: ${duration}; --pb-loading-bar-easing: ${easing};`}
 	{...restProps}
 >
-	<div class={cn("h-full w-1/3 bg-info pb-loading-bar", barClass)}></div>
+	<div
+		class={cn("h-full w-full animate-gradient-pan", barClass)}
+		style="background-image: linear-gradient(to right, #38bdf8, #6366f1, #8b5cf6, #6366f1, #38bdf8);"
+	></div>
 </div>
 
 <style>
-	@keyframes pb-indeterminate {
-		0% {
-			transform: translateX(-120%);
-		}
-		100% {
-			transform: translateX(360%);
-		}
-	}
-
-	.pb-loading-bar {
-		animation: pb-indeterminate var(--pb-loading-bar-duration, 1.2s)
-			var(--pb-loading-bar-easing, ease-in-out) infinite;
-	}
+	/* Indeterminate translateX animation removed — replaced by
+	   animate-gradient-pan (background-position panning) which gives
+	   the same "flowing" effect with the primary gradient. */
 </style>
 

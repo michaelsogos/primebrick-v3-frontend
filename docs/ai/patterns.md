@@ -12,6 +12,11 @@ Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer p
 
 Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 
+Buttons: always go through the `variant × tone` matrix of `ui/button` —
+see [`docs/dev-guide/button-styles.mdx`](../dev-guide/button-styles.mdx) for the full standard
+(gradient roles, tones, sizes, hard rules). Never hand-style a `Button`
+with border/background classes.
+
 ### Customization (keep updates easy)
 
 - **Composition-first:** wrappers, slots, props, local classes.
@@ -38,6 +43,23 @@ Primebrick uses **Shadcn-Svelte™** as vendored UI source + Tailwind™.
 ### Forms
 
 Prefer shared form building blocks (e.g. `FormField`, `MoneyInput`, `DateInput` under `src/lib/components/forms/` when present). Validation UX (errors, spacing, disabled) should stay consistent; promote to wrapper only after repetition.
+
+#### Field-row anatomy decision table
+
+Two field-row anatomies exist — pick by context, never hand-roll raw
+`<label>` markup in routes:
+
+| Context | Component | Association |
+|---|---|---|
+| Inside a `sveltekit-superforms` `form` | `ui/form` set (`FormField`/`FormControl`/`FormLabel`/`TranslatedFieldErrors`) | auto `for`/`id` via formsnap `props` |
+| Anywhere else (config entries, meta rows, settings widgets, sheet quick-forms) | `PrimeField` (`ui/form`) | real `<label for>`/`id` via the `control` snippet `{ id }` |
+| Read-only caption (badge, value) | plain `<span class="text-sm font-medium">` — never `<label>` | — |
+
+`PrimeField` supports `layout="stacked"` (default: label above control) and
+`layout="inline"` (control + label side by side — the `SwitchField` anatomy
+for boolean controls). `help` accepts a pre-mapped `{ text, priority?,
+title? }` or a raw `MetaColumn` (translation + `show_form_tooltip` gate
+handled internally). Docs: `docs/dev-guide/components/prime-field.mdx`.
 
 #### Detail-page primary CTA placement
 
@@ -115,6 +137,31 @@ structure**:
 - Validation triggers only on user interaction (tainted fields).
 - The `onUpdate` callback handles the API call and error mapping locally.
 
+#### KPI stats (StatCard + NumberTicker)
+
+For KPI values (machine capabilities, dashboard stats) use
+`StatCard` from `$lib/components/ui/stat-card` — never hand-roll
+icon+number+label markup.
+
+- `label` muted `text-xs font-medium`, `value` animated via embedded
+  `NumberTicker` (count-up, duration ∝ distance via `speed` units/s).
+- UoM always inside the value via `suffix` (` GB/s`, ` TFLOPS`) — never a
+  detached caption. `prefix` for bounds (e.g. `≥`).
+- Semantic color goes on the root `class` (e.g. `text-amber-600
+  dark:text-amber-400`) — value and icon inherit, label stays muted.
+- `card` (default true) = bordered shell with the icon in its own right
+  column; `card={false}` = bare stat, icon left of the label, less space.
+- Sizing is content-driven (`w-fit`, min/max bounds) — stats never
+  force a full-width fill; the caller's grid/flex owns layout. Center
+  strips with `flex flex-1 justify-center gap-3`.
+- `icon` is a `Snippet` prop: `{#snippet icon()}<Zap class="size-4 shrink-0" />{/snippet}`.
+- Use bare `NumberTicker` alone (`$lib/components/ui/number-ticker`) only
+  for inline numbers without the label/icon stat chrome.
+- Canonical example: machine-capabilities strip in
+  `src/lib/components/ui/smart-ai/machine-capabilities-section.svelte`.
+- User docs: `docs/dev-guide/components/stat-card.mdx`,
+  `components/number-ticker.mdx`.
+
 #### Password inputs
 
 ALL password-type inputs (passwords, API keys, client secrets, tokens)
@@ -126,7 +173,9 @@ MUST use `Password.PasswordInput` from `$lib/components/ui/password`.
 - Do NOT pass `type="password"` to `Password.PasswordInput` — the
   component manages the type dynamically based on toggle state.
 - OTP/code inputs (6-digit verification codes) are NOT password fields —
-  use plain `Input` with `inputmode="numeric" autocomplete="one-time-code"`.
+  use `OtpInput` + `useOtpInput` (segmented cells, auto-submit on complete).
+  Never a raw `Input`. See `.devin/rules/otp-input.md` — includes the
+  built-in duplicate-`onComplete` dedup contract.
 
 There are **three categories** of password input, with different
 validation requirements:
@@ -159,6 +208,46 @@ NOT user passwords, NOT subject to the password policy.
 
 See `.devin/rules/password-input-standard.md` for the enforcing rule.
 
+### Toolbars (MANDATORY ordering)
+
+Every toolbar MUST use `Toolbar` from `$lib/components/ui/toolbar`. The
+component **enforces** the presentation order — do not reorder manually:
+
+```
+[children: free-form controls] | [group] | [group] | refresh | [primary]
+```
+
+**Hard rules (non-negotiable):**
+
+1. **Primary CTA(s) always rightmost** — pass them via the `primary`
+   snippet. A divider is auto-rendered before them.
+2. **Refresh** — pass via the `refresh` prop object
+   `{ onclick, loading?, disabled? }`; it renders the standard
+   `ghost size="sm"` icon+label button immediately before the primary
+   CTAs. Never hand-roll a refresh button.
+3. **Every isolated island** (ButtonGroup segmented, selects, toggle
+   groups) MUST be passed in `groups: Snippet[]` — each gets a divider
+   automatically. A ButtonGroup without an isolating divider is wrong:
+   nobody can tell it is a self-contained unit.
+4. **`card`** (default `true`) = bordered card chrome
+   (`border border-border/60` over the same `bg-muted/30`) for standalone toolbars.
+   `card={false}` = borderless `bg-muted/30` — the embedded
+   EntityListTable look (its toolbar already passes `card={false}`).
+5. Section titles stay **outside** the toolbar (left side of the header
+   row); the toolbar holds CTAs only.
+6. **CTA zone is always far-right** (`ml-auto` wrapper). Content pinned
+   left goes in the `left` snippet (`flex-1 min-w-0`) — e.g. SearchBar in
+   entity lists, row counters in table footers. Never use
+   `justify-between` to split zones.
+7. Button rules still apply: toggles = `ButtonGroup segmented` +
+   `ghost icon-sm` + `aria-pressed`; primary = `variant="default"
+   size="sm"`.
+
+Canonical example: `/ai` models header in
+`src/routes/(app)/system/settings/ai/+page.svelte`
+(`data-testid="ai-models-toolbar"`). User docs:
+`docs/dev-guide/components/toolbar.mdx`.
+
 ### Tables / lists
 
 Prefer one table pattern: headers, row hover, empty/loading, pagination/filters consistent across modules. Reusable abstractions should be **app components** composing primitives, not forks of primitives.
@@ -180,6 +269,28 @@ runs on the client — SSR skips it entirely.
 
 See `.devin/rules/ssr-safe-async-loads.md` for the enforcing rule.
 
+### Auth & E2E know-how (hard-won)
+
+Before touching auth flows or E2E specs, read the enforcing rules:
+
+- `.devin/rules/e2e-test-users.md` — ephemeral actors only; `admin` is
+  forbidden in tests (enforcers throw).
+- `.devin/rules/e2e-webauthn-auth.md` — Playwright virtual-authenticator
+  contract (install-only enrollment, base64url ids, never navigate during
+  a ceremony) and the auth-E2E pitfalls list.
+- **`primebrick-be-v3/.devin/rules/casdoor-integration.md`** — Casdoor
+  gotchas that cost hours: the two client credential pairs (`idp_*` vs
+  `oidc_*` — wrong pair → `invalid_grant: user does not exist`), role
+  membership lives in `role.users` (not `user.roles`), `update-role` is a
+  full replace (omitted fields are zeroed — a partial body disabled
+  `administrators` once), WebAuthn discoverable login is broken on
+  Postgres (`webauthnCredentials` is `bytea`, LIKE never matches →
+  passkey signin is non-discoverable via `?name=`).
+- `.devin/rules/otp-input.md` — OTP/PIN contract; `OtpInput` dedupes
+  bits-ui `onComplete` re-emissions (a stale complete value re-fires the
+  submit during the post-success effect flush → duplicate request with a
+  consumed token).
+
 ### Navigation / modules
 
 Drive module navigation from the modules API via a domain component (e.g. module nav) rather than duplicating logic per route.
@@ -192,10 +303,13 @@ The **right-hand “sidebar” sheet** is not route-owned UI: it is a **single r
 |-------|------|
 | `$lib/shell/sheets/sheet-manager.svelte.ts` | `sheetState`, `openSheet`, `closeSheet`, `replaceSheet`; typed `SheetPanelId` and per-panel props. |
 | `$lib/shell/sheets/SheetHost.svelte` | One `Sheet.Root` / `Sheet.Content`; picks the panel component from a **registry** by `sheetState.panelId`. |
+| `$lib/shell/sheets/SheetPanelLayout.svelte` | **Canonical panel anatomy** — HEAD / TOOLBAR / CONTENT / FOOT. Every panel MUST use it. |
 | `$lib/shell/sheets/panels/*` | Shell panels (e.g. errors, versions). |
 | `$lib/entity-list/sheets/panels/*` | Entity-list panels (search-in, columns, filters). |
 
-**How to add a panel:** register the Svelte™ panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions.
+**Full reference:** [`docs/ai/sheets.md`](./sheets.md) — manager API, panel anatomy, registration checklist, hard rules.
+
+**How to add a panel:** register the Svelte™ panel in `SheetHost.svelte`, extend `SheetPanelId` / `SheetPanelPropsMap` in the manager, then call `openSheet('<id>', props, { contentClass, side })` from buttons or explicit user actions. The panel component MUST use `SheetPanelLayout` for anatomy — never mount `Sheet.Root` outside `SheetHost` and never invent ad-hoc panel layouts.
 
 **Do not** drive `openSheet` from an `$effect` that also depends on a **bindable boolean** mirroring sheet open state (e.g. “open when flag is true and sheet looks closed”). While the sheet is closing, the flag can still be `true` for a tick and the effect will **re-open** the sheet → infinite loop. Prefer **opening from the click handler** (or another discrete event) and use small, one-way sync effects only for “parent set flag false → `closeSheet`” / “sheet dismissed → clear flag”.
 

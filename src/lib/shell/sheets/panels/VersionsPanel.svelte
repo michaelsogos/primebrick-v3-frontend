@@ -1,19 +1,17 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
-  import * as Sheet from '$lib/components/ui/sheet';
   import * as Accordion from '$lib/components/ui/accordion/index.js';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { APP_VERSION } from '$lib/version';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import { servicesState, aggregateStatus, groupByCode } from '$lib/services-store.svelte';
   import type { ServiceInfo } from '$lib/api-types';
-  import XIcon from '@lucide/svelte/icons/x';
+  import Blocks from '@lucide/svelte/icons/blocks';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
@@ -65,37 +63,25 @@
   }
 </script>
 
-{#snippet headerTitle()}
-  {$t('shell.health.versionsTitle')}
-{/snippet}
+<SheetPanelLayout contentClass="px-4 pb-4">
+  {#snippet icon()}
+    <Blocks class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('app.health.versionsTitle')}
+  {/snippet}
 
-{#snippet headerActions()}
-  <div class="flex items-center gap-2">
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
-  </div>
-{/snippet}
-
-<div class="flex h-full flex-col">
-  <SheetHeader title={headerTitle} actions={headerActions} />
-
-  <div class="min-h-0 flex-1 overflow-auto px-4 pb-4">
-    <Accordion.Root type="multiple" class="w-full" value={['core']}>
+  <Accordion.Root type="multiple" class="w-full" value={['core']}>
 
       <!-- 1. Core Modules -->
       <Accordion.Item value="core" data-testid="versions-accordion-core">
-        <Accordion.Trigger>{$t('shell.health.coreModulesTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.coreModulesTitle')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <PanelsTopLeft class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.shellVersion')}</span>
+                <span>{$t('app.health.shellVersion')}</span>
               </div>
               <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                 v{APP_VERSION}
@@ -105,7 +91,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <Server class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.backendVersion')}</span>
+                <span>{$t('app.health.backendVersion')}</span>
               </div>
               <div class="flex items-center gap-2">
                 <Badge
@@ -132,7 +118,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <KeyRound class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.identityProvider')}</span>
+                <span>{$t('app.health.identityProvider')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.idp?.ok}
@@ -153,7 +139,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <DatabaseZap class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.redis')}</span>
+                <span>{$t('app.health.redis')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.redis?.ok}
@@ -174,7 +160,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <Radio class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.nats')}</span>
+                <span>{$t('app.health.nats')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.nats?.ok}
@@ -196,7 +182,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <BrainCircuit class="size-4 shrink-0 text-primary" />
-                <span>{$t('shell.health.aiLlm')}</span>
+                <span>{$t('app.health.aiLlm')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.llm?.ok}
@@ -204,7 +190,7 @@
                     Online
                   </Badge>
                   {#if backendState.health.checks.llm.model}
-                    <Badge variant="outline" class="font-mono text-[11px] font-medium" title={$t('shell.health.aiLlm')}>
+                    <Badge variant="outline" class="font-mono text-[11px] font-medium" title={$t('app.health.aiLlm')}>
                       {backendState.health.checks.llm.model}
                     </Badge>
                   {/if}
@@ -226,12 +212,12 @@
 
       <!-- 2. Installed Modules -->
       <Accordion.Item value="installed" data-testid="versions-accordion-installed">
-        <Accordion.Trigger>{$t('shell.health.installedModulesTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.installedModulesTitle')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           {#if servicesState.loading}
-            <div class="text-xs text-muted-foreground">{$t('common.loading')}</div>
+            <div class="text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if groupedServices.size === 0}
-            <div class="text-xs text-muted-foreground">{$t('shell.health.noMicroservices')}</div>
+            <div class="text-xs text-muted-foreground">{$t('app.health.noMicroservices')}</div>
           {:else}
             <div class="space-y-2">
               {#each groupedServices as [code, instances] (code)}
@@ -295,14 +281,14 @@
                           {:else}
                             <CloudOff class="size-3.5 opacity-90" />
                           {/if}
-                          <span>{$t(`shell.health.${aggStatus}`)}</span>
+                          <span>{$t(`app.health.${aggStatus}`)}</span>
                         </Badge>
                       {/if}
 
                       <!-- Second badge: instances count (non-reserved) or Reserved (reserved) -->
                       {#if isReserved}
                         <Badge variant="outline" class="text-[11px] font-medium">
-                          {$t('shell.settings.modules.reserved')}
+                          {$t('system.settings.modules.reserved')}
                         </Badge>
                       {:else}
                         <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
@@ -323,7 +309,7 @@
                   <div class="space-y-1">
                     {#if isReserved}
                       <div class="flex items-center justify-between gap-3 text-xs">
-                        <div class="truncate text-muted-foreground">{$t('shell.health.backendVersion')}</div>
+                        <div class="truncate text-muted-foreground">{$t('app.health.backendVersion')}</div>
                         <div class={cn('size-2 rounded-full', statusDotClass(beStatus))}></div>
                       </div>
                     {:else}
@@ -344,12 +330,11 @@
 
       <!-- 3. System Info -->
       <Accordion.Item value="system" data-testid="versions-accordion-system">
-        <Accordion.Trigger>{$t('shell.health.systemInfoTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.systemInfoTitle')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           <BrowserClientInfo />
         </Accordion.Content>
       </Accordion.Item>
 
     </Accordion.Root>
-  </div>
-</div>
+</SheetPanelLayout>

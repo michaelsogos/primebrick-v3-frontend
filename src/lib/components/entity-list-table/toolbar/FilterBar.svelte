@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import XIcon from '@lucide/svelte/icons/x';
+  import EraserIcon from '@lucide/svelte/icons/eraser';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 
   interface FilterBarProps {
@@ -30,7 +31,7 @@
     if (col.type === 'badge' && col.badge?.values) {
       const badgeValue = col.badge.values[value];
       if (badgeValue) {
-        return badgeValue.labelText || $t(badgeValue.labelKey || `entities.customer.status.${value}`);
+        return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
       }
     }
     return String(value);
@@ -62,8 +63,8 @@
       size="xs"
       onclick={onResetFilters}
     >
-      <XIcon class="size-3.5" />
-      {$t('common.clearAll')}
+      <EraserIcon class="size-3.5" />
+      {$t('app.common.clearAll')}
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
@@ -76,8 +77,8 @@
             variant="secondary"
             class="gap-1.5 pr-1"
           >
-            <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-            <span class="text-xs text-primary">{$t(`entities.list.operators.${operator}`)}</span>
+            <span class="text-xs font-bold text-foreground">{$t(col.label_key)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${operator}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
@@ -87,7 +88,7 @@
                 delete next[key];
                 onFilterValuesChange?.(next);
               }}
-              aria-label={$t('common.remove')}
+              aria-label={$t('app.common.remove')}
             >
               <XIcon class="size-3" />
             </button>
@@ -116,8 +117,8 @@
             variant="secondary"
             class="gap-1.5 pr-1"
           >
-            <span class="text-xs font-bold text-foreground">{$t(col.labelKey)}</span>
-            <span class="text-xs text-primary">{$t(`entities.list.operators.${filter.operator}`)}</span>
+            <span class="text-xs font-bold text-foreground">{$t(col.label_key)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${filter.operator}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
@@ -126,7 +127,7 @@
                 const next = advancedFilters.filter((f) => f.id !== filter.id);
                 onAdvancedFiltersChange?.(next);
               }}
-              aria-label={$t('common.remove')}
+              aria-label={$t('app.common.remove')}
             >
               <XIcon class="size-3" />
             </button>
@@ -136,5 +137,5 @@
     {/if}
   </div>
 {:else}
-  <span class="text-xs italic text-muted-foreground/70">{$t('entities.list.filterBadge.noFiltersApplied')}</span>
+  <span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.filterBadge.noFiltersApplied')}</span>
 {/if}

@@ -21,12 +21,14 @@
     { code: 'pt-PT', label: 'Português', flagCode: 'pt' }
   ];
 
-  $: sortedLangs = orderLangEntriesByBrowser(
-    LANGS,
-    browser && typeof navigator !== 'undefined' ? navigator.languages : null
+  const sortedLangs = $derived(
+    orderLangEntriesByBrowser(
+      LANGS,
+      browser && typeof navigator !== 'undefined' ? navigator.languages : null
+    )
   );
 
-  $: current = LANGS.find((l) => l.code === $uiLang) ?? LANGS[0];
+  const current = $derived(LANGS.find((l) => l.code === $uiLang) ?? LANGS[0]);
 </script>
 
 <DropdownMenu.Root>
@@ -35,7 +37,7 @@
       <Button
         {...props}
         type="button"
-        variant="soft"
+        variant="ghost"
         class="h-9 max-w-[min(100%,14rem)] gap-2 px-2"
         title={$uiLang}
         aria-label={`Language: ${current.label}`}

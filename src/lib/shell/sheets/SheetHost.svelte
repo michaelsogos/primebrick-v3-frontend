@@ -15,6 +15,18 @@
   import ColumnsPanel from '$lib/entity-list/sheets/panels/ColumnsPanel.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
+  import CurrencySelectPanel from '$lib/shell/sheets/panels/CurrencySelectPanel.svelte';
+  import ProtocolSelectPanel from '$lib/shell/sheets/panels/ProtocolSelectPanel.svelte';
+  import PhonePrefixSelectPanel from '$lib/shell/sheets/panels/PhonePrefixSelectPanel.svelte';
+  import RegexFlagsPanel from '$lib/components/ui/smart-regex-input/regex-flags-panel.svelte';
+  import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
+  import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
+  import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
+  import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
+  import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
+  import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
+  import AiModelImportPanel from '$lib/shell/sheets/panels/AiModelImportPanel.svelte';
+  import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -23,7 +35,19 @@
     'entity.searchIn': SearchInPanel,
     'entity.columns': ColumnsPanel,
     'entity.filters': FiltersPanel,
-    'entity.versionHistory': VersionHistoryPanel
+    'entity.versionHistory': VersionHistoryPanel,
+    'config.currencySelect': CurrencySelectPanel,
+    'config.protocolSelect': ProtocolSelectPanel,
+    'config.phonePrefixSelect': PhonePrefixSelectPanel,
+    'config.regexFlags': RegexFlagsPanel,
+    'config.regexAiChat': RegexAiChatPanel,
+    'config.jsonAiChat': JsonConfigAiChatPanel,
+    'shell.aiGuide': GuideAiChatPanel,
+    'shell.aiModelTestReport': AiModelTestReportPanel,
+    'shell.aiCerebellum': AiCerebellumPanel,
+    'shell.aiModelCache': AiModelCachePanel,
+    'shell.aiModelImport': AiModelImportPanel,
+    'config.badgeValueEdit': BadgeValuePanel
   };
 
   const panelId = $derived(sheetState.panelId);

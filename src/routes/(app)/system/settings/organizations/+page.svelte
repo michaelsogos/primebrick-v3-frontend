@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page as appPage } from '$app/state';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { EntityListTable } from '$lib/components/entity-list-table';
@@ -7,12 +8,14 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
   import {
     defaultVisibleColumnKeys,
-    orderedColumnsFromListMeta,
-    sanitizeVisibleKeys
+    orderedColumns,
+    sanitizeVisibleKeys,
+    searchableTextColumns
   } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -21,12 +24,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
-  type OrganizationMeta = {
-    entity: 'organization';
-    titleKey?: string;
-    uid: string;
-    list: EntityListListMeta;
-  };
+  type OrganizationMeta = EntityMeta;
 
   type OrganizationListRow = {
     uuid: string;
@@ -68,8 +66,7 @@
 
   let filtersOpen = $state(false);
 
-  const viewMode: ViewName = 'table';
-  const viewVisibility = $derived(meta?.list.viewVisibility);
+  const viewMode = $derived(meta?.table?.default_view ?? 'table');
 
   let filterValues = $state<Record<string, any>>({});
   let advancedFilters: AdvancedFilter[] = $state([]);
@@ -89,21 +86,24 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const columns = $derived(orderedColumnsFromListMeta(meta?.list));
-  const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
-  const dataColumns = $derived(
-    (meta?.list.columns ?? []).filter((c: MetaColumn) => {
-      const stickyKeys = new Set((meta?.list.stickyColumns ?? []).map((c) => c.key));
-      const auditingKeys = new Set((meta?.list.auditingColumns ?? []).map((c) => c.key));
-      return !stickyKeys.has(c.key) && !auditingKeys.has(c.key);
-    })
-  );
-  const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
+  const columns = $derived(orderedColumns(meta?.columns));
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
   const rowsLoading = $derived(metaLoaded && loading);
-  const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'uuid');
-  const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
+  const defaultSortKey = $derived(meta?.table?.default_sort?.key ?? 'uuid');
+  const defaultSortDir = $derived(meta?.table?.default_sort?.dir ?? 'asc');
+  /**
+   * Effective `search_in` keys: explicit scope wins; the default "all fields"
+   * scope is visible ∩ searchable text columns (hidden columns are excluded
+   * until the user shows them or selects them explicitly).
+   */
+  const effectiveSearchInKeys = $derived(
+    searchInKeys && searchInKeys.length
+      ? searchInKeys
+      : searchableTextColumns(columns)
+          .filter((c) => visibleKeys.includes(c.key))
+          .map((c) => c.key)
+  );
 
   // BroadcastChannel for sync with child windows
   useSyncChannel('primebrick_organizations_sync', {
@@ -113,11 +113,11 @@
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
+      visibleKeys = defaultVisibleColumnKeys(columns);
       return;
     }
     if (!columns.length) return;
-    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
   }
 
   function arrayEq(a: string[] | null, b: string[] | null): boolean {
@@ -149,24 +149,24 @@
     const cached = getMetaCache();
     if (cached) {
       meta = cached;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
     const inFlight = getMetaInFlight();
     if (inFlight) {
       meta = await inFlight;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
@@ -194,12 +194,12 @@
 
     const m = meta as unknown as OrganizationMeta | null;
     if (!m) return;
-    const defSort = m.list.defaultSort;
+    const defSort = m.table?.default_sort;
     if (sortKey === null) {
       sortKey = null;
       sortDir = defSort?.dir ?? 'asc';
     }
-    pageSize = m.list.defaultPageSize ?? pageSize;
+    pageSize = m.table?.default_page_size ?? pageSize;
     ensureVisibleKeys();
   }
 
@@ -331,79 +331,14 @@
 
     const qs = new URLSearchParams();
     if (appliedSearch.trim()) qs.set('search', appliedSearch.trim());
-    if (appliedSearch.trim() && searchInKeys && searchInKeys.length) qs.set('search_in', searchInKeys.join(','));
+    if (appliedSearch.trim() && effectiveSearchInKeys.length) qs.set('search_in', effectiveSearchInKeys.join(','));
 
-    let filterIdx = 0;
-    for (const [field, value] of Object.entries(filterValues)) {
-      if (value !== undefined && value !== null && value !== '') {
-        const col = columns.find(c => c.key === field);
-        const op = col?.type === 'text' ? 'ILIKE' : '=';
-
-        if (col?.type === 'badge' && Array.isArray(value)) {
-          for (let i = 0; i < value.length; i++) {
-            qs.set(`filters[${filterIdx}][field]`, field);
-            qs.set(`filters[${filterIdx}][op]`, op);
-            qs.set(`filters[${filterIdx}][value]`, String(value[i]));
-            const connector = i < value.length - 1 ? 'OR' : 'AND';
-            qs.set(`filters[${filterIdx}][connector]`, connector);
-            filterIdx++;
-          }
-        } else {
-          qs.set(`filters[${filterIdx}][field]`, field);
-          qs.set(`filters[${filterIdx}][op]`, op);
-          qs.set(`filters[${filterIdx}][value]`, String(value));
-          qs.set(`filters[${filterIdx}][connector]`, 'AND');
-          filterIdx++;
-        }
-      }
-    }
-
-    const advancedFiltersArray = Array.isArray(advancedFilters) ? advancedFilters : [];
-    for (const filter of advancedFiltersArray) {
-      if (filter.field && filter.value !== undefined && filter.value !== null && filter.value !== '') {
-        qs.set(`filters[${filterIdx}][field]`, filter.field);
-
-        let operator: string = filter.operator;
-        let value = filter.value;
-
-        if (operator === 'BETWEEN' && typeof value === 'object' && 'start' in value && 'end' in value) {
-          qs.set(`filters[${filterIdx}][op]`, operator);
-          qs.set(`filters[${filterIdx}][value][start]`, String(value.start));
-          qs.set(`filters[${filterIdx}][value][end]`, String(value.end));
-          filterIdx++;
-          continue;
-        }
-
-        if (Array.isArray(value)) {
-          operator = operator === '!=' ? 'NOT IN' : 'IN';
-        } else if (operator === 'startsWith') {
-          operator = 'ILIKE';
-          value = `${value}%`;
-        } else if (operator === 'endsWith') {
-          operator = 'ILIKE';
-          value = `%${value}`;
-        } else if (operator === 'contains') {
-          operator = 'ILIKE';
-          value = `%${value}%`;
-        }
-
-        qs.set(`filters[${filterIdx}][op]`, operator);
-
-        if (Array.isArray(value)) {
-          for (const val of value) {
-            qs.append(`filters[${filterIdx}][value][]`, String(val));
-          }
-        } else {
-          qs.set(`filters[${filterIdx}][value]`, String(value));
-        }
-
-        filterIdx++;
-      }
-    }
-
-    if (advancedFiltersArray.length > 0) {
-      qs.set('connector', globalConnector);
-    }
+    appendListFilterParams(qs, {
+      filterValues,
+      columns,
+      advancedFilters,
+      connector: globalConnector,
+    });
 
     if (deletionFilterMode === 'deleted') {
       qs.set('deleted_records', 'ONLY');
@@ -456,18 +391,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.organizationsList',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.organizationsList',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger';
       const tags: AppErrorTag[] = [
@@ -482,8 +417,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.organizationsList',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.organizationsList',
         tags,
         toast: false,
       });
@@ -517,18 +452,18 @@
       const isGateway = isBackendGatewayUnreachable(code, status);
 
       if (isGateway) {
-        error = $t('shell.serverUnreachable');
+        error = $t('app.serverUnreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.organizationsPageInit',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.organizationsPageInit',
           tags: backendOfflineTags(status),
           toast: false,
         });
         return;
       }
 
-      error = isDbDown ? $t('common.dbUnavailable') : $t('common.loadFailed');
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
       const impact = isDbDown ? 'CRITICAL' : 'HIGH';
       const toneForImpact = 'danger';
       const tags: AppErrorTag[] = [
@@ -543,8 +478,8 @@
       }
       pushNotification({
         impact: isDbDown ? 'CRITICAL' : 'HIGH',
-        messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-        scopeKey: 'errors.scope.organizationsPageInit',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.organizationsPageInit',
         tags,
         toast: false,
       });
@@ -576,7 +511,7 @@
 
   $effect(() => {
     if (!columns.length) return;
-    const next = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    const next = sanitizeVisibleKeys(visibleKeys, columns);
     if (!arrayEq(next, visibleKeys)) visibleKeys = next;
   });
 
@@ -661,7 +596,7 @@
   }
 
   function onResetColumnVisibility(view: ViewName) {
-    visibleKeys = defaultVisibleColumnKeys(columns, view, viewVisibility);
+    visibleKeys = defaultVisibleColumnKeys(columns);
   }
 
   function onSelectedKeysChange(keys: string[]) {
@@ -719,8 +654,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -728,7 +663,7 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.organizations')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
     </div>
   {/snippet}
 
@@ -737,20 +672,18 @@
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick
     uid={meta?.uid ?? 'uuid'}
-    {stickyColumns}
-    {dataColumns}
-    {auditingColumns}
     columnOrderStorageKey={skColumnOrder}
     columns={columns}
     rowActionsEnabled
-    entityRowActions={meta?.list.rowActions}
+    entityCustomActions={meta?.table?.row_custom_actions}
+    entityActions={meta?.actions}
     onCreateAction={openNewOrganization}
     onEditAction={openEditOrganization}
-    defaultSort={meta?.list.defaultSort}
-    pageSizeOptions={meta?.list.pageSizeOptions}
-    searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.organization.singular"
-    selectionLabelKey="entities.organization.plural"
+    defaultView={viewMode}
+    defaultSort={meta?.table?.default_sort}
+    pageSizeOptions={meta?.table?.page_size_options}
+    selectionLabelSingularKey="system.entities.organization.singular"
+    selectionLabelKey="system.entities.organization.plural"
     rows={rows}
     {total}
     {metaLoading}
@@ -781,7 +714,6 @@
     onAdvancedFiltersChange={onAdvancedFiltersChange}
     {deletionFilterMode}
     onDeletionFilterModeChange={onDeletionFilterModeChange}
-    viewVisibility={viewVisibility}
   >
   </EntityListTable>
 </AppPageScaffold>

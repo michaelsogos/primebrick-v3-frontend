@@ -14,8 +14,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -24,7 +24,7 @@
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">
-        {$t('shell.settings.credentials.title')}
+        {$t('system.settings.credentials.title')}
       </h1>
     </div>
   {/snippet}

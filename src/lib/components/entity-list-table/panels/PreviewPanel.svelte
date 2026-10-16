@@ -92,6 +92,14 @@
   const rowDeleted = $derived(isRowDeleted(row));
   const shownColumns = $derived([...(stickyColumns || []), ...(dataColumns || [])]);
 
+  // extJsonParse turns every integer into native bigint — the props below can
+  // legitimately arrive as bigint. Normalize once; arithmetic on mixed
+  // bigint/number operands throws "Cannot mix BigInt and other types".
+  const currentPageN = $derived(Number(currentPage));
+  const pageSizeN = $derived(Number(pageSize));
+  const totalRecordsN = $derived(Number(totalRecords));
+  const previewRowIndexN = $derived(Number(previewRowIndex));
+
   function listDefaultCellValue(row: TRow, col: MetaColumn) {
     const value = row[col.key];
     if (col.type === 'boolean') {
@@ -102,7 +110,7 @@
       return {
         type: 'badge',
         colors: badgeColors,
-        text: col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)
+        text: col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)
       };
     } else if (col.type === 'datetime') {
       const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
@@ -124,9 +132,9 @@
   {#snippet headerTitle()}
     {@const rowDeleted = isRowDeleted(row)}
     <div class="relative flex items-center">
-      <div>{$t('entities.list.previewPanelTitle')}</div>
+      <div>{$t('system.entities.list.previewPanelTitle')}</div>
       {#if rowDeleted}
-        <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('common.deletedRecord')}</div>
+        <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('app.common.deletedRecord')}</div>
       {/if}
     </div>
   {/snippet}
@@ -138,20 +146,20 @@
         size="icon-sm"
         variant="secondary-outline"
         onclick={() => onNavigatePreview(-1)}
-        disabled={previewRowIndex === 0 && currentPage === 1}
+        disabled={previewRowIndexN === 0 && currentPageN === 1}
         aria-label="Previous record"
         class="pointer-events-auto hover:scale-105 transition-all"
       >
         <ChevronLeft class="w-4 h-4" />
       </Button>
       <span class="text-xs font-medium w-16 text-center">
-        {(currentPage - 1) * pageSize + previewRowIndex + 1} / {totalRecords}
+        {(currentPageN - 1) * pageSizeN + previewRowIndexN + 1} / {totalRecordsN}
       </span>
       <Button
         size="icon-sm"
         variant="secondary-outline"
         onclick={() => onNavigatePreview(1)}
-        disabled={previewRowIndex >= columns.length - 1 && currentPage >= Math.ceil(totalRecords / pageSize)}
+        disabled={previewRowIndexN >= columns.length - 1 && currentPageN >= Math.ceil(totalRecordsN / pageSizeN)}
         aria-label="Next record"
         class="pointer-events-auto hover:scale-105 transition-all"
       >
@@ -171,7 +179,7 @@
         <Switch
           checked={previewEditMode}
           onCheckedChange={onPreviewEditModeChange}
-          aria-label={$t('entities.list.editModeLabel')}
+          aria-label={$t('system.entities.list.editModeLabel')}
           disabled={rowDeleted}
         />
       </div>
@@ -185,7 +193,7 @@
             {...props}
             variant="ghost" 
             size="icon-sm" 
-            aria-label={$t('common.more')} 
+            aria-label={$t('app.common.more')} 
             class="mr-1"
           >
             <MoreVertical class="w-4 h-4" />
@@ -200,7 +208,7 @@
           >
             <div class="flex items-center gap-2">
               <Pencil class="size-4 opacity-70" />
-              <span>{$t('common.edit')}</span>
+              <span>{$t('app.common.edit')}</span>
             </div>
           </DropdownMenu.Item>
         {/if}
@@ -211,7 +219,7 @@
           >
             <div class="flex items-center gap-2">
               <Copy class="size-4 opacity-70" />
-              <span>{$t('common.duplicate')}</span>
+              <span>{$t('app.common.duplicate')}</span>
             </div>
           </DropdownMenu.Item>
         {/if}
@@ -220,7 +228,7 @@
         >
           <div class="flex items-center gap-2">
             <FileClock class="size-4 opacity-70" />
-            <span>{$t('common.versionHistory')}</span>
+            <span>{$t('app.common.versionHistory')}</span>
           </div>
         </DropdownMenu.Item>
         {#if entityRowActions?.delete !== false}
@@ -232,7 +240,7 @@
                   <Trash2 class="size-4 text-warning/70" />
                   <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
                 </span>
-                <span>{$t('common.restore')}</span>
+                <span>{$t('app.common.restore')}</span>
               </div>
             </DropdownMenu.Item>
           {:else}
@@ -240,7 +248,7 @@
             <DropdownMenu.Item onclick={() => onDeleteRow(row)} class="text-destructive">
               <div class="flex items-center gap-2">
                 <Trash2 class="size-4 text-destructive/70" />
-                <span>{$t('common.delete')}</span>
+                <span>{$t('app.common.delete')}</span>
               </div>
             </DropdownMenu.Item>
           {/if}
@@ -253,7 +261,7 @@
       onclick={onClosePreview}
       size="icon-sm"
       variant="ghost"
-      aria-label={$t('common.close')}
+      aria-label={$t('app.common.close')}
     >
       <X class="w-4 h-4" />
     </Button>
@@ -272,15 +280,15 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.stickyFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.stickyFields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each stickyColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -291,15 +299,15 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.dataFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.dataFields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each dataColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -310,15 +318,15 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('entities.list.auditingFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.auditingFields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
           {#each auditingColumns as col}
-            {@const isIanaRecordMode = col.type === 'datetime' && col.datetimeIanaToggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
+            {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
-              <span class="text-xs font-semibold text-primary break-words">{$t(col.labelKey)}</span>
+              <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
               {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
             </div>
           {/each}
@@ -337,9 +345,9 @@
       class="shadow-none"
       style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
     >
-      {col.badge.values[badgeValue]?.labelText || $t(col.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+      {col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)}
     </Badge>
-  {:else if col.type === 'datetime' && col.datetimeIanaToggle}
+  {:else if col.type === 'datetime' && col.datetime_iana_toggle}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}
     {@const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode)}
     {#if isDatetimeIanaRecordMode(col, datetimeIanaModeByKey) && parts.iana}

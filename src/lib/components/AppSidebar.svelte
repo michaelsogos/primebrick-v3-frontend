@@ -4,7 +4,8 @@
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { afterNavigate } from '$app/navigation';
-  import { userProfileState } from '$lib/user-profile-store.svelte';
+  import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
+  import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
@@ -41,10 +42,20 @@
   });
 
   async function handleLogout() {
-    document.cookie = 'access_token=; path=/; max-age=0';
-    document.cookie = 'refresh_token=; path=/api/v1/auth/refresh; max-age=0';
-    sessionStorage.removeItem('user');
-    window.location.href = '/login';
+    // Auth cookies are HttpOnly — document.cookie cannot touch them (the
+    // previous attempt was dead code: the refresh cookie survived and the
+    // login boot silently re-authenticated). Only the server can clear
+    // them, via POST /auth/logout. Best-effort: local state is cleared
+    // regardless of the response.
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // offline / BE down — still clear everything local
+    }
+    userProfileStore.clear();      // sessionStorage['user'] + in-memory profile
+    getAndClearRedirectUrl();      // a logout must never restore a saved redirect
+    shellNav.clearLastRoute();     // don't land the next session on this user's page
+    window.location.href = '/login'; // NO redirect_path — by definition
   }
 
   afterNavigate(() => {
@@ -52,33 +63,33 @@
   });
 </script>
 
-<Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('shell.nav.aria')}>
+<Sidebar.Root side="left" variant="sidebar" collapsible="icon" aria-label={$t('app.nav.aria')}>
   <Sidebar.Content>
     <Sidebar.Group class="pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.org.subtitle')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.org.subtitle')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarOrgSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.module')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.module')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarModuleSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0">
-      <Sidebar.GroupLabel class="h-7">{$t('shell.nav.links')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.links')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           {#if moduleNavLoading}
-            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('common.loading')}</div>
+            <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if moduleNavError}
             <div class="px-2 py-1.5 text-xs text-destructive">
-              {$t('shell.modulesLoadFailed')}
+              {$t('app.modulesLoadFailed')}
               <button onclick={() => shellNav.reloadModuleNav()} class="ml-2 underline">
-                {$t('shell.retry')}
+                {$t('app.retry')}
               </button>
             </div>
           {:else if navItems.length > 0}
@@ -96,7 +107,7 @@
       class="text-sidebar-foreground/70 ring-sidebar-ring flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0"
       data-sidebar="group-label"
     >
-      {$t('shell.userMenu.title')}
+      {$t('app.userMenu.title')}
     </div>
     <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 

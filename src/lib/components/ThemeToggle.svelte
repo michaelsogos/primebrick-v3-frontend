@@ -33,7 +33,7 @@
   variant="ghost"
   size="icon"
   class="relative"
-  aria-label={mounted && theme === 'dark' ? $t('shell.theme.light') : $t('shell.theme.dark')}
+  aria-label={mounted && theme === 'dark' ? $t('app.theme.light') : $t('app.theme.dark')}
   onclick={() => apply(theme === 'dark' ? 'light' : 'dark')}
 >
   {#if mounted && theme === 'dark'}

@@ -15,7 +15,7 @@
 	bind:this={ref}
 	data-slot="breadcrumb"
 	class={className}
-	aria-label={$t('common.breadcrumb')}
+	aria-label={$t('app.common.breadcrumb')}
 	{...restProps}
 >
 	{@render children?.()}

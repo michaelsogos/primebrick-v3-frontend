@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page as appPage } from '$app/state';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
@@ -7,12 +8,14 @@
   import { extJsonParse } from '$lib/api-ext';
   import { pushNotification } from '$lib/errors/app-errors';
   import type { AppErrorTag } from '$lib/errors/app-errors';
-  import type { EntityListListMeta, ListMetaViewVisibility, MetaColumn, ViewName } from '$lib/entity-list';
+  import type { EntityMeta, ViewName } from '$lib/entity-list';
   import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
   import {
     defaultVisibleColumnKeys,
-    orderedColumnsFromListMeta,
+    orderedColumns,
     sanitizeVisibleKeys,
+    searchableTextColumns,
     isSnakeCaseSingular
   } from '$lib/entity-list';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -22,13 +25,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
 
-  type UserProfileMeta = {
-    entity: 'user_profiles';
-    translationKey?: string;
-    titleKey?: string;
-    uid: string;
-    list: EntityListListMeta;
-  };
+  type UserProfileMeta = EntityMeta;
 
   type UserProfileListRow = {
     uuid: string;
@@ -76,8 +73,7 @@
 
   let filtersOpen = $state(false);
 
-  const viewMode: ViewName = 'table';
-  const viewVisibility = $derived(meta?.list.viewVisibility);
+  const viewMode = $derived(meta?.table?.default_view ?? 'table');
 
   let filterValues = $state<Record<string, any>>({});
   let advancedFilters: AdvancedFilter[] = $state([]);
@@ -97,21 +93,20 @@
   const skColumnOrder = `${storageKeyPrefix}columnOrder`;
   const skSort = `${storageKeyPrefix}sort`;
 
-  const columns = $derived(orderedColumnsFromListMeta(meta?.list));
-  const stickyColumns = $derived(meta?.list.stickyColumns ?? []);
-  const dataColumns = $derived(
-    (meta?.list.columns ?? []).filter((c: MetaColumn) => {
-      const stickyKeys = new Set((meta?.list.stickyColumns ?? []).map((c) => c.key));
-      const auditingKeys = new Set((meta?.list.auditingColumns ?? []).map((c) => c.key));
-      return !stickyKeys.has(c.key) && !auditingKeys.has(c.key);
-    })
-  );
-  const auditingColumns = $derived(meta?.list.auditingColumns ?? []);
+  const columns = $derived(orderedColumns(meta?.columns));
   const metaLoaded = $derived(!!meta);
   const metaLoading = $derived(!metaLoaded && loading);
   const rowsLoading = $derived(metaLoaded && loading);
-  const defaultSortKey = $derived(meta?.list.defaultSort?.key ?? 'uuid');
-  const defaultSortDir = $derived(meta?.list.defaultSort?.dir ?? 'asc');
+  const defaultSortKey = $derived(meta?.table?.default_sort?.key ?? 'uuid');
+  const defaultSortDir = $derived(meta?.table?.default_sort?.dir ?? 'asc');
+  /** Effective `search_in` keys — explicit scope wins; default is visible ∩ searchable text columns. */
+  const effectiveSearchInKeys = $derived(
+    searchInKeys && searchInKeys.length
+      ? searchInKeys
+      : searchableTextColumns(columns)
+          .filter((c) => visibleKeys.includes(c.key))
+          .map((c) => c.key)
+  );
 
   // BroadcastChannel for sync with child windows
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', {
@@ -121,11 +116,11 @@
 
   function ensureVisibleKeys() {
     if (visibleKeys.length === 0 && columns.length) {
-      visibleKeys = defaultVisibleColumnKeys(columns, viewMode, viewVisibility);
+      visibleKeys = defaultVisibleColumnKeys(columns);
       return;
     }
     if (!columns.length) return;
-    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns, viewMode, viewVisibility);
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
   }
 
   function arrayEq(a: string[] | null, b: string[] | null): boolean {
@@ -157,31 +152,31 @@
     const cached = getMetaCache();
     if (cached) {
       meta = cached;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
     const inFlight = getMetaInFlight();
     if (inFlight) {
       meta = await inFlight;
-      const defSort = meta.list.defaultSort;
+      const defSort = meta.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta.list.defaultPageSize ?? pageSize;
+      pageSize = meta.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
       return;
     }
 
     setMetaInFlight(
       (async () => {
-        const metaRes = await apiFetchWithTimeout('/api/v1/entities/user_profiles/meta', undefined, 30_000);
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/user_profile/meta', undefined, 30_000);
         if (!metaRes.ok) {
           const apiDetails = await readApiErrorDetails(metaRes);
           const code = apiDetails.code ?? 'GET_METADATA_FAILED';
@@ -196,12 +191,12 @@
     try {
       const p = getMetaInFlight();
       meta = p ? await p : null;
-      const defSort = meta?.list.defaultSort;
+      const defSort = meta?.table?.default_sort;
       if (!sortRestored && sortKey === null) {
         sortKey = defSort?.key ?? null;
         sortDir = defSort?.dir ?? 'asc';
       }
-      pageSize = meta?.list.defaultPageSize ?? pageSize;
+      pageSize = meta?.table?.default_page_size ?? pageSize;
       ensureVisibleKeys();
     } catch (e) {
       setMetaInFlight(null);
@@ -285,15 +280,17 @@
     try {
       const params = new URLSearchParams();
       if (appliedSearch) params.set('search', appliedSearch);
-      if (searchInKeys && searchInKeys.length > 0) params.set('search_in', searchInKeys.join(','));
+      if (appliedSearch && effectiveSearchInKeys.length > 0) params.set('search_in', effectiveSearchInKeys.join(','));
       if (sortKey) params.set('sort_key', sortKey);
       if (sortDir) params.set('sort_dir', sortDir);
       params.set('page', page.toString());
       params.set('page_size', pageSize.toString());
-      if (advancedFilters.length > 0) {
-        params.set('filters', JSON.stringify(advancedFilters));
-        params.set('connector', globalConnector);
-      }
+      appendListFilterParams(params, {
+        filterValues,
+        columns,
+        advancedFilters,
+        connector: globalConnector,
+      });
       if (deletionFilterMode === 'deleted') {
         params.set('deleted_records', 'ONLY');
       } else if (deletionFilterMode === 'all') {
@@ -302,7 +299,7 @@
         params.set('deleted_records', 'EXCLUDED');
       }
 
-      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profiles/list?${params.toString()}`, undefined, 30_000);
+      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profile/list?${params.toString()}`, undefined, 30_000);
       if (!res.ok) {
         const apiDetails = await readApiErrorDetails(res);
         const code = apiDetails.code ?? 'LIST_FAILED';
@@ -320,16 +317,16 @@
       const apiError = asApiListError(e);
       const isDbDown = apiError?.code === 'DATABASE_UNAVAILABLE';
       if (apiError && isBackendGatewayUnreachable(apiError.code, apiError.status)) {
-        error = $t('shell.apiError.unreachable');
+        error = $t('app.apiError.unreachable');
         pushNotification({
           impact: 'CRITICAL',
-          messageKey: 'shell.serverUnreachable',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: backendOfflineTags(apiError.status),
           toast: false
         });
       } else {
-        error = $t('shell.apiError.generic');
+        error = $t('app.apiError.generic');
         const impact = isDbDown ? 'CRITICAL' : 'HIGH';
         const toneForImpact = 'danger';
         const tags: AppErrorTag[] = apiError ? [
@@ -338,8 +335,8 @@
         ] : [];
         pushNotification({
           impact,
-          messageKey: isDbDown ? 'common.dbUnavailable' : 'common.loadFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags,
           toast: false
         });
@@ -435,7 +432,7 @@
   }
 
   function onResetColumnVisibility(view: ViewName) {
-    visibleKeys = defaultVisibleColumnKeys(columns, view, viewVisibility);
+    visibleKeys = defaultVisibleColumnKeys(columns);
   }
 
   function onSelectedKeysChange(keys: string[]) {
@@ -491,7 +488,7 @@
   async function onDeleteRow(row: Record<string, unknown>) {
     const uuid = row.uuid as string;
     try {
-      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}`, {
+      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}?version=${row.version}`, {
         method: 'DELETE'
       }, 30_000);
       if (!res.ok) {
@@ -505,8 +502,8 @@
       if (err instanceof ApiListError) {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.deleteFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.common.deleteFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: [{ label: err.code, tone: 'danger' }],
           toast: false
         });
@@ -517,7 +514,7 @@
   async function onRestoreRow(row: Record<string, unknown>) {
     const uuid = row.uuid as string;
     try {
-      const res = await apiFetchWithTimeout(`/api/v1/entities/user_profiles/${uuid}/restore`, {
+      const res = await apiFetchWithTimeout(`/api/v1/auth/users/${uuid}/restore?version=${row.version}`, {
         method: 'POST'
       }, 30_000);
       if (!res.ok) {
@@ -531,8 +528,8 @@
       if (err instanceof ApiListError) {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'common.restoreFailed',
-          scopeKey: 'errors.scope.usersList',
+          messageKey: 'app.common.restoreFailed',
+          scopeKey: 'app.common.errors.scope.usersList',
           tags: [{ label: err.code, tone: 'danger' }],
           toast: false
         });
@@ -560,8 +557,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,
             searchParams: appPage.url.searchParams,
@@ -569,36 +566,34 @@
           })
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('shell.settings.tabs.users')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
     </div>
   {/snippet}
 
   <EntityListTable
-    entity="user_profiles"
-    translationKey={meta?.translationKey && isSnakeCaseSingular(meta.translationKey) ? meta.translationKey : 'user_profile'}
+    entity={meta?.entity ?? 'user_profile'}
+    translationKey={meta?.translation_key && isSnakeCaseSingular(meta.translation_key) ? meta.translation_key : 'user_profile'}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick
     uid={meta?.uid ?? 'uuid'}
-    {stickyColumns}
-    {dataColumns}
-    {auditingColumns}
     columnOrderStorageKey={skColumnOrder}
     columns={columns}
     rowActionsEnabled
-    entityRowActions={meta?.list.rowActions}
+    entityCustomActions={meta?.table?.row_custom_actions}
+    entityActions={meta?.actions}
     customActionHandlers={{
-      changePassword: (row: UserProfileListRow) => {
+      change_password: (row: UserProfileListRow) => {
         changePasswordRow = row;
         changePasswordOpen = true;
       },
     }}
     onCreateAction={openNewUser}
     onEditAction={openEditUser}
-    defaultSort={meta?.list.defaultSort}
-    pageSizeOptions={meta?.list.pageSizeOptions}
-    searchPlaceholderKey={meta?.list.searchPlaceholderKey}
-    selectionLabelSingularKey="entities.user_profile.singular"
-    selectionLabelKey="entities.user_profile.plural"
+    defaultView={viewMode}
+    defaultSort={meta?.table?.default_sort}
+    pageSizeOptions={meta?.table?.page_size_options}
+    selectionLabelSingularKey="system.entities.user_profile.singular"
+    selectionLabelKey="system.entities.user_profile.plural"
     rows={rows}
     {total}
     {metaLoading}

@@ -1,11 +1,22 @@
 <script lang="ts">
+	/**
+	 * TextInput — canonical single-line text input.
+	 *
+	 * Trailing contract (multi-CTA): the built-in clear button (`Eraser`,
+	 * `clearable` default true, hidden when readonly/disabled/empty) always
+	 * owns the right edge (`right-1.5` = rightmost, glyph 12px from border).
+	 * `trailing` snippet content
+	 * must self-position to the LEFT of the clear zone (e.g. `right-10`, like
+	 * `async-validated-input`'s status icon). Readonly mode shows the copy
+	 * button at the same right edge instead of clear.
+	 */
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 	import type { Snippet } from "svelte";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import Input from "./input.svelte";
 	import { CopyButton } from "$lib/components/ui/copy-button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import X from "@lucide/svelte/icons/x";
+	import Eraser from "@lucide/svelte/icons/eraser";
 	import { inputTrailingIconButtonClasses } from "./input-chrome.js";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
@@ -15,6 +26,7 @@
 			type?: InputType;
 			value?: string;
 			// --- Clear button (editable mode) ---
+			clearable?: boolean;
 			onClear?: () => void;
 			clearLabel?: string;
 			// --- Copy button (readonly mode) ---
@@ -32,6 +44,7 @@
 		type,
 		readonly = false,
 		disabled = false,
+		clearable = true,
 		onClear,
 		clearLabel = "Clear",
 		onCopy,
@@ -44,7 +57,9 @@
 
 	let mode = $derived(disabled ? "disabled" : readonly ? "readonly" : "editable");
 
-	let showTrailing = $derived(mode !== "disabled" && (value ?? "").length > 0);
+	let showClear = $derived(mode === "editable" && clearable && (value ?? "").length > 0);
+	let showCopy = $derived(mode === "readonly" && (value ?? "").length > 0);
+	let showTrailing = $derived(showClear || showCopy);
 
 	let inputClass = $derived(
 		cn(
@@ -73,8 +88,7 @@
 		{...restProps}
 	/>
 
-	{#if showTrailing}
-		{#if mode === "readonly"}
+	{#if showCopy}
 			{#if copyTooltipLabel}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
@@ -102,21 +116,22 @@
 					class={cn(inputTrailingIconButtonClasses, "text-foreground")}
 				/>
 			{/if}
-		{:else if mode === "editable"}
-			<button
-				type="button"
-				onclick={handleClear}
-				aria-label={clearLabel}
-				title={clearLabel}
-				tabindex={-1}
-				class={inputTrailingIconButtonClasses}
-			>
-				<X class="size-4" />
-			</button>
-		{/if}
 	{/if}
 
 	{#if trailing}
 		{@render trailing()}
+	{/if}
+
+	{#if showClear}
+		<button
+			type="button"
+			onclick={handleClear}
+			aria-label={clearLabel}
+			title={clearLabel}
+			tabindex={-1}
+			class={inputTrailingIconButtonClasses}
+		>
+			<Eraser class="size-4" />
+		</button>
 	{/if}
 </div>

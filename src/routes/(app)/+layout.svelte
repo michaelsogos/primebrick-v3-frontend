@@ -10,8 +10,14 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { useModuleTranslations, loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
 
   let { children }: { children: Snippet } = $props();
+
+  // Route-aware translation loader — watches route + language changes
+  const moduleI18n = useModuleTranslations();
 
   onMount(async () => {
     // Ensure auth config is loaded — shouldShowEnforcer needs it to know
@@ -51,6 +57,8 @@
             has_passkey: data.has_passkey,
             auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed,
             has_mfa: data.has_mfa,
+            // Expanded permission set for per-CTA enablement (BE stays authoritative).
+            permissions: data.permissions,
           });
 
           // ONE-TIME enforcer decision — made right here, with confirmed
@@ -83,6 +91,13 @@
     if (lastRoute && lastRoute !== '/login' && lastRoute !== currentPath) {
       await goto(lastRoute);
     }
+
+    // Always load "app" module translations on app init (shell + public pages)
+    await loadModuleTranslations('app', get(uiLang));
+    // "custom" is the first authenticated dictionary — user-created keys
+    // (custom.*), global/shared, loaded right after login and on every F5
+    // via the same localStorage + ETag revalidation as every module dict.
+    await loadModuleTranslations('custom', get(uiLang));
   });
 </script>
 

@@ -1,4 +1,4 @@
-import { apiFetch } from '$lib/api';
+import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn } from '$lib/entity-list/types';
@@ -14,6 +14,13 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   onRowActionError?: (error: Error) => void;
   onRefresh?: () => (() => void) | undefined;
   isRowDeleted?: (row: TRow) => boolean;
+  /**
+   * When true, row delete targets the hard-delete endpoint
+   * `DELETE /entities/{entity}/:uuid/purge?version=` instead of the soft
+   * `DELETE /entities/{entity}/:uuid?version=`. Derived from `meta.actions`:
+   * `purge.single` enabled ⇒ hard-delete-only entity (e.g. role_mapping).
+   */
+  usePurgeDelete?: () => boolean;
   rowKey?: (row: TRow) => string;
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
@@ -46,6 +53,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     onRowActionError,
     onRefresh: getOnRefresh,
     isRowDeleted,
+    usePurgeDelete,
     rowKey,
     onPreviewRow,
     closeRowDropdown,
@@ -108,7 +116,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isDeleting = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}`, {
+      const purge = usePurgeDelete?.() ? '/purge' : '';
+      await apiFetch(`${entityApiBase(entity)}/${uuidValue}${purge}?version=${(row as Record<string, unknown>).version}`, {
         method: 'DELETE'
       });
       // Refresh the list after successful deletion
@@ -131,8 +140,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.deleteFailed',
-          scope: tFn('errors.scope.deleteApi'),
+          messageKey: 'system.entities.list.deleteFailed',
+          scope: tFn('app.common.errors.scope.deleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -150,7 +159,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isRestoring = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`/api/v1/entities/${entity}/${uuidValue}/restore`, {
+      await apiFetch(`${entityApiBase(entity)}/${uuidValue}/restore?version=${(row as Record<string, unknown>).version}`, {
         method: 'POST'
       });
       // Refresh the list after successful restore
@@ -173,8 +182,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.restoreFailed',
-          scope: tFn('errors.scope.restoreApi'),
+          messageKey: 'system.entities.list.restoreFailed',
+          scope: tFn('app.common.errors.scope.restoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -192,7 +201,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     try {
       _state.isDuplicating = true;
       const uuidValue = row[uid] as string;
-      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
+      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: [uuidValue] })
@@ -209,16 +218,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       }
 
@@ -276,8 +285,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     });
   }
 
-  function handleCustomAction(action: { actionName: string; translationKey: string }, row: TRow) {
-    const handler = getCustomActionHandlers?.()?.[action.actionName];
+  function handleCustomAction(action: { action_name: string; translation_key: string }, row: TRow) {
+    const handler = getCustomActionHandlers?.()?.[action.action_name];
     if (handler) {
       handler(row);
     } else {
@@ -285,10 +294,10 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       // toast so the user sees the action exists but isn't wired yet.
       pushNotification({
         type: '/errors/not-implemented',
-        title: tFn('errors.notImplemented.title'),
+        title: tFn('app.common.errors.notImplemented.title'),
         status: 501,
-        detail: tFn('errors.notImplemented.detail', { action: action.actionName }),
-        instance: `customAction:${action.actionName}`,
+        detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+        instance: `customAction:${action.action_name}`,
         internal_code: 'CUSTOM_ACTION_NO_HANDLER',
         severity: 'LOW',
       });

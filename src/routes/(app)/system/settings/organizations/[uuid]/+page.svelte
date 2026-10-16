@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -22,7 +23,7 @@
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -39,11 +40,11 @@
     idp_code: z.string().optional(),
     display_name: displayNameSchema(z.string()),
     website_url: z.string()
-      .url({ message: 'validation.invalidUrl' })
+      .url({ message: 'app.common.validation.invalidUrl' })
       .max(2048, { message: maxMsg(2048) })
       .optional()
       .or(z.literal('')),
-    idp_owner: z.string().min(1, { message: 'validation.required' }).max(255, { message: maxMsg(255) }),
+    idp_owner: z.string().min(1, { message: 'app.common.validation.required' }).max(255, { message: maxMsg(255) }),
     idp_name: idpNameSchema(z.string()),
   });
 
@@ -94,19 +95,20 @@
     invalidateAll: false,
     resetForm: false,
     async onUpdate({ form: updateForm, cancel }) {
-      if (!updateForm.valid) return;
+      if (!updateForm.valid || !organization) return;
 
       try {
         const body = {
           display_name: updateForm.data.display_name,
           website_url: updateForm.data.website_url || undefined,
+          version: organization.version,
         };
         const response = await apiFetch(`/api/v1/entities/organization/${uuid}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ entity: body }),
         });
 
         if (!response.ok) {
@@ -114,17 +116,16 @@
           return;
         }
 
-        const data = await response.json();
-        if (data.success) {
-          console.log('Organization updated successfully');
-          // Refresh the organization data to show updated audit info
-          await loadOrganization();
-          // Notify parent window to refresh
-          notifyParentRefresh();
-          // Close popup if opened as child window
-          if (window.opener) {
-            window.close();
-          }
+        // The response IS the updated entity (DAL RETURNING), not a wrapper.
+        await response.json();
+        console.log('Organization updated successfully');
+        // Refresh the organization data to show updated audit info
+        await loadOrganization();
+        // Notify parent window to refresh
+        notifyParentRefresh();
+        // Close popup if opened as child window
+        if (window.opener) {
+          window.close();
         }
       } catch (error) {
         console.error('Failed to update organization:', error);
@@ -135,7 +136,8 @@
 
   const { form, errors, enhance, reset, tainted, isTainted } = superFormObj;
 
-  const { hasChanges, canSave } = useFormGuard(
+  // NOTE: do NOT destructure — getters freeze at initial values otherwise.
+  const formGuard = useFormGuard(
     () => $tainted,
     () => $errors as Record<string, unknown>,
     isTainted as (path?: unknown) => boolean,
@@ -183,8 +185,8 @@
   });
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
-    () => hasChanges,
-    'shell.settings.organizations.update.unsavedChanges',
+    () => formGuard.hasChanges,
+    'system.settings.organizations.update.unsavedChanges',
   );
 </script>
 
@@ -195,31 +197,31 @@
   rowUuid={uuid || ''}
   meta={meta || undefined}
   auditData={auditData}
-  auditingColumns={meta?.list?.auditingColumns || []}
+  auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
   {#snippet header()}
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
+          { label: $t('app.system') },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
             t: (key) => $t(key)
           }),
-          { label: $t('shell.settings.tabs.organizations'), href: '/system/settings/organizations' },
-          { label: $t('shell.settings.organizations.update.title') }
+          { label: $t('system.settings.tabs.organizations'), href: '/system/settings/organizations' },
+          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
         ]}
       />
-      <h1 class="truncate text-xl font-semibold leading-tight">{pageTitle || $t('common.loading')}</h1>
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
     </div>
   {/snippet}
 
   {#snippet children()}
     {#if loading}
       <div class="flex items-center justify-center p-8">
-        <div class="text-muted-foreground">{$t('common.loading')}</div>
+        <div class="text-muted-foreground">{$t('app.common.loading')}</div>
       </div>
     {:else}
       <div class="flex-1 overflow-auto p-4">
@@ -231,11 +233,11 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.displayName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.displayName')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.display_name}
-                        placeholder={$t('shell.settings.organizations.update.displayNamePlaceholder')}
+                        placeholder={$t('system.settings.organizations.update.displayNamePlaceholder')}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -247,7 +249,7 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.websiteUrl')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.websiteUrl')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.website_url}
@@ -266,12 +268,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpCode')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpCode')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_code}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpCode')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpCode')}
                       />
                     </div>
                   {/snippet}
@@ -282,12 +284,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpOwner')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpOwner')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_owner}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpOwner')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpOwner')}
                       />
                     </div>
                   {/snippet}
@@ -298,12 +300,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('shell.settings.organizations.update.idpName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpName')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_name}
                         readonly
-                        copyTooltipLabel={$t('shell.settings.organizations.update.copyIdpName')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpName')}
                       />
                     </div>
                   {/snippet}
@@ -319,10 +321,10 @@
   {#snippet footerActions()}
     <div class="flex gap-2">
       <Button variant="outline" onclick={handleCancel}>
-        {hasChanges ? $t('common.cancel') : $t('common.exit')}
+        {formGuard.hasChanges ? $t('app.common.cancel') : $t('app.common.exit')}
       </Button>
-      <Button type="submit" form="org-update-form" disabled={!canSave}>
-        {$t('common.save')}
+      <Button type="submit" form="org-update-form" disabled={!formGuard.canSave}>
+        {$t('app.common.save')}
       </Button>
     </div>
   {/snippet}

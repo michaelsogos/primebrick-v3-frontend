@@ -51,7 +51,7 @@ export function useAuditBox(state: AuditBoxState) {
     // Badge metadata
     if (column?.badge?.values && value) {
       const badgeValue = value as string;
-      return column.badge.values[badgeValue]?.labelText || badgeValue;
+      return column.badge.values[badgeValue]?.label_text || badgeValue;
     }
 
     // Datetime type

@@ -10,6 +10,7 @@
   import { authConfigState } from '$lib/auth-config-store.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { enforcerStore, hideEnforcer } from '$lib/auth-enforcer-store.svelte';
+  import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Fingerprint from '@lucide/svelte/icons/fingerprint';
   import Smartphone from '@lucide/svelte/icons/smartphone';
@@ -31,8 +32,12 @@
 
   // Sync `open` with the store flag. The store is the single source of truth
   // for visibility — set once by the layout, cleared by enrollment/dismiss.
+  // The session-expired login dialog takes absolute precedence: while it is
+  // open the enforcer must not render — two modal dialogs share the same
+  // z-index and the enforcer's overlay would swallow pointer/keyboard events
+  // meant for the login form.
   $effect(() => {
-    open = enforcerStore.visible;
+    open = enforcerStore.visible && !sessionExpiredStore.isOpen;
     if (open) {
       // Reset method selection when dialog opens.
       // If passkey_required=true, auto-select passkey (no method selector shown).
@@ -112,10 +117,10 @@
   <Dialog.Header>
     <Dialog.Title class="flex items-center gap-2">
       <ShieldCheck class="size-5 text-primary" />
-      {$t('auth.authMethodEnforcer.title')}
+      {$t('app.auth.authMethodEnforcer.title')}
     </Dialog.Title>
     <Dialog.Description>
-      {$t('auth.authMethodEnforcer.description')}
+      {$t('app.auth.authMethodEnforcer.description')}
     </Dialog.Description>
   </Dialog.Header>
 
@@ -130,10 +135,10 @@
           <Choicebox.Item value="passkey">
             <Choicebox.Title class="flex items-center gap-2">
               <Fingerprint class="size-4 text-primary" />
-              {$t('auth.authMethodEnforcer.methodPasskey')}
+              {$t('app.auth.authMethodEnforcer.methodPasskey')}
             </Choicebox.Title>
             <Choicebox.Description>
-              {$t('auth.authMethodEnforcer.methodPasskeyDesc')}
+              {$t('app.auth.authMethodEnforcer.methodPasskeyDesc')}
             </Choicebox.Description>
           </Choicebox.Item>
         {/if}
@@ -141,10 +146,10 @@
           <Choicebox.Item value="mfa">
             <Choicebox.Title class="flex items-center gap-2">
               <Smartphone class="size-4 text-primary" />
-              {$t('auth.authMethodEnforcer.methodMfa')}
+              {$t('app.auth.authMethodEnforcer.methodMfa')}
             </Choicebox.Title>
             <Choicebox.Description>
-              {$t('auth.authMethodEnforcer.methodMfaDesc')}
+              {$t('app.auth.authMethodEnforcer.methodMfaDesc')}
             </Choicebox.Description>
           </Choicebox.Item>
         {/if}
@@ -157,7 +162,7 @@
           class="text-xs text-muted-foreground hover:text-foreground underline"
           onclick={() => (selectedMethod = null)}
         >
-          ← {$t('auth.authMethodEnforcer.backToMethods')}
+          ← {$t('app.auth.authMethodEnforcer.backToMethods')}
         </button>
         <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
       </div>
@@ -169,7 +174,7 @@
           class="text-xs text-muted-foreground hover:text-foreground underline"
           onclick={() => (selectedMethod = null)}
         >
-          ← {$t('auth.authMethodEnforcer.backToMethods')}
+          ← {$t('app.auth.authMethodEnforcer.backToMethods')}
         </button>
         <MfaEnrollmentSection oncomplete={handleEnrollmentComplete} />
       </div>
@@ -185,7 +190,7 @@
           class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
         />
         <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {$t('auth.authMethodEnforcer.dontAskAgain')}
+          {$t('app.auth.authMethodEnforcer.dontAskAgain')}
         </label>
       </div>
     {/if}
@@ -200,7 +205,7 @@
         onclick={dismissPrompt}
         disabled={dismissing}
       >
-        {$t('auth.authMethodEnforcer.dismissButton')}
+        {$t('app.auth.authMethodEnforcer.dismissButton')}
       </Button>
     </Dialog.Footer>
   {/if}

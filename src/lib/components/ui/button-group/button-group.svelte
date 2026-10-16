@@ -6,17 +6,30 @@
 		variants: {
 			orientation: {
 				horizontal:
-					"[&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-lg! [&>[data-slot]]:rounded-r-none [&>[data-slot]~[data-slot]]:rounded-l-none [&>[data-slot]~[data-slot]]:border-l-0",
+					"[&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md! [&>[data-slot]]:rounded-r-none [&>[data-slot]~[data-slot]]:rounded-l-none [&>[data-slot]~[data-slot]]:border-l-0",
 				vertical:
-					"[&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-lg! flex-col [&>[data-slot]]:rounded-b-none [&>[data-slot]~[data-slot]]:rounded-t-none [&>[data-slot]~[data-slot]]:border-t-0",
+					"[&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-md! flex-col [&>[data-slot]]:rounded-b-none [&>[data-slot]~[data-slot]]:rounded-t-none [&>[data-slot]~[data-slot]]:border-t-0",
+			},
+			// segmented = frameless cluster for borderless variants (ghost):
+			// children keep their own full radius, no inner borders, minimal gap.
+			segmented: {
+				true: "gap-0.5",
 			},
 		},
+		compoundVariants: [
+			// segmented children keep full radius on every corner — the join
+			// flattening is only meaningful for joined (border-sharing) groups.
+			{ orientation: "horizontal", segmented: true, class: "[&>[data-slot]]:rounded-md!" },
+			{ orientation: "vertical", segmented: true, class: "flex-col [&>[data-slot]]:rounded-md!" },
+		],
 		defaultVariants: {
 			orientation: "horizontal",
+			segmented: false,
 		},
 	});
 
 	export type ButtonGroupOrientation = VariantProps<typeof buttonGroupVariants>["orientation"];
+	export type ButtonGroupSegmented = VariantProps<typeof buttonGroupVariants>["segmented"];
 </script>
 
 <script lang="ts">
@@ -28,9 +41,11 @@
 		class: className,
 		children,
 		orientation = "horizontal",
+		segmented = false,
 		...restProps
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
 		orientation?: ButtonGroupOrientation;
+		segmented?: ButtonGroupSegmented;
 	} = $props();
 </script>
 
@@ -39,7 +54,7 @@
 	role="group"
 	data-slot="button-group"
 	data-orientation={orientation}
-	class={cn(buttonGroupVariants({ orientation }), className)}
+	class={cn(buttonGroupVariants({ orientation, segmented }), className)}
 	{...restProps}
 >
 	{@render children?.()}

@@ -8,7 +8,7 @@
 
 - **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
 - This applies to ALL situations - no exceptions
-- See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules
+- See [.devin/rules/gitflow.md](./.devin/rules/gitflow.md) for complete GitFlow rules
 
 ## Quick Start for AI Agents
 

@@ -1,0 +1,71 @@
+---
+title: Composables (use* hooks)
+description: "The src/lib/composables catalog — reactive Svelte 5 hooks organized by concern: permissions/RBAC, entity metadata, form guards, selection, health, and input primitives."
+---
+
+# Composables — the `use*` catalog
+
+`src/lib/composables/` holds **Svelte 5 reactive hooks** (`$state`/`$derived`
+rune-backed classes) that components share. This page maps the catalog by
+concern — signatures live in [api-reference](./api-reference.mdx).
+
+## Permissions & roles
+
+| Hook | For |
+|---|---|
+| `usePermissionsCatalog` | the full permission catalog (admin screens, role editors) |
+| `useActiveRoles` | the caller's active roles for the current org/session |
+| `useRoleMappings` | role↔group mapping data (Casdoor-synced surfaces) |
+
+## Entity & data access
+
+| Hook | For |
+|---|---|
+| `useEntityMetadata` | `*.meta.ts`-driven entity metadata (fields, permissions, labels) — powers every entity page |
+| `useConfigEntries` | `config_entries` rows — settings pages, feature flags |
+| `useAuditBox` | entity audit-trail panel data |
+| `useExistingGroupKeys` | reserved/group-key existence checks in pickers |
+| `useTypeCapabilities` / `useMachineCapabilities` | what a type/machine supports (feature-gated UI) |
+
+## AI
+
+| Hook | For |
+|---|---|
+| `useAiModels` | installed AI models for selectors/settings |
+| `useAiCerebellum` | cerebellum rules for assistant config screens |
+
+The chat/tool loop itself lives in `shell/ai-chat/` — see
+[ai-tool-loop](./ai-tool-loop.mdx).
+
+## Forms & guards
+
+| Hook | For |
+|---|---|
+| `useFormGuard` / `useUnsavedChangesGuard` | dirty-state tracking + "leave without saving?" interception |
+| `useTabsMode` | tab-state for multi-section forms |
+| `useMfaStepUp` | step-up challenge flow around sensitive actions |
+| `usePasswordPolicy` | live password-rules checklist (pairs with `password-checklist`) |
+
+## Selection & input primitives
+
+| Hook | For |
+|---|---|
+| `useSelection` | multi-select state for list/bulk operations |
+| `useNumericInput` / `useOtpInput` | constrained inputs (numeric, OTP boxes) |
+| `useAvatarPreview` | image preview before upload (component doc: avatar-preview) |
+
+## Health & realtime
+
+| Hook | For |
+|---|---|
+| `useHealthChip` | service/module health chip state (sidebar badges) |
+| `useSyncChannel` | cross-tab sync via BroadcastChannel (session, theme, lang) |
+
+## Conventions
+
+- **Rune-backed classes, not function closures** — `.svelte.ts` files
+  expose `$state`-reactive objects; instantiate per component tree, not
+  module-scope singletons.
+- **Name = `use<Purpose>`**; file = kebab of the same.
+- **Composables fetch through `api.ts`** — never raw `fetch`; errors flow
+  through the [errors pipeline](./error-handling.mdx).

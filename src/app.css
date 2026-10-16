@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
 
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
@@ -161,6 +161,35 @@
 }
 
 /**
+ * Gradient ring — paints the gradient in `--gb` as a 1px border ring while
+ * leaving the element's own background untouched. This is the ONLY technique
+ * that allows a TRANSPARENT fill under a gradient border: the
+ * padding-box/border-box double-background used by border-primary-gradient
+ * requires an opaque fill layer, otherwise the full-strength border layer
+ * bleeds through. The mask-composite keeps the gradient inside the 1px ring;
+ * border-radius is honored via `inherit`.
+ *
+ * Usage: `class="gradient-ring"` + `style="--gb: linear-gradient(...)"`.
+ */
+.gradient-ring {
+  position: relative;
+}
+.gradient-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gb);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/**
  * Vertical gradient divider (sky-400 → indigo-400 at 50% opacity, top → bottom).
  * Branded replacement for `bg-border/60` on 1px-wide vertical separators in
  * toolbars/footers. Same visual weight as the old grey divider but with the
@@ -177,6 +206,82 @@
  */
 @utility hr-primary-gradient {
   background: linear-gradient(to right, #38bdf8, #818cf8);
+}
+
+/**
+ * Slider RANGE gradient fills (left → right), same color pairs as the
+ * matching border-{tone}-gradient utilities. Used by Slider/SliderField via
+ * the `tone` prop — the filled range is a tone gradient, never a flat color.
+ */
+@utility bg-range-primary-gradient {
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+}
+@utility bg-range-destructive-gradient {
+  background: linear-gradient(to right, #fb7185, #dc2626);
+}
+@utility bg-range-warning-gradient {
+  background: linear-gradient(to right, #fde047, #eab308);
+}
+@utility bg-range-info-gradient {
+  background: linear-gradient(to right, #38bdf8, #2563eb);
+}
+@utility bg-range-success-gradient {
+  background: linear-gradient(to right, #34d399, #059669);
+}
+
+/**
+ * Selected-row shadow for menus/lists: keeps the outer `shadow-xs` drop and
+ * adds a subtle inner glow derived from the primary gradient
+ * (sky-400 top-left → indigo-400 bottom-right), so selected rows read as a
+ * Button `outline`-style surface with a faint branded inner rim.
+ * Use INSTEAD of `shadow-xs` on selected menu rows (this utility includes it).
+ */
+@utility shadow-selected-primary {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    inset 3px 3px 8px -3px rgba(56, 189, 248, 0.35),
+    inset -3px -3px 8px -3px rgba(129, 140, 248, 0.35);
+}
+
+/**
+ * Left-side truncation ("…badge.active"): the meaningful tail of long
+ * identifiers (i18n keys, codes) is at the END, so the ellipsis goes at
+ * the start. `direction: rtl` moves the overflow to the visual left.
+ */
+@utility truncate-start {
+  direction: rtl;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/**
+ * Scrollbar utilities for floating surfaces (dropdowns, popovers, command
+ * lists): the native scrollbar steals ~15px and breaks right-alignment of
+ * trailing content (e.g. RankMeter). `no-scrollbar` hides it entirely (wheel
+ * still scrolls); `scrollbar-thin` keeps a slim 5px indicator.
+ */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /**
@@ -200,7 +305,7 @@
  * Usage: replace `text-muted-foreground` (or similar) with `text-primary-gradient`.
  */
 @utility text-primary-gradient {
-  background: linear-gradient(to bottom right, #38bdf8, #818cf8);
+  background: linear-gradient(to bottom right, #0284c7, #4f46e5, #7c3aed);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -543,6 +648,31 @@ select:-webkit-autofill:focus {
 @keyframes gradient-pan {
   0%   { background-position: 0% 0%; }
   100% { background-position: 200% 0%; }
+}
+
+/**
+ * VRAM load animation: indeterminate bar that slides left-to-right
+ * and loops, used during ONNX session creation + warmup phase.
+ */
+@utility animate-vram-load {
+  animation: vram-load 1.5s ease-in-out infinite;
+}
+
+@keyframes vram-load {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(300%); }
+}
+
+/**
+ * AI icon shimmer sweep — animates the SVG linearGradient's x1/x2
+ * to create a shimmer effect across the stroke. Used by AiIcon component.
+ * The actual animation is done via SMIL <animate> elements inside the SVG,
+ * so this keyframe is available as a CSS fallback if needed.
+ */
+@keyframes ai-shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 @layer base {

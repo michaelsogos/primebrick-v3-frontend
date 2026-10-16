@@ -2,7 +2,8 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
@@ -31,10 +32,10 @@
   let challengeToken = $state('');
   let availableFactors = $state<Array<{ factor_id: string; factor_type: string; label: string | null }>>([]);
   let factorId = $state('');
-  let code = $state('');
   let loading = $state(false);
   let verifying = $state(false);
   let error = $state<string | null>(null);
+  const otp = useOtpInput({ onSubmit: () => verify(), disabled: () => verifying });
 
   // Reset state when dialog opens
   $effect(() => {
@@ -42,7 +43,7 @@
       challengeToken = '';
       availableFactors = [];
       factorId = '';
-      code = '';
+      otp.reset();
       error = null;
       void initiate();
     }
@@ -59,7 +60,7 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('auth.mfaStepUp.stepUpInitiateError');
+        error = err.detail || $t('app.auth.mfaStepUp.stepUpInitiateError');
         return;
       }
       const data = await resp.json();
@@ -68,15 +69,15 @@
       factorId = availableFactors[0]?.factor_id ?? '';
     } catch (e) {
       console.error('[MfaStepUp] Initiate failed:', e);
-      error = $t('auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connectionError');
     } finally {
       loading = false;
     }
   }
 
   async function verify() {
-    if (!code || code.length !== 6) {
-      error = $t('auth.mfa.codeRequired');
+    if (otp.code.length !== 6) {
+      error = $t('app.auth.mfa.codeRequired');
       return;
     }
     verifying = true;
@@ -88,39 +89,49 @@
         body: JSON.stringify({
           mfa_challenge_token: challengeToken,
           factor_id: factorId,
-          code,
+          code: otp.code,
         }),
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('auth.mfa.invalidCode');
+        error = err.detail || $t('app.auth.mfa.invalidCode');
+        otp.reset();
         return;
       }
       const data = await resp.json();
       pushNotification({
         impact: 'NONE',
-        message: $t('auth.mfaStepUp.stepUpAuthorized'),
+        message: $t('app.auth.mfaStepUp.stepUpAuthorized'),
         scope: 'auth',
       });
+      // Clear before the dialog close re-render: a complete OTP left bound
+      // makes PinInput re-fire onComplete in the effect flush → duplicate
+      // step-up verify with the consumed challenge token.
+      otp.reset();
       onauthorized?.(data.action_authorization_token);
       open = false;
     } catch (e) {
       console.error('[MfaStepUp] Verify failed:', e);
-      error = $t('auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connectionError');
     } finally {
       verifying = false;
     }
   }
 </script>
 
-<BorderedDialog bind:open severity="primary" tone="soft" class="sm:max-w-md">
+<BorderedDialog bind:open severity="primary" tone="soft" class="sm:max-w-md"
+  onOpenAutoFocus={(e: Event) => {
+    // Focus the OTP hidden input so the user can type/paste without the mouse.
+    e.preventDefault();
+    document.querySelector<HTMLElement>('[data-pin-input-input]')?.focus();
+  }}>
   <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <ShieldCheck class="size-5 text-primary" />
-        {$t('auth.mfaStepUp.stepUpTitle')}
+        {$t('app.auth.mfaStepUp.stepUpTitle')}
       </Dialog.Title>
       <Dialog.Description>
-        {$t('auth.mfaStepUp.stepUpDescription')}
+        {$t('app.auth.mfaStepUp.stepUpDescription')}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -132,7 +143,7 @@
       <div class="space-y-4 py-2">
         <p class="text-sm text-destructive">{error}</p>
         <Button onclick={initiate} class="w-full">
-          {$t('common.retry')}
+          {$t('app.common.retry')}
         </Button>
       </div>
     {:else}
@@ -140,13 +151,13 @@
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
           <KeyRound class="size-4" />
           <span>
-            {$t('auth.mfaStepUp.stepUpAction')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
+            {$t('app.auth.mfaStepUp.stepUpAction')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
           </span>
         </div>
 
         {#if availableFactors.length > 1}
           <div class="space-y-2">
-            <Label for="mfa-stepup-factor">{$t('auth.mfaStepUp.selectFactor')}</Label>
+            <Label for="mfa-stepup-factor">{$t('app.auth.mfaStepUp.selectFactor')}</Label>
             <select
               id="mfa-stepup-factor"
               class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -154,7 +165,7 @@
             >
               {#each availableFactors as factor}
                 <option value={factor.factor_id}>
-                  {factor.label || $t('auth.mfa.defaultLabel')} ({factor.factor_type})
+                  {factor.label || $t('app.auth.mfa.defaultLabel')} ({factor.factor_type})
                 </option>
               {/each}
             </select>
@@ -162,18 +173,13 @@
         {/if}
 
         <div class="space-y-2">
-          <Label for="mfa-stepup-code">{$t('auth.mfa.verifyCode')}</Label>
-          <Input
+          <Label for="mfa-stepup-code">{$t('app.auth.mfa.verifyCode')}</Label>
+          <OtpInput
             id="mfa-stepup-code"
-            type="text"
-            inputmode="numeric"
-            pattern="\d{6}"
-            maxlength={6}
-            autocomplete="one-time-code"
-            placeholder="000000"
-            class="text-center text-lg tracking-widest"
-            bind:value={code}
-            onkeydown={(e) => { if (e.key === 'Enter') verify(); }}
+            data-testid="mfa-stepup-code-input"
+            bind:value={otp.code}
+            onsubmit={otp.requestSubmit}
+            disabled={verifying}
           />
         </div>
 
@@ -185,7 +191,7 @@
           {#if verifying}
             <Spinner class="size-4 mr-2" />
           {/if}
-          {$t('auth.mfaStepUp.verifyAndAuthorize')}
+          {$t('app.auth.mfaStepUp.verifyAndAuthorize')}
         </Button>
       </div>
     {/if}

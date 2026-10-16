@@ -1,5 +1,5 @@
 {
-  "audit_date": "2026-07-17T22:57:02.008Z",
+  "audit_date": "2026-09-27T23:07:39.220Z",
   "axe_version": "4.12.1",
   "base_url": "http://localhost:5173",
   "axe_tags": [
@@ -17,11 +17,11 @@
     "section508",
     "EN301549"
   ],
-  "routes_audited": 17,
-  "total_violations": 76,
-  "total_passes": 654,
-  "total_incomplete": 42,
-  "total_inapplicable": 907,
+  "routes_audited": 18,
+  "total_violations": 73,
+  "total_passes": 676,
+  "total_incomplete": 29,
+  "total_inapplicable": 977,
   "unique_violating_rules": [
     "aria-required-attr",
     "color-contrast-enhanced",
@@ -31,8 +31,9 @@
     "page-has-heading-one",
     "color-contrast",
     "label",
-    "heading-order",
-    "button-name"
+    "aria-input-field-name",
+    "button-name",
+    "heading-order"
   ],
   "unique_passing_rules": [
     "aria-allowed-attr",
@@ -94,7 +95,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 39,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 53,
       "violation_details": [
         {
@@ -114,7 +115,7 @@
           ],
           "nodes": [
             {
-              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
+              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"app.search.placehold...\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
               "target": [
                 "#pb-command-palette-input"
               ],
@@ -136,35 +137,21 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span>Online</span>",
+              "html": "<span>app.health.beOnline</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
-                ".truncate.svelte-33nbcj.text-xs"
+                ".truncate.svelte-33nbcj.text-muted-foreground"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
+              "html": "<span class=\"bg-card px-2 text-muted-foreground\">app.auth.login.or</span>",
               "target": [
                 ".bg-card"
               ],
@@ -266,7 +253,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -447,14 +433,14 @@
           ],
           "nodes": [
             {
-              "html": "<img alt=\"PrimeBrick Hero\" class=\"absolute inset-0 h-full w-full object-cover z-0 transition-opacity duration-500\" src=\"https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&amp;fit=crop&amp;w=1200&amp;q=80\">",
+              "html": "<img src=\"https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&amp;fit=crop&amp;w=1200&amp;q=80\" alt=\"PrimeBrick Hero\" class=\"absolute inset-0 h-full w-full object-cover z-0 transition-opacity duration-500\">",
               "target": [
                 ".object-cover"
               ],
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             },
             {
-              "html": "<p class=\"text-xl font-light leading-relaxed text-zinc-100 tracking-wide max-w-lg drop-shadow-md\">\"Ottimizza i flussi di lavoro e il controllo granulare. Tutto in un unico ecosistema.\"</p>",
+              "html": "<p class=\"text-xl font-light leading-relaxed text-zinc-100 tracking-wide max-w-lg drop-shadow-md\">\"La piattaforma di gestione solida, modulare ed efficiente per il controllo completo dei tuoi progetti.\"</p>",
               "target": [
                 ".text-xl"
               ],
@@ -649,7 +635,7 @@
           ],
           "nodes": [
             {
-              "html": "<p data-slot=\"card-description\" class=\"text-muted-foreground text-sm\">Nessun token di invito trovato. Utilizza il link dalla tua email di invito.<!----></p>",
+              "html": "<p data-slot=\"card-description\" class=\"text-muted-foreground text-sm\" data-testid=\"welcome-error-message\">Nessun token di invito trovato. Utilizza il link dalla tua email di invito.<!----></p>",
               "target": [
                 "p"
               ],
@@ -680,7 +666,7 @@
             {
               "html": "<span class=\"font-semibold text-sm\">Primebrick</span>",
               "target": [
-                ".justify-between > .gap-2.flex.items-center:nth-child(1) > .font-semibold"
+                ".justify-between > .gap-2.items-center.flex:nth-child(1) > .font-semibold"
               ],
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             },
@@ -692,7 +678,7 @@
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             },
             {
-              "html": "<p data-slot=\"card-description\" class=\"text-muted-foreground text-sm\">Nessun token di invito trovato. Utilizza il link dalla tua email di invito.<!----></p>",
+              "html": "<p data-slot=\"card-description\" class=\"text-muted-foreground text-sm\" data-testid=\"welcome-error-message\">Nessun token di invito trovato. Utilizza il link dalla tua email di invito.<!----></p>",
               "target": [
                 "p"
               ],
@@ -855,7 +841,7 @@
           ],
           "nodes": [
             {
-              "html": "<div data-slot=\"alert-description\" class=\"text-sm text-muted-foreground [&amp;_p]:leading-relaxed\">Parametri OAuth non validi — campi obbligatori mancanti<!----></div>",
+              "html": "<div data-slot=\"alert-description\" class=\"text-sm text-muted-foreground [&amp;_p]:leading-relaxed\">app.mcp.consent.invalidParams<!----></div>",
               "target": [
                 ".text-muted-foreground"
               ],
@@ -1015,36 +1001,11 @@
       "requested_url": "http://localhost:5173/customers",
       "final_url": "http://localhost:5173/customers",
       "redirected": false,
-      "violations": 6,
-      "passes": 42,
-      "incomplete": 3,
-      "inapplicable": 50,
+      "violations": 3,
+      "passes": 33,
+      "incomplete": 1,
+      "inapplicable": 59,
       "violation_details": [
-        {
-          "rule_id": "aria-required-attr",
-          "description": "Ensure elements with ARIA roles have all required ARIA attributes",
-          "help": "Required ARIA attributes must be provided",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-required-attr?application=playwright",
-          "impact": "critical",
-          "tags": [
-            "cat.aria",
-            "wcag2a",
-            "wcag412",
-            "EN-301-549",
-            "EN-9.4.1.2",
-            "RGAAv4",
-            "RGAA-7.1.1"
-          ],
-          "nodes": [
-            {
-              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
-              "target": [
-                "#pb-command-palette-input"
-              ],
-              "failure_summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-controls"
-            }
-          ]
-        },
         {
           "rule_id": "color-contrast-enhanced",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AAA enhanced contrast ratio thresholds",
@@ -1059,102 +1020,11 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-muted-foreground.text-xs"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span>Online</span>",
-              "target": [
-                ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                "kbd:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
-              "target": [
-                ".svelte-33nbcj.truncate.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">CRM</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"text-sm font-medium text-muted-foreground\">Caricamento…</div>",
-              "target": [
-                ".text-center.flex-col.relative > .text-muted-foreground.text-sm.font-medium"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"text-muted-foreground\">Righe per pagina</span>",
-              "target": [
-                ".border-t.justify-between.gap-3 > .gap-2.flex.items-center > .text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground\">Pagina 1 di 1</div>",
-              "target": [
-                ".px-0\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
               "target": [
                 ".bg-card"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            }
-          ]
-        },
-        {
-          "rule_id": "color-contrast",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "help": "Elements must meet minimum color contrast ratio thresholds",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright",
-          "impact": "serious",
-          "tags": [
-            "cat.color",
-            "wcag2aa",
-            "wcag143",
-            "TTv5",
-            "TT13.c",
-            "EN-301-549",
-            "EN-9.1.4.3",
-            "ACT",
-            "RGAAv4",
-            "RGAA-3.2.1"
-          ],
-          "nodes": [
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
             }
           ]
         },
@@ -1187,36 +1057,6 @@
           ]
         },
         {
-          "rule_id": "label",
-          "description": "Ensure every form element has a label",
-          "help": "Form elements must have labels",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/label?application=playwright",
-          "impact": "critical",
-          "tags": [
-            "cat.forms",
-            "wcag2a",
-            "wcag412",
-            "section508",
-            "section508.22.n",
-            "TTv5",
-            "TT5.c",
-            "EN-301-549",
-            "EN-9.4.1.2",
-            "ACT",
-            "RGAAv4",
-            "RGAA-11.1.1"
-          ],
-          "nodes": [
-            {
-              "html": "<input type=\"text\" class=\"w-full h-full bg-transparent border-none outline-hidden text-transparent caret-foreground tracking-normal font-sans py-1 px-3 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-muted-foreground/70\">",
-              "target": [
-                ".text-transparent"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
-            }
-          ]
-        },
-        {
           "rule_id": "region",
           "description": "Ensure all page content is contained by landmarks",
           "help": "All page content should be contained by landmarks",
@@ -1230,9 +1070,16 @@
           ],
           "nodes": [
             {
-              "html": "<div class=\"text-sidebar-foreground group peer hidden md:block\" data-state=\"expanded\" data-collapsible=\"\" data-variant=\"sidebar\" data-side=\"left\">",
+              "html": "<div class=\"flex items-center\"><span data-testid=\"error-page-status\" class=\"relative -top-[0.05rem] text-[3rem] leading-none font-extralight\">404</span> <div class=\"ml-4 flex min-h-10 items-center border-l border-border pl-4\"><h1 class=\"text-base font-normal\">Pagina non trovata</h1></div></div>",
               "target": [
-                ".group"
+                ".mx-4 > .flex.items-center:nth-child(1)"
+              ],
+              "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            },
+            {
+              "html": "<p data-testid=\"error-page-code\" class=\"font-mono text-xs font-bold\"><!--[-1--><!--]-->Not Found</p>",
+              "target": [
+                "p"
               ],
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             }
@@ -1252,10 +1099,8 @@
         "aria-roles",
         "aria-valid-attr-value",
         "aria-valid-attr",
-        "autocomplete-valid",
         "avoid-inline-spacing",
         "button-name",
-        "bypass",
         "color-contrast-enhanced",
         "color-contrast",
         "duplicate-id-aria",
@@ -1264,17 +1109,10 @@
         "heading-order",
         "html-has-lang",
         "html-lang-valid",
-        "identical-links-same-purpose",
         "label-title-only",
         "label",
-        "landmark-main-is-top-level",
-        "landmark-no-duplicate-banner",
-        "landmark-no-duplicate-main",
         "landmark-one-main",
         "landmark-unique",
-        "link-name",
-        "list",
-        "listitem",
         "meta-viewport-large",
         "meta-viewport",
         "nested-interactive",
@@ -1284,8 +1122,6 @@
         "target-size"
       ],
       "incomplete_rule_ids": [
-        "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -1303,7 +1139,9 @@
         "aria-toggle-field-name",
         "aria-tooltip-name",
         "aria-treeitem-name",
+        "autocomplete-valid",
         "blink",
+        "bypass",
         "definition-list",
         "dlitem",
         "empty-table-header",
@@ -1312,14 +1150,21 @@
         "frame-title-unique",
         "frame-title",
         "html-xml-lang-mismatch",
+        "identical-links-same-purpose",
         "image-alt",
         "image-redundant-alt",
         "input-button-name",
         "input-image-alt",
         "landmark-banner-is-top-level",
         "landmark-contentinfo-is-top-level",
+        "landmark-main-is-top-level",
+        "landmark-no-duplicate-banner",
         "landmark-no-duplicate-contentinfo",
+        "landmark-no-duplicate-main",
         "link-in-text-block",
+        "link-name",
+        "list",
+        "listitem",
         "marquee",
         "meta-refresh-no-exceptions",
         "meta-refresh",
@@ -1347,36 +1192,11 @@
       "requested_url": "http://localhost:5173/customers/new",
       "final_url": "http://localhost:5173/customers/new",
       "redirected": false,
-      "violations": 4,
-      "passes": 42,
-      "incomplete": 3,
-      "inapplicable": 50,
+      "violations": 3,
+      "passes": 33,
+      "incomplete": 1,
+      "inapplicable": 59,
       "violation_details": [
-        {
-          "rule_id": "aria-required-attr",
-          "description": "Ensure elements with ARIA roles have all required ARIA attributes",
-          "help": "Required ARIA attributes must be provided",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-required-attr?application=playwright",
-          "impact": "critical",
-          "tags": [
-            "cat.aria",
-            "wcag2a",
-            "wcag412",
-            "EN-301-549",
-            "EN-9.4.1.2",
-            "RGAAv4",
-            "RGAA-7.1.1"
-          ],
-          "nodes": [
-            {
-              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
-              "target": [
-                "#pb-command-palette-input"
-              ],
-              "failure_summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-controls"
-            }
-          ]
-        },
         {
           "rule_id": "color-contrast-enhanced",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AAA enhanced contrast ratio thresholds",
@@ -1390,55 +1210,6 @@
             "ACT"
           ],
           "nodes": [
-            {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span>Online</span>",
-              "target": [
-                ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
-              "target": [
-                ".truncate.svelte-33nbcj.text-xs"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">CRM</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/customers\"><!---->Gestione Clienti<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<p class=\"text-sm text-muted-foreground\">Presto</p>",
-              "target": [
-                "p"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
               "target": [
@@ -1490,9 +1261,16 @@
           ],
           "nodes": [
             {
-              "html": "<div class=\"text-sidebar-foreground group peer hidden md:block\" data-state=\"expanded\" data-collapsible=\"\" data-variant=\"sidebar\" data-side=\"left\">",
+              "html": "<div class=\"flex items-center\"><span data-testid=\"error-page-status\" class=\"relative -top-[0.05rem] text-[3rem] leading-none font-extralight\">404</span> <div class=\"ml-4 flex min-h-10 items-center border-l border-border pl-4\"><h1 class=\"text-base font-normal\">Pagina non trovata</h1></div></div>",
               "target": [
-                ".group"
+                ".mx-4 > .flex.items-center:nth-child(1)"
+              ],
+              "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            },
+            {
+              "html": "<p data-testid=\"error-page-code\" class=\"font-mono text-xs font-bold\"><!--[-1--><!--]-->Not Found</p>",
+              "target": [
+                "p"
               ],
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             }
@@ -1512,10 +1290,8 @@
         "aria-roles",
         "aria-valid-attr-value",
         "aria-valid-attr",
-        "autocomplete-valid",
         "avoid-inline-spacing",
         "button-name",
-        "bypass",
         "color-contrast-enhanced",
         "color-contrast",
         "duplicate-id-aria",
@@ -1524,17 +1300,10 @@
         "heading-order",
         "html-has-lang",
         "html-lang-valid",
-        "identical-links-same-purpose",
         "label-title-only",
         "label",
-        "landmark-main-is-top-level",
-        "landmark-no-duplicate-banner",
-        "landmark-no-duplicate-main",
         "landmark-one-main",
         "landmark-unique",
-        "link-name",
-        "list",
-        "listitem",
         "meta-viewport-large",
         "meta-viewport",
         "nested-interactive",
@@ -1544,8 +1313,6 @@
         "target-size"
       ],
       "incomplete_rule_ids": [
-        "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -1563,7 +1330,9 @@
         "aria-toggle-field-name",
         "aria-tooltip-name",
         "aria-treeitem-name",
+        "autocomplete-valid",
         "blink",
+        "bypass",
         "definition-list",
         "dlitem",
         "empty-table-header",
@@ -1572,14 +1341,21 @@
         "frame-title-unique",
         "frame-title",
         "html-xml-lang-mismatch",
+        "identical-links-same-purpose",
         "image-alt",
         "image-redundant-alt",
         "input-button-name",
         "input-image-alt",
         "landmark-banner-is-top-level",
         "landmark-contentinfo-is-top-level",
+        "landmark-main-is-top-level",
+        "landmark-no-duplicate-banner",
         "landmark-no-duplicate-contentinfo",
+        "landmark-no-duplicate-main",
         "link-in-text-block",
+        "link-name",
+        "list",
+        "listitem",
         "marquee",
         "meta-refresh-no-exceptions",
         "meta-refresh",
@@ -1609,7 +1385,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 39,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 53,
       "violation_details": [
         {
@@ -1651,13 +1427,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -1665,67 +1434,11 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
                 ".truncate.svelte-33nbcj.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">CRM</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<p class=\"text-sm text-muted-foreground\">Anteprima statica per layout e navigazione.</p>",
-              "target": [
-                ".space-y-2.shrink-0 > p"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<p>Schermata segnaposto per provare il flusso CRM prima di collegare le API.</p>",
-              "target": [
-                "p:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<p>Nessun dato viene salvato.</p>",
-              "target": [
-                ".space-y-3 > p:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<li>Fasi del lead (esempio)</li>",
-              "target": [
-                ".list-inside > li:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<li>Board drag-and-drop (non collegata)</li>",
-              "target": [
-                ".list-inside > li:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<li>Inbox di team (mock)</li>",
-              "target": [
-                "li:nth-child(3)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
@@ -1830,7 +1543,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -1897,7 +1609,7 @@
       "redirected": true,
       "violations": 4,
       "passes": 39,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 53,
       "violation_details": [
         {
@@ -1939,25 +1651,11 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.text-left.grid > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
@@ -2076,7 +1774,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -2143,7 +1840,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 39,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 53,
       "violation_details": [
         {
@@ -2185,25 +1882,11 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.text-left.grid > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
@@ -2322,7 +2005,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -2387,36 +2069,11 @@
       "requested_url": "http://localhost:5173/system/settings/security",
       "final_url": "http://localhost:5173/system/settings/security",
       "redirected": false,
-      "violations": 6,
-      "passes": 43,
-      "incomplete": 3,
-      "inapplicable": 49,
+      "violations": 3,
+      "passes": 33,
+      "incomplete": 1,
+      "inapplicable": 59,
       "violation_details": [
-        {
-          "rule_id": "aria-required-attr",
-          "description": "Ensure elements with ARIA roles have all required ARIA attributes",
-          "help": "Required ARIA attributes must be provided",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-required-attr?application=playwright",
-          "impact": "critical",
-          "tags": [
-            "cat.aria",
-            "wcag2a",
-            "wcag412",
-            "EN-301-549",
-            "EN-9.4.1.2",
-            "RGAAv4",
-            "RGAA-7.1.1"
-          ],
-          "nodes": [
-            {
-              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
-              "target": [
-                "#pb-command-palette-input"
-              ],
-              "failure_summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-controls"
-            }
-          ]
-        },
         {
           "rule_id": "color-contrast-enhanced",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AAA enhanced contrast ratio thresholds",
@@ -2431,130 +2088,11 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span>Online</span>",
-              "target": [
-                ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                "kbd:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
-              "target": [
-                ".svelte-33nbcj.truncate.text-xs"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full.gap-1\\.5[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"italic text-muted-foreground\">current</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(1) > .italic.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
               "target": [
                 ".bg-card"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            }
-          ]
-        },
-        {
-          "rule_id": "color-contrast",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "help": "Elements must meet minimum color contrast ratio thresholds",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright",
-          "impact": "serious",
-          "tags": [
-            "cat.color",
-            "wcag2aa",
-            "wcag143",
-            "TTv5",
-            "TT13.c",
-            "EN-301-549",
-            "EN-9.1.4.3",
-            "ACT",
-            "RGAAv4",
-            "RGAA-3.2.1"
-          ],
-          "nodes": [
-            {
-              "html": "<div data-slot=\"event-card-time\" class=\"mt-2 flex items-center gap-1.5 text-xs font-normal text-muted-foreground\">",
-              "target": [
-                "div[data-slot=\"event-card-time\"]"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.35 (foreground color: #64748b, background color: #fef2f2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">ID:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(1) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">Creato il:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(2) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">Creato da:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(3) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">Aggiornato il:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(4) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">Aggiornato da:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(5) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<span class=\"text-primary\">Ultima sincronizzazione:</span>",
-              "target": [
-                ".gap-x-2.items-center.flex:nth-child(6) > .text-primary"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.92 (foreground color: #0284c5, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
             }
           ]
         },
@@ -2587,26 +2125,6 @@
           ]
         },
         {
-          "rule_id": "heading-order",
-          "description": "Ensure the order of headings is semantically correct",
-          "help": "Heading levels should only increase by one",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/heading-order?application=playwright",
-          "impact": "moderate",
-          "tags": [
-            "cat.semantics",
-            "best-practice"
-          ],
-          "nodes": [
-            {
-              "html": "<h3 class=\"text-lg font-medium\">Cambia Password</h3>",
-              "target": [
-                ".rounded-lg.space-y-4.p-4:nth-child(1) > .text-lg"
-              ],
-              "failure_summary": "Fix any of the following:\n  Heading order invalid"
-            }
-          ]
-        },
-        {
           "rule_id": "region",
           "description": "Ensure all page content is contained by landmarks",
           "help": "All page content should be contained by landmarks",
@@ -2620,9 +2138,16 @@
           ],
           "nodes": [
             {
-              "html": "<div class=\"text-sidebar-foreground group peer hidden md:block\" data-state=\"expanded\" data-collapsible=\"\" data-variant=\"sidebar\" data-side=\"left\">",
+              "html": "<div class=\"flex items-center\"><span data-testid=\"error-page-status\" class=\"relative -top-[0.05rem] text-[3rem] leading-none font-extralight\">404</span> <div class=\"ml-4 flex min-h-10 items-center border-l border-border pl-4\"><h1 class=\"text-base font-normal\">Pagina non trovata</h1></div></div>",
               "target": [
-                ".peer"
+                ".mx-4 > .flex.items-center:nth-child(1)"
+              ],
+              "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            },
+            {
+              "html": "<p data-testid=\"error-page-code\" class=\"font-mono text-xs font-bold\"><!--[-1--><!--]-->Not Found</p>",
+              "target": [
+                "p"
               ],
               "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             }
@@ -2642,10 +2167,8 @@
         "aria-roles",
         "aria-valid-attr-value",
         "aria-valid-attr",
-        "autocomplete-valid",
         "avoid-inline-spacing",
         "button-name",
-        "bypass",
         "color-contrast-enhanced",
         "color-contrast",
         "duplicate-id-aria",
@@ -2654,29 +2177,19 @@
         "heading-order",
         "html-has-lang",
         "html-lang-valid",
-        "identical-links-same-purpose",
         "label-title-only",
         "label",
-        "landmark-main-is-top-level",
-        "landmark-no-duplicate-banner",
-        "landmark-no-duplicate-main",
         "landmark-one-main",
         "landmark-unique",
-        "link-name",
-        "list",
-        "listitem",
         "meta-viewport-large",
         "meta-viewport",
         "nested-interactive",
         "page-has-heading-one",
         "region",
-        "scrollable-region-focusable",
         "tabindex",
         "target-size"
       ],
       "incomplete_rule_ids": [
-        "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -2694,7 +2207,9 @@
         "aria-toggle-field-name",
         "aria-tooltip-name",
         "aria-treeitem-name",
+        "autocomplete-valid",
         "blink",
+        "bypass",
         "definition-list",
         "dlitem",
         "empty-table-header",
@@ -2703,14 +2218,21 @@
         "frame-title-unique",
         "frame-title",
         "html-xml-lang-mismatch",
+        "identical-links-same-purpose",
         "image-alt",
         "image-redundant-alt",
         "input-button-name",
         "input-image-alt",
         "landmark-banner-is-top-level",
         "landmark-contentinfo-is-top-level",
+        "landmark-main-is-top-level",
+        "landmark-no-duplicate-banner",
         "landmark-no-duplicate-contentinfo",
+        "landmark-no-duplicate-main",
         "link-in-text-block",
+        "link-name",
+        "list",
+        "listitem",
         "marquee",
         "meta-refresh-no-exceptions",
         "meta-refresh",
@@ -2718,6 +2240,7 @@
         "presentation-role-conflict",
         "role-img-alt",
         "scope-attr-valid",
+        "scrollable-region-focusable",
         "select-name",
         "server-side-image-map",
         "skip-link",
@@ -2737,9 +2260,9 @@
       "requested_url": "http://localhost:5173/system/settings/users",
       "final_url": "http://localhost:5173/system/settings/users",
       "redirected": false,
-      "violations": 6,
+      "violations": 5,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -2781,13 +2304,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-muted-foreground.text-xs"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -2795,58 +2311,9 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                "kbd:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
-                ".svelte-33nbcj.truncate.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Utenti</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"text-sm font-medium text-muted-foreground\">Caricamento…</div>",
-              "target": [
-                ".text-center.flex-col.relative > .text-muted-foreground.text-sm.font-medium"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"text-muted-foreground\">Righe per pagina</span>",
-              "target": [
-                ".justify-between.gap-3.border-t > .gap-2.flex.items-center > .text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground\">Pagina 1 di 1</div>",
-              "target": [
-                ".px-0\\.5"
+                ".svelte-33nbcj.truncate.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
             },
@@ -2856,41 +2323,6 @@
                 ".bg-card"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            }
-          ]
-        },
-        {
-          "rule_id": "color-contrast",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "help": "Elements must meet minimum color contrast ratio thresholds",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright",
-          "impact": "serious",
-          "tags": [
-            "cat.color",
-            "wcag2aa",
-            "wcag143",
-            "TTv5",
-            "TT13.c",
-            "EN-301-549",
-            "EN-9.1.4.3",
-            "ACT",
-            "RGAAv4",
-            "RGAA-3.2.1"
-          ],
-          "nodes": [
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
             }
           ]
         },
@@ -3021,7 +2453,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -3083,11 +2514,71 @@
       "requested_url": "http://localhost:5173/system/settings/users/create",
       "final_url": "http://localhost:5173/system/settings/users/create",
       "redirected": false,
-      "violations": 3,
-      "passes": 32,
-      "incomplete": 1,
-      "inapplicable": 59,
+      "violations": 5,
+      "passes": 43,
+      "incomplete": 2,
+      "inapplicable": 48,
       "violation_details": [
+        {
+          "rule_id": "aria-input-field-name",
+          "description": "Ensure every ARIA input field has an accessible name",
+          "help": "ARIA input fields must have an accessible name",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-input-field-name?application=playwright",
+          "impact": "serious",
+          "tags": [
+            "cat.aria",
+            "wcag2a",
+            "wcag412",
+            "TTv5",
+            "TT5.c",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-11.1.1"
+          ],
+          "nodes": [
+            {
+              "html": "<div data-slot=\"popover-trigger\" id=\"formsnap-11\" aria-haspopup=\"dialog\" aria-expanded=\"false\" data-state=\"closed\" data-popover-trigger=\"\" type=\"button\" role=\"combobox\" tabindex=\"0\" class=\"min-h-9 w-full round...\" data-testid=\"admin-user-create-ro...\">",
+              "target": [
+                "#formsnap-11"
+              ],
+              "failure_summary": "Fix any of the following:\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+            },
+            {
+              "html": "<div data-slot=\"popover-trigger\" id=\"formsnap-16\" aria-haspopup=\"dialog\" aria-expanded=\"false\" data-state=\"closed\" data-popover-trigger=\"\" type=\"button\" role=\"combobox\" tabindex=\"0\" class=\"min-h-9 w-full round...\" aria-required=\"true\" data-testid=\"admin-user-create-or...\">",
+              "target": [
+                "#formsnap-16"
+              ],
+              "failure_summary": "Fix any of the following:\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+            }
+          ]
+        },
+        {
+          "rule_id": "aria-required-attr",
+          "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+          "help": "Required ARIA attributes must be provided",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-required-attr?application=playwright",
+          "impact": "critical",
+          "tags": [
+            "cat.aria",
+            "wcag2a",
+            "wcag412",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "RGAAv4",
+            "RGAA-7.1.1"
+          ],
+          "nodes": [
+            {
+              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
+              "target": [
+                "#pb-command-palette-input"
+              ],
+              "failure_summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-controls"
+            }
+          ]
+        },
         {
           "rule_id": "color-contrast-enhanced",
           "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AAA enhanced contrast ratio thresholds",
@@ -3102,11 +2593,25 @@
           ],
           "nodes": [
             {
-              "html": "<p class=\"text-sm text-muted-foreground\">Enter email</p>",
+              "html": "<span>Online</span>",
               "target": [
-                "p:nth-child(2)"
+                ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
               ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
+            },
+            {
+              "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
+              "target": [
+                ".svelte-33nbcj.truncate.text-muted-foreground"
+              ],
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
+            },
+            {
+              "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
+              "target": [
+                ".bg-card"
+              ],
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
             }
           ]
         },
@@ -3139,22 +2644,24 @@
           ]
         },
         {
-          "rule_id": "page-has-heading-one",
-          "description": "Ensure that the page, or at least one of its frames contains a level-one heading",
-          "help": "Page should contain a level-one heading",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/page-has-heading-one?application=playwright",
+          "rule_id": "region",
+          "description": "Ensure all page content is contained by landmarks",
+          "help": "All page content should be contained by landmarks",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/region?application=playwright",
           "impact": "moderate",
           "tags": [
-            "cat.semantics",
-            "best-practice"
+            "cat.keyboard",
+            "best-practice",
+            "RGAAv4",
+            "RGAA-9.2.1"
           ],
           "nodes": [
             {
-              "html": "<html lang=\"en\">",
+              "html": "<div class=\"text-sidebar-foreground group peer hidden md:block\" data-state=\"expanded\" data-collapsible=\"\" data-variant=\"sidebar\" data-side=\"left\">",
               "target": [
-                "html"
+                ".group"
               ],
-              "failure_summary": "Fix all of the following:\n  Page must have a level-one heading"
+              "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
             }
           ]
         }
@@ -3164,6 +2671,7 @@
         "aria-allowed-role",
         "aria-conditional-attr",
         "aria-deprecated-role",
+        "aria-dialog-name",
         "aria-hidden-body",
         "aria-hidden-focus",
         "aria-prohibited-attr",
@@ -3174,26 +2682,37 @@
         "autocomplete-valid",
         "avoid-inline-spacing",
         "button-name",
+        "bypass",
         "color-contrast-enhanced",
         "color-contrast",
         "duplicate-id-aria",
+        "empty-heading",
         "form-field-multiple-labels",
+        "heading-order",
         "html-has-lang",
         "html-lang-valid",
+        "identical-links-same-purpose",
         "label-title-only",
         "label",
         "landmark-main-is-top-level",
+        "landmark-no-duplicate-banner",
         "landmark-no-duplicate-main",
         "landmark-one-main",
         "landmark-unique",
+        "link-name",
+        "list",
+        "listitem",
         "meta-viewport-large",
         "meta-viewport",
         "nested-interactive",
+        "page-has-heading-one",
         "region",
+        "scrollable-region-focusable",
         "tabindex",
         "target-size"
       ],
       "incomplete_rule_ids": [
+        "aria-prohibited-attr",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -3201,8 +2720,6 @@
         "area-alt",
         "aria-braille-equivalent",
         "aria-command-name",
-        "aria-dialog-name",
-        "aria-input-field-name",
         "aria-meter-name",
         "aria-progressbar-name",
         "aria-required-children",
@@ -3213,30 +2730,22 @@
         "aria-tooltip-name",
         "aria-treeitem-name",
         "blink",
-        "bypass",
         "definition-list",
         "dlitem",
-        "empty-heading",
         "empty-table-header",
         "frame-focusable-content",
         "frame-tested",
         "frame-title-unique",
         "frame-title",
-        "heading-order",
         "html-xml-lang-mismatch",
-        "identical-links-same-purpose",
         "image-alt",
         "image-redundant-alt",
         "input-button-name",
         "input-image-alt",
         "landmark-banner-is-top-level",
         "landmark-contentinfo-is-top-level",
-        "landmark-no-duplicate-banner",
         "landmark-no-duplicate-contentinfo",
         "link-in-text-block",
-        "link-name",
-        "list",
-        "listitem",
         "marquee",
         "meta-refresh-no-exceptions",
         "meta-refresh",
@@ -3244,7 +2753,6 @@
         "presentation-role-conflict",
         "role-img-alt",
         "scope-attr-valid",
-        "scrollable-region-focusable",
         "select-name",
         "server-side-image-map",
         "skip-link",
@@ -3264,9 +2772,9 @@
       "requested_url": "http://localhost:5173/system/settings/organizations",
       "final_url": "http://localhost:5173/system/settings/organizations",
       "redirected": false,
-      "violations": 6,
+      "violations": 5,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -3308,13 +2816,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-muted-foreground.text-xs"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -3322,58 +2823,9 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                "kbd:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
-                ".svelte-33nbcj.truncate.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Organizzazioni</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"text-sm font-medium text-muted-foreground\">Caricamento…</div>",
-              "target": [
-                ".text-center.flex-col.relative > .text-muted-foreground.text-sm.font-medium"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"text-muted-foreground\">Righe per pagina</span>",
-              "target": [
-                ".justify-between.gap-3.border-t > .gap-2.flex.items-center > .text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<div class=\"whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground\">Pagina 1 di 1</div>",
-              "target": [
-                ".px-0\\.5"
+                ".svelte-33nbcj.truncate.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
             },
@@ -3383,41 +2835,6 @@
                 ".bg-card"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            }
-          ]
-        },
-        {
-          "rule_id": "color-contrast",
-          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
-          "help": "Elements must meet minimum color contrast ratio thresholds",
-          "help_url": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright",
-          "impact": "serious",
-          "tags": [
-            "cat.color",
-            "wcag2aa",
-            "wcag143",
-            "TTv5",
-            "TT13.c",
-            "EN-301-549",
-            "EN-9.1.4.3",
-            "ACT",
-            "RGAAv4",
-            "RGAA-3.2.1"
-          ],
-          "nodes": [
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(1)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
-              "target": [
-                ".bg-primary\\/10.text-primary.hover\\:bg-primary\\/20:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.53 (foreground color: #0284c5, background color: #e2f0f7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
             }
           ]
         },
@@ -3548,7 +2965,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -3612,7 +3028,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -3654,13 +3070,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.text-left.grid > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -3668,39 +3077,11 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
-                ".svelte-33nbcj.truncate.text-xs"
+                ".svelte-33nbcj.truncate.text-muted-foreground"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full.gap-1\\.5[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Organizzazioni</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/organizations\"><!---->Organizzazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
@@ -3808,7 +3189,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -3872,7 +3252,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -3914,13 +3294,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -3928,39 +3301,11 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
                 ".svelte-33nbcj.truncate.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full.gap-1\\.5[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Provider email</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
@@ -4068,7 +3413,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -4132,7 +3476,7 @@
       "redirected": false,
       "violations": 4,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -4174,13 +3518,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -4188,39 +3525,11 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
                 ".svelte-33nbcj.truncate.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full.gap-1\\.5[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Moduli</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
@@ -4328,7 +3637,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [
@@ -4385,6 +3693,230 @@
       ]
     },
     {
+      "route": "/system/settings/modules/showcase",
+      "label": "Module detail (config entries form)",
+      "requested_url": "http://localhost:5173/system/settings/modules/showcase",
+      "final_url": "http://localhost:5173/system/settings/modules/showcase",
+      "redirected": false,
+      "violations": 4,
+      "passes": 39,
+      "incomplete": 2,
+      "inapplicable": 53,
+      "violation_details": [
+        {
+          "rule_id": "aria-required-attr",
+          "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+          "help": "Required ARIA attributes must be provided",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/aria-required-attr?application=playwright",
+          "impact": "critical",
+          "tags": [
+            "cat.aria",
+            "wcag2a",
+            "wcag412",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "RGAAv4",
+            "RGAA-7.1.1"
+          ],
+          "nodes": [
+            {
+              "html": "<input class=\"h-full min-h-0 w-ful...\" placeholder=\"Cerca…\" aria-expanded=\"true\" aria-autocomplete=\"list\" id=\"pb-command-palette-i...\" type=\"text\" data-command-input=\"\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\" role=\"combobox\" aria-labelledby=\"bits-s5\">",
+              "target": [
+                "#pb-command-palette-input"
+              ],
+              "failure_summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-controls"
+            }
+          ]
+        },
+        {
+          "rule_id": "color-contrast-enhanced",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AAA enhanced contrast ratio thresholds",
+          "help": "Elements must meet enhanced color contrast ratio thresholds",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/color-contrast-enhanced?application=playwright",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aaa",
+            "wcag146",
+            "ACT"
+          ],
+          "nodes": [
+            {
+              "html": "<span>Online</span>",
+              "target": [
+                ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
+              ],
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
+            },
+            {
+              "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
+              "target": [
+                ".truncate.svelte-33nbcj.text-muted-foreground"
+              ],
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
+            },
+            {
+              "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
+              "target": [
+                ".bg-card"
+              ],
+              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
+            }
+          ]
+        },
+        {
+          "rule_id": "document-title",
+          "description": "Ensure each HTML document contains a non-empty <title> element",
+          "help": "Documents must have <title> element to aid in navigation",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/document-title?application=playwright",
+          "impact": "serious",
+          "tags": [
+            "cat.text-alternatives",
+            "wcag2a",
+            "wcag242",
+            "TTv5",
+            "TT12.a",
+            "EN-301-549",
+            "EN-9.2.4.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-8.5.1"
+          ],
+          "nodes": [
+            {
+              "html": "<html lang=\"en\">",
+              "target": [
+                "html"
+              ],
+              "failure_summary": "Fix any of the following:\n  Document does not have a non-empty <title> element"
+            }
+          ]
+        },
+        {
+          "rule_id": "region",
+          "description": "Ensure all page content is contained by landmarks",
+          "help": "All page content should be contained by landmarks",
+          "help_url": "https://dequeuniversity.com/rules/axe/4.12/region?application=playwright",
+          "impact": "moderate",
+          "tags": [
+            "cat.keyboard",
+            "best-practice",
+            "RGAAv4",
+            "RGAA-9.2.1"
+          ],
+          "nodes": [
+            {
+              "html": "<div class=\"text-sidebar-foreground group peer hidden md:block\" data-state=\"expanded\" data-collapsible=\"\" data-variant=\"sidebar\" data-side=\"left\">",
+              "target": [
+                ".group"
+              ],
+              "failure_summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ],
+      "pass_rule_ids": [
+        "aria-allowed-attr",
+        "aria-allowed-role",
+        "aria-conditional-attr",
+        "aria-deprecated-role",
+        "aria-dialog-name",
+        "aria-hidden-body",
+        "aria-hidden-focus",
+        "aria-prohibited-attr",
+        "aria-required-attr",
+        "aria-roles",
+        "aria-valid-attr-value",
+        "aria-valid-attr",
+        "autocomplete-valid",
+        "avoid-inline-spacing",
+        "button-name",
+        "color-contrast-enhanced",
+        "color-contrast",
+        "duplicate-id-aria",
+        "empty-heading",
+        "form-field-multiple-labels",
+        "heading-order",
+        "html-has-lang",
+        "html-lang-valid",
+        "label-title-only",
+        "label",
+        "landmark-main-is-top-level",
+        "landmark-no-duplicate-banner",
+        "landmark-no-duplicate-main",
+        "landmark-one-main",
+        "landmark-unique",
+        "list",
+        "listitem",
+        "meta-viewport-large",
+        "meta-viewport",
+        "nested-interactive",
+        "page-has-heading-one",
+        "region",
+        "tabindex",
+        "target-size"
+      ],
+      "incomplete_rule_ids": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ],
+      "inapplicable_rule_ids": [
+        "accesskeys",
+        "area-alt",
+        "aria-braille-equivalent",
+        "aria-command-name",
+        "aria-input-field-name",
+        "aria-meter-name",
+        "aria-progressbar-name",
+        "aria-required-children",
+        "aria-required-parent",
+        "aria-tab-name",
+        "aria-text",
+        "aria-toggle-field-name",
+        "aria-tooltip-name",
+        "aria-treeitem-name",
+        "blink",
+        "bypass",
+        "definition-list",
+        "dlitem",
+        "empty-table-header",
+        "frame-focusable-content",
+        "frame-tested",
+        "frame-title-unique",
+        "frame-title",
+        "html-xml-lang-mismatch",
+        "identical-links-same-purpose",
+        "image-alt",
+        "image-redundant-alt",
+        "input-button-name",
+        "input-image-alt",
+        "landmark-banner-is-top-level",
+        "landmark-contentinfo-is-top-level",
+        "landmark-no-duplicate-contentinfo",
+        "link-in-text-block",
+        "link-name",
+        "marquee",
+        "meta-refresh-no-exceptions",
+        "meta-refresh",
+        "object-alt",
+        "presentation-role-conflict",
+        "role-img-alt",
+        "scope-attr-valid",
+        "scrollable-region-focusable",
+        "select-name",
+        "server-side-image-map",
+        "skip-link",
+        "summary-name",
+        "svg-img-alt",
+        "table-duplicate-name",
+        "td-headers-attr",
+        "th-has-data-cells",
+        "valid-lang",
+        "video-caption",
+        "no-autoplay-audio"
+      ]
+    },
+    {
       "route": "/system/settings/templates",
       "label": "Templates",
       "requested_url": "http://localhost:5173/system/settings/templates",
@@ -4392,7 +3924,7 @@
       "redirected": false,
       "violations": 6,
       "passes": 42,
-      "incomplete": 3,
+      "incomplete": 2,
       "inapplicable": 50,
       "violation_details": [
         {
@@ -4451,7 +3983,7 @@
             {
               "html": "<button data-slot=\"button\" class=\"focus-visible:border...\" type=\"button\">",
               "target": [
-                ".size-9.hover\\:bg-neutral-200\\/80.hover\\:text-neutral-900:nth-child(2)"
+                ".p-3 > .gap-2.flex.items-center > .size-9.hover\\:bg-neutral-200\\/80.hover\\:text-neutral-900:nth-child(2)"
               ],
               "failure_summary": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
             }
@@ -4471,13 +4003,6 @@
           ],
           "nodes": [
             {
-              "html": "<span class=\"truncate text-xs text-muted-foreground\">Organizzazione</span>",
-              "target": [
-                ".leading-tight.grid.text-left > .truncate.text-xs.text-muted-foreground"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.55 (foreground color: #64748b, background color: #fafafa, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span>Online</span>",
               "target": [
                 ".group-data-\\[collapsible\\=icon\\]\\:min-h-8\\! > span"
@@ -4485,46 +4010,11 @@
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.69 (foreground color: #007a55, background color: #e1f4ed, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
-              "html": "<kbd data-slot=\"kbd\" class=\"inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold text-muted-foreground shadow-sm h-5 px-1.5 text-[10px]\">Ctrl<!----></kbd>",
-              "target": [
-                ".px-1\\.5"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.54 (foreground color: #64748b, background color: #f8fafc, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
               "html": "<span class=\"truncate text-xs text-muted-foreground svelte-33nbcj\">Europe/Rome</span>",
               "target": [
                 ".svelte-33nbcj.truncate.text-xs"
               ],
               "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Sistema</span>",
-              "target": [
-                ".max-w-full[data-slot=\"breadcrumb-item\"]:nth-child(1) > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<a data-slot=\"breadcrumb-link\" class=\"hover:text-foreground transition-colors truncate hover:underline\" href=\"/system/settings/profile\"><!---->Impostazioni<!----></a>",
-              "target": [
-                "a"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<span class=\"truncate\">Template</span>",
-              "target": [
-                "#bits-s23 > .truncate"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
-            },
-            {
-              "html": "<p class=\"text-sm text-muted-foreground\">invoice.pdf</p>",
-              "target": [
-                "p:nth-child(2)"
-              ],
-              "failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.75 (foreground color: #64748b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 7:1"
             },
             {
               "html": "<span class=\"bg-card px-2 text-muted-foreground\">oppure</span>",
@@ -4575,7 +4065,7 @@
           ],
           "nodes": [
             {
-              "html": "<h3 class=\"text-lg font-medium\">Carica Template</h3>",
+              "html": "<h3 class=\"text-lg font-medium\">system.settings.templates.uploadTemplate</h3>",
               "target": [
                 ".rounded-lg.space-y-4.p-4:nth-child(2) > h3"
               ],
@@ -4652,7 +4142,6 @@
       ],
       "incomplete_rule_ids": [
         "aria-prohibited-attr",
-        "color-contrast-enhanced",
         "color-contrast"
       ],
       "inapplicable_rule_ids": [

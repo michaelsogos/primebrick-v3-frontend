@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
+  import { resolvePostLoginTarget } from '$lib/auth/redirect-cache';
+  import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
+  import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import LoadingWatermark from '$lib/components/auth/LoadingWatermark.svelte';
+  import Cookie from '@lucide/svelte/icons/cookie';
+  import RotateCcwKey from '@lucide/svelte/icons/rotate-ccw-key';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -22,6 +28,9 @@
   import { apiFetch } from '$lib/api';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
+  import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
 
   const health = $derived(backendState.health);
   const healthOffline = $derived(backendState.offline);
@@ -34,23 +43,23 @@
   const heroes = $derived([
     {
       image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote1'),
-      author: $t('login.hero.author1')
+      quote: $t('app.auth.login.hero.quote1'),
+      author: $t('app.auth.login.hero.author1')
     },
     {
       image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote2'),
-      author: $t('login.hero.author2')
+      quote: $t('app.auth.login.hero.quote2'),
+      author: $t('app.auth.login.hero.author2')
     },
     {
       image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote3'),
-      author: $t('login.hero.author3')
+      quote: $t('app.auth.login.hero.quote3'),
+      author: $t('app.auth.login.hero.author3')
     },
     {
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      quote: $t('login.hero.quote4'),
-      author: $t('login.hero.author4')
+      quote: $t('app.auth.login.hero.quote4'),
+      author: $t('app.auth.login.hero.author4')
     }
   ]);
 
@@ -62,9 +71,41 @@
   const alertToken = $derived(page.url.searchParams.get('token'));
   const hasAlert = $derived(!!alertType && !!alertToken);
 
+  /**
+   * Session boot — decide between auto-enter and the login form WITHOUT a
+   * server round-trip where possible:
+   *  - local session + unexpired access token → straight in ('checking').
+   *  - otherwise → attempt ONE refresh ('refreshing'): the HttpOnly refresh
+   *    cookie is the authoritative channel — this also covers fresh tabs
+   *    where sessionStorage['user'] is empty but the session is still valid.
+   *  - refresh fails (or none exists) → clear stale local state → form.
+   * `expires_at` comes from sessionStorage['user'] (login/refresh payload).
+   */
+  let bootState = $state<'checking' | 'refreshing' | 'form'>('checking');
+
+  async function bootSessionCheck() {
+    const target = resolvePostLoginTarget(page.url.searchParams.get('redirect_path'), shellNav.getLastRoute());
+    if (hasLocalSession() && !isTokenExpired()) {
+      window.location.href = target;
+      return;
+    }
+    bootState = 'refreshing';
+    try {
+      await triggerRefresh();
+      window.location.href = target;
+    } catch {
+      userProfileStore.clear();
+      bootState = 'form';
+    }
+  }
+
   onMount(() => {
+    void bootSessionCheck();
     // Trigger health probe on mount to ensure health status is updated
     probeHealth();
+
+    // Load public translations (login page is public — no auth)
+    void loadPublicTranslations(get(uiLang));
 
     // Select random hero
     heroIndex = Math.floor(Math.random() * heroes.length);
@@ -171,7 +212,7 @@
         <Alert variant="destructive" class="border-primary-gradient">
           <ShieldAlert class="size-4" />
           <AlertDescription>
-            {$t('login.alert.description')}
+            {$t('app.auth.login.alert.description')}
           </AlertDescription>
         </Alert>
       {/if}
@@ -179,14 +220,22 @@
       <!-- Login Card -->
       <Card class="border-primary-gradient shadow-sm">
         <CardHeader class="space-y-1">
-          <CardTitle class="text-2xl font-semibold">{$t('login.title')}</CardTitle>
-          <CardDescription>{$t('login.description')}</CardDescription>
+          <CardTitle class="text-2xl font-semibold">{$t('app.auth.login.title')}</CardTitle>
+          <CardDescription>{$t('app.auth.login.description')}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
-          <LoginForm onsuccess={() => {
-            const redirectUrl = getAndClearRedirectUrl();
-            window.location.href = redirectUrl || '/';
-          }} />
+          {#if bootState === 'form'}
+            <LoginForm onsuccess={() => {
+              window.location.href = resolvePostLoginTarget(page.url.searchParams.get('redirect_path'), shellNav.getLastRoute());
+            }} />
+          {:else}
+            <LoadingWatermark
+              icon={bootState === 'checking' ? Cookie : RotateCcwKey}
+              titleKey={bootState === 'checking' ? 'app.auth.login.auto_logging' : 'app.auth.login.refreshing_token'}
+              hintKey={bootState === 'checking' ? 'app.auth.login.auto_logging_hint' : 'app.auth.login.refreshing_token_hint'}
+              animation="flip"
+            />
+          {/if}
         </CardContent>
       </Card>
 

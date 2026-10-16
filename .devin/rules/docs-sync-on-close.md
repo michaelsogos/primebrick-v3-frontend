@@ -2,7 +2,7 @@
 
 ## Trigger
 - Applies when closing a GitFlow branch (feature, release, or hotfix).
-- Fires BEFORE the merge step of the closing procedure in docs/gitflow.md.
+- Fires BEFORE the merge step of the closing procedure in .devin/rules/gitflow.md.
 
 ## Diff base per branch type
 
@@ -57,7 +57,7 @@ user-facing behavior. For this repo (frontend), user-facing changes include:
 If NO user-facing files changed, skip to step 6 (proceed with normal close).
 
 ### 3. Run extraction (refresh component docs data)
-Run `pnpm extract-docs` to regenerate `docs/user-guide/_extracted/components.json`
+Run `pnpm extract-docs` to regenerate `docs/dev-guide/_extracted/components.json`
 from the current Svelte™ components. This ensures the extraction JSON reflects
 the latest prop types, snippets, and bindable flags.
 
@@ -78,9 +78,9 @@ against the diff:
 **The goal is surgical edits, not regeneration.** A 10-line code change
 should produce at most a few lines of doc changes, not a rewritten page.
 
-### 5. Update docs/user-guide/ and commit
+### 5. Update docs/dev-guide/ and commit
 For each page that needs updating (after the anti-rewrite check):
-- Follow `.devin/rules/docs-user-guide.md` for editorial conventions
+- Follow `.devin/rules/docs-dev-guide.md` for editorial conventions
 - Use `<Mermaid chart={...} />` for diagrams, never ```Code or ```mermaid
 - Update `<!-- AUTO-GENERATED:reference -->` blocks with extracted component data
 - Make minimal edits — preserve existing prose structure
@@ -88,12 +88,12 @@ For each page that needs updating (after the anti-rewrite check):
 Commit the doc updates (including regenerated _extracted/ JSON) ON the
 branch BEFORE merging:
 ```
-git add docs/user-guide/
-git commit -m "docs: update user-guide for <branch-name> changes"
+git add docs/dev-guide/
+git commit -m "docs: update dev-guide for <branch-name> changes"
 ```
 
 ### 6. Proceed with normal close
-Continue with the standard GitFlow closing procedure from docs/gitflow.md
+Continue with the standard GitFlow closing procedure from .devin/rules/gitflow.md
 (merge --no-ff, push, delete branch, etc.).
 
 ## What NOT to do

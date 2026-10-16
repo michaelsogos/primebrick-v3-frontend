@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.38.0",
+  "version": "3.0.0",
   "type": "module",
   "engines": {
     "node": "24"
@@ -33,7 +33,7 @@
     "@iconify-json/bi": "1.2.7",
     "@iconify-json/lucide": "1.2.116",
     "@internationalized/date": "3.12.2",
-    "@lucide/svelte": "1.26.0",
+    "@lucide/svelte": "1.47.0",
     "@playwright/test": "1.61.1",
     "@sveltejs/adapter-auto": "7.0.1",
     "@sveltejs/kit": "2.69.2",
@@ -52,7 +52,7 @@
     "@zxcvbn-ts/language-common": "4.1.2",
     "@zxcvbn-ts/language-en": "4.1.1",
     "axe-core": "4.12.1",
-    "bits-ui": "2.18.1",
+    "bits-ui": "2.19.2",
     "clsx": "2.1.1",
     "eslint": "10.7.0",
     "eslint-plugin-svelte": "3.20.0",
@@ -77,19 +77,33 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
+    "@codemirror/lang-json": "6.0.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/lint": "6.9.7",
+    "@codemirror/state": "6.7.5",
+    "@codemirror/view": "6.43.12",
+    "@eslint-community/regexpp": "4.12.2",
     "@fontsource-variable/inter": "5.2.8",
+    "@huggingface/transformers": "4.3.0",
+    "@lezer/highlight": "1.2.3",
     "@microsoft/fetch-event-source": "2.0.1",
     "class-variance-authority": "0.7.1",
+    "codemirror": "6.0.2",
+    "countries-list": "3.4.1",
     "dompurify": "3.4.12",
     "flag-icons": "7.5.0",
     "formsnap": "2.0.1",
     "html2pdf.js": "0.14.0",
     "inline-css": "4.0.3",
     "json-bigint": "1.0.0",
+    "libphonenumber-js": "1.13.12",
+    "marked": "18.0.14",
     "shiki": "4.3.1",
     "svelte-motion": "0.12.2",
     "svelte-sonner": "1.1.1",
     "sveltekit-superforms": "2.30.2",
+    "vscode-json-languageservice": "5.7.2",
+    "vscode-languageserver-textdocument": "1.0.12",
     "zod": "4.4.3"
   }
 }

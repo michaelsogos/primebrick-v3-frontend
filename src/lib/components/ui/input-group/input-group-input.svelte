@@ -15,7 +15,7 @@
 	bind:this={ref}
 	data-slot="input-group-control"
 	{type}
-	class={cn("flex-1 w-full bg-transparent border-none outline-hidden disabled:cursor-not-allowed disabled:opacity-50", className)}
+	class={cn("flex-1 w-full bg-transparent border-none outline-hidden text-base md:text-sm disabled:cursor-not-allowed disabled:opacity-50", className)}
 	bind:value
 	{...props}
 />

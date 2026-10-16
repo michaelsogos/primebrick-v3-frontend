@@ -1,0 +1,71 @@
+---
+title: Slider
+description: Single-value range input on bits-ui Slider — bounded numeric ranges such as temperature 0–2.
+---
+
+# Slider
+
+`src/lib/components/ui/slider/slider.svelte`
+
+## Purpose
+
+A single-value range slider for bounded numeric settings (e.g. temperature
+0–2 step 0.1). `value` is a bindable `number`.
+
+## Origin
+
+**Primebrick wrapper** over the `bits-ui` `Slider` primitive
+(`Slider.Root`/`Range`/`Thumb`), styled after the shadcn-svelte™ slider
+(track `bg-primary/20`, filled `Range`, bordered thumb).
+
+## Usage
+
+### Basic
+
+```svelte
+<script lang="ts">
+  import Slider from "$lib/components/ui/slider/slider.svelte";
+  let temperature = $state(0.1);
+</script>
+
+<Slider bind:value={temperature} min={0} max={2} step={0.1} />
+```
+
+### Tones
+
+The filled range is a semantic **gradient** (never a flat color), selected
+via `tone` — same color pairs as the `border-{tone}-gradient` utilities:
+
+| `tone` | Range gradient |
+|---|---|
+| `primary` (default) | sky-400 → indigo-400 |
+| `destructive` | rose-400 → red-600 |
+| `warning` | yellow-300 → yellow-500 |
+| `info` | sky-400 → blue-600 |
+| `success` | emerald-400 → emerald-600 |
+
+The track (`bg-{tone}/20`) and thumb border (`border-{tone}/50`) follow the
+same tone.
+
+```svelte
+<Slider bind:value={level} tone="warning" min={0} max={10} />
+```
+
+### Nullable "inherit" ranges — use SliderField
+
+When `null` means "inherit a default" (e.g. per-assistant overrides over
+model defaults), do NOT pair `Slider` with a numeric `Input` — use
+[`SliderField`](/docs/dev-guide/components/slider-field), the single
+reusable component for that pattern (slider + reactive label + reset-to-inherit).
+
+## Props
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `number` (bindable) | `0` | current value |
+| `min` / `max` | `number` | `0` / `100` | range bounds |
+| `step` | `number` | `1` | granularity |
+| `disabled` | `boolean` | `false` | dims the control |
+| `tone` | `'primary' \| 'destructive' \| 'warning' \| 'info' \| 'success'` | `'primary'` | semantic gradient of the range/track/thumb |
+| `onValueChange` | `(v: number) => void` | — | live drag callback (bits-ui passthrough) |
+| `class` | `string` | — | appended to Root |

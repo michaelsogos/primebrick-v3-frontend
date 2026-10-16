@@ -8,6 +8,7 @@
     class: className,
     type = 'text',
     placeholder,
+    oninput,
     ...props
   }: HTMLInputAttributes & { type?: string } = $props();
 
@@ -52,7 +53,7 @@
     bind:this={inputRef}
     {type}
     bind:value
-    oninput={syncScroll}
+    oninput={(e) => { syncScroll(); oninput?.(e); }}
     onscroll={syncScroll}
     class={cn(
       "w-full h-full bg-transparent border-none outline-hidden",

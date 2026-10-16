@@ -92,12 +92,15 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
-      customActions?: Array<{
-        actionName: string;
-        translationKey: string;
+      restore?: boolean;
+      versionHistory?: boolean;
+      custom_actions?: Array<{
+        action_name: string;
+        translation_key: string;
         icon: string;
-        textColor?: string;
-        disabledWhenDeleted?: boolean;
+        text_color?: string;
+        disabled_when_deleted?: boolean;
+        required_permission?: string | string[];
       }>;
     };
     dropdownMenuRow: TRow | null;
@@ -115,7 +118,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
     isRowDeleted: (row: TRow) => boolean;
   } = $props();
@@ -265,7 +268,7 @@
                 >
                   <div class="flex items-center gap-2">
                     <Pencil class="size-4 opacity-70" />
-                    <span>{$t('common.edit')}</span>
+                    <span>{$t('app.common.edit')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
@@ -276,57 +279,59 @@
                 >
                   <div class="flex items-center gap-2">
                     <Copy class="size-4 opacity-70" />
-                    <span>{$t('common.duplicate')}</span>
+                    <span>{$t('app.common.duplicate')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
+              {#if entityRowActions?.versionHistory !== false}
               <DropdownMenu.Item
                 onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
               >
                 <div class="flex items-center gap-2">
                   <FileClock class="size-4 opacity-70" />
-                  <span>{$t('common.versionHistory')}</span>
+                  <span>{$t('app.common.versionHistory')}</span>
                 </div>
               </DropdownMenu.Item>
+              {/if}
               {#if entityRowActions?.preview !== false}
                 <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
                   <div class="flex items-center gap-2">
                     <Eye class="size-4 opacity-70" />
-                    <span>{$t('entities.list.preview')}</span>
+                    <span>{$t('system.entities.list.preview')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
-              {#if entityRowActions?.customActions && handleCustomAction}
-                {#each entityRowActions.customActions as action}
-                  {@const isDisabled = action.disabledWhenDeleted && isRowDeleted(row)}
+              {#if entityRowActions?.custom_actions && handleCustomAction}
+                {#each entityRowActions.custom_actions as action}
+                  {@const isDisabled = action.disabled_when_deleted && isRowDeleted(row)}
                   <DropdownMenu.Item
                     onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}
-                    class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.textColor ?? '')}
+                    class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
                   >
                     <div class="flex items-center gap-2">
                       <DynamicIcon name={action.icon} size={16} class="opacity-70" />
-                      <span>{$t(action.translationKey)}</span>
+                      <span>{$t(action.translation_key)}</span>
                     </div>
                   </DropdownMenu.Item>
                 {/each}
               {/if}
               {#if entityRowActions?.delete !== false}
                 <DropdownMenu.Separator />
-                {#if isRowDeleted(row)}
+                {#if isRowDeleted(row) && entityRowActions?.restore !== false}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                     <div class="flex items-center gap-2">
                       <span class="relative flex items-center justify-center">
                         <Trash2 class="size-4 text-warning/70" />
                         <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
                       </span>
-                      <span>{$t('common.restore')}</span>
+                      <span>{$t('app.common.restore')}</span>
                     </div>
                   </DropdownMenu.Item>
                 {:else}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onDeleteRow(row); }} class="text-destructive">
                     <div class="flex items-center gap-2">
                       <Trash2 class="size-4 text-destructive/70" />
-                      <span>{$t('common.delete')}</span>
+                      <span>{$t('app.common.delete')}</span>
                     </div>
                   </DropdownMenu.Item>
                 {/if}

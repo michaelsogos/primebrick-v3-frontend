@@ -1,14 +1,13 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
   import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
-  import { FiltersPanel, ColumnSelectorPanel } from '../panels';
+
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 
   let {
     search,
     onSearchInput,
-    searchPlaceholderKey,
     searchInKeys,
     searchableColumns,
     onSearchInKeysChange,
@@ -30,7 +29,6 @@
     visibleKeys,
     toggleColumnKey,
     resetColumnsAndSorting,
-    checkboxVisualOnlyClass,
     onCreateAction,
     toolbarMode,
     hasAppliedFilters,
@@ -47,13 +45,13 @@
     onHtmlExport,
     onBulkDuplicate,
     onBulkDelete,
-    onBulkRestore
+    onBulkRestore,
+    bulkCapabilities
   }: EntityListTableHeaderProps<TRow> = $props();
 
   type EntityListTableHeaderProps<TRow> = {
     search: string;
     onSearchInput: (value: string) => void;
-    searchPlaceholderKey?: string;
     searchInKeys: string[] | null;
     searchableColumns: MetaColumn[];
     onSearchInKeysChange: (keys: string[] | null) => void;
@@ -75,7 +73,6 @@
     visibleKeys: string[];
     toggleColumnKey: (key: string) => void;
     resetColumnsAndSorting: () => void;
-    checkboxVisualOnlyClass: string;
     onCreateAction?: () => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
@@ -93,13 +90,13 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
   };
 </script>
 
 <EntityListToolbar
   search={search}
   onSearchInput={onSearchInput}
-  searchPlaceholderKey={searchPlaceholderKey}
   searchInKeys={searchInKeys}
   searchableColumns={searchableColumns}
   onSearchInKeysChange={onSearchInKeysChange}
@@ -122,19 +119,20 @@
         return;
       }
       onFiltersOpenChange(true);
-      openSheet('entity.filters', {
-        content: FiltersPanel,
-        props: {
-          content: {},
+      openSheet(
+        'entity.filters',
+        {
           filterableColumns,
           filterValues: filterValues ?? {},
           onFilterValuesChange,
-          onResetFilters
+          onResetFilters,
+          advancedFilters: advancedFilters ?? [],
+          onAdvancedFiltersChange
+        },
+        {
+          modal: false
         }
-      } as any, {
-        contentClass: 'w-[360px] p-0',
-        modal: false
-      });
+      );
     } else {
       closeSheet();
       onFiltersOpenChange(false);
@@ -149,10 +147,8 @@
         auditingColumns: auditingColumnsGroup,
         visibleKeys,
         toggleColumnKey,
-        onResetColumnVisibility: resetColumnsAndSorting,
-        sheetMenuCheckboxClass: checkboxVisualOnlyClass
-      } as any,
-      { contentClass: 'w-[360px] p-0' }
+        onResetColumnVisibility: resetColumnsAndSorting
+      }
     )}
   onCreateAction={onCreateAction}
 />
@@ -175,4 +171,5 @@
   onBulkDuplicate={onBulkDuplicate}
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
+  bulkCapabilities={bulkCapabilities}
 />

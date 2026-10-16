@@ -7,15 +7,18 @@
     icon: Component<{ color?: string; class?: string }>;
     titleKey: string;
     hintKey: string;
+    /** Icon animation: 'pulse' (default float+pulse) or 'flip' (rotateY
+     *  spin on the vertical axis + zoom, e.g. session boot states). */
+    animation?: 'pulse' | 'flip';
   };
 
-  let { icon: Icon, titleKey, hintKey }: Props = $props();
+  let { icon: Icon, titleKey, hintKey, animation = 'pulse' }: Props = $props();
   const gradientId = useId();
 </script>
 
 <div class="grid min-h-56 place-items-center p-3" data-testid="auth-loading-watermark">
   <div class="relative flex flex-col items-center gap-2 text-center">
-    <div class="pb-loading-watermark">
+    <div class={animation === 'flip' ? 'pb-loading-flip' : 'pb-loading-watermark'}>
       <Icon class="size-20" color="url(#pb-gradient-{gradientId})" />
     </div>
     <div class="text-sm font-medium text-muted-foreground">
@@ -51,6 +54,29 @@
     50% {
       opacity: 0.85;
       transform: translateY(-6px) scale(1.06);
+    }
+  }
+
+  /* 'flip' — continuous spin on the vertical axis (rotateY, left-to-right
+     coin flip) combined with a zoom in-out pulse. */
+  .pb-loading-flip {
+    transform-origin: center;
+    transform-style: preserve-3d;
+    animation: pb-loading-flip 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pb-loading-flip {
+    0% {
+      opacity: 0.75;
+      transform: rotateY(0deg) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: rotateY(180deg) scale(1.15);
+    }
+    100% {
+      opacity: 0.75;
+      transform: rotateY(360deg) scale(1);
     }
   }
 
