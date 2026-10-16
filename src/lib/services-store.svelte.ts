@@ -91,13 +91,15 @@ function upsertService(service: ServiceInfo): void {
  * - 'online' — all instances are online
  * - 'going_live' — 1+ online, 1+ not online
  * - 'offline' — all instances are offline
- * - 'unknown' — no online instances and at least one non-offline (e.g. 'unknown')
+ * - 'stale' — no online instances, at least one 'stale' (heartbeat lost recently)
+ * - 'unknown' — no online/stale instances and at least one non-offline
  */
 export function aggregateStatus(instances: ServiceInfo[]): string {
   if (instances.length === 0) return 'offline';
   if (instances.every((i) => i.status === 'online')) return 'online';
   if (instances.some((i) => i.status === 'online')) return 'going_live';
   if (instances.every((i) => i.status === 'offline')) return 'offline';
+  if (instances.some((i) => i.status === 'stale')) return 'stale';
   return 'unknown';
 }
 

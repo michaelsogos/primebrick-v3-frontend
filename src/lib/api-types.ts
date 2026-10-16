@@ -379,3 +379,49 @@ export class ApiRedisUnavailableError extends Error {
     this.status = status;
   }
 }
+
+// ── db_patch system module (migration admin surface) ──────────────────────
+// Wire contract shared by BE (/api/v1/system/db-migration/*) and every US
+// (/ws/<code>/api/v1/system/db-migration/*) — served by the SDK system module.
+
+/** A row of `<schema>.primebrick_database_patches` — the per-service migration registry. */
+export type DbPatchStatus =
+  | 'pending'
+  | 'applied'
+  | 'failed'
+  | 'pending_review'
+  | 'approved'
+  | 'resolved_manual';
+
+export type DbPatchRow = {
+  patch_name: string;
+  content_sha256: string;
+  status: DbPatchStatus;
+  signed_key_id: string | null;
+  attempts: number;
+  duration_ms: number | null;
+  error: string | null;
+  applied_by: string | null;
+  resolved_by: string | null;
+  resolved_note: string | null;
+  atomic: boolean;
+  applied_at: string;
+  updated_at: string;
+};
+
+/** GET .../db-migration/status — registry rows + boot result for one service. */
+export type DbMigrationStatus = {
+  service_schema: string;
+  degraded: boolean;
+  last_error: string | null;
+  boot_result: unknown;
+  patches: DbPatchRow[];
+};
+
+/** POST .../db-migration/drift-check — on-demand entity-vs-catalog diff. */
+export type DbMigrationDriftResult = {
+  checked: boolean;
+  clean?: boolean;
+  diff?: unknown;
+  detail?: string;
+};

@@ -29,6 +29,7 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/configurations` | Security settings |
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
+| `/system/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
 
 ## Modules
 
@@ -170,6 +171,32 @@ page suppresses duplicate notifications.
 
 `/system/settings/templates` manages templates. It uses the standard
 `AppPageScaffold` layout.
+
+## Migrations
+
+`/system/migrations` is the `db_patch` admin remediation surface — one card
+per service: the backend first (direct `/api/v1/system/db-migration/*`),
+then every registered microservice reached through the governed
+`/ws/<code>/api/v1/system/db-migration/*` proxy, which exempts that prefix
+for `migration_failed` instances so a degraded service stays fixable from
+the UI.
+
+Each card fetches `GET .../db-migration/status` (registry rows + boot
+result) via `fetchDbMigrationStatus(code)` and renders a plain `Table` —
+`db_patch` is served by the SDK system-module RPC surface, not the entity
+pipeline, so `EntityListTable` does not apply. Actions:
+
+- **Retry failed** — `POST .../db-migration/retry`, resets `failed` rows and
+  re-runs migrations
+- **Approve** / **Mark resolved** — per-row on `pending_review` /
+  `failed`/`pending` patches, via a shared `DialogBordered` note dialog
+- **Drift check** — `POST .../db-migration/drift-check`, renders a clean /
+  differences badge under the card header
+
+Helpers live in `src/lib/api.ts` (`dbMigrationBase` resolves `'be'` →
+direct, other codes → `/ws/<code>`); types in `src/lib/api-types.ts`
+(`DbPatchRow`, `DbMigrationStatus`, `DbMigrationDriftResult`). E2E coverage:
+`src/e2e/system-migrations.spec.ts`.
 
 ## Next steps
 

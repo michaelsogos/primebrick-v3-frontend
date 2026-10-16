@@ -13,6 +13,9 @@
   import Store from '@lucide/svelte/icons/store';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Hourglass from '@lucide/svelte/icons/hourglass';
+  import Clock from '@lucide/svelte/icons/clock';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Cloud from '@lucide/svelte/icons/cloud';
   import CloudOff from '@lucide/svelte/icons/cloud-off';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
@@ -24,7 +27,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
-  import { fetchServices, toggleModule, deleteModule } from '$lib/api';
+  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
@@ -38,7 +41,9 @@
 
   let deleteDialogOpen = $state(false);
   let deleteTarget = $state<ServiceInfo | null>(null);
+  let deleteIsInstance = $state(false);
   let isDeleting = $state(false);
+  let expanded = $state<Record<string, boolean>>({});
 
   const groupedServices = $derived(groupByCode(services));
   const healthChip = $derived(backendState.healthChip as HealthChip);
@@ -51,6 +56,8 @@
         return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       case 'going_live':
         return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300';
+      case 'stale':
+        return 'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300';
       case 'offline':
         return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
       default:
@@ -121,15 +128,33 @@
 
   function openDeleteDialog(module: ServiceInfo) {
     deleteTarget = module;
+    deleteIsInstance = false;
     deleteDialogOpen = true;
+  }
+
+  function openInstanceDeleteDialog(instance: ServiceInfo) {
+    deleteTarget = instance;
+    deleteIsInstance = true;
+    deleteDialogOpen = true;
+  }
+
+  function formatLastSeen(iso?: string): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     isDeleting = true;
     try {
-      await deleteModule(deleteTarget.code);
-      services = services.filter((s) => s.code !== deleteTarget!.code);
+      if (deleteIsInstance) {
+        await deleteServiceInstance(deleteTarget.uuid!);
+        services = services.filter((s) => s.uuid !== deleteTarget!.uuid);
+      } else {
+        await deleteModule(deleteTarget.code);
+        services = services.filter((s) => s.code !== deleteTarget!.code);
+      }
       deleteDialogOpen = false;
       deleteTarget = null;
       pushNotification({
@@ -222,8 +247,24 @@
                 {@const behindScaler = instances[0].is_behind_scaler}
                 {@const healthyCount = instances.filter((i) => i.status === 'online').length}
                 {@const module = instances[0]}
-                <div class="flex items-center justify-between rounded-lg border p-3">
+                <div class="rounded-lg border">
+                <div class="flex items-center justify-between p-3">
                   <div class="flex items-center gap-3 min-w-0">
+                    {#if !isReserved}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        onclick={() => { expanded[code] = !expanded[code]; }}
+                        title={$t('system.settings.modules.instances')}
+                      >
+                        {#if expanded[code]}
+                          <ChevronDown class="size-4" />
+                        {:else}
+                          <ChevronRight class="size-4" />
+                        {/if}
+                      </Button>
+                    {/if}
                     {#if module.icon && module.icon_type === 'icon'}
                       <DynamicIcon name={module.icon} size={20} class="text-primary shrink-0" />
                     {:else if module.icon && module.icon_type === 'url'}
@@ -283,6 +324,8 @@
                           <Cloud class="size-3.5 opacity-90" />
                         {:else if aggStatus === 'going_live'}
                           <AlertCircle class="size-3.5 opacity-90" />
+                        {:else if aggStatus === 'stale'}
+                          <Clock class="size-3.5 opacity-90" />
                         {:else if aggStatus === 'unknown'}
                           <CircleQuestionMark class="size-3.5 opacity-90" />
                         {:else}
@@ -331,6 +374,42 @@
                     {/if}
                   </div>
                 </div>
+                {#if expanded[code] && !isReserved}
+                  <div class="border-t px-3 py-2">
+                    {#each instances as instance (instance.uuid ?? instance.base_url)}
+                      <div class="flex items-center justify-between gap-3 py-1.5">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <span class="font-mono text-xs text-muted-foreground truncate">
+                            {instance.base_url}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          <span class="text-[11px] text-muted-foreground tabular-nums"
+                            title={$t('system.settings.modules.lastSeen')}>
+                            {formatLastSeen(instance.last_health_check_at)}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            class={cn('font-mono text-[11px] font-medium', statusBadgeClass(instance.status))}
+                          >
+                            {$t(`app.health.${instance.status}`)}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-7"
+                            onclick={() => openInstanceDeleteDialog(instance)}
+                            title={$t('app.common.delete')}
+                            disabled={!instance.uuid}
+                          >
+                            <Trash2 class="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+                </div>
               {/each}
             </div>
           {/if}
@@ -354,7 +433,7 @@
 
 <DeleteDialog
   entity="service_registry"
-  recordName={deleteTarget?.code}
+  recordName={deleteIsInstance ? deleteTarget?.base_url : deleteTarget?.code}
   open={deleteDialogOpen}
   onOpenChange={(open) => { if (!open) { deleteDialogOpen = false; deleteTarget = null; } }}
   isDeleting={isDeleting}

@@ -70,6 +70,27 @@ export default ts.config(
     },
   },
   {
+    /**
+     * ext-json wire layer: api-ext.ts/api-types.ts serialize BE traffic and must
+     * never bypass extJsonParse/extJsonStringify (bigint safety). Plain JSON.* in
+     * localStorage/UI code elsewhere is legitimate — scope stays tight on purpose.
+     */
+    files: ['src/lib/api-ext.ts', 'src/lib/api-types.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify']",
+          message: 'Use extJsonStringify — BE wire payloads are ext-json (bigint-safe).',
+        },
+        {
+          selector: "CallExpression[callee.object.name='JSON'][callee.property.name='parse']",
+          message: 'Use extJsonParse — BE wire payloads are ext-json (bigint-safe).',
+        },
+      ],
+    },
+  },
+  {
     // Ignore generated/build artifacts
     ignores: [
       '.svelte-kit/**',

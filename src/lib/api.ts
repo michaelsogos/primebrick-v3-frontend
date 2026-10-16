@@ -17,7 +17,9 @@ import {
   type TypeCapabilitiesMap,
   type AiModel,
   type AiCerebellum,
-  type ServiceInfo
+  type ServiceInfo,
+  type DbMigrationStatus,
+  type DbMigrationDriftResult
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
@@ -213,7 +215,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
           saveRedirectUrl(window.location.pathname + window.location.search);
           return sessionExpiredStore.enqueue(input, nextInit);
         }
-        throw new Error('Token refresh failed');
+        throw new Error('Token refresh failed', { cause: refreshError });
       }
     } else {
       // Token is not expired - this is a permission error, let it propagate
@@ -327,6 +329,13 @@ export async function deleteModule(code: string): Promise<void> {
   if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 }
 
+export async function deleteServiceInstance(uuid: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/system/services/instances/${encodeURIComponent(uuid)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+}
+
 export async function updateService(code: string, data: Partial<ServiceInfo>): Promise<ServiceInfo> {
   const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
     method: 'PUT',
@@ -336,6 +345,62 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
   if (!res.ok) throw new Error(`Update failed (${res.status})`);
   const result = (await res.json()) as { service: ServiceInfo };
   return result.service;
+}
+
+// ── db_patch system module (migration admin) ────────────────────────────────
+// BE answers directly; microservices are reached through the governed proxy
+// (/ws/<code>/...), which exempts this prefix for `migration_failed` instances.
+
+export function dbMigrationBase(code: string): string {
+  return code === 'be'
+    ? '/api/v1/system/db-migration'
+    : `/ws/${encodeURIComponent(code)}/api/v1/system/db-migration`;
+}
+
+export async function fetchDbMigrationStatus(code: string): Promise<DbMigrationStatus> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/status`);
+  if (!res.ok) throw new Error(`Migration status failed (${res.status})`);
+  return (await res.json()) as DbMigrationStatus;
+}
+
+export async function dbMigrationRetry(code: string): Promise<{ retried: number; result: unknown }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/retry`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Migration retry failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationApprove(
+  code: string,
+  patchName: string,
+  note?: string,
+): Promise<{ approved: boolean; detail?: string }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: extJsonStringify({ patch_name: patchName, note }),
+  });
+  if (!res.ok) throw new Error(`Migration approve failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationResolve(
+  code: string,
+  patchName: string,
+  note?: string,
+): Promise<{ resolved: boolean; detail?: string }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: extJsonStringify({ patch_name: patchName, note }),
+  });
+  if (!res.ok) throw new Error(`Migration resolve failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationDriftCheck(code: string): Promise<DbMigrationDriftResult> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/drift-check`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Drift check failed (${res.status})`);
+  return await res.json();
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
