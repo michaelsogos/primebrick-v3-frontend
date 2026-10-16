@@ -6,7 +6,7 @@
 
 - **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
 - This applies to ALL situations - no exceptions
-- See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules including commit rules
+- See [.devin/rules/gitflow.md](./.devin/rules/gitflow.md) for complete GitFlow rules including commit rules
 
 
 ## Svelte™ 5 & TypeScript® Mandatory Rules
@@ -78,9 +78,11 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 ## Where to look (order)
 
 1. **`docs/ai/patterns.md`** — layout, vendor workflow, forms/tables/nav, dev etiquette.
-2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: always add translations immediately when adding labels).
+2. **`docs/ai/i18n.md`** — translations rule (⚠️ CRITICAL: ALL translations are BE-owned; FE fallback is English-only for `app.*` keys only).
 3. **`.devin/rules/translation-key-convention.md`** — ⚠️ CRITICAL: translation keys MUST be snake_case singular (e.g. `entities.user_profile.fields.*`, NOT `userProfile` or `user_profiles`).
-4. **`docs/ai/`** — skills selection and suggested workflows.
+4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
+5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
+6. **`docs/ai/`** — skills selection and suggested workflows.
 
 ## List pages
 
@@ -136,7 +138,7 @@ dialog when the BE returns 403 with `mfa_step_up_required: true`.
 
 ### Canonical example
 
-The Security settings page (`src/routes/(app)/system/settings/security/+page.svelte`)
+The Configurations settings page (`src/routes/(app)/system/settings/configurations/+page.svelte`)
 is the canonical example of a Config List page. Mirror it for future Config
 Table pages.
 
@@ -144,7 +146,7 @@ Table pages.
 
 This repository follows GitFlow. AI agents MUST follow these rules.
 
-**See [docs/gitflow.md](./docs/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
+**See [.devin/rules/gitflow.md](./.devin/rules/gitflow.md) for complete GitFlow rules, branch management, closing procedure, version tagging, and commit rules.**
 
 ## Error notifications — NEVER use toast directly (MANDATORY)
 
@@ -187,6 +189,42 @@ that a significant refactor happened.
 - Enforcing Devin rule: `.devin/rules/e2e-testid-convention.md` (always-on)
 - E2E suites using this convention: `src/e2e/auth-password.spec.ts`,
   `src/e2e/auth-passkey.spec.ts`
+
+## Smart Components (AI-powered)
+
+Components with AI capabilities (NLP, LLM, ML inference) use the `Smart` prefix
+to distinguish them from standard UI components. This convention makes it
+immediately clear which components have AI dependencies and browser resource
+implications.
+
+### Naming convention
+
+- **Component name**: `Smart{Purpose}` — e.g. `SmartRegexInput`
+- **File name**: `smart-{purpose}.svelte` — e.g. `smart-regex-input.svelte`
+- **Directory**: `src/lib/components/ui/smart-{purpose}/`
+- **Composable**: `use-{purpose}.svelte.ts` — e.g. `use-regex-ai.svelte.ts`
+- **Panel components**: `{purpose}-panel.svelte` — e.g. `regex-flags-panel.svelte`
+
+### Current Smart components
+
+| Component | Purpose | AI Engine | Model |
+|----------|---------|-----------|-------|
+| `SmartRegexInput` | Regex pattern input with AI assistant | ONNX Runtime Web (WebGPU) | Config-driven via `ai_assistant_model` config row (default: granite-4.0-micro-ONNX-web q4f16) |
+
+### Requirements for Smart components
+
+1. **Browser-only inference**: AI models run entirely in the browser via WebGPU.
+   No backend AI calls for the Smart component's core functionality.
+2. **Lazy loading**: The AI engine and model are loaded via dynamic `import()`
+   only when the user interacts with the AI feature (e.g. clicks the brain CTA).
+3. **Progress reporting**: Model download and initialization must show visible
+   progress (e.g. "Loading model 56%").
+4. **Resource cleanup**: VRAM/memory is released when the AI panel closes
+   (`engine.unload()`).
+5. **Graceful degradation**: Non-WebGPU browsers show a clear message and
+   fall back to manual input (no AI).
+6. **Service Worker**: Background model pre-download uses a Service Worker
+   and the Cache API for offline-capable, non-blocking downloads.
 
 ## Composable state exposure pattern (MANDATORY)
 
@@ -241,17 +279,20 @@ $derived(something.state.items.length) // tracked (deep)
 something.open();                      // only path to mutation
 ```
 
-## User-facing documentation
+## Documentation (3 tiers — see `.devin/rules/docs-audience.md`)
 
-User-facing developer documentation lives in `docs/user-guide/` as MDX files.
-These are synced to `docs.primebrick.dev` by the docs repo's CI pipeline.
+- This repo is **dev-only**: the FE is the presentation layer and speaks
+  only to developers (like DAL and SDK). There is **no `docs/user-guide/`**
+  here — end-user manuals live in the owning domain repo (BE/US).
+- `docs/dev-guide/` — **developer documentation** (components, APIs,
+  architecture, conventions) as MDX files. Synced to `docs.primebrick.dev`
+  under the dev section; never ingested into the end-user AI KB.
+- `docs/ai/`, `docs/skills/`, `.devin/rules/gitflow.md` — **agent/internal docs**,
+  never synced or ingested.
 
-- **Location**: `docs/user-guide/*.mdx` — one file per topic
-- **Ordering**: `docs/user-guide/_order.json` defines the sidebar page order
-- **Conventions**: see `.devin/rules/docs-user-guide.md` for editorial rules
+- **Ordering**: each dir has its own `_order.json` defining sidebar page order
+- **Conventions**: see `.devin/rules/docs-dev-guide.md` for editorial rules
 - **Mermaid**: use `<Mermaid chart={...} />`, never ` ```Code ` or ` ```mermaid `
 - **Component extraction**: run `pnpm extract-docs` to generate
-  `docs/user-guide/_extracted/components.json` from Svelte™ components
+  `docs/dev-guide/_extracted/components.json` from Svelte™ components
 - **Do NOT hand-edit** files in `docs/ai/` or `docs/skills/` — those are internal
-- **Internal docs** (`docs/ai/`, `docs/skills/`, `docs/gitflow.md`) are NOT synced
-  to the docs site — they stay in this repo for AI agents only

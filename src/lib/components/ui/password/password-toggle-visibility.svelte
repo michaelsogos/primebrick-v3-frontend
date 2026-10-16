@@ -21,7 +21,7 @@
 		'z-10',
 		'data-[state=on]:bg-transparent',
 		{
-			'right-9 max-w-6': state.root.passwordState.copyMounted
+			'right-10 max-w-6': state.root.passwordState.copyMounted
 		},
 		className
 	)}

@@ -80,26 +80,26 @@
 
 <div class="space-y-4">
   <div class="space-y-2">
-    <Label>{$t('config.typeConfig.sourceMode')}</Label>
+    <Label>{$t('system.settings.config.typeConfig.sourceMode')}</Label>
     <div class="flex gap-2">
       <button
         type="button"
         class="text-xs px-3 py-1.5 rounded-md border {sourceMode === 'builtin' ? 'bg-primary text-primary-foreground' : 'border-border'}"
         onclick={() => handleModeChange('builtin')}
         data-testid="tcb-source-builtin"
-      >{$t('config.typeConfig.sourceBuiltin')}</button>
+      >{$t('system.settings.config.typeConfig.sourceBuiltin')}</button>
       <button
         type="button"
         class="text-xs px-3 py-1.5 rounded-md border {sourceMode === 'api' ? 'bg-primary text-primary-foreground' : 'border-border'}"
         onclick={() => handleModeChange('api')}
         data-testid="tcb-source-api"
-      >{$t('config.typeConfig.sourceApi')}</button>
+      >{$t('system.settings.config.typeConfig.sourceApi')}</button>
     </div>
   </div>
 
   {#if sourceMode === 'builtin'}
     <div class="space-y-1">
-      <Label for="tcb-builtin-source">{$t('config.typeConfig.builtinSource')}</Label>
+      <Label for="tcb-builtin-source">{$t('system.settings.config.typeConfig.builtinSource')}</Label>
       <ComboSelect
         mode="single"
         value={builder.selectConfig.values_source ?? ''}
@@ -107,14 +107,14 @@
         options={sourceOptions}
         valueField="value"
         labelField="label"
-        placeholder={$t('config.typeConfig.selectSource')}
+        placeholder={$t('system.settings.config.typeConfig.selectSource')}
         data-testid="tcb-builtin-source"
       />
     </div>
   {:else if sourceMode === 'api'}
     <div class="space-y-3">
       <div class="space-y-1">
-        <Label for="tcb-api-url">{$t('config.typeConfig.apiUrl')}</Label>
+        <Label for="tcb-api-url">{$t('system.settings.config.typeConfig.apiUrl')}</Label>
         <TextInput
           id="tcb-api-url"
           bind:value={apiUrl}
@@ -126,7 +126,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="space-y-1">
-          <Label for="tcb-api-verb">{$t('config.typeConfig.httpVerb')}</Label>
+          <Label for="tcb-api-verb">{$t('system.settings.config.typeConfig.httpVerb')}</Label>
           <TextInput
             id="tcb-api-verb"
             bind:value={apiVerb}
@@ -137,7 +137,7 @@
           />
         </div>
         <div class="space-y-1">
-          <Label for="tcb-value-field">{$t('config.typeConfig.valueField')}</Label>
+          <Label for="tcb-value-field">{$t('system.settings.config.typeConfig.valueField')}</Label>
           <TextInput
             id="tcb-value-field"
             bind:value={valueField}
@@ -149,7 +149,7 @@
         </div>
       </div>
       <div class="space-y-1">
-        <Label for="tcb-label-field">{$t('config.typeConfig.labelField')}</Label>
+        <Label for="tcb-label-field">{$t('system.settings.config.typeConfig.labelField')}</Label>
         <TextInput
           id="tcb-label-field"
           bind:value={labelField}

@@ -26,7 +26,7 @@
 {#if selectedCount > 0}
   <div class="flex items-center gap-2">
     <span class="text-sm text-muted-foreground">
-      {selectedCount} {selectedCount === 1 ? $t('entities.list.selectedSingular') : $t('entities.list.selectedPlural')}
+      {selectedCount} {selectedCount === 1 ? $t('system.entities.list.selectedSingular') : $t('system.entities.list.selectedPlural')}
     </span>
 
     {#if rowActions.delete}
@@ -36,7 +36,7 @@
         onclick={onBulkDelete}
       >
         <Trash2 class="size-4 mr-2" />
-        {$t('entities.list.bulkDelete')}
+        {$t('system.entities.list.bulkDelete')}
       </Button>
     {/if}
 
@@ -47,7 +47,7 @@
         onclick={onBulkDuplicate}
       >
         <Copy class="size-4 mr-2" />
-        {$t('entities.list.bulkDuplicate')}
+        {$t('system.entities.list.bulkDuplicate')}
       </Button>
     {/if}
 
@@ -58,7 +58,7 @@
         onclick={onBulkExport}
       >
         <Download class="size-4 mr-2" />
-        {$t('entities.list.bulkExport')}
+        {$t('system.entities.list.bulkExport')}
       </Button>
     {/if}
 
@@ -68,7 +68,7 @@
       onclick={onBulkRestore}
     >
       <RotateCcw class="size-4 mr-2" />
-      {$t('entities.list.bulkRestore')}
+      {$t('system.entities.list.bulkRestore')}
     </Button>
   </div>
 {/if}

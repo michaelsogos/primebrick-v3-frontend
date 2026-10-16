@@ -2,26 +2,27 @@
  * E2E Suite C — MFA enrollment + login MFA challenge + step-up.
  *
  * Flow:
- *   1. Admin logs in (may or may not have MFA — we handle both cases).
- *   2. Admin navigates to credentials page → MFA management section.
- *   3. Admin enrolls a new MFA factor (TOTP) via the UI.
+ *   1. Test admin actor logs in (may or may not have MFA — we handle both cases).
+ *   2. Actor navigates to credentials page → MFA management section.
+ *   3. Actor enrolls a new MFA factor (TOTP) via the UI.
  *      - Extracts the TOTP secret from the enrollment dialog.
  *      - Generates a TOTP code using the helper.
  *      - Completes enrollment.
- *   4. Admin logs out.
- *   5. Admin logs in again → MFA challenge appears.
+ *   4. Actor logs out.
+ *   5. Actor logs in again → MFA challenge appears.
  *   6. Enter TOTP code → login succeeds.
  *   7. Cleanup: delete the enrolled MFA factor via the UI.
  *
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
- *   - Casdoor seeded with admin/admin.
+ *   - Seeded E2E test actor (test-admin — never the dev bootstrap admin).
  *   - MFA enabled in auth config.
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention).
  */
 import { test, expect, type Page } from "@playwright/test";
 import { generateTotp } from "./helpers/totp";
+import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 
 // ─── Suite ──────────────────────────────────────────────────────────────────
@@ -31,13 +32,13 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
   let totpSecret: string = "";
 
   test.beforeAll(async ({ browser }) => {
-    // Delete any existing MFA factors for the admin user so login doesn't
+    // Delete any existing MFA factors for the test actor so login doesn't
     // trigger an MFA challenge.
-    await deleteMfaFactorsByUsername("admin");
+    await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
     // Dismiss the auth method enforcer dialog via DB so it doesn't block
     // the profile page interaction. The dialog is now DB-persisted, not
     // sessionStorage-based.
-    await setAuthMethodEnforcerDismissed("admin", true);
+    await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true);
 
     const adminContext = await browser.newContext();
     adminPage = await adminContext.newPage();
@@ -46,18 +47,18 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // which can race with the FE's hydration on IPv6).
     await adminPage.goto("/login", { waitUntil: "networkidle" });
     await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
-    await adminPage.getByTestId("login-username-input").fill("admin");
-    await adminPage.getByTestId("login-password-input").fill("admin");
+    await adminPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
+    await adminPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
     await adminPage.getByTestId("login-submit-button").click();
     await adminPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
   });
 
   test.afterAll(async () => {
-    // Cleanup: delete all MFA factors for the admin user via DB
+    // Cleanup: delete all MFA factors for the test actor via DB
     try {
-      await deleteMfaFactorsByUsername("admin");
+      await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
       // Re-enable the auth method enforcer dialog for other suites
-      await setAuthMethodEnforcerDismissed("admin", false);
+      await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, false);
     } catch (e) {
       console.warn("[MFA E2E] Cleanup failed:", e);
     }
@@ -107,8 +108,16 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     const code = generateTotp(totpSecret);
     await codeInput.fill(code);
 
-    // Click the verify button.
-    await adminPage.getByTestId("mfa-enroll-finish-button").click();
+    // The OtpInput auto-submits on the 6th digit (enrolling disables the
+    // finish button while the request runs). If auto-submit didn't fire,
+    // click verify manually; otherwise the dialog closes on its own.
+    try {
+      await adminPage
+        .getByTestId("mfa-management-list")
+        .waitFor({ state: "visible", timeout: 6000 });
+    } catch {
+      await adminPage.getByTestId("mfa-enroll-finish-button").click();
+    }
 
     // Wait for the dialog to close and the factor to appear in the list.
     await adminPage.getByTestId("mfa-management-list").waitFor({ state: "visible", timeout: 15000 });
@@ -138,8 +147,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await loginPage.goto("/login", { waitUntil: "networkidle" });
     await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
 
-    await loginPage.getByTestId("login-username-input").fill("admin");
-    await loginPage.getByTestId("login-password-input").fill("admin");
+    await loginPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
+    await loginPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
     await loginPage.getByTestId("login-submit-button").click();
 
     // The MFA challenge should appear (instead of redirecting to the app).
@@ -149,7 +158,14 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // Generate a TOTP code and enter it.
     const code = generateTotp(totpSecret);
     await mfaCodeInput.fill(code);
-    await loginPage.getByTestId("mfa-verify-button").click();
+    // The OtpInput auto-submits on the 6th digit — the verify click is only a
+    // fallback when auto-submit doesn't fire (button stays disabled while the
+    // request runs and detaches when the page navigates away).
+    try {
+      await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 6000 });
+    } catch {
+      await loginPage.getByTestId("mfa-verify-button").click();
+    }
 
     // Assert: redirect away from /login (success → app home).
     await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
@@ -168,8 +184,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await loginPage.goto("/login", { waitUntil: "networkidle" });
     await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
 
-    await loginPage.getByTestId("login-username-input").fill("admin");
-    await loginPage.getByTestId("login-password-input").fill("admin");
+    await loginPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
+    await loginPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
     await loginPage.getByTestId("login-submit-button").click();
 
     // Wait for MFA challenge.
@@ -177,12 +193,16 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await mfaCodeInput.waitFor({ state: "visible", timeout: 15000 });
 
     // Enter a wrong code (all zeros — unlikely to match).
+    // The OtpInput auto-submits on the 6th digit — no verify click needed.
     await mfaCodeInput.fill("000000");
-    await loginPage.getByTestId("mfa-verify-button").click();
 
-    // The login page should NOT redirect — the user stays on /login.
-    // We expect an error to appear (either an alert or the URL stays /login).
-    await loginPage.waitForTimeout(2000); // give the API time to respond
+    // The login page should NOT redirect — the user stays on /login. A wrong
+    // code either surfaces a destructive alert inside the MFA challenge or, if
+    // the challenge token was consumed, opens the global session-expired dialog.
+    await Promise.race([
+      loginPage.locator('[data-slot="alert"][class*="destructive"]').waitFor({ state: "visible", timeout: 15000 }),
+      loginPage.getByRole("dialog").waitFor({ state: "visible", timeout: 15000 }),
+    ]);
     expect(loginPage.url()).toContain("/login");
 
     await loginContext.close();

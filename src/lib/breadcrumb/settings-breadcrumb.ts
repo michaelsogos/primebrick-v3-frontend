@@ -31,13 +31,13 @@ export function settingsTabMenuSegment(args: {
 
   // Find the current item to use as the dropdown label
   const currentItem = items.find((item) => item.current);
-  const label = currentItem?.label ?? (items[0]?.label ?? args.t('shell.settings.title'));
+  const label = currentItem?.label ?? (items[0]?.label ?? args.t('system.settings.title'));
 
   return {
     kind: 'menu',
     label,
     icon: currentItem?.icon,
-    menuAriaLabel: args.t('shell.settings.breadcrumbMenu'),
+    menuAriaLabel: args.t('system.settings.breadcrumbMenu'),
     items
   };
 }

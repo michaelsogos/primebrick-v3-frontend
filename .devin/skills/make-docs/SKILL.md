@@ -1,6 +1,6 @@
 ---
 name: make-docs
-description: Run sveld extraction and surgically update docs/user-guide based on current branch diff
+description: Run sveld extraction and surgically update docs/dev-guide based on current branch diff
 allowed-tools: [read, write, edit, exec, grep, find_file_by_name]
 ---
 
@@ -24,7 +24,7 @@ diff base:
 
 ### 2. Run extraction (refresh component docs data)
 
-Run `pnpm extract-docs` to regenerate `docs/user-guide/_extracted/components.json`
+Run `pnpm extract-docs` to regenerate `docs/dev-guide/_extracted/components.json`
 from the current Svelte™ components via sveld. This ensures the extraction JSON
 reflects the latest prop types, snippets, and bindable flags.
 
@@ -69,9 +69,9 @@ For each doc page that might be affected:
 
 A 10-line code change → at most a few lines of doc changes, not a rewritten page.
 
-### 6. Update docs/user-guide/
+### 6. Update docs/dev-guide/
 
-Follow `.devin/rules/docs-user-guide.md` for editorial conventions:
+Follow `.devin/rules/docs-dev-guide.md` for editorial conventions:
 - Use `<Mermaid chart={...} />` for diagrams, never ```Code or ```mermaid
 - Minimal edits — preserve existing prose structure
 - Update `<!-- AUTO-GENERATED:reference -->` blocks with extracted component data

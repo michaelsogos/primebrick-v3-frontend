@@ -1,0 +1,207 @@
+---
+title: System settings
+description: The System Settings area — modules, organizations, users, profile, security, email providers, and templates.
+---
+
+# System settings
+
+The System Settings area lives under `/system/settings` and groups the
+platform administration pages. Each page uses `AppPageScaffold` +
+`AppPageBreadcrumb` for consistent layout.
+
+## Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/system/settings/modules` | List, enable/disable, delete, and inspect registered microservice modules |
+| `/system/settings/modules/[code]` | Edit a single module's metadata and configuration entries |
+| `/system/settings/organizations` | List organizations |
+| `/system/settings/organizations/[uuid]` | Edit an organization |
+| `/system/settings/organizations/create` | Create an organization |
+| `/system/settings/users` | List users (entity list table) |
+| `/system/settings/users/[uuid]` | Edit a user (with change-password dialog) |
+| `/system/settings/users/create` | Create a user |
+| `/system/settings/roles` | List role mappings (IdP role → permissions) |
+| `/system/settings/roles/create` | Create a role mapping |
+| `/system/settings/roles/[uuid]` | Edit a role mapping |
+| `/system/settings/profile` | Edit the current user's profile |
+| `/system/settings/ai` | Manage browser-local AI models, cache/storage, and test scores |
+| `/system/settings/configurations` | Security settings |
+| `/system/settings/email-providers` | Manage email provider configurations |
+| `/system/settings/templates` | Manage templates |
+| `/system/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
+
+## Modules
+
+The modules page (`/system/settings/modules`) fetches services via
+`fetchServices()` and groups them by code using `groupByCode()` from
+`src/lib/services-store.svelte.ts`. Each group shows aggregated status
+badges (`online`, `going_live`, `offline`, `unknown`) computed by
+`aggregateStatus()`.
+
+Actions per module:
+
+- **Toggle** — `toggleModule(code)` enables/disables the module
+- **Delete** — `deleteModule(code)` with a `DeleteDialog` confirmation
+- **Configure** — navigates to `/system/settings/modules/[code]`
+
+The page also reflects the backend health chip from `backendState.healthChip`
+via `useHealthChip()` (`chipLabel`, `chipClass`).
+
+```svelte
+<script lang="ts">
+  import { servicesStore, toggleModule, deleteModule } from "$lib/services-store.svelte.ts";
+  import { useHealthChip } from "$lib/composables/use-health-chip.svelte.ts";
+
+  const health = useHealthChip();
+  const services = $derived(servicesStore.services);
+  const grouped = $derived(groupByCode(services));
+</script>
+
+{#each grouped as [code, instances]}
+  <div class="module-card">
+    <span class="status-badge">{$derived(aggregateStatus(instances))}</span>
+    <Switch checked={instances[0].enabled} onchange={() => toggleModule(code)} />
+    <button onclick={() => goto(`/system/settings/modules/${code}`)}>Configure</button>
+  </div>
+{/each}
+```
+
+### Module detail
+
+`/system/settings/modules/[code]` has two tabs:
+
+1. **Service info** — editable fields: `name`, `description`, `base_url`,
+   `icon`, `icon_type` (`icon` | `url` | `image_url`), `author`,
+   `github_repo_url`. Saved via `updateService(code, data)`.
+2. **Module config** — lazy-loaded key/value entries fetched with
+   `fetchModuleConfig(code)` and saved individually via
+   `updateModuleConfigKey(code, key, value)`.
+
+The module's icon is rendered with `<DynamicIcon>` (see
+[UI components](/docs/dev-guide/ui-components#dynamicicon)) when
+`icon_type` is `icon`.
+
+## Organizations
+
+The organizations list and forms use standard entity patterns. The create
+page (`/system/settings/organizations/create`) and edit page
+(`/system/settings/organizations/[uuid]`) use `FormPageLayout` and
+SuperForms with the form guards described in
+[Authentication & sessions](/docs/dev-guide/authentication#form-guards).
+For the end-user procedure see
+[Organizations](/docs/user-guide/manual/organizations).
+
+```svelte
+<script lang="ts">
+  import { superForm } from "sveltekit-superforms";
+  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/use-form-guard.svelte.ts";
+
+  const { form, $tainted, $errors, isTainted } = superForm(data.form);
+  const formGuard = useFormGuard(() => $tainted, () => $errors, (p) => isTainted(p));
+  const navGuard = useUnsavedChangesGuard(() => formGuard.hasChanges, "settings.unsavedChangesConfirm");
+</script>
+
+<svelte:window onbeforeunload={navGuard.handleBeforeUnload} />
+
+<FormPageLayout title={$t("settings.organizationEdit")}>
+  <!-- form fields -->
+</FormPageLayout>
+```
+
+## Users
+
+The users list (`/system/settings/users`) renders an `EntityListTable` with
+row actions including edit and **change password**. The change-password
+action opens `ChangePasswordDialog`, which loads the active password policy
+and validates against it (see
+[Password policy](/docs/dev-guide/authentication#password-policy)).
+
+The user edit page (`/system/settings/users/[uuid]`) and create page
+(`/system/settings/users/create`) use SuperForms with `useFormGuard` and
+`useUnsavedChangesGuard`. The create form supports an optional
+**invitation flow** (no manual password — the user onboards via an email
+link) and per-organization username availability checks.
+
+For the end-user procedures (create user, invitation flow, making a user
+admin), see [Managing users](/docs/user-guide/manual/users). Role mappings
+are managed under `/system/settings/roles` — see
+[Roles and permissions](/docs/user-guide/rbac).
+
+## Profile
+
+`/system/settings/profile` edits the current user's profile. It uses
+SuperForms with the form guards and includes avatar preview/color selection
+(see [UI components](/docs/dev-guide/ui-components)).
+
+## AI models
+
+`/system/settings/ai` manages the browser-local AI models used by the Guide/User
+Manual assistant and the Regex and JSON assistant panels. Models run in the
+browser via WebGPU — there is no server-side generation. The Guide CTA in the
+top bar retrieves documentation excerpts for grounded answers and citations.
+
+- **Storage bar** — stacked breakdown of `navigator.storage.estimate().usage`
+  into cataloged models, orphaned cached models (in Cache API but not in the
+  `ai_models` catalog — individually deletable), other caches, and other
+  browser storage. The segments always sum to the real estimate.
+- **Model names** — displayed as `&lt;name> (&lt;quantization>)`, e.g.
+  `Qwen2.5-Coder-3B-Instruct (q4f16)`.
+- **Test scores** — each model carries per-case quality reports in
+  `ai_models.test_scores` under `*_test_score` keys (e.g.
+  `regex_test_score`, `json_editor_with_schema_test_score`). The test-report
+  popover renders one section per case with per-turn evidence: prompt,
+  expected vs actual output, verdict, reason, and response time. Aggregate
+  quality/speed/case score and the model rank are computed at read time
+  from the turn data — they are never stored. Speed uses a single rule at
+  every level: average the response seconds first (per case, then mean of
+  case averages), then bucket the average (≤3 s → 5 … >10 s → 0).
+
+## Email providers
+
+`/system/settings/email-providers` manages email provider configurations
+(provider name, API key, endpoint, from email/name, reply-to). It talks to
+the `EMAILSENDER` microservice through the backend proxy at
+`/ws/EMAILSENDER/api/v1/entities/provider` using `apiFetchExt` from
+`src/lib/api-ext.ts`. `ApiUnreachableError` is handled gracefully — when
+the microservice is offline and the error has already been notified, the
+page suppresses duplicate notifications.
+
+## Templates
+
+`/system/settings/templates` manages templates. It uses the standard
+`AppPageScaffold` layout.
+
+## Migrations
+
+`/system/migrations` is the `db_patch` admin remediation surface — one card
+per service: the backend first (direct `/api/v1/system/db-migration/*`),
+then every registered microservice reached through the governed
+`/ws/<code>/api/v1/system/db-migration/*` proxy, which exempts that prefix
+for `migration_failed` instances so a degraded service stays fixable from
+the UI.
+
+Each card fetches `GET .../db-migration/status` (registry rows + boot
+result) via `fetchDbMigrationStatus(code)` and renders a plain `Table` —
+`db_patch` is served by the SDK system-module RPC surface, not the entity
+pipeline, so `EntityListTable` does not apply. Actions:
+
+- **Retry failed** — `POST .../db-migration/retry`, resets `failed` rows and
+  re-runs migrations
+- **Approve** / **Mark resolved** — per-row on `pending_review` /
+  `failed`/`pending` patches, via a shared `DialogBordered` note dialog
+- **Drift check** — `POST .../db-migration/drift-check`, renders a clean /
+  differences badge under the card header
+
+Helpers live in `src/lib/api.ts` (`dbMigrationBase` resolves `'be'` →
+direct, other codes → `/ws/<code>`); types in `src/lib/api-types.ts`
+(`DbPatchRow`, `DbMigrationStatus`, `DbMigrationDriftResult`). E2E coverage:
+`src/e2e/system-migrations.spec.ts`.
+
+## Next steps
+
+- [App shell & sidebar](/docs/dev-guide/app-shell)
+- [Authentication & sessions](/docs/dev-guide/authentication)
+- [Entity list table](/docs/dev-guide/components/entity-list-table) — used by the users list
+- [Component catalog](/docs/dev-guide/components) — every custom/wrapped component
+- [API reference](/docs/dev-guide/api-reference)

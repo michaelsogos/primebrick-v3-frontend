@@ -33,3 +33,4 @@ playwright/.auth
 *.njsproj
 *.sln
 *.sw?
+docs/.obsidian/

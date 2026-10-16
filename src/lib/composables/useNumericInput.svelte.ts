@@ -272,7 +272,10 @@ export function useNumericInput(options: UseNumericInputOptions) {
   function syncFromProp() {
     const externalValue = value();
     _lastExternalValue = externalValue;
-    _state._rawValue = String(externalValue);
+    // Sanitize the incoming value through the same filter used on input —
+    // a stale/garbage string must never reach `displayValue` (it would get
+    // mangled by thousand-separator formatting, e.g. "asdf" → "a.sdf").
+    _state._rawValue = filterCanonicalInput(String(externalValue), type(), isUnsigned);
   }
 
   /**

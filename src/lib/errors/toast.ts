@@ -16,14 +16,14 @@ function toastEvent(tone: ToastTone, message: string, data?: ExternalToast & { t
 
   const label =
     tone === 'critical'
-      ? tr('impact.criticalError')
+      ? tr('app.common.impact.criticalError')
       : tone === 'error'
-        ? tr('impact.error')
+        ? tr('app.common.impact.error')
         : tone === 'warning'
-          ? tr('impact.warning')
+          ? tr('app.common.impact.warning')
           : tone === 'success'
-            ? tr('impact.success')
-            : tr('impact.information');
+            ? tr('app.common.impact.success')
+            : tr('app.common.impact.information');
 
   return sonnerToast.custom(
     EventToast,

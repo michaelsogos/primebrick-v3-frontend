@@ -1,12 +1,17 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
-  import { Switch } from '$lib/components/ui/switch';
+  import { t, dict, getDictKeys } from '$lib/i18n';
+  import { SwitchField } from '$lib/components/ui/switch-field';
   import { TextInput } from '$lib/components/ui/input';
+  import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
+  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import { Label } from '$lib/components/ui/label';
+  import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import type { ConfigEntryType } from '$lib/api-types';
   import { autoErrorLabelKey } from '$lib/config/type-config-schema';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
+  import { useTypeCapabilities } from '$lib/composables/useTypeCapabilities.svelte';
+  import { onMount } from 'svelte';
 
   let {
     type,
@@ -18,133 +23,219 @@
     builder: ReturnType<typeof useTypeConfigBuilder>;
   } = $props();
 
-  const isNumericType = $derived(type === 'bigint' || type === 'number' || type === 'money');
-  const isStringType = $derived(type === 'string' || type === 'text' || type === 'secret');
-  const isUrlType = $derived(type === 'url');
+  // Per-type capabilities — canonical matrix from @primebrick/sdk via
+  // config_entry/meta (see useTypeCapabilities). Replaces hardcoded type checks.
+  const typeCapabilities = useTypeCapabilities();
+  onMount(() => void typeCapabilities.ensureLoaded());
+  const caps = $derived(typeCapabilities.capabilitiesFor(type));
+  const isNumericType = $derived(caps.validation.min === 'value');
+  // email/phone have intrinsic format + length constraints (RFC 5321 / E.164)
+  // — min/max length and free regex would duplicate or conflict with the
+  // type's own validation, so they're hidden for those types.
+  const hasMinMax = $derived(
+    caps.validation.min !== undefined && type !== 'email' && type !== 'phone',
+  );
+  const hasRegex = $derived(
+    caps.validation.regex === true && !['url', 'email', 'phone'].includes(type),
+  );
 
-  // Local state for inputs that don't map 1:1 to builder mutators
+  // All i18n keys for ComboSelect error_label_key selectors
+  const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
+  const errorKeyOptions = $derived(allI18nKeys.map((k: string) => ({ key: k })));
+
+  // Local state for inputs that don't map 1:1 to builder mutators.
+  // NOTE: bind:value on <input type="number"> yields `number | null` at
+  // runtime (Svelte auto-coercion) despite the declared string type — always
+  // read via `asTrimmed()` before calling string methods.
   let minInput = $state<string>('');
   let maxInput = $state<string>('');
   let minErrorKey = $state<string>('');
   let maxErrorKey = $state<string>('');
   let regexPattern = $state<string>('');
+  let regexFlags = $state<string>('');
   let regexErrorKey = $state<string>('');
-  let urlProtocols = $state<string>('');
-  let urlErrorKey = $state<string>('');
+  let regexPatternError = $state<string | null>(null);
   let requiredErrorKey = $state<string>('');
 
-  // Sync from builder state — only reads custom error_label_keys (auto keys
-  // are no longer stored in state, so these stay empty unless user set one)
+  // Sync from builder state — error_label_keys fall back to auto-generated
+  // defaults (typed values, not placeholders) so the ComboSelect shows them
+  // as selected and the user can override or pick a different key.
   $effect(() => {
     const v = builder.validation;
     if (v?.rules?.min) {
       minInput = String(v.rules.min.value);
-      minErrorKey = v.rules.min.error_label_key ?? '';
+      minErrorKey = v.rules.min.error_label_key ?? autoErrorLabelKey(configKey, 'min');
+    } else {
+      minInput = '';
+      minErrorKey = '';
     }
     if (v?.rules?.max) {
       maxInput = String(v.rules.max.value);
-      maxErrorKey = v.rules.max.error_label_key ?? '';
+      maxErrorKey = v.rules.max.error_label_key ?? autoErrorLabelKey(configKey, 'max');
+    } else {
+      maxInput = '';
+      maxErrorKey = '';
     }
     if (v?.rules?.regex) {
       regexPattern = v.rules.regex.pattern;
-      regexErrorKey = v.rules.regex.error_label_key ?? '';
-    }
-    if (v?.rules?.url) {
-      urlProtocols = v.rules.url.protocols.join(', ');
-      urlErrorKey = v.rules.url.error_label_key ?? '';
+      regexFlags = v.rules.regex.flags ?? '';
+      regexErrorKey = v.rules.regex.error_label_key ?? autoErrorLabelKey(configKey, 'regex');
+      // Validate existing pattern on load — use local var to avoid tracking regexPattern
+      const p = v.rules.regex.pattern;
+      const f = v.rules.regex.flags ?? '';
+      if (p && p.trim() !== '') {
+        try {
+          new RegExp(p, f);
+          regexPatternError = null;
+        } catch {
+          regexPatternError = $t('app.common.validation.invalidRegexPattern');
+        }
+      } else {
+        regexPatternError = null;
+      }
+    } else {
+      regexPattern = '';
+      regexFlags = '';
+      regexErrorKey = '';
+      regexPatternError = null;
     }
     if (v?.required_error_label_key) {
       requiredErrorKey = v.required_error_label_key;
+    } else if (v?.required) {
+      requiredErrorKey = autoErrorLabelKey(configKey, 'required');
+    } else {
+      requiredErrorKey = '';
     }
   });
 
-  function handleMinChange() {
-    const val = minInput.trim() === '' ? null : Number(minInput);
+  function asTrimmed(v: unknown): string {
+    return String(v ?? '').trim();
+  }
+
+  function handleMinChange(e?: Event) {
+    // Read the live DOM value — bind:value update ordering vs oninput is not
+    // guaranteed, and type=number binds coerce to number.
+    const raw = e ? (e.currentTarget as HTMLInputElement).value : asTrimmed(minInput);
+    const val = raw.trim() === '' ? null : Number(raw);
     builder.setMin(val, minErrorKey || undefined);
   }
 
-  function handleMaxChange() {
-    const val = maxInput.trim() === '' ? null : Number(maxInput);
+  function handleMinErrorKeyChange(value: string | string[]) {
+    minErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleMinChange();
+  }
+
+  function handleMaxChange(e?: Event) {
+    const raw = e ? (e.currentTarget as HTMLInputElement).value : asTrimmed(maxInput);
+    const val = raw.trim() === '' ? null : Number(raw);
     builder.setMax(val, maxErrorKey || undefined);
   }
 
-  function handleRegexChange() {
-    builder.setRegex(regexPattern, regexErrorKey || undefined);
+  function handleMaxErrorKeyChange(value: string | string[]) {
+    maxErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleMaxChange();
   }
 
-  function handleUrlProtocolsChange() {
-    const protocols = urlProtocols.split(',').map((p) => p.trim()).filter(Boolean);
-    builder.setUrlProtocols(protocols, urlErrorKey || undefined);
+  function handleRegexChange() {
+    const pattern = (regexPattern ?? '').trim();
+    if (pattern !== '') {
+      try {
+        new RegExp(pattern, regexFlags);
+        regexPatternError = null;
+      } catch {
+        regexPatternError = $t('app.common.validation.invalidRegexPattern');
+      }
+    } else {
+      regexPatternError = null;
+    }
+    builder.setRegex(regexPattern, regexFlags || undefined, regexErrorKey || undefined);
+  }
+
+  function handleRegexErrorKeyChange(value: string | string[]) {
+    regexErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleRegexChange();
   }
 
   function handleRequiredErrorKeyChange() {
     builder.setRequiredErrorLabelKey(requiredErrorKey);
   }
+
+  function handleRequiredErrorKeyComboChange(value: string | string[]) {
+    requiredErrorKey = Array.isArray(value) ? value[0] ?? '' : value;
+    handleRequiredErrorKeyChange();
+  }
 </script>
 
-<div class="space-y-4">
-  <h4 class="text-sm font-semibold text-muted-foreground">{$t('config.typeConfig.validationRules')}</h4>
+<SelectableFieldset label={$t('system.settings.config.typeConfig.validationRules')}>
 
   <!-- Required -->
-  <div class="space-y-2">
-    <div class="flex items-center gap-3">
-      <Switch
-        id="tcb-required"
-        checked={builder.validation?.required ?? false}
-        onCheckedChange={(checked) => builder.setRequired(checked)}
-        data-testid="tcb-required"
-      />
-      <span class="text-sm font-medium leading-none">
-        {$t('config.typeConfig.required')}
-      </span>
-    </div>
-    <p class="text-xs text-muted-foreground">{$t('config.typeConfig.requiredHelp')}</p>
-  </div>
+  <SwitchField
+    id="tcb-required"
+    checked={builder.validation?.required ?? false}
+    onCheckedChange={(checked: boolean) => builder.setRequired(checked)}
+    label={$t('system.settings.config.typeConfig.required')}
+    tooltip={$t('system.settings.config.typeConfig.requiredHelp')}
+    tooltipPriority="INFORMATION"
+    data-testid="tcb-required"
+  />
 
   {#if builder.validation?.required}
     <div class="space-y-1">
       <Label for="tcb-required-error-key" class="text-xs text-muted-foreground">
-        {$t('config.typeConfig.requiredErrorLabelKey')}
+        {$t('system.settings.config.typeConfig.requiredErrorLabelKey')}
         <FormLabelWithPriorityHelp
-          text={$t('common.optionalTooltipText')}
+          text={$t('app.common.optionalTooltipText')}
           priority="INFORMATION"
-          title={$t('common.optionalTooltipTitle')}
-          labelKey="common.optional"
+          title={$t('app.common.optionalTooltipTitle')}
+          labelKey="app.common.optional"
         />
       </Label>
-      <TextInput
+      <ComboSelect
         id="tcb-required-error-key"
-        bind:value={requiredErrorKey}
-        oninput={handleRequiredErrorKeyChange}
-        placeholder="validation.required"
-        class="text-xs"
         data-testid="tcb-required-error-key"
+        mode="single"
+        value={requiredErrorKey}
+        onChange={handleRequiredErrorKeyComboChange}
+        options={errorKeyOptions}
+        valueField="key"
+        labelField="key"
+        isLabelTranslated={true}
+        allowCreate={true}
+        defaultSearch={autoErrorLabelKey(configKey, 'required')}
+        placeholder={autoErrorLabelKey(configKey, 'required')}
+        searchPlaceholder={autoErrorLabelKey(configKey, 'required')}
+        class="text-xs"
+        display="detailed"
       />
     </div>
   {/if}
 
   <!-- Unsigned (numeric only) -->
-  {#if isNumericType}
-    <div class="space-y-2">
-      <div class="flex items-center gap-3">
-        <Switch
-          id="tcb-unsigned"
-          checked={builder.validation?.unsigned === true}
-          onCheckedChange={(checked) => builder.setUnsigned(checked)}
-          data-testid="tcb-unsigned"
-        />
-        <span class="text-sm font-medium leading-none">
-          {$t('config.typeConfig.unsigned')}
-        </span>
-      </div>
-      <p class="text-xs text-muted-foreground">{$t('config.typeConfig.unsignedHelp')}</p>
-    </div>
+  {#if caps.validation.unsigned}
+    <SwitchField
+      id="tcb-unsigned"
+      checked={builder.validation?.unsigned === true}
+      onCheckedChange={(checked: boolean) => builder.setUnsigned(checked)}
+      label={$t('system.settings.config.typeConfig.unsigned')}
+      tooltip={$t('system.settings.config.typeConfig.unsignedHelp')}
+      tooltipPriority="INFORMATION"
+      data-testid="tcb-unsigned"
+    />
   {/if}
 
-  <!-- Min / Max -->
+  <!-- Min / Max (numeric types: value; string-derived types: length) -->
+  {#if hasMinMax}
   <div class="grid grid-cols-2 gap-3">
     <div class="space-y-1">
-      <Label for="tcb-min">{isNumericType ? $t('config.typeConfig.minValue') : $t('config.typeConfig.minLength')}</Label>
+      <Label for="tcb-min">
+        {isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
+        <FormLabelWithPriorityHelp
+          text={$t('system.settings.config.typeConfig.minHelp')}
+          priority="INFORMATION"
+          title={isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
+          labelKey="app.common.optional"
+        />
+      </Label>
       <TextInput
         id="tcb-min"
         type="number"
@@ -154,28 +245,45 @@
         class="text-xs"
         data-testid="tcb-min"
       />
-      {#if minInput.trim() !== ''}
+      {#if asTrimmed(minInput) !== ''}
         <Label for="tcb-min-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.minErrorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-min-error-key"
-          bind:value={minErrorKey}
-          oninput={handleMinChange}
-          placeholder={autoErrorLabelKey(configKey, 'min')}
-          class="text-xs"
           data-testid="tcb-min-error-key"
-        />
+          mode="single"
+          value={minErrorKey}
+          onChange={handleMinErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'min')}
+          placeholder={autoErrorLabelKey(configKey, 'min')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'min')}
+          class="text-xs"
+        display="detailed"
+      />
       {/if}
     </div>
     <div class="space-y-1">
-      <Label for="tcb-max">{isNumericType ? $t('config.typeConfig.maxValue') : $t('config.typeConfig.maxLength')}</Label>
+      <Label for="tcb-max">
+        {isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
+        <FormLabelWithPriorityHelp
+          text={$t('system.settings.config.typeConfig.maxHelp')}
+          priority="INFORMATION"
+          title={isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
+          labelKey="app.common.optional"
+        />
+      </Label>
       <TextInput
         id="tcb-max"
         type="number"
@@ -185,111 +293,96 @@
         class="text-xs"
         data-testid="tcb-max"
       />
-      {#if maxInput.trim() !== ''}
+      {#if asTrimmed(maxInput) !== ''}
         <Label for="tcb-max-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.maxErrorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-max-error-key"
-          bind:value={maxErrorKey}
-          oninput={handleMaxChange}
-          placeholder={autoErrorLabelKey(configKey, 'max')}
-          class="text-xs"
           data-testid="tcb-max-error-key"
-        />
+          mode="single"
+          value={maxErrorKey}
+          onChange={handleMaxErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'max')}
+          placeholder={autoErrorLabelKey(configKey, 'max')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'max')}
+          class="text-xs"
+        display="detailed"
+      />
       {/if}
     </div>
   </div>
-
-  <!-- URL protocols (url type only) -->
-  {#if isUrlType}
-    <div class="space-y-1">
-      <Label for="tcb-url-protocols">{$t('config.typeConfig.urlProtocols')}</Label>
-      <TextInput
-        id="tcb-url-protocols"
-        bind:value={urlProtocols}
-        oninput={handleUrlProtocolsChange}
-        placeholder="http, https"
-        class="text-xs"
-        data-testid="tcb-url-protocols"
-      />
-      {#if urlProtocols.trim() !== ''}
-        <Label for="tcb-url-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
-          <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
-            priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
-          />
-        </Label>
-        <TextInput
-          id="tcb-url-error-key"
-          bind:value={urlErrorKey}
-          oninput={handleUrlProtocolsChange}
-          placeholder={autoErrorLabelKey(configKey, 'url')}
-          class="text-xs"
-          data-testid="tcb-url-error-key"
-        />
-      {/if}
-    </div>
   {/if}
 
-  <!-- Email (string/text only) -->
-  {#if isStringType}
-    <div class="space-y-2">
-      <div class="flex items-center gap-3">
-        <Switch
-          id="tcb-email"
-          checked={!!builder.validation?.rules?.email}
-          onCheckedChange={(checked) => builder.setEmail(checked)}
-          data-testid="tcb-email"
-        />
-        <span class="text-sm font-medium leading-none">
-          {$t('config.typeConfig.emailValidation')}
-        </span>
-      </div>
-      <p class="text-xs text-muted-foreground">{$t('config.typeConfig.emailValidationHelp')}</p>
-    </div>
-  {/if}
+  <!-- Email validation rule is deprecated — email is now a TYPE with inherent validation -->
+  <!-- No email rule switch needed for string/text types -->
 
-  <!-- Regex (string/text/secret only) -->
-  {#if isStringType}
+  <!-- Regex (plain string types only — url/email/phone have intrinsic format validation) -->
+  {#if hasRegex}
     <div class="space-y-1">
-      <Label for="tcb-regex">{$t('config.typeConfig.regexPattern')}</Label>
-      <TextInput
+      <Label for="tcb-regex">
+        {$t('system.settings.config.typeConfig.regexPattern')}
+        <FormLabelWithPriorityHelp
+          text={$t('system.settings.config.typeConfig.regexPatternHelp')}
+          priority="HINT"
+          title={$t('system.settings.config.typeConfig.regexPattern')}
+          labelKey="app.common.optional"
+        />
+      </Label>
+      <SmartRegexInput
         id="tcb-regex"
         bind:value={regexPattern}
-        oninput={handleRegexChange}
-        placeholder="^[A-Z]{3}$"
+        bind:flags={regexFlags}
+        on_change={() => handleRegexChange()}
+        placeholder={$t('system.settings.config.typeConfig.regexPatternPlaceholder')}
         class="font-mono text-xs"
+        config_type={type as 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone'}
         data-testid="tcb-regex"
       />
-      {#if regexPattern.trim() !== ''}
+      {#if regexPatternError}
+        <p class="text-xs text-destructive" data-testid="tcb-regex-error">
+          {regexPatternError}
+        </p>
+      {/if}
+      {#if (regexPattern ?? '').trim() !== ''}
         <Label for="tcb-regex-error-key" class="text-xs text-muted-foreground">
-          {$t('config.typeConfig.errorLabelKey')}
+          {$t('system.settings.config.typeConfig.regexErrorLabelKey')}
           <FormLabelWithPriorityHelp
-            text={$t('common.optionalTooltipText')}
+            text={$t('app.common.optionalTooltipText')}
             priority="INFORMATION"
-            title={$t('common.optionalTooltipTitle')}
-            labelKey="common.optional"
+            title={$t('app.common.optionalTooltipTitle')}
+            labelKey="app.common.optional"
           />
         </Label>
-        <TextInput
+        <ComboSelect
           id="tcb-regex-error-key"
-          bind:value={regexErrorKey}
-          oninput={handleRegexChange}
-          placeholder={autoErrorLabelKey(configKey, 'regex')}
-          class="text-xs"
           data-testid="tcb-regex-error-key"
-        />
+          mode="single"
+          value={regexErrorKey}
+          onChange={handleRegexErrorKeyChange}
+          options={errorKeyOptions}
+          valueField="key"
+          labelField="key"
+          isLabelTranslated={true}
+          allowCreate={true}
+          defaultSearch={autoErrorLabelKey(configKey, 'regex')}
+          placeholder={autoErrorLabelKey(configKey, 'regex')}
+          searchPlaceholder={autoErrorLabelKey(configKey, 'regex')}
+          class="text-xs"
+        display="detailed"
+      />
       {/if}
     </div>
   {/if}
-</div>
+</SelectableFieldset>

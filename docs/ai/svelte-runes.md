@@ -334,6 +334,49 @@ Before Svelte 5.25, `$derived` values were read-only. Since 5.25, they can be
 overridden. If you need a value that's computed but also reassignable, use
 `$derived` (overridable) or `$state` + explicit update logic.
 
+### 5. State-sync `$effect` without a removal branch
+
+When an effect copies external/builder state into local input state, it must
+handle the case where the source value was REMOVED — not only when it
+changed. A sync effect written as `if (rule.min) { minInput = rule.min }`
+leaves `minInput` stale forever after `min` is deleted.
+
+```js
+// ❌ removed rule leaves stale input
+$effect(() => {
+  const rules = builder.validation?.rules;
+  if (rules?.min != null) minInput = String(rules.min);
+});
+
+// ✅ absence resets the local input
+$effect(() => {
+  const rules = builder.validation?.rules;
+  minInput = rules?.min != null ? String(rules.min) : "";
+});
+```
+
+### 6. Re-applying "init defaults" inside a reactive effect
+
+A normalization default (e.g. "required string ⇒ min ≥ 1") must run **once at
+form initialization**, never inside a `$effect` that re-fires on every apply.
+Otherwise an explicit removal — by the user or by the AI assistant applying
+new JSON — is silently reverted the next time the effect runs.
+
+```js
+// ❌ re-inserts the rule on every apply where it's absent
+$effect(() => {
+  if (STRING_TYPES.has(type) && !builder.validation?.rules?.min)
+    builder.setMin(required ? 1 : 0);
+});
+
+// ✅ default applied once during initForm(), not in an effect
+```
+
+Real-world evidence: `TypeConfigBuilder` / `ValidationRulesSection` — the AI
+correctly removed `min`, the builder re-added `min=1`, and the input then
+kept showing the stale `"3"`. Two bugs, one lesson: sync effects need removal
+branches, and defaults belong in init code.
+
 ---
 
 ## Decision flowchart

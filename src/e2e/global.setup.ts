@@ -15,8 +15,14 @@
  * no point running E2E tests against a half-up stack.
  */
 import { startFakeBrevoServer } from "./helpers/fake-brevo";
-import { upsertFakeBrevoProvider, getPool } from "./helpers/db";
-import { setFakeBrevo } from "./helpers/global-state";
+import {
+  getPool,
+  restoreBrevoProvider,
+  snapshotBrevoProvider,
+  upsertFakeBrevoProvider,
+} from "./helpers/db";
+import { getBrevoProviderSnapshot, setBrevoProviderSnapshot, setFakeBrevo } from "./helpers/global-state";
+import { createE2eAdminActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -50,11 +56,28 @@ export default async function globalSetup(): Promise<void> {
   //    must be set BEFORE emailsender starts. In dev, emailsender should be
   //    (re)started after this row is seeded. See plan Risks #8.
   try {
+    setBrevoProviderSnapshot(await snapshotBrevoProvider());
     await upsertFakeBrevoProvider(fakeBrevo.url);
     console.log("[globalSetup] Upserted fake Brevo provider row.");
   } catch (err) {
     await fakeBrevo.close();
-    throw new Error(`[globalSetup] Failed to upsert fake Brevo provider row: ${err}`);
+    throw new Error(`[globalSetup] Failed to snapshot or upsert fake Brevo provider row: ${err}`);
+  }
+
+  // 6. Mint the ephemeral E2E admin actor (random password, destroyed in
+  //    teardown) and publish its credentials to the test workers via env.
+  try {
+    const actor = await createE2eAdminActor();
+    console.log(`[globalSetup] Ephemeral E2E test actor created: ${actor.username}`);
+  } catch (err) {
+    const snapshot = getBrevoProviderSnapshot();
+    if (snapshot) {
+      await restoreBrevoProvider(snapshot, fakeBrevo.url).catch((restoreErr) => {
+        console.error("[globalSetup] Failed to restore Brevo provider after actor setup failure:", restoreErr);
+      });
+    }
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create E2E test actor: ${err}`);
   }
 
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");

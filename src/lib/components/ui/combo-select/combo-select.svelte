@@ -4,11 +4,15 @@
   import * as Popover from "$lib/components/ui/popover";
   import * as Command from "$lib/components/ui/command";
   import Badge from "$lib/components/ui/badge/badge.svelte";
+  import { badgeClassesFromToken } from "$lib/colors/badge";
   import X from "@lucide/svelte/icons/x";
+  import Eraser from "@lucide/svelte/icons/eraser";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Check from "@lucide/svelte/icons/check";
-  import type { Snippet } from "svelte";
-  import { inputTrailingIconColorClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { tick, type Snippet } from "svelte";
+  import { inputTrailingIconColorClasses, inputGhostChromeClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { menuListSelectedSurfaceDropdownClasses } from "$lib/components/ui/menu-row-chrome.js";
+  import DynamicIcon from "$lib/components/ui/dynamic-icon/DynamicIcon.svelte";
 
   type ComboSelectMode = "single" | "multi";
 
@@ -26,6 +30,25 @@
     id?: string;
     searchable?: boolean;
     searchPlaceholder?: string;
+    /**
+     * Declarative option template — avoids ad-hoc snippets for common layouts:
+     *   'default'  — plain label (default)
+     *   'badge'    — option rendered as a colored Badge; reads `colorField`
+     *   'detailed' — two-line row: label + `secondaryField` value (mono, muted)
+     *   'custom'   — REQUIRED to enable itemSnippet/selectedSnippet; snippets
+     *                are ignored without it (one canonical combobox look).
+     */
+    display?: 'default' | 'badge' | 'detailed' | 'custom';
+    /** display='badge': option field carrying a color token (e.g. 'emerald-500'). Default 'color'. */
+    colorField?: string;
+    /** display='detailed': option field rendered under the label (mono, muted). Defaults to the resolved value. */
+    secondaryField?: string;
+    /**
+     * Option field carrying a Lucide icon name — rendered via `DynamicIcon`
+     * before the label in option rows AND in the single-mode selected
+     * display. Ignored under display='custom' (the snippet owns rendering).
+     */
+    iconField?: string;
     itemSnippet?: Snippet<[{
       option: string | Record<string, any>;
       selected: boolean;
@@ -56,11 +79,45 @@
      */
     onCreate?: (value: string) => void;
     /**
+     * Called whenever the search text changes while the popover is open
+     * (fires once with `defaultSearch` on open). Lets the parent drive a
+     * remote/async options source — standard ComboSelect stays the same
+     * component, only `options` is refilled by the delegate.
+     */
+    onSearchInput?: (search: string) => void;
+    /**
+     * Infinite scroll: fired when the user scrolls near the bottom of the
+     * options list. The parent appends the next page into `options`.
+     * Pair with `loadingMore` to show the trailing spinner row.
+     */
+    onLoadMore?: () => void;
+    /** Shows a spinner row at the bottom of the list while more pages load. */
+    loadingMore?: boolean;
+    /**
      * Initial search text when the popover opens. Used to pre-filter
      * options (e.g. prefix-filter i18n keys by config.auth.{key}.).
      * The user can clear it via the X button to see all options.
      */
     defaultSearch?: string;
+    /**
+     * Where the ellipsis goes when the selected value / option text
+     * overflows: `'end'` (default, classic `truncate`) or `'start'`
+     * (leading `…`, tail stays visible — for long keys whose meaningful
+     * part is at the end, e.g. i18n keys). Affects the selected display,
+     * the "Create" row, and default/detailed option rows.
+     */
+    truncateFrom?: 'end' | 'start';
+    /**
+     * Trigger chrome:
+     *   `default` — primary-gradient border on bg-background (forms).
+     *   `toolbar` — plain neutral InputGroup-style chrome
+     *               (border-foreground/25, transparent bg) for toolbar strips.
+     *   `ghost`   — the FORMALIZED ghost chrome: subtle always-visible
+     *               `border-foreground/25` on transparent bg (same as the
+     *               toolbar SearchBar). Shared via `inputGhostChromeClasses`.
+     */
+    variant?: "default" | "toolbar" | "ghost";
+    class?: string;
     "aria-invalid"?: boolean | "true" | "false";
     "aria-describedby"?: string;
     "aria-required"?: boolean | "true" | "false";
@@ -82,28 +139,74 @@
     id,
     searchable = true,
     searchPlaceholder = "Search...",
+    display = 'default',
+    colorField = 'color',
+    secondaryField,
+    iconField,
     itemSnippet,
     isOptionDisabled,
     getSearchKeywords,
     selectedSnippet,
     allowCreate = false,
     onCreate,
+    onSearchInput,
+    onLoadMore,
+    loadingMore = false,
     defaultSearch = '',
+    truncateFrom = 'end',
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
     "aria-required": ariaRequired,
     "data-fs-error": dataFsError,
+    variant = "default",
+    class: className,
     "data-testid": dataTestId,
     ...restProps
   }: Props = $props();
 
+  // Contract: itemSnippet/selectedSnippet only render in display='custom'.
+  // Warn in dev so a forgotten display='custom' doesn't fail silently.
+  $effect(() => {
+    if (import.meta.env.DEV && (itemSnippet || selectedSnippet) && display !== 'custom') {
+      console.warn(
+        "[ComboSelect] itemSnippet/selectedSnippet ignored — pass display=\"custom\" to enable snippet rendering.",
+      );
+    }
+  });
+
   let open = $state(false);
   let search = $state("");
+  let listEl = $state<HTMLElement | null>(null);
+
+  // Scroll the first selected option into view when the popover opens —
+  // long lists should land on the current selection, not the top.
+  // NOTE: bits-ui Command.Item owns `aria-selected`/`data-selected`
+  // (keyboard highlight), so the real selection is marked with
+  // `data-combo-selected` — a non-colliding attribute.
+  $effect(() => {
+    if (!open) return;
+    void tick().then(() => {
+      // The popover mounts through a portal — wait one frame so the
+      // command list is laid out before measuring/scrolling.
+      requestAnimationFrame(() => {
+        const sel = listEl?.querySelector("[data-combo-selected]");
+        sel?.scrollIntoView({ block: "nearest" });
+      });
+    });
+  });
 
   // Reset search to defaultSearch whenever the popover opens
   $effect(() => {
     if (open) {
       search = defaultSearch;
+    }
+  });
+
+  // Remote-search delegate: notify the parent of every search change
+  // while open (including the initial open → prefetch call).
+  $effect(() => {
+    if (open) {
+      onSearchInput?.(search);
     }
   });
 
@@ -129,6 +232,12 @@
       return isLabelTranslated ? $t(rawStr) : rawStr;
     }
     return resolveValue(opt);
+  }
+
+  function resolveIcon(opt: string | Record<string, any>): string | null {
+    if (!iconField || typeof opt === 'string') return null;
+    const raw = getByPath(opt, iconField);
+    return raw != null && raw !== '' ? String(raw) : null;
   }
 
   function getByPath(obj: Record<string, any>, path: string): unknown {
@@ -239,6 +348,13 @@
 
   let showCreateItem = $derived(allowCreate && search.trim() !== '' && !exactMatchExists);
 
+  // Infinite scroll — near-bottom hit fires the parent's next-page delegate.
+  function handleListScroll(e: Event) {
+    if (!onLoadMore || loadingMore) return;
+    const el = e.currentTarget as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) onLoadMore();
+  }
+
   function handleCreate() {
     const newKey = search.trim();
     if (!newKey) return;
@@ -264,11 +380,17 @@
         role="combobox"
         tabindex={disabled ? -1 : 0}
         class={cn(
-          "min-h-9 w-full rounded-md border-primary-gradient bg-background px-3 py-1 text-sm ring-offset-background outline-hidden transition-all hover:brightness-105",
+          "min-h-9 w-full rounded-md px-3 py-1 text-sm ring-offset-background outline-hidden transition-all",
+          variant === "toolbar"
+            ? "border border-foreground/25 bg-transparent hover:border-foreground/40 focus-within:border-foreground/50"
+            : variant === "ghost"
+              ? inputGhostChromeClasses
+              : "border-primary-gradient bg-background hover:brightness-105",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          "cursor-pointer flex items-center text-left",
-          "aria-invalid:border-destructive-gradient aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
+          "cursor-pointer flex items-center gap-2 text-left",
+          "aria-invalid:border-destructive-gradient aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+          className
         )}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
@@ -278,28 +400,39 @@
       >
         {#if mode === "single"}
           {#if selectedNormalized}
-            {#if selectedSnippet}
+            {#if display === 'custom' && selectedSnippet}
               {@render selectedSnippet({
                 option: selectedNormalized.raw,
                 resolvedLabel: selectedNormalized.label,
                 resolvedValue: selectedNormalized.value,
               })}
+            {:else if display === 'badge'}
+              {@const c = badgeClassesFromToken(getByPath(selectedNormalized.raw as Record<string, any>, colorField) as string ?? null)}
+              <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
+                {selectedNormalized.label}
+              </Badge>
             {:else}
-              <span class="flex-1 truncate text-left">
+              {@const selIcon = resolveIcon(selectedNormalized.raw)}
+              {#if selIcon}
+                <DynamicIcon name={selIcon} size={16} class="shrink-0 text-muted-foreground" />
+              {/if}
+              <span class={cn("flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
                 {selectedNormalized.label}
               </span>
             {/if}
           {:else if (value as string).trim() !== ''}
             <!-- Created value not in options list — render with "new" badge -->
-            {#if selectedSnippet}
+            {#if display === 'custom' && selectedSnippet}
               {@render selectedSnippet({
                 option: { [valueField ?? 'value']: value } as Record<string, any>,
                 resolvedLabel: value as string,
                 resolvedValue: value as string,
               })}
             {:else}
-              <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground">
-                {value as string}
+              <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 justify-start">
+                <span class={cn("min-w-0 flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
+                  {value as string}
+                </span>
               </Badge>
             {/if}
           {:else}
@@ -341,10 +474,10 @@
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearSingle(); }}
               class={inputTrailingIconColorClasses}
-              aria-label={$t("common.clearSelection")}
-              title={$t("common.clearSelection")}
+              aria-label={$t("app.common.clearSelection")}
+              title={$t("app.common.clearSelection")}
             >
-              <X class="h-3.5 w-3.5" />
+              <Eraser />
             </button>
           {/if}
           {#if mode === "multi" && selectedValues.length > 0 && !disabled}
@@ -352,10 +485,10 @@
               type="button"
               onclick={(e) => { e.stopPropagation(); handleClearMulti(); }}
               class={inputTrailingIconColorClasses}
-              aria-label={$t("common.clearSelection")}
-              title={$t("common.clearSelection")}
+              aria-label={$t("app.common.clearSelection")}
+              title={$t("app.common.clearSelection")}
             >
-              <X class="h-3.5 w-3.5" />
+              <Eraser />
             </button>
           {/if}
           {#if loading}
@@ -368,7 +501,11 @@
     {/snippet}
   </Popover.Trigger>
   <Popover.Content align="start" class="w-(--bits-popover-anchor-width) min-w-56 p-0">
-    <Command.Root shouldFilter={searchable}>
+    <!-- shouldFilter=false: filtering is owned by `filteredOptions` (label +
+         value + getSearchKeywords). bits-ui's internal filter only matches the
+         item `value` (+ keywords), which breaks searches by label — e.g. typing
+         "dollar" found nothing because the item value is "USD". -->
+    <Command.Root shouldFilter={false}>
       {#if searchable}
         <Command.Input
           bind:value={search}
@@ -381,7 +518,7 @@
           }}
         />
       {/if}
-      <Command.List>
+      <Command.List bind:ref={listEl} onscroll={handleListScroll}>
         {#if showCreateItem}
           <Command.Item
             value={search.trim()}
@@ -390,33 +527,47 @@
               "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
               "data-highlighted:bg-muted data-highlighted:text-foreground",
               "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              "[&_.cn-command-item-indicator]:hidden",
             )}
             onSelect={() => handleCreate()}
           >
             <div class="flex items-center gap-2 w-full">
               {#if mode === "multi"}
-                <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0" />
+                <div class="combo-select-checkbox h-4 w-4 rounded border border-input shrink-0"></div>
               {/if}
-              <span class="flex-1 truncate text-left">
-                {$t('common.create')} <span class="font-medium">"{search.trim()}"</span>
-              </span>
+              {#if truncateFrom === 'start'}
+                <span class="flex min-w-0 flex-1 items-baseline whitespace-nowrap text-left">
+                  <span class="shrink-0">{$t('app.common.create')} "</span><span class="font-medium truncate-start min-w-0 flex-1">{search.trim()}</span><span class="shrink-0">"</span>
+                </span>
+              {:else}
+                <span class="flex-1 truncate text-left">
+                  {$t('app.common.create')} <span class="font-medium">"{search.trim()}"</span>
+                </span>
+              {/if}
             </div>
           </Command.Item>
         {/if}
         {#if filteredOptions.length === 0 && !showCreateItem}
-          <Command.Empty>{$t('common.noResults')}</Command.Empty>
+          <Command.Empty>{$t('app.common.noResults')}</Command.Empty>
         {:else if filteredOptions.length > 0}
           {#each filteredOptions as opt (opt.value)}
             {@const isDisabled = isOptionDisabled ? isOptionDisabled(opt.raw) : false}
+            {@const isSelected = mode === "single" ? (value as string) === opt.value : selectedValues.includes(opt.value)}
             <Command.Item
               value={opt.value}
               keywords={getSearchKeywords ? getSearchKeywords(opt.raw) : undefined}
               disabled={isDisabled}
+              data-combo-selected={isSelected || undefined}
               class={cn(
-                "relative flex w-full cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden",
+                "relative flex w-full cursor-default select-none items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm outline-hidden",
                 "data-highlighted:bg-muted data-highlighted:text-foreground",
                 "data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-60 data-disabled:text-muted-foreground data-disabled:data-highlighted:bg-transparent",
                 "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                // command-item appends a check indicator (ml-auto opacity-0,
+                // never data-checked here) → dead space on the right; hide it
+                // so trailing content (e.g. RankMeter) stays flush right.
+                "[&_.cn-command-item-indicator]:hidden",
+                isSelected && menuListSelectedSurfaceDropdownClasses,
               )}
               onSelect={() => {
                 if (isDisabled) return;
@@ -438,7 +589,7 @@
                     {/if}
                   </div>
                 {/if}
-                {#if itemSnippet}
+                {#if display === 'custom' && itemSnippet}
                   {@render itemSnippet({
                     option: opt.raw,
                     selected: mode === "multi" ? selectedValues.includes(opt.value) : (value as string) === opt.value,
@@ -446,11 +597,34 @@
                     resolvedValue: opt.value,
                   })}
                 {:else}
-                  <span class="flex-1 truncate text-left">{opt.label}</span>
+                  {@const optIcon = resolveIcon(opt.raw)}
+                  {#if optIcon}
+                    <DynamicIcon name={optIcon} size={16} class="shrink-0 text-muted-foreground" />
+                  {/if}
+                  {#if display === 'badge'}
+                    {@const c = badgeClassesFromToken(getByPath(opt.raw as Record<string, any>, colorField) as string ?? null)}
+                    <Badge class="shadow-none" style="background-color:{c.bgColor};color:{c.textColor};border-color:{c.borderColor};">
+                      {opt.label}
+                    </Badge>
+                  {:else if display === 'detailed'}
+                    <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class={cn("font-medium", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>{opt.label}</span>
+                      <span class={cn("font-mono text-xs text-muted-foreground", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>
+                        {secondaryField ? String(getByPath(opt.raw as Record<string, any>, secondaryField) ?? opt.value) : opt.value}
+                      </span>
+                    </div>
+                  {:else}
+                    <span class={cn("flex-1 text-left", truncateFrom === 'start' ? 'truncate-start' : 'truncate')}>{opt.label}</span>
+                  {/if}
                 {/if}
               </div>
             </Command.Item>
           {/each}
+        {/if}
+        {#if loadingMore}
+          <div class="flex items-center justify-center py-2" aria-hidden="true">
+            <div class="size-4 animate-spin rounded-full border-2 border-muted border-t-foreground"></div>
+          </div>
         {/if}
       </Command.List>
     </Command.Root>

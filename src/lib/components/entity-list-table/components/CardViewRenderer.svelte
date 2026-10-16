@@ -177,9 +177,9 @@
         </div>
         <div class="text-sm font-medium text-muted-foreground">
           {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-            {$t('entities.list.selectedRowsNotLoadedHint')}
+            {$t('system.entities.list.selectedRowsNotLoadedHint')}
           {:else}
-            {$t('entities.list.noSelectedRowsInView')}
+            {$t('system.entities.list.noSelectedRowsInView')}
           {/if}
         </div>
       </div>
@@ -196,21 +196,21 @@
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}
             onCheckedChange={() => toggleAllOnPage()}
-            aria-label={$t('entities.list.selectAll')}
+            aria-label={$t('system.entities.list.selectAll')}
           />
           <span class="text-xs font-medium text-muted-foreground">
-            {allOnPageSelected ? $t('entities.list.deselectAll') : $t('entities.list.selectAll')}
+            {allOnPageSelected ? $t('system.entities.list.deselectAll') : $t('system.entities.list.selectAll')}
           </span>
         {/if}
 
         <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
-        <span class="text-xs font-medium text-muted-foreground">{$t('entities.list.sortBy')}</span>
+        <span class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.sortBy')}</span>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
               <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
-                {$t(allColumns.find((c) => c.key === effectiveSortKey)?.labelKey ?? '')}
+                {$t(allColumns.find((c) => c.key === effectiveSortKey)?.label_key ?? '')}
               </Button>
             {/snippet}
           </DropdownMenu.Trigger>
@@ -220,13 +220,13 @@
                 class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
                 onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
               >
-                {$t(col.labelKey)}
+                {$t(col.label_key)}
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
-        <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('entities.list.inOrder')}</span>
+        <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('system.entities.list.inOrder')}</span>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -246,7 +246,7 @@
             >
               <span class="inline-flex items-center gap-2">
                 <ArrowUpNarrowWide class="size-4" />
-                {$t('entities.list.ascending')}
+                {$t('system.entities.list.ascending')}
               </span>
             </DropdownMenu.Item>
             <DropdownMenu.Item
@@ -255,7 +255,7 @@
             >
               <span class="inline-flex items-center gap-2">
                 <ArrowDownWideNarrow class="size-4" />
-                {$t('entities.list.descending')}
+                {$t('system.entities.list.descending')}
               </span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
@@ -264,16 +264,16 @@
         {#each datetimeIanaToggleColumns as col (col.key)}
           <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
           <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-muted-foreground">{$t(col.labelKey)}</span>
+            <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
             <Switch
               checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
               disabled={rowsLoading}
               aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('entities.list.datetimeIana.hintBrowser')
-                : $t('entities.list.datetimeIana.hintRecord')}
+                ? $t('system.entities.list.datetimeIana.hintBrowser')
+                : $t('system.entities.list.datetimeIana.hintRecord')}
               title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('entities.list.datetimeIana.hintBrowser')
-                : $t('entities.list.datetimeIana.hintRecord')}
+                ? $t('system.entities.list.datetimeIana.hintBrowser')
+                : $t('system.entities.list.datetimeIana.hintRecord')}
               onCheckedChange={() => toggleDatetimeIana(col)}
             >
               {#snippet thumbIcons({ checked })}

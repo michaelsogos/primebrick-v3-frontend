@@ -56,7 +56,7 @@ describe("buildConfigValueSchema — bigint", () => {
     if (!result.success) {
       // Should have exactly ONE error — the required error, not invalidBigint
       expect(result.error.issues.length).toBe(1);
-      expect(result.error.issues[0].message).toBe("validation.required");
+      expect(result.error.issues[0].message).toBe("app.common.validation.required");
     }
   });
 });
@@ -313,6 +313,64 @@ describe("buildConfigValueSchema — unsigned bigint", () => {
     const tc = JSON.stringify({ validation: { unsigned: false, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "-5").success).toBe(true);
+  });
+});
+
+describe("buildConfigValueSchema — regex with flags", () => {
+  it("validates case-insensitive with flags: 'i'", () => {
+    const tc = JSON.stringify({
+      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", flags: "i" } } },
+    });
+    const schema = buildConfigValueSchema("string", tc);
+    expect(safeParse(schema, "abc").success).toBe(true);
+    expect(safeParse(schema, "ABC").success).toBe(true);
+    expect(safeParse(schema, "AbC").success).toBe(true);
+    expect(safeParse(schema, "123").success).toBe(false);
+  });
+
+  it("rejects case mismatch without 'i' flag", () => {
+    const tc = JSON.stringify({
+      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$" } } },
+    });
+    const schema = buildConfigValueSchema("string", tc);
+    expect(safeParse(schema, "abc").success).toBe(true);
+    expect(safeParse(schema, "ABC").success).toBe(false);
+  });
+
+  it("uses regexMismatch fallback for mismatch when no custom error key", () => {
+    const tc = JSON.stringify({
+      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$" } } },
+    });
+    const schema = buildConfigValueSchema("string", tc);
+    const result = schema.safeParse("ABC");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("app.common.validation.regexMismatch");
+    }
+  });
+
+  it("uses custom error key for mismatch (not for invalid pattern)", () => {
+    const tc = JSON.stringify({
+      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", error_label_key: "err.regex" } } },
+    });
+    const schema = buildConfigValueSchema("string", tc);
+    const result = schema.safeParse("ABC");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("err.regex");
+    }
+  });
+
+  it("uses invalidRegexPattern for invalid pattern (even with custom error key)", () => {
+    const tc = JSON.stringify({
+      validation: { required: true, rules: { regex: { pattern: "[invalid", error_label_key: "err.regex" } } },
+    });
+    const schema = buildConfigValueSchema("string", tc);
+    const result = schema.safeParse("any value");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("app.common.validation.invalidRegexPattern");
+    }
   });
 });
 

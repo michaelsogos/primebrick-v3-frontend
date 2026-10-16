@@ -1,0 +1,79 @@
+---
+title: FormLabelWithPriorityHelp
+description: Form label with a help tooltip that supports priority-styled content (info, warning, error) via PriorityTooltipContent.
+---
+
+# FormLabelWithPriorityHelp
+
+`src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
+
+## Purpose
+
+A form-label help tooltip that can be styled by priority
+(info/warning/error) using `PriorityTooltipContent`. Use it when a field's help
+text carries a severity — for example, a warning that a setting is irreversible,
+or an info note about a recommended value.
+
+## Origin
+
+**Custom** — Primebrick-written. Wraps the shadcn-svelte™ `Tooltip` primitive,
+`PriorityTooltipContent`, and a priority-mapped Lucide™ trigger icon
+(`HelpCircle` default, `TriangleAlert`/`OctagonX` for `WARNING`/`ERROR`).
+
+## Usage
+
+### Default (no priority)
+
+Without an explicit `priority`, the tooltip still renders a title header —
+it defaults to `INFORMATION` styling and the `app.common.tooltipTitle.*` copy.
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('users.fields.username')}
+  <FormLabelWithPriorityHelp text={$t('users.fields.usernameHelp')} />
+</label>
+```
+
+### With priority and title
+
+Pass `priority` to render a styled tooltip with an optional `title` header.
+The trigger icon mirrors the priority: `WARNING` → `TriangleAlert`,
+`ERROR` → `OctagonX`, anything else → `HelpCircle`.
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('settings.fields.deleteMode')}
+  <FormLabelWithPriorityHelp
+    text={$t('settings.fields.deleteModeWarning')}
+    priority="WARNING"
+    title={$t('settings.fields.deleteModeTitle')}
+  />
+</label>
+```
+
+### Marker only (no tooltip body)
+
+`text` is optional — omit it for a pure qualifier marker:
+
+```svelte
+<label class="flex items-center gap-1">
+  {$t('settings.fields.labelKey')}
+  <FormLabelWithPriorityHelp labelKey="app.common.optional" />
+</label>
+```
+
+## Props
+
+Full prop table: see [API reference — formlabelwithpriorityhelp](/docs/dev-guide/api-reference#formlabelwithpriorityhelp).
+
+Key props: `text?: string` (tooltip body — optional), `priority?: TooltipPriority`
+(`'INFORMATION' | 'WARNING' | 'ERROR' | 'QUESTION' | 'HINT' | 'SUCCESS'` —
+when omitted the tooltip uses `INFORMATION` styling), `title?: string`
+(header inside the tooltip — defaults to `app.common.tooltipTitle.<priority>`),
+`labelKey?: string` (i18n key for the italic qualifier next to the icon).
+
+## Next steps
+
+- [Component catalog](/docs/dev-guide/components)
+- [UI stack](/docs/dev-guide/ui-stack)
+- [API reference](/docs/dev-guide/api-reference#formlabelwithpriorityhelp)

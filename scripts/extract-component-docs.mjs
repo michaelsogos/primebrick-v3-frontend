@@ -5,7 +5,7 @@
  * Supports $props(), $bindable(), Snippet, callback props, $state, $derived.
  *
  * Usage: node scripts/extract-component-docs.mjs
- * Output: docs/user-guide/_extracted/components.json
+ * Output: docs/dev-guide/_extracted/components.json
  */
 import { readdirSync, writeFileSync, mkdirSync, existsSync, statSync, readFileSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
 
 const COMPONENTS_DIR = join(projectRoot, 'src', 'lib', 'components');
-const OUTPUT_DIR = join(projectRoot, 'docs', 'user-guide', '_extracted');
+const OUTPUT_DIR = join(projectRoot, 'docs', 'dev-guide', '_extracted');
 const OUTPUT_FILE = join(OUTPUT_DIR, 'components.json');
 
 /**

@@ -5,7 +5,7 @@
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
-  import { saveRedirectUrl } from '$lib/auth/redirect-cache';
+  import { goToLoginPage } from '$lib/auth/redirect-cache';
   import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
   import LoginForm from './LoginForm.svelte';
   import ShieldUser from '@lucide/svelte/icons/shield-user';
@@ -26,8 +26,7 @@
   }
 
   function handleGoToLogin() {
-    saveRedirectUrl(window.location.pathname + window.location.search);
-    window.location.href = '/login';
+    goToLoginPage();
   }
 
   // Persistent dialog: bump animation when user tries to dismiss via outside click.
@@ -51,10 +50,10 @@
   <Dialog.Header>
     <Dialog.Title class="flex items-center gap-2 text-destructive">
       <ShieldUser class="size-5" />
-      {$t('auth.sessionExpired.title')}
+      {$t('app.auth.sessionExpired.title')}
     </Dialog.Title>
     <Dialog.Description>
-      {$t('auth.sessionExpired.description')}
+      {$t('app.auth.sessionExpired.description')}
     </Dialog.Description>
   </Dialog.Header>
 
@@ -62,7 +61,7 @@
     {#if sessionExpiredStore.hasFailedAttempt}
       <Alert variant="destructive">
         <AlertDescription>
-          {$t('auth.sessionExpired.failedAttempt')}
+          {$t('app.auth.sessionExpired.failedAttempt')}
         </AlertDescription>
       </Alert>
     {/if}
@@ -72,8 +71,8 @@
 
   {#if sessionExpiredStore.hasFailedAttempt}
     <Dialog.Footer class="flex justify-between gap-2">
-      <Button variant="outline" onclick={handleGoToLogin}>
-        {$t('auth.sessionExpired.goToLogin')}
+      <Button variant="outline" onclick={handleGoToLogin} data-testid="session-expired-goto-login">
+        {$t('app.auth.sessionExpired.goToLogin')}
       </Button>
     </Dialog.Footer>
   {/if}

@@ -3,7 +3,9 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export interface ViewModeOptions {
-  initialMode?: ViewMode;
+  /** Getter for `meta.table.default_view` — applied once meta arrives, unless
+   *  the user already picked a mode or a stored mode exists. */
+  initialMode?: () => ViewMode | undefined;
   onModeChange?: (mode: ViewMode) => void;
   storageKey?: () => string | undefined;
 }
@@ -29,17 +31,29 @@ function writeViewMode(storageKey: string, next: ViewMode) {
 }
 
 export function useViewMode(options: ViewModeOptions = {}) {
-  const { initialMode = 'table', onModeChange } = options;
+  const { onModeChange } = options;
+  const getInitialMode = options.initialMode;
   const getStorageKey = options.storageKey;
 
   // Read from sessionStorage eagerly (before effects run) to avoid the effect overwriting the stored value
   const storedMode = getStorageKey ? readViewMode(getStorageKey() ?? '') : null;
 
   const _state = $state({
-    viewMode: (storedMode ?? initialMode) as ViewMode,
+    viewMode: (storedMode ?? 'table') as ViewMode,
+  });
+
+  // Apply the meta default once it resolves — skipped when a stored mode
+  // exists or the user already picked a mode explicitly.
+  let userOverrode = false;
+  $effect(() => {
+    const m = getInitialMode?.();
+    if (!storedMode && !userOverrode && m) {
+      _state.viewMode = m;
+    }
   });
 
   function setViewMode(mode: ViewMode) {
+    userOverrode = true;
     _state.viewMode = mode;
     const sk = getStorageKey?.();
     if (sk) {

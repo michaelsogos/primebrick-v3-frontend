@@ -1,7 +1,8 @@
 import { ensureBackendOnlineOrThrow, noteGatewayFailure, probeHealth } from '$lib/backend-availability';
 import { saveRedirectUrl } from '$lib/auth/redirect-cache';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
-import { userProfileState } from '$lib/user-profile-store.svelte';
+import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
+import { userProfileStore } from '$lib/user-profile-store.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import {
   ApiDatabaseUnavailableError,
@@ -13,105 +14,42 @@ import {
   type ModuleNav,
   type ModuleConfigEntry,
   type ConfigEntry,
-  type ServiceInfo
+  type TypeCapabilitiesMap,
+  type AiModel,
+  type AiCerebellum,
+  type ServiceInfo,
+  type DbMigrationStatus,
+  type DbMigrationDriftResult
 } from '$lib/api-types';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
-import { building } from '$app/environment';
+import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
+import { getCachedETag, setCachedETag } from '$lib/cache/fe-cache-store';
 
-export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType } from '$lib/api-types';
+export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType, AiModel } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
 
 /** Avoid stale list/meta until server-side cache (e.g. Redis) is in place. */
 const ENTITY_API_PATH = '/api/v1/entities';
 
-// Concurrency control for token refresh
-let refreshPromise: Promise<void> | null = null;
-
 /**
- * Check if there is a local user session in sessionStorage
+ * Entities owned by a microservice are reached through the BE proxy
+ * (`/ws/<service>/api/v1/entities/<entity>`); BE-owned entities use the
+ * direct path. Single source of truth for every generic entity layer
+ * (entity-list-table composables, version history, dialogs).
  */
-function hasLocalSession(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  try {
-    const userStr = sessionStorage.getItem('user');
-    if (!userStr) return false;
-    
-    const user = JSON.parse(userStr);
-    // Consider session valid if it has at least an idp_code or username
-    return !!(user.idp_code || user.username);
-  } catch {
-    return false;
-  }
+const ENTITY_SERVICE_MAP: Record<string, string> = {
+  ai_model: 'ai',
+  ai_cerebellum: 'ai',
+};
+
+export function entityApiBase(entity: string): string {
+  const service = ENTITY_SERVICE_MAP[entity];
+  return service ? `/ws/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
-/**
- * Check if the access token is expired by comparing expiresAt from session storage
- * Supports both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
- */
-function isTokenExpired(): boolean {
-  if (typeof window === 'undefined') return true;
-  
-  try {
-    const userStr = sessionStorage.getItem('user');
-    if (!userStr) return true;
-    
-    const user = JSON.parse(userStr);
-    // Support both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
-    const expiresAt = user.expires_at || user.expiresAt;
-    if (!expiresAt) return true;
-    
-    // Add 30 seconds buffer to account for clock skew
-    const now = Date.now();
-    return expiresAt - 30000 < now;
-  } catch {
-    return true;
-  }
-}
-
-/**
- * Refresh the access token by calling the backend refresh endpoint
- * Updates session storage with new user data on success
- */
-async function refreshAccessToken(): Promise<void> {
-  try {
-    const response = await fetch('/api/v1/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('[Token Refresh] Failed:', errorData);
-      throw new Error(errorData.detail || 'Token refresh failed');
-    }
-
-    const data = await response.json();
-    
-    // Update session storage with new user data
-    if (data.success && data.user) {
-      sessionStorage.setItem('user', JSON.stringify(data.user));
-      console.log('[Token Refresh] Successfully refreshed token');
-    }
-  } catch (error) {
-    console.error('[Token Refresh] Error:', error);
-    throw error;
-  }
-}
-
-/**
- * Trigger token refresh with concurrency control
- * Multiple simultaneous calls will wait for the same refresh operation
- */
-async function triggerRefresh(): Promise<void> {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-  }
-  await refreshPromise;
-}
+// hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
+// live in $lib/auth/session-check — shared with the login page boot.
 
 function requestUrlString(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
@@ -164,6 +102,19 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     nextInit.cache = 'no-store';
   }
 
+  // ETag: send If-None-Match for GET requests with a cached ETag
+  const isGet = (nextInit.method ?? 'GET').toUpperCase() === 'GET';
+  let cachedETag: { etag: string; body: string } | null = null;
+  if (isGet && browser) {
+    cachedETag = getCachedETag(url);
+    if (cachedETag) {
+      nextInit.headers = {
+        ...nextInit.headers as Record<string, string>,
+        'If-None-Match': cachedETag.etag,
+      };
+    }
+  }
+
   let res: Response;
   try {
     res = await fetch(url, nextInit);
@@ -175,6 +126,26 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     // Network error / no response = backend unreachable (fetch threw, not a 503 response)
     noteGatewayFailure(502);
     throw new ApiUnreachableError(null);
+  }
+
+  // ETag: handle 304 Not Modified — return synthetic Response with cached body
+  if (res.status === 304 && cachedETag) {
+    return new Response(cachedETag.body, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // ETag: store body + ETag on 200 with X-PB-Cached header
+  if (res.ok && browser && isGet) {
+    const etag = res.headers.get('ETag');
+    const pbCached = res.headers.get('X-PB-Cached');
+    if (etag && pbCached === 'true') {
+      const cloned = res.clone();
+      cloned.text().then((body) => {
+        setCachedETag(url, etag, body);
+      }).catch(() => { /* best-effort */ });
+    }
   }
 
   // 503 from backend = application-level infrastructure unavailable signal (NOT gateway failure → no loop).
@@ -201,9 +172,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     if ((nextInit as any)._sessionRetry) {
       throw new Error('Session retry failed - still 401 after successful login');
     }
-    // Skip refresh for auth endpoints - user doesn't have tokens yet
+    // Skip refresh for auth endpoints - user doesn't have tokens yet.
+    // webauthn/signin too: a legit 401 (e.g. credential no longer registered
+    // in the IDP) must reach the caller — enqueueing it would deadlock the
+    // session-expired dialog (the dialog waits on the very request being
+    // enqueued → spinner forever, error never shown).
     const url = requestUrlString(input);
-    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh')) {
+    if (url.includes('/api/v1/auth/login') || url.includes('/api/v1/auth/refresh') || url.includes('/api/v1/auth/webauthn/signin')) {
       // Let the 401 propagate to the caller for proper error handling
       return res;
     }
@@ -215,7 +190,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       if (typeof window !== 'undefined') {
         // Clear in-memory profile so the passkey dialog doesn't render
         // on top of the session-expired dialog with stale data.
-        userProfileState.current = null;
+        userProfileStore.clear();
         saveRedirectUrl(window.location.pathname + window.location.search);
         return sessionExpiredStore.enqueue(input, nextInit);
       }
@@ -236,12 +211,11 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
           // Clear corrupted session data (both sessionStorage and in-memory)
           // before showing dialog so the passkey dialog doesn't render with
           // stale profile data.
-          sessionStorage.removeItem('user');
-          userProfileState.current = null;
+          userProfileStore.clear();
           saveRedirectUrl(window.location.pathname + window.location.search);
           return sessionExpiredStore.enqueue(input, nextInit);
         }
-        throw new Error('Token refresh failed');
+        throw new Error('Token refresh failed', { cause: refreshError });
       }
     } else {
       // Token is not expired - this is a permission error, let it propagate
@@ -278,8 +252,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     throw new ApiUnreachableError(res.status, alreadyNotified);
   }
 
-  // Auto-handle RFC7807 errors for non-auth endpoints
-  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh')) {
+  // Auto-handle RFC7807 errors for non-auth endpoints — auth endpoints
+  // (login/refresh/webauthn signin) surface their own error handling.
+  if (!res.ok && !url.includes('/api/v1/auth/login') && !url.includes('/api/v1/auth/refresh') && !url.includes('/api/v1/auth/webauthn/signin')) {
     await handleRFC7807Error(res);
   }
 
@@ -354,6 +329,13 @@ export async function deleteModule(code: string): Promise<void> {
   if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 }
 
+export async function deleteServiceInstance(uuid: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/system/services/instances/${encodeURIComponent(uuid)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+}
+
 export async function updateService(code: string, data: Partial<ServiceInfo>): Promise<ServiceInfo> {
   const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
     method: 'PUT',
@@ -365,18 +347,74 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
   return result.service;
 }
 
+// ── db_patch system module (migration admin) ────────────────────────────────
+// BE answers directly; microservices are reached through the governed proxy
+// (/ws/<code>/...), which exempts this prefix for `migration_failed` instances.
+
+export function dbMigrationBase(code: string): string {
+  return code === 'be'
+    ? '/api/v1/system/db-migration'
+    : `/ws/${encodeURIComponent(code)}/api/v1/system/db-migration`;
+}
+
+export async function fetchDbMigrationStatus(code: string): Promise<DbMigrationStatus> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/status`);
+  if (!res.ok) throw new Error(`Migration status failed (${res.status})`);
+  return (await res.json()) as DbMigrationStatus;
+}
+
+export async function dbMigrationRetry(code: string): Promise<{ retried: number; result: unknown }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/retry`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Migration retry failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationApprove(
+  code: string,
+  patchName: string,
+  note?: string,
+): Promise<{ approved: boolean; detail?: string }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: extJsonStringify({ patch_name: patchName, note }),
+  });
+  if (!res.ok) throw new Error(`Migration approve failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationResolve(
+  code: string,
+  patchName: string,
+  note?: string,
+): Promise<{ resolved: boolean; detail?: string }> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: extJsonStringify({ patch_name: patchName, note }),
+  });
+  if (!res.ok) throw new Error(`Migration resolve failed (${res.status})`);
+  return await res.json();
+}
+
+export async function dbMigrationDriftCheck(code: string): Promise<DbMigrationDriftResult> {
+  const res = await apiFetch(`${dbMigrationBase(code)}/drift-check`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Drift check failed (${res.status})`);
+  return await res.json();
+}
+
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/list`);
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
   const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
   return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number): Promise<void> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
+  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify({ value }),
+    body: extJsonStringify({ entity: { value, version } }),
   });
   if (!res.ok) throw new Error(`Config update failed (${res.status})`);
 }
@@ -384,10 +422,278 @@ export async function updateModuleConfigKey(code: string, uuid: string, value: s
 // === Config entries (BE auth_configurations — Config Table standard) ===
 
 export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
-  const res = await apiFetch('/api/v1/entities/config_entries/list');
+  const res = await apiFetch('/api/v1/entities/config_entry/list');
   if (!res.ok) throw new Error(`Config entries fetch failed (${res.status})`);
   const data = (await res.json()) as { rows: ConfigEntry[] };
   return data.rows;
+}
+
+/**
+ * Fetches `GET /api/v1/entities/config_entry/meta` — carries
+ * `type_capabilities` (canonical per-type capability matrix from
+ * `@primebrick/sdk`) alongside the entity meta columns.
+ */
+export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: TypeCapabilitiesMap }> {
+  const res = await apiFetch('/api/v1/entities/config_entry/meta');
+  if (!res.ok) throw new Error(`Config entry meta fetch failed (${res.status})`);
+  return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
+}
+
+// === AI models (AI-owned ai_models entity — WebLLM model catalog, via /ws/ai proxy) ===
+
+export async function fetchAiCerebellum(filters?: {
+  assistant_key?: string;
+  model_id?: string;
+}): Promise<AiCerebellum[]> {
+  const params = new URLSearchParams();
+  params.set('page_size', '100');
+  // Canonical qs bracket notation — parsed by Express qs into objects the DAL
+  // filter translator consumes directly (no JSON.stringify anywhere).
+  let i = 0;
+  for (const [field, value] of [
+    ['assistant_key', filters?.assistant_key],
+    ['model_id', filters?.model_id],
+  ] as const) {
+    if (!value) continue;
+    params.set(`filters[${i}][field]`, field);
+    params.set(`filters[${i}][op]`, '=');
+    params.set(`filters[${i}][value]`, value);
+    i++;
+  }
+  if (i > 0) params.set('connector', 'AND');
+  const url = `/ws/ai/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
+  const res = await apiFetch(url);
+  if (!res.ok) throw new Error(`AI cerebellum fetch failed (${res.status})`);
+  const data = (await res.json()) as { rows: AiCerebellum[] };
+  return data.rows;
+}
+
+export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
+  // The selector expects the full catalog. page_size is capped at 100 by the
+  // BE, and deleted+alive rows can exceed that — paginate until exhausted.
+  const rows: AiModel[] = [];
+  let page = 1;
+  for (;;) {
+    const params = new URLSearchParams({ page_size: '100', page: String(page) });
+    if (deletedRecords) params.set('deleted_records', deletedRecords);
+    const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/list?${params}`);
+    if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
+    const data = (await res.json()) as { rows: AiModel[]; total?: number };
+    rows.push(...data.rows);
+    if (data.rows.length < 100 || (data.total !== undefined && rows.length >= data.total)) break;
+    page++;
+  }
+  return rows;
+}
+
+// === Docs KB search (system RPC — BE pass-through to ai.docs_kb) ===
+
+export interface DocsSearchHit {
+  id: bigint;
+  repo: string;
+  path: string;
+  title: string;
+  chunk_idx: number;
+  content: string;
+  metadata: Record<string, unknown>;
+  similarity: number;
+  keyword_hits: number;
+  /** ts_rank_cd of the full-text lexical channel (0 when absent). */
+  lexical_score: number;
+  score: number;
+  /** Doc-graph expansion hit (outbound link of a top page) — real similarity
+   *  but structural provenance; bypasses the min_similarity floor. */
+  graph_expanded?: boolean;
+  /** Lexical-only recall (strong FTS match, absent from the vector top-N) —
+   *  bypasses the min_similarity floor like graph_expanded. */
+  lexical_match?: boolean;
+}
+
+export async function searchDocs(params: {
+  /** Raw query text — the BE embeds it via the AI microservice. The FE
+   *  never computes embeddings (embed-worker was removed by design). */
+  query: string;
+  /** Legacy path: precomputed embedding (internal callers/tests only). */
+  embedding?: number[];
+  keywords?: string[];
+  limit?: number;
+  repo?: string;
+  /** Corpus scoping applied inside the SQL candidate window — filtering
+   *  client-side after top-N lets out-of-scope docs saturate the window. */
+  path_prefix?: string;
+  /** Caller floor — the BE only expands the doc graph off hits above it. */
+  min_similarity?: number;
+  /** Rank-tuning overrides forwarded to the DAL (per-assistant balance). */
+  keyword_boost?: number;
+  lexical_boost?: number;
+  lex_match_min?: number;
+  oversample?: number;
+  graph_max_paths?: number;
+}): Promise<DocsSearchHit[]> {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Docs search failed (${res.status})`);
+  const data = (await res.json()) as { results: DocsSearchHit[] };
+  return data.results;
+}
+
+/** Full document fetch for the `docs_fetch` agent tool — the model
+ *  dereferences a path seen in an excerpt and reads the whole page. */
+export async function fetchDoc(params: {
+  path: string;
+  repo?: string;
+}): Promise<{ repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } | null> {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
+  const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } };
+  return data.document;
+}
+
+// ─── Docs index admin (/system/settings/docs-index) ─────────────────────────
+
+export interface DocsIndexRepoRow {
+  repo: string;
+  docs: bigint;
+  chunks: bigint;
+  unembedded_chunks: bigint;
+  content_bytes: bigint;
+  vector_bytes: bigint;
+}
+
+export interface DocsIndexDrift {
+  service: string;
+  repo?: string;
+  error?: string;
+  expected_docs?: bigint;
+  expected_chunks?: bigint;
+  missing_from_index?: string[];
+  stale?: string[];
+  orphans?: string[];
+  unembedded_chunks?: bigint;
+}
+
+export interface DocsIngestLogRow {
+  id: bigint;
+  repo: string | null;
+  service_code: string;
+  trigger_source: string;
+  ok: boolean;
+  stats: Record<string, unknown>;
+  error: string | null;
+  created_at: string;
+}
+
+export interface DocsIndexProbe {
+  query: string;
+  expect_path_includes: string;
+  ok: boolean;
+  top: Array<{ repo: string; path: string; similarity: number }>;
+}
+
+export interface DocsIndexStatus {
+  repos: DocsIndexRepoRow[];
+  drift: DocsIndexDrift[];
+  history: DocsIngestLogRow[];
+  probes?: DocsIndexProbe[];
+  storage: { total_bytes: bigint } | null;
+}
+
+export async function fetchDocsIndexStatus(probe = false): Promise<DocsIndexStatus> {
+  const res = await apiFetch(`/ws/ai/api/v1/ai/docs/index-status${probe ? '?probe=1' : ''}`);
+  if (!res.ok) throw new Error(`Docs index status failed (${res.status})`);
+  return (await res.json()) as DocsIndexStatus;
+}
+
+export interface DocsReindexResult {
+  service: string;
+  repo?: string;
+  ok: boolean;
+  stats?: Record<string, unknown>;
+  error?: string;
+}
+
+export async function reindexDocsPacks(repo?: string): Promise<DocsReindexResult[]> {
+  const res = await apiFetch('/ws/ai/api/v1/ai/reindex', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'packs', ...(repo ? { repo } : {}) }),
+  });
+  if (!res.ok) throw new Error(`Reindex failed (${res.status})`);
+  const data = (await res.json()) as { results: DocsReindexResult[] };
+  return data.results;
+}
+
+export interface CensusRoute {
+  route: string;
+  kind: 'list' | 'detail' | 'create' | 'page';
+  module: string;
+  entity?: string;
+  label_key?: string;
+}
+
+/** Runtime FE route census — aggregated on the BE from module meta. */
+export async function fetchRoutesCensus(): Promise<CensusRoute[]> {
+  const res = await apiFetch('/api/v1/system/routes');
+  if (!res.ok) throw new Error(`Routes census failed (${res.status})`);
+  const data = (await res.json()) as { routes: CensusRoute[] };
+  return data.routes;
+}
+
+/** A generic MCP tool definition (GET /api/v1/system/mcp/tools). */
+export interface McpToolDef {
+  name: string;
+  title?: string;
+  description: string;
+  input_schema: unknown;
+  /** Safe to auto-execute — write tools need user confirmation client-side. */
+  read_only: boolean;
+}
+
+/**
+ * List the generic MCP tool catalog (GET /api/v1/system/mcp/tools).
+ * Used by the AI chat agentic loop — the FE is the loop driver (B3): it
+ * passes these defs to /api/v1/ai/chat, executes model tool calls via
+ * callMcpTool, and resubmits the updated history.
+ */
+export async function listMcpTools(): Promise<McpToolDef[]> {
+  const res = await apiFetch('/api/v1/system/mcp/tools');
+  if (!res.ok) return [];
+  const data = (await res.json()) as { tools: McpToolDef[] };
+  return data.tools ?? [];
+}
+
+/** Response of POST /api/v1/system/mcp/call. */
+export interface McpCallResponse {
+  ok: boolean;
+  result?: unknown;
+  error?: string;
+}
+
+/**
+ * Invoke a generic MCP tool over REST (`POST /api/v1/system/mcp/call`).
+ * Used by the Guide assistant action CTAs — the BE dispatches through the
+ * SAME handlers as the MCP server (validation + RBAC included).
+ */
+export async function callMcpTool(
+  tool: string,
+  args: Record<string, unknown>,
+): Promise<McpCallResponse> {
+  const res = await apiFetch('/api/v1/system/mcp/call', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tool, args }),
+  });
+  const data = (await res.json()) as McpCallResponse;
+  if (!res.ok) return { ok: false, error: data.error ?? `Tool call failed (${res.status})` };
+  return data;
 }
 
 export async function createConfigEntry(params: {
@@ -399,11 +705,18 @@ export async function createConfigEntry(params: {
   description_key?: string | null;
   group_key?: string | null;
   reserved?: boolean;
+  /**
+   * Optional translation rows piggybacked on the same write — the BE inserts
+   * them in the SAME transaction as the entity ({entity, translations}
+   * write standard). Duplicate (key, language) rows are skipped, not fatal.
+   */
+  translations?: { key: string; language: string; value: string }[];
 }): Promise<ConfigEntry> {
-  const res = await apiFetch('/api/v1/entities/config_entries', {
+  const { translations, ...entity } = params;
+  const res = await apiFetch('/api/v1/entities/config_entry', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify(params),
+    body: extJsonStringify(translations?.length ? { entity, translations } : { entity }),
   });
   if (!res.ok) throw new Error(`Config entry create failed (${res.status})`);
   const data = (await res.json()) as ConfigEntry;
@@ -415,10 +728,10 @@ export async function updateConfigEntry(
   patch: { value?: string | bigint | number; type?: string; type_config?: string | null },
   version: number,
 ): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: extJsonStringify({ ...patch, version }),
+    body: extJsonStringify({ entity: { ...patch, version } }),
   });
   if (!res.ok) throw new Error(`Config entry update failed (${res.status})`);
 }
@@ -432,37 +745,128 @@ export async function bulkUpdateConfigEntries(
     version: number;
   }>,
 ): Promise<number> {
-  const res = await apiFetch('/api/v1/entities/config_entries/bulk-update', {
+  const res = await apiFetch('/api/v1/entities/config_entry/bulk-update', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ updates }),
   });
-  if (!res.ok) throw new Error(`Config entries bulk update failed (${res.status})`);
+  if (!res.ok) {
+    // Propagate the RFC 7807 body verbatim so the caller can pushNotification()
+    // it and extra.issues (per-row bulk detail) reaches the error dialog.
+    const errorData = await res.json().catch(() => null);
+    if (errorData && typeof errorData === 'object' && 'status' in errorData) throw errorData;
+    throw new Error(`Config entries bulk update failed (${res.status})`);
+  }
   const data = (await res.json()) as { success: boolean; updated: number };
   return data.updated;
 }
 
-export async function deleteConfigEntry(uuid: string, mfaActionAuthorization: string | null): Promise<Response> {
-  return apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}`, {
+export async function deleteConfigEntry(uuid: string, version: number, mfaActionAuthorization: string | null): Promise<Response> {
+  return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}?version=${version}`, {
     method: 'DELETE',
     headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
   });
 }
 
-export async function bulkDeleteConfigEntries(uuids: string[], mfaActionAuthorization: string | null): Promise<Response> {
-  return apiFetch('/api/v1/entities/config_entries/bulk-delete', {
+export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: number }>, mfaActionAuthorization: string | null): Promise<Response> {
+  return apiFetch('/api/v1/entities/config_entry/bulk-delete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {}),
     },
-    body: JSON.stringify({ uuids }),
+    body: JSON.stringify({ items }),
   });
 }
 
-export async function restoreConfigEntry(uuid: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/entities/config_entries/${encodeURIComponent(uuid)}/restore`, {
+export async function restoreConfigEntry(uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore?version=${version}`, {
     method: 'POST',
   });
   if (!res.ok) throw new Error(`Config entry restore failed (${res.status})`);
+}
+
+// ─── Translations ──────────────────────────────────────────────────────
+
+/** Public pages (login, welcome, MCP consent) — no auth needed. */
+export async function fetchPublicTranslations(language: string): Promise<Record<string, string>> {
+  const res = await apiFetch(`/api/v1/system/translations/public/${encodeURIComponent(language)}`);
+  if (!res.ok) throw new Error(`Public translations request failed (${res.status})`);
+  return await res.json();
+}
+
+/** Authenticated pages — module-aware translation dict (runtime read). */
+export async function fetchModuleTranslations(moduleCode: string, language: string): Promise<Record<string, string>> {
+  const res = await apiFetch(`/api/v1/system/translations/${encodeURIComponent(moduleCode)}/${encodeURIComponent(language)}`);
+  if (!res.ok) throw new Error(`Translations request failed (${res.status})`);
+  return await res.json();
+}
+
+/** Admin: list translations (paginated, filtered by module + language). */
+export async function fetchTranslationList(moduleCode: string, query: {
+  page?: number;
+  page_size?: number;
+  language?: string;
+  sort_key?: string;
+  sort_dir?: string;
+  deleted_records?: string;
+}): Promise<{ rows: unknown[]; total: bigint }> {
+  const params = new URLSearchParams({ module: moduleCode });
+  if (query.page) params.set('page', String(query.page));
+  if (query.page_size) params.set('page_size', String(query.page_size));
+  if (query.language) params.set('language', query.language);
+  if (query.sort_key) params.set('sort_key', query.sort_key);
+  if (query.sort_dir) params.set('sort_dir', query.sort_dir);
+  if (query.deleted_records) params.set('deleted_records', query.deleted_records);
+  const res = await apiFetch(`/api/v1/entities/translation/list?${params}`);
+  if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
+  return await res.json();
+}
+
+/** Admin: create a translation row. */
+export async function createTranslation(moduleCode: string, data: {
+  key: string;
+  language: string;
+  value: string;
+}): Promise<unknown> {
+  const res = await apiFetch(`/api/v1/entities/translation?module=${encodeURIComponent(moduleCode)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // `{entity}` envelope — a `translations` sibling is rejected by the BE.
+    body: JSON.stringify({ entity: data }),
+  });
+  if (!res.ok) throw new Error(`Translation create failed (${res.status})`);
+  return await res.json();
+}
+
+/** Admin: update a translation row. `version` is required (optimistic concurrency). */
+export async function updateTranslation(moduleCode: string, uuid: string, data: {
+  key?: string;
+  language?: string;
+  value?: string;
+  version: number;
+}): Promise<unknown> {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entity: data }),
+  });
+  if (!res.ok) throw new Error(`Translation update failed (${res.status})`);
+  return await res.json();
+}
+
+/** Admin: soft-delete a translation row. */
+export async function deleteTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Translation delete failed (${res.status})`);
+}
+
+/** Admin: restore a soft-deleted translation row. */
+export async function restoreTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Translation restore failed (${res.status})`);
 }

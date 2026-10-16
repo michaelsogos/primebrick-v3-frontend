@@ -1,4 +1,4 @@
-import { apiFetch } from '$lib/api';
+import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
@@ -6,6 +6,8 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export interface BulkActionsOptions {
   entity: () => string;
   selectedKeys: () => string[];
+  /** Resolve a selected key to its row (for the caller-observed `version`). */
+  rowByKey?: (key: string) => Record<string, unknown> | undefined;
   onBulkActionStart?: () => void;
   onBulkActionComplete?: () => void;
   onBulkActionError?: (error: Error) => void;
@@ -28,6 +30,7 @@ export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
     selectedKeys: selectedKeysFn,
+    rowByKey,
     onBulkActionStart,
     onBulkActionComplete,
     onBulkActionError,
@@ -53,34 +56,42 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isDeleting = true;
       onBulkActionStart?.();
 
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-delete`, {
+      // {items: [{uuid, version}]} — each record carries the caller-observed
+      // version for the per-row optimistic-concurrency guard.
+      const items = selectedKeys.map((k) => {
+        const row = rowByKey?.(k);
+        return { uuid: k, version: row?.version as number };
+      });
+      const res = await apiFetch(`${entityApiBase(entity)}/bulk-delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: JSON.stringify({ items })
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'danger';
+        // Propagate the RFC 7807 body verbatim — `extra.issues` carries the
+        // per-row bulk detail (≤10 offenders) rendered by RfcErrorDialog.
+        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
-          title: data.title || 'Bulk delete failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
+          toneForImpact: 'danger',
+          ...(data ?? {}),
+          title: data?.title || 'Bulk delete failed',
+          status: data?.status || res.status,
+          detail: data?.detail || 'Unknown error',
         };
       }
+
+      // 200 {received, affected} — success toast via the shell (no event card)
+      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      pushNotification({
+        impact: 'NONE',
+        messageKey: 'app.common.deleteSuccess',
+        messageParams: { count: result?.affected ?? items.length },
+        scope: tFn('app.common.errors.scope.bulkDeleteApi'),
+      });
 
       // Clear selection after successful deletion
       onSelectionChange?.([]);
@@ -98,8 +109,8 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkDeleteFailed',
-          scope: tFn('errors.scope.bulkDeleteApi'),
+          messageKey: 'system.entities.list.bulkDeleteFailed',
+          scope: tFn('app.common.errors.scope.bulkDeleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -131,34 +142,37 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isRestoring = true;
       onBulkActionStart?.();
 
-      const res = await apiFetch(`/api/v1/entities/${entity}/bulk-restore`, {
+      const items = selectedKeys.map((k) => {
+        const row = rowByKey?.(k);
+        return { uuid: k, version: row?.version as number };
+      });
+      const res = await apiFetch(`${entityApiBase(entity)}/bulk-restore`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: JSON.stringify({ items })
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ title: 'Unknown error', status: res.status, detail: 'Unknown error' })) as {
-          title?: string;
-          status?: number;
-          detail?: string;
-          instance?: string;
-          internal_code?: string;
-        };
-
-        const toneForImpact = 'warning';
+        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
-          title: data.title || 'Bulk restore failed',
-          status: data.status || res.status,
-          detail: data.detail || 'Unknown error',
-          instance: data.instance,
-          internal_code: data.internal_code,
-          toneForImpact
+          toneForImpact: 'warning',
+          ...(data ?? {}),
+          title: data?.title || 'Bulk restore failed',
+          status: data?.status || res.status,
+          detail: data?.detail || 'Unknown error',
         };
       }
+
+      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      pushNotification({
+        impact: 'NONE',
+        messageKey: 'system.entities.versionHistory.recordRestored',
+        messageParams: { count: result?.affected ?? items.length },
+        scope: tFn('app.common.errors.scope.bulkRestoreApi'),
+      });
 
       // Clear selection after successful restore
       onSelectionChange?.([]);
@@ -176,8 +190,8 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.bulkRestoreFailed',
-          scope: tFn('errors.scope.bulkRestoreApi'),
+          messageKey: 'system.entities.list.bulkRestoreFailed',
+          scope: tFn('app.common.errors.scope.bulkRestoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -201,8 +215,8 @@ export function useBulkActions(options: BulkActionsOptions) {
     if (selectedKeysFn().length > 50) {
       pushNotification({
         impact: 'MEDIUM',
-        messageKey: 'entities.list.duplicateMaxLimit',
-        scope: tFn('errors.scope.duplicateAction'),
+        messageKey: 'system.entities.list.duplicateMaxLimit',
+        scope: tFn('app.common.errors.scope.duplicateAction'),
         toast: true
       });
       return;
@@ -218,7 +232,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       _state.isDuplicating = true;
       onBulkActionStart?.();
 
-      const response = await apiFetch(`/api/v1/entities/${entity}/duplicate`, {
+      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: selectedKeys })
@@ -235,16 +249,16 @@ export function useBulkActions(options: BulkActionsOptions) {
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicatePartialSuccess',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicateSuccess',
           messageParams: { count: result.uuids.length },
-          scope: tFn('errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicateApi')
         });
       }
 

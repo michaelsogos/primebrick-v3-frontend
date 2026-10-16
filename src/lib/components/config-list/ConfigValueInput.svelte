@@ -1,17 +1,29 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Switch } from '$lib/components/ui/switch';
-  import { Input } from '$lib/components/ui/input';
+  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { TextInput } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ComboSelect } from '$lib/components/ui/combo-select';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
-  import { Button } from '$lib/components/ui/button';
   import * as Password from '$lib/components/ui/password';
   import { NumericInput } from '$lib/components/ui/numeric-input';
+  import { UrlInput } from '$lib/components/ui/url-input';
+  import { EmailInput } from '$lib/components/ui/email-input';
+  import { PhoneInput } from '$lib/components/ui/phone-input';
   import type { ConfigEntryType } from '$lib/api-types';
   import { currencySymbol, getAllCurrencies } from '$lib/currency';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { parseTypeConfig, serializeTypeConfig } from '$lib/config/type-config-schema';
+  import { apiFetch } from '$lib/api';
+  import {
+    CalendarDate,
+    CalendarDateTime,
+    parseDate,
+    parseDateTime,
+    today,
+    getLocalTimeZone,
+  } from '@internationalized/date';
 
   let {
     type,
@@ -21,6 +33,7 @@
     errors = [],
     onChange,
     onTypeConfigChange,
+    boolean_label,
   }: {
     type: ConfigEntryType;
     type_config?: string | null;
@@ -30,6 +43,12 @@
     onChange?: (value: string | bigint | number) => void;
     /** Called when the user changes the currency via the currency selection sheet. */
     onTypeConfigChange?: (typeConfig: string) => void;
+    /**
+     * Optional inline label rendered next to the boolean Switch (SwitchField
+     * anatomy: `[switch] Label`). Leave undefined in list rows where the
+     * row title already labels the field.
+     */
+    boolean_label?: string;
   } = $props();
 
   // Local editing state — synced from prop, used for bind:value in inputs.
@@ -116,10 +135,10 @@
       return;
     }
 
-    // 2. api_url → fetch from BE API
+    // 2. api_url → fetch from BE API (via apiFetch for auth + ETag support)
     if (selectConfig?.api_url) {
       selectLoading = true;
-      fetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
+      apiFetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
         .then((res) => res.json())
         .then((data) => {
           const arr: Record<string, string>[] = Array.isArray(data)
@@ -223,14 +242,73 @@
   }
 
   let translatedError = $derived(firstError ? translateError(firstError) : '');
+
+  // ─── date / datetime / time ───────────────────────────────────────────
+  // DateWheelPicker works on CalendarDate/CalendarDateTime objects while the
+  // form stores a plain string (date `YYYY-MM-DD`, datetime ISO, time
+  // `HH:mm:ss`). `dateValue` mirrors `localValue` in DateValue form — the
+  // pair of effects below is guarded by serialization equality so they
+  // cannot ping-pong.
+  function parseDateValue(str: string): CalendarDate | CalendarDateTime | undefined {
+    if (!str) return undefined;
+    try {
+      if (type === 'time') {
+        const [h = 0, m = 0, s = 0] = str.split(':').map(Number);
+        const d = today(getLocalTimeZone());
+        return new CalendarDateTime(d.year, d.month, d.day, h, m, s);
+      }
+      return type === 'date' ? parseDate(str) : parseDateTime(str);
+    } catch {
+      return undefined;
+    }
+  }
+
+  function serializeDateValue(dv: CalendarDate | CalendarDateTime | undefined): string {
+    if (!dv) return '';
+    if (type === 'time') {
+      const p = (n: number) => String(n).padStart(2, '0');
+      const t = dv as CalendarDateTime;
+      return `${p(t.hour)}:${p(t.minute)}:${p(t.second)}`;
+    }
+    return dv.toString();
+  }
+
+  // svelte-ignore state_referenced_locally — synced mirror of the string value, initialized once
+  let dateValue = $state<CalendarDate | CalendarDateTime | undefined>(parseDateValue(String(value)));
+
+  let isDateType = $derived(type === 'date' || type === 'datetime' || type === 'time');
+
+  $effect(() => {
+    if (!isDateType) return;
+    const parsed = parseDateValue(localValue);
+    if (serializeDateValue(parsed) === serializeDateValue(dateValue)) return;
+    dateValue = parsed;
+  });
+
+  $effect(() => {
+    if (!isDateType) return;
+    const str = serializeDateValue(dateValue);
+    if (str === localValue) return;
+    localValue = str;
+    notifyChange(str);
+  });
 </script>
 
 {#if type === 'boolean'}
-  <Switch
-    checked={stringValue === 'true'}
-    onCheckedChange={handleBooleanChange}
-    data-testid={`config-input-boolean-${fieldKey}`}
-  />
+  {#if boolean_label}
+    <SwitchField
+      checked={stringValue === 'true'}
+      onCheckedChange={handleBooleanChange}
+      label={boolean_label}
+      data-testid={`config-input-boolean-${fieldKey}`}
+    />
+  {:else}
+    <Switch
+      checked={stringValue === 'true'}
+      onCheckedChange={handleBooleanChange}
+      data-testid={`config-input-boolean-${fieldKey}`}
+    />
+  {/if}
 {:else if type === 'badge'}
   <div class="w-full">
     <ComboSelect
@@ -242,7 +320,7 @@
       labelField="label_key"
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       data-testid={`config-input-badge-${fieldKey}`}
     />
     {#if firstError}
@@ -260,11 +338,22 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
+      display="custom"
       data-testid={`config-input-single-select-${fieldKey}`}
-    />
+    >
+      {#snippet itemSnippet({ option, resolvedLabel, selected })}
+        {@const descKey = (option as Record<string, any>).description_key}
+        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+          <span class="truncate text-left font-medium">{resolvedLabel}</span>
+          {#if descKey}
+            <span class="truncate text-left text-xs text-muted-foreground">{$t(descKey)}</span>
+          {/if}
+        </div>
+      {/snippet}
+    </ComboSelect>
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}
@@ -280,7 +369,7 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('common.selectValue')}
+      placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
       data-testid={`config-input-multi-select-${fieldKey}`}
@@ -312,58 +401,13 @@
     onCurrencyChange={onTypeConfigChange ? handleCurrencyChange : undefined}
     data-testid={`config-input-money-${fieldKey}`}
   />
-{:else if type === 'date'}
+{:else if type === 'date' || type === 'datetime' || type === 'time'}
   <div class="w-full">
     <DateWheelPicker
-      bind:value={localValue}
-      includeTime={false}
-      placeholder={$t('common.selectDate')}
-    />
-    {#if localValue}
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={handleBlur}
-        class="ml-2"
-      >
-        {$t('common.save')}
-      </Button>
-    {/if}
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
-{:else if type === 'datetime'}
-  <div class="w-full">
-    <DateWheelPicker
-      bind:value={localValue}
-      includeTime={true}
-      placeholder={$t('common.selectDate')}
-    />
-    {#if localValue}
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={handleBlur}
-        class="ml-2"
-      >
-        {$t('common.save')}
-      </Button>
-    {/if}
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
-{:else if type === 'time'}
-  <div class="w-full">
-    <Input
-      type="time"
-      bind:value={localValue}
-      oninput={handleInput}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-time-${fieldKey}`}
+      bind:value={dateValue}
+      includeTime={type === 'datetime'}
+      timeOnly={type === 'time'}
+      placeholder={type === 'time' ? $t('app.common.selectTime') : $t('app.common.selectDate')}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
@@ -387,20 +431,28 @@
     {/if}
   </div>
 {:else if type === 'url'}
-  <div class="w-full">
-    <Input
-      type="url"
-      bind:value={localValue}
-      oninput={handleInput}
-      onblur={handleBlur}
-      aria-invalid={ariaInvalid}
-      class="w-full"
-      data-testid={`config-input-url-${fieldKey}`}
-    />
-    {#if firstError}
-      <p class="text-xs text-destructive mt-1">{translatedError}</p>
-    {/if}
-  </div>
+  <UrlInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-url-${fieldKey}`}
+  />
+{:else if type === 'email'}
+  <EmailInput
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-email-${fieldKey}`}
+  />
+{:else if type === 'phone'}
+  <PhoneInput
+    {type_config}
+    bind:value={localValue}
+    onChange={handleBlur}
+    errors={errors}
+    data-testid={`config-input-phone-${fieldKey}`}
+  />
 {:else if type === 'text' || type === 'json'}
   <div class="w-full">
     <Textarea
@@ -417,11 +469,12 @@
   </div>
 {:else}
   <div class="w-full">
-    <Input
+    <TextInput
       type="text"
       bind:value={localValue}
       oninput={handleInput}
       onblur={handleBlur}
+      onClear={handleBlur}
       aria-invalid={ariaInvalid}
       class="w-full"
       data-testid={`config-input-string-${fieldKey}`}

@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
-  import { checkboxVisualOnlyClass, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { checkboxInteractiveClass } from '$lib/components/ui/checkbox';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
   import EntityListTableDialogs from './components/EntityListTableDialogs.svelte';
   import EntityListTableContent from './components/EntityListTableContent.svelte';
@@ -24,6 +24,7 @@
   } from './utils';
   import { useExport } from './composables/useExport.svelte.js';
   import { useBulkActions } from './composables/useBulkActions.svelte.js';
+  import { hasRequiredPermission, isEntityOpAllowed } from '$lib/permissions.svelte';
   import { useRowActions } from './composables/useRowActions.svelte.js';
   import { useDialogs } from './composables/useDialogs.svelte.js';
   import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
@@ -41,14 +42,10 @@
     entity = 'customer',
     translationKey,
     columns,
-    stickyColumns,
-    dataColumns,
-    auditingColumns,
-    viewVisibility,
     columnOrderStorageKey,
     defaultSort,
+    defaultView,
     pageSizeOptions: pageSizeOptionsProp,
-    searchPlaceholderKey,
     selectionLabelKey,
     selectionLabelSingularKey,
     selectionLabelText,
@@ -79,7 +76,8 @@
     refreshDisabled = false,
     rowActionsEnabled = false,
     rowActions,
-    entityRowActions,
+    entityCustomActions,
+    entityActions,
     customActionHandlers,
     onCreateAction,
     onEditAction,
@@ -104,10 +102,10 @@
     noRecordsMessage
   }: EntityListTableProps<TRow> = $props();
 
-  // Set context for child components — must be reactive because auditingColumns
-  // arrives after meta is loaded (initial value is [] before meta fetch completes)
+  // Set context for child components — must be reactive because the audited
+  // columns arrive after meta is loaded (initial value is [] before meta fetch)
   $effect(() => {
-    setAuditColumnsContext(auditingColumns);
+    setAuditColumnsContext(auditingColumnsGroup);
   });
 
   // Translation key for dynamic i18n keys (dialogs, version history).
@@ -121,66 +119,36 @@
   const columnOrder = useColumnOrder(() => columnOrderStorageKey);
   const orderState = columnOrder.state;
 
-  const allColumns = $derived.by(() => {
-    let all: MetaColumn[];
-    if (stickyColumns || auditingColumns) {
-      all = [
-        ...columnOrder.applyKeyOrder(stickyColumns ?? [], orderState.sticky),
-        ...columnOrder.applyKeyOrder(dataColumns ?? [], orderState.data),
-        ...columnOrder.applyKeyOrder(auditingColumns ?? [], orderState.auditing)
-      ];
-    } else {
-      all = columns;
-    }
-    // Deduplicate by key, preserving order.
-    const seen = new Set<string>();
-    const dedup: MetaColumn[] = [];
-    for (const col of all) {
-      if (!seen.has(col.key)) {
-        seen.add(col.key);
-        dedup.push(col);
-      }
-    }
-    return dedup;
-  });
-  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetimeIanaToggle));
+  // Columns arrive as the single root-level `columns` array (pre-ordered via
+  // `orderedColumns`); the sticky/audited groups are derived from column flags.
+  const allColumns = $derived(columns);
+  const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetime_iana_toggle));
   const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
-  const searchableColumns = $derived(allColumns.filter((c) => c.searchable !== false));
+  const searchableColumns = $derived(
+    allColumns.filter((c) => c.searchable !== false && c.type === 'text')
+  );
   const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
-  const shownColumns = $derived(allColumns.filter((c) => visibleKeys.includes(c.key)));
   const stickyColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(
-      stickyColumns ??
-      (() => {
-        // Back-compat: use sticky flag from column metadata
-        return allColumns.filter((c) => c.sticky === true);
-      })(),
-      orderState.sticky
-    )
+    columnOrder.applyKeyOrder(allColumns.filter((c) => c.sticky === true), orderState.sticky)
   );
 
-  const auditingKeySet = new Set([
-    'created_at',
-    'created_by',
-    'updated_at',
-    'updated_by',
-    'version',
-    'deleted_at',
-    'deleted_by'
-  ]);
   const auditingColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(auditingColumns ?? allColumns.filter((c) => auditingKeySet.has(c.key)), orderState.auditing)
+    columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
   );
   const hasSoftDelete = $derived(
     auditingColumnsGroup.some((c) => c.key === 'deleted_at' || c.key === 'deleted_by')
   );
   const nonAuditingColumns = $derived(
     columnOrder.applyKeyOrder(
-      dataColumns ??
-        allColumns.filter(
-          (c) => !auditingKeySet.has(c.key) && !stickyColumnsGroup.some((s) => s.key === c.key)
-        ),
+      allColumns.filter((c) => !c.audited && !c.sticky),
       orderState.data
+    )
+  );
+  // Rendered columns: sticky → normal → audited groups (manual reorder via
+  // `orderState` applied), filtered by current visibility.
+  const shownColumns = $derived(
+    [...stickyColumnsGroup, ...nonAuditingColumns, ...auditingColumnsGroup].filter((c) =>
+      visibleKeys.includes(c.key)
     )
   );
 
@@ -189,7 +157,7 @@
     columnOrderStorageKey ? `${columnOrderStorageKey}:viewMode` : `pb.entityList:${uid}:viewMode`
   );
   const viewModeComposable = useViewMode({
-    initialMode: 'table',
+    initialMode: () => defaultView,
     storageKey: () => viewModeStorageKey
   });
   const viewMode = $derived(viewModeComposable.state.viewMode);
@@ -233,7 +201,6 @@
     onAdvancedFiltersChange: () => onAdvancedFiltersChange,
     filtersOpen: () => filtersOpen,
     setFiltersOpen: (open) => { filtersOpen = open; },
-    checkboxVisualOnlyClass,
   });
   const toggleSearchKey = sheetPanels.toggleSearchKey;
   const toggleColumnKey = sheetPanels.toggleColumnKey;
@@ -301,7 +268,10 @@
   const allSelectedDeleted = $derived(clientSelection.allSelectedDeleted);
   const clientSelectedTotalPages = $derived(clientSelection.clientSelectedTotalPages);
   const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
-  const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : page);
+  // `page` arrives from extJsonParse as native bigint — normalize to number
+  // once here so every downstream consumer (footer math, PreviewPanel)
+  // stays in plain-number land.
+  const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : Number(page));
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
   const footerRangeTotal = $derived(footerUsesClientPaging ? orderedSelectedRows.length : Number(total));
   const footerRangeStart = $derived(
@@ -402,6 +372,7 @@
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
+    rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
     onBulkActionStart: () => {
       // Optional: handle bulk action start
     },
@@ -430,6 +401,59 @@
     setDuplicateScope: dialogs.setDuplicateScope
   });
 
+  // ── Capability + permission gating (meta.actions contract) ─────────────
+
+  /**
+   * True when the op exists in `meta.actions`, is `enabled`, and the current
+   * user satisfies its declared requirement. FAIL-CLOSED: when `entityActions`
+   * is absent (meta without `actions` — contract violation) every CTA is
+   * treated as not allowed.
+   */
+  function opAllowed(op: string): boolean {
+    if (!entityActions) {
+      // Only warn when meta has actually loaded (columns are meta-derived —
+      // columns.length > 0 means meta arrived but `actions` is still absent).
+      // During the meta-loading window entityActions is legitimately undefined.
+      if (import.meta.env.DEV && columns.length > 0) {
+        console.warn(
+          `[EntityListTable] no entityActions provided for entity "${entity}" — ` +
+          `meta.actions missing (contract violation or stale meta cache); all CTAs gated off`
+        );
+      }
+      return false;
+    }
+    return isEntityOpAllowed(entityActions, op);
+  }
+
+  /**
+   * Row/bulk CTA visibility derived solely from the `meta.actions` capability
+   * contract — an op is visible iff it is enabled AND the user satisfies its
+   * declared requirement. Custom CTAs come from `meta.table.row_custom_actions`.
+   */
+  const effectiveRowActions = $derived.by(() => ({
+    edit: opAllowed('update.single'),
+    duplicate: opAllowed('duplicate.bulk'),
+    preview: opAllowed('get'),
+    delete: opAllowed('delete.single') || opAllowed('purge.single'),
+    restore: opAllowed('restore.single'),
+    versionHistory: opAllowed('read.audit'),
+    custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
+  }));
+
+  /** Create CTA — provided handler only effective when `create.single` is allowed. */
+  const effectiveOnCreateAction = $derived(
+    onCreateAction && opAllowed('create.single') ? onCreateAction : undefined
+  );
+
+  /** Bulk toolbar CTA capabilities — each maps to its canonical op. */
+  const bulkCapabilities = $derived({
+    export: opAllowed('export'),
+    htmlExport: opAllowed('export'),
+    duplicate: opAllowed('duplicate.bulk'),
+    delete: opAllowed('delete.bulk'),
+    restore: opAllowed('restore.bulk')
+  });
+
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
     translationKey: () => effectiveTranslationKey,
@@ -438,6 +462,9 @@
     onEditAction: () => onEditAction,
     onRefresh: () => onRefresh,
     isRowDeleted: isRowDeleted,
+    // Hard-delete-only entities (meta.actions: purge.single enabled,
+    // delete.single disabled) target `DELETE /:uuid/purge` automatically.
+    usePurgeDelete: () => !opAllowed('delete.single') && opAllowed('purge.single'),
     rowKey: rowKey,
     onPreviewRow: (row) => {
       previewPanel.openPreview(row);
@@ -505,7 +532,7 @@
     () => rowsLoading,
     () => sortKey,
     () => sortDir,
-    () => dataColumns,
+    () => nonAuditingColumns,
     () => auditingColumnsGroup,
     () => nonAuditingColumns,
     () => onFilterValuesChange,
@@ -526,12 +553,12 @@
   );
   const { handleEditRow, handlePreviewRow, onEntityRowClick, onEntityCardClick } = clickHandlers;
 
-  const loadingText = $derived(loadingMessage ?? $t('common.loading'));
-  const emptyText = $derived(noRecordsMessage ?? $t('entities.list.noRecords'));
+  const loadingText = $derived(loadingMessage ?? $t('app.common.loading'));
+  const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.noRecords'));
 
   const selectionCount = $derived(selectedKeys.length);
   const selectionPastParticipleKey = $derived(
-    selectionCount === 1 ? 'entities.list.selectedSingular' : 'entities.list.selectedPlural'
+    selectionCount === 1 ? 'system.entities.list.selectedSingular' : 'system.entities.list.selectedPlural'
   );
 </script>
 
@@ -544,7 +571,6 @@
   <EntityListTableHeader
     search={search}
     onSearchInput={onSearchInput}
-    searchPlaceholderKey={searchPlaceholderKey}
     searchInKeys={searchInKeys}
     searchableColumns={searchableColumns}
     onSearchInKeysChange={onSearchInKeysChange}
@@ -566,8 +592,7 @@
     visibleKeys={visibleKeys}
     toggleColumnKey={toggleColumnKey}
     resetColumnsAndSorting={resetColumnsAndSorting}
-    checkboxVisualOnlyClass={checkboxVisualOnlyClass}
-    onCreateAction={onCreateAction}
+    onCreateAction={effectiveOnCreateAction}
     toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}
@@ -584,6 +609,7 @@
     onBulkDuplicate={() => bulkActions.handleBulkDuplicate()}
     onBulkDelete={() => bulkActions.handleBulkDelete()}
     onBulkRestore={() => bulkActions.handleBulkRestore()}
+    bulkCapabilities={bulkCapabilities}
   />
 
   <EntityListTableContent
@@ -600,7 +626,7 @@
     previewPanel={previewPanel}
     actionsEnabled={actionsEnabled}
     rowActions={rowActions}
-    entityRowActions={entityRowActions}
+    entityRowActions={effectiveRowActions}
     dropdownMenuRow={dropdownMenuRow}
     datetimeIanaModeByKey={datetimeIanaModeByKey}
     datetimeIanaRenderTick={datetimeIanaRenderTick}
@@ -647,9 +673,9 @@
     onPageChange={onPageChange}
     entity={entity}
     columns={columns}
-    stickyColumns={stickyColumns}
-    dataColumns={dataColumns}
-    auditingColumns={auditingColumns}
+    stickyColumns={stickyColumnsGroup}
+    dataColumns={nonAuditingColumns}
+    auditingColumns={auditingColumnsGroup}
     rowActionsEnabled={rowActionsEnabled}
     footerRangeTotal={footerRangeTotal}
     footerPage={footerPage}

@@ -120,7 +120,7 @@
 <div class="relative w-full max-w-xs sm:max-w-sm" bind:this={rootEl}>
   <Command.Root
     class="w-full"
-    label={$t('shell.commandPalette.title')}
+    label={$t('app.commandPalette.title')}
   >
     <div class="relative">
       <!-- Real search field: always visible, never covered by the dropdown -->
@@ -166,7 +166,7 @@
             'selection:bg-primary selection:text-primary-foreground',
             'focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0'
           )}
-          placeholder={$t('shell.search.placeholder')}
+          placeholder={$t('app.search.placeholder')}
           aria-expanded={open}
           aria-controls={open ? listDomId : undefined}
           aria-autocomplete="list"
@@ -198,25 +198,25 @@
             class="max-h-[min(50vh,18rem)] overflow-x-hidden overflow-y-hidden p-2"
           >
             <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
-              {$t('shell.commandPalette.empty')}
+              {$t('app.commandPalette.empty')}
             </Command.Empty>
 
             <Command.Group value="suggestions" class="overflow-hidden p-1 text-foreground">
               <Command.GroupHeading class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                {$t('shell.commandPalette.groupSuggestions')}
+                {$t('app.commandPalette.groupSuggestions')}
               </Command.GroupHeading>
               <Command.GroupItems>
                 <Command.Item value="calendar" class={commandMenuItemClassName}>
                   <CalendarIcon />
-                  <span>{$t('shell.commandPalette.itemCalendar')}</span>
+                  <span>{$t('app.commandPalette.itemCalendar')}</span>
                 </Command.Item>
                 <Command.Item value="emoji" class={commandMenuItemClassName}>
                   <SmileIcon />
-                  <span>{$t('shell.commandPalette.itemSearchEmoji')}</span>
+                  <span>{$t('app.commandPalette.itemSearchEmoji')}</span>
                 </Command.Item>
                 <Command.Item value="calculator" disabled class={commandMenuItemClassName}>
                   <CalculatorIcon />
-                  <span>{$t('shell.commandPalette.itemCalculator')}</span>
+                  <span>{$t('app.commandPalette.itemCalculator')}</span>
                 </Command.Item>
               </Command.GroupItems>
             </Command.Group>
@@ -225,22 +225,22 @@
 
             <Command.Group value="settings" class="overflow-hidden p-1 text-foreground">
               <Command.GroupHeading class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                {$t('shell.commandPalette.groupSettings')}
+                {$t('app.commandPalette.groupSettings')}
               </Command.GroupHeading>
               <Command.GroupItems>
                 <Command.Item value="profile" class={commandMenuItemClassName}>
                   <UserIcon />
-                  <span>{$t('shell.commandPalette.itemProfile')}</span>
+                  <span>{$t('app.commandPalette.itemProfile')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('P')}</span>
                 </Command.Item>
                 <Command.Item value="billing" class={commandMenuItemClassName}>
                   <CreditCardIcon />
-                  <span>{$t('shell.commandPalette.itemBilling')}</span>
+                  <span>{$t('app.commandPalette.itemBilling')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('B')}</span>
                 </Command.Item>
                 <Command.Item value="app-settings" class={commandMenuItemClassName}>
                   <SettingsIcon />
-                  <span>{$t('shell.commandPalette.itemSettings')}</span>
+                  <span>{$t('app.commandPalette.itemSettings')}</span>
                   <span class="ms-auto text-xs text-muted-foreground">{modShortcut('S')}</span>
                 </Command.Item>
               </Command.GroupItems>

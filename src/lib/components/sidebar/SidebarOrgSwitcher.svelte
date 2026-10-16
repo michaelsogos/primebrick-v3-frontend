@@ -45,7 +45,7 @@
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             title={selectedOrgLabel}
-            aria-label={$t('shell.org.switcherAria')}
+            aria-label={$t('app.org.switcherAria')}
           >
             <div
               class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"

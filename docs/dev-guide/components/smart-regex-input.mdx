@@ -1,0 +1,126 @@
+---
+title: SmartRegexInput
+description: AI-powered regex input component with flags selector and natural language regex generation
+---
+
+# SmartRegexInput
+
+The `SmartRegexInput` component is an AI-powered regex pattern input that extends
+the standard text input with two inner CTAs:
+
+1. **Flags CTA** — opens a right-panel sheet to toggle regex flags (`g`, `i`, `m`)
+2. **Brain CTA** — opens a right-panel AI chat that converts natural language
+   descriptions into regex patterns using a browser-only LLM
+
+## AI Engine
+
+The AI assistant runs ONNX models in the browser via
+[Transformers.js](https://huggingface.co/docs/transformers.js) + ONNX Runtime
+WebGPU. No backend calls are made for the AI feature.
+
+The model is selected from the `ai_models` registry (System Settings → AI
+models); each entry is an engine + quantization variant (e.g.
+`onnx-community/Qwen3-4B-ONNX#fp16`).
+
+### Requirements
+
+- **WebGPU**: Chrome 113+/Edge 113+ or other Chromium-based browser with WebGPU enabled
+- **VRAM / download size**: model-dependent — shown per model in the AI models list
+- **Download**: one-time per model, cached in the browser (Cache API / OPFS)
+
+### Model quality indicators
+
+Each model row carries three quality/compute fields, all set empirically by
+E2E regression tests:
+
+| Field | Range | Meaning |
+|-------|-------|---------|
+| `power_level` | 1-5 | Compute/size class (the 5-bar indicator). 1 = ≤1B quantized, 5 = ≥4B unquantized (fp16). Higher = heavier, not necessarily better. |
+| `rank` | 0.0-5.0 | Combined score — `quality × 0.8 + speed × 0.2`. Quality = `mean(turn_scores) × 0.6 + (success_count / total_turns) × 5 × 0.4` (turn scores 5 = correct, 2 = partially valid, 1 = fail; "success" = score ≥ 4). Speed = bucket of the average response time — the seconds are averaged FIRST (per case, then mean of case averages for the model), then mapped once: ≤3 s → 5, ≤5 s → 4, ≤7 s → 3, ≤9 s → 2, ≤10 s → 1, >10 s → 0 |
+
+`rank` measures output quality **and** responsiveness — `power_level` is
+deliberately not part of it, so a light reliable model can outrank a heavy
+unreliable one. A model that cannot answer within the 90 s generation timeout
+on at least 2 of 5 test turns is marked not compatible regardless of quality.
+
+### Non-WebGPU Browsers
+
+If the browser does not support WebGPU, the AI assistant shows a message:
+"AI regex assistant requires WebGPU (Chrome 113+/Edge 113+). Please type the
+regex manually."
+
+The flags CTA works without AI — users can still toggle flags and type regex
+manually.
+
+## Flags
+
+Regex flags are stored as a separate `flags` field in `type_config.validation.rules.regex`:
+
+```json
+{
+  "validation": {
+    "rules": {
+      "regex": {
+        "pattern": "^[a-z]+$",
+        "flags": "gi",
+        "error_label_key": "app.common.validation.regexMismatch"
+      }
+    }
+  }
+}
+```
+
+### Available Flags
+
+| Flag | Name | Available For |
+|------|------|---------------|
+| `g` | Global | All string-derived types |
+| `i` | Ignore case | All string-derived types |
+| `m` | Multiline | `text` type only (textarea) |
+
+## Model Lifecycle
+
+1. **Background pre-download**: A Service Worker pre-downloads the model files
+   on app startup using the Cache API. This is non-blocking.
+2. **Lazy loading**: The model is loaded into VRAM only when the user clicks the
+   brain CTA. A progress bar shows "Loading model X%".
+3. **Ready state**: On subsequent uses, the model is already cached and a
+   "{model} is ready!" message appears.
+4. **Resource cleanup**: VRAM is released when the AI panel closes.
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
+</script>
+
+<SmartRegexInput
+  bind:value={pattern}
+  bind:flags={flags}
+  on_change={(value, flags) => console.log(value, flags)}
+  config_type="string"
+  placeholder="^[A-Z]{3}$"
+/>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `string` | `''` | The regex pattern (bindable) |
+| `flags` | `string` | `''` | The regex flags (bindable, e.g. `'gi'`) |
+| `on_change` | `(value: string, flags: string) => void` | — | Called when pattern or flags change |
+| `config_type` | `'string' \| 'text' \| 'secret' \| 'url' \| 'email' \| 'phone'` | `'string'` | Controls which flags are available |
+| `placeholder` | `string` | — | Placeholder text |
+| `disabled` | `boolean` | `false` | Disabled state |
+| `readonly` | `boolean` | `false` | Read-only state |
+
+## Naming Convention
+
+`SmartRegexInput` establishes the `Smart` prefix convention for AI-powered
+components. Future AI-capable components should follow this pattern:
+
+- Component: `Smart{Purpose}` (PascalCase)
+- File: `smart-{purpose}.svelte` (kebab-case)
+- Directory: `src/lib/components/ui/smart-{purpose}/`

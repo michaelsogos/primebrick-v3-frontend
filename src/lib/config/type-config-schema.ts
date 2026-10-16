@@ -13,38 +13,73 @@
  */
 
 // ─── Validation types (mirror SDK ConfigValidation) ──────────────
+// Single zod source: types are z.infer'd (identical shape to the previous
+// hand-written interfaces) and the JSON Schema is z.toJSONSchema()'d for
+// the CodeMirror language service — one definition, two artifacts.
 
-export interface ConfigValidation {
-  required: boolean;
-  required_error_label_key?: string;
+import { z } from 'zod';
+
+const errorLabelKey = z.string().optional();
+
+const ruleWithNumberSchema = z.object({
+  value: z.number().describe('Numeric boundary for this rule'),
+  error_label_key: errorLabelKey.describe('Translation key for the validation error message'),
+});
+
+export const configValidationSchema = z.object({
+  required: z.boolean().describe('If true, the value cannot be empty'),
+  required_error_label_key: errorLabelKey,
   /** If true, numeric values are unsigned (no sign chars, default min=0). */
-  unsigned?: boolean;
-  rules: {
-    min?: { value: number; error_label_key?: string };
-    max?: { value: number; error_label_key?: string };
-    url?: { protocols: string[]; error_label_key?: string };
-    email?: { error_label_key?: string };
-    regex?: { pattern: string; error_label_key?: string };
-  };
-}
+  unsigned: z.boolean().optional().describe('Numeric values are unsigned (no sign chars)'),
+  rules: z.object({
+    min: ruleWithNumberSchema.optional().describe('Minimum length/value'),
+    max: ruleWithNumberSchema.optional().describe('Maximum length/value'),
+    url: z.object({
+      protocols: z.array(z.string()).describe('Allowed URL protocols, e.g. ["https"]'),
+      error_label_key: errorLabelKey,
+    }).optional().describe('URL protocol validation'),
+    email: z.object({ error_label_key: errorLabelKey }).optional().describe('Email format validation'),
+    regex: z.object({
+      pattern: z.string().describe('Regular expression the value must match'),
+      flags: z.string().optional().describe('Regex flags, e.g. "i"'),
+      error_label_key: errorLabelKey,
+    }).optional().describe('Regex pattern validation'),
+  }).describe('Validation rules applied to the value'),
+});
+
+export type ConfigValidation = z.infer<typeof configValidationSchema>;
 
 // ─── Parsed type_config (union of all possible fields) ──────────
 
-export interface ParsedTypeConfig {
+export const typeConfigSchema = z.object({
   // Validation (all types)
-  validation?: ConfigValidation;
+  validation: configValidationSchema.optional().describe('Validation rules for the config value'),
   // Money
-  currency?: string;
-  allowed_currencies?: string[];
+  currency: z.string().optional().describe('ISO 4217 currency code, e.g. "EUR"'),
+  allowed_currencies: z.array(z.string()).optional().describe('Selectable currency codes'),
   // Badge
-  values?: Record<string, { label_key?: string; color?: string }>;
+  values: z.record(z.string(), z.object({
+    label_key: z.string().optional().describe('Translation key for the badge label'),
+    color: z.string().optional().describe('Badge color token'),
+  })).optional().describe('Badge values map: value → label/color'),
   // single_select / multi_select
-  values_source?: string;
-  api_url?: string;
-  api_verb?: string;
-  value_field?: string;
-  label_field?: string;
-}
+  values_source: z.string().optional().describe('Built-in source id, e.g. "currencies"'),
+  api_url: z.string().optional().describe('Endpoint URL providing the options'),
+  api_verb: z.string().optional().describe('HTTP method for the options endpoint'),
+  value_field: z.string().optional().describe('Response field used as option value'),
+  label_field: z.string().optional().describe('Response field used as option label'),
+  // URL
+  default_protocol: z.string().optional().describe('Default URL protocol, e.g. "https"'),
+  allowed_protocols: z.array(z.string()).optional().describe('Allowed URL protocols'),
+  // Phone
+  country: z.string().optional().describe('Default ISO country code, e.g. "IT"'),
+  allowed_countries: z.array(z.string()).optional().describe('Selectable country codes'),
+});
+
+export type ParsedTypeConfig = z.infer<typeof typeConfigSchema>;
+
+/** JSON Schema of type_config — generated from typeConfigSchema (single source). */
+export const typeConfigJsonSchema = z.toJSONSchema(typeConfigSchema);
 
 // ─── Parse ───────────────────────────────────────────────────────
 
@@ -109,13 +144,37 @@ export function serializeTypeConfig(config: ParsedTypeConfig): string {
 
 /**
  * Auto-generate an error_label_key for a validation rule.
- * Convention: config.auth.{configKey}.errors.{rule}
+ * Standard rules (required, min, max, invalidUrl, invalidEmail) map to
+ * generic `app.common.validation.*` keys — the default always points to the
+ * existing system seed key so module translations keep their reusability.
+ * Rules without a system default use the convention
+ * `custom.config.{configKey}.errors.{rule}` — user-created keys live in
+ * custom.translations (global, shared, cross-org) and MUST start with
+ * `custom.` (enforced by the BE).
  * Users can override this in the builder UI.
  * If configKey is empty, uses "my_custom_setting" as a placeholder example.
  */
+const GENERIC_ERROR_KEYS: Record<string, string> = {
+  required: 'app.common.validation.required',
+  min: 'app.common.validation.tooShort',
+  max: 'app.common.validation.tooLong',
+  url: 'app.common.validation.invalidUrl',
+  email: 'app.common.validation.invalidEmail',
+  phone: 'app.common.validation.invalidPhone',
+  regex: 'app.common.validation.regexMismatch',
+  invalidUrl: 'app.common.validation.invalidUrl',
+  invalidEmail: 'app.common.validation.invalidEmail',
+  invalidPhone: 'app.common.validation.invalidPhone',
+  invalidUrlProtocol: 'app.common.validation.invalidUrlProtocol',
+  invalidRegexPattern: 'app.common.validation.invalidRegexPattern',
+};
+
 export function autoErrorLabelKey(configKey: string, rule: string): string {
+  if (GENERIC_ERROR_KEYS[rule]) {
+    return GENERIC_ERROR_KEYS[rule];
+  }
   const key = configKey.trim() || 'my_custom_setting';
-  return `config.auth.${key}.errors.${rule}`;
+  return `custom.config.${key}.errors.${rule}`;
 }
 
 // ─── Default limits ──────────────────────────────────────────────
@@ -148,5 +207,6 @@ export interface ValuesSourceDefinition {
  * Extensible: add new sources here (countries, languages, timezones, etc.).
  */
 export const BUILTIN_VALUES_SOURCES: ValuesSourceDefinition[] = [
-  { id: 'currencies', label_key: 'config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
+  { id: 'currencies', label_key: 'system.settings.config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
+  { id: 'ai_models', label_key: 'system.settings.config.typeConfig.valuesSource.ai_models', value_field: 'id', label_field: 'label_key' },
 ];

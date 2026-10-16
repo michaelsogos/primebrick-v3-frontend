@@ -29,7 +29,7 @@
   const value = $derived(row[column.key]);
 
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
-    return col.type === 'datetime' && !!col.datetimeIanaToggle && (modeByKey[col.key] ?? 'browser') === 'record';
+    return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
   }
 </script>
 
@@ -42,7 +42,7 @@
         <CircleCheck class="size-4 text-green-600 shrink-0" />
       </Tooltip.Trigger>
       <Tooltip.Content>
-        <p>{$t(`entities.user_profile.fields.${column.key}`)}</p>
+        <p>{$t(`system.entities.user_profile.fields.${column.key}`)}</p>
       </Tooltip.Content>
     </Tooltip.Root>
   {:else if value === false}
@@ -51,7 +51,7 @@
         <CircleX class="size-4 text-muted-foreground shrink-0" />
       </Tooltip.Trigger>
       <Tooltip.Content>
-        <p>{$t(`entities.user_profile.fields.${column.key}_false`)}</p>
+        <p>{$t(`system.entities.user_profile.fields.${column.key}_false`)}</p>
       </Tooltip.Content>
     </Tooltip.Root>
   {:else}
@@ -64,7 +64,7 @@
     class="shadow-none"
     style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
   >
-    {column.badge.values[badgeValue]?.labelText || $t(column.badge.values[badgeValue]?.labelKey || `entities.customer.status.${badgeValue}`)}
+    {column.badge.values[badgeValue]?.label_text || $t(column.badge.values[badgeValue]?.label_key || `system.entities.customer.status.${badgeValue}`)}
   </Badge>
 {:else if column.type === 'datetime'}
   {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}

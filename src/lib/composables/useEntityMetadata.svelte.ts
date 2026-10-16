@@ -1,16 +1,11 @@
 import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
-import type { EntityListListMeta } from '$lib/entity-list/types';
+import type { EntityMeta } from '$lib/entity-list/types';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
-export interface EntityMetadata {
-  entity?: string;
-  titleKey?: string;
-  updatePageTitle?: string;
-  uid?: string;
-  defaultView?: 'table' | 'cards' | 'cards_list';
-  list?: EntityListListMeta;
-}
+/** @deprecated use `EntityMeta` from `$lib/entity-list/types` — kept as an
+ *  alias during the canonical-schema migration. */
+export type EntityMetadata = EntityMeta;
 
 export interface UseEntityMetadataOptions {
   endpoint: string;
@@ -22,7 +17,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
   const { endpoint, entityName } = options;
 
   const _state = $state({
-    meta: null as EntityMetadata | null,
+    meta: null as EntityMeta | null,
     loading: true,
     error: null as string | null,
   });
@@ -37,8 +32,8 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
         const data = await res.json();
 
         // Code Guardrail: Check if metadata becomes null after loading
-        if (!data || !data.list || !data.list.auditingColumns || data.list.auditingColumns.length === 0) {
-          console.error('[METADATA PARSING ERROR] Metadata loaded but list.auditingColumns is null or empty:', {
+        if (!data || !data.columns || data.columns.length === 0) {
+          console.error('[METADATA PARSING ERROR] Metadata loaded but columns is null or empty:', {
             endpoint,
             entity: entityName,
             response: data,
@@ -48,7 +43,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
           // RFC ERROR TOAST - Metadata parsing error
           pushNotification({
             impact: 'HIGH',
-            message: 'Metadata parsing error: list.auditingColumns is null or empty',
+            message: 'Metadata parsing error: columns is null or empty',
             scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
             detail: JSON.stringify(data, null, 2),
             tags: [{ label: 'METADATA', tone: 'danger' }],

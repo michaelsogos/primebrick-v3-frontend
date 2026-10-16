@@ -33,19 +33,19 @@
   // (when the user types), not at schema creation time.
   const changePasswordSchema = z
     .object({
-      current_password: z.string().min(1, { message: 'validation.required' }),
+      current_password: z.string().min(1, { message: 'app.common.validation.required' }),
       new_password: z
         .string()
-        .min(1, { message: 'validation.required' })
+        .min(1, { message: 'app.common.validation.required' })
         .refine(async (val) => {
           if (!passwordPolicy.state.loaded || !val) return true;
           return passwordPolicy.regex.test(val);
         }, passwordPolicy.state.errorLabelKey),
-      confirm_password: z.string().min(1, { message: 'validation.required' }),
+      confirm_password: z.string().min(1, { message: 'app.common.validation.required' }),
     })
     .refine((data) => data.new_password === data.confirm_password, {
       path: ['confirm_password'],
-      message: 'shell.settings.security.passwordsDoNotMatch',
+      message: 'system.settings.security.passwordsDoNotMatch',
     });
 
   const superFormObj = superForm(defaults(zod4(changePasswordSchema)), {
@@ -70,7 +70,7 @@
         if (resp.ok) {
           pushNotification({
             impact: 'NONE',
-            message: $t('shell.settings.security.passwordChangedSuccess'),
+            message: $t('system.settings.security.passwordChangedSuccess'),
             scope: 'auth',
           });
           reset();
@@ -83,7 +83,7 @@
         console.error('Failed to change password:', error);
         pushNotification({
           impact: 'HIGH',
-          message: $t('shell.settings.security.passwordChangedError'),
+          message: $t('system.settings.security.passwordChangedError'),
           scope: 'auth',
         });
         cancel();
@@ -119,10 +119,10 @@
   <CardHeader>
     <CardTitle class="flex items-center gap-2">
       <KeyRound class="size-5" />
-      {$t('shell.settings.credentials.changePassword.title')}
+      {$t('system.settings.credentials.changePassword.title')}
     </CardTitle>
     <CardDescription>
-      {$t('shell.settings.credentials.changePassword.description')}
+      {$t('system.settings.credentials.changePassword.description')}
     </CardDescription>
   </CardHeader>
   <CardContent>
@@ -139,12 +139,12 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}>
-                  {$t('shell.settings.security.currentPassword')}
+                  {$t('system.settings.security.currentPassword')}
                 </FormLabel>
                 <Password.PasswordInput
                   {...props}
                   bind:value={$form.current_password}
-                  placeholder={$t('shell.settings.security.currentPasswordPlaceholder')}
+                  placeholder={$t('system.settings.security.currentPasswordPlaceholder')}
                   autocomplete="current-password"
                   data-testid="credentials-current-password-input"
                 />
@@ -162,12 +162,12 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}>
-                  {$t('shell.settings.security.newPassword')}
+                  {$t('system.settings.security.newPassword')}
                 </FormLabel>
                 <Password.PasswordInput
                   {...props}
                   bind:value={$form.new_password}
-                  placeholder={$t('shell.settings.security.newPasswordPlaceholder')}
+                  placeholder={$t('system.settings.security.newPasswordPlaceholder')}
                   autocomplete="new-password"
                   data-testid="credentials-new-password-input"
                 />
@@ -196,12 +196,12 @@
             {#snippet children({ props })}
               <div class="space-y-2">
                 <FormLabel for={props.id}>
-                  {$t('shell.settings.security.confirmPassword')}
+                  {$t('system.settings.security.confirmPassword')}
                 </FormLabel>
                 <Password.PasswordInput
                   {...props}
                   bind:value={$form.confirm_password}
-                  placeholder={$t('shell.settings.security.confirmPasswordPlaceholder')}
+                  placeholder={$t('system.settings.security.confirmPasswordPlaceholder')}
                   autocomplete="new-password"
                   data-testid="credentials-confirm-password-input"
                 />
@@ -220,7 +220,7 @@
       disabled={$submitting || !canSubmit}
       data-testid="credentials-change-password-button"
     >
-      {$t('shell.settings.credentials.changePassword.button')}
+      {$t('system.settings.credentials.changePassword.button')}
     </Button>
   </CardFooter>
 </Card>

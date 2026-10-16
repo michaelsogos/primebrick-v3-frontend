@@ -105,7 +105,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    handleCustomAction?: (action: { actionName: string; translationKey: string }, row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
   } = $props();
 </script>
@@ -177,9 +177,9 @@
             </div>
             <div class="text-sm font-medium text-muted-foreground">
               {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-                {$t('entities.list.selectedRowsNotLoadedHint')}
+                {$t('system.entities.list.selectedRowsNotLoadedHint')}
               {:else}
-                {$t('entities.list.noSelectedRowsInView')}
+                {$t('system.entities.list.noSelectedRowsInView')}
               {/if}
             </div>
           </div>

@@ -32,8 +32,8 @@
 		toneCheckedClasses[tone],
 		className
 	)}
-	checked={checked}
-	indeterminate={indeterminate}
+	bind:checked
+	bind:indeterminate
 	{...restProps}
 >
 	{#snippet children({ checked: c, indeterminate: ind })}

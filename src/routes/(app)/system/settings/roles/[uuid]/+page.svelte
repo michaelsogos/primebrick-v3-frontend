@@ -1,14 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
+  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import {
     AnchorTabs,
@@ -95,6 +98,7 @@
       label_key: label_key || undefined,
       is_admin,
       permissions: Array.from(selected_permissions),
+      version: role.version,
     });
     saving = false;
     if (ok) {
@@ -105,7 +109,7 @@
   async function handleDelete() {
     if (!role) return;
     deleting = true;
-    const ok = await roleMappings.remove(role.uuid);
+    const ok = await roleMappings.remove(role.uuid, role.version);
     deleting = false;
     if (ok) {
       deleteOpen = false;
@@ -119,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('shell.settings.roles.editTitle')} · Primebrick</title>
+  <title>{entityPageTitle('role_mapping', 'edit', $t)} · Primebrick</title>
 </svelte:head>
 
 <AppPageScaffold>
@@ -127,8 +131,8 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('shell.system') },
-          { label: $t('shell.settings.title'), href: '/system/settings/profile' },
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,
             searchParams: page.url.searchParams,
@@ -138,7 +142,7 @@
       />
       <div class="flex items-center justify-between gap-4">
         <h1 class="truncate text-xl font-semibold leading-tight">
-          {$t('shell.settings.roles.editTitle')}
+          {entityPageTitle('role_mapping', 'edit', $t)}
           {#if role}
             <span class="font-mono text-base text-muted-foreground">{role.idp_role}</span>
           {/if}
@@ -151,70 +155,85 @@
             disabled={deleting}
             data-testid="roles-edit-delete-btn"
           >
-            {$t('shell.settings.roles.delete')}
+            {$t('system.settings.roles.delete')}
           </Button>
         {/if}
       </div>
     </div>
   {/snippet}
 
-  <p class="text-sm text-muted-foreground mb-4">{$t('shell.settings.roles.editSubtitle')}</p>
+  <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.editSubtitle')}</p>
 
   {#if loading}
-    <p class="text-sm text-muted-foreground">{$t('common.loading')}</p>
+    <p class="text-sm text-muted-foreground">{$t('app.common.loading')}</p>
   {:else if notFound}
     <div class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-      {$t('shell.settings.roles.notFound')}
+      {$t('system.settings.roles.notFound')}
     </div>
   {:else if role}
     <AnchorTabs value="details">
       <div class="flex items-center justify-between gap-4">
         <AnchorTabsList>
-          <AnchorTabsTrigger value="details">{$t('shell.settings.roles.tabDetails')}</AnchorTabsTrigger>
-          <AnchorTabsTrigger value="permissions">{$t('shell.settings.roles.tabPermissions')}</AnchorTabsTrigger>
+          <AnchorTabsTrigger value="details">{$t('system.settings.roles.tabDetails')}</AnchorTabsTrigger>
+          <AnchorTabsTrigger value="permissions">{$t('system.settings.roles.tabPermissions')}</AnchorTabsTrigger>
         </AnchorTabsList>
         <AnchorTabsModeSwitch
-          label_show_all={$t('shell.settings.roles.modeShowAll')}
-          label_hide={$t('shell.settings.roles.modeHide')}
+          label_show_all={$t('system.settings.roles.modeShowAll')}
+          label_hide={$t('system.settings.roles.modeHide')}
         />
       </div>
 
       <AnchorTabsContent value="details">
         <div class="space-y-6 max-w-2xl pt-6">
           <div class="space-y-2">
-            <Label for="idp_role">{$t('shell.settings.roles.fieldIdpRole')}</Label>
-            <Input
+            <Label for="idp_role">
+              {$t('system.settings.roles.fieldIdpRole')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIdpRoleImmutable')}
+                priority="WARNING"
+              />
+            </Label>
+            <TextInput
               id="idp_role"
               value={role.idp_role}
               disabled
               class="font-mono bg-muted/50"
               data-testid="roles-edit-idp-role"
             />
-            <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIdpRoleImmutable')}</p>
           </div>
 
           <div class="space-y-2">
-            <Label for="idp_org">{$t('shell.settings.roles.fieldIdpOrg')}</Label>
-            <Input
+            <Label for="idp_org">
+              {$t('system.settings.roles.fieldIdpOrg')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIdpOrgImmutable')}
+                priority="WARNING"
+              />
+            </Label>
+            <TextInput
               id="idp_org"
               value={role.idp_org ?? ''}
               disabled
               class="font-mono bg-muted/50"
               data-testid="roles-edit-idp-org"
             />
-            <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIdpOrgImmutable')}</p>
           </div>
 
           <div class="space-y-2">
-            <Label for="label_key">{$t('shell.settings.roles.fieldLabelKey')}</Label>
-            <Input
+            <Label for="label_key">
+              {$t('system.settings.roles.fieldLabelKey')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldLabelKeyHint')}
+                priority="HINT"
+              />
+            </Label>
+            <TextInput
               id="label_key"
               bind:value={label_key}
-              placeholder="e.g. shell.roles.sales_manager"
+              placeholder="e.g. app.auth.roles.sales_manager"
               class="font-mono"
               data-testid="roles-edit-label-key"
             />
-            <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldLabelKeyHint')}</p>
           </div>
 
           <div class="flex items-center gap-3">
@@ -224,14 +243,17 @@
               data-testid="roles-edit-is-admin"
             />
             <Label for="is_admin" class="cursor-pointer">
-              {$t('shell.settings.roles.fieldIsAdmin')}
+              {$t('system.settings.roles.fieldIsAdmin')}
+              <FormLabelWithPriorityHelp
+                text={$t('system.settings.roles.fieldIsAdminHint')}
+                priority="INFORMATION"
+              />
             </Label>
-            <p class="text-xs text-muted-foreground">{$t('shell.settings.roles.fieldIsAdminHint')}</p>
           </div>
 
           {#if role.last_synced_at}
             <div class="text-xs text-muted-foreground">
-              {$t('shell.settings.roles.lastSynced')}: {new Date(role.last_synced_at).toLocaleString()}
+              {$t('system.settings.roles.lastSynced')}: {new Date(role.last_synced_at).toLocaleString()}
             </div>
           {/if}
         </div>
@@ -240,9 +262,9 @@
       <AnchorTabsContent value="permissions">
         <div class="space-y-6 pt-6">
           {#if permissionsCatalog.state.loading}
-            <p class="text-sm text-muted-foreground">{$t('shell.settings.roles.permissionsLoading')}</p>
+            <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsLoading')}</p>
           {:else if permissionsCatalog.state.modules.length === 0}
-            <p class="text-sm text-muted-foreground">{$t('shell.settings.roles.permissionsEmpty')}</p>
+            <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsEmpty')}</p>
           {:else}
             {#each permissionsCatalog.state.modules as module (module.code)}
               <div class="rounded-md border" data-testid={`roles-perm-module-${module.code}`}>
@@ -282,45 +304,21 @@
 
     <div class="flex items-center justify-end gap-2 pt-6 border-t mt-6">
       <Button variant="outline" onclick={handleCancel} disabled={saving} data-testid="roles-edit-cancel">
-        {$t('common.cancel')}
+        {$t('app.common.cancel')}
       </Button>
       <Button onclick={handleSubmit} disabled={saving} data-testid="roles-edit-submit">
-        {saving ? $t('common.saving') : $t('common.save')}
+        {saving ? $t('app.common.saving') : $t('app.common.save')}
       </Button>
     </div>
   {/if}
 </AppPageScaffold>
 
-{#if deleteOpen && role}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    role="dialog"
-    aria-modal="true"
-    data-testid="roles-edit-delete-dialog"
-  >
-    <div class="rounded-lg border bg-background p-6 shadow-lg max-w-md w-full mx-4">
-      <h2 class="text-lg font-semibold">{$t('shell.settings.roles.deleteConfirmTitle')}</h2>
-      <p class="text-sm text-muted-foreground mt-2">
-        {$t('shell.settings.roles.deleteConfirmBody', { values: { role: role.idp_role } })}
-      </p>
-      <div class="flex justify-end gap-2 mt-6">
-        <Button
-          variant="outline"
-          onclick={() => (deleteOpen = false)}
-          disabled={deleting}
-          data-testid="roles-edit-delete-cancel"
-        >
-          {$t('common.cancel')}
-        </Button>
-        <Button
-          variant="destructive"
-          onclick={handleDelete}
-          disabled={deleting}
-          data-testid="roles-edit-delete-confirm"
-        >
-          {deleting ? $t('common.deleting') : $t('common.delete')}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
+<DeleteDialog
+  entity="role"
+  recordName={role?.idp_role}
+  bind:open={deleteOpen}
+  onOpenChange={(open) => { if (!open) deleteOpen = false; }}
+  isDeleting={deleting}
+  onConfirm={handleDelete}
+  onCancel={() => (deleteOpen = false)}
+/>

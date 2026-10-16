@@ -1,0 +1,119 @@
+---
+title: StatCard
+description: KPI stat card (dashboard-stats pattern) — muted label, animated NumberTicker value, icon in its own right-hand column. Optional bare mode without the card shell.
+---
+
+# StatCard
+
+`src/lib/components/ui/stat-card/`
+
+## Purpose
+
+Standard KPI stat for dashboards and capability strips, in the more-shadcn
+"dashboard stats" style: a muted label on top, a colored animated value
+below (embedded [NumberTicker](./number-ticker)), and an icon in a dedicated
+right-hand column so nothing renders underneath it.
+
+## Origin
+
+**Custom** — fully Primebrick-written. Wraps `NumberTicker`. Not vendored.
+
+## Usage
+
+```svelte
+<script>
+  import { StatCard } from '$lib/components/ui/stat-card';
+  import { Zap } from '@lucide/svelte';
+</script>
+```
+
+### Card (default)
+
+```svelte
+<StatCard
+  label="Memory Bandwidth"
+  value={150}
+  suffix=" GB/s"
+  class="text-amber-600 dark:text-amber-400"
+>
+  {#snippet icon()}<Zap class="size-4 shrink-0" />{/snippet}
+</StatCard>
+```
+
+The text color set on the root is inherited by the value and the icon —
+the label stays muted regardless.
+
+### Bare (no card shell)
+
+```svelte
+<StatCard
+  card={false}
+  label="CPU Threads"
+  value={20}
+  class="text-zinc-700 dark:text-zinc-200"
+>
+  {#snippet icon()}<Cpu class="size-4 shrink-0" />{/snippet}
+</StatCard>
+```
+
+In bare mode the icon moves to the **left** of the label and the block
+drops its border/padding.
+
+### With a sub-line
+
+```svelte
+<StatCard label="Requests" value={1250} sub="+12% vs last hour">
+  {#snippet icon()}<Activity class="size-4 shrink-0" />{/snippet}
+</StatCard>
+```
+
+## Layout behavior
+
+Sizing is **content-driven**: `w-fit` with min/max bounds
+(card: `9rem–13rem`, bare: `5rem–9rem`). Stats sit next to siblings in a
+flex row without forcing a full-width fill — the caller owns the layout:
+
+```svelte
+<div class="flex items-stretch justify-center gap-3">
+  <StatCard label="Bandwidth" value={150} suffix=" GB/s" class="text-amber-600 dark:text-amber-400">
+    {#snippet icon()}<Zap class="size-4 shrink-0" />{/snippet}
+  </StatCard>
+  <StatCard label="Compute" value={8.3} decimals={1} suffix=" TFLOPS" class="text-sky-600 dark:text-sky-400">
+    {#snippet icon()}<Gauge class="size-4 shrink-0" />{/snippet}
+  </StatCard>
+</div>
+```
+
+For dense dashboards, put the cards inside your own `grid` — they will
+respect the column width instead of expanding.
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `label` | `string` | required | Metric label — muted, normal case, above the value. |
+| `value` | `number` | `0` | Target number (animated via NumberTicker). |
+| `decimals` | `number` | `0` | Digits after the decimal point. |
+| `prefix` | `string` | `''` | Text before the number (e.g. `≥`). |
+| `suffix` | `string` | `''` | Text after the number — UoM goes here (` GB`). |
+| `speed` | `number` | `100` | Value-units per second forwarded to NumberTicker. |
+| `card` | `boolean` | `true` | `false` = bare stat, icon left of the label. |
+| `sub` | `string` | — | Optional line under the value (delta, hint). |
+| `icon` | `Snippet` | — | Icon content — right column in card mode, left of label in bare mode. |
+| `class` | `string` | — | Color classes applied to the root (value + icon inherit). |
+
+The component spreads the rest of `HTMLAttributes<HTMLDivElement>` onto
+the root element (`data-testid`, `title`, …).
+
+## Reference
+
+<!-- AUTO-GENERATED:reference -->
+```json
+{"component":"stat-card","file":"src/lib/components/ui/stat-card/stat-card.svelte","props":["label","value","decimals","prefix","suffix","speed","card","sub","icon","class"]}
+```
+<!-- END -->
+
+## Next steps
+
+- [NumberTicker](./number-ticker) — the animated value engine used inside
+- [UI components](./ui-components) — component inventory

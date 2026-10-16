@@ -19,29 +19,50 @@
   let {
     onsuccess,
     onerror,
+    username,
   }: {
     onsuccess?: (data: { success: boolean; user: any }) => void;
     onerror?: () => void;
+    // When the user already typed their username, forward it so Casdoor uses
+    // the non-discoverable signin path — the discoverable lookup
+    // (webauthnCredentials LIKE %<id>%) does not work on Postgres because the
+    // column is bytea and CAST(bytea AS text) yields \x-hex, so the LIKE never
+    // matches. Usernameless passkey login therefore requires the username to
+    // be filled in.
+    username?: string;
   } = $props();
 
   let loading = $state(false);
+
+  /** Map WebAuthn internal_codes to specific translated messages — a generic
+   * "login failed" hides actionable causes (e.g. passkey no longer
+   * registered in the IDP after an IDP data reset). */
+  function passkeyErrorMessage(err: { internal_code?: string }): { message?: string } {
+    if (err.internal_code === 'webauthn_credential_not_found') {
+      return { message: $t('app.auth.login.passkey.credentialNotFound') };
+    }
+    if (err.internal_code === 'webauthn_session_expired') {
+      return { message: $t('app.auth.login.passkey.sessionExpired') };
+    }
+    return {};
+  }
 
   async function signInWithPasskey() {
     if (loading) return;
     loading = true;
     try {
       // Step 1: begin — ask the BE (→ Casdoor) for PublicKeyCredentialRequestOptions.
-      // No username → discoverable login (passkey-only, the OS prompts for
-      // which passkey to use).
+      // Forward the username when typed → Casdoor takes the non-discoverable
+      // path (the discoverable credential lookup is broken on Postgres).
       const beginResp = await apiFetch("/api/v1/auth/webauthn/signin/begin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(username?.trim() ? { username: username.trim() } : {}),
       });
 
       if (!beginResp.ok) {
         const err = await beginResp.json();
-        pushNotification({ ...err, toast: false });
+        pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
@@ -78,7 +99,7 @@
 
       if (!finishResp.ok) {
         const err = await finishResp.json();
-        pushNotification({ ...err, toast: false });
+        pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
@@ -97,7 +118,7 @@
       console.error("[Passkey Signin Error]", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("login.passkey.error"),
+        message: $t("app.auth.login.passkey.error"),
         scope: "auth",
       });
       onerror?.();
@@ -119,5 +140,5 @@
   {:else}
     <Fingerprint class="size-4 mr-2" />
   {/if}
-  {$t("login.passkey.button")}
+  {$t("app.auth.login.passkey.button")}
 </Button>
