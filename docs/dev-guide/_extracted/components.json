@@ -5148,7 +5148,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      edit?: boolean;\n      duplicate?: boolean;\n      preview?: boolean;\n      delete?: boolean;\n      restore?: boolean;\n      versionHistory?: boolean;\n    }",
+          "type": "{\r\n      edit?: boolean;\r\n      duplicate?: boolean;\r\n      preview?: boolean;\r\n      delete?: boolean;\r\n      restore?: boolean;\r\n      versionHistory?: boolean;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -6514,7 +6514,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      edit?: boolean;\n      duplicate?: boolean;\n      preview?: boolean;\n      delete?: boolean;\n    }",
+          "type": "{\r\n      edit?: boolean;\r\n      duplicate?: boolean;\r\n      preview?: boolean;\r\n      delete?: boolean;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -14379,7 +14379,7 @@
         {
           "name": "rowRangeSelection",
           "kind": "let",
-          "type": "{\n      state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };\n      onRowRangeMouseDown: (index: number, e: MouseEvent) => void;\n    }",
+          "type": "{\r\n      state: { rowRangeMouseDown: boolean; rangeDragActive: boolean };\r\n      onRowRangeMouseDown: (index: number, e: MouseEvent) => void;\r\n    }",
           "typeSource": "typescript",
           "isFunction": true,
           "isFunctionDeclaration": false,
@@ -14463,7 +14463,7 @@
         {
           "name": "previewPanel",
           "kind": "let",
-          "type": "{\n      focusedRowIndex: number | null;\n    }",
+          "type": "{\r\n      focusedRowIndex: number | null;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -14631,7 +14631,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      duplicate?: boolean;\n      delete?: boolean;\n      edit?: boolean;\n      preview?: boolean;\n    }",
+          "type": "{\r\n      duplicate?: boolean;\r\n      delete?: boolean;\r\n      edit?: boolean;\r\n      preview?: boolean;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -15525,7 +15525,7 @@
         {
           "name": "stickyColumnsState",
           "kind": "let",
-          "type": "{\n      checkboxHeadRef: HTMLTableCellElement | null;\n      state: { stickyLeftOffsets: Record<string, number> };\n      stickyRef: any;\n    }",
+          "type": "{\r\n      checkboxHeadRef: HTMLTableCellElement | null;\r\n      state: { stickyLeftOffsets: Record<string, number> };\r\n      stickyRef: any;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -15840,7 +15840,7 @@
         {
           "name": "previewPanel",
           "kind": "let",
-          "type": "{\n      state: {\n        previewPanelOpen: boolean;\n        previewRow: TRow | null;\n      };\n      openPreview: (row: TRow) => void;\n      closePreview: () => void;\n    }",
+          "type": "{\r\n      state: {\r\n        previewPanelOpen: boolean;\r\n        previewRow: TRow | null;\r\n      };\r\n      openPreview: (row: TRow) => void;\r\n      closePreview: () => void;\r\n    }",
           "typeSource": "typescript",
           "isFunction": true,
           "isFunctionDeclaration": false,
@@ -16164,7 +16164,7 @@
         {
           "name": "stickyColumnsState",
           "kind": "let",
-          "type": "{\n      state: { stickyLeftOffsets: Record<string, number> };\n      stickyRef: any;\n    }",
+          "type": "{\r\n      state: { stickyLeftOffsets: Record<string, number> };\r\n      stickyRef: any;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -16248,7 +16248,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      edit?: boolean;\n      duplicate?: boolean;\n      preview?: boolean;\n      delete?: boolean;\n      restore?: boolean;\n      versionHistory?: boolean;\n      custom_actions?: Array<{\n        action_name: string;\n        translation_key: string;\n        icon: string;\n        text_color?: string;\n        disabled_when_deleted?: boolean;\n        required_permission?: string | string[];\n      }>;\n    }",
+          "type": "{\r\n      edit?: boolean;\r\n      duplicate?: boolean;\r\n      preview?: boolean;\r\n      delete?: boolean;\r\n      restore?: boolean;\r\n      versionHistory?: boolean;\r\n      custom_actions?: Array<{\r\n        action_name: string;\r\n        translation_key: string;\r\n        icon: string;\r\n        text_color?: string;\r\n        disabled_when_deleted?: boolean;\r\n        required_permission?: string | string[];\r\n      }>;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -16290,7 +16290,7 @@
         {
           "name": "previewPanel",
           "kind": "let",
-          "type": "{\n      focusedRowIndex: number | null;\n    }",
+          "type": "{\r\n      focusedRowIndex: number | null;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -23775,6 +23775,168 @@
     }
   },
   {
+    "file": "src/lib/components/jobs/JobEntityTable.svelte",
+    "component": "JobEntityTable",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 113,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "list",
+          "kind": "let",
+          "type": "EntityListState<TRow>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "runStats",
+          "kind": "let",
+          "type": "Record<string, RunStatsBucket[]>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 27,
+              "column": 4
+            },
+            "end": {
+              "line": 27,
+              "column": 12
+            }
+          }
+        },
+        {
+          "name": "bucketUnit",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 14
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": [
+        "TRow",
+        "TRow extends Record<string, unknown>"
+      ],
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/jobs/RunStatsSparkline.svelte",
+    "component": "RunStatsSparkline",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 85,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "buckets",
+          "kind": "let",
+          "type": "RunStatsBucket[] | undefined",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 22,
+              "column": 4
+            },
+            "end": {
+              "line": 22,
+              "column": 11
+            }
+          }
+        },
+        {
+          "name": "bucketUnit",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 14
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/LangSelect.svelte",
     "component": "LangSelect",
     "data": {
@@ -26258,6 +26420,109 @@
           }
         }
       ]
+    }
+  },
+  {
+    "file": "src/lib/components/ui/bot-icon/bot-icon.svelte",
+    "component": "bot-icon",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 55,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "size",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "24",
+          "defaultValue": {
+            "raw": "24",
+            "kind": "literal",
+            "value": 24
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 8
+            },
+            "end": {
+              "line": 23,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "stroke_width",
+          "kind": "let",
+          "type": "number",
+          "typeSource": "typescript",
+          "value": "2",
+          "defaultValue": {
+            "raw": "2",
+            "kind": "literal",
+            "value": 2
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 19
+            },
+            "end": {
+              "line": 23,
+              "column": 35
+            }
+          }
+        },
+        {
+          "name": "class",
+          "localName": "className",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 37
+            },
+            "end": {
+              "line": 23,
+              "column": 53
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
     }
   },
   {
@@ -51222,7 +51487,7 @@
           "column": 0
         },
         "end": {
-          "line": 108,
+          "line": 109,
           "column": 0
         }
       },
@@ -51241,11 +51506,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 32,
+              "line": 33,
               "column": 8
             },
             "end": {
-              "line": 32,
+              "line": 33,
               "column": 15
             }
           }
@@ -51262,11 +51527,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 32,
+              "line": 33,
               "column": 17
             },
             "end": {
-              "line": 32,
+              "line": 33,
               "column": 25
             }
           }
@@ -51514,7 +51779,7 @@
           "column": 0
         },
         "end": {
-          "line": 776,
+          "line": 820,
           "column": 0
         }
       },
@@ -51533,12 +51798,33 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 86,
+              "line": 89,
               "column": 4
             },
             "end": {
-              "line": 86,
+              "line": 89,
               "column": 16
+            }
+          }
+        },
+        {
+          "name": "assistant_key",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 90,
+              "column": 4
+            },
+            "end": {
+              "line": 90,
+              "column": 17
             }
           }
         },
@@ -51554,11 +51840,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 87,
+              "line": 91,
               "column": 4
             },
             "end": {
-              "line": 87,
+              "line": 91,
               "column": 11
             }
           }
@@ -51575,11 +51861,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 88,
+              "line": 92,
               "column": 4
             },
             "end": {
-              "line": 88,
+              "line": 92,
               "column": 13
             }
           }
@@ -51596,11 +51882,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 89,
+              "line": 93,
               "column": 4
             },
             "end": {
-              "line": 89,
+              "line": 93,
               "column": 17
             }
           }
@@ -51617,11 +51903,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 90,
+              "line": 94,
               "column": 4
             },
             "end": {
-              "line": 90,
+              "line": 94,
               "column": 21
             }
           }
@@ -51635,11 +51921,11 @@
           "slot_props": "{\n  ai: any;\n  message: any;\n  msg_idx: any;\n  is_latest: any;\n}",
           "source": {
             "start": {
-              "line": 457,
+              "line": 505,
               "column": 12
             },
             "end": {
-              "line": 462,
+              "line": 510,
               "column": 15
             }
           }
@@ -52304,7 +52590,7 @@
           "column": 0
         },
         "end": {
-          "line": 19,
+          "line": 20,
           "column": 0
         }
       },
@@ -52630,7 +52916,7 @@
           "column": 0
         },
         "end": {
-          "line": 364,
+          "line": 365,
           "column": 0
         }
       },
@@ -53617,7 +53903,7 @@
           "column": 0
         },
         "end": {
-          "line": 434,
+          "line": 435,
           "column": 0
         }
       },
