@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "module",
   "engines": {
     "node": "24"
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite dev",
     "version:auto": "node scripts/version-sync.mjs",
-    "prebuild": "node scripts/version-sync.mjs",
+    "prebuild": "node scripts/version-sync.mjs && pnpm extract-docs",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo .",
