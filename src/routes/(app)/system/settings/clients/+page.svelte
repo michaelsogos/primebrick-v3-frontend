@@ -1,0 +1,718 @@
+<script lang="ts">
+  import { t } from '$lib/i18n';
+  import { entityPageTitle } from '$lib/utils/entity-meta';
+  import { page as appPage } from '$app/state';
+  import { EntityListTable } from '$lib/components/entity-list-table';
+  import { apiFetchWithTimeout, ApiDatabaseUnavailableError, ApiUnreachableError } from '$lib/api';
+  import { extJsonParse } from '$lib/api-ext';
+  import { pushNotification } from '$lib/errors/app-errors';
+  import type { AppErrorTag } from '$lib/errors/app-errors';
+  import type { EntityMeta } from '$lib/entity-list';
+  import type { AdvancedFilter } from '$lib/entity-list/types';
+  import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
+  import {
+    defaultVisibleColumnKeys,
+    orderedColumns,
+    sanitizeVisibleKeys,
+    searchableTextColumns
+  } from '$lib/entity-list';
+  import { browser } from '$app/environment';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
+  import { onConnectivityRestored } from '$lib/app-connectivity-events';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+
+  type ClientRegistryMeta = EntityMeta;
+
+  type ClientRegistryListRow = {
+    uuid: string;
+    ua_prefix: string;
+    source: 'manual' | 'registry';
+    is_enabled: boolean;
+    created_at: string;
+    updated_at: string;
+    version: number;
+    created_by?: string;
+    updated_by?: string;
+    deleted_at?: string;
+    deleted_by?: string;
+  } & Record<string, unknown>;
+
+  type ListResponse = {
+    rows: ClientRegistryListRow[];
+    page: number;
+    page_size: number;
+    total: bigint;
+  };
+
+  let meta = $state<ClientRegistryMeta | null>(null);
+  let rows = $state<ClientRegistryListRow[]>([]);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+
+  let search = $state('');
+  let appliedSearch = $state('');
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  let sortKey = $state<string | null>(null);
+  let sortDir = $state<'asc' | 'desc'>('asc');
+
+  let page = $state(1);
+  let pageSize = $state(25);
+  let total = $state<bigint>(0n);
+
+  let filtersOpen = $state(false);
+
+  const viewMode = $derived(meta?.table?.default_view ?? 'table');
+
+  let filterValues = $state<Record<string, any>>({});
+  let advancedFilters: AdvancedFilter[] = $state([]);
+  let globalConnector: 'AND' | 'OR' = $state('AND');
+
+  let visibleKeys = $state<string[]>([]);
+  let selectedKeys = $state<string[]>([]);
+  let searchInKeys = $state<string[] | null>(null);
+  let deletionFilterMode = $state<'non_deleted' | 'deleted' | 'all'>('non_deleted');
+
+  let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
+  let datetimeIanaRenderTick = $state(0);
+
+  const storageKeyPrefix = 'pb:client_registry:list:';
+  const skVisibleKeys = `${storageKeyPrefix}visibleKeys`;
+  const skSearchInKeys = `${storageKeyPrefix}searchInKeys`;
+  const skColumnOrder = `${storageKeyPrefix}columnOrder`;
+  const skSort = `${storageKeyPrefix}sort`;
+
+  const columns = $derived(orderedColumns(meta?.columns));
+  const metaLoaded = $derived(!!meta);
+  const metaLoading = $derived(!metaLoaded && loading);
+  const rowsLoading = $derived(metaLoaded && loading);
+  const defaultSortKey = $derived(meta?.table?.default_sort?.key ?? 'uuid');
+  const defaultSortDir = $derived(meta?.table?.default_sort?.dir ?? 'asc');
+  /**
+   * Effective `search_in` keys: explicit scope wins; the default "all fields"
+   * scope is visible ∩ searchable text columns (hidden columns are excluded
+   * until the user shows them or selects them explicitly).
+   */
+  const effectiveSearchInKeys = $derived(
+    searchInKeys && searchInKeys.length
+      ? searchInKeys
+      : searchableTextColumns(columns)
+          .filter((c) => visibleKeys.includes(c.key))
+          .map((c) => c.key)
+  );
+
+  // BroadcastChannel for sync with child windows
+  useSyncChannel('primebrick_client_registry_sync', {
+    mode: 'receiver',
+    onRefresh: () => void refreshRows(),
+  });
+
+  function ensureVisibleKeys() {
+    if (visibleKeys.length === 0 && columns.length) {
+      visibleKeys = defaultVisibleColumnKeys(columns);
+      return;
+    }
+    if (!columns.length) return;
+    visibleKeys = sanitizeVisibleKeys(visibleKeys, columns);
+  }
+
+  function arrayEq(a: string[] | null, b: string[] | null): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  const metaCacheKey = '__pbClientRegistryMetaCache';
+  const metaInFlightKey = '__pbClientRegistryMetaInFlight';
+
+  function getMetaCache(): ClientRegistryMeta | null {
+    return ((globalThis as any)[metaCacheKey] ?? null) as ClientRegistryMeta | null;
+  }
+  function getMetaInFlight(): Promise<ClientRegistryMeta> | null {
+    return ((globalThis as any)[metaInFlightKey] ?? null) as Promise<ClientRegistryMeta> | null;
+  }
+  function setMetaCache(next: ClientRegistryMeta | null) {
+    (globalThis as any)[metaCacheKey] = next;
+  }
+  function setMetaInFlight(next: Promise<ClientRegistryMeta> | null) {
+    (globalThis as any)[metaInFlightKey] = next;
+  }
+
+  async function loadMeta() {
+    if (meta) return;
+    const cached = getMetaCache();
+    if (cached) {
+      meta = cached;
+      const defSort = meta.table?.default_sort;
+      if (!sortRestored && sortKey === null) {
+        sortKey = defSort?.key ?? null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
+      pageSize = meta.table?.default_page_size ?? pageSize;
+      ensureVisibleKeys();
+      return;
+    }
+    const inFlight = getMetaInFlight();
+    if (inFlight) {
+      meta = await inFlight;
+      const defSort = meta.table?.default_sort;
+      if (!sortRestored && sortKey === null) {
+        sortKey = defSort?.key ?? null;
+        sortDir = defSort?.dir ?? 'asc';
+      }
+      pageSize = meta.table?.default_page_size ?? pageSize;
+      ensureVisibleKeys();
+      return;
+    }
+
+    setMetaInFlight(
+      (async () => {
+        const metaRes = await apiFetchWithTimeout('/api/v1/entities/client_registry/meta', undefined, 30_000);
+        if (!metaRes.ok) {
+          const apiDetails = await readApiErrorDetails(metaRes);
+          const code = apiDetails.code ?? 'GET_METADATA_FAILED';
+          throw new ApiListError(code, metaRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
+        }
+        const next = (await metaRes.json()) as ClientRegistryMeta;
+        setMetaCache(next);
+        return next;
+      })()
+    );
+
+    try {
+      const p = getMetaInFlight();
+      meta = p ? await p : null;
+    } finally {
+      setMetaInFlight(null);
+    }
+
+    const m = meta as unknown as ClientRegistryMeta | null;
+    if (!m) return;
+    const defSort = m.table?.default_sort;
+    if (sortKey === null) {
+      sortKey = null;
+      sortDir = defSort?.dir ?? 'asc';
+    }
+    pageSize = m.table?.default_page_size ?? pageSize;
+    ensureVisibleKeys();
+  }
+
+  function tryRestoreListUiStateFromSession() {
+    try {
+      const rawVisible = sessionStorage.getItem(skVisibleKeys);
+      if (rawVisible) {
+        const parsed = JSON.parse(rawVisible) as unknown;
+        if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+          visibleKeys = parsed;
+        }
+      }
+
+      const rawSearchIn = sessionStorage.getItem(skSearchInKeys);
+      if (rawSearchIn) {
+        const parsed = JSON.parse(rawSearchIn) as unknown;
+        if (parsed === null) {
+          searchInKeys = null;
+        } else if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+          searchInKeys = parsed;
+        }
+      }
+
+      const rawSort = sessionStorage.getItem(skSort);
+      if (rawSort) {
+        const parsed = JSON.parse(rawSort) as unknown;
+        if (parsed && typeof parsed === 'object') {
+          const obj = parsed as { key: string | null; dir: 'asc' | 'desc' };
+          if (obj.key === null || typeof obj.key === 'string') {
+            if (obj.dir === 'asc' || obj.dir === 'desc') {
+              sortKey = obj.key;
+              sortDir = obj.dir;
+              sortRestored = true;
+            }
+          }
+        }
+      }
+    } catch {
+      // best-effort — ignore
+    }
+  }
+
+  function persistListUiStateToSession() {
+    try {
+      sessionStorage.setItem(skVisibleKeys, JSON.stringify(visibleKeys));
+      sessionStorage.setItem(skSearchInKeys, JSON.stringify(searchInKeys));
+      sessionStorage.setItem(skSort, JSON.stringify({ key: sortKey, dir: sortDir }));
+    } catch {
+      // best-effort — ignore
+    }
+  }
+
+  let activeListController: AbortController | null = null;
+  let bootstrapped = $state(false);
+
+  class ApiListError extends Error {
+    readonly status: number;
+    readonly code: string;
+    readonly internalCode?: string;
+    readonly instance?: string;
+
+    constructor(code: string, status: number, internalCode?: string, instance?: string) {
+      super(code);
+      this.code = code;
+      this.status = status;
+      this.internalCode = internalCode;
+      this.instance = instance;
+    }
+  }
+
+  async function readApiErrorDetails(res: Response): Promise<{ code: string | null; internalCode: string | null; instance: string | null; status: number | null }> {
+    try {
+      const data = (await res.json()) as { error?: unknown; title?: unknown; internal_code?: unknown; instance?: unknown; status?: unknown };
+      const code = typeof data?.error === 'string' ? data.error : typeof data?.title === 'string' ? data.title : null;
+      const internalCode = typeof data?.internal_code === 'string' ? data.internal_code : null;
+      const instance = typeof data?.instance === 'string' ? data.instance : null;
+      const status = typeof data?.status === 'number' ? data.status : res.status;
+      return { code, internalCode, instance, status };
+    } catch {
+      return { code: null, internalCode: null, instance: null, status: res.status };
+    }
+  }
+
+  function isAbortError(e: unknown): boolean {
+    return (
+      (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
+      (e instanceof Error && e.name === 'AbortError')
+    );
+  }
+
+  function asApiListError(e: unknown): { code: string; status: number | null } | null {
+    if (e instanceof ApiDatabaseUnavailableError) {
+      return { code: 'DATABASE_UNAVAILABLE', status: e.status };
+    }
+    if (e instanceof ApiUnreachableError) {
+      return { code: 'BACKEND_OFFLINE', status: e.status };
+    }
+    if (!e || typeof e !== 'object') return null;
+    const anyE = e as { name?: string; code?: string; message?: string; status?: number | null };
+    const code =
+      typeof anyE.code === 'string' ? anyE.code : typeof anyE.message === 'string' ? anyE.message : null;
+    const status = typeof anyE.status === 'number' ? anyE.status : null;
+    if (!code) return null;
+    return { code, status };
+  }
+
+  function isBackendGatewayUnreachable(code: string, status: number | null): boolean {
+    if (code === 'DATABASE_UNAVAILABLE') return false;
+    return (
+      code === 'BACKEND_OFFLINE' ||
+      (status !== null && (status === 502 || status === 503 || status === 504))
+    );
+  }
+
+  function httpTagForGatewayFailure(status: number | null): number {
+    return typeof status === 'number' ? status : 502;
+  }
+
+  function backendOfflineTags(status: number | null): AppErrorTag[] {
+    const http = httpTagForGatewayFailure(status);
+    return [
+      { label: 'BACKEND_OFFLINE', tone: 'danger' },
+      { label: `HTTP ${http}`, tone: 'danger' },
+    ];
+  }
+
+  async function loadRows() {
+    activeListController?.abort();
+    const controller = new AbortController();
+    activeListController = controller;
+
+    const qs = new SvelteURLSearchParams();
+    if (appliedSearch.trim()) qs.set('search', appliedSearch.trim());
+    if (appliedSearch.trim() && effectiveSearchInKeys.length) qs.set('search_in', effectiveSearchInKeys.join(','));
+
+    appendListFilterParams(qs, {
+      filterValues,
+      columns,
+      advancedFilters,
+      connector: globalConnector,
+    });
+
+    if (deletionFilterMode === 'deleted') {
+      qs.set('deleted_records', 'ONLY');
+    } else if (deletionFilterMode === 'all') {
+      qs.set('deleted_records', 'INCLUDED');
+    }
+
+    qs.set('page', String(page));
+    qs.set('page_size', String(pageSize));
+    const effSortKey = sortKey ?? defaultSortKey;
+    const effSortDir = sortKey ? sortDir : defaultSortDir;
+    qs.set('sort_key', effSortKey);
+    qs.set('sort_dir', effSortDir);
+
+    const listRes = await apiFetchWithTimeout(
+      `/api/v1/entities/client_registry/list?${qs.toString()}`,
+      { signal: controller.signal },
+      30_000
+    );
+    if (!listRes.ok) {
+      const apiDetails = await readApiErrorDetails(listRes);
+      const code = apiDetails.code ?? 'GET_ENTITY_LIST_FAILED';
+      throw new ApiListError(code, listRes.status, apiDetails.internalCode ?? undefined, apiDetails.instance ?? undefined);
+    }
+    const list = extJsonParse<ListResponse>(await listRes.text());
+    rows = list.rows;
+    total = list.total;
+  }
+
+  async function refreshRows(opts?: { clampPage?: boolean }) {
+    if (!bootstrapped) return;
+    loading = true;
+    error = null;
+    try {
+      await loadRows();
+      if (opts?.clampPage) {
+        const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
+        if (page > nextTotalPages) {
+          page = 1;
+          await loadRows();
+        }
+      }
+    } catch (e) {
+      if (isAbortError(e)) return;
+      const err = asApiListError(e);
+      const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+      const status = err?.status ?? null;
+
+      const isDbDown = code === 'DATABASE_UNAVAILABLE';
+      const isGateway = isBackendGatewayUnreachable(code, status);
+
+      if (isGateway) {
+        error = $t('app.serverUnreachable');
+        pushNotification({
+          impact: 'CRITICAL',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.clientsList',
+          tags: backendOfflineTags(status),
+          toast: false,
+        });
+        return;
+      }
+
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
+      const toneForImpact = 'danger';
+      const tags: AppErrorTag[] = [
+        { label: code, tone: toneForImpact },
+        ...(status !== null ? [{ label: `HTTP ${status}`, tone: toneForImpact } as const] : []),
+      ];
+      if (err instanceof ApiListError && err.internalCode) {
+        tags.push({ label: err.internalCode, tone: toneForImpact });
+      }
+      if (err instanceof ApiListError && err.instance) {
+        tags.push({ label: err.instance, tone: toneForImpact });
+      }
+      pushNotification({
+        impact: isDbDown ? 'CRITICAL' : 'HIGH',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.clientsList',
+        tags,
+        toast: false,
+      });
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function bootstrapClientsList() {
+    loading = true;
+    error = null;
+
+    tryRestoreListUiStateFromSession();
+
+    try {
+      await loadMeta();
+      await loadRows();
+      const nextTotalPages = Math.max(1, Math.ceil(Number(total) / pageSize));
+      if (page > nextTotalPages) {
+        page = 1;
+        await loadRows();
+      }
+    } catch (e) {
+      if (isAbortError(e)) return;
+
+      const err = asApiListError(e);
+      const code = err?.code ?? (e instanceof Error ? e.message : 'UNKNOWN_ERROR');
+      const status = err?.status ?? null;
+
+      const isDbDown = code === 'DATABASE_UNAVAILABLE';
+      const isGateway = isBackendGatewayUnreachable(code, status);
+
+      if (isGateway) {
+        error = $t('app.serverUnreachable');
+        pushNotification({
+          impact: 'CRITICAL',
+          messageKey: 'app.serverUnreachable',
+          scopeKey: 'app.common.errors.scope.clientsPageInit',
+          tags: backendOfflineTags(status),
+          toast: false,
+        });
+        return;
+      }
+
+      error = isDbDown ? $t('app.common.dbUnavailable') : $t('app.common.loadFailed');
+      const toneForImpact = 'danger';
+      const tags: AppErrorTag[] = [
+        { label: code, tone: toneForImpact },
+        ...(status !== null ? [{ label: `HTTP ${status}`, tone: toneForImpact } as const] : []),
+      ];
+      if (err instanceof ApiListError && err.internalCode) {
+        tags.push({ label: err.internalCode, tone: toneForImpact });
+      }
+      if (err instanceof ApiListError && err.instance) {
+        tags.push({ label: err.instance, tone: toneForImpact });
+      }
+      pushNotification({
+        impact: isDbDown ? 'CRITICAL' : 'HIGH',
+        messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+        scopeKey: 'app.common.errors.scope.clientsPageInit',
+        tags,
+        toast: false,
+      });
+    } finally {
+      loading = false;
+      bootstrapped = true;
+    }
+  }
+
+  let didInit = $state(false);
+  $effect(() => {
+    if (didInit) return;
+    didInit = true;
+    void bootstrapClientsList();
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    return onConnectivityRestored(() => {
+      void (async () => {
+        if (meta) {
+          await refreshRows();
+        } else {
+          await bootstrapClientsList();
+        }
+      })();
+    });
+  });
+
+  $effect(() => {
+    if (!columns.length) return;
+    const next = sanitizeVisibleKeys(visibleKeys, columns);
+    if (!arrayEq(next, visibleKeys)) visibleKeys = next;
+  });
+
+  let sortRestored = $state(false);
+  $effect(() => {
+    if (!metaLoaded) return;
+    void visibleKeys;
+    void searchInKeys;
+    void sortKey;
+    void sortDir;
+    persistListUiStateToSession();
+  });
+
+  function clientSearchShouldQuery(trimmed: string): boolean {
+    if (trimmed.length === 0) return false;
+    if (trimmed.length >= 3) return true;
+    let trueChars = 0;
+    let hasEscapedWildcard = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i]!;
+      const next = trimmed[i + 1];
+      if (ch === '\\' && (next === '*' || next === '?')) {
+        hasEscapedWildcard = true;
+        i++;
+        continue;
+      }
+      if (ch === '\\' && next !== undefined) {
+        trueChars++;
+        i++;
+        continue;
+      }
+      trueChars++;
+    }
+    return hasEscapedWildcard && trueChars >= 1;
+  }
+
+  function onSearchInput(v: string) {
+    search = v;
+
+    if (searchTimer) clearTimeout(searchTimer);
+
+    const trimmed = v.trim();
+    const shouldReset = trimmed.length === 0;
+    const shouldSearch = clientSearchShouldQuery(trimmed);
+    if (!shouldReset && !shouldSearch) return;
+
+    searchTimer = setTimeout(() => {
+      appliedSearch = search.trim();
+      page = 1;
+      void refreshRows({ clampPage: true });
+    }, 450);
+  }
+
+  function onSearchInKeysChange(keys: string[] | null) {
+    searchInKeys = keys;
+    if (appliedSearch.trim()) {
+      page = 1;
+      void refreshRows({ clampPage: true });
+    }
+  }
+
+  function onSortChange(key: string | null, dir: 'asc' | 'desc') {
+    sortKey = key;
+    sortDir = dir;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onPageChange(p: number) {
+    page = p;
+    void refreshRows();
+  }
+
+  function onPageSizeChange(size: number) {
+    pageSize = size;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onVisibleKeysChange(keys: string[]) {
+    visibleKeys = keys;
+  }
+
+  function onResetColumnVisibility() {
+    visibleKeys = defaultVisibleColumnKeys(columns);
+  }
+
+  function onSelectedKeysChange(keys: string[]) {
+    selectedKeys = keys;
+  }
+
+  function onFilterValuesChange(values: Record<string, any>) {
+    filterValues = values;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onAdvancedFiltersChange(filters: AdvancedFilter[], connector: 'AND' | 'OR') {
+    advancedFilters = filters;
+    globalConnector = connector;
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onResetFilters() {
+    filterValues = {};
+    advancedFilters = [];
+    page = 1;
+    void refreshRows({ clampPage: true });
+  }
+
+  function onDeletionFilterModeChange(mode: 'non_deleted' | 'deleted' | 'all') {
+    deletionFilterMode = mode;
+    void refreshRows();
+  }
+
+  function openNewClient() {
+    const url = '/system/settings/clients/create';
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
+
+  function openEditClient(row: ClientRegistryListRow) {
+    const url = `/system/settings/clients/${row.uuid}`;
+    const childWindow = window.open(url, '_blank');
+    if (childWindow) {
+      childWindow.focus();
+    } else {
+      alert('Popup bloccato dal browser! Controlla le impostazioni.');
+    }
+  }
+</script>
+
+<AppPageScaffold>
+  {#snippet header()}
+    <div class="min-w-0 space-y-1">
+      <AppPageBreadcrumb
+        segments={[
+          { label: $t('app.system') },
+          { label: $t('system.settings.title'), href: '/system/settings/profile' },
+          settingsTabMenuSegment({
+            pathname: appPage.url.pathname,
+            searchParams: appPage.url.searchParams,
+            t: (key) => $t(key)
+          })
+        ]}
+      />
+      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
+    </div>
+  {/snippet}
+
+  <EntityListTable
+    entity="client_registry"
+    bind:datetimeIanaModeByKey
+    bind:datetimeIanaRenderTick
+    uid={meta?.uid ?? 'uuid'}
+    columnOrderStorageKey={skColumnOrder}
+    columns={columns}
+    rowActionsEnabled
+    entityCustomActions={meta?.table?.row_custom_actions}
+    entityActions={meta?.actions}
+    onCreateAction={openNewClient}
+    onEditAction={openEditClient}
+    defaultView={viewMode}
+    defaultSort={meta?.table?.default_sort}
+    pageSizeOptions={meta?.table?.page_size_options}
+    selectionLabelSingularKey="system.entities.client_registry.singular"
+    selectionLabelKey="system.entities.client_registry.plural"
+    rows={rows}
+    {total}
+    {metaLoading}
+    {rowsLoading}
+    {error}
+    {page}
+    {pageSize}
+    {onPageChange}
+    {onPageSizeChange}
+    search={search}
+    {onSearchInput}
+    searchInKeys={searchInKeys}
+    {onSearchInKeysChange}
+    {sortKey}
+    {sortDir}
+    {onSortChange}
+    visibleKeys={visibleKeys}
+    {onVisibleKeysChange}
+    {onResetColumnVisibility}
+    selectedKeys={selectedKeys}
+    {onSelectedKeysChange}
+    onRefresh={() => refreshRows({ clampPage: true })}
+    bind:filtersOpen
+    {filterValues}
+    onFilterValuesChange={onFilterValuesChange}
+    onResetFilters={onResetFilters}
+    {advancedFilters}
+    onAdvancedFiltersChange={onAdvancedFiltersChange}
+    {deletionFilterMode}
+    onDeletionFilterModeChange={onDeletionFilterModeChange}
+  >
+  </EntityListTable>
+</AppPageScaffold>
