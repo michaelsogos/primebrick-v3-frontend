@@ -540,6 +540,33 @@ export async function searchDocs(params: {
   return data.results;
 }
 
+/** Ordered repo→pages tree for the in-product docs browser. `entity` is the
+ *  `metadata.entity` value used for page→doc context matching (never the
+ *  filename); `order` comes from the repo's `_order.json` manifest. */
+export interface DocsIndexEntry {
+  path: string;
+  title: string;
+  order: number | null;
+  entity?: string;
+  description?: string;
+}
+
+export interface DocsIndexRepo {
+  repo: string;
+  entries: DocsIndexEntry[];
+}
+
+export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/index', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error(`Docs index failed (${res.status})`);
+  const data = (await res.json()) as { repos: DocsIndexRepo[] };
+  return data.repos;
+}
+
 /** Full document fetch for the `docs_fetch` agent tool — the model
  *  dereferences a path seen in an excerpt and reads the whole page. */
 export async function fetchDoc(params: {

@@ -19,7 +19,8 @@ export type SheetPanelId =
   | 'shell.aiModelTestReport'
   | 'shell.aiCerebellum'
   | 'shell.aiModelImport'
-  | 'shell.aiModelCache';
+  | 'shell.aiModelCache'
+  | 'shell.docs';
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -141,6 +142,7 @@ export type SheetPanelPropsMap = {
     /** model_id → quality rank, from the compatible catalog snapshot. */
     model_ranks?: Record<string, number | null>;
   };
+  'shell.docs': Record<string, never>;
 };
 
 type AnyPanelProps = SheetPanelPropsMap[SheetPanelId];
@@ -164,6 +166,7 @@ type SheetState = {
   contentClass: string;
   keepMountedState: boolean;
   modal: boolean;
+  expanded: boolean;
 };
 
 export const sheetState = $state<SheetState>({
@@ -173,7 +176,8 @@ export const sheetState = $state<SheetState>({
   side: 'right',
   contentClass: 'p-0',
   keepMountedState: false,
-  modal: true
+  modal: true,
+  expanded: false
 });
 
 export function openSheet<T extends SheetPanelId>(
@@ -187,6 +191,7 @@ export function openSheet<T extends SheetPanelId>(
   sheetState.contentClass = options?.contentClass ?? sheetState.contentClass;
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
   sheetState.modal = options?.modal ?? true;
+  sheetState.expanded = false;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
   requestAnimationFrame(() => {
@@ -207,6 +212,7 @@ export function replaceSheet<T extends SheetPanelId>(
 
 export function closeSheet() {
   sheetState.open = false;
+  sheetState.expanded = false;
   if (sheetState.keepMountedState) return;
   // Clear on a microtask so callers can react to the closing panel id.
   queueMicrotask(() => {
@@ -214,5 +220,15 @@ export function closeSheet() {
     sheetState.panelId = null;
     sheetState.props = null;
   });
+}
+
+/**
+ * Expanded mode — a panel that opts in (e.g. the docs viewer) may widen to
+ * half the viewport. Expanded implies modal (the underlying page is covered
+ * anyway); collapsing restores the standard 384px non-modal behavior.
+ */
+export function setSheetExpanded(expanded: boolean) {
+  sheetState.expanded = expanded;
+  sheetState.modal = expanded ? true : sheetState.modal;
 }
 

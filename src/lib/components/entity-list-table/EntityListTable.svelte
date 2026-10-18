@@ -34,6 +34,7 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { setAuditColumnsContext } from './context';
+  import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
 
   import type { EntityListTableProps, CellArgs } from './types';
 
@@ -107,6 +108,10 @@
   $effect(() => {
     setAuditColumnsContext(auditingColumnsGroup);
   });
+
+  // Docs context: every entity list claims it so the docs panel resolves the
+  // entity's user-guide doc. Cleanup releases it on unmount / entity change.
+  $effect(() => claimDocsContext({ entity, mode: 'list' }));
 
   // Translation key for dynamic i18n keys (dialogs, version history).
   // Falls back to `entity` when not explicitly provided.
