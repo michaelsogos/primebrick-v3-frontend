@@ -56,13 +56,47 @@ function stripMdxDirectives(md: string): string {
     .replace(/<\/?[A-Z][A-Za-z0-9]*[^>]*>/g, '');
 }
 
+/** Docs-site base for links that point outside the KB (dev docs, site pages). */
+const DOCS_SITE_BASE = 'https://docs.primebrick.dev/en/';
+
+/**
+ * Resolve a stored KB link (`metadata.links`, namespaced `<repo>/guide/<path>`)
+ * or a `data-docpath` into a {repo, path} doc target. Namespaced links route
+ * cross-repo; bare paths stay on the current repo.
+ */
+export function resolveDocTarget(
+  link: string,
+  currentRepo: string | undefined,
+  repos: readonly { repo: string }[]
+): { repo: string; path: string } | null {
+  const clean = link.replace(/\.mdx?$/i, '');
+  const segs = clean.split('/');
+  if (segs.length >= 3 && segs[1] === 'guide' && repos.some((r) => r.repo === segs[0])) {
+    return { repo: segs[0]!, path: segs.slice(2).join('/') };
+  }
+  const repo = currentRepo ?? repos[0]?.repo;
+  return repo ? { repo, path: clean } : null;
+}
+
+/** Resolve `./`/`../` segments in a relative href against the doc's own dir. */
+function resolveRelPath(docPath: string | undefined, href: string): string {
+  if (!docPath || href.startsWith('/')) return href.replace(/^\.?\//, '');
+  const dir = docPath.split('/').slice(0, -1);
+  for (const seg of href.split('/')) {
+    if (seg === '..') dir.pop();
+    else if (seg && seg !== '.') dir.push(seg);
+  }
+  return dir.join('/');
+}
+
 /**
  * Render a KB doc to sanitized html + heading TOC.
- * `resolveDocHref` turns a relative `.mdx` href into the KB path used by
- * `data-docpath` (click → in-panel navigation); external links get
- * `target=_blank` so they leave the product in a new tab.
+ * Internal links become `data-docpath`/`data-docrepo` attributes (click →
+ * in-panel navigation handled by the host); `#` anchors become
+ * `data-docanchor`; external links get `target=_blank` so they leave the
+ * product in a new tab. `opts.docPath` anchors relative `.mdx` hrefs.
  */
-export async function renderDoc(md: string): Promise<DocsRenderResult> {
+export async function renderDoc(md: string, opts?: { docPath?: string }): Promise<DocsRenderResult> {
   const toc: DocsTocItem[] = [];
   const codeBlocks: { token: string; lang: string; code: string }[] = [];
 
@@ -88,13 +122,32 @@ export async function renderDoc(md: string): Promise<DocsRenderResult> {
         if (/^https?:\/\//i.test(href)) {
           return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
         }
-        if (/\.mdx?(#.*)?$/i.test(href)) {
-          const clean = href.replace(/\.mdx?$/i, '').replace(/^\.\//, '');
-          const [path, anchor] = clean.split('#');
-          return `<a href="#" data-docpath="${escapeHtml(path ?? '')}"${anchor ? ` data-docanchor="${escapeHtml(anchor)}"` : ''}>${text}</a>`;
-        }
         if (href.startsWith('#')) {
           return `<a href="${escapeHtml(href)}" data-docanchor="${escapeHtml(href.slice(1))}">${text}</a>`;
+        }
+        const docLink = (slug: string, repo?: string): string => {
+          const [path, anchor] = slug.replace(/\.mdx?$/i, '').split('#');
+          return (
+            `<a href="#" data-docpath="${escapeHtml(path ?? '')}"` +
+            `${repo ? ` data-docrepo="${escapeHtml(repo)}"` : ''}` +
+            `${anchor ? ` data-docanchor="${escapeHtml(anchor)}"` : ''}>${text}</a>`
+          );
+        };
+        // `/docs/user-guide/<slug>` — product-route link to a user-guide
+        // page of the same repo (the pack namespace is per-repo).
+        let m = href.match(/^\/docs\/user-guide\/([^?#]+)/);
+        if (m) return docLink(m[1]!);
+        // `/docs/<repo>/guide/<slug>` — namespaced cross-repo user-guide link.
+        m = href.match(/^\/docs\/([^/]+)\/guide\/([^?#]+)/);
+        if (m) return docLink(m[2]!, m[1]!);
+        // Other `/docs/…` (dev docs, site pages) — not in the product KB:
+        // hand off to the public docs site in a new tab.
+        m = href.match(/^\/docs\/(.+)/);
+        if (m) {
+          return `<a href="${escapeHtml(`${DOCS_SITE_BASE}${m[1]}`)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        }
+        if (/\.mdx?(#.*)?$/i.test(href) || /^\.\.?\/(?!\/)/.test(href)) {
+          return docLink(resolveRelPath(opts?.docPath, href.split('#')[0]!) + (href.includes('#') ? `#${href.split('#')[1]}` : ''));
         }
         return `<a href="${escapeHtml(href)}">${text}</a>`;
       },
@@ -130,7 +183,7 @@ export async function renderDoc(md: string): Promise<DocsRenderResult> {
   }
 
   const clean = DOMPurify.sanitize(html, {
-    ADD_ATTR: ['data-docpath', 'data-docanchor', 'target'],
+    ADD_ATTR: ['data-docpath', 'data-docrepo', 'data-docanchor', 'target'],
     ADD_TAGS: ['figure']
   });
   return { html: clean, toc };

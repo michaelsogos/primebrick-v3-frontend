@@ -43,7 +43,7 @@
       docMissing = true;
       return;
     }
-    const rendered = await renderDoc(found.content);
+    const rendered = await renderDoc(found.content, { docPath: found.path });
     doc = { repo: found.repo, path: found.path, title: found.title, html: rendered.html };
     await tick();
     if (contentEl) await hydrateMermaid(contentEl);
@@ -57,10 +57,11 @@
     const el = (e.target as HTMLElement).closest('a');
     if (!el) return;
     const docpath = el.getAttribute('data-docpath');
+    const docrepo = el.getAttribute('data-docrepo');
     const anchor = el.getAttribute('data-docanchor');
     if (docpath) {
       e.preventDefault();
-      const target = hrefFor(docRef?.repo ?? index?.[0]?.repo ?? 'backend', docpath);
+      const target = hrefFor(docrepo ?? docRef?.repo ?? index?.[0]?.repo ?? 'backend', docpath);
       void goto(resolve(target as '/')).then(() => {
         if (anchor) tick().then(() => contentEl?.querySelector(`#${CSS.escape(anchor)}`)?.scrollIntoView());
       });

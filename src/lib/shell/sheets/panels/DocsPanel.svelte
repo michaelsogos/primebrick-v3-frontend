@@ -27,7 +27,7 @@
   import { closeSheet, sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
   import * as Sheet from '$lib/components/ui/sheet';
   import { docsContext } from '$lib/shell/docs/docs-context.svelte';
-  import { renderDoc, hydrateMermaid, type DocsTocItem } from '$lib/shell/docs/docs-render';
+  import { renderDoc, hydrateMermaid, resolveDocTarget, type DocsTocItem } from '$lib/shell/docs/docs-render';
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';
   import { cn } from '$lib/utils';
   import BookOpen from '@lucide/svelte/icons/book-open';
@@ -90,7 +90,7 @@
         stack = [...stack, { kind: 'missing' }];
         return;
       }
-      const rendered = await renderDoc(doc.content);
+      const rendered = await renderDoc(doc.content, { docPath: doc.path });
       const links = Array.isArray(doc.metadata?.links)
         ? (doc.metadata.links as unknown[]).filter((l): l is string => typeof l === 'string')
         : [];
@@ -128,11 +128,12 @@
     const el = (e.target as HTMLElement).closest('a');
     if (!el) return;
     const docpath = el.getAttribute('data-docpath');
+    const docrepo = el.getAttribute('data-docrepo');
     const anchor = el.getAttribute('data-docanchor');
     if (docpath) {
       e.preventDefault();
       const path = docpath.endsWith('.mdx') ? docpath : `${docpath}.mdx`;
-      const repo = view.kind === 'doc' ? view.doc.repo : index?.[0]?.repo;
+      const repo = docrepo ?? (view.kind === 'doc' ? view.doc.repo : index?.[0]?.repo);
       if (repo) void openDoc({ repo, path }).then(() => {
         if (anchor) tick().then(() => scrollToAnchor(anchor));
       });
@@ -315,16 +316,19 @@
             </div>
             <ul class="space-y-1">
               {#each doc.links as link (link)}
-                <li>
-                  <button
-                    type="button"
-                    class="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    onclick={() => void openDoc({ repo: doc.repo, path: link.endsWith('.mdx') ? link : `${link}.mdx` })}
-                  >
-                    <FileText class="size-3.5 shrink-0" />
-                    {link.replace(/\.mdx$/i, '')}
-                  </button>
-                </li>
+                {@const target = resolveDocTarget(link, doc.repo, index ?? [])}
+                {#if target}
+                  <li>
+                    <button
+                      type="button"
+                      class="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                      onclick={() => void openDoc({ repo: target.repo, path: target.path.endsWith('.mdx') ? target.path : `${target.path}.mdx` })}
+                    >
+                      <FileText class="size-3.5 shrink-0" />
+                      {target.path.replace(/\.mdx$/i, '').split('/').pop()}
+                    </button>
+                  </li>
+                {/if}
               {/each}
             </ul>
           </div>
