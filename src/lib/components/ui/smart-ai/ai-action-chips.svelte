@@ -81,11 +81,11 @@
       variant={idx === 0 ? 'default' : 'outline'}
       disabled={pendingIdx !== null || !!done}
       onclick={() => void execute(action, idx)}
-      class="{done === 'ok'
+      class={done === 'ok'
         ? 'border-green-600/40 bg-green-500/10 text-green-700 hover:bg-green-500/10 dark:text-green-400'
         : done === 'error'
           ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/10'
-          : ''}"
+          : ''}
       data-testid="ai-action-{idx}"
       data-route={action.kind === 'navigate' ? action.route : undefined}
     >
