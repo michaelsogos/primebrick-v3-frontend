@@ -31,6 +31,9 @@
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';
   import { cn } from '$lib/utils';
   import BookOpen from '@lucide/svelte/icons/book-open';
+  import LibraryBig from '@lucide/svelte/icons/library-big';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Maximize2 from '@lucide/svelte/icons/maximize-2';
   import Minimize2 from '@lucide/svelte/icons/minimize-2';
@@ -49,7 +52,14 @@
     links: string[];
   };
 
-  type View = { kind: 'index' } | { kind: 'doc'; doc: LoadedDoc } | { kind: 'missing' };
+  type View =
+    | { kind: 'index'; scrollTop?: number }
+    | { kind: 'doc'; doc: LoadedDoc; highlight?: string; scrollTop?: number }
+    | { kind: 'missing'; scrollTop?: number };
+
+  /** Search hits grouped per doc — /docs/search returns one row per CHUNK,
+   *  so an N-chunk doc shows N identical-looking hits. */
+  type HitGroup = { repo: string; path: string; title: string; count: number; best: DocsSearchHit };
 
   let index = $state<DocsIndexRepo[] | null>(null);
   let indexError = $state<string | null>(null);
@@ -59,6 +69,8 @@
   let searchResults = $state<DocsSearchHit[] | null>(null);
   let searching = $state(false);
   let contentEl = $state<HTMLElement | null>(null);
+  let matchCount = $state(0);
+  let matchIdx = $state(-1);
   /** The context doc resolved on open — the "back to here" landmark. */
   let contextDocRef = $state<DocRef | null>(null);
 
@@ -82,7 +94,35 @@
     return null;
   }
 
-  async function openDoc(ref: DocRef, opts?: { replace?: boolean }) {
+  /** path→title lookup across every repo's index — see-also labels.
+   *  Plain object map — Svelte's reactivity rules prefer it over Map. */
+  const titleByPath = $derived.by(() => {
+    const m: Record<string, string> = {};
+    for (const r of index ?? []) {
+      for (const e of r.entries) m[`${r.repo}/${e.path.replace(/\.mdx?$/i, '')}`] = e.title;
+    }
+    return m;
+  });
+
+  function linkLabel(target: DocRef): string {
+    return titleByPath[`${target.repo}/${target.path.replace(/\.mdx?$/i, '')}`] ?? humanizePath(target.path);
+  }
+
+  function humanizePath(p: string): string {
+    const base = p.replace(/\.mdx?$/i, '').split('/').pop() ?? p;
+    return base.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  /** Persist the scroll position of the view being covered, so `goBack`
+   *  restores exactly where the user was — at any stack depth. */
+  function saveScrollTop() {
+    if (!contentEl || !stack.length) return;
+    const st = contentEl.scrollTop;
+    stack = stack.map((v, i) => (i === stack.length - 1 ? { ...v, scrollTop: st } : v));
+  }
+
+  async function openDoc(ref: DocRef, opts?: { replace?: boolean; highlight?: string }) {
+    saveScrollTop();
     loadingDoc = true;
     try {
       const doc = await fetchDoc({ repo: ref.repo, path: ref.path });
@@ -95,20 +135,22 @@
         ? (doc.metadata.links as unknown[]).filter((l): l is string => typeof l === 'string')
         : [];
       const loaded: LoadedDoc = { repo: doc.repo, path: doc.path, title: doc.title, html: rendered.html, toc: rendered.toc, links };
-      stack = opts?.replace ? [...stack.slice(0, -1), { kind: 'doc', doc: loaded }] : [...stack, { kind: 'doc', doc: loaded }];
+      const v: View = { kind: 'doc', doc: loaded, ...(opts?.highlight ? { highlight: opts.highlight } : {}) };
+      stack = opts?.replace ? [...stack.slice(0, -1), v] : [...stack, v];
     } finally {
       loadingDoc = false;
     }
   }
 
   function pushIndex() {
+    saveScrollTop();
     stack = [...stack, { kind: 'index' }];
   }
 
   function goBack() {
     if (stack.length <= 1) return;
     stack = stack.slice(0, -1);
-    contentEl?.scrollTo({ top: 0 });
+    // scroll restore is handled by the view $effect (v.scrollTop)
   }
 
   function toggleExpand() {
@@ -165,22 +207,136 @@
     }, 300);
   }
 
-  function openSearchHit(hit: DocsSearchHit) {
+  const groupedResults = $derived.by((): HitGroup[] | null => {
+    if (!searchResults) return null;
+    const byDoc: Record<string, HitGroup> = {};
+    const order: string[] = [];
+    for (const h of searchResults) {
+      const key = `${h.repo}|${h.path}`;
+      const g = byDoc[key];
+      if (g) g.count++;
+      else {
+        byDoc[key] = { repo: h.repo, path: h.path, title: h.title, count: 1, best: h };
+        order.push(key);
+      }
+    }
+    return order.map((k) => byDoc[k]!);
+  });
+
+  function openSearchHit(group: HitGroup) {
+    const q = searchQuery.trim();
     searchQuery = '';
     searchResults = null;
-    void openDoc({ repo: hit.repo, path: hit.path });
+    void openDoc({ repo: group.repo, path: group.best.path }, { highlight: q || undefined });
   }
 
   function fullPageHref(doc: LoadedDoc): string {
     return `/docs/${doc.repo}/${doc.path.replace(/\.mdx$/i, '')}`;
   }
 
-  /** Mermaid diagrams hydrate after the {@html} content mounts. */
+  // ─── Search-term highlighting (P9) ─────────────────────────────────────
+  // Highlights are applied to the LIVE DOM after DOMPurify — text nodes are
+  // split and wrapped in <mark>, never by rewriting HTML strings. Code blocks
+  // (PRE/CODE), existing marks and scripts are skipped.
+
+  function escapeRe(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function clearHighlights(root: HTMLElement) {
+    for (const mark of Array.from(root.querySelectorAll('mark.docs-search-hit'))) {
+      const parent = mark.parentNode;
+      if (!parent) continue;
+      parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark);
+      parent.normalize();
+    }
+  }
+
+  function applyHighlights(root: HTMLElement, term: string): number {
+    const container = root.querySelector('.docs-md');
+    if (!container) return 0;
+    clearHighlights(container as HTMLElement);
+    const q = term.trim();
+    if (!q) return 0;
+    // Multi-word queries ("roles permissions") highlight each term — the
+    // literal phrase almost never occurs verbatim in the doc.
+    const terms = q.split(/\s+/).filter((t) => t.length >= 2);
+    const re = new RegExp(terms.length ? terms.map(escapeRe).join('|') : escapeRe(q), 'gi');
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        (n as Text).parentElement?.closest('pre, code, script, style, mark')
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT,
+    });
+    const nodes: Text[] = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+    let count = 0;
+    for (const node of nodes) {
+      re.lastIndex = 0;
+      if (!re.test(node.data)) continue;
+      re.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(node.data))) {
+        if (m.index > last) frag.append(node.data.slice(last, m.index));
+        const mark = document.createElement('mark');
+        mark.className = 'docs-search-hit';
+        mark.textContent = m[0];
+        frag.append(mark);
+        last = m.index + m[0].length;
+        count++;
+      }
+      if (last < node.data.length) frag.append(node.data.slice(last));
+      node.replaceWith(frag);
+    }
+    return count;
+  }
+
+  function activateMatch(i: number) {
+    const hits = contentEl?.querySelectorAll('mark.docs-search-hit');
+    if (!hits?.length) return;
+    matchIdx = ((i % hits.length) + hits.length) % hits.length;
+    hits.forEach((h, j) => h.classList.toggle('docs-search-hit-active', j === matchIdx));
+    hits[matchIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearMatchMode() {
+    if (!contentEl) return;
+    clearHighlights(contentEl);
+    matchCount = 0;
+    matchIdx = -1;
+    // Keep the current scrollTop on the view — the $effect re-runs when
+    // `highlight` leaves and would otherwise reset the position to 0.
+    const st = contentEl.scrollTop;
+    stack = stack.map((v, i) => {
+      if (i !== stack.length - 1 || v.kind !== 'doc') return v;
+      return { kind: 'doc', doc: v.doc, scrollTop: st };
+    });
+  }
+
+  /** Post-mount for every view change: highlight hits + jump to the first
+   *  match when arriving from search; otherwise restore the saved scrollTop
+   *  (back navigation) or reset to top (fresh doc). Mermaid last — it swaps
+   *  placeholders, which shifts scroll positions if done earlier. */
   $effect(() => {
     const el = contentEl;
     const v = view;
-    if (!el || v.kind !== 'doc') return;
-    tick().then(() => hydrateMermaid(el));
+    if (!el) return;
+    const highlight = v.kind === 'doc' ? v.highlight : undefined;
+    const saved = v.scrollTop;
+    tick().then(async () => {
+      if (highlight) {
+        matchCount = applyHighlights(el, highlight);
+        matchIdx = -1;
+        if (matchCount) activateMatch(0);
+      } else {
+        matchCount = 0;
+        matchIdx = -1;
+        el.scrollTop = saved ?? 0;
+      }
+      if (v.kind === 'doc') await hydrateMermaid(el);
+    });
   });
 
   onMount(async () => {
@@ -245,6 +401,29 @@
         data-testid="docs-panel-search"
       />
     </div>
+    <div class="mt-1.5 flex items-center justify-between gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        onclick={pushIndex}
+        data-testid="docs-all-docs"
+      >
+        <LibraryBig class="size-3.5" />
+        {$t('app.docs.index')}
+      </button>
+      {#if view.kind === 'doc'}
+        <a
+          href={resolve(fullPageHref(view.doc) as '/')}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          data-testid="docs-view-full"
+        >
+          <ExternalLink class="size-3.5" />
+          {$t('app.docs.viewFull')}
+        </a>
+      {/if}
+    </div>
   {/snippet}
 
   <div bind:this={contentEl} class="h-full overflow-auto" onclick={onContentClick} role="presentation">
@@ -255,19 +434,26 @@
             <LoaderCircle class="size-4 animate-spin" />
             <span class="text-sm">{$t('app.docs.loading')}</span>
           </div>
-        {:else if searchResults && searchResults.length === 0}
+        {:else if groupedResults && groupedResults.length === 0}
           <p class="py-6 text-center text-sm text-muted-foreground">{$t('app.docs.noResults')}</p>
         {:else}
           <ul class="space-y-1" data-testid="docs-search-results">
-            {#each searchResults ?? [] as hit (hit.repo + hit.path + hit.chunk_idx)}
+            {#each groupedResults ?? [] as group (group.repo + group.path)}
               <li>
                 <button
                   type="button"
                   class="w-full rounded-md px-2 py-1.5 text-left hover:bg-accent"
-                  onclick={() => openSearchHit(hit)}
+                  onclick={() => openSearchHit(group)}
                 >
-                  <div class="text-sm font-medium">{hit.title}</div>
-                  <div class="text-xs text-muted-foreground">{hit.repo} · {hit.path}</div>
+                  <div class="flex items-center gap-2">
+                    <div class="min-w-0 truncate text-sm font-medium">{group.title}</div>
+                    {#if group.count > 1}
+                      <span class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground" data-testid="docs-hit-count">
+                        {$t('app.docs.more_matches', { n: group.count })}
+                      </span>
+                    {/if}
+                  </div>
+                  <div class="text-xs text-muted-foreground">{group.repo} · {group.path}</div>
                 </button>
               </li>
             {/each}
@@ -284,6 +470,47 @@
     {:else if view.kind === 'doc'}
       {@const doc = view.doc}
       <article class="p-4">
+        {#if view.highlight}
+          <div
+            class="sticky top-0 z-10 -mx-4 -mt-4 mb-3 flex items-center gap-1.5 border-b border-border bg-background/95 px-4 py-1.5 backdrop-blur"
+            data-testid="docs-match-nav"
+          >
+            <Search class="size-3.5 shrink-0 text-muted-foreground" />
+            <span class="min-w-0 truncate text-xs text-muted-foreground">{view.highlight}</span>
+            <span class="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground" data-testid="docs-match-counter">
+              {matchCount ? `${matchIdx + 1}/${matchCount}` : '0/0'}
+            </span>
+            <button
+              type="button"
+              class="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              onclick={() => activateMatch(matchIdx - 1)}
+              disabled={!matchCount}
+              title={$t('app.docs.match_prev')}
+              data-testid="docs-match-prev"
+            >
+              <ChevronUp class="size-3.5" />
+            </button>
+            <button
+              type="button"
+              class="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              onclick={() => activateMatch(matchIdx + 1)}
+              disabled={!matchCount}
+              title={$t('app.docs.match_next')}
+              data-testid="docs-match-next"
+            >
+              <ChevronDown class="size-3.5" />
+            </button>
+            <button
+              type="button"
+              class="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+              onclick={clearMatchMode}
+              title={$t('app.docs.highlight_clear')}
+              data-testid="docs-match-clear"
+            >
+              <XIcon class="size-3.5" />
+            </button>
+          </div>
+        {/if}
         <div class="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{doc.repo}</div>
         <h1 class="mb-3 text-lg font-semibold leading-tight">{doc.title}</h1>
 
@@ -322,10 +549,11 @@
                     <button
                       type="button"
                       class="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                      title={target.path}
                       onclick={() => void openDoc({ repo: target.repo, path: target.path.endsWith('.mdx') ? target.path : `${target.path}.mdx` })}
                     >
                       <FileText class="size-3.5 shrink-0" />
-                      {target.path.replace(/\.mdx$/i, '').split('/').pop()}
+                      {linkLabel(target)}
                     </button>
                   </li>
                 {/if}
@@ -334,26 +562,6 @@
           </div>
         {/if}
 
-        <div class="mt-6 flex items-center justify-between gap-2 border-t border-border pt-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            onclick={pushIndex}
-            data-testid="docs-all-docs"
-          >
-            <BookOpen class="size-3.5" />
-            {$t('app.docs.index')}
-          </button>
-          <a
-            href={resolve(fullPageHref(doc) as '/')}
-            class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            onclick={() => closeSheet()}
-            data-testid="docs-view-full"
-          >
-            <ExternalLink class="size-3.5" />
-            {$t('app.docs.viewFull')}
-          </a>
-        </div>
       </article>
     {:else}
       <!-- index view -->
@@ -477,4 +685,14 @@
     overflow-x: auto;
   }
   .docs-md :global(.docs-mermaid-diagram svg) { max-width: 100%; }
+  .docs-md :global(mark.docs-search-hit) {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 0.15rem;
+    padding: 0 0.1em;
+  }
+  .docs-md :global(mark.docs-search-hit-active) {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
 </style>

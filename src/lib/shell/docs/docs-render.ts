@@ -46,14 +46,29 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/** Convert MDX components that carry real content into markdown equivalents
+ *  BEFORE any tag stripping. `<Mermaid chart={\`…\`}/>` (multiline attribute,
+ *  chart text contains `-->` and `<br/>`) becomes a fenced ```mermaid block so
+ *  it flows through the normal code path → `.docs-mermaid` placeholder →
+ *  `hydrateMermaid`. Runs first: the generic JSX stripper would eat the
+ *  opening tag at the first `>` inside the chart and leak the diagram body
+ *  as raw text, corrupting every table/list after it (verified on rbac.mdx). */
+function mdxComponentsToMarkdown(md: string): string {
+  return md
+    .replace(/<Mermaid\s+chart=\{`([\s\S]*?)`\}\s*\/?>/g, '\n\n```mermaid\n$1\n```\n\n')
+    .replace(/<Mermaid[^>]*>\s*(?:\{`([\s\S]*?)`\}|([\s\S]*?))\s*<\/Mermaid>/g, (_m, attr, body) => `\n\n\`\`\`mermaid\n${attr ?? body}\n\`\`\`\n\n`);
+}
+
 /** Strip MDX-only syntax the KB docs may carry: import/export lines and
  *  PascalCase JSX tags (`<Callout …>…</Callout>`) — they have no meaning
- *  in-product and would leak as unknown elements after sanitization. */
+ *  in-product and would leak as unknown elements after sanitization. The tag
+ *  matcher is brace-aware: `prop={…}` groups may contain `>` (arrows, generics)
+ *  without ending the tag early. */
 function stripMdxDirectives(md: string): string {
   return md
     .replace(/^import\s[^\n]*$/gm, '')
     .replace(/^export\s[^\n]*$/gm, '')
-    .replace(/<\/?[A-Z][A-Za-z0-9]*[^>]*>/g, '');
+    .replace(/<\/?[A-Z][A-Za-z0-9]*(?:(?:\{[^{}]*\})|[^>{])*>/g, '');
 }
 
 /** Docs-site base for links that point outside the KB (dev docs, site pages). */
@@ -160,7 +175,7 @@ export async function renderDoc(md: string, opts?: { docPath?: string }): Promis
     }
   });
 
-  let html = marked.parse(stripMdxDirectives(md), { async: false }) as string;
+  let html = marked.parse(stripMdxDirectives(mdxComponentsToMarkdown(md)), { async: false }) as string;
 
   // Code blocks: shiki highlight, mermaid → placeholder for post-mount hydration.
   if (codeBlocks.length) {

@@ -79,8 +79,13 @@ test.describe("docs browser", () => {
     // TOC present on a real doc (h2/h3 headings exist in organizations.mdx).
     await expect(page.getByTestId("docs-toc")).toBeVisible({ timeout: 10000 });
 
-    // See-also links rendered from metadata.links.
-    await expect(page.getByTestId("docs-see-also")).toBeVisible({ timeout: 10000 });
+    // See-also links rendered from metadata.links — labels are page TITLES,
+    // not file paths (P2).
+    const seeAlso = page.getByTestId("docs-see-also");
+    await expect(seeAlso).toBeVisible({ timeout: 10000 });
+    const linkText = (await seeAlso.locator("button").first().innerText()).trim();
+    expect(linkText).not.toContain("/");
+    expect(linkText).not.toMatch(/\.mdx?$/);
   });
 
   test("see-also navigates in-panel and back CTA returns", async ({ page }) => {
@@ -94,14 +99,25 @@ test.describe("docs browser", () => {
     // Follow the first see-also link — stays inside the sheet.
     const seeAlso = page.getByTestId("docs-see-also").locator("button").first();
     await expect(seeAlso).toBeVisible({ timeout: 10000 });
+
+    // P3: scroll to the bottom of the doc BEFORE navigating away — back must
+    // restore this position, not land at the top.
+    const scroller = page.getByTestId("docs-content").locator('xpath=ancestor::*[contains(@class,"overflow-auto")][1]');
+    await scroller.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+    const savedScroll = await scroller.evaluate((el) => el.scrollTop);
+    expect(savedScroll).toBeGreaterThan(0);
+
     await seeAlso.click();
     const content = page.getByTestId("docs-content");
     await expect(content.locator("xpath=../h1")).not.toHaveText(firstTitle, { timeout: 15000 });
     await expect(page.getByTestId("docs-panel-back")).toBeVisible();
 
-    // Back returns to the context doc.
+    // Back returns to the context doc AND restores the saved scroll offset.
     await page.getByTestId("docs-panel-back").click();
     await expect(content.locator("xpath=../h1")).toHaveText(firstTitle, { timeout: 15000 });
+    await expect
+      .poll(async () => scroller.evaluate((el) => el.scrollTop), { timeout: 5000 })
+      .toBeGreaterThan(savedScroll * 0.5);
   });
 
   test("search hits the embedding-backed /docs/search endpoint", async ({ page }) => {
@@ -118,12 +134,29 @@ test.describe("docs browser", () => {
     const hitCount = await results.locator("button").count();
     expect(hitCount).toBeGreaterThan(0);
 
-    // Open the top hit — it lands as an in-panel doc view.
-    const hitLabel = await results.locator("button").first().locator(".text-sm").innerText();
+    // Open the top hit — it lands as an in-panel doc view with the searched
+    // term highlighted and the match navigator on top (P8+P9).
+    const hitLabel = await results.locator("button").first().locator(".text-sm").first().innerText();
     await results.locator("button").first().click();
     const content = page.getByTestId("docs-content");
     await expect(content).toBeVisible({ timeout: 15000 });
     await expect(content.locator("xpath=../h1")).toHaveText(hitLabel.trim(), { timeout: 15000 });
+
+    const nav = page.getByTestId("docs-match-nav");
+    await expect(nav).toBeVisible({ timeout: 10000 });
+    const counter = page.getByTestId("docs-match-counter");
+    await expect(counter).toHaveText(/^[1-9]\d*\/[1-9]\d*$/, { timeout: 10000 });
+    const markCount = await content.locator("mark.docs-search-hit").count();
+    expect(markCount).toBeGreaterThan(0);
+    // Next/prev walk the matches — counter tracks the active one.
+    await page.getByTestId("docs-match-next").click();
+    await expect(counter).toHaveText(/^2\/\d+$/);
+    await page.getByTestId("docs-match-prev").click();
+    await expect(counter).toHaveText(/^1\/\d+$/);
+    // Clear removes the navigator and the marks.
+    await page.getByTestId("docs-match-clear").click();
+    await expect(nav).not.toBeVisible();
+    expect(await content.locator("mark.docs-search-hit").count()).toBe(0);
   });
 
   test("index view lists repos and entries; expand toggles central mode", async ({ page }) => {
@@ -152,27 +185,43 @@ test.describe("docs browser", () => {
     });
   });
 
-  test("view-full hands off to /docs/<repo>/<path> and the route renders", async ({ page }) => {
+  test("view-full opens /docs/<repo>/<path> in a NEW focused tab (P4)", async ({ page, context }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/settings/organizations");
     await waitForShell(page);
     await openDocsPanel(page);
     await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 15000 });
 
-    const href = await page.getByTestId("docs-view-full").getAttribute("href");
+    const link = page.getByTestId("docs-view-full");
+    const href = await link.getAttribute("href");
     expect(href).toMatch(/^\/docs\/[a-z0-9_-]+\/.+/);
-    await page.getByTestId("docs-view-full").click();
+    expect(await link.getAttribute("target")).toBe("_blank");
 
-    await expect(page.getByTestId("docs-tree")).toBeVisible({ timeout: 15000 });
-    // `.docs-page > h1` — the article title, not the doc's own rendered h1.
-    await expect(page.locator(".docs-page > h1")).toBeVisible({ timeout: 15000 });
-    await expect(page).toHaveURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    const [popup] = await Promise.all([context.waitForEvent("page"), link.click()]);
+    await popup.waitForLoadState("domcontentloaded");
+    await expect(popup.getByTestId("docs-tree")).toBeVisible({ timeout: 15000 });
+    await expect(popup.locator(".docs-page > h1")).toBeVisible({ timeout: 15000 });
+    await expect(popup).toHaveURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    // The sheet stays open on the source page — no navigation happened there.
+    await expect(page.getByTestId("docs-panel-search")).toBeVisible();
+    await popup.close();
   });
 
   test("direct route load: /docs/backend/rbac renders the doc", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/docs/backend/rbac");
     await expect(page.getByTestId("docs-tree")).toBeVisible({ timeout: 15000 });
-    await expect(page.locator(".docs-page > h1")).toContainText("Roles", { timeout: 15000 });
+    const content = page.locator(".docs-page");
+    await expect(content.locator("> h1")).toContainText("Roles", { timeout: 15000 });
+
+    // P1 render fidelity on the heaviest doc (2 Mermaid JSX + tables + code):
+    // the raw MDX comes from the doc_source row — table separators must end
+    // up as <table> markup, never leak as "|---" text into the output.
+    await expect(content.locator("table")).not.toHaveCount(0);
+    const bodyText = await content.innerText();
+    expect(bodyText).not.toMatch(/\|[-\s|]*---/);
+    // Mermaid blocks hydrate to SVG (or keep the placeholder if hydration
+    // fails) — the JSX wrapper must never leak as raw text.
+    expect(bodyText).not.toMatch(/<Mermaid|chart=\{/);
   });
 });
