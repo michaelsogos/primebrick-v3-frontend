@@ -14,6 +14,7 @@
   import CircleAlert from '@lucide/svelte/icons/circle-alert'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
+  import BookOpen from '@lucide/svelte/icons/book-open'
   import Info from '@lucide/svelte/icons/info'
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import XIcon from '@lucide/svelte/icons/x';
@@ -214,6 +215,19 @@
             'M8 7h8',
           ]}
         />
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="relative"
+        aria-label={$t('app.docs.aria')}
+        title={$t('app.docs.aria')}
+        data-testid="app-topbar-docs-cta"
+        onclick={() => openSheet('shell.docs', {}, { modal: false })}
+      >
+        <BookOpen class="size-4" />
       </Button>
 
       <ThemeToggle />
