@@ -94,10 +94,17 @@ async function waitPanelPhase(page: Page, want: string): Promise<void> {
 }
 
 function parseStageJson(raw: string): unknown | null {
+  const text = raw
+    .trim()
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+  // ReAct agent turns (Thought:/Action:/Final:) are valid non-JSON stage
+  // output — the loop parses them with its own parser; don't count them as
+  // JSON failures when the capture is complete.
+  if (/^(Thought|Action|Final)\s*:/m.test(text)) return { react: true };
   try {
-    return JSON.parse(
-      raw.trim().replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim(),
-    );
+    return JSON.parse(text);
   } catch {
     return null;
   }
@@ -342,6 +349,14 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
           // target (session restore) — execution state is the real signal.
           await chip.click();
           await poll(async () => ((await chip.isDisabled()) ? true : null), "navigate chip executed", 6);
+          // Chip flips at invoke time — the client-side goto resolves after.
+          // Poll the URL instead of reading it once (session restore may
+          // leave us on an unrelated page when the click fires).
+          await poll(
+            async () => (page.url().includes(spec.expect_route_prefix as string) ? true : null),
+            `url reaches ${spec.expect_route_prefix}`,
+            12,
+          );
           log(`  navigate CTA executed; url=${page.url()}`);
           expect(page.url()).toContain(spec.expect_route_prefix);
           await page.goBack().catch(() => undefined);
