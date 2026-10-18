@@ -18,6 +18,7 @@
  *     result message; cancel path closes without a POST
  */
 import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { execSync } from "node:child_process";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
@@ -38,24 +39,53 @@ type DebugWindow = Window & {
   }>;
 };
 
-async function getSharedContext(): Promise<BrowserContext> {
+/**
+ * Kill zombie Edge processes that hold the E2E profile. Killed playwright
+ * runs leave a browser with the profile locked but a wedged CDP/renderer —
+ * the next launch then exits instantly ("opening in existing browser
+ * session") and every evaluate hangs. These processes are test-owned.
+ */
+function killEdgeZombies(): void {
   try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
+    execSync(
+      `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='msedge.exe'\\" | Where-Object { \\$_.CommandLine -like '*pw-edge-profile*' } | ForEach-Object { Stop-Process -Id \\$_.ProcessId -Force }"`,
+      { timeout: 20_000, stdio: "ignore" },
+    );
+    log("killed zombie pw-edge-profile Edge processes");
   } catch {
-    /* launch our own */
+    /* none running or query failed — proceed */
   }
-  log("launching persistent Edge session (CDP :9333)");
+}
+
+async function launchEdge(): Promise<BrowserContext> {
+  log("launching new persistent Edge session (CDP :9333)");
   return chromium.launchPersistentContext(E2E_PROFILE, {
     channel: "msedge",
     headless: false,
     viewport: { width: 1440, height: 900 },
     args: ["--remote-debugging-port=9333"],
   });
+}
+
+async function getSharedContext(): Promise<BrowserContext> {
+  try {
+    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 15000 });
+    const ctx = browser.contexts()[0];
+    if (ctx) {
+      log("attached to running Edge session (CDP :9333)");
+      return ctx;
+    }
+  } catch {
+    /* no debug session up — launch one */
+  }
+  try {
+    return await launchEdge();
+  } catch {
+    // Singleton handoff to a zombie — kill it and retry once.
+    killEdgeZombies();
+    await new Promise((r) => setTimeout(r, 3000));
+    return launchEdge();
+  }
 }
 
 async function ensureAuth(page: Page): Promise<void> {
@@ -77,6 +107,17 @@ async function ensureAuth(page: Page): Promise<void> {
   }
   for (let i = 0; i < 12 && !(await isAuthed()); i++) await page.waitForTimeout(5000);
   await page.goto(BASE_URL);
+  // The enforcer modal ("Secure your account") can survive the DB flag when
+  // the session is restored from the persistent profile — dismiss via UI.
+  const enforcerDismiss = page.getByTestId("auth-method-enforcer-dismiss-button");
+  try {
+    await enforcerDismiss.waitFor({ state: "visible", timeout: 5000 });
+    await enforcerDismiss.click({ timeout: 5000 });
+    await enforcerDismiss.waitFor({ state: "hidden", timeout: 5000 });
+    log("MFA enforcer dismissed");
+  } catch {
+    await enforcerDismiss.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
+  }
 }
 
 async function openGuidePanel(page: Page): Promise<void> {
@@ -118,6 +159,11 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
     const context = await getSharedContext();
     const page = context.pages()[0] ?? (await context.newPage());
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") {
+        log(`console.${msg.type()}: ${msg.text().slice(0, 300)}`);
+      }
+    });
 
     // ── Intercept the MCP shim — deterministic transport, asserted body ──
     const mcpCalls: { tool: string; args: Record<string, unknown> }[] = [];
@@ -246,5 +292,18 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
     log(`cancel path clean (${mcpCalls.length - callsBeforeCancel} non-destructive preloads)`);
 
     console.log("[act-cta-calls]", JSON.stringify(mcpCalls.map((c) => c.tool)));
+  });
+
+  test("client-registry admin surface — list renders live registry rows", async () => {
+    const context = await getSharedContext();
+    const page = context.pages()[0] ?? (await context.newPage());
+    await ensureAuth(page);
+    await page.goto(`${BASE_URL}/system/settings/clients`, { waitUntil: "domcontentloaded" });
+    // The live registry (populated by service enrollment) must surface as
+    // rows in the admin list — proof the entity route + meta + list page
+    // are wired end-to-end, not just compiled.
+    await expect(page.getByText("primebrick-api/3.1.0").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("primebrick-ai/3.1.0").first()).toBeVisible({ timeout: 15_000 });
+    log("client_registry list renders live registry rows");
   });
 });
