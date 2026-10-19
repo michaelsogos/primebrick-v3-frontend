@@ -126,6 +126,11 @@
         dispose_source?.();
         return;
       }
+      // Publish the module namespace under `components.remote` — the shim's
+      // host-side snippets reach additional chunk exports (e.g. `cell_mount`)
+      // through it. Mutating the shim's components record is the documented
+      // back-channel; ctx sees the same object.
+      if (components) components.remote = mod;
       try {
         const mode = resolveMountable(mod);
         if (!mode) {
@@ -147,6 +152,9 @@
         dispose_source?.();
       } catch (e) {
         dispose_source?.();
+        // Mount failures are unexpected — keep the stack in the console for
+        // diagnostics; the user still sees the classified in-content panel.
+        console.error('[remote-page] mount failed', e);
         throw e instanceof RemoteLoadError
           ? e
           : new RemoteLoadError('mount', e instanceof Error ? e.message : String(e));

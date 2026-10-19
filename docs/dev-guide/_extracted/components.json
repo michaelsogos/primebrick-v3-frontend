@@ -24882,6 +24882,102 @@
     }
   },
   {
+    "file": "src/lib/components/remote-page/RemoteMountSlot.svelte",
+    "component": "RemoteMountSlot",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 62,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "mount_fn",
+          "kind": "let",
+          "type": "(el: HTMLElement, args: Record<string, unknown>) => unknown",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 22,
+              "column": 4
+            },
+            "end": {
+              "line": 22,
+              "column": 24
+            }
+          }
+        },
+        {
+          "name": "args",
+          "kind": "let",
+          "type": "Record<string, unknown>",
+          "typeSource": "typescript",
+          "value": "{}",
+          "defaultValue": {
+            "raw": "{}",
+            "kind": "object",
+            "value": {}
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 13
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [
+        {
+          "name": "fallback",
+          "default": false,
+          "slot_props": "Record<string, never>",
+          "source": {
+            "start": {
+              "line": 60,
+              "column": 2
+            },
+            "end": {
+              "line": 60,
+              "column": 22
+            }
+          }
+        }
+      ],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/remote-page/RemotePageErrorPanel.svelte",
     "component": "RemotePageErrorPanel",
     "data": {
@@ -25019,7 +25115,7 @@
           "column": 0
         },
         "end": {
-          "line": 222,
+          "line": 230,
           "column": 0
         }
       },

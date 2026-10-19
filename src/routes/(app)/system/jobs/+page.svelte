@@ -7,25 +7,31 @@
    * mounts it via `RemotePageMount`, passing the host-coupled surface the
    * remote cannot self-render:
    *
-   *   components.EntityListTable / AppPageScaffold / AppPageBreadcrumb
-   *     → big host trees, mounted via ctx.mount_host (separate Svelte roots)
-   *   components.default_cell / host_button
-   *     → leaf host snippets, {@render}ed inline by the remote
+   *   components.EntityListTable / AppPageBreadcrumb / Button
+   *     → host components, mounted as separate roots via ctx.mount_host
+   *   components.jobs_cell
+   *     → a HOST snippet forwarded as EntityListTable's `cell` override; it
+   *       runs inside host render so it may compose host components — it
+   *       routes `run_stats_sparkline` to <RemoteMountSlot> (the remote
+   *       mounts its own root via components.remote.cell_mount), humanizes
+   *       `duration_ms`, and defers everything else to <TableCell>
    *   components.settingsTabMenuSegment / onConnectivityRestored
    *     → host-state-bound plain functions
    *
-   * Resolution failures render an in-content error panel — the shell stays.
+   * NO snippets cross the bundle boundary — a snippet invoked under the
+   * other bundle's render reads its own `active_effect` (null) and dies;
+   * separate roots are the only safe primitive. Resolution failures render
+   * an in-content error panel — the shell stays.
    */
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import { fetchRoutesCensus, type CensusRoute } from '$lib/api';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
+  import RemoteMountSlot from '$lib/components/remote-page/RemoteMountSlot.svelte';
   import { EntityListTable, TableCell } from '$lib/components/entity-list-table';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { Button } from '$lib/components/ui/button';
-  import type { ButtonSize, ButtonVariant } from '$lib/components/ui/button';
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import { Skeleton } from '$lib/components/ui/skeleton';
@@ -36,6 +42,31 @@
 
   let decl = $state<CensusRoute | null>(null);
   let resolve_error = $state<ResolveError | null>(null);
+
+  // Shim-owned components map — RemotePageMount adds `remote` (the loaded
+  // module namespace) to this object after the chunk resolves; the jobs_cell
+  // snippet reads `components.remote.cell_mount` lazily at render time.
+  const components: Record<string, unknown> = {
+    EntityListTable,
+    AppPageBreadcrumb,
+    Button,
+    settingsTabMenuSegment,
+    onConnectivityRestored,
+    jobs_cell: jobsCell,
+  };
+
+  /** Scalable UoM for `duration_ms` — mirrors the remote's formatter. */
+  function humanizeMs(value: unknown): string {
+    const ms = Number(value ?? NaN);
+    if (!Number.isFinite(ms)) return '—';
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${String(m % 60).padStart(2, '0')}m`;
+  }
 
   async function resolveDecl() {
     resolve_error = null;
@@ -70,18 +101,7 @@
 </svelte:head>
 
 {#if decl}
-  <RemotePageMount
-    {decl}
-    components={{
-      EntityListTable,
-      AppPageScaffold,
-      AppPageBreadcrumb,
-      settingsTabMenuSegment,
-      onConnectivityRestored,
-      default_cell: defaultCell,
-      host_button: hostButton,
-    }}
-  />
+  <RemotePageMount {decl} {components} />
 {:else if resolve_error}
   <RemotePageErrorPanel
     kind={resolve_error.kind}
@@ -100,37 +120,32 @@
   </div>
 {/if}
 
-<!-- Standard cell fallback for remote `cell` overrides — renders the host
-     TableCell with the table's live IANA datetime state forwarded via
-     CellArgs (see entity-list-table/types.ts). -->
-{#snippet defaultCell({
-  row,
-  column,
-  datetimeIanaModeByKey,
-  datetimeIanaRenderTick,
-}: CellArgs<Record<string, unknown>>)}
-  <TableCell
-    {row}
-    {column}
-    datetimeIanaModeByKey={datetimeIanaModeByKey ?? {}}
-    datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0}
-  />
-{/snippet}
-
-<!-- Host button leaf — keeps module CTAs visually identical to app chrome. -->
-{#snippet hostButton(args: {
-  label: string;
-  onclick: () => void;
-  disabled?: boolean;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-})}
-  <Button
-    variant={args.variant ?? 'default'}
-    size={args.size ?? 'sm'}
-    disabled={args.disabled ?? false}
-    onclick={args.onclick}
-  >
-    {args.label}
-  </Button>
+<!-- EntityListTable `cell` override — a HOST snippet (safe: invoked under
+     the host table's render). Module-owned cell types route to the remote
+     through RemoteMountSlot; everything else is the standard host cell. -->
+{#snippet jobsCell(args: CellArgs<Record<string, unknown>>)}
+  {#if args.column.type === 'run_stats_sparkline'}
+    <RemoteMountSlot
+      mount_fn={(components.remote as { cell_mount?: (el: HTMLElement, a: Record<string, unknown>) => unknown } | undefined)?.cell_mount}
+      args={{ row: args.row, column: args.column }}
+    >
+      {#snippet fallback()}
+        <TableCell
+          row={args.row}
+          column={args.column}
+          datetimeIanaModeByKey={args.datetimeIanaModeByKey ?? {}}
+          datetimeIanaRenderTick={args.datetimeIanaRenderTick ?? 0}
+        />
+      {/snippet}
+    </RemoteMountSlot>
+  {:else if args.column.key === 'duration_ms'}
+    <span class="min-w-0 truncate">{humanizeMs(args.row.duration_ms)}</span>
+  {:else}
+    <TableCell
+      row={args.row}
+      column={args.column}
+      datetimeIanaModeByKey={args.datetimeIanaModeByKey ?? {}}
+      datetimeIanaRenderTick={args.datetimeIanaRenderTick ?? 0}
+    />
+  {/if}
 {/snippet}
