@@ -34,18 +34,24 @@ function clearLastRoute(): void {
 }
 
 function resolveModuleFromRoute(pathname: string): string | null {
+  // Longest-prefix match wins: a module declaring a specific route_prefix
+  // (e.g. job → /system/jobs) owns that page even when it sits under a
+  // broader prefix owned by another module (settings → /system). First-match
+  // would let the broad prefix swallow service-owned routes.
+  let best: { id: string; len: number } | null = null;
   for (const m of _state.modules) {
     if (!m.route_prefixes) continue;
     for (const prefix of m.route_prefixes) {
-      if (prefix === '/') {
-        if (pathname === '/') return m.id;
-      } else {
-        if (pathname === prefix || pathname.startsWith(prefix + '/')) {
-          return m.id;
-        }
+      const matches =
+        prefix === '/'
+          ? pathname === '/'
+          : pathname === prefix || pathname.startsWith(prefix + '/');
+      if (matches && (!best || prefix.length > best.len)) {
+        best = { id: m.id, len: prefix.length };
       }
     }
   }
+  if (best) return best.id;
   // No prefix matched (e.g. `/` home): the reserved module (system settings)
   // is the default — not the first module by sort order.
   return _state.modules.find((m) => m.is_reserved)?.id ?? null;

@@ -10,7 +10,10 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * RemotePageMount. These specs verify:
  *
  *   - the remote chunk mounts and renders the four job sections
- *   - the page is reachable through the settings-module sidebar link
+ *   - MODULE OWNERSHIP: /system/jobs is declared by the job service's
+ *     endpoints.nav registration — it resolves to the `job` module (longest
+ *     route_prefix match), appears in the job sidebar nav, and is NOT part
+ *     of the settings module's nav even though it lives under /system
  *   - asset delivery failures degrade to an IN-CONTENT error panel — the
  *     app shell is never replaced by the system full-page error
  *   - the error panel's retry recovers without a reload
@@ -56,18 +59,45 @@ test.describe("/system/jobs (remote module page)", () => {
     ).toBeVisible({ timeout: 30000 });
   });
 
-  test("is reachable through the settings-module sidebar link", async ({
-    page,
-  }) => {
-    // Any /system/* route activates the settings module — its nav list
-    // contains the jobs entry (module-nav-meta: id 'jobs', icon list-clock).
+  test("is owned by the job module — not by Settings", async ({ page }) => {
+    // Longest route_prefix match: /system/jobs resolves to the `job`
+    // module even though it sits under settings' broad /system prefix.
+    await page.goto("/system/jobs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(REMOTE_CONTENT)).toBeVisible({ timeout: 30000 });
+
+    // The module switcher shows the OWNING module (service display name),
+    // and its nav contains the self-declared jobs link.
+    const switcher = page.locator("button[title='Job Handler']");
+    await expect(switcher).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.locator("a[href='/system/jobs']").first(),
+    ).toBeVisible();
+
+    // Settings' nav does NOT present another module's page: under a real
+    // settings route the jobs link is absent.
     await page.goto("/system/settings/profile", {
       waitUntil: "domcontentloaded",
     });
+    await expect(page.locator("button[title='Settings']")).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.locator("a[href='/system/jobs']")).toHaveCount(0);
+  });
 
-    const jobsLink = page.locator("a[href='/system/jobs']").first();
-    await expect(jobsLink).toBeVisible({ timeout: 15000 });
-    await jobsLink.click();
+  test("is reachable through the module switcher (job module home)", async ({
+    page,
+  }) => {
+    await page.goto("/system/settings/profile", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.locator("button[title='Settings']")).toBeVisible({
+      timeout: 15000,
+    });
+
+    // Module switcher → Job Handler: its first route_prefix (/system/jobs)
+    // is the module home — selection navigates straight onto the page.
+    await page.locator("button[title='Settings']").click();
+    await page.getByRole("menuitem", { name: "Job Handler" }).click();
 
     await page.waitForURL("**/system/jobs", { timeout: 10000 });
     await expect(page.locator(REMOTE_CONTENT)).toBeVisible({ timeout: 30000 });
