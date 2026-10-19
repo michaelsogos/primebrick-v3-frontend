@@ -1,7 +1,8 @@
 import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { MetaColumn } from '$lib/entity-list/types';
+import type { MetaColumn, EntityAction } from '$lib/entity-list/types';
+import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
@@ -9,6 +10,11 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   translationKey?: () => string;
   uid: () => string;
   columns: () => MetaColumn[];
+  /** `meta.actions` — when present, write ops dispatch to their declared
+   *  `endpoint` (`{method, path}` from the BE route scan) instead of the
+   *  `/api/v1/entities/{entity}` convention. Required for entities whose
+   *  write ops live under non-standard prefixes (e.g. `/api/v1/auth/users`). */
+  actions?: () => EntityAction[] | undefined;
   onEditAction?: () => ((row: TRow) => void) | undefined;
   onRowActionComplete?: () => void;
   onRowActionError?: (error: Error) => void;
@@ -48,6 +54,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     translationKey: translationKeyFn,
     uid: uidFn,
     columns: columnsFn,
+    actions: getActions,
     onEditAction: getOnEditAction,
     onRowActionComplete,
     onRowActionError,
@@ -109,16 +116,30 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown?.();
   }
 
+  /** Declared endpoint for `op` resolved to a concrete URL for `row` —
+   *  falls back to the `/entities/{entity}` convention when absent. */
+  function resolveOpUrl(op: string, row: TRow, fallbackSuffix: string): { url: string; method: string } {
+    const ep = findActionEndpoint(getActions?.(), op);
+    if (ep) {
+      return { url: fillActionPath(ep.path, row, uidFn()), method: ep.method };
+    }
+    return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
+  }
+
   async function confirmDeleteRowImpl(row: TRow) {
-    const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
     try {
       _state.isDeleting = true;
       const uuidValue = row[uid] as string;
       const purge = usePurgeDelete?.() ? '/purge' : '';
-      await apiFetch(`${entityApiBase(entity)}/${uuidValue}${purge}?version=${(row as Record<string, unknown>).version}`, {
-        method: 'DELETE'
+      const { url, method } = resolveOpUrl(
+        usePurgeDelete?.() ? 'purge.single' : 'delete.single',
+        row,
+        `/${uuidValue}${purge}`
+      );
+      await apiFetch(`${url}?version=${(row as Record<string, unknown>).version}`, {
+        method: method || 'DELETE'
       });
       // Refresh the list after successful deletion
       getOnRefresh?.()?.();
@@ -153,14 +174,14 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   async function confirmRestoreRowImpl(row: TRow) {
-    const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
     try {
       _state.isRestoring = true;
       const uuidValue = row[uid] as string;
-      await apiFetch(`${entityApiBase(entity)}/${uuidValue}/restore?version=${(row as Record<string, unknown>).version}`, {
-        method: 'POST'
+      const { url, method } = resolveOpUrl('restore.single', row, `/${uuidValue}/restore`);
+      await apiFetch(`${url}?version=${(row as Record<string, unknown>).version}`, {
+        method: method || 'POST'
       });
       // Refresh the list after successful restore
       getOnRefresh?.()?.();
@@ -195,14 +216,14 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
   async function confirmDuplicateRowImpl(row: TRow) {
-    const entity = entityFn();
     const uid = uidFn();
     if (!row) return;
     try {
       _state.isDuplicating = true;
       const uuidValue = row[uid] as string;
-      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
-        method: 'POST',
+      const { url, method } = resolveOpUrl('duplicate.bulk', row, '/duplicate');
+      const response = await apiFetch(url, {
+        method: method || 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: [uuidValue] })
       });

@@ -1,7 +1,8 @@
 import { onMount } from 'svelte';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeletionFilterMode } from '$lib/entity-list/types';
 
-export type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+export type { DeletionFilterMode };
 
 export function useDeletionFilter(
   getUid: () => string,

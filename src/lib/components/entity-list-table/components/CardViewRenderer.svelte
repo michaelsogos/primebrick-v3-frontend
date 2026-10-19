@@ -66,7 +66,8 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
-    onPreviewRow
+    onPreviewRow,
+    handleCustomAction
   }: {
     viewMode: 'cards_list' | 'cards_grid' | 'cards';
     viewRows: TRow[];
@@ -83,6 +84,16 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
+      restore?: boolean;
+      versionHistory?: boolean;
+      custom_actions?: Array<{
+        action_name: string;
+        translation_key: string;
+        icon: string;
+        text_color?: string;
+        disabled_when_deleted?: boolean;
+        required_permission?: string | string[];
+      }>;
     };
     dropdownMenuRow: TRow | null;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
@@ -120,6 +131,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
   } = $props();
 
   // Convert 'cards' to 'cards_grid' for internal use
@@ -331,6 +343,7 @@
             onDeleteRow={onDeleteRow}
             onRestoreRow={onRestoreRow}
             onPreviewRow={onPreviewRow}
+            handleCustomAction={handleCustomAction}
             selectedKeys={selectedKeys}
           />
         {/each}

@@ -146,5 +146,6 @@
     onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
     onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
     onPreviewRow={onPreviewRow}
+    handleCustomAction={(a, r) => rowActionsComposable.handleCustomAction(a, r)}
   />
 {/if}

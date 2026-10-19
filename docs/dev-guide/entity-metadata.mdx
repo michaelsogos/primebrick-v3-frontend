@@ -135,6 +135,14 @@ entry rather than an absent op:
 - Non-standard routes (`change-password`, `check-availability`) surface as
   additional bare ops.
 
+Every enabled op also carries `endpoint` — `{ method, path }` resolved from
+the real registered route (path params use the `:param` convention, filled
+from the row's `uid` field). The frontend dispatches write ops to the
+declared endpoint, not to a guessed `/entities/{entity}/{uuid}` convention —
+this is how `user_profile` keeps read-only entity routes while its writes
+live under `/api/v1/auth/users/*`. Ops without a declared endpoint fall back
+to the entity convention base (`entityApiBase`).
+
 This is the single capability/visibility mechanism — there are no parallel
 row-action boolean flags in the schema.
 
@@ -186,6 +194,6 @@ required fields (`type_capabilities`).
 
 ## Next steps
 
-- [Entity list table](/docs/dev-guide/components/entity-list-table) — the table component driven by `columns` + `table` + `actions`
+- [Entity list table](/docs/dev-guide/components/entity-list-table) — the table component driven by `columns` + `table` + `actions` (routes normally wrap it via `EntityTablePage` — see [entity list pages](/docs/dev-guide/components/entity-list-table#route-level-usage-entitytablepage))
 - [Form page layout](/docs/dev-guide/components/form-page-layout) — form pages consuming `columns` tooltips and `display_name`
 - [API reference](/docs/dev-guide/api-reference) — full prop tables

@@ -103,7 +103,7 @@
           {@const formattedValue = (() => {
             if (Array.isArray(filter.value)) {
               return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
-            } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+            } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value) {
               const startFormatted = formatFilterDateValue(String(filter.value.start));
               const endFormatted = formatFilterDateValue(String(filter.value.end));
               return `${startFormatted} e ${endFormatted}`;

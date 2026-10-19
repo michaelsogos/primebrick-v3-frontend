@@ -111,7 +111,8 @@ For the end-user procedure see
 
 ## Users
 
-The users list (`/system/settings/users`) renders an `EntityListTable` with
+The users list (`/system/settings/users`) renders an `EntityTablePage`
+(the route-level host for `EntityListTable`) with
 row actions including edit and **change password**. The change-password
 action opens `ChangePasswordDialog`, which loads the active password policy
 and validates against it (see

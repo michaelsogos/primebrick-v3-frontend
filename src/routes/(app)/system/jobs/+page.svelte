@@ -63,6 +63,8 @@
     storageKeyPrefix: 'pb:jobs:recurring:',
     fixedFilters: [{ field: 'schedule_type', op: '=', value: 'recurring' }],
     onRowsLoaded: (rows) => void loadRunStats(rows),
+    deletionFilter: false,
+    refetchOnConnectivity: false,
   });
 
   const once = useEntityList<JobRow>({
@@ -70,16 +72,22 @@
     storageKeyPrefix: 'pb:jobs:once:',
     fixedFilters: [{ field: 'schedule_type', op: '=', value: 'once' }],
     onRowsLoaded: (rows) => void loadRunStats(rows),
+    deletionFilter: false,
+    refetchOnConnectivity: false,
   });
 
   const runs = useEntityList<JobRow>({
     basePath: `${BASE}/entities/job_run`,
     storageKeyPrefix: 'pb:jobs:runs:',
+    deletionFilter: false,
+    refetchOnConnectivity: false,
   });
 
   const rules = useEntityList<JobRow>({
     basePath: `${BASE}/entities/job_rule`,
     storageKeyPrefix: 'pb:jobs:rules:',
+    deletionFilter: false,
+    refetchOnConnectivity: false,
   });
 
   // ── manual schedule dialog ─────────────────────────────────────────

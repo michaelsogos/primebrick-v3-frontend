@@ -2,7 +2,8 @@
 // that namespace can be undefined when this barrel is evaluated, so `Tooltip.Root` throws.
 import { Root, Trigger, Provider } from "$lib/vendor/bits-ui-tooltip-exports";
 import Content from "./tooltip-content.svelte";
-import PriorityContent, { type TooltipPriority } from "./priority-tooltip-content.svelte";
+import PriorityContent from "./priority-tooltip-content.svelte";
+import type { TooltipPriority } from "@primebrick/ui";
 
 export {
 	Root,

@@ -161,6 +161,19 @@
 }
 
 /**
+ * Gradient glow shadow — sky-400 glow offset top-left → indigo-400 glow offset
+ * bottom-right, matching the PB logo gradient direction (two directional
+ * shadows simulate a gradient wash; CSS box-shadow cannot be a real gradient).
+ * EXPERIMENTAL UX test: applied only to the entity row-actions dropdown
+ * (TableRow + CardActions). Stacks with `shadow-md` (kept as the neutral base).
+ */
+@utility shadow-primary-gradient {
+  box-shadow:
+    -10px -10px 40px -10px rgb(56 189 248 / 0.45),
+    10px 10px 40px -10px rgb(129 140 248 / 0.5);
+}
+
+/**
  * Gradient ring — paints the gradient in `--gb` as a 1px border ring while
  * leaving the element's own background untouched. This is the ONLY technique
  * that allows a TRANSPARENT fill under a gradient border: the

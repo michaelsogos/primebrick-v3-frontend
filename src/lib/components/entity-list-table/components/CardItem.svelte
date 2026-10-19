@@ -33,6 +33,7 @@
     onDeleteRow,
     onRestoreRow,
     onPreviewRow,
+    handleCustomAction,
     selectedKeys
   }: {
     row: TRow;
@@ -54,6 +55,16 @@
       duplicate?: boolean;
       preview?: boolean;
       delete?: boolean;
+      restore?: boolean;
+      versionHistory?: boolean;
+      custom_actions?: Array<{
+        action_name: string;
+        translation_key: string;
+        icon: string;
+        text_color?: string;
+        disabled_when_deleted?: boolean;
+        required_permission?: string | string[];
+      }>;
     };
     dropdownMenuRow: TRow | null;
     viewMode: 'cards_list' | 'cards_grid';
@@ -67,6 +78,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     selectedKeys: string[];
   } = $props();
 </script>
@@ -128,6 +140,7 @@
         onDeleteRow={onDeleteRow}
         onRestoreRow={onRestoreRow}
         onPreviewRow={onPreviewRow}
+        handleCustomAction={handleCustomAction}
         isListMode={true}
       />
 
@@ -170,6 +183,7 @@
         onDeleteRow={onDeleteRow}
         onRestoreRow={onRestoreRow}
         onPreviewRow={onPreviewRow}
+        handleCustomAction={handleCustomAction}
         isListMode={false}
       />
     </div>

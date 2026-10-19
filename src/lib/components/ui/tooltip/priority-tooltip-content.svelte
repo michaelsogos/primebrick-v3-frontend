@@ -11,13 +11,8 @@
 	import Lightbulb from "@lucide/svelte/icons/lightbulb";
 	import BadgeCheck from "@lucide/svelte/icons/badge-check";
 
-	export type TooltipPriority =
-		| "INFORMATION"
-		| "WARNING"
-		| "ERROR"
-		| "QUESTION"
-		| "HINT"
-		| "SUCCESS";
+	// Canonical union lives in @primebrick/core — re-exported for consumers by ./index.ts.
+	import type { TooltipPriority } from '@primebrick/ui';
 
 	type Props = ContentProps & {
 		priority?: TooltipPriority;

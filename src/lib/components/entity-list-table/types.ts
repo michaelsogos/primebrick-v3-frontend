@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -16,7 +16,7 @@ export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export type ToolbarMode = 'filters' | 'bulk';
 
-export type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+export type { DeletionFilterMode };
 
 /**
  * Main props interface for EntityListTable component
@@ -43,10 +43,6 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   columns: MetaColumn[];
   /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
   columnOrderStorageKey?: string;
-  /** Session-scoped (sessionStorage) storage key for filter values. */
-  filterValuesStorageKey?: string;
-  /** Session-scoped (sessionStorage) storage key for advanced filters. */
-  advancedFiltersStorageKey?: string;
   defaultSort?: { key: string; dir: SortDir };
   /** Initial view mode from `meta.table.default_view` (defaults to 'table'). */
   defaultView?: ViewName;

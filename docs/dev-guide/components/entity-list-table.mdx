@@ -10,6 +10,12 @@ render entity lists. It is generic over a row type `TRow extends
 Record<string, unknown>` and lives in
 `src/lib/components/entity-list-table/`.
 
+**Route pages do not wire `EntityListTable` directly** — they render
+`EntityTablePage` (see [Route-level usage](#route-level-usage-entitytablepage)
+below), which owns data/state via `useEntityList` and feeds this component.
+Use `EntityListTable` directly only in composite hosts (multiple list
+instances, extra UI — e.g. `system/jobs`).
+
 ## Component overview
 
 <Mermaid chart={`flowchart TB
@@ -44,7 +50,7 @@ for two-way sync.
 
 | Group | Props |
 |-------|-------|
-| Identity | `uid`, `entity`, `translationKey`, `columnOrderStorageKey`, `filterValuesStorageKey`, `advancedFiltersStorageKey` |
+| Identity | `uid`, `entity`, `translationKey`, `columnOrderStorageKey` |
 | Columns | `columns` — the full root-level meta array via `orderedColumns(meta.columns)` |
 | Data | `rows`, `total`, `metaLoading`, `rowsLoading`, `error` |
 | Pagination | `page`, `pageSize`, `pageSizeOptions`, `onPageChange`, `onPageSizeChange` |
@@ -64,7 +70,7 @@ meta. Sticky/audited groups are derived internally from the `sticky` and
 
 ## Composable architecture
 
-Behavior is split into 18 composables under `composables/`, each following
+Behavior is split into composables under `composables/`, each following
 the composable state exposure pattern (read-only `state` getter, mutator
 functions, individual `$derived` getters).
 
@@ -74,22 +80,22 @@ functions, individual `$derived` getters).
 | `useViewMode` | `table` / `cards` / `cards_list` mode; persists to sessionStorage |
 | `useDeletionFilter` | `non_deleted` / `deleted` / `all` mode; persists to sessionStorage |
 | `useToolbarMode` | Auto-switches toolbar between `filters` and `bulk` modes |
-| `useSelection` | Basic toggle/select-all/clear logic |
 | `useClientSelection` | Selected-only view with client-side pagination |
 | `useRowRangeSelection` | Mouse-drag brush selection across rows |
-| `useFilters` | Basic filter values object |
-| `useAdvancedFilters` | Advanced filter builder with operators and AND/OR connector |
-| `useSorting` | Sort direction toggling (asc → desc → null) |
 | `useKeyboardNavigation` | Arrow keys, space, enter, escape shortcuts |
 | `useStickyColumns` | Sticky column positioning |
 | `useScrollPreservation` | Preserves scroll position across re-renders |
-| `useSheetPanelManagement` | Tracks last opened panel; coordinates with global SheetHost |
-| `useSheetPanels` | Orchestrates columns/filters/search-in panels |
+| `useSheetPanels` | Orchestrates columns/filters/search-in panels (wraps `useSheetPanelManagement`) |
 | `useDialogs` | Centralized dialog open/close state |
-| `useBulkActions` | Bulk delete/restore/duplicate via `/api/v1/entities/{entity}/bulk-*` |
-| `useRowActions` | Single-row edit/preview/delete/restore/duplicate |
-| `useExport` | XLSX/CSV export with HTML preview; `/api/v1/entities/{entity}/export` |
+| `useBulkActions` | Bulk delete/restore/duplicate; dispatch on `meta.actions[].endpoint` with `/api/v1/entities/{entity}` fallback |
+| `useRowActions` | Single-row edit/preview/delete/restore/duplicate; declared-endpoint dispatch + purge detection |
+| `useExport` | XLSX/CSV export with HTML preview via the declared `export` endpoint |
 | `usePreviewPanel` | Preview row, inline edit mode, prev/next navigation |
+
+List data/state (meta fetch, rows, search/sort/page/filter state,
+persistence, sync) is NOT a composable of this component — it is owned by
+`useEntityList`, consumed directly by `EntityTablePage` or by composite
+hosts.
 
 ## View modes
 
@@ -180,13 +186,60 @@ The default "all fields" search covers **visible ∩ searchable ∩ `text`
 columns**: hidden-by-default columns (e.g. `uuid`) are excluded until the
 user shows them or picks them explicitly in the search-scope selector.
 
+## Route-level usage — EntityTablePage
+
+`EntityTablePage` (`src/lib/components/entity-table-page/`) is the
+route-level host for the table archetype. A page is ~50 lines: config props
++ snippets, no data logic.
+
+```svelte
+<script lang="ts">
+  import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
+  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+
+  type MyRow = { uuid: string } & Record<string, unknown>;
+</script>
+
+<EntityTablePage
+  basePath="/api/v1/entities/my_entity"
+  storageKeyPrefix="pb:my-entity:list:"
+  syncChannel="primebrick_my_entity_sync"
+  errorScopeKey="app.common.errors.scope.myEntitiesList"
+  navStrategy="goto"
+  createPath="/system/my-entity/create"
+  editPath="/system/my-entity/:uuid"
+>
+  {#snippet breadcrumb()}
+    <AppPageBreadcrumb segments={[{ label: 'My entities' }]} />
+  {/snippet}
+</EntityTablePage>
+```
+
+| Group | Props |
+|-------|-------|
+| Data | `basePath` (entity API base; `/ws/<svc>/api/v1/entities/…` for module entities), `fixedFilters`, `onRowsLoaded` |
+| List behavior | `deletionFilter={false}` (no `deleted_records` param — e.g. `role_mapping`), `searchGate`, `searchDebounceMs` |
+| Persistence | `storageKeyPrefix`, `persist` (`'session'` default) + `legacyPersist` (read-only legacy medium, `'local'` default) |
+| Errors | `errorScopeKey`, `errorScopeKeyInit` |
+| Sync | `syncChannel` — legacy BroadcastChannel name (receiver mode; child form pages post `refresh`) |
+| Navigation | `navStrategy` (`'goto'` default or `'popup'` — new tab + focus), `createPath`, `editPath` (`:uuid` placeholder), `onCreateAction`/`onEditAction` overrides |
+| Row actions | `customActionHandlers` keyed by `meta.table.row_custom_actions[].action_name`, `rowActions={false}` hides the column |
+| Selection labels | `selectionLabelKey` / `selectionLabelSingularKey` / `selectionLabelText` / `selectionLabelSingularText` |
+| Snippets | `breadcrumb`, `headerExtras`, `headerActions(meta)` (page-level CTAs — gate with `isEntityOpAllowed`), `cell`, `extraDialogs(uid)`, `metaLoadingView`, `rowsLoadingView`, `emptyView`, `errorView` |
+
+Canonical examples: `system/settings/users` (popup nav + `extraDialogs`),
+`system/settings/roles` (`deletionFilter={false}`), `system/customers`
+(`headerActions` CTA). Composite host example: `system/jobs`.
+
 ## Persistence
 
 User preferences are persisted to **sessionStorage** (cleared when the tab
-closes): column order, view mode, filter values, deletion filter mode, and
-datetime IANA toggle mode. Storage keys are derived from
-`columnOrderStorageKey` / `filterValuesStorageKey` / `advancedFiltersStorageKey`
-props so each list instance has its own namespace.
+closes) — column order, view mode, search scope keys, sort, filter values,
+advanced filters, deletion filter mode, and datetime IANA toggle mode.
+`useEntityList` derives keys from `storageKeyPrefix` (e.g.
+`pb:users:list:sort`); `EntityListTable` derives its internals from
+`columnOrderStorageKey`. Legacy localStorage keys are read once as fallback
+then orphaned — never rewritten.
 
 ## Next steps
 

@@ -9,7 +9,6 @@
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import RunStatsSparkline, { type RunStatsBucket } from './RunStatsSparkline.svelte';
   import type { EntityListState } from '$lib/composables/useEntityList.svelte';
-  import type { Snippet } from 'svelte';
 
   /** Scalable UoM: 312ms → "312ms", 67000 → "1m 07s", 7.4e6 → "2h 03m". */
   function humanizeMs(ms: number): string {
@@ -32,12 +31,10 @@
     bucketUnit?: string;
   } = $props();
 
-  // Local mirrors — EntityListTable two-way binds these for IANA datetime
-  // mode; the list composable is the source of truth for reads.
+  // datetime-IANA view toggles are local view state (not persisted) — bound
+  // into the table (EntityListTable is their source of truth).
   let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
   let datetimeIanaRenderTick = $state(0);
-  $effect(() => { list.datetimeIanaModeByKey = datetimeIanaModeByKey; });
-  $effect(() => { list.datetimeIanaRenderTick = datetimeIanaRenderTick; });
 
   const meta = $derived(list.meta);
 </script>

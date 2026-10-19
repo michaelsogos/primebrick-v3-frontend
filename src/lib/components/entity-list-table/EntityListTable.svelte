@@ -10,7 +10,6 @@
     useStickyColumns,
     useScrollPreservation,
     useRowRangeSelection,
-    useFilterPersistence,
     useToolbarMode,
     useClientSelection,
     useKeyboardNavigation,
@@ -88,8 +87,6 @@
     onResetFilters,
     advancedFilters = [],
     onAdvancedFiltersChange,
-    filterValuesStorageKey,
-    advancedFiltersStorageKey,
     deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
     onDeletionFilterModeChange,
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
@@ -292,8 +289,7 @@
   const allOnPageSelected = $derived(pageKeys.length > 0 && selectedOnPageCount === pageKeys.length);
   /** Header checkbox tri-state: partial selection on current page. */
   const headerIndeterminate = $derived(selectedOnPageCount > 0 && !allOnPageSelected);
-  const actionsEnabled = $derived(!!rowActionsEnabled || !!rowActions);
-  const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
+
 
   /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
   let tableRef = $state<HTMLTableElement | null>(null);
@@ -325,14 +321,6 @@
     pageSize: () => pageSize
   });
 
-  // Filter persistence
-  const filterPersistence = useFilterPersistence({
-    uid: () => uid,
-    filterValuesStorageKey: () => filterValuesStorageKey,
-    advancedFiltersStorageKey: () => advancedFiltersStorageKey,
-    columnOrderStorageKey: () => columnOrderStorageKey
-  });
-
   // Toolbar mode
   const toolbarModeState = useToolbarMode({
     selectedKeys: () => selectedKeys,
@@ -344,6 +332,7 @@
     entity: () => entity,
     selectedKeys: () => selectedKeys,
     uid: () => uid,
+    actions: () => entityActions,
     columns: () => columns,
     search: () => search,
     searchInKeys: () => searchInKeys,
@@ -377,6 +366,7 @@
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
+    actions: () => entityActions,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
     onBulkActionStart: () => {
       // Optional: handle bulk action start
@@ -445,6 +435,23 @@
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
   }));
 
+  /** True when at least one standard or custom row action is allowed —
+   *  `restore` counts because a deleted row may show only that entry. */
+  const hasEntityRowActions = $derived(
+    effectiveRowActions.edit === true ||
+      effectiveRowActions.duplicate === true ||
+      effectiveRowActions.preview === true ||
+      effectiveRowActions.versionHistory === true ||
+      effectiveRowActions.delete === true ||
+      effectiveRowActions.restore === true ||
+      (effectiveRowActions.custom_actions?.length ?? 0) > 0
+  );
+
+  // Zero allowed row ops → no ⋮ column at all (an empty dropdown reads as
+  // broken). `rowActions` snippet keeps the column regardless (page owns it).
+  const actionsEnabled = $derived(!!rowActions || (rowActionsEnabled && hasEntityRowActions));
+  const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
+
   /** Create CTA — provided handler only effective when `create.single` is allowed. */
   const effectiveOnCreateAction = $derived(
     onCreateAction && opAllowed('create.single') ? onCreateAction : undefined
@@ -464,6 +471,7 @@
     translationKey: () => effectiveTranslationKey,
     uid: () => uid,
     columns: () => columns,
+    actions: () => entityActions,
     onEditAction: () => onEditAction,
     onRefresh: () => onRefresh,
     isRowDeleted: isRowDeleted,

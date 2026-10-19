@@ -315,9 +315,9 @@
                   </DropdownMenu.Item>
                 {/each}
               {/if}
-              {#if entityRowActions?.delete !== false}
+              {#if isRowDeleted(row) ? entityRowActions?.restore !== false : entityRowActions?.delete !== false}
                 <DropdownMenu.Separator />
-                {#if isRowDeleted(row) && entityRowActions?.restore !== false}
+                {#if isRowDeleted(row)}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                     <div class="flex items-center gap-2">
                       <span class="relative flex items-center justify-center">

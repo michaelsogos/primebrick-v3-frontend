@@ -1,13 +1,18 @@
 import { apiFetch, entityApiBase } from '$lib/api';
+import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+import type { MetaColumn, AdvancedFilter, EntityAction } from '$lib/entity-list/types';
+import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 interface ExportOptions {
   entity: () => string;
   uid: () => string;
+  /** `meta.actions` — the `export` op dispatches to its declared `endpoint`
+   *  when present instead of the `/api/v1/entities/{entity}` convention. */
+  actions?: () => EntityAction[] | undefined;
   columns: () => MetaColumn[];
   selectedKeys: () => string[];
   search?: () => string;
@@ -26,6 +31,7 @@ export function useExport(options: ExportOptions) {
   const {
     entity: entityFn,
     uid: uidFn,
+    actions: getActions,
     columns: columnsFn,
     selectedKeys: selectedKeysFn,
     search: searchFn,
@@ -113,7 +119,7 @@ export function useExport(options: ExportOptions) {
       const advancedFilters = advancedFiltersFn?.();
       const deletionFilterMode = deletionFilterModeFn?.();
 
-      const params = new URLSearchParams();
+      const params = new SvelteURLSearchParams();
       params.append('file_type', fileTypeParam);
 
       if (search) params.append('search', search);
@@ -143,7 +149,8 @@ export function useExport(options: ExportOptions) {
       }
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
-      const response = await apiFetch(`${entityApiBase(entity)}/export?${params.toString()}`);
+      const exportBase = findActionEndpoint(getActions?.(), 'export')?.path ?? `${entityApiBase(entity)}/export`;
+      const response = await apiFetch(`${exportBase}?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -154,7 +161,7 @@ export function useExport(options: ExportOptions) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${entity}-export-${new Date().toISOString().replace(/[:.]/g, '-')}.${fileTypeParam}`;
+      a.download = `${entity}-export-${new SvelteDate().toISOString().replace(/[:.]/g, '-')}.${fileTypeParam}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -191,7 +198,7 @@ export function useExport(options: ExportOptions) {
       const advancedFilters = advancedFiltersFn?.();
       const deletionFilterMode = deletionFilterModeFn?.();
 
-      const params = new URLSearchParams();
+      const params = new SvelteURLSearchParams();
       params.append('file_type', 'html');
 
       if (search) params.append('search', search);
@@ -216,7 +223,7 @@ export function useExport(options: ExportOptions) {
       }
 
       if (advancedFilters && advancedFilters.length > 0) {
-        advancedFilters.forEach((filter, idx) => {
+        advancedFilters.forEach((filter) => {
           filters[`filter[${filterIdx}].field`] = filter.field;
           filters[`filter[${filterIdx}].operator`] = filter.operator;
           filters[`filter[${filterIdx}].value`] = filter.value;
@@ -248,7 +255,8 @@ export function useExport(options: ExportOptions) {
         params.append(key, value);
       });
 
-      const response = await apiFetch(`${entityApiBase(entity)}/export?${params.toString()}`);
+      const exportBase = findActionEndpoint(getActions?.(), 'export')?.path ?? `${entityApiBase(entity)}/export`;
+      const response = await apiFetch(`${exportBase}?${params.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
