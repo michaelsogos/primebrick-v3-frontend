@@ -82,7 +82,7 @@
         <Tooltip.Content>{$t('system.entities.list.emptyField')}</Tooltip.Content>
       </Tooltip.Root>
     {:else if cell}
-      {@render cell({ row, column })}
+      {@render cell({ row, column, datetimeIanaModeByKey, datetimeIanaRenderTick })}
     {:else}
       <TableCell 
         row={row} 

@@ -3566,7 +3566,7 @@
         {
           "name": "cell",
           "default": false,
-          "slot_props": "{\n  row: Record<string, unknown>;\n  column: MetaColumn;\n}",
+          "slot_props": "{\n  row: Record<string, unknown>;\n  column: MetaColumn;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n  datetimeIanaRenderTick: number;\n}",
           "source": {
             "start": {
               "line": 85,
@@ -3574,7 +3574,7 @@
             },
             "end": {
               "line": 85,
-              "column": 37
+              "column": 84
             }
           }
         }
@@ -7454,7 +7454,7 @@
         {
           "name": "cell",
           "default": false,
-          "slot_props": "{\n  row: TRow;\n  column: MetaColumn;\n}",
+          "slot_props": "{\n  row: TRow;\n  column: MetaColumn;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n  datetimeIanaRenderTick: number;\n}",
           "source": {
             "start": {
               "line": 25,
@@ -7462,7 +7462,7 @@
             },
             "end": {
               "line": 25,
-              "column": 33
+              "column": 80
             }
           }
         }
@@ -21390,7 +21390,7 @@
         {
           "name": "cell",
           "default": false,
-          "slot_props": "{\n  row: TRow;\n  column: any;\n}",
+          "slot_props": "{\n  row: TRow;\n  column: any;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n}",
           "source": {
             "start": {
               "line": 367,
@@ -21398,7 +21398,7 @@
             },
             "end": {
               "line": 367,
-              "column": 40
+              "column": 63
             }
           }
         }
@@ -24544,168 +24544,6 @@
     }
   },
   {
-    "file": "src/lib/components/jobs/JobEntityTable.svelte",
-    "component": "JobEntityTable",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 110,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "list",
-          "kind": "let",
-          "type": "EntityListState<TRow>",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 25,
-              "column": 4
-            },
-            "end": {
-              "line": 25,
-              "column": 8
-            }
-          }
-        },
-        {
-          "name": "runStats",
-          "kind": "let",
-          "type": "Record<string, RunStatsBucket[]>",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 26,
-              "column": 4
-            },
-            "end": {
-              "line": 26,
-              "column": 12
-            }
-          }
-        },
-        {
-          "name": "bucketUnit",
-          "kind": "let",
-          "type": "string",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 27,
-              "column": 4
-            },
-            "end": {
-              "line": 27,
-              "column": 14
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": [
-        "TRow",
-        "TRow extends Record<string, unknown>"
-      ],
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
-    "file": "src/lib/components/jobs/RunStatsSparkline.svelte",
-    "component": "RunStatsSparkline",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 85,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "buckets",
-          "kind": "let",
-          "type": "RunStatsBucket[] | undefined",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 22,
-              "column": 4
-            },
-            "end": {
-              "line": 22,
-              "column": 11
-            }
-          }
-        },
-        {
-          "name": "bucketUnit",
-          "kind": "let",
-          "type": "string",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": false,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 23,
-              "column": 4
-            },
-            "end": {
-              "line": 23,
-              "column": 14
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
     "file": "src/lib/components/LangSelect.svelte",
     "component": "LangSelect",
     "data": {
@@ -24940,6 +24778,402 @@
             "end": {
               "line": 30,
               "column": 10
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/remote-page/HostMountShell.svelte",
+    "component": "HostMountShell",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 34,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "comp",
+          "kind": "let",
+          "type": "Component<Record<string, unknown>>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 14,
+              "column": 4
+            },
+            "end": {
+              "line": 14,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "initial",
+          "kind": "let",
+          "type": "Record<string, unknown>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 15,
+              "column": 4
+            },
+            "end": {
+              "line": 15,
+              "column": 11
+            }
+          }
+        },
+        {
+          "name": "update",
+          "kind": "function",
+          "type": "() => any",
+          "typeSource": "inferred",
+          "isFunction": true,
+          "isFunctionDeclaration": true,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 25,
+              "column": 2
+            },
+            "end": {
+              "line": 27,
+              "column": 3
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/remote-page/RemotePageErrorPanel.svelte",
+    "component": "RemotePageErrorPanel",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 64,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "kind",
+          "kind": "let",
+          "type": "RemoteErrorKind",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 16,
+              "column": 4
+            },
+            "end": {
+              "line": 16,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "status",
+          "kind": "let",
+          "type": "number | null",
+          "typeSource": "typescript",
+          "value": "null",
+          "defaultValue": {
+            "raw": "null",
+            "kind": "literal",
+            "value": null
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 17,
+              "column": 4
+            },
+            "end": {
+              "line": 17,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "detail",
+          "kind": "let",
+          "type": "string | null",
+          "typeSource": "typescript",
+          "value": "null",
+          "defaultValue": {
+            "raw": "null",
+            "kind": "literal",
+            "value": null
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 18,
+              "column": 4
+            },
+            "end": {
+              "line": 18,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "on_retry",
+          "kind": "let",
+          "type": "(() => void) | undefined",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 19,
+              "column": 4
+            },
+            "end": {
+              "line": 19,
+              "column": 24
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/remote-page/RemotePageMount.svelte",
+    "component": "RemotePageMount",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 222,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "decl",
+          "kind": "let",
+          "type": "PageRouteDeclaration",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 35,
+              "column": 4
+            },
+            "end": {
+              "line": 35,
+              "column": 8
+            }
+          }
+        },
+        {
+          "name": "meta",
+          "kind": "let",
+          "type": "EntityMeta",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 36,
+              "column": 4
+            },
+            "end": {
+              "line": 36,
+              "column": 20
+            }
+          }
+        },
+        {
+          "name": "components",
+          "kind": "let",
+          "type": "Record<string, unknown>",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 37,
+              "column": 4
+            },
+            "end": {
+              "line": 37,
+              "column": 26
+            }
+          }
+        },
+        {
+          "name": "service",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 38,
+              "column": 4
+            },
+            "end": {
+              "line": 38,
+              "column": 23
+            }
+          }
+        },
+        {
+          "name": "css_url",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 39,
+              "column": 4
+            },
+            "end": {
+              "line": 39,
+              "column": 23
+            }
+          }
+        },
+        {
+          "name": "loader",
+          "kind": "let",
+          "type": "typeof loadRemoteModule",
+          "typeSource": "typescript",
+          "value": "loadRemoteModule",
+          "defaultValue": {
+            "raw": "loadRemoteModule",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 40,
+              "column": 4
+            },
+            "end": {
+              "line": 40,
+              "column": 29
             }
           }
         }
@@ -42772,7 +43006,8 @@
         {
           "name": "data",
           "kind": "let",
-          "typeSource": "unknown",
+          "type": "any",
+          "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
           "isRequired": true,
@@ -42793,7 +43028,7 @@
           "name": "isNested",
           "kind": "let",
           "type": "boolean",
-          "typeSource": "default",
+          "typeSource": "typescript",
           "value": "false",
           "defaultValue": {
             "raw": "false",
@@ -42823,24 +43058,7 @@
       "typedefs": [],
       "generics": null,
       "contexts": [],
-      "diagnostics": [
-        {
-          "component": "src/lib/components/ui/JsonTableViewer.svelte",
-          "kind": "prop-unknown-type",
-          "name": "data",
-          "message": "Prop \"data\" type could not be inferred; falling back to \"any\".",
-          "source": {
-            "start": {
-              "line": 7,
-              "column": 8
-            },
-            "end": {
-              "line": 7,
-              "column": 12
-            }
-          }
-        }
-      ]
+      "diagnostics": []
     }
   },
   {
@@ -59461,7 +59679,7 @@
           "column": 0
         },
         "end": {
-          "line": 84,
+          "line": 79,
           "column": 16
         }
       },
@@ -59486,11 +59704,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 29,
+              "line": 24,
               "column": 2
             },
             "end": {
-              "line": 29,
+              "line": 24,
               "column": 23
             }
           }
@@ -59507,11 +59725,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 30,
+              "line": 25,
               "column": 2
             },
             "end": {
-              "line": 30,
+              "line": 25,
               "column": 18
             }
           }
@@ -59534,11 +59752,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 31,
+              "line": 26,
               "column": 2
             },
             "end": {
-              "line": 31,
+              "line": 26,
               "column": 16
             }
           }
@@ -59561,11 +59779,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 32,
+              "line": 27,
               "column": 2
             },
             "end": {
-              "line": 32,
+              "line": 27,
               "column": 26
             }
           }
@@ -59582,11 +59800,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 33,
+              "line": 28,
               "column": 2
             },
             "end": {
-              "line": 33,
+              "line": 28,
               "column": 7
             }
           }
@@ -59600,11 +59818,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 80,
+              "line": 75,
               "column": 4
             },
             "end": {
-              "line": 80,
+              "line": 75,
               "column": 24
             }
           }
@@ -59626,11 +59844,11 @@
           "message": "Prop \"ref\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 29,
+              "line": 24,
               "column": 2
             },
             "end": {
-              "line": 29,
+              "line": 24,
               "column": 23
             }
           }
@@ -59642,11 +59860,11 @@
           "message": "Prop \"class\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 30,
+              "line": 25,
               "column": 2
             },
             "end": {
-              "line": 30,
+              "line": 25,
               "column": 18
             }
           }

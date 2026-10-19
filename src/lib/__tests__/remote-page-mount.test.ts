@@ -8,6 +8,7 @@ import type { ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
 import { getFallbackDict, mergeModuleDict } from '../i18n';
 import { DEFAULT_LANG } from '../i18n/languages';
 import Counter from './Counter.svelte';
+import Echo from './Echo.svelte';
 
 beforeAll(() => {
 	// t() returns the raw key when the dict is empty — merge the fallback so
@@ -147,6 +148,42 @@ describe('RemotePageMount', () => {
 		expect(await screen.findByTestId('remote-inner')).toBeInTheDocument();
 		expect(screen.queryByTestId('remote-page-error')).not.toBeInTheDocument();
 		expect(calls).toBe(2);
+	});
+
+	it('ctx.mount_host mounts a host component as a separate root with reactive updates', async () => {
+		let handle: { update: (p: Record<string, unknown>) => void; destroy: () => void | Promise<void> } | null =
+			null;
+		const mountPage = (el: HTMLElement, ctx: ModulePageHost) => {
+			const slot = document.createElement('div');
+			slot.dataset.testid = 'host-slot';
+			el.appendChild(slot);
+			handle = ctx.mount_host!(Echo, slot, { value: 'initial' });
+			return undefined;
+		};
+		render(RemotePageMount, { props: { decl: DECL, loader: okLoader({ mountPage }) } });
+
+		const slot = await screen.findByTestId('host-slot');
+		expect(slot).toHaveTextContent('initial');
+		expect(screen.getByTestId('echo-value')).toBeInTheDocument();
+
+		// The imperative channel pushes props into the host root reactively.
+		handle!.update({ value: 'pushed' });
+		await waitFor(() => expect(screen.getByTestId('echo-value')).toHaveTextContent('pushed'));
+	});
+
+	it('ctx.mount_host destroy() tears down the host root', async () => {
+		let handle: { destroy: () => void | Promise<void> } | null = null;
+		const mountPage = (el: HTMLElement, ctx: ModulePageHost) => {
+			const slot = document.createElement('div');
+			el.appendChild(slot);
+			handle = ctx.mount_host!(Echo, slot, { value: 'doomed' });
+			return undefined;
+		};
+		render(RemotePageMount, { props: { decl: DECL, loader: okLoader({ mountPage }) } });
+
+		await screen.findByText('doomed');
+		await handle!.destroy();
+		await waitFor(() => expect(screen.queryByText('doomed')).not.toBeInTheDocument());
 	});
 
 	it('disposes the mounted instance on unmount', async () => {

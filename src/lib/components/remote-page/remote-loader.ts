@@ -17,8 +17,9 @@
  * | `contract`  | module exposes neither `mountPage` nor a default     |
  * | `mount`     | `mountPage()`/default mount threw (component-owned)  |
  */
-import { unmount } from 'svelte';
-import type { MountPageFn } from '@primebrick/ui';
+import { mount, unmount, type Component } from 'svelte';
+import type { HostMountHandle, MountPageFn } from '@primebrick/ui';
+import HostMountShell from './HostMountShell.svelte';
 
 /** The `esm-mount` chunk shape: preferred self-mount export, default fallback. */
 export type RemoteModule = {
@@ -215,4 +216,34 @@ export function ensureStylesheet(css_url: string): HTMLLinkElement {
 export function parseWsServiceCode(component_url: string): string | undefined {
 	const m = /^\/ws\/([^/]+)\//.exec(component_url);
 	return m?.[1];
+}
+
+/**
+ * Mount a host-compiled component as a separate Svelte root inside remote
+ * DOM — the `ModulePageHost.mount_host` implementation.
+ *
+ * Inline `<HostComp/>` inside a separately bundled remote tree cannot work:
+ * component internals (template helpers, component-context stack) live in the
+ * bundle that compiled the component. This bridge roots the component via the
+ * HOST's own `mount()` — verified empirically by the cross-bundle spike.
+ *
+ * `HostMountShell` exposes an `update()` component export, giving the remote
+ * an imperative reactive channel — no rune signals cross the boundary.
+ */
+export function mountHostComponent(
+	component: unknown,
+	el: HTMLElement,
+	props: Record<string, unknown>,
+): HostMountHandle {
+	const ref = mount(HostMountShell, {
+		target: el,
+		props: {
+			comp: component as Component<Record<string, unknown>>,
+			initial: props,
+		},
+	}) as { update: (patch: Record<string, unknown>) => void };
+	return {
+		update: (patch) => ref.update(patch),
+		destroy: () => unmount(ref),
+	};
 }

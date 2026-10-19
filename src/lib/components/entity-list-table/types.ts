@@ -4,6 +4,14 @@ import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCu
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
   column: MetaColumn;
+  /**
+   * Live IANA datetime view state owned by the table — provided so a `cell`
+   * override can forward them to the standard `TableCell` fallback. Present
+   * since remote pages supply cells from a separate Svelte bundle whose
+   * `bind:` props cannot flow back to the host table.
+   */
+  datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
+  datetimeIanaRenderTick?: number;
 };
 
 export type ColumnOrderState = {

@@ -15,11 +15,8 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { Button } from '$lib/components/ui/button';
   import { Skeleton } from '$lib/components/ui/skeleton';
-  import CloudOff from '@lucide/svelte/icons/cloud-off';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import RemotePageErrorPanel from './RemotePageErrorPanel.svelte';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import type { EntityMeta, ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
   import {
@@ -28,6 +25,7 @@
     disposeMounted,
     ensureStylesheet,
     loadRemoteModule,
+    mountHostComponent,
     parseWsServiceCode,
     resolveMountable,
     type RemoteErrorKind,
@@ -90,6 +88,7 @@
         pushNotification(input);
       },
       ...(components ? { components } : {}),
+      mount_host: mountHostComponent,
     };
   }
 
@@ -188,38 +187,12 @@
 
 <div class="flex min-h-0 flex-1 flex-col" data-testid="remote-page-mount">
   {#if phase === 'error'}
-    <div
-      class="flex flex-1 flex-col items-center justify-center p-6"
-      data-testid="remote-page-error"
-      data-error-kind={error_kind}
-    >
-      <div class="mx-4 flex max-w-lg flex-col items-center text-center">
-        {#if error_kind === 'network'}
-          <CloudOff class="size-10 text-muted-foreground/60" />
-        {:else}
-          <TriangleAlert class="size-10 text-muted-foreground/60" />
-        {/if}
-        <h2 class="mt-4 text-base font-normal" data-testid="remote-page-error-title">
-          {$t('app.remote_page.error.title')}
-        </h2>
-        <p class="mt-2 text-sm text-muted-foreground" data-testid="remote-page-error-message">
-          {$t(`app.remote_page.error.${error_kind}`)}
-        </p>
-        <p class="mt-3 font-mono text-xs text-muted-foreground/70" data-testid="remote-page-error-detail">
-          {#if error_status != null}HTTP {error_status} — {/if}{error_detail}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          class="mt-6"
-          data-testid="remote-page-retry"
-          onclick={() => void load()}
-        >
-          <RefreshCw class="size-3.5" />
-          {$t('app.remote_page.retry')}
-        </Button>
-      </div>
-    </div>
+    <RemotePageErrorPanel
+      kind={error_kind ?? 'mount'}
+      status={error_status}
+      detail={error_detail}
+      on_retry={() => void load()}
+    />
   {:else if phase === 'loading'}
     <div
       class="flex flex-1 flex-col gap-3 p-6"

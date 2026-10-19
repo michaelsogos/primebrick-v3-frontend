@@ -364,7 +364,7 @@
       <span class="text-sm font-medium break-words">{parts.text}</span>
     {/if}
   {:else if cell}
-    {@render cell({ row, column: col })}
+    {@render cell({ row, column: col, datetimeIanaModeByKey })}
   {:else}
     <span class="text-sm font-medium break-words">{formatListCellValue(col, value, $uiLang)}</span>
   {/if}
