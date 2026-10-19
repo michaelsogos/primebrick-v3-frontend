@@ -485,5 +485,14 @@
   "app.error.description.404": "The page you are looking for does not exist or was moved.",
   "app.error.description.generic": "An unexpected error occurred.",
   "app.error.return_home": "Return to home",
-  "app.error.go_back": "Go back"
+  "app.error.go_back": "Go back",
+  "app.remote_page.loading": "Loading module page…",
+  "app.remote_page.retry": "Retry",
+  "app.remote_page.error.title": "This page could not be loaded",
+  "app.remote_page.error.network": "The module service is unreachable. Check that the service is running, then retry.",
+  "app.remote_page.error.http": "The page asset could not be found on the module service, or the service rejected the request.",
+  "app.remote_page.error.integrity": "The downloaded page did not pass its integrity check and was not loaded. This may indicate a corrupted or tampered asset.",
+  "app.remote_page.error.import": "The page module was downloaded but could not be loaded by the browser.",
+  "app.remote_page.error.contract": "The page module is not compatible with this application version.",
+  "app.remote_page.error.mount": "The page failed while rendering."
 }

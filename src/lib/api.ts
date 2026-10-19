@@ -21,6 +21,7 @@ import {
   type DbMigrationStatus,
   type DbMigrationDriftResult
 } from '$lib/api-types';
+import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
@@ -658,12 +659,13 @@ export async function reindexDocsPacks(repo?: string): Promise<DocsReindexResult
   return data.results;
 }
 
-export interface CensusRoute {
-  route: string;
-  kind: 'list' | 'detail' | 'create' | 'page';
+/**
+ * Runtime FE route census entry — the canonical `PageRouteDeclaration`
+ * (carrying optional remote-delivery fields `component_url`/`component_format`/
+ * `integrity` consumed by `RemotePageMount`) plus the owning module code.
+ */
+export interface CensusRoute extends PageRouteDeclaration {
   module: string;
-  entity?: string;
-  label_key?: string;
 }
 
 /** Runtime FE route census — aggregated on the BE from module meta. */
