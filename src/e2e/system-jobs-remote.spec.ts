@@ -9,7 +9,10 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * resolves the route declaration from the routes census and mounts it via
  * RemotePageMount. These specs verify:
  *
- *   - the remote chunk mounts and renders the four job sections
+ *   - the remote chunk mounts and renders the two job sections
+ *     (schedules — scope via the meta-declared `schedule_kind` toolbar
+ *     preset — and run history); job rules live on the host-rendered
+ *     /system/jobs/rules EntityTablePage
  *   - MODULE OWNERSHIP: /system/jobs is declared by the job service's
  *     endpoints.nav registration — it resolves to the `job` module (longest
  *     route_prefix match), appears in the job sidebar nav, and is NOT part
@@ -31,7 +34,7 @@ test.describe("/system/jobs (remote module page)", () => {
     await loginAsTestAdmin(page);
   });
 
-  test("mounts the remote chunk and renders the four job sections", async ({
+  test("mounts the remote chunk and renders the two job sections", async ({
     page,
   }) => {
     await page.goto("/system/jobs", { waitUntil: "domcontentloaded" });
@@ -45,18 +48,130 @@ test.describe("/system/jobs (remote module page)", () => {
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
     await expect(page.locator(REMOTE_ERROR)).toHaveCount(0);
 
-    // Remote page chrome: title + four sections (recurring / once / rules /
-    // runs), each hosting a mount_host'd EntityListTable.
+    // Remote page chrome: title + two sections (schedules / runs), each
+    // hosting a mount_host'd EntityListTable.
     await expect(
       content.locator("h1", { hasText: /./ }).first(),
     ).toBeVisible();
-    await expect(content.locator("section")).toHaveCount(4);
+    await expect(content.locator("section")).toHaveCount(2);
 
     // At least one host-mounted entity table finishes loading (meta + rows
     // round-trips through ctx.api → /ws/job → job:3006).
     await expect(
       content.locator("table").first(),
     ).toBeVisible({ timeout: 30000 });
+  });
+
+  test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
+    page,
+  }) => {
+    const listUrls: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/entities/job_schedule/list"))
+        listUrls.push(decodeURIComponent(req.url()));
+    });
+
+    await page.goto("/system/jobs", { waitUntil: "domcontentloaded" });
+    const content = page.locator(REMOTE_CONTENT);
+    await expect(content).toBeVisible({ timeout: 30000 });
+    const schedulesSection = content.locator("section").first();
+    await expect(schedulesSection.locator("table")).toBeVisible({
+      timeout: 30000,
+    });
+
+    // Every segmented toolbar group that RENDERS options (view mode,
+    // preset, deletion filter when the entity is soft-deletable) has
+    // exactly one option active — the always-one-selected contract,
+    // asserted as an invariant. Groups with no pressed-capable children
+    // (e.g. the search-scope wrapper) are out of scope.
+    const groups = schedulesSection
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button[aria-pressed]") });
+    const groupCount = await groups.count();
+    expect(groupCount).toBeGreaterThanOrEqual(2); // view mode + schedule_kind preset
+    for (let i = 0; i < groupCount; i++) {
+      await expect(
+        groups.nth(i).locator("[aria-pressed='true']"),
+      ).toHaveCount(1);
+    }
+
+    // The default scope ANDs into every list call as filters[0].
+    const lastUrl = listUrls.at(-1) ?? "";
+    expect(lastUrl).toContain("filters[0][field]=schedule_type");
+    expect(lastUrl).toContain("filters[0][value]=recurring");
+
+    // Switching to "Once" re-queries with the new scope — and the previous
+    // option releases aria-pressed (mutually exclusive).
+    await schedulesSection
+      .locator("button[aria-pressed]")
+      .filter({
+        hasText: /once|esecuzione singola|einmalig|exécution unique|ejecución única|execução única/i,
+      })
+      .first()
+      .click();
+    await expect(async () => {
+      const u = listUrls.at(-1) ?? "";
+      expect(u).toContain("filters[0][value]=once");
+    }).toPass({ timeout: 10000 });
+
+    // "All" is the escape option — a real selection applying no condition:
+    // the request carries NO schedule_type scope filter.
+    await schedulesSection
+      .locator("button[aria-pressed]")
+      .filter({ hasText: /all|tutte|alle|toutes|todas/i })
+      .first()
+      .click();
+    await expect(async () => {
+      const u = listUrls.at(-1) ?? "";
+      expect(u).not.toContain("schedule_type");
+    }).toPass({ timeout: 10000 });
+  });
+
+  test("sparkline column is builtin — batch stats fetch + svg cells", async ({
+    page,
+  }) => {
+    const statsRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/actions/job-run-stats"))
+        statsRequests.push(req.url());
+    });
+
+    await page.goto("/system/jobs", { waitUntil: "domcontentloaded" });
+    const schedulesSection = page
+      .locator(REMOTE_CONTENT)
+      .locator("section")
+      .first();
+    await expect(schedulesSection.locator("table")).toBeVisible({
+      timeout: 30000,
+    });
+
+    // The run_stats column is meta-declared (type:"sparkline") — the engine
+    // batch-POSTs the row keys; cells render the shared SparklineBars svg.
+    await expect
+      .poll(() => statsRequests.length, { timeout: 15000 })
+      .toBeGreaterThan(0);
+    // Sparkline svg (or its empty placeholder) inside schedule rows.
+    const sparklineCells = schedulesSection.locator(
+      "td svg[aria-label='sparkline'], td span",
+    );
+    await expect(sparklineCells.first()).toBeVisible();
+  });
+
+  test("job rules live on the host-rendered /system/jobs/rules list page", async ({
+    page,
+  }) => {
+    // Declared by the job service (kind:"list", entity:"job_rule") —
+    // rendered by the standard host EntityTablePage through /ws/job.
+    await page.goto("/system/jobs/rules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    // Sidebar: the job module nav carries both links.
+    await expect(
+      page.locator("a[href='/system/jobs']").first(),
+    ).toBeVisible();
+    await expect(
+      page.locator("a[href='/system/jobs/rules']").first(),
+    ).toBeVisible();
   });
 
   test("is owned by the job module — not by Settings", async ({ page }) => {

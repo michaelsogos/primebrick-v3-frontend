@@ -47,6 +47,7 @@
     stickyColumnsState,
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
+    sparklineData,
     cell,
     rowActions,
     entityRowActions,
@@ -85,6 +86,7 @@
     };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[TableRowCellArgs]>;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
@@ -182,6 +184,7 @@
               cell={cell}
               datetimeIanaModeByKey={datetimeIanaModeByKey}
               datetimeIanaRenderTick={datetimeIanaRenderTick}
+              sparklineData={sparklineData}
             />
           </div>
         </Table.Cell>
@@ -205,6 +208,7 @@
             cell={cell}
             datetimeIanaModeByKey={datetimeIanaModeByKey}
             datetimeIanaRenderTick={datetimeIanaRenderTick}
+            sparklineData={sparklineData}
           />
         </Table.Cell>
       {/if}
@@ -227,6 +231,7 @@
           cell={cell}
           datetimeIanaModeByKey={datetimeIanaModeByKey}
           datetimeIanaRenderTick={datetimeIanaRenderTick}
+          sparklineData={sparklineData}
         />
       </Table.Cell>
     {/if}

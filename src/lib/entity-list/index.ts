@@ -5,3 +5,5 @@ export { ApiListError, readApiErrorDetails, asApiListError, isAbortError, isBack
 export { defaultSearchGate } from './search-gate';
 export { fetchEntityMeta, clearEntityMetaCache } from './meta-cache';
 export { findActionEndpoint, fillActionPath } from './action-endpoints';
+export { resolvePresetSelection, resolvePresetConditions, serviceApiBase } from '@primebrick/ui';
+export type { FilterPreset, FilterPresetOption, FilterCondition } from './types';

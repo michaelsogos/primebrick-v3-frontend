@@ -12,9 +12,8 @@
    *   components.jobs_cell
    *     → a HOST snippet forwarded as EntityListTable's `cell` override; it
    *       runs inside host render so it may compose host components — it
-   *       routes `run_stats_sparkline` to <RemoteMountSlot> (the remote
-   *       mounts its own root via components.remote.cell_mount), humanizes
-   *       `duration_ms`, and defers everything else to <TableCell>
+   *       humanizes `duration_ms` and defers everything else to <TableCell>
+   *       (`type:"sparkline"` is builtin — fed by `sparklineData`).
    *   components.settingsTabMenuSegment / onConnectivityRestored
    *     → host-state-bound plain functions
    *
@@ -28,7 +27,6 @@
   import { fetchRoutesCensus, type CensusRoute } from '$lib/api';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
-  import RemoteMountSlot from '$lib/components/remote-page/RemoteMountSlot.svelte';
   import { EntityListTable, TableCell } from '$lib/components/entity-list-table';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { Button } from '$lib/components/ui/button';
@@ -44,8 +42,7 @@
   let resolve_error = $state<ResolveError | null>(null);
 
   // Shim-owned components map — RemotePageMount adds `remote` (the loaded
-  // module namespace) to this object after the chunk resolves; the jobs_cell
-  // snippet reads `components.remote.cell_mount` lazily at render time.
+  // module namespace) to this object after the chunk resolves.
   const components: Record<string, unknown> = {
     EntityListTable,
     AppPageBreadcrumb,
@@ -121,24 +118,10 @@
 {/if}
 
 <!-- EntityListTable `cell` override — a HOST snippet (safe: invoked under
-     the host table's render). Module-owned cell types route to the remote
-     through RemoteMountSlot; everything else is the standard host cell. -->
+     the host table's render). `duration_ms` is humanized here; `sparkline`
+     columns and everything else defer to the standard host cell. -->
 {#snippet jobsCell(args: CellArgs<Record<string, unknown>>)}
-  {#if args.column.type === 'run_stats_sparkline'}
-    <RemoteMountSlot
-      mount_fn={(components.remote as { cell_mount?: (el: HTMLElement, a: Record<string, unknown>) => unknown } | undefined)?.cell_mount}
-      args={{ row: args.row, column: args.column }}
-    >
-      {#snippet fallback()}
-        <TableCell
-          row={args.row}
-          column={args.column}
-          datetimeIanaModeByKey={args.datetimeIanaModeByKey ?? {}}
-          datetimeIanaRenderTick={args.datetimeIanaRenderTick ?? 0}
-        />
-      {/snippet}
-    </RemoteMountSlot>
-  {:else if args.column.key === 'duration_ms'}
+  {#if args.column.key === 'duration_ms'}
     <span class="min-w-0 truncate">{humanizeMs(args.row.duration_ms)}</span>
   {:else}
     <TableCell
@@ -146,6 +129,7 @@
       column={args.column}
       datetimeIanaModeByKey={args.datetimeIanaModeByKey ?? {}}
       datetimeIanaRenderTick={args.datetimeIanaRenderTick ?? 0}
+      sparklineData={args.sparklineData}
     />
   {/if}
 {/snippet}

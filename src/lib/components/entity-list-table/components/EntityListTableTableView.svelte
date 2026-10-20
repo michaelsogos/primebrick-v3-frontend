@@ -43,6 +43,7 @@
     orderedSelectedRows,
     rowRangeSelection,
     datetimeIanaRenderTick,
+    sparklineData,
     rowKey,
     isRowDeleted,
     cell,
@@ -109,6 +110,7 @@
     orderedSelectedRows: TRow[];
     rowRangeSelection: any;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
     cell: any;
@@ -185,6 +187,7 @@
         selectedKeys={selectedKeys}
         rowRangeSelection={rowRangeSelection}
         datetimeIanaRenderTick={datetimeIanaRenderTick}
+        sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
         previewPanel={previewPanel}

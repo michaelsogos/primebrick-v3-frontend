@@ -4,4 +4,5 @@ export { default as DeletionFilterToggle } from './DeletionFilterToggle.svelte';
 export { default as BulkActions } from './BulkActions.svelte';
 export { default as EntityListToolbar } from './EntityListToolbar.svelte';
 export { default as FilterBar } from './FilterBar.svelte';
+export { default as FilterPresetToolbar } from './FilterPresetToolbar.svelte';
 export { default as SelectionCounter } from './SelectionCounter.svelte';

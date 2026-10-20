@@ -90,6 +90,10 @@
     onAdvancedFiltersChange,
     deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
     onDeletionFilterModeChange,
+    filterPresets = [],
+    presetSelections = {},
+    onPresetChange,
+    sparklineData = {},
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -608,6 +612,9 @@
     filterableColumns={filterableColumns}
     filtersOpen={filtersOpen}
     onFiltersOpenChange={(open) => { filtersOpen = open; }}
+    filterPresets={filterPresets}
+    presetSelections={presetSelections}
+    onPresetChange={onPresetChange}
     stickyColumnsGroup={stickyColumnsGroup}
     nonAuditingColumns={nonAuditingColumns}
     auditingColumnsGroup={auditingColumnsGroup}
@@ -652,6 +659,7 @@
     dropdownMenuRow={dropdownMenuRow}
     datetimeIanaModeByKey={datetimeIanaModeByKey}
     datetimeIanaRenderTick={datetimeIanaRenderTick}
+    sparklineData={sparklineData}
     cell={cell}
     stickyColumnsGroup={stickyColumnsGroup}
     error={error}

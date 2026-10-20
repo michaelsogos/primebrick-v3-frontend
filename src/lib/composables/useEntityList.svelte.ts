@@ -52,9 +52,12 @@ import {
   isAbortError,
   isBackendGatewayUnreachable,
   backendOfflineTags,
-  defaultSearchGate
+  defaultSearchGate,
+  resolvePresetSelection,
+  resolvePresetConditions,
+  serviceApiBase
 } from '$lib/entity-list';
-import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse } from '$lib/entity-list/types';
+import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition } from '$lib/entity-list/types';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -142,6 +145,11 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
     deletionFilterMode: 'non_deleted' as DeletionFilterMode,
 
+    /** Active option id per declared filter preset (`preset.id → option.id`). */
+    presetSelections: {} as Record<string, string>,
+    /** Batch-loaded sparkline buckets: `column.key → {by_key, bucket_unit}`. */
+    sparklineData: {} as Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>,
+
     bootstrapped: false
   });
 
@@ -169,6 +177,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   // the pre-regression era are still picked up.
   const skFilterValues = `${skColumnOrder}:filterValues`;
   const skAdvancedFilters = `${skColumnOrder}:advancedFilters`;
+  const skFilterPresets = `${opts.storageKeyPrefix}filterPresets`;
 
   // ── persistence (canonical medium + legacy read fallback) ────────────
 
@@ -253,6 +262,13 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           _state.advancedFilters = parsed as AdvancedFilter[];
         }
       }
+      const fp = storageGet(skFilterPresets);
+      if (fp) {
+        const parsed = JSON.parse(fp) as unknown;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          _state.presetSelections = parsed as Record<string, string>;
+        }
+      }
     } catch {
       // ignore bad storage payloads
     }
@@ -264,6 +280,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     storageSet(skSearchInKeys, JSON.stringify(_state.searchInKeys));
     storageSet(skFilterValues, JSON.stringify(_state.filterValues));
     storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
+    storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
   }
 
   // Persist UI state changes (write-only; gated on meta so restoration-time
@@ -276,6 +293,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     void _state.sortDir;
     void _state.filterValues;
     void _state.advancedFilters;
+    void _state.presetSelections;
     persistState();
   });
 
@@ -307,6 +325,15 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     if (_state.meta) return;
     _state.meta = await fetchEntityMeta(opts.basePath);
     applyMetaDefaults();
+    // Sanitize persisted selections against the served meta: unknown preset
+    // ids are dropped, missing/invalid ones fall back to default_option —
+    // a declared preset always resolves to exactly one active option.
+    for (const preset of _state.meta?.table?.filter_presets ?? []) {
+      _state.presetSelections[preset.id] = resolvePresetSelection(
+        preset,
+        _state.presetSelections[preset.id]
+      );
+    }
   }
 
   async function loadRows() {
@@ -331,12 +358,27 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     qs.set('page', String(_state.page));
     qs.set('page_size', String(_state.pageSize));
 
-    // Fixed scope filters (section split) occupy filters[0..n-1].
+    // Fixed scope filters + ACTIVE filter-preset conditions occupy
+    // filters[0..n-1] — the preset where ANDs into every call (refresh,
+    // pagination, sort, user filters — all combine).
+    const scopeConditions: (FixedFilter | FilterCondition)[] = [
+      ...(opts.fixedFilters ?? []),
+      ...resolvePresetConditions(
+        _state.meta?.table?.filter_presets,
+        _state.presetSelections
+      )
+    ];
     let fi = 0;
-    for (const f of opts.fixedFilters ?? []) {
+    for (const f of scopeConditions) {
       qs.set(`filters[${fi}][field]`, f.field);
       qs.set(`filters[${fi}][op]`, f.op);
-      qs.set(`filters[${fi}][value]`, f.value);
+      if (Array.isArray(f.value)) {
+        for (const v of f.value) {
+          qs.append(`filters[${fi}][value][]`, String(v));
+        }
+      } else {
+        qs.set(`filters[${fi}][value]`, String(f.value));
+      }
       qs.set(`filters[${fi}][connector]`, 'AND');
       fi++;
     }
@@ -380,7 +422,47 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     // Apply the echoed page/page_size — the BE may clamp out-of-range pages.
     _state.page = Number(data.page);
     _state.pageSize = Number(data.page_size);
+    void loadSparklines();
     opts.onRowsLoaded?.(_state.rows);
+  }
+
+  /**
+   * Batch-fetch the per-row bucket series for every `type:"sparkline"`
+   * column — declared in meta, no per-page wiring. One POST per column per
+   * load; failures are best-effort (cells render the empty placeholder).
+   */
+  async function loadSparklines() {
+    const cols = (columns ?? []).filter((c) => c.type === 'sparkline' && c.sparkline);
+    for (const col of cols) {
+      const cfg = col.sparkline!;
+      const keys = _state.rows
+        .map((r) => r[cfg.row_key])
+        .filter((k): k is string => typeof k === 'string' && k.length > 0);
+      if (!keys.length) {
+        _state.sparklineData[col.key] = { by_key: {} };
+        continue;
+      }
+      try {
+        const res = await apiFetchWithTimeout(
+          `${serviceApiBase(opts.basePath)}${cfg.endpoint}`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ [cfg.request_field]: keys })
+          },
+          15_000
+        );
+        if (!res.ok) continue;
+        const data = (await res.json()) as Record<string, unknown>;
+        const map = data[cfg.response_field ?? 'stats'];
+        _state.sparklineData[col.key] = {
+          by_key: (map ?? {}) as Record<string, unknown[]>,
+          bucket_unit: data[cfg.bucket_unit_field ?? 'bucket_unit'] as string | undefined
+        };
+      } catch {
+        // sparkline is best-effort — the cell renders the empty placeholder
+      }
+    }
   }
 
   function handleLoadError(e: unknown, scopeKey: string | undefined) {
@@ -572,6 +654,18 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     get viewMode() {
       return viewMode;
     },
+    /** Declared toolbar filter presets (`meta.table.filter_presets`). */
+    get filterPresets() {
+      return _state.meta?.table?.filter_presets ?? [];
+    },
+    /** Active option id per preset — always resolves (default_option fallback). */
+    get presetSelections() {
+      return _state.presetSelections;
+    },
+    /** Batch-loaded sparkline buckets keyed `column.key → {by_key, bucket_unit}`. */
+    get sparklineData() {
+      return _state.sparklineData;
+    },
     // get defaultSortKey()/defaultSortDir()/effectiveSearchInKeys() —
     // info getters with zero readers; `state` remains the AGENTS read contract.
     // get defaultSortKey() {
@@ -654,6 +748,16 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     onDeletionFilterModeChange(mode: DeletionFilterMode) {
       _state.deletionFilterMode = mode;
       void refreshRows();
+    },
+    /** Switch a filter preset's active option — one is always selected;
+     *  re-selecting the active option is a no-op. */
+    onPresetChange(presetId: string, optionId: string) {
+      const preset = (_state.meta?.table?.filter_presets ?? []).find((p) => p.id === presetId);
+      if (!preset || !preset.options.some((o) => o.id === optionId)) return;
+      if (_state.presetSelections[presetId] === optionId) return;
+      _state.presetSelections[presetId] = optionId;
+      _state.page = 1;
+      void refreshRows({ clampPage: true });
     },
     setFiltersOpen(open: boolean) {
       _state.filtersOpen = open;

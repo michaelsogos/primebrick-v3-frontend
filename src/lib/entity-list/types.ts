@@ -29,6 +29,9 @@ export type {
 	ListConnector,
 	ListResponse,
 	StandardOp,
+	FilterPreset,
+	FilterPresetOption,
+	FilterCondition,
 } from '@primebrick/ui';
 
 export {

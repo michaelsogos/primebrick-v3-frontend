@@ -3,7 +3,7 @@
   import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
 
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
-  import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+  import type { MetaColumn, AdvancedFilter, FilterPreset } from '$lib/entity-list/types';
 
   let {
     search,
@@ -30,6 +30,9 @@
     toggleColumnKey,
     resetColumnsAndSorting,
     onCreateAction,
+    filterPresets = [],
+    presetSelections = {},
+    onPresetChange,
     toolbarMode,
     hasAppliedFilters,
     filterValues,
@@ -74,6 +77,9 @@
     toggleColumnKey: (key: string) => void;
     resetColumnsAndSorting: () => void;
     onCreateAction?: () => void;
+    filterPresets?: readonly FilterPreset[];
+    presetSelections?: Record<string, string>;
+    onPresetChange?: (presetId: string, optionId: string) => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
     filterValues: Record<string, any>;
@@ -151,6 +157,9 @@
       }
     )}
   onCreateAction={onCreateAction}
+  filterPresets={filterPresets}
+  presetSelections={presetSelections}
+  onPresetChange={onPresetChange}
 />
 
 <BulkActionsToolbar

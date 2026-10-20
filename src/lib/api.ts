@@ -42,6 +42,9 @@ const ENTITY_API_PATH = '/api/v1/entities';
 const ENTITY_SERVICE_MAP: Record<string, string> = {
   ai_model: 'ai',
   ai_cerebellum: 'ai',
+  job_schedule: 'job',
+  job_run: 'job',
+  job_rule: 'job',
 };
 
 export function entityApiBase(entity: string): string {

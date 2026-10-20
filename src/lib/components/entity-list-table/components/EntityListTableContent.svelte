@@ -23,6 +23,7 @@
     dropdownMenuRow,
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
+    sparklineData,
     cell,
     stickyColumnsGroup,
     error,
@@ -96,6 +97,7 @@
     dropdownMenuRow: any;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell: any;
     stickyColumnsGroup: any[];
     error: string | null;
@@ -242,6 +244,7 @@
         orderedSelectedRows={orderedSelectedRows}
         rowRangeSelection={rowRangeSelection}
         datetimeIanaRenderTick={datetimeIanaRenderTick}
+        sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
         cell={cell}

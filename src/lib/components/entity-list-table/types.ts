@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -12,6 +12,12 @@ export type CellArgs<TRow extends Record<string, unknown>> = {
    */
   datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
   datetimeIanaRenderTick?: number;
+  /**
+   * Batch-loaded sparkline buckets (`column.key → {by_key, bucket_unit}`) —
+   * fed to `type:"sparkline"` cells by the default `TableCell`; a `cell`
+   * override may forward it verbatim.
+   */
+  sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
 };
 
 export type ColumnOrderState = {
@@ -116,6 +122,13 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
   deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
   onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
+  /** Declared toolbar filter presets (`meta.table.filter_presets`). */
+  filterPresets?: readonly FilterPreset[];
+  /** Active option id per preset (`preset.id → option.id`) — resolved by the list engine. */
+  presetSelections?: Record<string, string>;
+  onPresetChange?: (presetId: string, optionId: string) => void;
+  /** Batch-loaded sparkline buckets: `column.key → {by_key, bucket_unit}` — fed to `type:"sparkline"` cells. */
+  sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
   datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
   datetimeIanaRenderTick?: number;
