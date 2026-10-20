@@ -44,7 +44,10 @@
     />
   {/snippet}
   {#snippet headerActions()}
-    <Button onclick={() => void goto(resolve('/jobs/new'))}>
+    <Button
+      data-testid="jobs-schedule-cta"
+      onclick={() => void goto(resolve('/jobs/new'))}
+    >
       {$t('job.jobs.scheduleNew')}
     </Button>
   {/snippet}

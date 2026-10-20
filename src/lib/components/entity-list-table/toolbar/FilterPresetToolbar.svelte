@@ -5,7 +5,10 @@
    * (tandem with the deletion-filter group). Exactly one option is always
    * active — there is no deselect affordance by contract.
    *
-   * `display: "button_group"` → segmented buttons (icon + label + tooltip).
+   * `display: "button_group"` → segmented icon-only buttons — the toolbar
+   * standard: no visible label, meaning carried by the tooltip (`title`)
+   * and `aria-pressed` state. Options without `icon` are a meta bug; the
+   * label is rendered as graceful fallback so the button is never empty.
    * `display: "combobox"` → combo-select (icon + label + tooltip as the
    * item's secondary line).
    */
@@ -65,17 +68,19 @@
       {@const active = selected === option.id}
       <Button
         variant="ghost"
-        size="sm"
+        size="icon-sm"
         type="button"
         class={cn(active && 'bg-foreground/10 text-foreground shadow-xs')}
         aria-pressed={active}
+        aria-label={$t(option.label_key)}
         title={option.tooltip_key ? $t(option.tooltip_key) : $t(option.label_key)}
         onclick={() => onSelect(option.id)}
       >
         {#if option.icon}
           <DynamicIcon name={option.icon} class="size-4" />
+        {:else}
+          <span>{$t(option.label_key)}</span>
         {/if}
-        <span class="hidden lg:inline">{$t(option.label_key)}</span>
       </Button>
     {/each}
   </ButtonGroup>

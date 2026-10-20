@@ -22,6 +22,7 @@
   errorScopeKey="app.common.errors.scope.jobsList"
   errorScopeKeyInit="app.common.errors.scope.jobsPageInit"
   deletionFilter={false}
+  createPath="/jobs/rules/new"
 >
   {#snippet breadcrumb()}
     <AppPageBreadcrumb

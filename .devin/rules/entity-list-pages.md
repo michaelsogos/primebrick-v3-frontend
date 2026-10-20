@@ -128,12 +128,24 @@ For non-table delete flows (e.g. a detail-page delete button) mirror the
 same rule: pick `/purge` when `isEntityOpAllowed(actions, 'purge.single')`
 is true and `'delete.single'` is false — see `useRoleMappings.remove`.
 
+## Toolbar segmented groups — icon-only standard (MANDATORY)
+
+Every segmented button-group control in the list toolbar (filter presets
+`display:"button_group"`, the deletion-filter toggle, the view-mode switch)
+renders **icon-only** buttons: `size="icon-sm"`, NO visible label text —
+the option's `icon` is the only visible affordance and MUST resolve via
+`DynamicIcon`. Meaning is carried by the `title` tooltip (`tooltip_key`,
+falling back to `label_key`) plus `aria-label`/`aria-pressed`. Exactly one
+option is always pressed (`aria-pressed="true"`). `display:"combobox"`
+variants MAY render icon + label + secondary description.
+
 ## Exceptions
 - **Composite/module pages** — a page hosting several list instances or
-  extra UI drives `useEntityList` + `EntityListTable` directly.
-  `system/jobs` is the standing example (4 list scopes + sparkline
-  enrichment) and is RESERVED for the module/remote-page pilot — do not
-  "migrate" it to `EntityTablePage`.
+  extra UI drives `useEntityList` + `EntityListTable` directly. Remote
+  module-owned pages (e.g. the job service's `/jobs/new` schedule form,
+  mounted via `mountPage`) are the standing example — the `/jobs`,
+  `/jobs/runs`, `/jobs/rules` lists themselves are plain `EntityTablePage`
+  hosts like any other module list.
 - **Non-table archetypes** (list, cards, kanban, timeline, custom pages)
   follow their own page components — this rule covers only routes that
   resolve to the table archetype.

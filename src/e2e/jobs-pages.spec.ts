@@ -46,12 +46,8 @@ test.describe("/jobs pages (module-owned)", () => {
     // multi-section custom page.
     const tables = page.locator("table");
     await expect(tables).toHaveCount(1, { timeout: 30000 });
-    // Schedule CTA → the remote /jobs/new page.
-    await expect(
-      page.getByRole("link", { name: /schedule|pianifica|planen/i }).or(
-        page.getByRole("button", { name: /schedule|pianifica|planen/i }),
-      ),
-    ).toBeVisible();
+    // Schedule CTA (page-level header action) → the remote /jobs/new page.
+    await expect(page.getByTestId("jobs-schedule-cta")).toBeVisible();
   });
 
   test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
@@ -87,15 +83,47 @@ test.describe("/jobs pages (module-owned)", () => {
     expect(lastUrl).toContain("filters[0][field]=schedule_type");
     expect(lastUrl).toContain("filters[0][value]=recurring");
 
-    // Switching to "Once" re-queries with the new scope — and the previous
-    // option releases aria-pressed (mutually exclusive).
-    await page
-      .locator("button[aria-pressed]")
-      .filter({
-        hasText: /once|esecuzione singola|einmalig|exécution unique|ejecución única|execução única/i,
-      })
+    // Button groups are ICON-ONLY by design — no visible label text, the
+    // meaning is carried by the tooltip (title) and the accessible name.
+    const presetGroup = groups.filter({
+      has: page.getByRole("button", {
+        name: /once|esecuzione singola|einmalig|exécution unique|ejecución única|execução única/i,
+      }),
+    });
+    for (const btn of await presetGroup
       .first()
-      .click();
+      .locator("button[aria-pressed]")
+      .all()) {
+      await expect(btn).toHaveAttribute("title", /\S/);
+      expect(await btn.innerText()).toBe("");
+      await expect(btn.locator("svg")).toBeVisible();
+    }
+    // Icon contract: single-execution option uses "zap"; the all-option
+    // uses the same icon as the jobs page (list-clock).
+    await expect(
+      presetGroup.first().locator("button svg.lucide-zap"),
+    ).toBeVisible();
+    await expect(
+      presetGroup.first().locator("button svg.lucide-list-clock"),
+    ).toBeVisible();
+
+    // Switching options re-queries with the new scope. Clicks are scoped
+    // inside the preset group (other controls may share the label) and
+    // retried until aria-pressed flips — a click landing before hydration
+    // is silently dropped by the browser.
+    const preset = presetGroup.first();
+    const onceBtn = preset.getByRole("button", {
+      name: /once|esecuzione singola|einmalig|exécution unique|ejecución única|execução única/i,
+    });
+    const allBtn = preset.getByRole("button", {
+      name: /all|tutte|alle|toutes|todas/i,
+    });
+    await expect(async () => {
+      await onceBtn.click();
+      await expect(onceBtn).toHaveAttribute("aria-pressed", "true", {
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 15000 });
     await expect(async () => {
       const u = listUrls.at(-1) ?? "";
       expect(u).toContain("filters[0][value]=once");
@@ -103,11 +131,12 @@ test.describe("/jobs pages (module-owned)", () => {
 
     // "All" is the escape option — a real selection applying no condition:
     // the request carries NO schedule_type scope filter.
-    await page
-      .locator("button[aria-pressed]")
-      .filter({ hasText: /all|tutte|alle|toutes|todas/i })
-      .first()
-      .click();
+    await expect(async () => {
+      await allBtn.click();
+      await expect(allBtn).toHaveAttribute("aria-pressed", "true", {
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 15000 });
     await expect(async () => {
       const u = listUrls.at(-1) ?? "";
       expect(u).not.toContain("schedule_type");
@@ -145,6 +174,69 @@ test.describe("/jobs pages (module-owned)", () => {
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
       await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     }
+  });
+
+  test("/jobs/rules exposes the create CTA → /jobs/rules/new remote form", async ({
+    page,
+  }) => {
+    await page.goto("/jobs/rules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // create.single is enabled for admins — the New CTA must be present
+    // and navigate to the module-owned remote create page.
+    const createBtn = page.getByTestId("entity-create-cta");
+    await expect(createBtn).toBeVisible();
+    await createBtn.click();
+
+    await page.waitForURL("**/jobs/rules/new", { timeout: 10000 });
+    const content = page.locator(REMOTE_CONTENT);
+    await expect(content).toBeVisible({ timeout: 30000 });
+    await expect(content.locator("input#rule-name")).toBeVisible();
+    await expect(content.locator("input#rule-event")).toBeVisible();
+    await expect(content.locator("input#rule-spec")).toBeVisible();
+    await expect(content.locator("input#rule-target")).toBeVisible();
+  });
+
+  test("job_run version history endpoint works — audit tables exist", async ({
+    page,
+  }) => {
+    await page.goto("/jobs/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // The regression was `relation "job.job_runs_audit" does not exist` —
+    // the endpoint must answer 200 (empty page is fine, the table exists).
+    const result = await page.evaluate(async () => {
+      const list = await fetch(
+        "/ws/job/api/v1/entities/job_run/list?page=1&page_size=1",
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+      const row = list?.rows?.[0] ?? null;
+      if (!row?.uuid) return { status: -1, body: "no job_run row" };
+      const res = await fetch(
+        `/ws/job/api/v1/entities/job_run/${row.uuid}/audit?page=1&limit=20`,
+      );
+      return { status: res.status, body: await res.text() };
+    });
+    expect(result.status).toBe(200);
+    expect(result.body).not.toContain("does not exist");
+  });
+
+  test("cold load hydrates cleanly — no effect_orphan (vite deps must stay consistent)", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+
+    // Full document loads — every hydration path must stay orphan-free.
+    for (const route of ["/jobs", "/jobs/rules", "/system/settings/profile"]) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
+    }
+    expect(errors.filter((e) => e.includes("effect_orphan"))).toEqual([]);
   });
 
   test("sidebar: exactly ONE nav item active on /jobs/rules", async ({

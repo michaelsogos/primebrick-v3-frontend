@@ -816,7 +816,7 @@
           "column": 0
         },
         "end": {
-          "line": 182,
+          "line": 199,
           "column": 0
         }
       },
@@ -7357,7 +7357,7 @@
           "column": 0
         },
         "end": {
-          "line": 29,
+          "line": 31,
           "column": 0
         }
       },
@@ -7447,6 +7447,27 @@
               "column": 26
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 15,
+              "column": 4
+            },
+            "end": {
+              "line": 15,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -7454,15 +7475,15 @@
         {
           "name": "cell",
           "default": false,
-          "slot_props": "{\n  row: TRow;\n  column: MetaColumn;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n  datetimeIanaRenderTick: number;\n}",
+          "slot_props": "{\n  row: TRow;\n  column: MetaColumn;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n  datetimeIanaRenderTick: number;\n  sparklineData: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;\n}",
           "source": {
             "start": {
-              "line": 25,
+              "line": 27,
               "column": 2
             },
             "end": {
-              "line": 25,
-              "column": 80
+              "line": 27,
+              "column": 95
             }
           }
         }
@@ -8441,7 +8462,7 @@
           "column": 0
         },
         "end": {
-          "line": 278,
+          "line": 281,
           "column": 0
         }
       },
@@ -8806,6 +8827,27 @@
           }
         },
         {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 17
+            }
+          }
+        },
+        {
           "name": "cell",
           "kind": "let",
           "type": "any",
@@ -8817,11 +8859,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 26,
+              "line": 27,
               "column": 4
             },
             "end": {
-              "line": 26,
+              "line": 27,
               "column": 8
             }
           }
@@ -8838,11 +8880,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 27,
+              "line": 28,
               "column": 4
             },
             "end": {
-              "line": 27,
+              "line": 28,
               "column": 22
             }
           }
@@ -8859,11 +8901,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 28,
+              "line": 29,
               "column": 4
             },
             "end": {
-              "line": 28,
+              "line": 29,
               "column": 9
             }
           }
@@ -8880,11 +8922,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 29,
+              "line": 30,
               "column": 4
             },
             "end": {
-              "line": 29,
+              "line": 30,
               "column": 13
             }
           }
@@ -8901,11 +8943,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 30,
+              "line": 31,
               "column": 4
             },
             "end": {
-              "line": 30,
+              "line": 31,
               "column": 15
             }
           }
@@ -8922,11 +8964,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 31,
+              "line": 32,
               "column": 4
             },
             "end": {
-              "line": 31,
+              "line": 32,
               "column": 19
             }
           }
@@ -8943,11 +8985,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 32,
+              "line": 33,
               "column": 4
             },
             "end": {
-              "line": 32,
+              "line": 33,
               "column": 8
             }
           }
@@ -8964,11 +9006,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 33,
+              "line": 34,
               "column": 4
             },
             "end": {
-              "line": 33,
+              "line": 34,
               "column": 13
             }
           }
@@ -8985,11 +9027,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 34,
+              "line": 35,
               "column": 4
             },
             "end": {
-              "line": 34,
+              "line": 35,
               "column": 13
             }
           }
@@ -9006,11 +9048,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 35,
+              "line": 36,
               "column": 4
             },
             "end": {
-              "line": 35,
+              "line": 36,
               "column": 20
             }
           }
@@ -9027,11 +9069,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 36,
+              "line": 37,
               "column": 4
             },
             "end": {
-              "line": 36,
+              "line": 37,
               "column": 18
             }
           }
@@ -9048,11 +9090,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 38,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 38,
               "column": 23
             }
           }
@@ -9069,11 +9111,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 39,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 39,
               "column": 21
             }
           }
@@ -9090,11 +9132,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 40,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 40,
               "column": 23
             }
           }
@@ -9111,11 +9153,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 41,
               "column": 19
             }
           }
@@ -9132,11 +9174,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 42,
               "column": 14
             }
           }
@@ -9153,11 +9195,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 20
             }
           }
@@ -9174,11 +9216,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 44,
               "column": 11
             }
           }
@@ -9195,11 +9237,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 45,
               "column": 16
             }
           }
@@ -9216,11 +9258,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 46,
               "column": 19
             }
           }
@@ -9237,11 +9279,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 47,
               "column": 29
             }
           }
@@ -9258,11 +9300,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 48,
               "column": 22
             }
           }
@@ -9279,11 +9321,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 20
             }
           }
@@ -9300,11 +9342,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 21
             }
           }
@@ -9321,11 +9363,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 21
             }
           }
@@ -9342,11 +9384,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 22
             }
           }
@@ -9363,11 +9405,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 13
             }
           }
@@ -9384,11 +9426,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 24
             }
           }
@@ -9405,11 +9447,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 16
             }
           }
@@ -9426,11 +9468,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 12
             }
           }
@@ -9447,11 +9489,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 57,
               "column": 21
             }
           }
@@ -9468,11 +9510,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 58,
               "column": 22
             }
           }
@@ -9489,11 +9531,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 59,
               "column": 14
             }
           }
@@ -9510,11 +9552,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 60,
               "column": 28
             }
           }
@@ -9531,11 +9573,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 61,
               "column": 4
             },
             "end": {
-              "line": 60,
+              "line": 61,
               "column": 15
             }
           }
@@ -9552,11 +9594,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 62,
               "column": 4
             },
             "end": {
-              "line": 61,
+              "line": 62,
               "column": 19
             }
           }
@@ -9573,11 +9615,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 62,
+              "line": 63,
               "column": 4
             },
             "end": {
-              "line": 62,
+              "line": 63,
               "column": 21
             }
           }
@@ -9594,11 +9636,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 63,
+              "line": 64,
               "column": 4
             },
             "end": {
-              "line": 63,
+              "line": 64,
               "column": 7
             }
           }
@@ -9615,11 +9657,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 64,
+              "line": 65,
               "column": 4
             },
             "end": {
-              "line": 64,
+              "line": 65,
               "column": 12
             }
           }
@@ -9636,11 +9678,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 65,
+              "line": 66,
               "column": 4
             },
             "end": {
-              "line": 65,
+              "line": 66,
               "column": 8
             }
           }
@@ -9657,11 +9699,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 66,
+              "line": 67,
               "column": 4
             },
             "end": {
-              "line": 66,
+              "line": 67,
               "column": 16
             }
           }
@@ -9678,11 +9720,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 67,
+              "line": 68,
               "column": 4
             },
             "end": {
-              "line": 67,
+              "line": 68,
               "column": 10
             }
           }
@@ -9699,11 +9741,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 68,
+              "line": 69,
               "column": 4
             },
             "end": {
-              "line": 68,
+              "line": 69,
               "column": 15
             }
           }
@@ -9720,11 +9762,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 69,
+              "line": 70,
               "column": 4
             },
             "end": {
-              "line": 69,
+              "line": 70,
               "column": 11
             }
           }
@@ -9741,11 +9783,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 70,
+              "line": 71,
               "column": 4
             },
             "end": {
-              "line": 70,
+              "line": 71,
               "column": 17
             }
           }
@@ -9762,11 +9804,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 71,
+              "line": 72,
               "column": 4
             },
             "end": {
-              "line": 71,
+              "line": 72,
               "column": 15
             }
           }
@@ -9783,11 +9825,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 72,
+              "line": 73,
               "column": 4
             },
             "end": {
-              "line": 72,
+              "line": 73,
               "column": 19
             }
           }
@@ -9804,11 +9846,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 73,
+              "line": 74,
               "column": 4
             },
             "end": {
-              "line": 73,
+              "line": 74,
               "column": 21
             }
           }
@@ -9825,11 +9867,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 74,
+              "line": 75,
               "column": 4
             },
             "end": {
-              "line": 74,
+              "line": 75,
               "column": 20
             }
           }
@@ -9846,11 +9888,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 75,
+              "line": 76,
               "column": 4
             },
             "end": {
-              "line": 75,
+              "line": 76,
               "column": 14
             }
           }
@@ -9867,11 +9909,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 76,
+              "line": 77,
               "column": 4
             },
             "end": {
-              "line": 76,
+              "line": 77,
               "column": 23
             }
           }
@@ -9888,11 +9930,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 77,
+              "line": 78,
               "column": 4
             },
             "end": {
-              "line": 77,
+              "line": 78,
               "column": 19
             }
           }
@@ -9909,11 +9951,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 78,
+              "line": 79,
               "column": 4
             },
             "end": {
-              "line": 78,
+              "line": 79,
               "column": 13
             }
           }
@@ -10642,7 +10684,7 @@
           "column": 0
         },
         "end": {
-          "line": 176,
+          "line": 185,
           "column": 0
         }
       },
@@ -11160,6 +11202,81 @@
           }
         },
         {
+          "name": "filterPresets",
+          "kind": "let",
+          "type": "readonly FilterPreset[]",
+          "typeSource": "typescript",
+          "value": "[]",
+          "defaultValue": {
+            "raw": "[]",
+            "kind": "array",
+            "value": []
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 33,
+              "column": 4
+            },
+            "end": {
+              "line": 33,
+              "column": 22
+            }
+          }
+        },
+        {
+          "name": "presetSelections",
+          "kind": "let",
+          "type": "Record<string, string>",
+          "typeSource": "typescript",
+          "value": "{}",
+          "defaultValue": {
+            "raw": "{}",
+            "kind": "object",
+            "value": {}
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 34,
+              "column": 4
+            },
+            "end": {
+              "line": 34,
+              "column": 25
+            }
+          }
+        },
+        {
+          "name": "onPresetChange",
+          "kind": "let",
+          "type": "(presetId: string, optionId: string) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 35,
+              "column": 4
+            },
+            "end": {
+              "line": 35,
+              "column": 18
+            }
+          }
+        },
+        {
           "name": "toolbarMode",
           "kind": "let",
           "type": "'filters' | 'bulk'",
@@ -11171,11 +11288,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 33,
+              "line": 36,
               "column": 4
             },
             "end": {
-              "line": 33,
+              "line": 36,
               "column": 15
             }
           }
@@ -11192,11 +11309,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 34,
+              "line": 37,
               "column": 4
             },
             "end": {
-              "line": 34,
+              "line": 37,
               "column": 21
             }
           }
@@ -11213,11 +11330,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 35,
+              "line": 38,
               "column": 4
             },
             "end": {
-              "line": 35,
+              "line": 38,
               "column": 16
             }
           }
@@ -11234,11 +11351,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 36,
+              "line": 39,
               "column": 4
             },
             "end": {
-              "line": 36,
+              "line": 39,
               "column": 19
             }
           }
@@ -11255,11 +11372,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 40,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 40,
               "column": 16
             }
           }
@@ -11276,11 +11393,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 41,
               "column": 22
             }
           }
@@ -11297,11 +11414,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 42,
               "column": 22
             }
           }
@@ -11318,11 +11435,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 43,
               "column": 18
             }
           }
@@ -11339,11 +11456,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 44,
               "column": 24
             }
           }
@@ -11360,11 +11477,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 45,
               "column": 27
             }
           }
@@ -11381,11 +11498,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 46,
               "column": 23
             }
           }
@@ -11402,11 +11519,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 47,
               "column": 16
             }
           }
@@ -11423,11 +11540,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 48,
               "column": 16
             }
           }
@@ -11444,11 +11561,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 49,
               "column": 19
             }
           }
@@ -11465,11 +11582,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 50,
               "column": 16
             }
           }
@@ -11486,11 +11603,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 51,
               "column": 17
             }
           }
@@ -11507,11 +11624,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 52,
               "column": 20
             }
           }
@@ -12050,7 +12167,7 @@
           "column": 0
         },
         "end": {
-          "line": 261,
+          "line": 264,
           "column": 0
         }
       },
@@ -12772,6 +12889,27 @@
           }
         },
         {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 46,
+              "column": 4
+            },
+            "end": {
+              "line": 46,
+              "column": 17
+            }
+          }
+        },
+        {
           "name": "rowKey",
           "kind": "let",
           "type": "(row: TRow) => string",
@@ -12783,11 +12921,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 47,
               "column": 10
             }
           }
@@ -12804,11 +12942,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 48,
               "column": 16
             }
           }
@@ -12825,11 +12963,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 8
             }
           }
@@ -12846,11 +12984,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 14
             }
           }
@@ -12867,11 +13005,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 20
             }
           }
@@ -12888,11 +13026,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 19
             }
           }
@@ -12909,11 +13047,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 20
             }
           }
@@ -12930,11 +13068,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 20
             }
           }
@@ -12951,11 +13089,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 19
             }
           }
@@ -12972,11 +13110,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 19
             }
           }
@@ -12993,11 +13131,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 57,
               "column": 20
             }
           }
@@ -13014,11 +13152,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 58,
               "column": 17
             }
           }
@@ -13035,11 +13173,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 59,
               "column": 24
             }
           }
@@ -13056,11 +13194,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 60,
               "column": 7
             }
           }
@@ -13077,11 +13215,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 61,
               "column": 4
             },
             "end": {
-              "line": 60,
+              "line": 61,
               "column": 12
             }
           }
@@ -13098,11 +13236,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 62,
               "column": 4
             },
             "end": {
-              "line": 61,
+              "line": 62,
               "column": 8
             }
           }
@@ -13119,11 +13257,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 62,
+              "line": 63,
               "column": 4
             },
             "end": {
-              "line": 62,
+              "line": 63,
               "column": 16
             }
           }
@@ -13140,11 +13278,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 63,
+              "line": 64,
               "column": 4
             },
             "end": {
-              "line": 63,
+              "line": 64,
               "column": 10
             }
           }
@@ -13161,11 +13299,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 64,
+              "line": 65,
               "column": 4
             },
             "end": {
-              "line": 64,
+              "line": 65,
               "column": 15
             }
           }
@@ -13182,11 +13320,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 65,
+              "line": 66,
               "column": 4
             },
             "end": {
-              "line": 65,
+              "line": 66,
               "column": 11
             }
           }
@@ -13203,11 +13341,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 66,
+              "line": 67,
               "column": 4
             },
             "end": {
-              "line": 66,
+              "line": 67,
               "column": 17
             }
           }
@@ -13224,11 +13362,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 67,
+              "line": 68,
               "column": 4
             },
             "end": {
-              "line": 67,
+              "line": 68,
               "column": 15
             }
           }
@@ -13245,11 +13383,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 68,
+              "line": 69,
               "column": 4
             },
             "end": {
-              "line": 68,
+              "line": 69,
               "column": 19
             }
           }
@@ -13266,11 +13404,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 69,
+              "line": 70,
               "column": 4
             },
             "end": {
-              "line": 69,
+              "line": 70,
               "column": 21
             }
           }
@@ -13287,11 +13425,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 70,
+              "line": 71,
               "column": 4
             },
             "end": {
-              "line": 70,
+              "line": 71,
               "column": 16
             }
           }
@@ -13308,11 +13446,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 71,
+              "line": 72,
               "column": 4
             },
             "end": {
-              "line": 71,
+              "line": 72,
               "column": 20
             }
           }
@@ -13329,11 +13467,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 72,
+              "line": 73,
               "column": 4
             },
             "end": {
-              "line": 72,
+              "line": 73,
               "column": 14
             }
           }
@@ -13350,11 +13488,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 73,
+              "line": 74,
               "column": 4
             },
             "end": {
-              "line": 73,
+              "line": 74,
               "column": 23
             }
           }
@@ -13371,11 +13509,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 74,
+              "line": 75,
               "column": 4
             },
             "end": {
-              "line": 74,
+              "line": 75,
               "column": 19
             }
           }
@@ -14243,7 +14381,7 @@
           "column": 0
         },
         "end": {
-          "line": 237,
+          "line": 240,
           "column": 0
         }
       },
@@ -14734,9 +14872,9 @@
           }
         },
         {
-          "name": "cell",
+          "name": "sparklineData",
           "kind": "let",
-          "type": "Snippet<[ { row: TRow; column: MetaColumn } ]>",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -14750,6 +14888,27 @@
             },
             "end": {
               "line": 39,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "cell",
+          "kind": "let",
+          "type": "Snippet<[ { row: TRow; column: MetaColumn } ]>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 40,
+              "column": 4
+            },
+            "end": {
+              "line": 40,
               "column": 8
             }
           }
@@ -14766,11 +14925,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 41,
               "column": 14
             }
           }
@@ -14787,11 +14946,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 42,
               "column": 20
             }
           }
@@ -14808,11 +14967,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 19
             }
           }
@@ -14829,11 +14988,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 44,
               "column": 23
             }
           }
@@ -14850,11 +15009,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 45,
               "column": 20
             }
           }
@@ -14871,11 +15030,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 46,
               "column": 16
             }
           }
@@ -14892,11 +15051,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 47,
               "column": 21
             }
           }
@@ -14913,11 +15072,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 48,
               "column": 21
             }
           }
@@ -14934,11 +15093,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 22
             }
           }
@@ -14955,11 +15114,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 13
             }
           }
@@ -14976,11 +15135,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 24
             }
           }
@@ -14997,11 +15156,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 18
             }
           }
@@ -15018,11 +15177,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 15
             }
           }
@@ -15039,11 +15198,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 16
             }
           }
@@ -15060,11 +15219,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 22
             }
           }
@@ -15081,11 +15240,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 19
             }
           }
@@ -15099,11 +15258,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 155,
+              "line": 157,
               "column": 6
             },
             "end": {
-              "line": 155,
+              "line": 157,
               "column": 27
             }
           }
@@ -15114,11 +15273,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 118,
+              "line": 120,
               "column": 6
             },
             "end": {
-              "line": 118,
+              "line": 120,
               "column": 27
             }
           }
@@ -15129,11 +15288,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 135,
+              "line": 137,
               "column": 6
             },
             "end": {
-              "line": 135,
+              "line": 137,
               "column": 33
             }
           }
@@ -16049,7 +16208,7 @@
           "column": 0
         },
         "end": {
-          "line": 346,
+          "line": 351,
           "column": 0
         }
       },
@@ -16372,9 +16531,9 @@
           }
         },
         {
-          "name": "cell",
+          "name": "sparklineData",
           "kind": "let",
-          "type": "Snippet<[TableRowCellArgs]>",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -16388,6 +16547,27 @@
             },
             "end": {
               "line": 50,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "cell",
+          "kind": "let",
+          "type": "Snippet<[TableRowCellArgs]>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 51,
+              "column": 4
+            },
+            "end": {
+              "line": 51,
               "column": 8
             }
           }
@@ -16404,11 +16584,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 20
             }
           }
@@ -16425,11 +16605,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 19
             }
           }
@@ -16446,11 +16626,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 16
             }
           }
@@ -16467,11 +16647,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 23
             }
           }
@@ -16488,11 +16668,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 57,
               "column": 20
             }
           }
@@ -16509,11 +16689,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 58,
               "column": 16
             }
           }
@@ -16530,11 +16710,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 59,
               "column": 21
             }
           }
@@ -16551,11 +16731,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 60,
               "column": 21
             }
           }
@@ -16572,11 +16752,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 61,
               "column": 4
             },
             "end": {
-              "line": 60,
+              "line": 61,
               "column": 22
             }
           }
@@ -16593,11 +16773,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 62,
               "column": 4
             },
             "end": {
-              "line": 61,
+              "line": 62,
               "column": 13
             }
           }
@@ -16614,11 +16794,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 62,
+              "line": 63,
               "column": 4
             },
             "end": {
-              "line": 62,
+              "line": 63,
               "column": 24
             }
           }
@@ -16635,11 +16815,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 63,
+              "line": 64,
               "column": 4
             },
             "end": {
-              "line": 63,
+              "line": 64,
               "column": 18
             }
           }
@@ -16656,11 +16836,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 64,
+              "line": 65,
               "column": 4
             },
             "end": {
-              "line": 64,
+              "line": 65,
               "column": 15
             }
           }
@@ -16677,11 +16857,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 65,
+              "line": 66,
               "column": 4
             },
             "end": {
-              "line": 65,
+              "line": 66,
               "column": 16
             }
           }
@@ -16698,11 +16878,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 66,
+              "line": 67,
               "column": 4
             },
             "end": {
-              "line": 66,
+              "line": 67,
               "column": 22
             }
           }
@@ -16719,11 +16899,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 67,
+              "line": 68,
               "column": 4
             },
             "end": {
-              "line": 67,
+              "line": 68,
               "column": 19
             }
           }
@@ -16740,11 +16920,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 68,
+              "line": 69,
               "column": 4
             },
             "end": {
-              "line": 68,
+              "line": 69,
               "column": 16
             }
           }
@@ -16758,11 +16938,11 @@
           "slot_props": "{ row: TRow }",
           "source": {
             "start": {
-              "line": 243,
+              "line": 248,
               "column": 10
             },
             "end": {
-              "line": 243,
+              "line": 248,
               "column": 39
             }
           }
@@ -18855,7 +19035,7 @@
           "column": 0
         },
         "end": {
-          "line": 747,
+          "line": 755,
           "column": 0
         }
       },
@@ -19971,6 +20151,107 @@
           }
         },
         {
+          "name": "filterPresets",
+          "kind": "let",
+          "type": "[]",
+          "typeSource": "default",
+          "value": "[]",
+          "defaultValue": {
+            "raw": "[]",
+            "kind": "array",
+            "value": []
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 93,
+              "column": 4
+            },
+            "end": {
+              "line": 93,
+              "column": 22
+            }
+          }
+        },
+        {
+          "name": "presetSelections",
+          "kind": "let",
+          "type": "{}",
+          "typeSource": "default",
+          "value": "{}",
+          "defaultValue": {
+            "raw": "{}",
+            "kind": "object",
+            "value": {}
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 94,
+              "column": 4
+            },
+            "end": {
+              "line": 94,
+              "column": 25
+            }
+          }
+        },
+        {
+          "name": "onPresetChange",
+          "kind": "let",
+          "typeSource": "unknown",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 95,
+              "column": 4
+            },
+            "end": {
+              "line": 95,
+              "column": 18
+            }
+          }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "{}",
+          "typeSource": "default",
+          "value": "{}",
+          "defaultValue": {
+            "raw": "{}",
+            "kind": "object",
+            "value": {}
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 96,
+              "column": 4
+            },
+            "end": {
+              "line": 96,
+              "column": 22
+            }
+          }
+        },
+        {
           "name": "datetimeIanaModeByKey",
           "kind": "let",
           "bindable": true,
@@ -19989,11 +20270,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 93,
+              "line": 97,
               "column": 4
             },
             "end": {
-              "line": 93,
+              "line": 97,
               "column": 79
             }
           }
@@ -20017,11 +20298,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 94,
+              "line": 98,
               "column": 4
             },
             "end": {
-              "line": 94,
+              "line": 98,
               "column": 41
             }
           }
@@ -20037,11 +20318,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 95,
+              "line": 99,
               "column": 4
             },
             "end": {
-              "line": 95,
+              "line": 99,
               "column": 8
             }
           }
@@ -20057,11 +20338,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 96,
+              "line": 100,
               "column": 4
             },
             "end": {
-              "line": 96,
+              "line": 100,
               "column": 19
             }
           }
@@ -20077,11 +20358,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 97,
+              "line": 101,
               "column": 4
             },
             "end": {
-              "line": 97,
+              "line": 101,
               "column": 19
             }
           }
@@ -20097,11 +20378,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 98,
+              "line": 102,
               "column": 4
             },
             "end": {
-              "line": 98,
+              "line": 102,
               "column": 13
             }
           }
@@ -20117,11 +20398,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 99,
+              "line": 103,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 103,
               "column": 13
             }
           }
@@ -20137,11 +20418,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 100,
+              "line": 104,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 104,
               "column": 18
             }
           }
@@ -20157,11 +20438,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 101,
+              "line": 105,
               "column": 4
             },
             "end": {
-              "line": 101,
+              "line": 105,
               "column": 20
             }
           }
@@ -20868,8 +21149,8 @@
         {
           "component": "src/lib/components/entity-list-table/EntityListTable.svelte",
           "kind": "prop-unknown-type",
-          "name": "cell",
-          "message": "Prop \"cell\" type could not be inferred; falling back to \"any\".",
+          "name": "onPresetChange",
+          "message": "Prop \"onPresetChange\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
               "line": 95,
@@ -20877,6 +21158,22 @@
             },
             "end": {
               "line": 95,
+              "column": 18
+            }
+          }
+        },
+        {
+          "component": "src/lib/components/entity-list-table/EntityListTable.svelte",
+          "kind": "prop-unknown-type",
+          "name": "cell",
+          "message": "Prop \"cell\" type could not be inferred; falling back to \"any\".",
+          "source": {
+            "start": {
+              "line": 99,
+              "column": 4
+            },
+            "end": {
+              "line": 99,
               "column": 8
             }
           }
@@ -20888,11 +21185,11 @@
           "message": "Prop \"metaLoadingView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 96,
+              "line": 100,
               "column": 4
             },
             "end": {
-              "line": 96,
+              "line": 100,
               "column": 19
             }
           }
@@ -20904,11 +21201,11 @@
           "message": "Prop \"rowsLoadingView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 97,
+              "line": 101,
               "column": 4
             },
             "end": {
-              "line": 97,
+              "line": 101,
               "column": 19
             }
           }
@@ -20920,11 +21217,11 @@
           "message": "Prop \"emptyView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 98,
+              "line": 102,
               "column": 4
             },
             "end": {
-              "line": 98,
+              "line": 102,
               "column": 13
             }
           }
@@ -20936,11 +21233,11 @@
           "message": "Prop \"errorView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 99,
+              "line": 103,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 103,
               "column": 13
             }
           }
@@ -20952,11 +21249,11 @@
           "message": "Prop \"loadingMessage\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 100,
+              "line": 104,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 104,
               "column": 18
             }
           }
@@ -20968,11 +21265,11 @@
           "message": "Prop \"noRecordsMessage\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 101,
+              "line": 105,
               "column": 4
             },
             "end": {
-              "line": 101,
+              "line": 105,
               "column": 20
             }
           }
@@ -21792,7 +22089,7 @@
           "column": 0
         },
         "end": {
-          "line": 90,
+          "line": 118,
           "column": 5
         }
       },
@@ -21811,11 +22108,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 16,
+              "line": 17,
               "column": 4
             },
             "end": {
-              "line": 16,
+              "line": 17,
               "column": 7
             }
           }
@@ -21832,11 +22129,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 17,
+              "line": 18,
               "column": 4
             },
             "end": {
-              "line": 17,
+              "line": 18,
               "column": 10
             }
           }
@@ -21853,11 +22150,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 18,
+              "line": 19,
               "column": 4
             },
             "end": {
-              "line": 18,
+              "line": 19,
               "column": 25
             }
           }
@@ -21874,12 +22171,33 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 19,
+              "line": 20,
               "column": 4
             },
             "end": {
-              "line": 19,
+              "line": 20,
               "column": 26
+            }
+          }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 21,
+              "column": 17
             }
           }
         }
@@ -21892,11 +22210,11 @@
           "slot_props": "{\n  row: Record<string, unknown>;\n  column: MetaColumn;\n}",
           "source": {
             "start": {
-              "line": 37,
+              "line": 58,
               "column": 2
             },
             "end": {
-              "line": 37,
+              "line": 58,
               "column": 40
             }
           }
@@ -22420,7 +22738,7 @@
           "column": 0
         },
         "end": {
-          "line": 131,
+          "line": 149,
           "column": 0
         }
       },
@@ -22439,11 +22757,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 35,
+              "line": 40,
               "column": 4
             },
             "end": {
-              "line": 35,
+              "line": 40,
               "column": 10
             }
           }
@@ -22460,11 +22778,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 36,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 36,
+              "line": 41,
               "column": 17
             }
           }
@@ -22481,11 +22799,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 42,
               "column": 16
             }
           }
@@ -22502,11 +22820,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 43,
               "column": 21
             }
           }
@@ -22523,11 +22841,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 44,
               "column": 24
             }
           }
@@ -22544,11 +22862,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 45,
               "column": 19
             }
           }
@@ -22565,11 +22883,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 46,
               "column": 12
             }
           }
@@ -22586,11 +22904,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 47,
               "column": 20
             }
           }
@@ -22607,11 +22925,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 48,
               "column": 22
             }
           }
@@ -22628,11 +22946,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 49,
               "column": 30
             }
           }
@@ -22655,11 +22973,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 50,
               "column": 24
             }
           }
@@ -22676,11 +22994,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 51,
               "column": 15
             }
           }
@@ -22697,11 +23015,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 52,
               "column": 19
             }
           }
@@ -22718,11 +23036,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 53,
               "column": 13
             }
           }
@@ -22739,11 +23057,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 54,
               "column": 21
             }
           }
@@ -22760,11 +23078,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 55,
               "column": 15
             }
           }
@@ -22781,11 +23099,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 56,
               "column": 23
             }
           }
@@ -22802,11 +23120,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 57,
               "column": 25
             }
           }
@@ -22823,11 +23141,86 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 58,
+              "column": 18
+            }
+          }
+        },
+        {
+          "name": "filterPresets",
+          "kind": "let",
+          "type": "readonly FilterPreset[]",
+          "typeSource": "typescript",
+          "value": "[]",
+          "defaultValue": {
+            "raw": "[]",
+            "kind": "array",
+            "value": []
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 59,
+              "column": 4
+            },
+            "end": {
+              "line": 59,
+              "column": 22
+            }
+          }
+        },
+        {
+          "name": "presetSelections",
+          "kind": "let",
+          "type": "Record<string, string>",
+          "typeSource": "typescript",
+          "value": "{}",
+          "defaultValue": {
+            "raw": "{}",
+            "kind": "object",
+            "value": {}
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 60,
+              "column": 4
+            },
+            "end": {
+              "line": 60,
+              "column": 25
+            }
+          }
+        },
+        {
+          "name": "onPresetChange",
+          "kind": "let",
+          "type": "(presetId: string, optionId: string) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 61,
+              "column": 4
+            },
+            "end": {
+              "line": 61,
               "column": 18
             }
           }
@@ -23003,6 +23396,96 @@
             "end": {
               "line": 27,
               "column": 27
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/entity-list-table/toolbar/FilterPresetToolbar.svelte",
+    "component": "FilterPresetToolbar",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 88,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "preset",
+          "kind": "let",
+          "type": "FilterPreset",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 24,
+              "column": 4
+            },
+            "end": {
+              "line": 24,
+              "column": 10
+            }
+          }
+        },
+        {
+          "name": "selected",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 25,
+              "column": 4
+            },
+            "end": {
+              "line": 25,
+              "column": 12
+            }
+          }
+        },
+        {
+          "name": "onSelect",
+          "kind": "let",
+          "type": "(optionId: string) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 12
             }
           }
         }
@@ -23443,7 +23926,7 @@
           "column": 0
         },
         "end": {
-          "line": 267,
+          "line": 271,
           "column": 0
         }
       },
@@ -24199,11 +24682,11 @@
           "message": "{@render extraDialogs(...)} argument is not a plain object literal; the render call was not mapped to slot metadata.",
           "source": {
             "start": {
-              "line": 264,
+              "line": 268,
               "column": 4
             },
             "end": {
-              "line": 264,
+              "line": 268,
               "column": 31
             }
           }
@@ -25629,7 +26112,7 @@
           "column": 0
         },
         "end": {
-          "line": 89,
+          "line": 97,
           "column": 0
         }
       },

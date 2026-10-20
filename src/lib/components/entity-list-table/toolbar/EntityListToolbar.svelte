@@ -1,6 +1,5 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { cn } from '$lib/utils.js';
   import { SearchBar, ViewModeToggle, DeletionFilterToggle, FilterPresetToolbar } from '.';
   import Columns3 from '@lucide/svelte/icons/columns-3'
   import Funnel from '@lucide/svelte/icons/funnel';
@@ -138,6 +137,7 @@
         variant="default"
         size="sm"
         type="button"
+        data-testid="entity-create-cta"
         onclick={onCreateAction}
       >
         {$t('system.entities.list.new')}

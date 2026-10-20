@@ -96,6 +96,7 @@ is reusable for comboboxes, related-object labels, and other display contexts.
 | `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
+| `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) |
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
 
@@ -110,6 +111,7 @@ Present only on entities rendered by `EntityListTable`:
 | `default_page_size` | Initial rows per page |
 | `page_size_options` | Page-size dropdown values |
 | `row_custom_actions` | Table-specific custom row CTAs (non-standard ops) |
+| `filter_presets` | Mutually-exclusive preset scope filters rendered as toolbar controls. `display:"button_group"` renders **icon-only** segmented buttons — `icon` required per option, meaning carried by `title` tooltip + `aria-pressed` (the label is never shown); `"combobox"` for long lists. Exactly one option is always active, `where:[]` is the "all" escape, conditions AND into every `/list` request |
 
 `row_custom_actions` entries carry only display config (`action_name`,
 `translation_key`, `icon`, `text_color`, `disabled_when_deleted`,
