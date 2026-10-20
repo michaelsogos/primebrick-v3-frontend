@@ -1,15 +1,16 @@
 <script lang="ts">
   /**
-   * /system/jobs/rules — job_rule list, HOST-rendered EntityTablePage.
+   * /jobs/rules — job_rule list, HOST-rendered EntityTablePage (standard
+   * archetype). Declared by the job service's `endpoints.nav` census
+   * (`kind:"list"`, `entity:"job_rule"`); api_base resolves via
+   * ENTITY_SERVICE_MAP → /ws/job.
    *
-   * The route is declared by the job service's `endpoints.nav` census
-   * (`kind:"list"`, `entity:"job_rule"`) — the page archetype is the
-   * standard metadata-driven list; the service proxy base resolves via
-   * `entityApiBase` (ENTITY_SERVICE_MAP → `/ws/job`).
+   * The breadcrumb renders the JOB module's nav menu — the page is owned
+   * by the `job` module (route_prefix `/jobs`), never by settings.
    */
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
   import { page as appPage } from '$app/state';
   import { t } from '$lib/i18n';
   import { entityApiBase } from '$lib/api';
@@ -20,14 +21,13 @@
   storageKeyPrefix="pb:jobs:rules:"
   errorScopeKey="app.common.errors.scope.jobsList"
   errorScopeKeyInit="app.common.errors.scope.jobsPageInit"
+  deletionFilter={false}
 >
   {#snippet breadcrumb()}
     <AppPageBreadcrumb
       segments={[
-        { label: $t('app.system') },
-        settingsTabMenuSegment({
+        moduleMenuSegment({
           pathname: appPage.url.pathname,
-          searchParams: appPage.url.searchParams,
           t: (key) => $t(key)
         })
       ]}

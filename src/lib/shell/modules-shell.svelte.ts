@@ -35,7 +35,7 @@ function clearLastRoute(): void {
 
 /**
  * Pure prefix-ownership resolver: longest-prefix match wins — a module
- * declaring a specific route_prefix (e.g. job → /system/jobs) owns that
+ * declaring a specific route_prefix (e.g. job → /jobs) owns that
  * page even when it sits under a broader prefix owned by another module
  * (settings → /system). First-match would let the broad prefix swallow
  * service-owned routes. No match → `null` (neutral: no module owns the

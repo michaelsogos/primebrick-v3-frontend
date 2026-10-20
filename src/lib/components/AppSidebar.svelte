@@ -28,13 +28,29 @@
   const moduleNavLoading = $derived(shellNav.moduleNavLoading);
   const moduleNavError = $derived(shellNav.moduleNavError);
 
+  /** All declared nav hrefs (links + group children) — flattened once so
+   *  active resolution can pick the longest match. */
+  const navHrefs = $derived(
+    navItems.flatMap((item) => [
+      item.href,
+      ...(item.children ?? []).map((child) => child.href)
+    ])
+  );
+
   function isLinkActive(href: string): boolean {
     const pathname = page.url.pathname;
     // Prefix match alone is not enough: a link only glows when the current
     // route actually belongs to THIS module — otherwise a broad declared
     // prefix would light up on pages owned by another module.
     if (!(pathname === href || pathname.startsWith(href + '/'))) return false;
-    return shellNav.resolveModuleFromRoute(pathname) === shellNav.selectedModuleId;
+    if (shellNav.resolveModuleFromRoute(pathname) !== shellNav.selectedModuleId) return false;
+    // LONGEST MATCH WINS — sibling links may share prefixes (e.g. `/jobs`
+    // and `/jobs/rules`); only the most specific declared link is active,
+    // never both. On deeper sub-pages (`/jobs/rules/123`) the longest
+    // declared prefix still resolves correctly.
+    return !navHrefs.some(
+      (h) => h !== href && h.length > href.length && (pathname === h || pathname.startsWith(h + '/'))
+    );
   }
 
   $effect(() => {
@@ -129,7 +145,8 @@
 
 {#snippet navLink(item: ModuleNavLink, level: 1 | 2)}
   {#if item.children && item.children.length > 0}
-    {@const isParentActive = isLinkActive(item.href)}
+    {@const isParentActive =
+      isLinkActive(item.href) || item.children.some((child) => isLinkActive(child.href))}
     {@const groupOpen = openGroups[item.id] ?? isParentActive}
     <Sidebar.MenuItem>
       <div class="group/collapsible" data-state={groupOpen ? 'open' : 'closed'}>

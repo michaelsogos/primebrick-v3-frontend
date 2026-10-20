@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 /**
  * resolveModuleFromRoute — longest-prefix module ownership.
  *
- * A service-owned page (job → /system/jobs) must resolve to its OWN module
+ * A service-owned page (job → /jobs) must resolve to its OWN module
  * even when it sits under a broader prefix owned by another module
  * (settings → /system). First-match resolution would let the broad prefix
  * swallow service-declared routes — the anti-pattern this guards against.
@@ -28,7 +28,7 @@ const MODULES = [
     name: 'Job Handler',
     enabled: true,
     icon: 'schedule',
-    route_prefixes: ['/system/jobs'],
+    route_prefixes: ['/jobs'],
     is_reserved: false,
   },
   {
@@ -57,9 +57,9 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   });
 
   it('resolves a service-owned page to its own module, not the broad prefix owner', () => {
-    // /system/jobs sits under settings' /system prefix but the job module
-    // declares the longer /system/jobs prefix — the specific owner wins.
-    expect(shellNav.resolveModuleFromRoute('/system/jobs')).toBe('job');
+    // /jobs is the job module's own prefix — it must resolve to 'job',
+    // never to a foreign module.
+    expect(shellNav.resolveModuleFromRoute('/jobs')).toBe('job');
   });
 
   it('resolves routes under a declared prefix to that prefix owner', () => {
@@ -73,9 +73,9 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   });
 
   it('does not let a trailing-slash-less prefix over-match', () => {
-    // '/system/jobs-extra' matches neither job's '/system/jobs' nor any
-    // settings prefix (no /system catch-all exists anymore) → unowned.
-    expect(shellNav.resolveModuleFromRoute('/system/jobs-extra')).toBeNull();
+    // '/jobs-extra' matches neither job's '/jobs' (segment-boundary rule)
+    // nor any other declared prefix → unowned.
+    expect(shellNav.resolveModuleFromRoute('/jobs-extra')).toBeNull();
     // An undeclared /system subtree is unowned, not settings'.
     expect(shellNav.resolveModuleFromRoute('/system/users')).toBeNull();
   });

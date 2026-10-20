@@ -230,8 +230,13 @@ test.describe("module ownership — observable contract", () => {
       .locator("[data-slot='dropdown-menu-content'] [aria-label^='Icon not found']")
       .count();
     expect(markers, "missing-icon markers in module switcher").toBe(0);
-    const svgs = await page.locator(`${MENU_ITEM} svg`).count();
-    expect(svgs, "module icons must render as svg").toBeGreaterThanOrEqual(modules.length);
+    // DynamicIcon resolves each icon via a lazy import — poll so the count
+    // is taken only after the async components actually render.
+    await expect
+      .poll(async () => page.locator(`${MENU_ITEM} svg`).count(), {
+        timeout: 10000,
+      })
+      .toBeGreaterThanOrEqual(modules.length);
     await page.keyboard.press("Escape");
 
     // For each page-owning module, open its home and check nav-link icons.
