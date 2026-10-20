@@ -36,7 +36,8 @@ const MODULES = [
     name: 'Settings',
     enabled: true,
     icon: 'settings',
-    route_prefixes: ['/system'],
+    // Real prefixes only — no /system catch-all (attribution, not containment)
+    route_prefixes: ['/system/settings', '/system/migrations'],
     is_reserved: true,
   },
   {
@@ -61,9 +62,8 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
     expect(shellNav.resolveModuleFromRoute('/system/jobs')).toBe('job');
   });
 
-  it('resolves broader-prefix routes to the broad prefix owner', () => {
+  it('resolves routes under a declared prefix to that prefix owner', () => {
     expect(shellNav.resolveModuleFromRoute('/system/settings/profile')).toBe('settings');
-    expect(shellNav.resolveModuleFromRoute('/system/users')).toBe('settings');
     expect(shellNav.resolveModuleFromRoute('/system/migrations')).toBe('settings');
   });
 
@@ -73,9 +73,11 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   });
 
   it('does not let a trailing-slash-less prefix over-match', () => {
-    // '/system/jobs-extra' must NOT match job's '/system/jobs' prefix —
-    // it falls back to settings' '/system'.
-    expect(shellNav.resolveModuleFromRoute('/system/jobs-extra')).toBe('settings');
+    // '/system/jobs-extra' matches neither job's '/system/jobs' nor any
+    // settings prefix (no /system catch-all exists anymore) → unowned.
+    expect(shellNav.resolveModuleFromRoute('/system/jobs-extra')).toBeNull();
+    // An undeclared /system subtree is unowned, not settings'.
+    expect(shellNav.resolveModuleFromRoute('/system/users')).toBeNull();
   });
 
   it('returns null when nothing matches — neutral, not the reserved module', () => {

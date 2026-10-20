@@ -21,7 +21,13 @@ export async function load() {
   } catch (e) {
     error(500, `Cannot resolve module for '/system': ${e instanceof Error ? e.message : String(e)}`);
   }
-  const ownerId = resolveModuleIdFromPrefixes(modules, '/system');
+  // `/system` is a synthetic convenience route — no module declares it as
+  // a prefix anymore (the reserved module only claims its real subtrees,
+  // /system/settings + /system/migrations). The reserved module is the
+  // honest landing target for the system area.
+  const ownerId =
+    resolveModuleIdFromPrefixes(modules, '/system') ??
+    modules.find((m) => m.is_reserved)?.id;
   if (!ownerId) {
     error(500, "No module declares ownership of route '/system'");
   }

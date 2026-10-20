@@ -21,6 +21,7 @@ import type { UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
+import { pushNotification } from '$lib/errors/app-errors';
 
 const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
 const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
@@ -56,10 +57,19 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
-    // Never silent: a failed fetch leaves raw keys on screen until the next
-    // navigation — always log it. `cached` only decides severity.
+    // Never silent, never blocking: a failed dict fetch surfaces as a
+    // non-blocking notification (toast + errors-panel card) — raw keys stay
+    // visible but the failure is explicit and the user can navigate/retry.
+    // Severity: HIGH when there is no cached dict (raw keys guaranteed),
+    // MEDIUM when a cached dict still covers the UI (stale but working).
     const log = cached ? console.warn : console.error;
     log(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
+    pushNotification({
+      impact: cached ? 'MEDIUM' : 'HIGH',
+      message: `Failed to load translations for module '${moduleId}' (${lang})`,
+      scope: 'i18n',
+      detail: String(e),
+    });
   }
 }
 
