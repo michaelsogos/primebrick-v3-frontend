@@ -49,6 +49,7 @@
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             title={selectedLabel}
             aria-label={$t('app.nav.module')}
+            data-testid="module-switcher-trigger"
           >
             <div
               class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"

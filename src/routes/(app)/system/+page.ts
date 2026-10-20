@@ -2,6 +2,10 @@ import { error, redirect } from '@sveltejs/kit';
 import { fetchModuleMeta, fetchModules, type ModuleInfo } from '$lib/api';
 import { resolveModuleIdFromPrefixes } from '$lib/shell/modules-shell.svelte';
 
+// Client-only: every authenticated API call in this app happens from the
+// browser — SSR-side fetch has no session cookie and the BE would 401.
+export const ssr = false;
+
 // Landing on the bare module prefix `/system` must not 404: resolve the
 // module that owns the prefix by longest-prefix ownership (the same rule
 // the shell applies — first-match would let an arbitrary module win),
