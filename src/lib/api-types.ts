@@ -33,7 +33,6 @@ export type ModuleNavLink = {
 
 export type ModuleNav = {
   module: string;
-  icon?: string;
   nav: ModuleNavLink[];
 };
 
