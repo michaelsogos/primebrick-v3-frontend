@@ -1,17 +1,16 @@
 import { error, redirect } from '@sveltejs/kit';
 import { fetchModuleMeta, fetchModules, type ModuleInfo } from '$lib/api';
-import { resolveModuleIdFromPrefixes } from '$lib/shell/modules-shell.svelte';
 
 // Client-only: every authenticated API call in this app happens from the
 // browser — SSR-side fetch has no session cookie and the BE would 401.
 export const ssr = false;
 
-// Landing on the bare module prefix `/system` must not 404: resolve the
-// module that owns the prefix by longest-prefix ownership (the same rule
-// the shell applies — first-match would let an arbitrary module win),
-// then send the user to its home — the first nav link declared by the
-// module. That target may itself redirect deeper
-// (e.g. /system/settings → /system/settings/profile).
+// Landing on the bare root prefix `/system` must not 404: `/system` is
+// the ROOT level (`service_registry.part_of`), not a module prefix — no
+// module declares it. Resolve the level's reserved module (settings is
+// the platform landing for the system area), then send the user to its
+// declared home — the first nav link (`nav[0].href`, may itself redirect
+// deeper e.g. /system/settings → /system/settings/profile).
 // A fetch/ownership failure surfaces as an error page, not an arbitrary
 // redirect to a module the route does not belong to.
 export async function load() {
@@ -21,13 +20,9 @@ export async function load() {
   } catch (e) {
     error(500, `Cannot resolve module for '/system': ${e instanceof Error ? e.message : String(e)}`);
   }
-  // `/system` is a synthetic convenience route — no module declares it as
-  // a prefix anymore (the reserved module only claims its real subtrees,
-  // /system/settings + /system/migrations). The reserved module is the
-  // honest landing target for the system area.
   const ownerId =
-    resolveModuleIdFromPrefixes(modules, '/system') ??
-    modules.find((m) => m.is_reserved)?.id;
+    modules.find((m) => m.part_of === 'system' && m.is_reserved)?.id ??
+    modules.find((m) => m.part_of === 'system' && m.enabled)?.id;
   if (!ownerId) {
     error(500, "No module declares ownership of route '/system'");
   }

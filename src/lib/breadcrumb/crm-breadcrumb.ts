@@ -16,8 +16,8 @@ export function crmModuleMenuSegment(args: {
     items: [
       {
         label: args.t('system.entities.customer.title'),
-        href: '/system/customers',
-        current: pathname === '/system/customers' || pathname.startsWith('/system/customers/')
+        href: '/crm/customers',
+        current: pathname === '/crm/customers' || pathname.startsWith('/crm/customers/')
       },
       {
         label: args.t('crm.pipeline.nav'),

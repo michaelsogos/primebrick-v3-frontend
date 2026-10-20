@@ -11,8 +11,8 @@ import { shellNav } from '$lib/shell/modules-shell.svelte';
  * (from `/modules`), so a job page shows "Job Handler ▾", never a foreign
  * module's label.
  *
- * Current-item detection uses LONGEST-MATCH semantics: on `/jobs/rules`
- * only the `/jobs/rules` item is marked current — `/jobs` is a prefix of
+ * Current-item detection uses LONGEST-MATCH semantics: on `/system/job/rules`
+ * only the `/system/job/rules` item is marked current — `/system/job` is a prefix of
  * it, not a second current entry.
  */
 export function moduleMenuSegment(args: {

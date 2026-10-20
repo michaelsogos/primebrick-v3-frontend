@@ -24,7 +24,8 @@
     datetimeIanaModeByKey,
     viewMode,
     cell,
-    datetimeIanaRenderTick
+    datetimeIanaRenderTick,
+    sparklineData
   }: {
     row: Record<string, unknown>;
     column: MetaColumn;
@@ -34,6 +35,8 @@
     viewMode?: 'cards_grid' | 'cards_list';
     cell?: any;
     datetimeIanaRenderTick?: number;
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
   const value = $derived(row[column.key]);
@@ -84,11 +87,12 @@
     {:else if cell}
       {@render cell({ row, column, datetimeIanaModeByKey, datetimeIanaRenderTick })}
     {:else}
-      <TableCell 
-        row={row} 
-        column={column} 
-        datetimeIanaModeByKey={datetimeIanaModeByKey} 
-        datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0} 
+      <TableCell
+        row={row}
+        column={column}
+        datetimeIanaModeByKey={datetimeIanaModeByKey}
+        datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0}
+        sparklineData={sparklineData}
       />
     {/if}
   </div>

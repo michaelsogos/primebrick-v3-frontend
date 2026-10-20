@@ -226,7 +226,6 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('app.system') },
           { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: page.url.pathname,

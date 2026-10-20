@@ -1,12 +1,14 @@
 <script lang="ts">
   /**
-   * /jobs/rules — job_rule list, HOST-rendered EntityTablePage (standard
-   * archetype). Declared by the job service's `endpoints.nav` census
-   * (`kind:"list"`, `entity:"job_rule"`); api_base resolves via
+   * /system/job/rules — job_rule list, HOST-rendered EntityTablePage
+   * (standard archetype). Declared by the job service's `endpoints.nav`
+   * census (`kind:"list"`, `entity:"job_rule"`); api_base resolves via
    * ENTITY_SERVICE_MAP → /ws/job.
    *
    * The breadcrumb renders the JOB module's nav menu — the page is owned
-   * by the `job` module (route_prefix `/jobs`), never by settings.
+   * by the `job` module (route_prefix `/system/job`), never by settings.
+   * The create CTA is census-derived (`/system/job/rules/new` is
+   * `kind:"create"` on `job_rule`).
    */
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -22,7 +24,6 @@
   errorScopeKey="app.common.errors.scope.jobsList"
   errorScopeKeyInit="app.common.errors.scope.jobsPageInit"
   deletionFilter={false}
-  createPath="/jobs/rules/new"
 >
   {#snippet breadcrumb()}
     <AppPageBreadcrumb

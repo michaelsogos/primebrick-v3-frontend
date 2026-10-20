@@ -163,7 +163,6 @@
 <AppPageScaffold>
   <AppPageBreadcrumb
     segments={[
-      { label: $t('app.system') },
       { label: $t('system.settings.title'), href: '/system/settings/profile' },
       settingsTabMenuSegment({
         pathname: appPage.url.pathname,

@@ -35,7 +35,7 @@ function clearLastRoute(): void {
 
 /**
  * Pure prefix-ownership resolver: longest-prefix match wins — a module
- * declaring a specific route_prefix (e.g. job → /jobs) owns that
+ * declaring a specific route_prefix (e.g. job → /system/job) owns that
  * page even when it sits under a broader prefix owned by another module
  * (settings → /system). First-match would let the broad prefix swallow
  * service-owned routes. No match → `null` (neutral: no module owns the
@@ -68,6 +68,16 @@ function resolveModuleFromRoute(pathname: string): string | null {
   return resolveModuleIdFromPrefixes(_state.modules, pathname);
 }
 
+/**
+ * Distinct root levels (`part_of`) across the registered modules —
+ * 'system' first (the platform root), the rest alphabetical. Drives the
+ * sidebar's root-level selector and the breadcrumb root segment.
+ */
+function listRoots(modules: readonly ModuleInfo[]): string[] {
+  const roots = [...new Set(modules.filter((m) => m.enabled !== false).map((m) => m.part_of).filter(Boolean))];
+  return roots.sort((a, b) => (a === 'system' ? -1 : b === 'system' ? 1 : a.localeCompare(b)));
+}
+
 export const shellNav = {
   get state(): DeepReadonly<typeof _state> { return _state as DeepReadonly<typeof _state>; },
   get loading() { return _state.loading; },
@@ -78,6 +88,17 @@ export const shellNav = {
   get moduleNav() { return _state.module_nav; },
   get moduleNavLoading() { return _state.module_nav_loading; },
   get moduleNavError() { return _state.module_nav_error ?? undefined; },
+  /** Root levels present in the registry (e.g. ['system', 'crm']). */
+  get roots(): string[] { return listRoots(_state.modules); },
+  /** The selected module's root level — 'system' when nothing is selected
+   *  (the platform root is the shell's neutral level). */
+  get selectedRoot(): string {
+    return _state.modules.find((m) => m.id === _state.selected_module_id)?.part_of ?? 'system';
+  },
+  /** Modules living under a root level (sidebar filtering). */
+  modulesForRoot(root: string): ModuleInfo[] {
+    return _state.modules.filter((m) => m.part_of === root);
+  },
   loadShellNav,
   selectModule,
   reloadModuleNav,

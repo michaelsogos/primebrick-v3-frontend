@@ -35,6 +35,8 @@ type ModuleInfo = {
   name: string;
   enabled: boolean;
   icon?: string;
+  /** Root level — every route_prefix must live under /{part_of}/{id}. */
+  part_of: string;
   route_prefixes?: string[];
   is_reserved?: boolean;
 };
@@ -121,7 +123,20 @@ test.describe("module ownership — observable contract", () => {
     ).toBeGreaterThan(0);
 
     for (const m of pageModules_) {
-      // Open the switcher and pick THIS module by name.
+      // Root level first: the module switcher only lists modules under the
+      // selected root — pick the module's root (label app.nav.roots.<part_of>,
+      // same string the sidebar shows) when it isn't the current root.
+      const currentRootBtn = page.locator("[data-testid='root-switcher-trigger']").first();
+      const currentRootLabel = (await currentRootBtn.textContent())?.trim();
+      const targetRootLabel = new RegExp(`^${m.part_of}$`, "i");
+      if (!currentRootLabel || !targetRootLabel.test(currentRootLabel)) {
+        await currentRootBtn.click();
+        await page
+          .getByRole("menuitem", { name: targetRootLabel })
+          .first()
+          .click();
+      }
+      // Then pick THIS module by name in the module switcher.
       await page.locator(SWITCHER_TRIGGER).first().click();
       await page.locator(MENU_ITEM, { hasText: m.name }).first().click();
 
@@ -182,6 +197,52 @@ test.describe("module ownership — observable contract", () => {
     }
   });
 
+  test("root level: every module is namespaced under /{part_of}/{code}", async ({
+    page,
+  }) => {
+    const modules = await fetchModules(page);
+    expect(modules.length, "at least one module must be enabled").toBeGreaterThan(0);
+
+    for (const m of modules) {
+      // Root==code collapses: crm (part_of 'crm') lives under /crm,
+      // not /crm/crm — same rule the BE validates at registration.
+      const expectedPrefix = m.part_of === m.id ? `/${m.id}` : `/${m.part_of}/${m.id}`;
+      for (const p of m.route_prefixes ?? []) {
+        expect(
+          p === expectedPrefix || p.startsWith(expectedPrefix + "/"),
+          `module '${m.id}' prefix '${p}' must live under '${expectedPrefix}'`
+        ).toBeTruthy();
+      }
+      // The module's home link (nav[0].href) is namespaced too. Modules
+      // without a nav declaration (headless services — offline ai/
+      // emailsender/webhook carry no endpoints.nav) legitimately 404 on
+      // /modules/:code/meta: nothing to check for them.
+      const nav = (m.route_prefixes?.length ?? 0) > 0 ? await fetchModuleNav(page, m.id) : [];
+      for (const href of flattenHrefs(nav)) {
+        expect(
+          href === expectedPrefix || href.startsWith(expectedPrefix + "/"),
+          `module '${m.id}' nav link '${href}' must live under '${expectedPrefix}'`
+        ).toBeTruthy();
+      }
+    }
+
+    // The root-level selector is always visible — even with a single root.
+    await page.goto("/system", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator("[data-testid='root-switcher-trigger']").first(),
+      "root-level switcher must be visible in the sidebar"
+    ).toBeVisible({ timeout: 10000 });
+    const roots = new Set(modules.map((m) => m.part_of));
+    await page.locator("[data-testid='root-switcher-trigger']").first().click();
+    for (const root of roots) {
+      await expect(
+        page.locator(MENU_ITEM).filter({ hasText: new RegExp(root, "i") }).first(),
+        `root '${root}' must appear in the root switcher`
+      ).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+  });
+
   test("i18n coverage: no raw dict keys leak on module pages", async ({ page }) => {
     const modules = pageModules(await fetchModules(page));
 
@@ -223,7 +284,9 @@ test.describe("module ownership — observable contract", () => {
     const modules = await fetchModules(page);
 
     // Switcher dropdown: every module icon must render an <svg>, never the
-    // '?' error marker.
+    // '?' error marker. The module switcher is root-scoped — on `/system`
+    // it lists only the selected root's modules.
+    const systemRootModules = modules.filter((m) => m.part_of === "system");
     await page.locator(SWITCHER_TRIGGER).first().click();
     await page.locator(MENU_ITEM).first().waitFor({ state: "visible", timeout: 10000 });
     const markers = await page
@@ -236,7 +299,7 @@ test.describe("module ownership — observable contract", () => {
       .poll(async () => page.locator(`${MENU_ITEM} svg`).count(), {
         timeout: 10000,
       })
-      .toBeGreaterThanOrEqual(modules.length);
+      .toBeGreaterThanOrEqual(systemRootModules.length);
     await page.keyboard.press("Escape");
 
     // For each page-owning module, open its home and check nav-link icons.

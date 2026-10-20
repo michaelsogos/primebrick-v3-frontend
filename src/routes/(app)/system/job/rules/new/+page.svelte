@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * /jobs/rules/new — module-owned REMOTE page (rule creation form).
+   * /system/job/rules/new — module-owned REMOTE page (rule creation form).
    *
-   * Same esm-mount contract as /jobs/new: the job service ships this page's
+   * Same esm-mount contract as /system/job/new: the job service ships this page's
    * UI inside its precompiled chunk (mountPage dispatches on ctx.nav.route);
    * the route resolves the declaration from the routes census and mounts it
-   * via RemotePageMount. The list page it belongs to (/jobs/rules) is a
+   * via RemotePageMount. The list page it belongs to (/system/job/rules) is a
    * host-rendered EntityTablePage archetype declared kind:"list".
    *
    * components.AppPageBreadcrumb / Button / moduleMenuSegment → host surface
@@ -38,7 +38,7 @@
     resolve_error = null;
     try {
       const routes = await fetchRoutesCensus();
-      const found = routes.find((r) => r.route === '/jobs/rules/new' && r.component_url);
+      const found = routes.find((r) => r.route === '/system/job/rules/new' && r.component_url);
       if (found) {
         decl = found;
         return;
@@ -46,7 +46,7 @@
       decl = null;
       resolve_error = {
         kind: 'contract',
-        detail: 'route /jobs/rules/new is not declared for remote delivery',
+        detail: 'route /system/job/rules/new is not declared for remote delivery',
       };
     } catch (e) {
       decl = null;

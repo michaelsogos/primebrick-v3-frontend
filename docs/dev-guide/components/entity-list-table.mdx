@@ -14,7 +14,7 @@ Record<string, unknown>` and lives in
 `EntityTablePage` (see [Route-level usage](#route-level-usage-entitytablepage)
 below), which owns data/state via `useEntityList` and feeds this component.
 Use `EntityListTable` directly only in composite hosts (multiple list
-instances, extra UI — e.g. `system/jobs`).
+instances, extra UI — e.g. `system/job`).
 
 ## Component overview
 
@@ -223,13 +223,14 @@ route-level host for the table archetype. A page is ~50 lines: config props
 | Errors | `errorScopeKey`, `errorScopeKeyInit` |
 | Sync | `syncChannel` — legacy BroadcastChannel name (receiver mode; child form pages post `refresh`) |
 | Navigation | `navStrategy` (`'goto'` default or `'popup'` — new tab + focus), `createPath`, `editPath` (`:uuid` placeholder), `onCreateAction`/`onEditAction` overrides |
+| Create CTA | Derived automatically: `EntityTablePage` matches the route census `kind:"create"` route for the current entity and forwards `createPath` + `create_cta` (`label_key`/`icon` from the census route) to the toolbar `entity-create-cta`. Pass `createPath` only to override the census-derived route. |
 | Row actions | `customActionHandlers` keyed by `meta.table.row_custom_actions[].action_name`, `rowActions={false}` hides the column |
 | Selection labels | `selectionLabelKey` / `selectionLabelSingularKey` / `selectionLabelText` / `selectionLabelSingularText` |
-| Snippets | `breadcrumb`, `headerExtras`, `headerActions(meta)` (page-level CTAs — gate with `isEntityOpAllowed`), `cell`, `extraDialogs(uid)`, `metaLoadingView`, `rowsLoadingView`, `emptyView`, `errorView` |
+| Snippets | `breadcrumb`, `headerExtras`, `headerActions(meta)` (non-entity page CTAs — entity create belongs to the census-derived toolbar CTA), `cell`, `extraDialogs(uid)`, `metaLoadingView`, `rowsLoadingView`, `emptyView`, `errorView` |
 
 Canonical examples: `system/settings/users` (popup nav + `extraDialogs`),
-`system/settings/roles` (`deletionFilter={false}`), `system/customers`
-(`headerActions` CTA). Composite host example: `system/jobs`.
+`system/settings/roles` (`deletionFilter={false}`), `crm/customers`
+(census-derived create CTA). Composite host example: `system/job`.
 
 ## Persistence
 

@@ -511,7 +511,7 @@
           "column": 0
         },
         "end": {
-          "line": 84,
+          "line": 110,
           "column": 0
         }
       },
@@ -531,11 +531,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 13,
+              "line": 16,
               "column": 4
             },
             "end": {
-              "line": 13,
+              "line": 16,
               "column": 12
             }
           }
@@ -816,7 +816,7 @@
           "column": 0
         },
         "end": {
-          "line": 199,
+          "line": 208,
           "column": 0
         }
       },
@@ -3406,7 +3406,7 @@
           "column": 0
         },
         "end": {
-          "line": 95,
+          "line": 99,
           "column": 6
         }
       },
@@ -3559,6 +3559,27 @@
               "column": 26
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -3569,11 +3590,11 @@
           "slot_props": "{\n  row: Record<string, unknown>;\n  column: MetaColumn;\n  datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;\n  datetimeIanaRenderTick: number;\n}",
           "source": {
             "start": {
-              "line": 85,
+              "line": 88,
               "column": 6
             },
             "end": {
-              "line": 85,
+              "line": 88,
               "column": 84
             }
           }
@@ -3596,7 +3617,7 @@
           "column": 0
         },
         "end": {
-          "line": 222,
+          "line": 226,
           "column": 0
         }
       },
@@ -4062,6 +4083,27 @@
             "end": {
               "line": 39,
               "column": 16
+            }
+          }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 40,
+              "column": 4
+            },
+            "end": {
+              "line": 40,
+              "column": 17
             }
           }
         }
@@ -4085,7 +4127,7 @@
           "column": 0
         },
         "end": {
-          "line": 220,
+          "line": 224,
           "column": 0
         }
       },
@@ -4551,6 +4593,27 @@
             "end": {
               "line": 39,
               "column": 16
+            }
+          }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 40,
+              "column": 4
+            },
+            "end": {
+              "line": 40,
+              "column": 17
             }
           }
         }
@@ -5457,7 +5520,7 @@
           "column": 0
         },
         "end": {
-          "line": 88,
+          "line": 92,
           "column": 0
         }
       },
@@ -5673,6 +5736,27 @@
               "column": 12
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -5697,7 +5781,7 @@
           "column": 0
         },
         "end": {
-          "line": 209,
+          "line": 214,
           "column": 0
         }
       },
@@ -6312,6 +6396,27 @@
               "column": 16
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 38,
+              "column": 4
+            },
+            "end": {
+              "line": 38,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -6336,7 +6441,7 @@
           "column": 0
         },
         "end": {
-          "line": 355,
+          "line": 359,
           "column": 0
         }
       },
@@ -7287,6 +7392,27 @@
               "column": 22
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 71,
+              "column": 4
+            },
+            "end": {
+              "line": 71,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -7297,11 +7423,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 173,
+              "line": 176,
               "column": 6
             },
             "end": {
-              "line": 173,
+              "line": 176,
               "column": 27
             }
           }
@@ -7312,11 +7438,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 144,
+              "line": 147,
               "column": 6
             },
             "end": {
-              "line": 144,
+              "line": 147,
               "column": 27
             }
           }
@@ -7327,11 +7453,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 157,
+              "line": 160,
               "column": 6
             },
             "end": {
-              "line": 157,
+              "line": 160,
               "column": 33
             }
           }
@@ -7508,7 +7634,7 @@
           "column": 0
         },
         "end": {
-          "line": 152,
+          "line": 156,
           "column": 0
         }
       },
@@ -8438,6 +8564,27 @@
               "column": 16
             }
           }
+        },
+        {
+          "name": "sparklineData",
+          "kind": "let",
+          "type": "Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 50,
+              "column": 4
+            },
+            "end": {
+              "line": 50,
+              "column": 17
+            }
+          }
         }
       ],
       "moduleExports": [],
@@ -8462,7 +8609,7 @@
           "column": 0
         },
         "end": {
-          "line": 281,
+          "line": 282,
           "column": 0
         }
       },
@@ -10684,7 +10831,7 @@
           "column": 0
         },
         "end": {
-          "line": 185,
+          "line": 188,
           "column": 0
         }
       },
@@ -11202,6 +11349,27 @@
           }
         },
         {
+          "name": "create_cta",
+          "kind": "let",
+          "type": "{ label_key?: string; icon?: string }",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 33,
+              "column": 4
+            },
+            "end": {
+              "line": 33,
+              "column": 14
+            }
+          }
+        },
+        {
           "name": "filterPresets",
           "kind": "let",
           "type": "readonly FilterPreset[]",
@@ -11219,11 +11387,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 33,
+              "line": 34,
               "column": 4
             },
             "end": {
-              "line": 33,
+              "line": 34,
               "column": 22
             }
           }
@@ -11246,11 +11414,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 34,
+              "line": 35,
               "column": 4
             },
             "end": {
-              "line": 34,
+              "line": 35,
               "column": 25
             }
           }
@@ -11267,11 +11435,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 35,
+              "line": 36,
               "column": 4
             },
             "end": {
-              "line": 35,
+              "line": 36,
               "column": 18
             }
           }
@@ -11288,11 +11456,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 36,
+              "line": 37,
               "column": 4
             },
             "end": {
-              "line": 36,
+              "line": 37,
               "column": 15
             }
           }
@@ -11309,11 +11477,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 38,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 38,
               "column": 21
             }
           }
@@ -11330,11 +11498,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 39,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 39,
               "column": 16
             }
           }
@@ -11351,11 +11519,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 40,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 40,
               "column": 19
             }
           }
@@ -11372,11 +11540,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 41,
               "column": 16
             }
           }
@@ -11393,11 +11561,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 42,
               "column": 22
             }
           }
@@ -11414,11 +11582,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 22
             }
           }
@@ -11435,11 +11603,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 44,
               "column": 18
             }
           }
@@ -11456,11 +11624,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 45,
               "column": 24
             }
           }
@@ -11477,11 +11645,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 46,
               "column": 27
             }
           }
@@ -11498,11 +11666,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 47,
               "column": 23
             }
           }
@@ -11519,11 +11687,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 48,
               "column": 16
             }
           }
@@ -11540,11 +11708,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 49,
               "column": 16
             }
           }
@@ -11561,11 +11729,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 19
             }
           }
@@ -11582,11 +11750,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 16
             }
           }
@@ -11603,11 +11771,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 17
             }
           }
@@ -11624,11 +11792,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 20
             }
           }
@@ -19035,7 +19203,7 @@
           "column": 0
         },
         "end": {
-          "line": 755,
+          "line": 757,
           "column": 0
         }
       },
@@ -19940,7 +20108,7 @@
           }
         },
         {
-          "name": "onEditAction",
+          "name": "create_cta",
           "kind": "let",
           "typeSource": "unknown",
           "isFunction": false,
@@ -19955,6 +20123,26 @@
             },
             "end": {
               "line": 84,
+              "column": 14
+            }
+          }
+        },
+        {
+          "name": "onEditAction",
+          "kind": "let",
+          "typeSource": "unknown",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 85,
+              "column": 4
+            },
+            "end": {
+              "line": 85,
               "column": 16
             }
           }
@@ -19978,11 +20166,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 85,
+              "line": 86,
               "column": 4
             },
             "end": {
-              "line": 85,
+              "line": 86,
               "column": 34
             }
           }
@@ -20005,11 +20193,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 86,
+              "line": 87,
               "column": 4
             },
             "end": {
-              "line": 86,
+              "line": 87,
               "column": 21
             }
           }
@@ -20025,11 +20213,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 87,
+              "line": 88,
               "column": 4
             },
             "end": {
-              "line": 87,
+              "line": 88,
               "column": 24
             }
           }
@@ -20045,11 +20233,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 88,
+              "line": 89,
               "column": 4
             },
             "end": {
-              "line": 88,
+              "line": 89,
               "column": 18
             }
           }
@@ -20072,11 +20260,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 89,
+              "line": 90,
               "column": 4
             },
             "end": {
-              "line": 89,
+              "line": 90,
               "column": 24
             }
           }
@@ -20092,11 +20280,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 90,
+              "line": 91,
               "column": 4
             },
             "end": {
-              "line": 90,
+              "line": 91,
               "column": 27
             }
           }
@@ -20121,11 +20309,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 91,
+              "line": 92,
               "column": 4
             },
             "end": {
-              "line": 91,
+              "line": 92,
               "column": 73
             }
           }
@@ -20141,11 +20329,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 92,
+              "line": 93,
               "column": 4
             },
             "end": {
-              "line": 92,
+              "line": 93,
               "column": 30
             }
           }
@@ -20168,11 +20356,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 93,
+              "line": 94,
               "column": 4
             },
             "end": {
-              "line": 93,
+              "line": 94,
               "column": 22
             }
           }
@@ -20195,11 +20383,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 94,
+              "line": 95,
               "column": 4
             },
             "end": {
-              "line": 94,
+              "line": 95,
               "column": 25
             }
           }
@@ -20215,11 +20403,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 95,
+              "line": 96,
               "column": 4
             },
             "end": {
-              "line": 95,
+              "line": 96,
               "column": 18
             }
           }
@@ -20242,11 +20430,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 96,
+              "line": 97,
               "column": 4
             },
             "end": {
-              "line": 96,
+              "line": 97,
               "column": 22
             }
           }
@@ -20270,11 +20458,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 97,
+              "line": 98,
               "column": 4
             },
             "end": {
-              "line": 97,
+              "line": 98,
               "column": 79
             }
           }
@@ -20298,11 +20486,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 98,
+              "line": 99,
               "column": 4
             },
             "end": {
-              "line": 98,
+              "line": 99,
               "column": 41
             }
           }
@@ -20318,11 +20506,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 99,
+              "line": 100,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 100,
               "column": 8
             }
           }
@@ -20338,11 +20526,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 100,
+              "line": 101,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 101,
               "column": 19
             }
           }
@@ -20358,11 +20546,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 101,
+              "line": 102,
               "column": 4
             },
             "end": {
-              "line": 101,
+              "line": 102,
               "column": 19
             }
           }
@@ -20378,11 +20566,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 102,
+              "line": 103,
               "column": 4
             },
             "end": {
-              "line": 102,
+              "line": 103,
               "column": 13
             }
           }
@@ -20398,11 +20586,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 103,
+              "line": 104,
               "column": 4
             },
             "end": {
-              "line": 103,
+              "line": 104,
               "column": 13
             }
           }
@@ -20418,11 +20606,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 104,
+              "line": 105,
               "column": 4
             },
             "end": {
-              "line": 104,
+              "line": 105,
               "column": 18
             }
           }
@@ -20438,11 +20626,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 105,
+              "line": 106,
               "column": 4
             },
             "end": {
-              "line": 105,
+              "line": 106,
               "column": 20
             }
           }
@@ -21069,8 +21257,8 @@
         {
           "component": "src/lib/components/entity-list-table/EntityListTable.svelte",
           "kind": "prop-unknown-type",
-          "name": "onEditAction",
-          "message": "Prop \"onEditAction\" type could not be inferred; falling back to \"any\".",
+          "name": "create_cta",
+          "message": "Prop \"create_cta\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
               "line": 84,
@@ -21078,6 +21266,22 @@
             },
             "end": {
               "line": 84,
+              "column": 14
+            }
+          }
+        },
+        {
+          "component": "src/lib/components/entity-list-table/EntityListTable.svelte",
+          "kind": "prop-unknown-type",
+          "name": "onEditAction",
+          "message": "Prop \"onEditAction\" type could not be inferred; falling back to \"any\".",
+          "source": {
+            "start": {
+              "line": 85,
+              "column": 4
+            },
+            "end": {
+              "line": 85,
               "column": 16
             }
           }
@@ -21089,11 +21293,11 @@
           "message": "Prop \"onFilterValuesChange\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 87,
+              "line": 88,
               "column": 4
             },
             "end": {
-              "line": 87,
+              "line": 88,
               "column": 24
             }
           }
@@ -21105,11 +21309,11 @@
           "message": "Prop \"onResetFilters\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 88,
+              "line": 89,
               "column": 4
             },
             "end": {
-              "line": 88,
+              "line": 89,
               "column": 18
             }
           }
@@ -21121,11 +21325,11 @@
           "message": "Prop \"onAdvancedFiltersChange\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 90,
+              "line": 91,
               "column": 4
             },
             "end": {
-              "line": 90,
+              "line": 91,
               "column": 27
             }
           }
@@ -21137,11 +21341,11 @@
           "message": "Prop \"onDeletionFilterModeChange\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 92,
+              "line": 93,
               "column": 4
             },
             "end": {
-              "line": 92,
+              "line": 93,
               "column": 30
             }
           }
@@ -21153,11 +21357,11 @@
           "message": "Prop \"onPresetChange\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 95,
+              "line": 96,
               "column": 4
             },
             "end": {
-              "line": 95,
+              "line": 96,
               "column": 18
             }
           }
@@ -21169,11 +21373,11 @@
           "message": "Prop \"cell\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 99,
+              "line": 100,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 100,
               "column": 8
             }
           }
@@ -21185,11 +21389,11 @@
           "message": "Prop \"metaLoadingView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 100,
+              "line": 101,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 101,
               "column": 19
             }
           }
@@ -21201,11 +21405,11 @@
           "message": "Prop \"rowsLoadingView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 101,
+              "line": 102,
               "column": 4
             },
             "end": {
-              "line": 101,
+              "line": 102,
               "column": 19
             }
           }
@@ -21217,11 +21421,11 @@
           "message": "Prop \"emptyView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 102,
+              "line": 103,
               "column": 4
             },
             "end": {
-              "line": 102,
+              "line": 103,
               "column": 13
             }
           }
@@ -21233,11 +21437,11 @@
           "message": "Prop \"errorView\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 103,
+              "line": 104,
               "column": 4
             },
             "end": {
-              "line": 103,
+              "line": 104,
               "column": 13
             }
           }
@@ -21249,11 +21453,11 @@
           "message": "Prop \"loadingMessage\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 104,
+              "line": 105,
               "column": 4
             },
             "end": {
-              "line": 104,
+              "line": 105,
               "column": 18
             }
           }
@@ -21265,11 +21469,11 @@
           "message": "Prop \"noRecordsMessage\" type could not be inferred; falling back to \"any\".",
           "source": {
             "start": {
-              "line": 105,
+              "line": 106,
               "column": 4
             },
             "end": {
-              "line": 105,
+              "line": 106,
               "column": 20
             }
           }
@@ -22738,7 +22942,7 @@
           "column": 0
         },
         "end": {
-          "line": 149,
+          "line": 156,
           "column": 0
         }
       },
@@ -22757,11 +22961,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 43,
               "column": 10
             }
           }
@@ -22778,11 +22982,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 44,
               "column": 17
             }
           }
@@ -22799,11 +23003,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 45,
               "column": 16
             }
           }
@@ -22820,11 +23024,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 46,
               "column": 21
             }
           }
@@ -22841,11 +23045,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 47,
               "column": 24
             }
           }
@@ -22862,11 +23066,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 48,
               "column": 19
             }
           }
@@ -22883,11 +23087,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 49,
               "column": 12
             }
           }
@@ -22904,11 +23108,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 50,
               "column": 20
             }
           }
@@ -22925,11 +23129,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 51,
               "column": 22
             }
           }
@@ -22946,11 +23150,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 52,
               "column": 30
             }
           }
@@ -22973,11 +23177,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 53,
               "column": 24
             }
           }
@@ -22994,11 +23198,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 54,
               "column": 15
             }
           }
@@ -23015,11 +23219,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 55,
               "column": 19
             }
           }
@@ -23036,11 +23240,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 56,
               "column": 13
             }
           }
@@ -23057,11 +23261,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 57,
               "column": 21
             }
           }
@@ -23078,11 +23282,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 58,
               "column": 15
             }
           }
@@ -23099,11 +23303,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 59,
               "column": 23
             }
           }
@@ -23120,11 +23324,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 60,
               "column": 25
             }
           }
@@ -23141,12 +23345,33 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 61,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 61,
               "column": 18
+            }
+          }
+        },
+        {
+          "name": "create_cta",
+          "kind": "let",
+          "type": "{ label_key?: string; icon?: string }",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 62,
+              "column": 4
+            },
+            "end": {
+              "line": 62,
+              "column": 14
             }
           }
         },
@@ -23168,11 +23393,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 63,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 63,
               "column": 22
             }
           }
@@ -23195,11 +23420,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 64,
               "column": 4
             },
             "end": {
-              "line": 60,
+              "line": 64,
               "column": 25
             }
           }
@@ -23216,11 +23441,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 65,
               "column": 4
             },
             "end": {
-              "line": 61,
+              "line": 65,
               "column": 18
             }
           }
@@ -23926,7 +24151,7 @@
           "column": 0
         },
         "end": {
-          "line": 271,
+          "line": 289,
           "column": 0
         }
       },
@@ -23945,11 +24170,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 78,
+              "line": 79,
               "column": 4
             },
             "end": {
-              "line": 78,
+              "line": 79,
               "column": 12
             }
           }
@@ -23966,11 +24191,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 79,
+              "line": 80,
               "column": 4
             },
             "end": {
-              "line": 79,
+              "line": 80,
               "column": 20
             }
           }
@@ -23987,11 +24212,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 80,
+              "line": 81,
               "column": 4
             },
             "end": {
-              "line": 80,
+              "line": 81,
               "column": 15
             }
           }
@@ -24008,11 +24233,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 81,
+              "line": 82,
               "column": 4
             },
             "end": {
-              "line": 81,
+              "line": 82,
               "column": 17
             }
           }
@@ -24029,11 +24254,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 82,
+              "line": 83,
               "column": 4
             },
             "end": {
-              "line": 82,
+              "line": 83,
               "column": 21
             }
           }
@@ -24050,11 +24275,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 83,
+              "line": 84,
               "column": 4
             },
             "end": {
-              "line": 83,
+              "line": 84,
               "column": 16
             }
           }
@@ -24071,11 +24296,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 84,
+              "line": 85,
               "column": 4
             },
             "end": {
-              "line": 84,
+              "line": 85,
               "column": 16
             }
           }
@@ -24092,11 +24317,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 85,
+              "line": 86,
               "column": 4
             },
             "end": {
-              "line": 85,
+              "line": 86,
               "column": 18
             }
           }
@@ -24113,11 +24338,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 86,
+              "line": 87,
               "column": 4
             },
             "end": {
-              "line": 86,
+              "line": 87,
               "column": 11
             }
           }
@@ -24134,11 +24359,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 87,
+              "line": 88,
               "column": 4
             },
             "end": {
-              "line": 87,
+              "line": 88,
               "column": 17
             }
           }
@@ -24155,11 +24380,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 88,
+              "line": 89,
               "column": 4
             },
             "end": {
-              "line": 88,
+              "line": 89,
               "column": 14
             }
           }
@@ -24176,11 +24401,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 89,
+              "line": 90,
               "column": 4
             },
             "end": {
-              "line": 89,
+              "line": 90,
               "column": 20
             }
           }
@@ -24203,11 +24428,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 90,
+              "line": 91,
               "column": 4
             },
             "end": {
-              "line": 90,
+              "line": 91,
               "column": 24
             }
           }
@@ -24224,11 +24449,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 91,
+              "line": 92,
               "column": 4
             },
             "end": {
-              "line": 91,
+              "line": 92,
               "column": 14
             }
           }
@@ -24245,11 +24470,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 92,
+              "line": 93,
               "column": 4
             },
             "end": {
-              "line": 92,
+              "line": 93,
               "column": 12
             }
           }
@@ -24266,11 +24491,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 93,
+              "line": 94,
               "column": 4
             },
             "end": {
-              "line": 93,
+              "line": 94,
               "column": 18
             }
           }
@@ -24287,11 +24512,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 94,
+              "line": 95,
               "column": 4
             },
             "end": {
-              "line": 94,
+              "line": 95,
               "column": 16
             }
           }
@@ -24308,11 +24533,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 95,
+              "line": 96,
               "column": 4
             },
             "end": {
-              "line": 95,
+              "line": 96,
               "column": 24
             }
           }
@@ -24335,11 +24560,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 96,
+              "line": 97,
               "column": 4
             },
             "end": {
-              "line": 96,
+              "line": 97,
               "column": 21
             }
           }
@@ -24356,11 +24581,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 97,
+              "line": 98,
               "column": 4
             },
             "end": {
-              "line": 97,
+              "line": 98,
               "column": 21
             }
           }
@@ -24377,11 +24602,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 98,
+              "line": 99,
               "column": 4
             },
             "end": {
-              "line": 98,
+              "line": 99,
               "column": 29
             }
           }
@@ -24398,11 +24623,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 99,
+              "line": 100,
               "column": 4
             },
             "end": {
-              "line": 99,
+              "line": 100,
               "column": 22
             }
           }
@@ -24419,11 +24644,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 100,
+              "line": 101,
               "column": 4
             },
             "end": {
-              "line": 100,
+              "line": 101,
               "column": 30
             }
           }
@@ -24440,11 +24665,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 103,
+              "line": 104,
               "column": 4
             },
             "end": {
-              "line": 103,
+              "line": 104,
               "column": 17
             }
           }
@@ -24461,11 +24686,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 104,
+              "line": 105,
               "column": 4
             },
             "end": {
-              "line": 104,
+              "line": 105,
               "column": 8
             }
           }
@@ -24482,11 +24707,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 105,
+              "line": 106,
               "column": 4
             },
             "end": {
-              "line": 105,
+              "line": 106,
               "column": 16
             }
           }
@@ -24503,11 +24728,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 106,
+              "line": 107,
               "column": 4
             },
             "end": {
-              "line": 106,
+              "line": 107,
               "column": 19
             }
           }
@@ -24524,11 +24749,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 107,
+              "line": 108,
               "column": 4
             },
             "end": {
-              "line": 107,
+              "line": 108,
               "column": 19
             }
           }
@@ -24545,11 +24770,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 108,
+              "line": 109,
               "column": 4
             },
             "end": {
-              "line": 108,
+              "line": 109,
               "column": 13
             }
           }
@@ -24566,11 +24791,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 109,
+              "line": 110,
               "column": 4
             },
             "end": {
-              "line": 109,
+              "line": 110,
               "column": 13
             }
           }
@@ -24587,11 +24812,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 110,
+              "line": 111,
               "column": 4
             },
             "end": {
-              "line": 110,
+              "line": 111,
               "column": 18
             }
           }
@@ -24608,11 +24833,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 111,
+              "line": 112,
               "column": 4
             },
             "end": {
-              "line": 111,
+              "line": 112,
               "column": 20
             }
           }
@@ -24626,11 +24851,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 187,
+              "line": 204,
               "column": 10
             },
             "end": {
-              "line": 187,
+              "line": 204,
               "column": 32
             }
           }
@@ -24641,11 +24866,11 @@
           "slot_props": "Record<string, never>",
           "source": {
             "start": {
-              "line": 191,
+              "line": 208,
               "column": 10
             },
             "end": {
-              "line": 191,
+              "line": 208,
               "column": 34
             }
           }
@@ -24666,11 +24891,11 @@
           "message": "{@render headerActions(...)} argument is not a plain object literal; the render call was not mapped to slot metadata.",
           "source": {
             "start": {
-              "line": 196,
+              "line": 213,
               "column": 10
             },
             "end": {
-              "line": 196,
+              "line": 213,
               "column": 39
             }
           }
@@ -24682,11 +24907,11 @@
           "message": "{@render extraDialogs(...)} argument is not a plain object literal; the render call was not mapped to slot metadata.",
           "source": {
             "start": {
-              "line": 268,
+              "line": 286,
               "column": 4
             },
             "end": {
-              "line": 268,
+              "line": 286,
               "column": 31
             }
           }
@@ -26112,7 +26337,7 @@
           "column": 0
         },
         "end": {
-          "line": 97,
+          "line": 101,
           "column": 0
         }
       },
@@ -26131,11 +26356,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 13,
+              "line": 14,
               "column": 8
             },
             "end": {
-              "line": 13,
+              "line": 14,
               "column": 17
             }
           }
@@ -26275,6 +26500,54 @@
             "end": {
               "line": 18,
               "column": 12
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/sidebar/SidebarRootSwitcher.svelte",
+    "component": "SidebarRootSwitcher",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 80,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "collapsed",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 13,
+              "column": 8
+            },
+            "end": {
+              "line": 13,
+              "column": 17
             }
           }
         }

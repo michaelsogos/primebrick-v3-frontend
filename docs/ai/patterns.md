@@ -264,13 +264,17 @@ recovery, sync channels, RFC 7807 errors) → `EntityListTable` renders
 table/cards/cards-list.
 
 - Migrated pages: `system/settings/users|organizations|clients|roles`,
-  `system/customers` — read them for config variants (popup vs goto nav,
-  `deletionFilter={false}`, `headerActions` CTA, `extraDialogs`).
+  `crm/customers` — read them for config variants (popup vs goto nav,
+  `deletionFilter={false}`, `extraDialogs`).
 - Op dispatch uses declared `meta.actions[].endpoint` `{method, path}` —
   never hand-build `/entities/{entity}/{uuid}` URLs.
+- The create CTA is metadata-driven: `EntityTablePage` reads the route
+  census (`kind:"create"` route for the entity) and renders the toolbar
+  `entity-create-cta` (label_key/icon from the census route), gated by
+  `create.single`. `headerActions` stays for non-entity page CTAs only.
 - Composite/module pages bypass `EntityTablePage` and drive
-  `useEntityList`+`EntityListTable` directly — `system/jobs` is the
-  standing example (reserved for the remote-page pilot).
+  `useEntityList`+`EntityListTable` directly — `system/job` is the
+  standing example (remote-page host).
 - Rule of record: `.devin/rules/entity-list-pages.md`.
 
 Reusable abstractions should be **app components** composing primitives,

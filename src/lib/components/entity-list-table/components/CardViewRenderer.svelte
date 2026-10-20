@@ -67,7 +67,8 @@
     onDeleteRow,
     onRestoreRow,
     onPreviewRow,
-    handleCustomAction
+    handleCustomAction,
+    sparklineData
   }: {
     viewMode: 'cards_list' | 'cards_grid' | 'cards';
     viewRows: TRow[];
@@ -132,6 +133,8 @@
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
   // Convert 'cards' to 'cards_grid' for internal use
@@ -345,6 +348,7 @@
             onPreviewRow={onPreviewRow}
             handleCustomAction={handleCustomAction}
             selectedKeys={selectedKeys}
+            sparklineData={sparklineData}
           />
         {/each}
         {/if}

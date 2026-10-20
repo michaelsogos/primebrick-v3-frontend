@@ -179,6 +179,7 @@
       datetimeIanaRenderTick={datetimeIanaRenderTick}
       cell={cell}
       stickyColumnsGroup={stickyColumnsGroup}
+      sparklineData={sparklineData}
       error={error}
       errorView={errorView}
       rowsLoading={rowsLoading}

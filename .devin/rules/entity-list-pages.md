@@ -142,9 +142,9 @@ variants MAY render icon + label + secondary description.
 ## Exceptions
 - **Composite/module pages** — a page hosting several list instances or
   extra UI drives `useEntityList` + `EntityListTable` directly. Remote
-  module-owned pages (e.g. the job service's `/jobs/new` schedule form,
-  mounted via `mountPage`) are the standing example — the `/jobs`,
-  `/jobs/runs`, `/jobs/rules` lists themselves are plain `EntityTablePage`
+  module-owned pages (e.g. the job service's `/system/job/new` schedule form,
+  mounted via `mountPage`) are the standing example — the `/system/job`,
+  `/system/job/runs`, `/system/job/rules` lists themselves are plain `EntityTablePage`
   hosts like any other module list.
 - **Non-table archetypes** (list, cards, kanban, timeline, custom pages)
   follow their own page components — this rule covers only routes that

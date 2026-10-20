@@ -4,6 +4,7 @@
   import { resolve } from '$app/paths';
   import { onMount, type Snippet } from 'svelte';
   import { entityPageTitle, entitiesNs } from '$lib/utils/entity-meta';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
@@ -146,14 +147,30 @@
   let datetimeIanaModeByKey = $state<Record<string, 'browser' | 'record'>>({});
   let datetimeIanaRenderTick = $state(0);
 
+  /**
+   * Meta-driven create: the module's route census declares `kind:"create"`
+   * routes with `entity` — when the page doesn't pass `createPath`
+   * explicitly, the census route supplies path + label_key + icon for the
+   * toolbar CTA. Explicit props win (page-level override).
+   */
+  const censusCreateRoute = $derived(
+    shellNav.moduleNav?.routes?.find((r) => r.kind === 'create' && r.entity === entity)
+  );
+  const effectiveCreatePath = $derived(createPath ?? censusCreateRoute?.route);
+  const createCta = $derived(
+    censusCreateRoute
+      ? { label_key: censusCreateRoute.label_key, icon: censusCreateRoute.icon }
+      : undefined
+  );
+
   function openCreate() {
-    if (!createPath) return;
+    if (!effectiveCreatePath) return;
     if (navStrategy === 'popup') {
-      const w = window.open(createPath, '_blank');
+      const w = window.open(effectiveCreatePath, '_blank');
       if (w) w.focus();
       else alert('Popup bloccato dal browser! Controlla le impostazioni.');
     } else {
-      void goto(resolve(createPath as '/'));
+      void goto(resolve(effectiveCreatePath as '/'));
     }
   }
 
@@ -169,7 +186,7 @@
     }
   }
 
-  const effectiveOnCreateAction = $derived(onCreateAction ?? (createPath ? openCreate : undefined));
+  const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
   const effectiveOnEditAction = $derived(onEditAction ?? (editPath ? openEdit : undefined));
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
@@ -213,6 +230,7 @@
     entityActions={meta?.actions}
     {customActionHandlers}
     onCreateAction={effectiveOnCreateAction}
+    create_cta={createCta}
     onEditAction={effectiveOnEditAction}
     defaultView={list.viewMode}
     defaultSort={meta?.table?.default_sort}

@@ -1,13 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page as appPage } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import Plus from '@lucide/svelte/icons/plus';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { crmModuleMenuSegment } from '$lib/breadcrumb/crm-breadcrumb';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { isEntityOpAllowed } from '$lib/permissions.svelte';
 </script>
 
 <EntityTablePage
@@ -26,13 +23,5 @@
         })
       ]}
     />
-  {/snippet}
-  {#snippet headerActions(meta)}
-    {#if isEntityOpAllowed(meta?.actions, 'create.single')}
-      <Button href="/system/customers/new">
-        <Plus class="size-4" />
-        {$t('app.common.new')}
-      </Button>
-    {/if}
   {/snippet}
 </EntityTablePage>

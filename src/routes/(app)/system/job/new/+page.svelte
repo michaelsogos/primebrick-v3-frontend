@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * /jobs/new — module-owned REMOTE page (manual schedule creation).
+   * /system/job/new — module-owned REMOTE page (manual schedule creation).
    *
    * The job service ships this page's UI as a precompiled ESM chunk; the
    * route only resolves the declaration from the routes census and mounts
    * it via RemotePageMount. It's the module's one custom surface — the
-   * list pages (/jobs, /jobs/runs, /jobs/rules) are host-rendered
+   * list pages (/system/job, /system/job/runs, /system/job/rules) are host-rendered
    * EntityTablePage archetypes declared kind:"list" by the same service.
    *
    * components.AppPageBreadcrumb / Button / moduleMenuSegment /
@@ -39,7 +39,7 @@
     resolve_error = null;
     try {
       const routes = await fetchRoutesCensus();
-      const found = routes.find((r) => r.route === '/jobs/new' && r.component_url);
+      const found = routes.find((r) => r.route === '/system/job/new' && r.component_url);
       if (found) {
         decl = found;
         return;
@@ -47,7 +47,7 @@
       decl = null;
       resolve_error = {
         kind: 'contract',
-        detail: 'route /jobs/new is not declared for remote delivery',
+        detail: 'route /system/job/new is not declared for remote delivery',
       };
     } catch (e) {
       decl = null;

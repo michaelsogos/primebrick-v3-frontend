@@ -30,6 +30,7 @@
     toggleColumnKey,
     resetColumnsAndSorting,
     onCreateAction,
+    create_cta,
     filterPresets = [],
     presetSelections = {},
     onPresetChange,
@@ -77,6 +78,7 @@
     toggleColumnKey: (key: string) => void;
     resetColumnsAndSorting: () => void;
     onCreateAction?: () => void;
+    create_cta?: { label_key?: string; icon?: string };
     filterPresets?: readonly FilterPreset[];
     presetSelections?: Record<string, string>;
     onPresetChange?: (presetId: string, optionId: string) => void;
@@ -157,6 +159,7 @@
       }
     )}
   onCreateAction={onCreateAction}
+  create_cta={create_cta}
   filterPresets={filterPresets}
   presetSelections={presetSelections}
   onPresetChange={onPresetChange}

@@ -6,6 +6,7 @@
   import { Button } from '$lib/components/ui/button';
   import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Toolbar } from '$lib/components/ui/toolbar';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import type { FilterPreset, ViewName } from '$lib/entity-list/types';
 
   interface ToolbarProps {
@@ -28,6 +29,9 @@
     onFiltersOpenChange: (open: boolean) => void;
     onColumnSelectorClick: () => void;
     onCreateAction?: () => void;
+    /** Meta-driven create CTA shape (route census `kind:"create"`) —
+     *  `label_key`/`icon` override the generic "New" default. */
+    create_cta?: { label_key?: string; icon?: string };
     /** Declared toolbar filter presets (`meta.table.filter_presets`). */
     filterPresets?: readonly FilterPreset[];
     /** Active option id per preset (`preset.id → option.id`). */
@@ -55,6 +59,7 @@
     onFiltersOpenChange,
     onColumnSelectorClick,
     onCreateAction,
+    create_cta,
     filterPresets = [],
     presetSelections = {},
     onPresetChange
@@ -140,7 +145,10 @@
         data-testid="entity-create-cta"
         onclick={onCreateAction}
       >
-        {$t('system.entities.list.new')}
+        {#if create_cta?.icon}
+          <DynamicIcon name={create_cta.icon} size={16} />
+        {/if}
+        {$t(create_cta?.label_key ?? 'system.entities.list.new')}
       </Button>
     {/if}
   </div>

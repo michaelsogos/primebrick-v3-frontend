@@ -34,7 +34,8 @@
     onRestoreRow,
     onPreviewRow,
     handleCustomAction,
-    selectedKeys
+    selectedKeys,
+    sparklineData
   }: {
     row: TRow;
     index: number;
@@ -80,6 +81,8 @@
     onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     selectedKeys: string[];
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 </script>
 
@@ -157,6 +160,7 @@
             datetimeIanaRenderTick={datetimeIanaRenderTick}
             cell={cell}
             viewMode={viewMode}
+            sparklineData={sparklineData}
           />
         {/each}
       </div>
@@ -201,6 +205,7 @@
           datetimeIanaRenderTick={datetimeIanaRenderTick}
           cell={cell}
           viewMode={viewMode}
+          sparklineData={sparklineData}
         />
       {/each}
     </div>

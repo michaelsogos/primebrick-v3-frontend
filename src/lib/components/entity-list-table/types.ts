@@ -113,6 +113,9 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   entityActions?: EntityAction[];
   customActionHandlers?: Record<string, (row: TRow) => void>;
   onCreateAction?: () => void;
+  /** Meta-driven create CTA (route census `kind:"create"`) — `label_key`/`icon`
+   *  override the generic "New" label in the toolbar button. */
+  create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
   filtersOpen?: boolean;
   filterValues?: Record<string, any>;

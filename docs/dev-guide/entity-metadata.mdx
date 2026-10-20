@@ -96,7 +96,7 @@ is reusable for comboboxes, related-object labels, and other display contexts.
 | `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
-| `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) |
+| `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
 

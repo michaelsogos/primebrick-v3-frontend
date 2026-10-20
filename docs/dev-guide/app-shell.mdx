@@ -66,6 +66,23 @@ automatically, loading that module's navigation structure.
 `SidebarModuleSwitcher` renders the dropdown that lists modules from
 `shellNav.modules` and calls `shellNav.selectModule(id)` on selection.
 
+## Root-level switcher
+
+`SidebarRootSwitcher` sits **above** the module switcher and is always
+visible, even when a single root level exists. Modules carry a `part_of`
+field (`/api/v1/modules`) — the **root level** they are part of —
+distinct from the module `code`:
+
+- `part_of: "system"` → module lives under `/system/<code>` (settings,
+  job, emailsender, webhook, ai…)
+- `part_of === code` → the module IS its own root level and the namespace
+  collapses to `/<code>` (crm → `/crm`)
+
+The module switcher is scoped to the selected root level — selecting a
+module under another root requires selecting that root first. The root
+segment is also the first breadcrumb segment (auto-prepended by
+`AppPageBreadcrumb`), giving `{root} / {module} / {page}`.
+
 ## Organization switcher
 
 `SidebarOrgSwitcher` fetches active organizations from

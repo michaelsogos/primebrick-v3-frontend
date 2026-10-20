@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * /system/migrations — db_patch admin remediation page.
+   * /system/settings/migrations — db_patch admin remediation page.
    *
    * One card per service: the backend first (direct /api/v1), then every
    * registered microservice reached through the governed /ws/<code> proxy —
@@ -247,7 +247,6 @@
     <div class="min-w-0 flex-1 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('app.system') },
           { label: $t('system.settings.title'), href: '/system/settings/profile' },
           settingsTabMenuSegment({
             pathname: appPage.url.pathname,

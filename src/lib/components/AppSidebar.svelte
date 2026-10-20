@@ -4,12 +4,14 @@
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { afterNavigate } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
   import SidebarModuleSwitcher from '$lib/components/sidebar/SidebarModuleSwitcher.svelte';
+  import SidebarRootSwitcher from '$lib/components/sidebar/SidebarRootSwitcher.svelte';
   import SidebarProfileMenu from '$lib/components/sidebar/SidebarProfileMenu.svelte';
   import SidebarHealthBadge from '$lib/components/sidebar/SidebarHealthBadge.svelte';
   import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
@@ -44,9 +46,9 @@
     // prefix would light up on pages owned by another module.
     if (!(pathname === href || pathname.startsWith(href + '/'))) return false;
     if (shellNav.resolveModuleFromRoute(pathname) !== shellNav.selectedModuleId) return false;
-    // LONGEST MATCH WINS — sibling links may share prefixes (e.g. `/jobs`
-    // and `/jobs/rules`); only the most specific declared link is active,
-    // never both. On deeper sub-pages (`/jobs/rules/123`) the longest
+    // LONGEST MATCH WINS — sibling links may share prefixes (e.g. `/system/job`
+    // and `/system/job/rules`); only the most specific declared link is active,
+    // never both. On deeper sub-pages (`/system/job/rules/123`) the longest
     // declared prefix still resolves correctly.
     return !navHrefs.some(
       (h) => h !== href && h.length > href.length && (pathname === h || pathname.startsWith(h + '/'))
@@ -89,6 +91,13 @@
       <Sidebar.GroupLabel class="h-7">{$t('app.org.subtitle')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarOrgSwitcher {collapsed} />
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+
+    <Sidebar.Group class="pt-0 pb-0">
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.rootLevel')}</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <SidebarRootSwitcher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
@@ -187,7 +196,7 @@
     <Sidebar.MenuItem>
       <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
         {#snippet child({ props })}
-          <a {...props} href={item.href}>
+          <a {...props} href={resolve(item.href as '/')}>
             <DynamicIcon name={item.icon ?? 'circle'} size={16} />
             <span>{$t(item.label_key)}</span>
           </a>

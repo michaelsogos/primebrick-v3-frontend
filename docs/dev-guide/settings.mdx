@@ -29,7 +29,7 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/configurations` | Security settings |
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
-| `/system/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
+| `/system/settings/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
 
 ## Modules
 
@@ -175,7 +175,7 @@ page suppresses duplicate notifications.
 
 ## Migrations
 
-`/system/migrations` is the `db_patch` admin remediation surface — one card
+`/system/settings/migrations` is the `db_patch` admin remediation surface — one card
 per service: the backend first (direct `/api/v1/system/db-migration/*`),
 then every registered microservice reached through the governed
 `/ws/<code>/api/v1/system/db-migration/*` proxy, which exempts that prefix

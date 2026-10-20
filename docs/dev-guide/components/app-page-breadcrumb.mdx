@@ -31,13 +31,17 @@ primitives.
   import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
 
   const segments: AppBreadcrumbSegment[] = [
-    { label: 'System', href: '/system' },
     { label: 'Settings', href: '/system/settings' }
   ];
 </script>
 
 <AppPageBreadcrumb {segments} />
 ```
+
+The **root-level segment** (`System`, `CRM`, … — the current module's
+`part_of`, resolved via `shellNav`) is prepended automatically by the
+component — pages never declare it themselves. Result:
+`{root} / {module-level segments…}`.
 
 ### With a menu segment (sibling switcher)
 

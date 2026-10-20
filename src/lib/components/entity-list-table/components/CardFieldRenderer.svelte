@@ -24,7 +24,8 @@
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
     cell,
-    viewMode
+    viewMode,
+    sparklineData
   }: {
     row: TRow;
     column: MetaColumn;
@@ -36,6 +37,8 @@
     datetimeIanaRenderTick: number;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     viewMode: 'cards_list' | 'cards_grid';
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
   const auditingColumns = getAuditColumnsContext();
@@ -81,6 +84,7 @@
         column={column}
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         datetimeIanaRenderTick={datetimeIanaRenderTick}
+        sparklineData={sparklineData}
       />
     {/if}
   </div>

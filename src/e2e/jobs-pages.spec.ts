@@ -2,20 +2,20 @@ import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
- * /jobs — the job module's pages E2E.
+ * /system/job — the job module's pages E2E.
  *
- * The job module owns the `/jobs` route prefix (self-declared via
+ * The job module owns the `/system/job` route prefix (self-declared via
  * `endpoints.nav`). Three pages are HOST-rendered standard list
  * archetypes (kind:"list" → EntityTablePage over /ws/job):
  *
- *   /jobs        job_schedule — `schedule_kind` toolbar preset +
+ *   /system/job        job_schedule — `schedule_kind` toolbar preset +
  *                builtin sparkline column
- *   /jobs/runs   job_run      — duration_ms humanizer cell
- *   /jobs/rules  job_rule
+ *   /system/job/runs   job_run      — duration_ms humanizer cell
+ *   /system/job/rules  job_rule
  *
  * The module's only custom surface is REMOTE-delivered:
  *
- *   /jobs/new    manual schedule form (jobs-page.js esm-mount chunk)
+ *   /system/job/new    manual schedule form (jobs-page.js esm-mount chunk)
  *
  * These specs verify: standard single-table rendering, preset AND-ing on
  * the wire, sparkline batch fetch, exactly-one-active nav item
@@ -31,23 +31,27 @@ const REMOTE_ERROR = "[data-testid='remote-page-error']";
 const SYSTEM_ERROR_PAGE = "[data-testid='error-page']";
 const SIDEBAR_LINKS = "[data-sidebar='content'] a[href]";
 
-test.describe("/jobs pages (module-owned)", () => {
+test.describe("/system/job pages (module-owned)", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
   });
 
-  test("/jobs renders ONE standard list table for job_schedule", async ({
+  test("/system/job renders ONE standard list table for job_schedule", async ({
     page,
   }) => {
-    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
 
     // Standard archetype: a single EntityTablePage table — not the old
     // multi-section custom page.
     const tables = page.locator("table");
     await expect(tables).toHaveCount(1, { timeout: 30000 });
-    // Schedule CTA (page-level header action) → the remote /jobs/new page.
-    await expect(page.getByTestId("jobs-schedule-cta")).toBeVisible();
+    // Schedule CTA — census-driven toolbar create (`kind:"create"` on
+    // job_schedule → /system/job/new remote form, label job.jobs.scheduleNew).
+    const createBtn = page.getByTestId("entity-create-cta");
+    await expect(createBtn).toBeVisible();
+    await createBtn.click();
+    await page.waitForURL("**/system/job/new", { timeout: 10000 });
   });
 
   test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
@@ -59,7 +63,7 @@ test.describe("/jobs pages (module-owned)", () => {
         listUrls.push(decodeURIComponent(req.url()));
     });
 
-    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Every segmented toolbar group that RENDERS options (view mode,
@@ -118,19 +122,26 @@ test.describe("/jobs pages (module-owned)", () => {
     const allBtn = preset.getByRole("button", {
       name: /all|tutte|alle|toutes|todas/i,
     });
+    const onceMark = listUrls.length;
     await expect(async () => {
       await onceBtn.click();
       await expect(onceBtn).toHaveAttribute("aria-pressed", "true", {
         timeout: 2000,
       });
     }).toPass({ timeout: 15000 });
+    // Poll requests issued AFTER the click — `at(-1)` can pick a stale
+    // in-flight list fetch (mount refetch under parallel-worker load).
     await expect(async () => {
-      const u = listUrls.at(-1) ?? "";
-      expect(u).toContain("filters[0][value]=once");
+      expect(
+        listUrls.slice(onceMark).some((u) =>
+          u.includes("filters[0][value]=once"),
+        ),
+      ).toBe(true);
     }).toPass({ timeout: 10000 });
 
     // "All" is the escape option — a real selection applying no condition:
     // the request carries NO schedule_type scope filter.
+    const allMark = listUrls.length;
     await expect(async () => {
       await allBtn.click();
       await expect(allBtn).toHaveAttribute("aria-pressed", "true", {
@@ -138,8 +149,11 @@ test.describe("/jobs pages (module-owned)", () => {
       });
     }).toPass({ timeout: 15000 });
     await expect(async () => {
-      const u = listUrls.at(-1) ?? "";
-      expect(u).not.toContain("schedule_type");
+      expect(
+        listUrls
+          .slice(allMark)
+          .some((u) => !u.includes("schedule_type")),
+      ).toBe(true);
     }).toPass({ timeout: 10000 });
   });
 
@@ -152,7 +166,7 @@ test.describe("/jobs pages (module-owned)", () => {
         statsRequests.push(req.url());
     });
 
-    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The run_stats column is meta-declared (type:"sparkline") — the engine
@@ -164,22 +178,41 @@ test.describe("/jobs pages (module-owned)", () => {
       "td svg[aria-label='sparkline'], td span",
     );
     await expect(sparklineCells.first()).toBeVisible();
+
+    // The SAME sparkline must render in the card view modes — the batch
+    // sparklineData map flows through the card chain into TableCell, and the
+    // virtual column must not hit the empty-field (Ban) fallback.
+    for (const icon of ["layout-list", "layout-grid"]) {
+      await page
+        .locator(`button:has(svg.lucide-${icon})`)
+        .first()
+        .click();
+      await expect(
+        page.locator(`svg[aria-label='sparkline']`).first(),
+      ).toBeVisible({ timeout: 10000 });
+      // Back to table for the next iteration.
+      await page
+        .locator("button:has(svg.lucide-table-2)")
+        .first()
+        .click();
+      await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
+    }
   });
 
-  test("/jobs/runs and /jobs/rules render standard list tables", async ({
+  test("/system/job/runs and /system/job/rules render standard list tables", async ({
     page,
   }) => {
-    for (const route of ["/jobs/runs", "/jobs/rules"]) {
+    for (const route of ["/system/job/runs", "/system/job/rules"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
       await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     }
   });
 
-  test("/jobs/rules exposes the create CTA → /jobs/rules/new remote form", async ({
+  test("/system/job/rules exposes the create CTA → /system/job/rules/new remote form", async ({
     page,
   }) => {
-    await page.goto("/jobs/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // create.single is enabled for admins — the New CTA must be present
@@ -188,7 +221,7 @@ test.describe("/jobs pages (module-owned)", () => {
     await expect(createBtn).toBeVisible();
     await createBtn.click();
 
-    await page.waitForURL("**/jobs/rules/new", { timeout: 10000 });
+    await page.waitForURL("**/system/job/rules/new", { timeout: 10000 });
     const content = page.locator(REMOTE_CONTENT);
     await expect(content).toBeVisible({ timeout: 30000 });
     await expect(content.locator("input#rule-name")).toBeVisible();
@@ -200,7 +233,7 @@ test.describe("/jobs pages (module-owned)", () => {
   test("job_run version history endpoint works — audit tables exist", async ({
     page,
   }) => {
-    await page.goto("/jobs/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The regression was `relation "job.job_runs_audit" does not exist` —
@@ -232,29 +265,29 @@ test.describe("/jobs pages (module-owned)", () => {
     });
 
     // Full document loads — every hydration path must stay orphan-free.
-    for (const route of ["/jobs", "/jobs/rules", "/system/settings/profile"]) {
+    for (const route of ["/system/job", "/system/job/rules", "/system/settings/profile"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
     }
     expect(errors.filter((e) => e.includes("effect_orphan"))).toEqual([]);
   });
 
-  test("sidebar: exactly ONE nav item active on /jobs/rules", async ({
+  test("sidebar: exactly ONE nav item active on /system/job/rules", async ({
     page,
   }) => {
-    await page.goto("/jobs/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to resolve.
     await expect(
-      page.locator("a[href='/jobs/rules']").first(),
+      page.locator("a[href='/system/job/rules']").first(),
     ).toBeVisible({ timeout: 15000 });
 
-    // Longest-match wins: /jobs/rules is active, /jobs is NOT (it is a
+    // Longest-match wins: /system/job/rules is active, /system/job is NOT (it is a
     // prefix of the current route, not the route itself).
     await expect(
-      page.locator("a[href='/jobs/rules']"),
+      page.locator("a[href='/system/job/rules']"),
     ).toHaveAttribute("data-active", "true");
-    await expect(page.locator("a[href='/jobs']")).not.toHaveAttribute(
+    await expect(page.locator("a[href='/system/job']")).not.toHaveAttribute(
       "data-active",
       "true",
     );
@@ -266,14 +299,14 @@ test.describe("/jobs pages (module-owned)", () => {
     expect(activeCount).toBe(1);
   });
 
-  test("breadcrumb on /jobs/rules is the job module menu — never Settings", async ({
+  test("breadcrumb on /system/job/rules is System / Job Handler — never Settings", async ({
     page,
   }) => {
-    await page.goto("/jobs/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to load (breadcrumb items come from it).
     await expect(
-      page.locator("a[href='/jobs/rules']").first(),
+      page.locator("a[href='/system/job/rules']").first(),
     ).toBeVisible({ timeout: 15000 });
 
     // The breadcrumb menu trigger carries the OWNING module's display
@@ -282,23 +315,29 @@ test.describe("/jobs pages (module-owned)", () => {
     const trigger = page.getByRole("button", { name: "Job Handler" });
     await expect(trigger).toBeVisible();
 
-    // The breadcrumb ancestor contains no foreign-module segment.
+    // The breadcrumb shape is {root} / {module} / … — the root-level
+    // segment is "System" (part_of), and the module menu is Job's own.
+    // No foreign-module ("Settings") segment may appear.
     const breadcrumbNav = trigger.locator("xpath=ancestor::nav[1]");
-    await expect(breadcrumbNav).not.toContainText(
-      /settings|impostazioni|system/i,
-    );
+    // Root segment: a menu trigger whose VISIBLE text is the translated
+    // root label ("System") — its accessible name is the group aria-label
+    // ("Level"), so match on text content.
+    await expect(
+      breadcrumbNav.locator("button").filter({ hasText: /system|sistema/i }).first(),
+    ).toBeVisible();
+    await expect(breadcrumbNav).not.toContainText(/settings|impostazioni/i);
   });
 
   test("is owned by the job module — not by Settings", async ({ page }) => {
-    await page.goto("/jobs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The module switcher shows the OWNING module (service display name),
     // and its nav contains the self-declared links.
     const switcher = page.locator("button[title='Job Handler']");
     await expect(switcher).toBeVisible({ timeout: 15000 });
-    await expect(page.locator("a[href='/jobs']").first()).toBeVisible();
-    await expect(page.locator("a[href='/jobs/rules']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job/rules']").first()).toBeVisible();
 
     // Settings' nav does NOT present another module's pages.
     await page.goto("/system/settings/profile", {
@@ -307,7 +346,7 @@ test.describe("/jobs pages (module-owned)", () => {
     await expect(page.locator("button[title='Settings']")).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.locator("a[href='/jobs']")).toHaveCount(0);
+    await expect(page.locator("a[href='/system/job']")).toHaveCount(0);
   });
 
   test("is reachable through the module switcher (job module home)", async ({
@@ -320,17 +359,17 @@ test.describe("/jobs pages (module-owned)", () => {
       timeout: 15000,
     });
 
-    // Module switcher → Job Handler: nav[0].href (/jobs) is the module
+    // Module switcher → Job Handler: nav[0].href (/system/job) is the module
     // home — selection navigates straight onto the page.
     await page.locator("button[title='Settings']").click();
     await page.getByRole("menuitem", { name: "Job Handler" }).click();
 
-    await page.waitForURL("**/jobs", { timeout: 10000 });
+    await page.waitForURL("**/system/job", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
-  test("/jobs/new mounts the remote schedule form", async ({ page }) => {
-    await page.goto("/jobs/new", { waitUntil: "domcontentloaded" });
+  test("/system/job/new mounts the remote schedule form", async ({ page }) => {
+    await page.goto("/system/job/new", { waitUntil: "domcontentloaded" });
 
     const content = page.locator(REMOTE_CONTENT);
     await expect(content).toBeVisible({ timeout: 30000 });
@@ -352,7 +391,7 @@ test.describe("/jobs pages (module-owned)", () => {
       route.abort("connectionrefused"),
     );
 
-    await page.goto("/jobs/new", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/new", { waitUntil: "domcontentloaded" });
 
     // In-content error panel — classified 'network' (fetch threw).
     const errorPanel = page.locator(REMOTE_ERROR);
@@ -362,7 +401,7 @@ test.describe("/jobs pages (module-owned)", () => {
     // The app shell survives: sidebar nav is still rendered, and the
     // failure NEVER escalated to the system full-page error.
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
-    await expect(page.locator("a[href='/jobs']").first()).toBeVisible({
+    await expect(page.locator("a[href='/system/job']").first()).toBeVisible({
       timeout: 15000,
     });
 

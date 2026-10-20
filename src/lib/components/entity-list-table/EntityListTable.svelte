@@ -81,6 +81,7 @@
     entityActions,
     customActionHandlers,
     onCreateAction,
+    create_cta,
     onEditAction,
     filtersOpen = $bindable(false),
     filterValues = {},
@@ -622,6 +623,7 @@
     toggleColumnKey={toggleColumnKey}
     resetColumnsAndSorting={resetColumnsAndSorting}
     onCreateAction={effectiveOnCreateAction}
+    create_cta={create_cta}
     toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}

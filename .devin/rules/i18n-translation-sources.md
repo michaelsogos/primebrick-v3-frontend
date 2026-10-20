@@ -64,9 +64,12 @@ Consequences:
 - **A page outside every registered `route_prefix` gets NO module dict** —
   its keys render raw. Example: `/customers` was unrouted (the `crm` module
   is not registered in `service_registry`), so `system.entities.customer.*`
-  stayed untranslated until the page moved under `/system/customers`.
-- The `settings` module claims `route_prefixes: ["/system"]` → any page under
-  `/system/*` loads the `system` schema dict (`system.*` keys).
+  stayed untranslated until the page moved under `/crm/customers` (the crm
+  root level — `part_of === code` collapses the namespace).
+- The `settings` module claims `route_prefixes: ["/system/settings"]` → any
+  page under `/system/settings/*` loads the `system` schema dict (`system.*`
+  keys). A page under another module's root (`/system/job`, `/crm`) loads
+  that module's dict instead.
 - A registered module with no `MODULE_ENTITIES` mapping makes the dict fetch
   fail — module id must exist in both `service_registry` and the DAL map.
 

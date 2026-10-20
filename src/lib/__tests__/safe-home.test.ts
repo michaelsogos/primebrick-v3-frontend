@@ -17,6 +17,7 @@ const settingsModule: ModuleInfo = {
   id: 'settings',
   name: 'Settings',
   enabled: true,
+  part_of: 'system',
   route_prefixes: ['/system/settings'],
   is_reserved: true,
 };

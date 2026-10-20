@@ -6,6 +6,7 @@
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
@@ -34,7 +35,7 @@
     await shellNav.selectModule(m.id);
     const target =
       shellNav.moduleNav?.nav?.[0]?.href ?? m.route_prefixes?.[0] ?? '/';
-    void goto(target);
+    void goto(resolve(target as '/'));
   }
 
   // No `?? modules[0]` fallback — when nothing is selected the switcher
@@ -42,6 +43,9 @@
   const selectedModule = $derived(
     shellNav.modules.find((m) => m.id === shellNav.selectedModuleId)
   );
+  // Root level first, then module: the dropdown only lists the modules
+  // living under the selected root (`part_of`).
+  const rootModules = $derived(shellNav.modulesForRoot(shellNav.selectedRoot));
   const selectedLabel = $derived(selectedModule?.name ?? $t('app.nav.module'));
   const selectedIcon = $derived(selectedModule?.icon ?? 'layout-grid');
 </script>
@@ -78,7 +82,7 @@
         side="right"
         align="end"
       >
-        {#each shellNav.modules as m (m.id)}
+        {#each rootModules as m (m.id)}
           <DropdownMenu.Item
             class={cn('gap-2', dropdownMenuSelectedItemClass(shellNav.selectedModuleId === m.id))}
             closeOnSelect={true}

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * /jobs/runs — job_run list, HOST-rendered EntityTablePage (standard
+   * /system/job/runs — job_run list, HOST-rendered EntityTablePage (standard
    * archetype). Declared by the job service's `endpoints.nav` census
    * (`kind:"list"`, `entity:"job_run"`); api_base resolves via
    * ENTITY_SERVICE_MAP → /ws/job.

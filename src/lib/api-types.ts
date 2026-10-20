@@ -19,6 +19,8 @@ export type ModuleInfo = {
   name: string;
   enabled: boolean;
   icon?: string;
+  /** Root level the module is part of — `/{part_of}/{id}` route prefix. */
+  part_of: string;
   route_prefixes?: string[];
   is_reserved?: boolean;
 };
@@ -34,6 +36,20 @@ export type ModuleNavLink = {
 export type ModuleNav = {
   module: string;
   nav: ModuleNavLink[];
+  /** Full route census declared by the module (nav + non-nav pages). */
+  routes?: ModuleRouteDecl[];
+};
+
+/** Route census entry declared inside `ModuleNav.routes`. */
+export type ModuleRouteDecl = {
+  route: string;
+  kind: 'list' | 'detail' | 'create' | 'page';
+  entity?: string;
+  label_key?: string;
+  icon?: string;
+  component_url?: string;
+  component_format?: string;
+  integrity?: string;
 };
 
 export type HealthModule = { id: string; version: string };
