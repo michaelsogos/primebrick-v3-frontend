@@ -78,8 +78,11 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
     expect(shellNav.resolveModuleFromRoute('/system/jobs-extra')).toBe('settings');
   });
 
-  it('falls back to the reserved module when nothing matches', () => {
-    expect(shellNav.resolveModuleFromRoute('/')).toBe('settings');
-    expect(shellNav.resolveModuleFromRoute('/unknown/path')).toBe('settings');
+  it('returns null when nothing matches — neutral, not the reserved module', () => {
+    // No route_prefix claims `/` or /unknown/path: no module is attributed.
+    // The switcher shows a neutral state instead of falsely crediting the
+    // reserved module for pages it does not own.
+    expect(shellNav.resolveModuleFromRoute('/')).toBeNull();
+    expect(shellNav.resolveModuleFromRoute('/unknown/path')).toBeNull();
   });
 });

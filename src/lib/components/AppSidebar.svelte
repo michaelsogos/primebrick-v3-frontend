@@ -30,7 +30,11 @@
 
   function isLinkActive(href: string): boolean {
     const pathname = page.url.pathname;
-    return pathname === href || pathname.startsWith(href + '/');
+    // Prefix match alone is not enough: a link only glows when the current
+    // route actually belongs to THIS module — otherwise a broad declared
+    // prefix would light up on pages owned by another module.
+    if (!(pathname === href || pathname.startsWith(href + '/'))) return false;
+    return shellNav.resolveModuleFromRoute(pathname) === shellNav.selectedModuleId;
   }
 
   $effect(() => {

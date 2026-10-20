@@ -16,7 +16,7 @@ import { browser } from '$app/environment';
 import { page } from '$app/state';
 import { get, type Unsubscriber } from 'svelte/store';
 import { uiLang, getCachedModuleDict, setCachedModuleDict } from './store.svelte';
-import { mergeModuleDict, getFallbackDict } from './index';
+import { mergeModuleDict, getFallbackDict, CORE_DICT_MODULES } from './index';
 import type { UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
@@ -108,8 +108,8 @@ export function useModuleTranslations(): { stop: () => void } {
     // 'system' is the shared platform dictionary (entity labels
     // system.entities.*, shared chrome strings) — NOT settings-owned; every
     // module page needs it (a service-owned page under module `job` still
-    // renders system.* keys).
-    const modules = new Set(['app', 'custom', 'system']);
+    // renders system.* keys). CORE_DICT_MODULES is the single source.
+    const modules = new Set<string>(CORE_DICT_MODULES);
     if (moduleId) modules.add(moduleId);
     for (const id of modules) {
       // Reset the in-memory cache for this module so the (new language or

@@ -22,15 +22,19 @@
   function handleSelectModule(m: (typeof shellNav.modules)[number]) {
     void shellNav.selectModule(m.id);
     const target = m.route_prefixes?.[0] ?? '/';
-    const path = page.url.pathname;
-    const inside = target === '/' ? path === '/' : path === target || path.startsWith(target + '/');
+    // Ownership check, not prefix containment: stay only when the current
+    // route actually resolves to this module — a foreign module's page
+    // nested under a shared prefix must still navigate away.
+    const inside = shellNav.resolveModuleFromRoute(page.url.pathname) === m.id;
     if (!inside) void goto(target);
   }
 
+  // No `?? modules[0]` fallback — when nothing is selected the switcher
+  // shows the neutral module label instead of faking a selection.
   const selectedModule = $derived(
-    shellNav.modules.find((m) => m.id === shellNav.selectedModuleId) ?? shellNav.modules[0]
+    shellNav.modules.find((m) => m.id === shellNav.selectedModuleId)
   );
-  const selectedLabel = $derived(selectedModule?.name ?? '');
+  const selectedLabel = $derived(selectedModule?.name ?? $t('app.nav.module'));
   const selectedIcon = $derived(selectedModule?.icon ?? 'layout-grid');
 </script>
 

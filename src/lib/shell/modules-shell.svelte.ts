@@ -33,13 +33,20 @@ function clearLastRoute(): void {
   localStorage.removeItem(LAST_ROUTE_KEY);
 }
 
-function resolveModuleFromRoute(pathname: string): string | null {
-  // Longest-prefix match wins: a module declaring a specific route_prefix
-  // (e.g. job → /system/jobs) owns that page even when it sits under a
-  // broader prefix owned by another module (settings → /system). First-match
-  // would let the broad prefix swallow service-owned routes.
+/**
+ * Pure prefix-ownership resolver: longest-prefix match wins — a module
+ * declaring a specific route_prefix (e.g. job → /system/jobs) owns that
+ * page even when it sits under a broader prefix owned by another module
+ * (settings → /system). First-match would let the broad prefix swallow
+ * service-owned routes. No match → `null` (neutral: no module owns the
+ * route — e.g. `/` home). Shared by the shell and route loaders.
+ */
+export function resolveModuleIdFromPrefixes(
+  modules: readonly { id: string; route_prefixes?: string[] }[],
+  pathname: string,
+): string | null {
   let best: { id: string; len: number } | null = null;
-  for (const m of _state.modules) {
+  for (const m of modules) {
     if (!m.route_prefixes) continue;
     for (const prefix of m.route_prefixes) {
       const matches =
@@ -51,10 +58,14 @@ function resolveModuleFromRoute(pathname: string): string | null {
       }
     }
   }
-  if (best) return best.id;
-  // No prefix matched (e.g. `/` home): the reserved module (system settings)
-  // is the default — not the first module by sort order.
-  return _state.modules.find((m) => m.is_reserved)?.id ?? null;
+  return best?.id ?? null;
+}
+
+function resolveModuleFromRoute(pathname: string): string | null {
+  // Neutral when nothing owns the route: no module is attributed — the
+  // switcher shows a neutral state instead of falsely attributing the
+  // page to the reserved module.
+  return resolveModuleIdFromPrefixes(_state.modules, pathname);
 }
 
 export const shellNav = {
@@ -124,7 +135,14 @@ async function reloadModuleNav(): Promise<void> {
 async function syncModuleFromRoute(pathname: string): Promise<void> {
   if (_state.loading || _state.modules.length === 0) return;
   const moduleId = resolveModuleFromRoute(pathname);
-  if (moduleId && moduleId !== _state.selected_module_id) {
+  if (moduleId === _state.selected_module_id) return;
+  if (moduleId) {
     await selectModule(moduleId);
+    return;
   }
+  // No module owns this route → neutral selection, no stale attribution.
+  _state.selected_module_id = null;
+  _state.module_nav = null;
+  _state.module_nav_error = null;
+  _state.module_nav_loading = false;
 }

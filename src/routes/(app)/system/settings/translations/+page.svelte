@@ -5,6 +5,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { type UiLang, UI_LANGS, uiLangRegionSuffix } from '$lib/i18n/languages';
   import { pushNotification } from '$lib/errors/app-errors';
+  import { CORE_DICT_MODULES } from '$lib/i18n';
   import {
     fetchModules,
     fetchTranslationList,
@@ -28,6 +29,7 @@
   };
 
   let modules = $state<string[]>([]);
+  let modulesLoadError = $state<string | null>(null);
   let selectedModule = $state<string>('app');
   let selectedLanguage = $state<UiLang>(get(uiLang) ?? 'en-GB');
   let rows = $state<TranslationRow[]>([]);
@@ -43,18 +45,23 @@
   let saving = $state(false);
 
   async function loadModules() {
+    modulesLoadError = null;
     try {
-      // Static translation modules (always available — not in service_registry)
-      const staticModules = ['app', 'system', 'custom'];
+      // Static translation modules (always available — not in service_registry);
+      // CORE_DICT_MODULES is the single source for this list.
+      const staticModules: readonly string[] = CORE_DICT_MODULES;
       // US microservice modules from the existing /api/v1/modules endpoint
       const serviceModules = (await fetchModules())
         .map(m => m.id.toLowerCase())
         .filter(id => !staticModules.includes(id));
       modules = [...staticModules, ...serviceModules];
     } catch (e) {
-      // Fall back to static modules only if the modules endpoint fails
-      modules = ['app', 'system', 'custom'];
-      pushNotification({ impact: 'MEDIUM', message: 'Failed to load service modules, showing static modules only', scope: 'translations', detail: String(e) });
+      // Fall back to core dict modules only — but surface the failure
+      // inline (not just a toast): the admin must see that service-module
+      // namespaces are missing from the selector.
+      modules = [...CORE_DICT_MODULES];
+      modulesLoadError = String(e);
+      pushNotification({ impact: 'MEDIUM', message: 'Failed to load service modules, showing core modules only', scope: 'translations', detail: String(e) });
     }
   }
 
@@ -194,6 +201,13 @@
         </button>
       </div>
     </div>
+
+    {#if modulesLoadError}
+      <p class="translations-admin__error" role="alert">
+        {$t('app.modulesLoadFailed')}
+        <button onclick={loadModules}>{$t('app.retry')}</button>
+      </p>
+    {/if}
 
     {#if loading}
       <p>{$t('app.common.loading')}</p>
