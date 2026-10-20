@@ -8,6 +8,8 @@ import type { DeepReadonly } from '$lib/types/deep-readonly';
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
   translationKey?: () => string;
+  /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to the version-history sheet. */
+  entities_ns?: () => string | undefined;
   uid: () => string;
   columns: () => MetaColumn[];
   /** `meta.actions` — when present, write ops dispatch to their declared
@@ -52,6 +54,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   const {
     entity: entityFn,
     translationKey: translationKeyFn,
+    entities_ns: entitiesNsFn,
     uid: uidFn,
     columns: columnsFn,
     actions: getActions,
@@ -301,6 +304,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     openSheet('entity.versionHistory', {
       entity,
       translationKey,
+      entities_ns: entitiesNsFn?.(),
       rowUuid,
       columns
     });

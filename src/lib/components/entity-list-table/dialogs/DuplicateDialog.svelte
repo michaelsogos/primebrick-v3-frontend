@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { getEntitiesNsContext } from '../context';
 
   interface DuplicateDialogProps {
     open: boolean;
@@ -10,6 +11,8 @@
     duplicateScope: 'single' | 'selected';
     selectedCount: number;
     entity: string;
+    /** Entity-label i18n namespace from `meta.entities_ns` — defaults to the table context / `system`. */
+    entities_ns?: string;
     isDuplicating: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -21,10 +24,13 @@
     duplicateScope,
     selectedCount,
     entity,
+    entities_ns,
     isDuplicating,
     onConfirm,
     onCancel
   }: DuplicateDialogProps = $props();
+
+  const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
@@ -34,7 +40,7 @@
       {#if duplicateScope === 'single'}
         {$t('app.common.duplicateConfirmSingle')}?
       {:else}
-        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`system.entities.${entity}.plural`)}?
+        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

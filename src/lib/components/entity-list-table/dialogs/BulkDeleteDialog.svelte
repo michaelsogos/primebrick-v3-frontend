@@ -3,14 +3,17 @@
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { getEntitiesNsContext } from '../context';
 
   interface BulkDeleteDialogProps {
     /**
      * Entity translation key (e.g. 'ai_model', 'customer'). The title is
-     * auto-built as `app.common.deleteEntitiesTitle` + `system.entities.{entity}.plural`
+     * auto-built as `app.common.deleteEntitiesTitle` + `<entities_ns>.entities.{entity}.plural`
      * — NEVER pass a custom title.
      */
     entity: string;
+    /** Entity-label i18n namespace from `meta.entities_ns` — defaults to the table context / `system`. */
+    entities_ns?: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     selectedCount: number;
@@ -21,6 +24,7 @@
 
   let {
     entity,
+    entities_ns,
     open = $bindable(),
     onOpenChange,
     selectedCount,
@@ -29,7 +33,8 @@
     onCancel
   }: BulkDeleteDialogProps = $props();
 
-  let entityPlural = $derived($t(`system.entities.${entity}.plural`));
+  const ns = $derived(entities_ns ?? getEntitiesNsContext());
+  let entityPlural = $derived($t(`${ns}.entities.${entity}.plural`));
 </script>
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>

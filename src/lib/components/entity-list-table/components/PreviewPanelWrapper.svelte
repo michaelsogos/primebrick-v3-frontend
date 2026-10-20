@@ -26,6 +26,8 @@
     page: number;
     onPageChange: (page: number) => void;
     entity?: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to the version-history sheet. */
+    entities_ns?: string;
     columns: MetaColumn[];
     stickyColumns?: MetaColumn[];
     dataColumns?: MetaColumn[];
@@ -61,6 +63,7 @@
     page,
     onPageChange,
     entity = 'default',
+    entities_ns,
     columns,
     stickyColumns = [],
     dataColumns = [],
@@ -149,6 +152,7 @@
     const { openSheet } = await import('$lib/shell/sheets/sheet-manager.svelte');
     openSheet('entity.versionHistory', {
       entity,
+      entities_ns,
       rowUuid,
       columns: columns
     });

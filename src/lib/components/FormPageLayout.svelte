@@ -3,6 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { t } from '$lib/i18n';
   import { useAuditBox } from '$lib/composables/useAuditBox';
+  import { entitiesNs } from '$lib/utils/entity-meta';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
@@ -35,13 +36,14 @@
   }: Props = $props();
 
   const showAuditBox = $derived(!isCreatePage);
-  const deletedFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }).getDeletedFields(auditingColumns));
-  const updatedFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }).getUpdatedFields(auditingColumns));
-  const syncFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }).getSyncFields(auditingColumns));
-  const createdFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }).getCreatedFields(auditingColumns));
-  const versionField = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }).getVersionField(auditingColumns));
+  const entities_ns = $derived(entitiesNs(meta));
+  const deletedFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }).getDeletedFields(auditingColumns));
+  const updatedFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }).getUpdatedFields(auditingColumns));
+  const syncFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }).getSyncFields(auditingColumns));
+  const createdFields = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }).getCreatedFields(auditingColumns));
+  const versionField = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }).getVersionField(auditingColumns));
   const hasDeletedFields = $derived.by(() => deletedFields.length > 0 && !!auditData.deleted_at);
-  const auditBox = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, rowUuid }));
+  const auditBox = $derived.by(() => useAuditBox({ auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid }));
 </script>
 
 <div class="h-full p-2 sm:p-3 contain-layout">

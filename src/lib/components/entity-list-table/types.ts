@@ -44,6 +44,14 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    */
   translationKey?: string;
   /**
+   * Entity-label i18n namespace from the served `meta.entities_ns` —
+   * `job` for service-owned entities, `system` for BE/core-owned entities.
+   * Dialogs/panels compose `<entities_ns>.entities.<tk>.*`; CORE shared
+   * vocabulary (`system.entities.list.*`, `system.entities.page_title.*`)
+   * stays `system`. Defaults to `system` when absent.
+   */
+  entities_ns?: string;
+  /**
    * Columns to render/select in the UI — the full root-level `columns` array
    * from the entity meta (ordered via `orderedColumns`). Sticky/audited
    * grouping is derived internally from the `sticky` / `audited` flags.

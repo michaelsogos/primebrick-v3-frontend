@@ -61,6 +61,7 @@
     page,
     onPageChange,
     entity,
+    entities_ns,
     columns,
     stickyColumns,
     dataColumns,
@@ -126,6 +127,8 @@
     page: number;
     onPageChange: (page: number) => void;
     entity: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
+    entities_ns?: string;
     columns: MetaColumn[];
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
@@ -229,6 +232,7 @@
     {page}
     {onPageChange}
     {entity}
+    entities_ns={entities_ns}
     {columns}
     {stickyColumns}
     {dataColumns}

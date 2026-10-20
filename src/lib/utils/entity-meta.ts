@@ -8,6 +8,18 @@ import type { EntityMeta } from "$lib/entity-list/types";
 import { interpolateTemplate } from "$lib/template-interpolate";
 
 /**
+ * The namespace OWNING an entity's label keys — the module's own i18n
+ * namespace (`job` → `job.entities.<tk>.*`) for service-owned entities,
+ * `system` for BE/core-owned entities (the documented contract default
+ * when `entities_ns` is absent). This is READ-side only — the write
+ * boundary (`<schema>.translations` holds `<schema-ns>.*` keys) guarantees
+ * the referenced keys exist in the owning module's dictionary.
+ */
+export function entitiesNs(meta: { entities_ns?: string } | null | undefined): string {
+  return meta?.entities_ns ?? "system";
+}
+
+/**
  * Resolve the page title for an edit page using the meta's `display_name`
  * template expression (always materialized by `assembleMeta` — defaults to
  * `"${" + display_field + "}"`). Falls back to the provided fallback string
@@ -49,20 +61,23 @@ export function resolvePageTitle(
  * @param t The i18n translate function (e.g. `$t`)
  */
 export function entityPageTitle(
-  metaOrKey: { translation_key?: string; title_key?: string } | string | null,
+  metaOrKey: { translation_key?: string; title_key?: string; entities_ns?: string } | string | null,
   kind: "list" | "create" | "edit",
   t: (key: string, params?: Record<string, unknown>) => string,
 ): string {
   const meta = typeof metaOrKey === "string" ? null : metaOrKey;
   if (kind === "list" && meta?.title_key) return t(meta.title_key);
   const tk = typeof metaOrKey === "string" ? metaOrKey : metaOrKey?.translation_key;
+  // The `system.entities.page_title.*` templates are CORE shared vocabulary —
+  // only the entity-name keys are namespaced by the owning module.
+  const ns = entitiesNs(meta);
   // entity names are lowercase in some locales (e.g. "organization") because
   // the same key is reused mid-sentence (dialogs) — capitalize the injected
   // value so the title reads correctly in every template position.
   const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
   return t(`system.entities.page_title.${kind}`, {
-    entity_plural: tk ? cap(t(`system.entities.${tk}.plural`)) : "",
-    entity_singular: tk ? cap(t(`system.entities.${tk}.singular`)) : "",
+    entity_plural: tk ? cap(t(`${ns}.entities.${tk}.plural`)) : "",
+    entity_singular: tk ? cap(t(`${ns}.entities.${tk}.singular`)) : "",
   });
 }
 

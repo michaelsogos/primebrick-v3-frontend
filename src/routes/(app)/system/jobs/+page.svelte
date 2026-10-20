@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('system.jobs.title')} · Primebrick</title>
+  <title>{$t('job.jobs.title')} · Primebrick</title>
 </svelte:head>
 
 {#if decl}

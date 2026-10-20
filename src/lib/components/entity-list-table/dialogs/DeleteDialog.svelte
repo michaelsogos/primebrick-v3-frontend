@@ -4,14 +4,17 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import EntityConfirmQuestion from './EntityConfirmQuestion.svelte';
+  import { getEntitiesNsContext } from '../context';
 
   interface DeleteDialogProps {
     /**
      * Entity translation key (e.g. 'ai_model', 'customer'). The title is
-     * auto-built as `app.common.deleteEntityTitle` + `system.entities.{entity}.singular`
+     * auto-built as `app.common.deleteEntityTitle` + `<entities_ns>.entities.{entity}.singular`
      * — NEVER pass a custom title.
      */
     entity: string;
+    /** Entity-label i18n namespace from `meta.entities_ns` — defaults to the table context / `system`. */
+    entities_ns?: string;
     /** Optional record name shown under the description (e.g. model.name). */
     recordName?: string;
     open: boolean;
@@ -23,6 +26,7 @@
 
   let {
     entity,
+    entities_ns,
     recordName,
     open = $bindable(),
     onOpenChange,
@@ -31,7 +35,8 @@
     onCancel
   }: DeleteDialogProps = $props();
 
-  let entityName = $derived($t(`system.entities.${entity}.singular`));
+  const ns = $derived(entities_ns ?? getEntitiesNsContext());
+  let entityName = $derived($t(`${ns}.entities.${entity}.singular`));
 </script>
 
 <DialogBordered bind:open={open} severity="destructive" class="sm:max-w-md" showCloseButton={false}>
@@ -40,7 +45,7 @@
       {$t('app.common.deleteEntityTitle', { entity: entityName })}
     </Dialog.Title>
     <Dialog.Description>
-      <EntityConfirmQuestion action="delete" {entity} {recordName} />
+      <EntityConfirmQuestion action="delete" {entity} entities_ns={ns} {recordName} />
     </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">

@@ -32,7 +32,7 @@
   import { createSortingHandlers } from './handlers/sorting';
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { setAuditColumnsContext } from './context';
+  import { setAuditColumnsContext, setEntitiesNsContext } from './context';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
 
   import type { EntityListTableProps, CellArgs } from './types';
@@ -41,6 +41,7 @@
     uid,
     entity = 'customer',
     translationKey,
+    entities_ns,
     columns,
     columnOrderStorageKey,
     defaultSort,
@@ -104,6 +105,13 @@
   // columns arrive after meta is loaded (initial value is [] before meta fetch)
   $effect(() => {
     setAuditColumnsContext(auditingColumnsGroup);
+  });
+
+  // Entity-label i18n namespace for the whole subtree (dialogs, panels,
+  // version history) — `meta.entities_ns` served by the owning module;
+  // `system` for BE/core-owned entities.
+  $effect(() => {
+    setEntitiesNsContext(entities_ns ?? 'system');
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the
@@ -469,6 +477,7 @@
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
     translationKey: () => effectiveTranslationKey,
+    entities_ns: () => entities_ns,
     uid: () => uid,
     columns: () => columns,
     actions: () => entityActions,
@@ -685,6 +694,7 @@
     page={page}
     onPageChange={onPageChange}
     entity={entity}
+    entities_ns={entities_ns}
     columns={columns}
     stickyColumns={stickyColumnsGroup}
     dataColumns={nonAuditingColumns}
@@ -730,6 +740,7 @@
     {selectedKeys}
     {total}
     {entity}
+    entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
   />
 

@@ -187,6 +187,15 @@ async function collectUiLabels(hits: DocHit[], routes: CensusRoute[]): Promise<s
     if (typeof e === 'string' && e) prefixes.add(`system.entities.${e}.`);
   }
   for (const r of routes) {
+    // Entity-label namespaces — the owning module's namespace (`job` →
+    // `job.entities.*`) plus CORE `system.entities.*` for BE-owned entities.
+    // Prefixes are a collection filter: a nonexistent namespace yields
+    // nothing, so collecting both is safe.
+    if (r.entity && r.module) {
+      prefixes.add(`${r.module}.entities.${r.entity}.`);
+      prefixes.add(`system.entities.${r.entity}.`);
+    }
+
     // Route → settings-page namespace: /system/settings/users/{uuid} →
     // system.settings.users. (param segments drop, prefix covers the subtree).
     const ns = r.route

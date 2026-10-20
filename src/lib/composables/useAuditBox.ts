@@ -10,11 +10,13 @@ export type AuditBoxState = {
   auditingColumns: MetaColumn[];
   isCreatePage: boolean;
   entity: string;
+  /** Entity-label i18n namespace (`meta.entities_ns`) — `system` for BE-owned entities. */
+  entities_ns?: string;
   rowUuid: string;
 };
 
 export function useAuditBox(state: AuditBoxState) {
-  const { auditData, auditingColumns, isCreatePage, entity, rowUuid } = state;
+  const { auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid } = state;
 
   function getDeletedFields(cols: MetaColumn[]): MetaColumn[] {
     return cols.filter(f => f.key.startsWith('deleted_'));
@@ -81,7 +83,7 @@ export function useAuditBox(state: AuditBoxState) {
   }
 
   function openVersionHistory() {
-    openSheet('entity.versionHistory', { entity, rowUuid });
+    openSheet('entity.versionHistory', { entity, entities_ns, rowUuid });
   }
 
   return {

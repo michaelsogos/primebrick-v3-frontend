@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { onMount, type Snippet } from 'svelte';
-  import { entityPageTitle } from '$lib/utils/entity-meta';
+  import { entityPageTitle, entitiesNs } from '$lib/utils/entity-meta';
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
@@ -172,10 +172,10 @@
   const effectiveOnCreateAction = $derived(onCreateAction ?? (createPath ? openCreate : undefined));
   const effectiveOnEditAction = $derived(onEditAction ?? (editPath ? openEdit : undefined));
   const effectiveSelectionLabelKey = $derived(
-    selectionLabelKey ?? (entity ? `system.entities.${entity}.plural` : undefined)
+    selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );
   const effectiveSelectionLabelSingularKey = $derived(
-    selectionLabelSingularKey ?? (entity ? `system.entities.${entity}.singular` : undefined)
+    selectionLabelSingularKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.singular` : undefined)
   );
 </script>
 
@@ -202,6 +202,7 @@
   <EntityListTable
     {entity}
     {translationKey}
+    entities_ns={entitiesNs(meta)}
     bind:datetimeIanaModeByKey
     bind:datetimeIanaRenderTick
     {uid}
