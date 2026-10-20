@@ -105,7 +105,11 @@ export function useModuleTranslations(): { stop: () => void } {
   function reloadFor(lang: UiLang) {
     const path = page.url.pathname;
     const moduleId = shellNav.resolveModuleFromRoute(path);
-    const modules = new Set(['app', 'custom']);
+    // 'system' is the shared platform dictionary (entity labels
+    // system.entities.*, shared chrome strings) — NOT settings-owned; every
+    // module page needs it (a service-owned page under module `job` still
+    // renders system.* keys).
+    const modules = new Set(['app', 'custom', 'system']);
     if (moduleId) modules.add(moduleId);
     for (const id of modules) {
       // Reset the in-memory cache for this module so the (new language or

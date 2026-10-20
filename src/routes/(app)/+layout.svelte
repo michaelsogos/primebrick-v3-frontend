@@ -98,6 +98,10 @@
     // (custom.*), global/shared, loaded right after login and on every F5
     // via the same localStorage + ETag revalidation as every module dict.
     await loadModuleTranslations('custom', get(uiLang));
+    // "system" is the shared platform dictionary (system.entities.* labels
+    // and shared chrome strings) — module-agnostic, needed by every page
+    // including service-owned module pages.
+    await loadModuleTranslations('system', get(uiLang));
   });
 </script>
 
