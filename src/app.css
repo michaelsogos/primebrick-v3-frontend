@@ -2,6 +2,12 @@
 
 @source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
 
+/* Meta-driven `fill-*` utilities: entity-meta `sparkline.series[].color`
+   declares Tailwind classes that live ONLY in the DB — the content scan can
+   never see them, so every fill shade a module may pick must be safelisted
+   here (an unscanned class degrades silently to a BLACK svg bar). */
+@source inline("fill-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{50,100,200,300,400,500,600,700,800,900,950}");
+
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
 
