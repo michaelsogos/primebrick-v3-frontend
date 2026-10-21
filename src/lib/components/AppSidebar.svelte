@@ -4,12 +4,13 @@
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { afterNavigate } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
-  import SidebarModuleSwitcher from '$lib/components/sidebar/SidebarModuleSwitcher.svelte';
+  import SidebarAppLauncher from '$lib/components/sidebar/SidebarAppLauncher.svelte';
   import SidebarProfileMenu from '$lib/components/sidebar/SidebarProfileMenu.svelte';
   import SidebarHealthBadge from '$lib/components/sidebar/SidebarHealthBadge.svelte';
   import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
@@ -24,13 +25,43 @@
 
   const user = $derived(userProfileState.current);
 
-  const navItems = $derived(shellNav.moduleNav?.nav ?? []);
+  /**
+   * Nav items scoped to the ROUTE's root — a module with pages under two
+   * roots (crm → /crm/* + /system/crm/*) only shows the slice owned by
+   * the current app level. Links whose first segment differs from the
+   * route root are hidden; children inherit their parent's scope.
+   */
+  const navItems = $derived.by(() => {
+    const nav = shellNav.moduleNav?.nav ?? [];
+    const root = shellNav.rootForRoute(page.url.pathname);
+    return nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root);
+  });
   const moduleNavLoading = $derived(shellNav.moduleNavLoading);
   const moduleNavError = $derived(shellNav.moduleNavError);
 
+  /** All declared nav hrefs (links + group children) — flattened once so
+   *  active resolution can pick the longest match. */
+  const navHrefs = $derived(
+    navItems.flatMap((item) => [
+      item.href,
+      ...(item.children ?? []).map((child) => child.href)
+    ])
+  );
+
   function isLinkActive(href: string): boolean {
     const pathname = page.url.pathname;
-    return pathname === href || pathname.startsWith(href + '/');
+    // Prefix match alone is not enough: a link only glows when the current
+    // route actually belongs to THIS module — otherwise a broad declared
+    // prefix would light up on pages owned by another module.
+    if (!(pathname === href || pathname.startsWith(href + '/'))) return false;
+    if (shellNav.resolveModuleFromRoute(pathname) !== shellNav.selectedModuleId) return false;
+    // LONGEST MATCH WINS — sibling links may share prefixes (e.g. `/system/job`
+    // and `/system/job/rules`); only the most specific declared link is active,
+    // never both. On deeper sub-pages (`/system/job/rules/123`) the longest
+    // declared prefix still resolves correctly.
+    return !navHrefs.some(
+      (h) => h !== href && h.length > href.length && (pathname === h || pathname.startsWith(h + '/'))
+    );
   }
 
   $effect(() => {
@@ -73,9 +104,9 @@
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('app.nav.module')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.rootLevel')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <SidebarModuleSwitcher {collapsed} />
+        <SidebarAppLauncher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
@@ -125,7 +156,8 @@
 
 {#snippet navLink(item: ModuleNavLink, level: 1 | 2)}
   {#if item.children && item.children.length > 0}
-    {@const isParentActive = isLinkActive(item.href)}
+    {@const isParentActive =
+      isLinkActive(item.href) || item.children.some((child) => isLinkActive(child.href))}
     {@const groupOpen = openGroups[item.id] ?? isParentActive}
     <Sidebar.MenuItem>
       <div class="group/collapsible" data-state={groupOpen ? 'open' : 'closed'}>
@@ -166,7 +198,7 @@
     <Sidebar.MenuItem>
       <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
         {#snippet child({ props })}
-          <a {...props} href={item.href}>
+          <a {...props} href={resolve(item.href as '/')}>
             <DynamicIcon name={item.icon ?? 'circle'} size={16} />
             <span>{$t(item.label_key)}</span>
           </a>

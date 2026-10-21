@@ -47,6 +47,7 @@
     stickyColumnsState,
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
+    sparklineData,
     cell,
     rowActions,
     entityRowActions,
@@ -85,6 +86,7 @@
     };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[TableRowCellArgs]>;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
@@ -182,6 +184,7 @@
               cell={cell}
               datetimeIanaModeByKey={datetimeIanaModeByKey}
               datetimeIanaRenderTick={datetimeIanaRenderTick}
+              sparklineData={sparklineData}
             />
           </div>
         </Table.Cell>
@@ -205,6 +208,7 @@
             cell={cell}
             datetimeIanaModeByKey={datetimeIanaModeByKey}
             datetimeIanaRenderTick={datetimeIanaRenderTick}
+            sparklineData={sparklineData}
           />
         </Table.Cell>
       {/if}
@@ -227,6 +231,7 @@
           cell={cell}
           datetimeIanaModeByKey={datetimeIanaModeByKey}
           datetimeIanaRenderTick={datetimeIanaRenderTick}
+          sparklineData={sparklineData}
         />
       </Table.Cell>
     {/if}
@@ -315,9 +320,9 @@
                   </DropdownMenu.Item>
                 {/each}
               {/if}
-              {#if entityRowActions?.delete !== false}
+              {#if isRowDeleted(row) ? entityRowActions?.restore !== false : entityRowActions?.delete !== false}
                 <DropdownMenu.Separator />
-                {#if isRowDeleted(row) && entityRowActions?.restore !== false}
+                {#if isRowDeleted(row)}
                   <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                     <div class="flex items-center gap-2">
                       <span class="relative flex items-center justify-center">

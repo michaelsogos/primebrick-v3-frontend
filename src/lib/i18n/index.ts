@@ -7,6 +7,22 @@ import enGBFallback from './messages/en-GB-fallback.json';
 /** Flat dict — keys are full dot-paths, values are translated strings. */
 type Dict = Record<string, string>;
 
+/**
+ * Core dictionary modules — the ONLY non-service translation namespaces.
+ *
+ *   - `app`    — public/shared app vocabulary (public.translations), the
+ *                only dict with a static en-GB fallback file.
+ *   - `custom` — customer-owned overrides (custom.translations).
+ *   - `system` — shared platform vocabulary (system.translations):
+ *                system.entities.* labels and shared chrome strings.
+ *
+ * Every authenticated page needs all three; service-owned module pages add
+ * their own `<module>` dict on top (resolved from the route). Single source
+ * for the bootstrap loader, the route-aware reloader and the translations
+ * admin module list — never redeclare this literal.
+ */
+export const CORE_DICT_MODULES = ['app', 'custom', 'system'] as const;
+
 // Merged dict store — modules add their translations via mergeModuleDict.
 // The dict is flat (same shape as the BE's jsonb_object_agg response).
 // globalThis singleton: editing this module (or en-GB-fallback.json) during

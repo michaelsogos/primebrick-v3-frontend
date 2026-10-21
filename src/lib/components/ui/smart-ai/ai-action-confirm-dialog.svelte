@@ -220,125 +220,123 @@
   });
 </script>
 
-<Dialog.Root bind:open>
-  <DialogBordered>
-    <Dialog.Header class="pb-4">
-      <Dialog.Title>{action?.label}</Dialog.Title>
-      <Dialog.Description>{$t(`${NS}.confirm_desc`, { tool: action?.tool ?? '' })}</Dialog.Description>
-    </Dialog.Header>
+<DialogBordered bind:open>
+  <Dialog.Header class="pb-4">
+    <Dialog.Title>{action?.label}</Dialog.Title>
+    <Dialog.Description>{$t(`${NS}.confirm_desc`, { tool: action?.tool ?? '' })}</Dialog.Description>
+  </Dialog.Header>
 
-    <div class="space-y-3 text-sm">
-      {#if phase === 'resolve'}
-        <!-- ─── Entity resolution: search → pick a candidate ─── -->
-        <p class="text-xs text-muted-foreground">{$t(`${NS}.resolve_hint`)}</p>
-        <div class="flex gap-2">
-          <Input
-            bind:value={searchText}
-            placeholder={$t(`${NS}.search_placeholder`)}
-            onkeydown={(e) => e.key === 'Enter' && void searchEntities()}
-          />
-          <Button variant="outline" size="sm" onclick={() => void searchEntities()} disabled={searching}>
-            {#if searching}<Loader2 class="size-4 animate-spin" />{:else}{$t(`${NS}.search`)}{/if}
-          </Button>
-        </div>
-        {#if candidates.length > 0}
-          <ul class="max-h-48 space-y-1 overflow-auto">
-            {#each candidates as c (String(c.uuid))}
-              <li>
-                <button
-                  type="button"
-                  class="w-full rounded-md border border-border/60 px-2 py-1.5 text-left text-xs hover:border-border hover:bg-muted/50"
-                  onclick={() => void pickCandidate(c)}
-                >
-                  {(c.name ?? c.email ?? c.title ?? c.code ?? c.uuid) as string}
-                  <span class="ml-1 text-muted-foreground">({String(c.uuid).slice(0, 8)}…)</span>
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {:else if !searching && searchText}
-          <p class="text-xs text-muted-foreground">{$t(`${NS}.no_results`)}</p>
-        {/if}
-      {:else}
-        <!-- ─── Entity card (resolved target) ─── -->
-        {#if resolvedEntity}
-          <div class="rounded-md border border-border/60 bg-muted/30 p-2.5" data-testid="guide-action-entity-card">
-            <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {entityName}
-            </div>
-            {#each summaryFields as [k, v] (k)}
-              <div class="flex justify-between gap-2 text-xs">
-                <span class="text-muted-foreground">{k}</span>
-                <span class="truncate font-medium">{String(v)}</span>
-              </div>
-            {/each}
-            {#if editUrl}
-              <a
-                href={resolve(editUrl as '/')}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-1.5 inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
-              >
-                <ExternalLink class="size-3" />
-                {$t(`${NS}.open_edit`)}
-              </a>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- ─── Args: editable JSON (create/update) or read-only (destructive) ─── -->
-        {#if phase === 'confirm' || phase === 'executing'}
-          {#if isCreateUpdate}
-            <label class="text-xs text-muted-foreground" for="guide-action-args">{$t(`${NS}.args_label`)}</label>
-            <textarea
-              id="guide-action-args"
-              bind:value={argsText}
-              rows={Math.min(10, argsText.split('\n').length + 1)}
-              class="w-full rounded-md border border-border/60 bg-background p-2 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
-              data-testid="guide-action-args"
-            ></textarea>
-            {#if missingRequired.length > 0}
-              <p class="text-xs text-destructive">
-                {$t(`${NS}.missing_required`, { fields: missingRequired.join(', ') })}
-              </p>
-            {/if}
-          {:else}
-            <pre class="max-h-40 overflow-auto rounded-md border border-border/60 bg-muted/30 p-2 font-mono text-[11px]">{argsText}</pre>
-          {/if}
-        {/if}
-
-        {#if phase === 'done'}
-          <div class="flex items-center gap-2 text-sm" data-testid="guide-action-result">
-            {#if doneOk}
-              <CircleCheck class="size-4 text-green-600" /><span>{$t(`${NS}.done_ok`)}</span>
-            {:else}
-              <CircleX class="size-4 text-destructive" /><span>{$t(`${NS}.done_error`)}</span>
-            {/if}
-          </div>
-        {/if}
-      {/if}
-
-      {#if error}
-        <p class="text-xs text-destructive" data-testid="guide-action-error">{error}</p>
-      {/if}
-    </div>
-
-    <Dialog.Footer class="-mx-4 -mb-4 mt-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
-      <Button variant="outline" size="sm" onclick={() => (open = false)} disabled={executing}>
-        {$t(`${NS}.cancel`)}
-      </Button>
-      {#if phase === 'confirm' || phase === 'executing'}
-        <Button
-          variant="default"
-          size="sm"
-          onclick={() => void execute()}
-          disabled={executing || (isCreateUpdate && missingRequired.length > 0)}
-          data-testid="guide-action-execute"
-        >
-          {#if executing}<Loader2 class="mr-1 size-4 animate-spin" />{/if}
-          {$t(`${NS}.execute`)}
+  <div class="space-y-3 text-sm">
+    {#if phase === 'resolve'}
+      <!-- ─── Entity resolution: search → pick a candidate ─── -->
+      <p class="text-xs text-muted-foreground">{$t(`${NS}.resolve_hint`)}</p>
+      <div class="flex gap-2">
+        <Input
+          bind:value={searchText}
+          placeholder={$t(`${NS}.search_placeholder`)}
+          onkeydown={(e) => e.key === 'Enter' && void searchEntities()}
+        />
+        <Button variant="outline" size="sm" onclick={() => void searchEntities()} disabled={searching}>
+          {#if searching}<Loader2 class="size-4 animate-spin" />{:else}{$t(`${NS}.search`)}{/if}
         </Button>
+      </div>
+      {#if candidates.length > 0}
+        <ul class="max-h-48 space-y-1 overflow-auto">
+          {#each candidates as c (String(c.uuid))}
+            <li>
+              <button
+                type="button"
+                class="w-full rounded-md border border-border/60 px-2 py-1.5 text-left text-xs hover:border-border hover:bg-muted/50"
+                onclick={() => void pickCandidate(c)}
+              >
+                {(c.name ?? c.email ?? c.title ?? c.code ?? c.uuid) as string}
+                <span class="ml-1 text-muted-foreground">({String(c.uuid).slice(0, 8)}…)</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {:else if !searching && searchText}
+        <p class="text-xs text-muted-foreground">{$t(`${NS}.no_results`)}</p>
       {/if}
-    </Dialog.Footer>
-  </DialogBordered>
-</Dialog.Root>
+    {:else}
+      <!-- ─── Entity card (resolved target) ─── -->
+      {#if resolvedEntity}
+        <div class="rounded-md border border-border/60 bg-muted/30 p-2.5" data-testid="guide-action-entity-card">
+          <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {entityName}
+          </div>
+          {#each summaryFields as [k, v] (k)}
+            <div class="flex justify-between gap-2 text-xs">
+              <span class="text-muted-foreground">{k}</span>
+              <span class="truncate font-medium">{String(v)}</span>
+            </div>
+          {/each}
+          {#if editUrl}
+            <a
+              href={resolve(editUrl as '/')}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-1.5 inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+            >
+              <ExternalLink class="size-3" />
+              {$t(`${NS}.open_edit`)}
+            </a>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- ─── Args: editable JSON (create/update) or read-only (destructive) ─── -->
+      {#if phase === 'confirm' || phase === 'executing'}
+        {#if isCreateUpdate}
+          <label class="text-xs text-muted-foreground" for="guide-action-args">{$t(`${NS}.args_label`)}</label>
+          <textarea
+            id="guide-action-args"
+            bind:value={argsText}
+            rows={Math.min(10, argsText.split('\n').length + 1)}
+            class="w-full rounded-md border border-border/60 bg-background p-2 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+            data-testid="guide-action-args"
+          ></textarea>
+          {#if missingRequired.length > 0}
+            <p class="text-xs text-destructive">
+              {$t(`${NS}.missing_required`, { fields: missingRequired.join(', ') })}
+            </p>
+          {/if}
+        {:else}
+          <pre class="max-h-40 overflow-auto rounded-md border border-border/60 bg-muted/30 p-2 font-mono text-[11px]">{argsText}</pre>
+        {/if}
+      {/if}
+
+      {#if phase === 'done'}
+        <div class="flex items-center gap-2 text-sm" data-testid="guide-action-result">
+          {#if doneOk}
+            <CircleCheck class="size-4 text-green-600" /><span>{$t(`${NS}.done_ok`)}</span>
+          {:else}
+            <CircleX class="size-4 text-destructive" /><span>{$t(`${NS}.done_error`)}</span>
+          {/if}
+        </div>
+      {/if}
+    {/if}
+
+    {#if error}
+      <p class="text-xs text-destructive" data-testid="guide-action-error">{error}</p>
+    {/if}
+  </div>
+
+  <Dialog.Footer class="-mx-4 -mb-4 mt-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
+    <Button variant="outline" size="sm" onclick={() => (open = false)} disabled={executing}>
+      {$t(`${NS}.cancel`)}
+    </Button>
+    {#if phase === 'confirm' || phase === 'executing'}
+      <Button
+        variant="default"
+        size="sm"
+        onclick={() => void execute()}
+        disabled={executing || (isCreateUpdate && missingRequired.length > 0)}
+        data-testid="guide-action-execute"
+      >
+        {#if executing}<Loader2 class="mr-1 size-4 animate-spin" />{/if}
+        {$t(`${NS}.execute`)}
+      </Button>
+    {/if}
+  </Dialog.Footer>
+</DialogBordered>

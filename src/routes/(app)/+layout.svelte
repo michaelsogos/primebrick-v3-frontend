@@ -11,6 +11,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { useModuleTranslations, loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { CORE_DICT_MODULES } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
 
@@ -92,12 +93,14 @@
       await goto(lastRoute);
     }
 
-    // Always load "app" module translations on app init (shell + public pages)
-    await loadModuleTranslations('app', get(uiLang));
-    // "custom" is the first authenticated dictionary — user-created keys
-    // (custom.*), global/shared, loaded right after login and on every F5
-    // via the same localStorage + ETag revalidation as every module dict.
-    await loadModuleTranslations('custom', get(uiLang));
+    // Core dictionaries on app init — the single CORE_DICT_MODULES list:
+    // "app" (shell + public pages), "custom" (user-created global keys),
+    // "system" (system.entities.* labels + shared chrome needed by every
+    // page including service-owned module pages). Each dict revalidates
+    // via the same localStorage + ETag flow on every F5.
+    for (const dictModule of CORE_DICT_MODULES) {
+      await loadModuleTranslations(dictModule, get(uiLang));
+    }
   });
 </script>
 

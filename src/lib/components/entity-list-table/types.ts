@@ -1,9 +1,23 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
   column: MetaColumn;
+  /**
+   * Live IANA datetime view state owned by the table — provided so a `cell`
+   * override can forward them to the standard `TableCell` fallback. Present
+   * since remote pages supply cells from a separate Svelte bundle whose
+   * `bind:` props cannot flow back to the host table.
+   */
+  datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
+  datetimeIanaRenderTick?: number;
+  /**
+   * Batch-loaded sparkline buckets (`column.key → {by_key, bucket_unit}`) —
+   * fed to `type:"sparkline"` cells by the default `TableCell`; a `cell`
+   * override may forward it verbatim.
+   */
+  sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
 };
 
 export type ColumnOrderState = {
@@ -16,7 +30,7 @@ export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export type ToolbarMode = 'filters' | 'bulk';
 
-export type DeletionFilterMode = 'non_deleted' | 'deleted' | 'all';
+export type { DeletionFilterMode };
 
 /**
  * Main props interface for EntityListTable component
@@ -36,6 +50,14 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    */
   translationKey?: string;
   /**
+   * Entity-label i18n namespace from the served `meta.entities_ns` —
+   * `job` for service-owned entities, `system` for BE/core-owned entities.
+   * Dialogs/panels compose `<entities_ns>.entities.<tk>.*`; CORE shared
+   * vocabulary (`system.entities.list.*`, `system.entities.page_title.*`)
+   * stays `system`. Defaults to `system` when absent.
+   */
+  entities_ns?: string;
+  /**
    * Columns to render/select in the UI — the full root-level `columns` array
    * from the entity meta (ordered via `orderedColumns`). Sticky/audited
    * grouping is derived internally from the `sticky` / `audited` flags.
@@ -43,10 +65,6 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   columns: MetaColumn[];
   /** Session-scoped (sessionStorage) storage key for per-group column ordering. */
   columnOrderStorageKey?: string;
-  /** Session-scoped (sessionStorage) storage key for filter values. */
-  filterValuesStorageKey?: string;
-  /** Session-scoped (sessionStorage) storage key for advanced filters. */
-  advancedFiltersStorageKey?: string;
   defaultSort?: { key: string; dir: SortDir };
   /** Initial view mode from `meta.table.default_view` (defaults to 'table'). */
   defaultView?: ViewName;
@@ -95,6 +113,9 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   entityActions?: EntityAction[];
   customActionHandlers?: Record<string, (row: TRow) => void>;
   onCreateAction?: () => void;
+  /** Meta-driven create CTA (route census `kind:"create"`) — `label_key`/`icon`
+   *  override the generic "New" label in the toolbar button. */
+  create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
   filtersOpen?: boolean;
   filterValues?: Record<string, any>;
@@ -104,6 +125,13 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
   deletionFilterMode?: 'non_deleted' | 'deleted' | 'all';
   onDeletionFilterModeChange?: (mode: 'non_deleted' | 'deleted' | 'all') => void;
+  /** Declared toolbar filter presets (`meta.table.filter_presets`). */
+  filterPresets?: readonly FilterPreset[];
+  /** Active option id per preset (`preset.id → option.id`) — resolved by the list engine. */
+  presetSelections?: Record<string, string>;
+  onPresetChange?: (presetId: string, optionId: string) => void;
+  /** Batch-loaded sparkline buckets: `column.key → {by_key, bucket_unit}` — fed to `type:"sparkline"` cells. */
+  sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   /** Two-way with parent when the route uses `{#snippet cell}` and must mirror IANA datetime formatting. */
   datetimeIanaModeByKey?: Record<string, 'browser' | 'record'>;
   datetimeIanaRenderTick?: number;

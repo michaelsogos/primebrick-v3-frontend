@@ -11,18 +11,20 @@
     column,
     cell,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick
+    datetimeIanaRenderTick,
+    sparklineData
   }: {
     row: TRow;
     column: MetaColumn;
     cell?: Snippet<[CellRendererArgs]>;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 </script>
 
 {#if cell}
-  {@render cell({ row, column })}
+  {@render cell({ row, column, datetimeIanaModeByKey, datetimeIanaRenderTick, sparklineData })}
 {:else}
-  <TableCell row={row} column={column} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} />
+  <TableCell row={row} column={column} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} sparklineData={sparklineData} />
 {/if}

@@ -36,6 +36,11 @@ export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
     return isAuditableFieldEmpty(row, col, auditingColumns);
   }
 
+  // `type:"sparkline"` is a VIRTUAL column — no row field exists, so the
+  // raw-value checks below would always report it empty. SparklineBars
+  // renders its own `—` placeholder when no buckets were loaded.
+  if (col.type === 'sparkline') return false;
+
   // Existing logic for non-auditable fields
   const r = row as Record<string, unknown>;
   const raw = r[col.key];

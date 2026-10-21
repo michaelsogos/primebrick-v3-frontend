@@ -17,15 +17,18 @@
 
 ### Why
 
-1. **Reproducibility**: Every dev machine, CI build, and production release
-   gets the exact same dependency tree that was used during the test and UAT
-   phase. No "lucky loot" — no surprise patch/minor that behaves differently.
-2. **Stability**: A `pnpm install` on any machine at any time produces the
-   same `node_modules`. A rebuild during a prod release cannot accidentally
-   pull a newer patch that wasn't tested.
-3. **Controlled upgrades**: Upgrading a dependency is a deliberate, tested
-   action — not something that happens silently because of a range
-   resolution.
+1. **Certification (MANDATORY rationale)**: the dependency set in
+   `package.json` is the exact set this code was developed, reviewed, and
+   tested against — it is CERTIFIED to work with it. An unapproved patch or
+   minor release can still introduce behavior or breaking changes; ranges
+   let uncertified code in silently. We do not accept that.
+2. **Reproducibility**: every dev machine, CI build, and production release
+   gets the exact same dependency tree that was certified. A rebuild during
+   a prod release cannot accidentally pull a newer patch that wasn't tested.
+3. **Controlled upgrades**: upgrading a dependency is a deliberate act —
+   performed in periodic `pnpm outdated` review sessions, each bump is
+   re-verified (tests + any needed code adaptation) before it lands. Never
+   implicit, never silent.
 
 ### Exceptions
 

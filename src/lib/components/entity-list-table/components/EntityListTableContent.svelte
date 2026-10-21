@@ -23,6 +23,7 @@
     dropdownMenuRow,
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
+    sparklineData,
     cell,
     stickyColumnsGroup,
     error,
@@ -65,6 +66,7 @@
     page,
     onPageChange,
     entity,
+    entities_ns,
     columns,
     stickyColumns,
     dataColumns,
@@ -95,6 +97,7 @@
     dropdownMenuRow: any;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell: any;
     stickyColumnsGroup: any[];
     error: string | null;
@@ -137,6 +140,8 @@
     page: number;
     onPageChange: (page: number) => void;
     entity: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
+    entities_ns?: string;
     columns: MetaColumn[];
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
@@ -174,6 +179,7 @@
       datetimeIanaRenderTick={datetimeIanaRenderTick}
       cell={cell}
       stickyColumnsGroup={stickyColumnsGroup}
+      sparklineData={sparklineData}
       error={error}
       errorView={errorView}
       rowsLoading={rowsLoading}
@@ -239,6 +245,7 @@
         orderedSelectedRows={orderedSelectedRows}
         rowRangeSelection={rowRangeSelection}
         datetimeIanaRenderTick={datetimeIanaRenderTick}
+        sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
         cell={cell}
@@ -257,6 +264,7 @@
         page={page}
         onPageChange={onPageChange}
         entity={entity}
+        entities_ns={entities_ns}
         columns={columns}
         stickyColumns={stickyColumns}
         dataColumns={dataColumns}

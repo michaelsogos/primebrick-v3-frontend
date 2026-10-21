@@ -113,7 +113,7 @@
             return;
           }
           if (data.success && data.user) {
-            userProfileStore.set(data.user);
+            userProfileStore.setSession(data.user);
           }
           onsuccess?.(data);
         } catch (error) {

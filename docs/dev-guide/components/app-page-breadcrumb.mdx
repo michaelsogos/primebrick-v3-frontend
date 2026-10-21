@@ -31,13 +31,58 @@ primitives.
   import type { AppBreadcrumbSegment } from '$lib/breadcrumb/types';
 
   const segments: AppBreadcrumbSegment[] = [
-    { label: 'System', href: '/system' },
     { label: 'Settings', href: '/system/settings' }
   ];
 </script>
 
 <AppPageBreadcrumb {segments} />
 ```
+
+The **root-level segment** (`System`, `CRM`, …) is prepended
+automatically by the component — pages never declare it themselves. It
+follows the **route's** root (`shellNav.rootForRoute(pathname)` — the
+URL's first segment), not the module's `part_of`: a crm page at
+`/system/crm/pipeline` shows `System / CRM / …`. Each menu item
+navigates to that app's declared `is_default` module home. Result:
+`{app} / {module-level segments…}`.
+
+### Module pages — the mechanical contract
+
+Module-owned pages never hand-build the middle segments: they call
+`moduleBreadcrumbSegments({ pathname, t })` from
+`$lib/breadcrumb/module-breadcrumb`, which returns exactly two segments
+from `shellNav.moduleNav` (the module's declared `endpoints.nav`):
+
+1. **module** — plain link labeled with the module's localized display
+   name (`service_registry.label_key`), pointing at the module's home
+   *within the route's root* (first nav item of that root's slice).
+2. **page** — dropdown labeled with the current page's nav label
+   (longest-prefix match), listing the module's sibling pages in the
+   same root with the current one marked.
+
+Each segment renders an icon from the same source of truth as the app
+launcher — never declared per-page:
+
+| segment | icon source |
+|---|---|
+| `{app}` (root) | `APP_ROOT_ICON` (`$lib/shell/app-icons`) — shared with the launcher's apps column |
+| `{module}` | `service_registry.icon` (fallback `layout-grid`) |
+| `{page}` / menu items | the nav item's declared `icon` (fallback `circle`) |
+
+Detail/create pages append their own trailing segment, so the rendered
+shape is always `{app} / {module} / {page} [/ {detail}]`:
+
+```svelte
+<AppPageBreadcrumb
+  segments={[
+    ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (k) => $t(k) }),
+    { label: $t('system.entities.customer.new.title') } // create/detail only
+  ]}
+/>
+```
+
+Remote ESM pages receive the same function via `mountPage` host
+components (`c.moduleBreadcrumbSegments`).
 
 ### With a menu segment (sibling switcher)
 

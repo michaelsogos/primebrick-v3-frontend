@@ -1,21 +1,35 @@
-import { redirect } from '@sveltejs/kit';
-import { fetchModuleMeta, fetchModules } from '$lib/api';
+import { error, redirect } from '@sveltejs/kit';
+import { fetchModules, type ModuleInfo } from '$lib/api';
 
-// Landing on the bare module prefix `/system` must not 404: resolve the
-// module that owns the prefix, then send the user to its home — the first
-// nav link declared by the module. That target may itself redirect deeper
-// (e.g. /system/settings → /system/settings/profile).
+// Client-only: every authenticated API call in this app happens from the
+// browser — SSR-side fetch has no session cookie and the BE would 401.
+export const ssr = false;
+
+// Landing on the bare root prefix `/system` must not 404: `/system` is
+// the ROOT level (`service_registry.part_of`), not a module prefix — no
+// module declares it. Resolve the level's reserved module (settings is
+// the platform landing for the system area), then send the user to its
+// declared home for that root — `ModuleInfo.home[root]`, the first nav
+// link of the root slice (may itself redirect deeper e.g.
+// /system/settings → /system/settings/profile).
+// A fetch/ownership failure surfaces as an error page, not an arbitrary
+// redirect to a module the route does not belong to.
 export async function load() {
-  let home: string | null = null;
+  let modules: ModuleInfo[];
   try {
-    const modules = await fetchModules();
-    const mod = modules.find((m) => m.route_prefixes?.includes('/system'));
-    if (mod) {
-      const nav = await fetchModuleMeta(mod.id);
-      home = nav.nav?.[0]?.href ?? null;
-    }
-  } catch {
-    // fall through to the static fallback
+    modules = await fetchModules();
+  } catch (e) {
+    error(500, `Cannot resolve module for '/system': ${e instanceof Error ? e.message : String(e)}`);
   }
-  redirect(307, home ?? '/system/settings');
+  const owner =
+    modules.find((m) => m.part_of === 'system' && m.is_reserved) ??
+    modules.find((m) => m.part_of === 'system' && m.enabled);
+  if (!owner) {
+    error(500, "No module declares ownership of route '/system'");
+  }
+  const home = owner.home?.['system'];
+  if (!home) {
+    error(500, `Module '${owner.id}' owns '/system' but declares no nav home`);
+  }
+  redirect(307, home);
 }

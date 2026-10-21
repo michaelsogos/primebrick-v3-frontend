@@ -43,8 +43,8 @@ not in the H1 — the H1 stays `Edit {entity_singular}`.
 
 - ❌ Per-entity title keys like `settings.users.create.title`,
   `settings.roles.createTitle`, `entities.<e>.create.title` — these were
-  soft-deleted from `system.translations` (see BE
-  `db-meta/fire-and-forget/add_page_title_translations.sql`).
+  soft-deleted from `system.translations` via a BE `db-meta/patches/`
+  seed patch.
 - ❌ Composed titles like `${t(plural)} list` or `"Create " + singular`.
 - ❌ `$t('system.settings.tabs.*')` as a page H1 — `tabs.*` keys are
   navigation labels (menus, tabs, breadcrumb to the section), a different

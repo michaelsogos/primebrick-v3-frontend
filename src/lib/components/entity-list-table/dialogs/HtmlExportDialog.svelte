@@ -8,6 +8,7 @@
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
   import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import { getEntitiesNsContext } from '../context';
 
   interface HtmlExportDialogProps {
     open: boolean;
@@ -15,6 +16,8 @@
     selectedCount: number;
     totalCount: bigint;
     entity: string;
+    /** Entity-label i18n namespace from `meta.entities_ns` — defaults to the table context / `system`. */
+    entities_ns?: string;
     isExporting: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -26,10 +29,13 @@
     selectedCount,
     totalCount,
     entity,
+    entities_ns,
     isExporting,
     onConfirm,
     onCancel
   }: HtmlExportDialogProps = $props();
+
+  const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
@@ -37,9 +43,9 @@
     <Dialog.Title>{$t('app.common.exportHtmlConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('app.common.exportHtmlConfirm')} {selectedCount} {$t(`system.entities.${entity}.plural`)}?
+        {$t('app.common.exportHtmlConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {:else}
-        {$t('app.common.exportHtmlConfirm')} {totalCount} {$t(`system.entities.${entity}.plural`)}?
+        {$t('app.common.exportHtmlConfirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

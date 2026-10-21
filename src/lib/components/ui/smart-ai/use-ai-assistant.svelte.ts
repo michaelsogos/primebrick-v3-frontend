@@ -30,6 +30,7 @@ import { useAiCerebellum } from '$lib/composables/useAiCerebellum.svelte';
 import { resolveEffectiveParams, type EffectiveAiParams } from '$lib/ai/ai-cerebellum';
 import type { AiCerebellum } from '$lib/api-types';
 import type {
+  AiAction,
   AiAssistantHooks,
   ChatMessage,
   OneOffGenerationOptions,
@@ -1149,12 +1150,17 @@ export function useAiAssistant<TChoice = unknown>(
    * for deterministic, schema-driven choice cards that must not consume a
    * model turn. The message participates in history like a model answer.
    */
-  function addLocalAssistantMessage(content: string, choices?: TChoice[] | null): void {
+  function addLocalAssistantMessage(
+    content: string,
+    choices?: TChoice[] | null,
+    actions?: AiAction[],
+  ): void {
     const msg: ChatMessage<TChoice> = {
       uuid: crypto.randomUUID(),
       role: 'assistant',
       content,
       choices: choices ?? undefined,
+      actions: actions?.length ? actions : undefined,
     };
     _state.messages = [..._state.messages, msg];
     if (choices && choices.length > 0) {

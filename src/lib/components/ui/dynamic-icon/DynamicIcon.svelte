@@ -41,12 +41,18 @@
   } = $props();
 
   let IconComp = $state<any>(null);
+  let missing = $state(false);
 
-  // Load the icon component whenever the name changes.
+  // Load the icon component whenever the name changes. A name that has no
+  // lucide module is a declaration bug — it must surface visibly (the icon
+  // box shows a "?" marker), not collapse into empty space.
   $effect(() => {
     let cancelled = false;
+    missing = false;
     loadIcon(name).then((comp) => {
-      if (!cancelled) IconComp = comp;
+      if (cancelled) return;
+      IconComp = comp;
+      missing = comp === null;
     });
     return () => { cancelled = true; };
   });
@@ -54,6 +60,17 @@
 
 {#if IconComp}
   <IconComp {size} class={cn(className)} />
+{:else if missing}
+  <span
+    role="img"
+    aria-label="Icon not found: {name}"
+    title="Icon not found: {name}"
+    style="display:inline-flex;width:{size}px;height:{size}px;align-items:center;justify-content:center;font-size:{Math.max(
+      size - 4,
+      8
+    )}px;font-weight:700"
+    class={cn('rounded-sm border border-dashed border-destructive text-destructive', className)}>?</span
+  >
 {:else}
   <!-- Placeholder while the icon chunk loads — keeps layout stable -->
   <span style="display:inline-block;width:{size}px;height:{size}px" class={cn(className)}></span>

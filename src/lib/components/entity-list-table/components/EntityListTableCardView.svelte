@@ -46,7 +46,8 @@
     onCloseRowDropdown,
     onEditRow,
     rowActionsComposable,
-    onPreviewRow
+    onPreviewRow,
+    sparklineData
   }: EntityListTableCardViewProps = $props();
 
   type EntityListTableCardViewProps = {
@@ -94,6 +95,8 @@
     onEditRow: (row: TRow) => void;
     rowActionsComposable: any;
     onPreviewRow: (row: TRow) => void;
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   };
 </script>
 
@@ -146,5 +149,7 @@
     onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
     onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
     onPreviewRow={onPreviewRow}
+    handleCustomAction={(a, r) => rowActionsComposable.handleCustomAction(a, r)}
+    sparklineData={sparklineData}
   />
 {/if}

@@ -264,6 +264,12 @@
 
       // 3. Create the AI composable with the resolved model ID.
       ai = create_composable(modelId);
+      // Dev/test seam: lets E2E specs inject local messages (e.g. action
+      // CTAs) without a model turn. No-op in production builds.
+      if (import.meta.env.DEV && browser) {
+        const w = window as Window & { __ai_panels?: Record<string, AiHandle> };
+        (w.__ai_panels ??= {})[testid_prefix] = ai;
+      }
 
       // 4. Initialize the engine.
       void ai.init();

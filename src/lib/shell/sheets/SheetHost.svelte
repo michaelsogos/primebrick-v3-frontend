@@ -27,6 +27,7 @@
   import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
   import AiModelImportPanel from '$lib/shell/sheets/panels/AiModelImportPanel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
+  import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
 
   const registry: Record<SheetPanelId, any> = {
     'shell.errors': ErrorsPanel,
@@ -47,7 +48,8 @@
     'shell.aiCerebellum': AiCerebellumPanel,
     'shell.aiModelCache': AiModelCachePanel,
     'shell.aiModelImport': AiModelImportPanel,
-    'config.badgeValueEdit': BadgeValuePanel
+    'config.badgeValueEdit': BadgeValuePanel,
+    'shell.docs': DocsPanel
   };
 
   const panelId = $derived(sheetState.panelId);
@@ -69,7 +71,7 @@
 </script>
 
 <Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
     {#if Panel}
       <Panel {...panelProps} modal={sheetState.modal} />
     {/if}

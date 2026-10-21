@@ -21,6 +21,7 @@ import {
   type DbMigrationStatus,
   type DbMigrationDriftResult
 } from '$lib/api-types';
+import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
@@ -41,6 +42,9 @@ const ENTITY_API_PATH = '/api/v1/entities';
 const ENTITY_SERVICE_MAP: Record<string, string> = {
   ai_model: 'ai',
   ai_cerebellum: 'ai',
+  job_schedule: 'job',
+  job_run: 'job',
+  job_rule: 'job',
 };
 
 export function entityApiBase(entity: string): string {
@@ -281,17 +285,19 @@ export async function apiFetchWithTimeout(
   }
 }
 
+/**
+ * THE module discovery document — `GET /api/v1/modules` is the single
+ * access-filtered payload feeding every nav surface (launcher, sidebar,
+ * breadcrumb, route census). It embeds each module's `nav`/`routes`/`home`
+ * already filtered by the caller's `access.*` grants — there is no
+ * per-module meta endpoint; a module the user cannot reach is simply
+ * absent from the list.
+ */
 export async function fetchModules(): Promise<ModuleInfo[]> {
   const res = await apiFetch('/api/v1/modules');
   if (!res.ok) throw new Error(`Modules request failed (${res.status})`);
   const data = (await res.json()) as { modules: ModuleInfo[] };
   return data.modules;
-}
-
-export async function fetchModuleMeta(code: string): Promise<ModuleNav> {
-  const res = await apiFetch(`/api/v1/modules/${encodeURIComponent(code)}/meta`);
-  if (!res.ok) throw new Error(`Module meta request failed (${res.status})`);
-  return (await res.json()) as ModuleNav;
 }
 
 export async function fetchHealth(): Promise<HealthPayload> {
@@ -540,6 +546,33 @@ export async function searchDocs(params: {
   return data.results;
 }
 
+/** Ordered repo→pages tree for the in-product docs browser. `entity` is the
+ *  `metadata.entity` value used for page→doc context matching (never the
+ *  filename); `order` comes from the repo's `_order.json` manifest. */
+export interface DocsIndexEntry {
+  path: string;
+  title: string;
+  order: number | null;
+  entity?: string;
+  description?: string;
+}
+
+export interface DocsIndexRepo {
+  repo: string;
+  entries: DocsIndexEntry[];
+}
+
+export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
+  const res = await apiFetch('/ws/ai/api/v1/system/docs/index', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error(`Docs index failed (${res.status})`);
+  const data = (await res.json()) as { repos: DocsIndexRepo[] };
+  return data.repos;
+}
+
 /** Full document fetch for the `docs_fetch` agent tool — the model
  *  dereferences a path seen in an excerpt and reads the whole page. */
 export async function fetchDoc(params: {
@@ -631,20 +664,38 @@ export async function reindexDocsPacks(repo?: string): Promise<DocsReindexResult
   return data.results;
 }
 
-export interface CensusRoute {
-  route: string;
-  kind: 'list' | 'detail' | 'create' | 'page';
+/**
+ * Runtime FE route census entry — the canonical `PageRouteDeclaration`
+ * (carrying optional remote-delivery fields `component_url`/`component_format`/
+ * `integrity` consumed by `RemotePageMount`) plus the owning module code.
+ */
+export interface CensusRoute extends PageRouteDeclaration {
   module: string;
-  entity?: string;
-  label_key?: string;
 }
 
-/** Runtime FE route census — aggregated on the BE from module meta. */
-export async function fetchRoutesCensus(): Promise<CensusRoute[]> {
-  const res = await apiFetch('/api/v1/system/routes');
-  if (!res.ok) throw new Error(`Routes census failed (${res.status})`);
-  const data = (await res.json()) as { routes: CensusRoute[] };
-  return data.routes;
+/**
+ * Client-derived route census — flattens the discovery payload's `routes`
+ * + nav hrefs into the historical `/system/routes` shape
+ * (`{...decl, module}`). Same output as the retired endpoint, already
+ * access-filtered because the payload itself is.
+ */
+export function routesCensusFromModules(modules: readonly ModuleInfo[]): CensusRoute[] {
+  const seen = new Set<string>();
+  const routes: CensusRoute[] = [];
+  for (const m of modules) {
+    if (m.enabled === false) continue;
+    for (const r of m.routes ?? []) {
+      if (seen.has(r.route)) continue;
+      seen.add(r.route);
+      routes.push({ ...r, module: m.id });
+    }
+    for (const l of m.nav ?? []) {
+      if (seen.has(l.href)) continue;
+      seen.add(l.href);
+      routes.push({ route: l.href, kind: 'page', label_key: l.label_key, module: m.id });
+    }
+  }
+  return routes.sort((a, b) => a.route.localeCompare(b.route));
 }
 
 /** A generic MCP tool definition (GET /api/v1/system/mcp/tools). */

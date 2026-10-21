@@ -94,10 +94,17 @@ async function waitPanelPhase(page: Page, want: string): Promise<void> {
 }
 
 function parseStageJson(raw: string): unknown | null {
+  const text = raw
+    .trim()
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+  // ReAct agent turns (Thought:/Action:/Final:) are valid non-JSON stage
+  // output — the loop parses them with its own parser; don't count them as
+  // JSON failures when the capture is complete.
+  if (/^(Thought|Action|Final)\s*:/m.test(text)) return { react: true };
   try {
-    return JSON.parse(
-      raw.trim().replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim(),
-    );
+    return JSON.parse(text);
   } catch {
     return null;
   }
@@ -185,7 +192,12 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
             w.__loop_debug!.docs_search_keywords.push(body.keywords);
           } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
         }
-        if (url.includes("/api/v1/system/routes")) w.__loop_debug!.routes_census_calls++;
+        // The route census is derived client-side from the /modules
+        // discovery payload (the /system/routes endpoint is retired) —
+        // the loop's own fetch of /api/v1/modules is the census load.
+        if (url.includes("/api/v1/system/routes") || url.includes("/api/v1/modules")) {
+          w.__loop_debug!.routes_census_calls++;
+        }
         return origFetch(input, init);
       };
     });
@@ -342,6 +354,14 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
           // target (session restore) — execution state is the real signal.
           await chip.click();
           await poll(async () => ((await chip.isDisabled()) ? true : null), "navigate chip executed", 6);
+          // Chip flips at invoke time — the client-side goto resolves after.
+          // Poll the URL instead of reading it once (session restore may
+          // leave us on an unrelated page when the click fires).
+          await poll(
+            async () => (page.url().includes(spec.expect_route_prefix as string) ? true : null),
+            `url reaches ${spec.expect_route_prefix}`,
+            12,
+          );
           log(`  navigate CTA executed; url=${page.url()}`);
           expect(page.url()).toContain(spec.expect_route_prefix);
           await page.goBack().catch(() => undefined);

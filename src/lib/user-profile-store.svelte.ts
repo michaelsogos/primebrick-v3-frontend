@@ -2,6 +2,8 @@ export interface UserProfile {
   uuid?: string;
   username?: string;
   idp_code?: string;
+  /** Access-token expiry (ms epoch) — session metadata, written by login/refresh. */
+  expires_at?: number;
   idp_org?: string;
   idp_username?: string;
   display_name?: string;
@@ -54,6 +56,32 @@ export const userProfileStore = {
     // Always assign a NEW object reference to `.current` to force updates
     // while preserving any fields not present in the PATCH response.
     const next = current ? { ...current, ...profile } : ({ ...profile } as UserProfile);
+    userProfileState.current = next;
+    sessionStorage.setItem('user', JSON.stringify(next));
+  },
+
+  /**
+   * Session-fields writer — login/refresh payloads (IDP JWT claims) may
+   * update ONLY session metadata. Identity fields (`display_name`,
+   * `avatar_*`, `is_admin`, `uuid`, …) are owned solely by
+   * `GET /api/v1/auth/me` → `user_profiles`: claims are NOT authoritative
+   * and must never overwrite them (single source of truth, certified —
+   * never deduced).
+   *
+   * Account switch: when the payload's `idp_code` differs from the stored
+   * one the identity fields are dropped — `/auth/me` repopulates them
+   * reactively, so no stale identity of a different account can linger.
+   */
+  setSession(user: Record<string, unknown>) {
+    const SESSION_FIELDS = ['username', 'idp_code', 'expires_at', 'roles', 'organization'] as const;
+    const patch: Partial<UserProfile> = {};
+    for (const k of SESSION_FIELDS) {
+      if (user[k] !== undefined) (patch as Record<string, unknown>)[k] = user[k];
+    }
+    const nextIdp = user.idp_code as string | undefined;
+    const current = userProfileState.current;
+    const differentAccount = !!nextIdp && !!current?.idp_code && nextIdp !== current.idp_code;
+    const next = differentAccount ? ({ ...patch } as UserProfile) : ({ ...current, ...patch } as UserProfile);
     userProfileState.current = next;
     sessionStorage.setItem('user', JSON.stringify(next));
   },

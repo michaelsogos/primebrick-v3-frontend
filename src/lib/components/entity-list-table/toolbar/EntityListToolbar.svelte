@@ -1,13 +1,13 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { cn } from '$lib/utils.js';
-  import { SearchBar, ViewModeToggle, DeletionFilterToggle } from '.';
+  import { SearchBar, ViewModeToggle, DeletionFilterToggle, FilterPresetToolbar } from '.';
   import Columns3 from '@lucide/svelte/icons/columns-3'
   import Funnel from '@lucide/svelte/icons/funnel';
   import { Button } from '$lib/components/ui/button';
   import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Toolbar } from '$lib/components/ui/toolbar';
-  import type { ViewName } from '$lib/entity-list/types';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import type { FilterPreset, ViewName } from '$lib/entity-list/types';
 
   interface ToolbarProps {
     search: string;
@@ -29,6 +29,14 @@
     onFiltersOpenChange: (open: boolean) => void;
     onColumnSelectorClick: () => void;
     onCreateAction?: () => void;
+    /** Meta-driven create CTA shape (route census `kind:"create"`) —
+     *  `label_key`/`icon` override the generic "New" default. */
+    create_cta?: { label_key?: string; icon?: string };
+    /** Declared toolbar filter presets (`meta.table.filter_presets`). */
+    filterPresets?: readonly FilterPreset[];
+    /** Active option id per preset (`preset.id → option.id`). */
+    presetSelections?: Record<string, string>;
+    onPresetChange?: (presetId: string, optionId: string) => void;
   }
 
   let {
@@ -50,7 +58,11 @@
     filtersOpen,
     onFiltersOpenChange,
     onColumnSelectorClick,
-    onCreateAction
+    onCreateAction,
+    create_cta,
+    filterPresets = [],
+    presetSelections = {},
+    onPresetChange
   }: ToolbarProps = $props();
 </script>
 
@@ -82,6 +94,15 @@
       />
       <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {/if}
+
+    {#each filterPresets as preset (preset.id)}
+      <FilterPresetToolbar
+        {preset}
+        selected={presetSelections[preset.id] ?? preset.default_option}
+        onSelect={(optionId) => onPresetChange?.(preset.id, optionId)}
+      />
+      <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+    {/each}
 
     <Button
       variant="ghost"
@@ -121,9 +142,13 @@
         variant="default"
         size="sm"
         type="button"
+        data-testid="entity-create-cta"
         onclick={onCreateAction}
       >
-        {$t('system.entities.list.new')}
+        {#if create_cta?.icon}
+          <DynamicIcon name={create_cta.icon} size={16} />
+        {/if}
+        {$t(create_cta?.label_key ?? 'system.entities.list.new')}
       </Button>
     {/if}
   </div>

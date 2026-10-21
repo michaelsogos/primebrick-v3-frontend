@@ -11,22 +11,43 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { getAuditFieldValue } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';
+  import { SparklineBars } from '@primebrick/ui';
 
   let {
     row,
     column,
     datetimeIanaModeByKey,
     datetimeIanaRenderTick,
+    sparklineData,
     cellSnippet
   }: {
     row: Record<string, unknown>;
     column: MetaColumn;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cellSnippet?: any;
   } = $props();
 
   const value = $derived(row[column.key]);
+
+  /** `type:"sparkline"` — resolve the per-row bucket series from the
+   *  batch-loaded `sparklineData` map; series labels resolve `label_key`
+   *  through i18n. */
+  const sparklineSeries = $derived(
+    (column.sparkline?.series ?? []).map((s) => ({
+      field: s.field,
+      color: s.color,
+      label: s.label_key ? $t(s.label_key) : s.field
+    }))
+  );
+  const sparklineBuckets = $derived(
+    column.type === 'sparkline' && column.sparkline
+      ? (sparklineData?.[column.key]?.by_key?.[String(row[column.sparkline.row_key] ?? '')] as
+          | { bucket_start: string; [k: string]: string | number }[]
+          | undefined)
+      : undefined
+  );
 
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
     return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
@@ -57,6 +78,13 @@
   {:else}
     <span class="min-w-0 truncate">-</span>
   {/if}
+{:else if column.type === 'sparkline' && column.sparkline}
+  <SparklineBars
+    buckets={sparklineBuckets}
+    bucketUnit={sparklineData?.[column.key]?.bucket_unit}
+    series={sparklineSeries}
+    bucketField={column.sparkline.bucket_field ?? 'bucket_start'}
+  />
 {:else if column.badge?.values && value}
   {@const badgeValue = value as string}
   {@const badgeColors = badgeClassesFromToken(column.badge.values[badgeValue]?.color ?? null)}

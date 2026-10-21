@@ -33,7 +33,8 @@
 
     { "slug": "date-wheel-picker", "dir": "src/lib/components/date-dropper/date-wheel-picker.svelte", "origin": "custom", "source_url": null, "customized": true, "category": "form", "summary": "Date/time picker popover built on the more-shadcn wheel-picker primitive with timezone support." },
 
-    { "slug": "entity-list-table", "dir": "src/lib/components/entity-list-table", "origin": "custom", "source_url": null, "customized": true, "category": "entity-list", "summary": "Flagship generic controlled list/table/card system used by every module. 18 composables, dialogs, sheet panels, export." },
+    { "slug": "entity-list-table", "dir": "src/lib/components/entity-list-table", "origin": "custom", "source_url": null, "customized": true, "category": "entity-list", "summary": "Flagship generic controlled list/table/card system used by every module. Composable-based, dialogs, sheet panels, export." },
+    { "slug": "entity-table-page", "dir": "src/lib/components/entity-table-page", "origin": "custom", "source_url": null, "customized": true, "category": "entity-list", "summary": "Route-level host for entity table pages — owns useEntityList (meta, rows, filters, persistence, sync) and renders EntityListTable. Canonical pattern for table-archetype routes." },
 
     { "slug": "form-label-with-help", "dir": "src/lib/components/forms/FormLabelWithHelp.svelte", "origin": "custom", "source_url": null, "customized": true, "category": "form", "summary": "Form label with an inline help tooltip." },
     { "slug": "form-label-with-priority-help", "dir": "src/lib/components/forms/FormLabelWithPriorityHelp.svelte", "origin": "custom", "source_url": null, "customized": true, "category": "form", "summary": "Form label with a priority-styled tooltip (uses priority-tooltip-content)." },

@@ -53,6 +53,37 @@ async function selectType(page: Page, typeLabel: string): Promise<void> {
 }
 
 /**
+ * Pick an option inside a ComboSelect — by visible label, or the first
+ * available option when `optionName` is omitted.
+ * Single-select popovers self-close on pick; multi-select ones stay open.
+ * Escape is pressed ONLY when the popover is still open — an extra Escape
+ * would bubble up and close a parent right-sheet.
+ */
+async function pickComboOption(page: Page, testid: string, optionName?: string): Promise<void> {
+  const trigger = page.getByTestId(testid);
+  await trigger.waitFor({ state: "visible", timeout: 10000 });
+  await trigger.click();
+  const popover = page.locator("[data-state='open']").last();
+  const option = optionName
+    ? popover.getByRole("option", { name: optionName, exact: true })
+    : popover.locator("[role='option']").first();
+  await option.waitFor({ state: "visible", timeout: 5000 });
+  await option.click();
+  // Single-select popovers self-close on pick; multi-select ones stay open.
+  // Key on the OPTION going hidden — unambiguous (the sheet itself also
+  // renders data-state='open'). Escape only if it survived: focus is inside
+  // the popover so it is consumed there, never reaching the parent sheet.
+  const closed = await option
+    .waitFor({ state: "hidden", timeout: 800 })
+    .then(() => true)
+    .catch(() => false);
+  if (!closed) {
+    await page.keyboard.press("Escape");
+    await option.waitFor({ state: "hidden", timeout: 2000 });
+  }
+}
+
+/**
  * Fill the config key field and trigger validation.
  */
 async function fillKey(page: Page, value: string): Promise<void> {
@@ -274,7 +305,7 @@ test.describe("Left column — top-level field validation", () => {
 
 test.describe("Right column — per-type field visibility", () => {
   // String-derived types: show required, min, max, regex; hide unsigned, url-protocols
-  for (const typeName of ["String", "Text", "Secret", "Email", "Phone"]) {
+  for (const typeName of ["String", "Text", "Secret"]) {
     test(`type=${typeName.toLowerCase()} shows required, min, max, regex; hides unsigned, url-protocols`, async ({ page }) => {
       await selectType(page, typeName);
       await expectVisible(page, "tcb-required");
@@ -282,18 +313,34 @@ test.describe("Right column — per-type field visibility", () => {
       await expectVisible(page, "tcb-max");
       await expectVisible(page, "tcb-regex");
       await expectHidden(page, "tcb-unsigned");
-      await expectHidden(page, "tcb-url-protocols");
+      await expectHidden(page, "tcb-allowed-protocols");
     });
   }
 
-  test("type=url shows required, min, max, regex, url-protocols; hides unsigned", async ({ page }) => {
+  // email/phone have intrinsic format + length constraints (RFC 5321 /
+  // E.164) — min/max length and free regex are hidden by design
+  // (ValidationRulesSection).
+  for (const typeName of ["Email", "Phone"]) {
+    test(`type=${typeName.toLowerCase()} shows required only; hides min, max, unsigned, regex, url-protocols`, async ({ page }) => {
+      await selectType(page, typeName);
+      await expectVisible(page, "tcb-required");
+      await expectHidden(page, "tcb-min");
+      await expectHidden(page, "tcb-max");
+      await expectHidden(page, "tcb-unsigned");
+      await expectHidden(page, "tcb-regex");
+      await expectHidden(page, "tcb-allowed-protocols");
+    });
+  }
+
+  test("type=url shows required, min, max, url-protocols; hides unsigned, regex", async ({ page }) => {
     await selectType(page, "URL");
     await expectVisible(page, "tcb-required");
     await expectVisible(page, "tcb-min");
     await expectVisible(page, "tcb-max");
-    await expectVisible(page, "tcb-regex");
-    await expectVisible(page, "tcb-url-protocols");
+    await expectVisible(page, "tcb-allowed-protocols");
+    await expectVisible(page, "tcb-default-protocol");
     await expectHidden(page, "tcb-unsigned");
+    await expectHidden(page, "tcb-regex");
   });
 
   // Numeric types: show required, unsigned, min, max; hide regex, url-protocols
@@ -305,7 +352,7 @@ test.describe("Right column — per-type field visibility", () => {
       await expectVisible(page, "tcb-min");
       await expectVisible(page, "tcb-max");
       await expectHidden(page, "tcb-regex");
-      await expectHidden(page, "tcb-url-protocols");
+      await expectHidden(page, "tcb-allowed-protocols");
     });
   }
 
@@ -317,7 +364,7 @@ test.describe("Right column — per-type field visibility", () => {
     await expectVisible(page, "tcb-max");
     await expectVisible(page, "tcb-currency");
     await expectHidden(page, "tcb-regex");
-    await expectHidden(page, "tcb-url-protocols");
+    await expectHidden(page, "tcb-allowed-protocols");
   });
 
   test("type=boolean shows required only; hides min, max, unsigned, regex, url-protocols", async ({ page }) => {
@@ -327,7 +374,7 @@ test.describe("Right column — per-type field visibility", () => {
     await expectHidden(page, "tcb-max");
     await expectHidden(page, "tcb-unsigned");
     await expectHidden(page, "tcb-regex");
-    await expectHidden(page, "tcb-url-protocols");
+    await expectHidden(page, "tcb-allowed-protocols");
   });
 
   test("type=json shows required only; hides min, max, unsigned, regex, url-protocols", async ({ page }) => {
@@ -337,13 +384,13 @@ test.describe("Right column — per-type field visibility", () => {
     await expectHidden(page, "tcb-max");
     await expectHidden(page, "tcb-unsigned");
     await expectHidden(page, "tcb-regex");
-    await expectHidden(page, "tcb-url-protocols");
+    await expectHidden(page, "tcb-allowed-protocols");
   });
 
   test("type=badge shows required, badge values editor; hides min, max, unsigned, regex", async ({ page }) => {
     await selectType(page, "Badge");
     await expectVisible(page, "tcb-required");
-    await expectVisible(page, "tcb-badge-add");
+    await expectVisible(page, "tcb-badge-open-add");
     await expectHidden(page, "tcb-min");
     await expectHidden(page, "tcb-max");
     await expectHidden(page, "tcb-unsigned");
@@ -435,13 +482,17 @@ test.describe("Right column — validation rule interactions", () => {
     await expectHidden(page, "tcb-regex-error");
   });
 
-  test("url protocols set shows url-error-key field; cleared hides it", async ({ page }) => {
+  test("url allowed_protocols selection constrains default_protocol options", async ({ page }) => {
     await selectType(page, "URL");
-    const urlProtocolsInput = page.getByTestId("tcb-url-protocols");
-    await urlProtocolsInput.fill("https");
-    await expectVisible(page, "tcb-url-error-key");
-    await urlProtocolsInput.fill("");
-    await expectHidden(page, "tcb-url-error-key");
+    // Pick only 'https' in the multi-select (default_protocol is derived
+    // from allowed_protocols — WidgetConfigSection).
+    await pickComboOption(page, "tcb-allowed-protocols", "https");
+    const defTrigger = page.getByTestId("tcb-default-protocol");
+    await defTrigger.click();
+    const pop = page.locator("[data-state='open']");
+    await expect(pop.getByRole("option", { name: "https", exact: true })).toBeVisible();
+    await expect(pop.getByRole("option", { name: "ftp", exact: true })).toHaveCount(0);
+    await page.keyboard.press("Escape");
   });
 
   test("unsigned toggle ON for bigint strips the minus sign", async ({ page }) => {
@@ -656,7 +707,7 @@ test.describe("Value field validation per type × rule", () => {
 
   test("url: protocol not in allowed list shows invalidUrlProtocol error", async ({ page }) => {
     await selectType(page, "URL");
-    await page.getByTestId("tcb-url-protocols").fill("https");
+    await pickComboOption(page, "tcb-allowed-protocols", "https");
     const valueInput = page.getByTestId("config-input-url-create");
     await valueInput.fill("http://example.com");
     await valueInput.blur();
@@ -773,26 +824,32 @@ test.describe("Widget config section per type", () => {
     await option.click();
   });
 
-  test("badge: add/remove badge value rows", async ({ page }) => {
+  test("badge: add/remove badge value rows via right-sheet", async ({ page }) => {
     await selectType(page, "Badge");
-    // Initially no rows — click add.
-    await page.getByTestId("tcb-badge-add").click();
+    // Add lives in the typed right-sheet (config.badgeValueEdit →
+    // BadgeValuePanel); the page list only carries edit/remove controls.
+    await page.getByTestId("tcb-badge-open-add").click();
     await expectVisible(page, "tcb-badge-value");
+    await page.getByTestId("tcb-badge-value").fill("active");
+    await page.getByTestId("tcb-badge-add").click();
+    // Sheet closes after add; the row appears with remove control.
     await expectVisible(page, "tcb-badge-remove");
-    // Remove the row.
     await page.getByTestId("tcb-badge-remove").click();
-    await expectHidden(page, "tcb-badge-value");
+    await expectHidden(page, "tcb-badge-remove");
   });
 
-  test("badge: badge value/label/color inputs editable", async ({ page }) => {
+  test("badge: badge value/label/color inputs editable via right-sheet", async ({ page }) => {
     await selectType(page, "Badge");
-    await page.getByTestId("tcb-badge-add").click();
+    await page.getByTestId("tcb-badge-open-add").click();
+    await expectVisible(page, "tcb-badge-value");
     await page.getByTestId("tcb-badge-value").fill("active");
-    await page.getByTestId("tcb-badge-label").fill("Active");
-    await page.getByTestId("tcb-badge-color").fill("#00ff00");
-    // Verify the values are set.
     await expect(page.getByTestId("tcb-badge-value")).toHaveValue("active");
-    await expect(page.getByTestId("tcb-badge-label")).toHaveValue("Active");
+    // label_key is a ComboSelect of i18n keys, not a free-text input.
+    await pickComboOption(page, "tcb-badge-label", undefined);
+    await expectVisible(page, "tcb-badge-color");
+    await page.getByTestId("tcb-badge-add").click();
+    // Committed row exposes an edit trigger that reopens the sheet.
+    await expectVisible(page, "tcb-badge-edit");
   });
 
   test("single_select: builtin source mode shows builtin-source selector", async ({ page }) => {
