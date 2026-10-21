@@ -69,28 +69,21 @@ function resolveModuleFromRoute(pathname: string): string | null {
   return resolveModuleIdFromPrefixes(_state.modules, pathname);
 }
 
-/** First URL segment of a route prefix — the root level it lives under. */
-function prefixRoot(prefix: string): string {
-  return prefix.split('/').filter(Boolean)[0] ?? '';
-}
-
 /**
- * Distinct root levels across the registered modules — 'system' first
- * (the platform root), the rest alphabetical. The universe is `part_of`
- * ∪ the first segment of every declared `route_prefixes` entry: a module
- * with an extra membership (`/shop/mymodule`) materializes that root in
- * the switcher without a registry entry — roots are prefix-derived, open
- * by design.
+ * Distinct NAVIGABLE root levels — 'system' first (the platform root),
+ * the rest alphabetical. A root appears only when at least one module is
+ * reachable under it (has `home[root]`); declared prefixes that own no
+ * navigable page stay in the routing domain, not the launcher.
  */
 function listRoots(modules: readonly ModuleInfo[]): string[] {
   const set = new SvelteSet<string>();
   for (const m of modules) {
     if (m.enabled === false) continue;
-    if (m.part_of) set.add(m.part_of);
-    for (const p of m.route_prefixes ?? []) {
-      const r = prefixRoot(p);
-      if (r) set.add(r);
-    }
+    // A root is a navigation surface: it exists only when at least one
+    // module has a reachable page under it (`home[root]` = nav[0] of the
+    // root slice, post access-filter). Prefix-declared roots with no
+    // navigable member never appear.
+    for (const r of Object.keys(m.home ?? {})) set.add(r);
   }
   return [...set].sort((a, b) => (a === 'system' ? -1 : b === 'system' ? 1 : a.localeCompare(b)));
 }
@@ -124,13 +117,12 @@ export const shellNav = {
     if (seg && this.roots.includes(seg)) return seg;
     return this.selectedRoot;
   },
-  /** Modules owning pages under a root level — `part_of` members plus
-   *  extra-root members (a module with prefix `/{root}/{code}` owns pages
-   *  in that app too). */
+  /** Modules NAVIGABLE under a root level — `home[root]` present means
+   *  the access-filtered nav has at least one page under that root.
+   *  Membership without a reachable home is routing-domain only (the
+   *  module owns URLs there but has nothing to navigate to). */
   modulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter(
-      (m) => m.part_of === root || (m.route_prefixes ?? []).some((p) => prefixRoot(p) === root),
-    );
+    return _state.modules.filter((m) => !!m.home?.[root]);
   },
   /** Declared default module for a root — `is_default` among `part_of`
    *  members (the claim is for the module's OWN root), else first member. */

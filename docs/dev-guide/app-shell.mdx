@@ -92,11 +92,13 @@ Columns, left to right — **click/tap descends** into the next column
 (Finder-style), hover only highlights, and every row carries an
 icon-only **goto CTA** (Enter/Space) that navigates without descending:
 
-1. **Applications** — every root level (`part_of` ∪ first segment of
-   every declared prefix). Click = descend; goto CTA = the app's declared
+1. **Applications** — every NAVIGABLE root level: a root appears only
+   when at least one module has `home[root]` (≥1 reachable page under it
+   post access-filter). Click = descend; goto CTA = the app's declared
    `is_default` module's first page **under that app** (`home[root]`).
-2. **Modules** — modules owning pages under the selected app (`part_of`
-   members plus extra-prefix members). Click = descend; goto CTA =
+2. **Modules** — modules NAVIGABLE under the selected app (`home[root]`
+   present — declared membership without a reachable page is
+   routing-domain only and never lists). Click = descend; goto CTA =
    `home[root]`. Labels resolve from the embedded `nav`/`label_key` in
    the same payload — no per-module meta fetch.
 3. **Pages** — the selected module's nav links **scoped to the selected

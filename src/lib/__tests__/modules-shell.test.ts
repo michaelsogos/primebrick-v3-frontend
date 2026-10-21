@@ -31,6 +31,7 @@ const MODULES = [
     part_of: 'system',
     route_prefixes: ['/system/job'],
     is_reserved: false,
+    home: { system: '/system/job' },
   },
   {
     id: 'settings',
@@ -43,6 +44,7 @@ const MODULES = [
     route_prefixes: ['/system/settings'],
     is_reserved: true,
     is_default: true,
+    home: { system: '/system/settings/profile' },
   },
   {
     id: 'crm',
@@ -55,6 +57,18 @@ const MODULES = [
     route_prefixes: ['/crm', '/system/crm'],
     is_reserved: false,
     is_default: true,
+    home: { crm: '/crm/customers', system: '/system/crm/pipeline' },
+  },
+  {
+    // Headless service — declares prefixes (owns URLs) but has no
+    // navigable nav slice anywhere: no home, no launcher/breadcrumb row.
+    id: 'webhook',
+    name: 'Webhook',
+    enabled: true,
+    icon: 'webhook',
+    part_of: 'system',
+    route_prefixes: ['/system/webhook'],
+    is_reserved: false,
   },
 ];
 
@@ -118,6 +132,14 @@ describe('root levels — part_of grouping', () => {
     // crm owns pages under BOTH roots: /crm (own) and /system/crm (extra).
     expect(shellNav.modulesForRoot('system').map((m) => m.id)).toEqual(['job', 'settings', 'crm']);
     expect(shellNav.modulesForRoot('crm').map((m) => m.id)).toEqual(['crm']);
+  });
+
+  it('excludes modules with no reachable home — navigation, not routing', () => {
+    // webhook owns /system/webhook URLs but declares no nav: nothing to
+    // navigate to, so no launcher/breadcrumb row. Route resolution still
+    // attributes its URLs correctly.
+    expect(shellNav.modulesForRoot('system').map((m) => m.id)).not.toContain('webhook');
+    expect(shellNav.resolveModuleFromRoute('/system/webhook/inbound')).toBe('webhook');
   });
 
   it('rootForRoute follows the URL, not the module registry root', () => {
