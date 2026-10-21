@@ -10,7 +10,6 @@
     useStickyColumns,
     useScrollPreservation,
     useRowRangeSelection,
-    useFilterPersistence,
     useToolbarMode,
     useClientSelection,
     useKeyboardNavigation,
@@ -33,7 +32,7 @@
   import { createSortingHandlers } from './handlers/sorting';
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { setAuditColumnsContext } from './context';
+  import { setAuditColumnsContext, setEntitiesNsContext } from './context';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
 
   import type { EntityListTableProps, CellArgs } from './types';
@@ -42,6 +41,7 @@
     uid,
     entity = 'customer',
     translationKey,
+    entities_ns,
     columns,
     columnOrderStorageKey,
     defaultSort,
@@ -81,6 +81,7 @@
     entityActions,
     customActionHandlers,
     onCreateAction,
+    create_cta,
     onEditAction,
     filtersOpen = $bindable(false),
     filterValues = {},
@@ -88,10 +89,12 @@
     onResetFilters,
     advancedFilters = [],
     onAdvancedFiltersChange,
-    filterValuesStorageKey,
-    advancedFiltersStorageKey,
     deletionFilterMode: deletionFilterModeProp = $bindable('non_deleted'),
     onDeletionFilterModeChange,
+    filterPresets = [],
+    presetSelections = {},
+    onPresetChange,
+    sparklineData = {},
     datetimeIanaModeByKey = $bindable<Record<string, 'browser' | 'record'>>({}),
     datetimeIanaRenderTick = $bindable(0),
     cell,
@@ -107,6 +110,13 @@
   // columns arrive after meta is loaded (initial value is [] before meta fetch)
   $effect(() => {
     setAuditColumnsContext(auditingColumnsGroup);
+  });
+
+  // Entity-label i18n namespace for the whole subtree (dialogs, panels,
+  // version history) — `meta.entities_ns` served by the owning module;
+  // `system` for BE/core-owned entities.
+  $effect(() => {
+    setEntitiesNsContext(entities_ns ?? 'system');
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the
@@ -292,8 +302,7 @@
   const allOnPageSelected = $derived(pageKeys.length > 0 && selectedOnPageCount === pageKeys.length);
   /** Header checkbox tri-state: partial selection on current page. */
   const headerIndeterminate = $derived(selectedOnPageCount > 0 && !allOnPageSelected);
-  const actionsEnabled = $derived(!!rowActionsEnabled || !!rowActions);
-  const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
+
 
   /** `<table>` from `Table.Root`; used to find the scroll host and preserve horizontal scroll across row reloads. */
   let tableRef = $state<HTMLTableElement | null>(null);
@@ -325,14 +334,6 @@
     pageSize: () => pageSize
   });
 
-  // Filter persistence
-  const filterPersistence = useFilterPersistence({
-    uid: () => uid,
-    filterValuesStorageKey: () => filterValuesStorageKey,
-    advancedFiltersStorageKey: () => advancedFiltersStorageKey,
-    columnOrderStorageKey: () => columnOrderStorageKey
-  });
-
   // Toolbar mode
   const toolbarModeState = useToolbarMode({
     selectedKeys: () => selectedKeys,
@@ -344,6 +345,7 @@
     entity: () => entity,
     selectedKeys: () => selectedKeys,
     uid: () => uid,
+    actions: () => entityActions,
     columns: () => columns,
     search: () => search,
     searchInKeys: () => searchInKeys,
@@ -377,6 +379,7 @@
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
+    actions: () => entityActions,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
     onBulkActionStart: () => {
       // Optional: handle bulk action start
@@ -445,6 +448,23 @@
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
   }));
 
+  /** True when at least one standard or custom row action is allowed —
+   *  `restore` counts because a deleted row may show only that entry. */
+  const hasEntityRowActions = $derived(
+    effectiveRowActions.edit === true ||
+      effectiveRowActions.duplicate === true ||
+      effectiveRowActions.preview === true ||
+      effectiveRowActions.versionHistory === true ||
+      effectiveRowActions.delete === true ||
+      effectiveRowActions.restore === true ||
+      (effectiveRowActions.custom_actions?.length ?? 0) > 0
+  );
+
+  // Zero allowed row ops → no ⋮ column at all (an empty dropdown reads as
+  // broken). `rowActions` snippet keeps the column regardless (page owns it).
+  const actionsEnabled = $derived(!!rowActions || (rowActionsEnabled && hasEntityRowActions));
+  const extraCols = $derived((rowSelectionEnabled ? 1 : 0) + (actionsEnabled ? 1 : 0));
+
   /** Create CTA — provided handler only effective when `create.single` is allowed. */
   const effectiveOnCreateAction = $derived(
     onCreateAction && opAllowed('create.single') ? onCreateAction : undefined
@@ -462,8 +482,10 @@
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
     translationKey: () => effectiveTranslationKey,
+    entities_ns: () => entities_ns,
     uid: () => uid,
     columns: () => columns,
+    actions: () => entityActions,
     onEditAction: () => onEditAction,
     onRefresh: () => onRefresh,
     isRowDeleted: isRowDeleted,
@@ -591,6 +613,9 @@
     filterableColumns={filterableColumns}
     filtersOpen={filtersOpen}
     onFiltersOpenChange={(open) => { filtersOpen = open; }}
+    filterPresets={filterPresets}
+    presetSelections={presetSelections}
+    onPresetChange={onPresetChange}
     stickyColumnsGroup={stickyColumnsGroup}
     nonAuditingColumns={nonAuditingColumns}
     auditingColumnsGroup={auditingColumnsGroup}
@@ -598,6 +623,7 @@
     toggleColumnKey={toggleColumnKey}
     resetColumnsAndSorting={resetColumnsAndSorting}
     onCreateAction={effectiveOnCreateAction}
+    create_cta={create_cta}
     toolbarMode={toolbarModeState.state.toolbarMode}
     hasAppliedFilters={toolbarModeState.hasAppliedFilters}
     filterValues={filterValues}
@@ -635,6 +661,7 @@
     dropdownMenuRow={dropdownMenuRow}
     datetimeIanaModeByKey={datetimeIanaModeByKey}
     datetimeIanaRenderTick={datetimeIanaRenderTick}
+    sparklineData={sparklineData}
     cell={cell}
     stickyColumnsGroup={stickyColumnsGroup}
     error={error}
@@ -677,6 +704,7 @@
     page={page}
     onPageChange={onPageChange}
     entity={entity}
+    entities_ns={entities_ns}
     columns={columns}
     stickyColumns={stickyColumnsGroup}
     dataColumns={nonAuditingColumns}
@@ -722,6 +750,7 @@
     {selectedKeys}
     {total}
     {entity}
+    entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
   />
 

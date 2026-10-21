@@ -1,11 +1,16 @@
 import { apiFetch, entityApiBase } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
+import type { EntityAction } from '$lib/entity-list/types';
+import { findActionEndpoint } from '$lib/entity-list';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 export interface BulkActionsOptions {
   entity: () => string;
   selectedKeys: () => string[];
+  /** `meta.actions` — bulk ops dispatch to their declared `endpoint` when
+   *  present instead of the `/api/v1/entities/{entity}` convention. */
+  actions?: () => EntityAction[] | undefined;
   /** Resolve a selected key to its row (for the caller-observed `version`). */
   rowByKey?: (key: string) => Record<string, unknown> | undefined;
   onBulkActionStart?: () => void;
@@ -30,6 +35,7 @@ export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
     selectedKeys: selectedKeysFn,
+    actions: getActions,
     rowByKey,
     onBulkActionStart,
     onBulkActionComplete,
@@ -44,12 +50,18 @@ export function useBulkActions(options: BulkActionsOptions) {
 
   const _state = $state({ isDeleting: false, isRestoring: false, isDuplicating: false });
 
+  /** Declared endpoint for `op` — falls back to the entity convention. */
+  function resolveOpUrl(op: string, fallbackSuffix: string): { url: string; method: string } {
+    const ep = findActionEndpoint(getActions?.(), op);
+    if (ep) return { url: ep.path, method: ep.method };
+    return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
+  }
+
   function handleBulkDelete() {
     dialogs?.openBulkDeleteDialog();
   }
 
   async function confirmBulkDeleteImpl() {
-    const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
     try {
@@ -62,8 +74,9 @@ export function useBulkActions(options: BulkActionsOptions) {
         const row = rowByKey?.(k);
         return { uuid: k, version: row?.version as number };
       });
-      const res = await apiFetch(`${entityApiBase(entity)}/bulk-delete`, {
-        method: 'POST',
+      const { url, method } = resolveOpUrl('delete.bulk', '/bulk-delete');
+      const res = await apiFetch(url, {
+        method: method || 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -135,7 +148,6 @@ export function useBulkActions(options: BulkActionsOptions) {
   }
 
   async function confirmBulkRestoreImpl() {
-    const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     if (selectedKeys.length === 0) return;
     try {
@@ -146,8 +158,9 @@ export function useBulkActions(options: BulkActionsOptions) {
         const row = rowByKey?.(k);
         return { uuid: k, version: row?.version as number };
       });
-      const res = await apiFetch(`${entityApiBase(entity)}/bulk-restore`, {
-        method: 'POST',
+      const { url, method } = resolveOpUrl('restore.bulk', '/bulk-restore');
+      const res = await apiFetch(url, {
+        method: method || 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -226,14 +239,14 @@ export function useBulkActions(options: BulkActionsOptions) {
   }
 
   async function confirmBulkDuplicateImpl() {
-    const entity = entityFn();
     const selectedKeys = selectedKeysFn();
     try {
       _state.isDuplicating = true;
       onBulkActionStart?.();
 
-      const response = await apiFetch(`${entityApiBase(entity)}/duplicate`, {
-        method: 'POST',
+      const { url, method } = resolveOpUrl('duplicate.bulk', '/duplicate');
+      const response = await apiFetch(url, {
+        method: method || 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuids: selectedKeys })
       });

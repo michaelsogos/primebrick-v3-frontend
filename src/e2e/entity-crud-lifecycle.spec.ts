@@ -23,6 +23,9 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 
 const BASE = "/api/v1/entities";
+// ai_model / ai_cerebellum are ai-service-owned — reachable only through the
+// /ws/<service> gateway prefix, not the BE-owned /api/v1/entities root.
+const AI_BASE = "/ws/ai/api/v1/entities";
 const TS = Date.now();
 const CUSTOMER_CODE = `E2E-${TS}`;
 const E2E_MODEL_ID = `e2e/lifecycle-${TS}`;
@@ -254,12 +257,12 @@ test.describe("entity CRUD over the wire", () => {
     const pool = getPool();
 
     // ── hygiene: drop leftovers from crashed runs (unique E2E prefixes) ──
-    await pool.query(`DELETE FROM ai_cerebellum WHERE assistant_key = $1`, [E2E_ASSISTANT_KEY]);
-    await pool.query(`DELETE FROM ai_models WHERE model_id = $1`, [E2E_MODEL_ID]);
+    await pool.query(`DELETE FROM ai.ai_cerebellum WHERE assistant_key = $1`, [E2E_ASSISTANT_KEY]);
+    await pool.query(`DELETE FROM ai.ai_models WHERE model_id = $1`, [E2E_MODEL_ID]);
 
     // ── ai_model create → 201 + entity (power_level derived from
     // working_set_mb by beforeCreate hook) ────────────────────────────────
-    const modelRes = await api.post(`${BASE}/ai_model`, {
+    const modelRes = await api.post(`${AI_BASE}/ai_model`, {
       data: {
         entity: {
           model_id: E2E_MODEL_ID,
@@ -278,14 +281,14 @@ test.describe("entity CRUD over the wire", () => {
     let modelVersion = model.version;
 
     // ── ai_model update → version bump ──────────────────────────────────
-    const modelPut = await api.put(`${BASE}/ai_model/${model.uuid}`, {
+    const modelPut = await api.put(`${AI_BASE}/ai_model/${model.uuid}`, {
       data: { entity: { name: `E2E Model ${TS} v2`, version: modelVersion } },
     });
     expect(modelPut.status()).toBe(200);
     modelVersion = (await modelPut.json()).version;
 
     // ── ai_cerebellum create → bound to the model just created ──────────
-    const cereRes = await api.post(`${BASE}/ai_cerebellum`, {
+    const cereRes = await api.post(`${AI_BASE}/ai_cerebellum`, {
       data: {
         entity: {
           assistant_key: E2E_ASSISTANT_KEY,
@@ -300,7 +303,7 @@ test.describe("entity CRUD over the wire", () => {
     expect(cere.uuid).toBeTruthy();
 
     // ── cerebellum name-uniqueness guard: same name for same pair → 4xx ─
-    const dupName = await api.post(`${BASE}/ai_cerebellum`, {
+    const dupName = await api.post(`${AI_BASE}/ai_cerebellum`, {
       data: {
         entity: {
           assistant_key: E2E_ASSISTANT_KEY,
@@ -315,7 +318,7 @@ test.describe("entity CRUD over the wire", () => {
     // (writeAudit is fire-and-forget — poll briefly until the row lands)
     let auditActions: string[] = [];
     for (let i = 0; i < 10; i++) {
-      const auditRes = await api.get(`${BASE}/ai_model/${model.uuid}/audit?page=1&limit=10`);
+      const auditRes = await api.get(`${AI_BASE}/ai_model/${model.uuid}/audit?page=1&limit=10`);
       expect(auditRes.status()).toBe(200);
       const body = await auditRes.json();
       auditActions = ((body.data ?? body.rows ?? []) as Array<{ action: string }>).map(
@@ -326,22 +329,28 @@ test.describe("entity CRUD over the wire", () => {
     }
     expect(auditActions).toContain("INSERT");
 
-    // ── duplicate is OFF for both entities (E.8 opt-out) → route 404 ────
-    const dupModel = await api.post(`${BASE}/ai_model/duplicate`, { data: { uuids: [model.uuid] } });
-    expect(dupModel.status()).toBe(404);
-    const dupCere = await api.post(`${BASE}/ai_cerebellum/duplicate`, { data: { uuids: [cere.uuid] } });
-    expect(dupCere.status()).toBe(404);
+    // ── duplicate is OFF for both entities (E.8 opt-out) → not callable ──
+    // US rpc-router is resource-oriented: "duplicate" path-matches :uuid,
+    // so an unregistered POST yields 405 (RFC 9110), not Express-style 404.
+    const dupModel = await api.post(`${AI_BASE}/ai_model/duplicate`, { data: { uuids: [model.uuid] } });
+    expect([404, 405]).toContain(dupModel.status());
+    const dupCere = await api.post(`${AI_BASE}/ai_cerebellum/duplicate`, { data: { uuids: [cere.uuid] } });
+    expect([404, 405]).toContain(dupCere.status());
 
-    // ── delete is MFA step-up gated → 403 without a TOTP token ──────────
-    const delNoMfa = await api.delete(`${BASE}/ai_model/${model.uuid}?version=${modelVersion}`);
-    expect(delNoMfa.status()).toBe(403);
+    // ── delete: admin-gated, soft-delete via API ─────────────────────────
+    // NOTE: MFA step-up on delete was wired on the former BE route but is
+    // intentionally NOT yet wired on the US entities route (plan item B9 —
+    // needs the governed auth.mfa.consume correlation). Current contract:
+    // AUTHENTICATED_ADMIN may delete without TOTP.
+    const delRes = await api.delete(`${AI_BASE}/ai_model/${model.uuid}?version=${modelVersion}`);
+    expect(delRes.status()).toBe(200);
 
     // ── cleanup: hard-delete the ad-hoc rows + their audit residue ──────
     // (API delete needs a TOTP step-up token the ephemeral actor lacks;
     //  direct SQL mirrors what the dal purge path would do.)
-    await pool.query(`DELETE FROM ai_cerebellum_audit WHERE entity_uuid = $1`, [cere.uuid]);
-    await pool.query(`DELETE FROM ai_cerebellum WHERE uuid = $1`, [cere.uuid]);
-    await pool.query(`DELETE FROM ai_models_audit WHERE entity_uuid = $1`, [model.uuid]);
-    await pool.query(`DELETE FROM ai_models WHERE uuid = $1`, [model.uuid]);
+    await pool.query(`DELETE FROM ai.ai_cerebellum_audit WHERE entity_uuid = $1`, [cere.uuid]);
+    await pool.query(`DELETE FROM ai.ai_cerebellum WHERE uuid = $1`, [cere.uuid]);
+    await pool.query(`DELETE FROM ai.ai_models_audit WHERE entity_uuid = $1`, [model.uuid]);
+    await pool.query(`DELETE FROM ai.ai_models WHERE uuid = $1`, [model.uuid]);
   });
 });

@@ -353,7 +353,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
     const selectedColumn = filterableColumns.find((c) => c.key === filter.field);
 
     // Handle BETWEEN operator
-    if (filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value) {
+    if (filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value) {
       // Convert ISO strings back to CalendarDate/CalendarDateTime using existing helper
       if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
         newFilterStartDate = isoToCalendarDate(filter.value.start as string, selectedColumn.type, browserTimezone || "UTC");
@@ -605,7 +605,7 @@ import Switch from "$lib/components/ui/switch/switch.svelte";
                           column?.badge?.values?.[v]?.label_text ||
                           $t(column?.badge?.values?.[v]?.label_key || `system.entities.customer.status.${v}`)
                         ).join(", ")
-                      : filter.operator === "BETWEEN" && typeof filter.value === "object" && "start" in filter.value && "end" in filter.value
+                      : filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value
                       ? `${formatListCellValue(column ?? { type: 'text' }, filter.value.start, $uiLang)} e ${formatListCellValue(column ?? { type: 'text' }, filter.value.end, $uiLang)}`
                       : formatListCellValue(column ?? { type: 'text' }, filter.value, $uiLang)}
                   </span>

@@ -3,10 +3,13 @@
  * (401 retry/refresh path) and the login page boot.
  *
  * The session mirror lives in `sessionStorage['user']` (written on login
- * and refresh via `userProfileStore.set`). `expires_at` lets the FE check
+ * and refresh via `userProfileStore.setSession` — session fields ONLY;
+ * identity is owned by `/auth/me`). `expires_at` lets the FE check
  * token validity client-side — no `/auth/me` round-trip needed. The
  * refresh cookie (HttpOnly) is the authoritative cross-tab channel.
  */
+
+import { userProfileStore } from '$lib/user-profile-store.svelte';
 
 // Concurrency control for token refresh — multiple simultaneous callers
 // wait on the same refresh operation.
@@ -78,9 +81,12 @@ export async function refreshAccessToken(): Promise<void> {
 
     const data = await response.json();
 
-    // Update session storage with new user data
+    // Update the session mirror — session fields ONLY (username, idp_code,
+    // expires_at, roles, organization). A raw sessionStorage replace here
+    // would bypass the store's merge + $state and let JWT claims overwrite
+    // the /auth/me-owned identity (the bug this fixes).
     if (data.success && data.user) {
-      sessionStorage.setItem('user', JSON.stringify(data.user));
+      userProfileStore.setSession(data.user);
       console.log('[Token Refresh] Successfully refreshed token');
     }
   } catch (error) {

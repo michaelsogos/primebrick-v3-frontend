@@ -4,7 +4,7 @@
   import JsonTableViewer from "./JsonTableViewer.svelte";
 
   // Riceve i dati e un flag opzionale per capire se è un nodo annidato
-  let { data, isNested = false } = $props<{ data: any; isNested?: boolean }>();
+  let { data, isNested = false }: { data: any; isNested?: boolean } = $props();
 
   function isObject(val: any): boolean {
     return val !== null && typeof val === "object";

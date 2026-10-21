@@ -1,11 +1,5 @@
-export { useSelection } from './useSelection.svelte';
-
-export { useSorting } from './useSorting.svelte';
-
 export { useViewMode } from './useViewMode.svelte';
 export type { ViewModeOptions, ViewMode } from './useViewMode.svelte';
-
-export { useFilters, useAdvancedFilters } from './useFilters.svelte';
 
 // New composables for EntityListTable refactoring
 export { usePreviewPanel } from './usePreviewPanel.svelte';
@@ -14,7 +8,6 @@ export { useRowRangeSelection } from './useRowRangeSelection.svelte';
 export { useKeyboardNavigation } from './useKeyboardNavigation.svelte';
 export { useColumnOrder } from './useColumnOrder.svelte';
 export type { ColumnOrderState } from './useColumnOrder.svelte';
-export { useFilterPersistence } from './useFilterPersistence.svelte';
 export { useDeletionFilter } from './useDeletionFilter.svelte';
 export type { DeletionFilterMode } from './useDeletionFilter.svelte';
 export { useToolbarMode } from './useToolbarMode.svelte';

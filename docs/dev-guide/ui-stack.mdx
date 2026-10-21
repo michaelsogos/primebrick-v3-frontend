@@ -40,6 +40,22 @@ Global styles and shadcn CSS variables live in `src/app.css`.
 - **Companions**: `tailwind-merge`, `tailwind-variants`, `class-variance-authority`, `tw-animate-css`
 - **Learn the basics**: [https://tailwindcss.com](https://tailwindcss.com)
 
+`src/app.css` also defines Primebrick-specific `@utility` helpers beyond raw
+tokens — the PB logo gradient family (sky-400 → indigo-400, oblique
+top-left → bottom-right):
+
+| Utility | Effect | Used by |
+|---------|--------|---------|
+| `border-{tone}-gradient` | 1px gradient border, neutral fill | `Button variant="outline"`, in-card list items |
+| `border-{tone}-gradient-soft` | Gradient border + tinted gradient fill | `Button variant="soft"` |
+| `bg-primary-gradient-soft` | Tinted gradient fill only (no border) | Elements flush inside bordered containers |
+| `shadow-primary-gradient` | Two directional glows simulating the gradient (sky TL → indigo BR) | All dropdown surfaces — baked into `DropdownMenu.Content`, `DropdownMenu.SubContent`, `Popover.Content` |
+
+The shadow utility is the standard for floating menu surfaces: it replaces
+`shadow-md`/`shadow-lg` inside the shared dropdown components, so every
+dropdown menu and popover gets the same gradient glow with zero per-instance
+classes. Do not apply it to dialogs, sheets, tooltips, or inline cards.
+
 ### 2. BITS UI™
 
 Headless, accessible Svelte™ component primitives (the Svelte™ equivalent of

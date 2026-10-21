@@ -53,9 +53,9 @@ Module loading and selection is centralized in
 
 | Function | Purpose |
 |----------|---------|
-| `loadShellNav()` | Fetches the available modules from the backend |
-| `selectModule(id)` | Selects a module and fetches its navigation tree |
-| `reloadModuleNav()` | Reloads the current module's navigation (retry) |
+| `loadShellNav()` | Fetches the access-filtered `GET /api/v1/modules` payload — every record embeds `nav`, `routes` and per-root `home` |
+| `selectModule(id)` | Selects a module — navigation comes from the already-loaded `ModuleInfo`, no second request |
+| `reloadModuleNav()` | Rebuilds the current module's navigation from the loaded payload |
 | `syncModuleFromRoute(pathname)` | Auto-selects the module that owns the current route via `route_prefixes` |
 | `getLastRoute()` / `saveLastRoute(pathname)` | localStorage persistence of the last visited route |
 
@@ -63,8 +63,65 @@ When the user navigates to a route, `syncModuleFromRoute` matches the
 pathname against each module's `route_prefixes` and switches module
 automatically, loading that module's navigation structure.
 
-`SidebarModuleSwitcher` renders the dropdown that lists modules from
-`shellNav.modules` and calls `shellNav.selectModule(id)` on selection.
+`SidebarAppLauncher` renders the Finder-style launcher that replaces the
+old root/module switchers: one trigger (`{app} / {module}`) opens a
+three-column panel **Applications | Modules | Pages**.
+
+## Application launcher (Finder cascade)
+
+The launcher is always visible, even when a single app level exists.
+Modules carry a `part_of` field (`/api/v1/modules`) — the **root level**
+they are part of — distinct from the module `code`:
+
+- `part_of: "system"` → module lives under `/system/<code>` (settings,
+  job, emailsender, webhook, ai…)
+- `part_of === code` → the module IS its own root level and the namespace
+  collapses to `/<code>` (crm → `/crm`)
+
+A module may also declare **extra root memberships** — `route_prefixes`
+entries of the form `/{other-root}/{code}` (e.g. crm owns `/crm/*` plus
+`/system/crm/pipeline`). Every prefix's first segment becomes an app
+level the module lists under; `part_of` alone decides where `is_default`
+applies.
+
+The payload is already **access-filtered server-side** — a user only ever
+sees the modules/pages their `access.{app}.{module}.{page}` grants cover
+(see the BE dev-guide for the grammar). The FE never re-filters.
+
+Columns, left to right — **click/tap descends** into the next column
+(Finder-style), hover only highlights, and every row carries an
+icon-only **goto CTA** (Enter/Space) that navigates without descending:
+
+1. **Applications** — every NAVIGABLE root level: a root appears only
+   when at least one module has `home[root]` (≥1 reachable page under it
+   post access-filter). Click = descend; goto CTA = the app's declared
+   `is_default` module's first page **under that app** (`home[root]`).
+2. **Modules** — modules NAVIGABLE under the selected app (`home[root]`
+   present — declared membership without a reachable page is
+   routing-domain only and never lists). Click = descend; goto CTA =
+   `home[root]`. Labels resolve from the embedded `nav`/`label_key` in
+   the same payload — no per-module meta fetch.
+3. **Pages** — the selected module's nav links **scoped to the selected
+   app** (a multi-root module shows only that app's slice). Click =
+   direct navigation.
+
+The current route marks its ancestors in all three columns; the shown
+"current app" is the ROUTE's root (`shellNav.rootForRoute`), so a crm
+page at `/system/crm/pipeline` marks **System**, not CRM.
+
+**Module labels** come from ONE source: `service_registry.label_key`
+(`ModuleInfo.label_key`), resolved by `resolveModuleLabel(module, t)`
+against the module's own dictionary with the raw `name` as the only
+fallback. The launcher trigger, the Modules column, `moduleBreadcrumbSegments`
+(breadcrumb) and the service-admin pages all share it — "Impostazioni"
+everywhere, never a registry-name drift. Row goto CTAs and the keyboard
+footer use `app.nav.goTo` ("Vai a"/"Go to"); `app.nav.open` stays on the
+sidebar open-trigger where "open navigation" is the literal action.
+
+The root segment is also the first breadcrumb segment (auto-prepended by
+`AppPageBreadcrumb`), giving `{app} / {module} / {page}`. The sidebar nav
+links are likewise root-scoped — under `/system/crm/*` only the crm
+pages declared below `/system/crm` render.
 
 ## Organization switcher
 

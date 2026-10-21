@@ -26,9 +26,10 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
+  import { resolveModuleLabel } from '$lib/shell/module-label';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
   import { backendState } from '$lib/backend-availability';
@@ -188,13 +189,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('app.system') },
-          { label: $t('system.settings.title'), href: '/system/settings/profile' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          })
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>
@@ -279,7 +274,7 @@
 
                     <div class="min-w-0">
                       <div class="flex items-center gap-2">
-                        <p class="font-medium truncate">{module.name || module.code}</p>
+                        <p class="font-medium truncate">{resolveModuleLabel(module, $t) || module.code}</p>
                         {#if module.service_version}
                           <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                             v{module.service_version}

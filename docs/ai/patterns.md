@@ -17,6 +17,11 @@ see [`docs/dev-guide/button-styles.mdx`](../dev-guide/button-styles.mdx) for the
 (gradient roles, tones, sizes, hard rules). Never hand-style a `Button`
 with border/background classes.
 
+Dropdown surfaces (DropdownMenu Content/SubContent, Popover Content —
+combo-select included) carry `shadow-primary-gradient` baked into the
+shared components; never add per-instance `shadow-*` classes. Scope and
+rationale: [`.devin/rules/dropdown-surface-standard.md`](../../.devin/rules/dropdown-surface-standard.md).
+
 ### Customization (keep updates easy)
 
 - **Composition-first:** wrappers, slots, props, local classes.
@@ -250,7 +255,31 @@ Canonical example: `/ai` models header in
 
 ### Tables / lists
 
-Prefer one table pattern: headers, row hover, empty/loading, pagination/filters consistent across modules. Reusable abstractions should be **app components** composing primitives, not forks of primitives.
+**Canonical pattern**: routes that resolve to the table archetype render
+`EntityTablePage` (`$lib/components/entity-table-page`) — a ~50-line
+`+page.svelte` with props + snippets only. It owns scaffold/breadcrumb/title
+and drives `useEntityList` (meta cache, rows, search gate+debounce, sort,
+pagination, filters, deletion mode, persistence, abort, connectivity
+recovery, sync channels, RFC 7807 errors) → `EntityListTable` renders
+table/cards/cards-list.
+
+- Migrated pages: `system/settings/users|organizations|clients|roles`,
+  `crm/customers` — read them for config variants (popup vs goto nav,
+  `deletionFilter={false}`, `extraDialogs`).
+- Op dispatch uses declared `meta.actions[].endpoint` `{method, path}` —
+  never hand-build `/entities/{entity}/{uuid}` URLs.
+- The create CTA is metadata-driven: `EntityTablePage` reads the route
+  census (`kind:"create"` route for the entity) and renders the toolbar
+  `entity-create-cta` (label_key/icon from the census route), gated by
+  `create.single`. `headerActions` stays for non-entity page CTAs only.
+- Composite/module pages bypass `EntityTablePage` and drive
+  `useEntityList`+`EntityListTable` directly. Remote-module pages mount
+  through `RemotePageMount` instead — `system/job/job-schedules/create`
+  and `system/job/rules/create` are the standing examples.
+- Rule of record: `.devin/rules/entity-list-pages.md`.
+
+Reusable abstractions should be **app components** composing primitives,
+not forks of primitives.
 
 ### SSR-safe async loads
 

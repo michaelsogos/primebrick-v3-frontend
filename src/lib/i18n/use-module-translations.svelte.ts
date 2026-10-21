@@ -16,11 +16,12 @@ import { browser } from '$app/environment';
 import { page } from '$app/state';
 import { get, type Unsubscriber } from 'svelte/store';
 import { uiLang, getCachedModuleDict, setCachedModuleDict } from './store.svelte';
-import { mergeModuleDict, getFallbackDict } from './index';
+import { mergeModuleDict, getFallbackDict, CORE_DICT_MODULES } from './index';
 import type { UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
+import { pushNotification } from '$lib/errors/app-errors';
 
 const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
 const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
@@ -56,10 +57,19 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
-    // Never silent: a failed fetch leaves raw keys on screen until the next
-    // navigation — always log it. `cached` only decides severity.
+    // Never silent, never blocking: a failed dict fetch surfaces as a
+    // non-blocking notification (toast + errors-panel card) — raw keys stay
+    // visible but the failure is explicit and the user can navigate/retry.
+    // Severity: HIGH when there is no cached dict (raw keys guaranteed),
+    // MEDIUM when a cached dict still covers the UI (stale but working).
     const log = cached ? console.warn : console.error;
     log(`[i18n] Failed to load translations for module ${moduleId}, lang ${lang}:`, e);
+    pushNotification({
+      impact: cached ? 'MEDIUM' : 'HIGH',
+      message: `Failed to load translations for module '${moduleId}' (${lang})`,
+      scope: 'i18n',
+      detail: String(e),
+    });
   }
 }
 
@@ -105,7 +115,11 @@ export function useModuleTranslations(): { stop: () => void } {
   function reloadFor(lang: UiLang) {
     const path = page.url.pathname;
     const moduleId = shellNav.resolveModuleFromRoute(path);
-    const modules = new Set(['app', 'custom']);
+    // 'system' is the shared platform dictionary (entity labels
+    // system.entities.*, shared chrome strings) — NOT settings-owned; every
+    // module page needs it (a service-owned page under module `job` still
+    // renders system.* keys). CORE_DICT_MODULES is the single source.
+    const modules = new Set<string>(CORE_DICT_MODULES);
     if (moduleId) modules.add(moduleId);
     for (const id of modules) {
       // Reset the in-memory cache for this module so the (new language or

@@ -24,6 +24,8 @@
   interface Props {
     entity: string;
     translationKey?: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — `system` for BE-owned entities. */
+    entities_ns?: string;
     rowUuid: string;
     columns?: any[];
   }
@@ -31,6 +33,7 @@
   let {
     entity,
     translationKey,
+    entities_ns = 'system',
     rowUuid,
     columns = [],
   }: Props = $props();
@@ -224,7 +227,7 @@
       let fieldLabel = $t(`system.entities.versionHistory.field.${field}`);
       if (fieldLabel === `system.entities.versionHistory.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
-        fieldLabel = $t(`system.entities.${i18nEntity}.fields.${field}`) || field;
+        fieldLabel = $t(`${entities_ns}.entities.${i18nEntity}.fields.${field}`) || field;
       }
       // Use display_name for audit fields if available, otherwise use raw value
       const oldValue = change.old_display_name || change.from || change.old;

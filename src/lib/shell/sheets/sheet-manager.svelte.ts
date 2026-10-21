@@ -66,6 +66,8 @@ export type SheetPanelPropsMap = {
   'entity.versionHistory': {
     entity: string;
     translationKey?: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — `system` for BE-owned entities. */
+    entities_ns?: string;
     rowUuid: string;
     columns?: any[];
   };

@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   search_docs: vi.fn(),
   fetch_doc: vi.fn(),
   module_translations: vi.fn(),
-  routes_census: vi.fn(),
+  modules: vi.fn(),
   hooks: null as unknown,
   ai: {
     state: { is_ready: true, is_streaming: false },
@@ -51,7 +51,16 @@ vi.mock('$lib/api', () => ({
   searchDocs: mocks.search_docs,
   fetchDoc: mocks.fetch_doc,
   fetchModuleTranslations: mocks.module_translations,
-  fetchRoutesCensus: mocks.routes_census,
+  // Discovery payload → census derivation: the test feeds ModuleInfo[]
+  // and this replica flattens them exactly like the real helper.
+  fetchModules: mocks.modules,
+  routesCensusFromModules: (mods: { id: string; enabled?: boolean; routes?: object[]; nav?: { href: string }[] }[]) =>
+    mods
+      .filter((m) => m.enabled !== false)
+      .flatMap((m) => [
+        ...(m.routes ?? []).map((r) => ({ ...r, module: m.id })),
+        ...(m.nav ?? []).map((l) => ({ route: l.href, kind: 'page', module: m.id })),
+      ]),
 }));
 vi.mock('$lib/shell/modules-shell.svelte', () => ({
   shellNav: { resolveModuleFromRoute: () => null, modules: [] },
@@ -152,9 +161,17 @@ function makeCtx(generate_agent: ReturnType<typeof stubAgent>) {
 describe('useGuideAi RAG preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.routes_census.mockResolvedValue([
-      { route: '/system/settings/users', kind: 'list', module: 'settings', entity: 'user_profiles' },
-      { route: '/system/settings/users/create', kind: 'create', module: 'settings', entity: 'user_profiles' },
+    mocks.modules.mockResolvedValue([
+      {
+        id: 'settings',
+        name: 'Settings',
+        enabled: true,
+        part_of: 'system',
+        routes: [
+          { route: '/system/settings/users', kind: 'list', entity: 'user_profiles' },
+          { route: '/system/settings/users/create', kind: 'create', entity: 'user_profiles' },
+        ],
+      },
     ]);
     mocks.search_docs.mockResolvedValue([SEARCH_HIT]);
     mocks.fetch_doc.mockResolvedValue(FETCHED_DOC);

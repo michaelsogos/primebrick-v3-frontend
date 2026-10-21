@@ -6,6 +6,8 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
+import type { PageRouteDeclaration } from '@primebrick/ui';
+
 export type EntityWritePayload<E> = {
   entity: E;
   translations?: PendingTranslationRow[];
@@ -19,8 +21,34 @@ export type ModuleInfo = {
   name: string;
   enabled: boolean;
   icon?: string;
+  /** Root level the module is part of — `/{part_of}/{id}` route prefix. */
+  part_of: string;
   route_prefixes?: string[];
   is_reserved?: boolean;
+  /** Declared default module of its root level — at most one per part_of. */
+  is_default?: boolean;
+  /**
+   * i18n key for the module's localized display name — resolved against
+   * the module's own translation namespace (same contract as
+   * `nav[].label_key`). Single display-name source for every UI surface;
+   * falls back to `name` when absent or unresolved.
+   */
+  label_key?: string;
+  /**
+   * The module's declared nav, ALREADY access-filtered server-side —
+   * present only when the module owns pages (absent for headless services).
+   * `/api/v1/modules` is the single discovery document; there is no
+   * per-module meta endpoint anymore.
+   */
+  nav?: ModuleNavLink[];
+  /** Route census declared by the module — access-filtered like `nav`. */
+  routes?: ModuleRouteDecl[];
+  /**
+   * nav[0].href of each root slice, post-filter — the first page the user
+   * is actually allowed to see in that root. `{crm: "/crm/customers",
+   * system: "/system/crm/pipeline"}`.
+   */
+  home?: Record<string, string>;
 };
 
 export type ModuleNavLink = {
@@ -28,14 +56,28 @@ export type ModuleNavLink = {
   label_key: string;
   href: string;
   icon?: string;
+  /**
+   * Access-axis gate (`access.{app}.{module}.{page}`) — server-side
+   * filtered already; kept on the wire so clients can reason about the
+   * declaration (e.g. admin views), not to re-filter.
+   */
+  access?: string;
   children?: ModuleNavLink[];
 };
 
 export type ModuleNav = {
   module: string;
-  icon?: string;
   nav: ModuleNavLink[];
+  /** Full route census declared by the module (nav + non-nav pages). */
+  routes?: ModuleRouteDecl[];
 };
+
+/**
+ * Route census entry declared inside `ModuleNav.routes` — the canonical
+ * `PageRouteDeclaration` contract (carries `component_*` remote-delivery
+ * fields and the `access` axis gate).
+ */
+export type ModuleRouteDecl = PageRouteDeclaration;
 
 export type HealthModule = { id: string; version: string };
 
@@ -80,6 +122,8 @@ export type ServiceInfo = {
   icon?: string;
   icon_type: IconType;
   is_reserved?: boolean;
+  /** i18n key for the module's localized display name (module's own namespace). */
+  label_key?: string;
   uuid?: string;
 };
 

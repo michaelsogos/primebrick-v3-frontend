@@ -10,7 +10,7 @@
  */
 import { getBrevoProviderSnapshot, getFakeBrevo } from "./helpers/global-state";
 import { closePool, restoreBrevoProvider } from "./helpers/db";
-import { destroyE2eAdminActor } from "./helpers/test-users";
+import { destroyE2eAdminActor, destroyE2eUserActor } from "./helpers/test-users";
 
 export default async function globalTeardown(): Promise<void> {
   console.log("[globalTeardown] Cleaning up E2E resources...");
@@ -20,6 +20,12 @@ export default async function globalTeardown(): Promise<void> {
     console.log("[globalTeardown] Ephemeral E2E test actor destroyed.");
   } catch (e) {
     console.warn("[globalTeardown] Test actor cleanup failed:", e);
+  }
+  try {
+    await destroyE2eUserActor();
+    console.log("[globalTeardown] Ephemeral non-admin actor destroyed.");
+  } catch (e) {
+    console.warn("[globalTeardown] Non-admin actor cleanup failed:", e);
   }
 
   const fakeBrevo = getFakeBrevo();

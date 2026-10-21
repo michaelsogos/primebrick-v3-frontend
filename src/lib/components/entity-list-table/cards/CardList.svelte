@@ -36,7 +36,8 @@
     onVersionHistory,
     rowFocusedIndex,
     cell,
-    isRowDeleted
+    isRowDeleted,
+    sparklineData
   }: {
     rows: Record<string, unknown>[];
     columns: MetaColumn[];
@@ -60,6 +61,8 @@
     rowFocusedIndex?: number | null;
     cell?: any;
     isRowDeleted?: (row: Record<string, unknown>) => boolean;
+    /** Per-column batch sparkline buckets — same map as the table view. */
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
   const renderColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
@@ -134,14 +137,15 @@
         {/if}
         <div class="flex flex-col gap-2 flex-1 min-w-0">
           {#each renderColumns as col (col.key)}
-            <CardField 
-              row={r} 
-              column={col} 
-              {rowSelected} 
-              {rowDeleted} 
+            <CardField
+              row={r}
+              column={col}
+              {rowSelected}
+              {rowDeleted}
               {datetimeIanaModeByKey}
               {viewMode}
               {cell}
+              {sparklineData}
               datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0}
             />
           {/each}

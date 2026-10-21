@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import ChangePasswordCard from '$lib/components/auth/ChangePasswordCard.svelte';
   import PasskeyEnrollment from '$lib/components/auth/PasskeyEnrollment.svelte';
   import MfaManagement from '$lib/components/auth/MfaManagement.svelte';
@@ -14,13 +14,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('app.system') },
-          { label: $t('system.settings.title'), href: '/system/settings/profile' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key),
-          }),
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">

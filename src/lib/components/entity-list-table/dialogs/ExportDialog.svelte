@@ -10,6 +10,7 @@
   import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
+  import { getEntitiesNsContext } from '../context';
 
   interface ExportDialogProps {
     open: boolean;
@@ -17,6 +18,8 @@
     selectedCount: number;
     totalCount: bigint;
     entity: string;
+    /** Entity-label i18n namespace from `meta.entities_ns` — defaults to the table context / `system`. */
+    entities_ns?: string;
     exportScope: 'selected' | 'all';
     onExportScopeChange: (scope: 'selected' | 'all') => void;
     fileType: string | null;
@@ -32,6 +35,7 @@
     selectedCount,
     totalCount,
     entity,
+    entities_ns,
     exportScope,
     onExportScopeChange,
     fileType,
@@ -40,6 +44,8 @@
     onConfirm,
     onCancel
   }: ExportDialogProps = $props();
+
+  const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
 <DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
@@ -47,9 +53,9 @@
     <Dialog.Title>{$t('app.common.exportConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('app.common.exportConfirm')} {selectedCount} {$t(`system.entities.${entity}.plural`)}?
+        {$t('app.common.exportConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {:else}
-        {$t('app.common.exportConfirm')} {totalCount} {$t(`system.entities.${entity}.plural`)}?
+        {$t('app.common.exportConfirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

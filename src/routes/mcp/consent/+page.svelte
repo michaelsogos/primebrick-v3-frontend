@@ -11,7 +11,7 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
-  import { userProfileState } from '$lib/user-profile-store.svelte';
+  import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import {
@@ -62,8 +62,7 @@
       if (response.ok) {
         const data = await response.json();
         if (data.user) {
-          userProfileState.current = data.user;
-          sessionStorage.setItem('user', JSON.stringify(data.user));
+          userProfileStore.set(data.user);
         }
       }
     } catch {

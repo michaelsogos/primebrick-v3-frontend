@@ -9,6 +9,7 @@
     selectedKeys,
     total,
     entity,
+    entities_ns,
     translationKey
   }: EntityListTableDialogsProps = $props();
 
@@ -20,6 +21,9 @@
     selectedKeys: string[];
     total: bigint;
     entity: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to every
+     *  dialog so entity keys compose as `<ns>.entities.*`. */
+    entities_ns?: string;
     translationKey?: string;
   };
 
@@ -122,6 +126,7 @@
 
 <DeleteDialog
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   recordName={recordName(dialogs.state.rowToDelete)}
   open={dialogs.state.deleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
@@ -132,6 +137,7 @@
 
 <RestoreDialog
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   recordName={recordName(dialogs.state.rowToRestore)}
   open={dialogs.state.restoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
@@ -142,6 +148,7 @@
 
 <BulkDeleteDialog
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   open={dialogs.state.bulkDeleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
   selectedCount={selectedKeys.length}
@@ -152,6 +159,7 @@
 
 <BulkRestoreDialog
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   open={dialogs.state.bulkRestoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
   selectedCount={selectedKeys.length}
@@ -166,6 +174,7 @@
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   exportScope={exportComposable.state.exportScope}
   onExportScopeChange={(scope) => exportComposable.setExportScope(scope)}
   fileType={exportComposable.state.fileType}
@@ -181,6 +190,7 @@
   selectedCount={selectedKeys.length}
   totalCount={total}
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   isExporting={exportComposable.state.isHtmlExporting}
   onConfirm={confirmHtmlExport}
   onCancel={cancelHtmlExport}
@@ -192,6 +202,7 @@
   duplicateScope={dialogs.state.duplicateScope}
   selectedCount={selectedKeys.length}
   entity={translationKey ?? entity}
+  entities_ns={entities_ns}
   isDuplicating={rowActionsComposable.state.isDuplicating}
   onConfirm={confirmDuplicate}
   onCancel={cancelDuplicate}

@@ -13,7 +13,8 @@
  *       max iterations, early-exit on zero new chunks
  *   S3  the answer streams as the MAIN generation
  *   S4  action selection: the model picks navigate CTAs from the runtime
- *       route census (GET /system/routes) — selection, never generation
+ *       route census (derived from the consolidated GET /api/v1/modules
+ *       payload) — selection, never generation
  *
  * No hits produce a deterministic localized answer; retrieval failures and
  * invalid rewrites stop the turn instead of allowing an unsupported answer.

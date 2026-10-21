@@ -41,6 +41,22 @@ The shared helpers live in `src/lib/auth/session-check.ts`
 `triggerRefresh` is single-flight, so concurrent callers share one
 refresh request.
 
+### Identity vs session — one certified source
+
+`sessionStorage['user']` / `userProfileStore` mixes two domains that are
+written by different paths:
+
+| Writer | Allowed fields |
+|--------|----------------|
+| `GET /api/v1/auth/me` → `userProfileStore.set(profile)` | **Identity** — `uuid`, `display_name`, `email`, `avatar_*`, `is_admin`, `is_verified`, `idp_*`, `permissions`, audit fields. THE certified source (DB `user_profiles`). |
+| login / refresh responses (IDP JWT claims) → `userProfileStore.setSession(data.user)` | **Session only** — `username`, `idp_code`, `expires_at`, `roles`, `organization`. `setSession` whitelists these keys: claim-level `display_name`/`email` are dropped — never deduced identity. |
+
+`setSession` also carries an account-switch guard: a payload `idp_code`
+different from the stored one drops the current identity fields, which
+`/auth/me` then repopulates reactively — no stale identity of another
+account can linger. Never write `sessionStorage['user']` directly or feed
+claims to `set()`.
+
 ### Post-login redirect
 
 `src/lib/auth/redirect-cache.ts` exposes the redirect helpers:
@@ -67,9 +83,9 @@ degenerating to `/`.
 ## Module switching & route-aware translations
 
 Selecting a module in the sidebar switcher calls
-`shellNav.selectModule(id)` **and navigates** to the module's first
-`route_prefixes` entry (metadata-driven; modules without prefixes land
-on `/`). `/system/settings` itself redirects to `/system/settings/profile`
+`shellNav.selectModule(id)` **and navigates** to the module home — the
+first `nav` entry of the current root slice (`home[root]` from the
+`/api/v1/modules` payload; `nav[0].href` is the single source of truth). `/system/settings` itself redirects to `/system/settings/profile`
 via a `+page.ts` universal `load()` — `redirect()` inside a component
 `<script>` only works on SSR; on client-side navigation it surfaces as
 an unhandled "Redirect" error and a blank page.

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
- * /system/migrations — db_patch admin remediation page E2E.
+ * /system/settings/migrations — db_patch admin remediation page E2E.
  *
  * Asserts the per-service cards render (BE direct + registered services via
  * the /ws/<code> proxy), the patch registry table lists rows, the drift-check
@@ -10,10 +10,10 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * approve action. Auth: ephemeral E2E admin actor (see helpers/admin-login).
  */
 
-test.describe("/system/migrations", () => {
+test.describe("/system/settings/migrations", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/migrations", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/settings/migrations", { waitUntil: "domcontentloaded" });
   });
 
   test("renders the backend card and patch registry rows", async ({ page }) => {

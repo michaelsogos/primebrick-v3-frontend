@@ -1,10 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { resolve } from '$app/paths';
   import * as Breadcrumb from '$lib/components/ui/breadcrumb';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import { isMenuSegment, type AppBreadcrumbSegment } from '$lib/breadcrumb/types';
+  import { isMenuSegment, type AppBreadcrumbSegment, type AppBreadcrumbMenuSegment } from '$lib/breadcrumb/types';
   import { cn } from '$lib/utils';
+  import { t } from '$lib/i18n';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
@@ -14,12 +19,39 @@
   }: {
     segments: AppBreadcrumbSegment[];
   } = $props();
+
+  /**
+   * Root-level segment — the ROUTE's root (`/system/crm/pipeline` shows
+   * 'System', not 'CRM'), menu across sibling roots (each item navigates
+   * to that root's declared default module home). Single source of truth:
+   * every page gets `root / module / …` without per-page wiring.
+   */
+  const rootSegment = $derived.by((): AppBreadcrumbMenuSegment | null => {
+    const roots = shellNav.roots;
+    if (roots.length === 0) return null;
+    const current = shellNav.rootForRoute(page.url.pathname);
+    return {
+      kind: 'menu',
+      label: $t(`app.nav.roots.${current}`),
+      icon: APP_ROOT_ICON,
+      menuAriaLabel: $t('app.nav.rootLevel'),
+      items: roots.map((r) => ({
+        label: $t(`app.nav.roots.${r}`),
+        icon: APP_ROOT_ICON,
+        // `home[root]` = nav[0] of that root's slice — the first page the
+        // user is actually allowed to reach (post-filter).
+        href: (shellNav.defaultModuleForRoot(r)?.home?.[r] ?? '/') as '/',
+        current: r === current
+      }))
+    };
+  });
+  const allSegments = $derived(rootSegment ? [rootSegment, ...segments] : segments);
 </script>
 
-{#if segments.length > 0}
+{#if allSegments.length > 0}
   <Breadcrumb.Root class="text-xs sm:text-sm">
     <Breadcrumb.List class="gap-x-1.5 gap-y-0.5">
-      {#each segments as seg, i (i)}
+      {#each allSegments as seg, i (i)}
         {#if i > 0}
           <Breadcrumb.Separator class="text-muted-foreground/60">
             <span aria-hidden="true">/</span>
@@ -47,7 +79,7 @@
                   <DropdownMenu.Item
                     class={cn(dropdownMenuSelectedItemClass(item.current), 'flex items-center gap-2')}
                     onSelect={() => {
-                      if (!item.current) void goto(item.href);
+                      if (!item.current) void goto(resolve(item.href as '/'));
                     }}
                   >
                     {#if item.icon}

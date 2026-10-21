@@ -43,6 +43,7 @@
     orderedSelectedRows,
     rowRangeSelection,
     datetimeIanaRenderTick,
+    sparklineData,
     rowKey,
     isRowDeleted,
     cell,
@@ -61,6 +62,7 @@
     page,
     onPageChange,
     entity,
+    entities_ns,
     columns,
     stickyColumns,
     dataColumns,
@@ -108,6 +110,7 @@
     orderedSelectedRows: TRow[];
     rowRangeSelection: any;
     datetimeIanaRenderTick: number;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
     cell: any;
@@ -126,6 +129,8 @@
     page: number;
     onPageChange: (page: number) => void;
     entity: string;
+    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
+    entities_ns?: string;
     columns: MetaColumn[];
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
@@ -182,6 +187,7 @@
         selectedKeys={selectedKeys}
         rowRangeSelection={rowRangeSelection}
         datetimeIanaRenderTick={datetimeIanaRenderTick}
+        sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
         previewPanel={previewPanel}
@@ -229,6 +235,7 @@
     {page}
     {onPageChange}
     {entity}
+    entities_ns={entities_ns}
     {columns}
     {stickyColumns}
     {dataColumns}

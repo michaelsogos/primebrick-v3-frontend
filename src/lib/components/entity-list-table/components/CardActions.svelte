@@ -12,6 +12,7 @@
   import Eye from '@lucide/svelte/icons/eye'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
+  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
   let {
     row,
@@ -33,6 +34,7 @@
     onDeleteRow,
     onRestoreRow,
     onPreviewRow,
+    handleCustomAction,
     isListMode
   }: {
     row: TRow;
@@ -50,6 +52,14 @@
       delete?: boolean;
       restore?: boolean;
       versionHistory?: boolean;
+      custom_actions?: Array<{
+        action_name: string;
+        translation_key: string;
+        icon: string;
+        text_color?: string;
+        disabled_when_deleted?: boolean;
+        required_permission?: string | string[];
+      }>;
     };
     dropdownMenuRow: TRow | null;
     onToggleRowSelect: (key: string) => void;
@@ -61,6 +71,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
+    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
     isListMode: boolean;
   } = $props();
 </script>
@@ -160,9 +171,23 @@
               </div>
             </DropdownMenu.Item>
           {/if}
-          {#if entityRowActions?.delete !== false}
+          {#if entityRowActions?.custom_actions && handleCustomAction}
+            {#each entityRowActions.custom_actions as action}
+              {@const isDisabled = action.disabled_when_deleted && rowDeleted}
+              <DropdownMenu.Item
+                onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}
+                class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
+              >
+                <div class="flex items-center gap-2">
+                  <DynamicIcon name={action.icon} size={16} class="opacity-70" />
+                  <span>{$t(action.translation_key)}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/each}
+          {/if}
+          {#if rowDeleted ? entityRowActions?.restore !== false : entityRowActions?.delete !== false}
             <DropdownMenu.Separator />
-            {#if rowDeleted && entityRowActions?.restore !== false}
+            {#if rowDeleted}
               <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
                 <div class="flex items-center gap-2">
                   <span class="relative flex items-center justify-center">

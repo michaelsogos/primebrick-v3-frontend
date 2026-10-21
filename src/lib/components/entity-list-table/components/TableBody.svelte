@@ -36,6 +36,7 @@
     stickyColumnsGroup,
     stickyColumnsState,
     datetimeIanaModeByKey,
+    sparklineData,
     cell,
     rowActions,
     entityRowActions,
@@ -85,6 +86,7 @@
     stickyColumnsGroup: MetaColumn[];
     stickyColumnsState: any;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
+    sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[ { row: TRow; column: MetaColumn } ]>;
     rowActions?: Snippet<[ { row: TRow } ]>;
     entityRowActions?: {
@@ -211,6 +213,7 @@
           stickyColumnsGroup,
           stickyColumnsState,
           datetimeIanaModeByKey,
+          sparklineData,
           cell,
           rowActions,
           entityRowActions,
