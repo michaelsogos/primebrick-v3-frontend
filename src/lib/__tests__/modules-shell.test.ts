@@ -44,6 +44,7 @@ const MODULES = [
     // containment). /system/settings/migrations matches via the prefix.
     route_prefixes: ['/system/settings'],
     is_reserved: true,
+    is_default: true,
   },
   {
     id: 'crm',
@@ -51,8 +52,11 @@ const MODULES = [
     enabled: true,
     icon: 'users',
     part_of: 'crm',
-    route_prefixes: ['/crm'],
+    // One foot in each shoe: own root /crm plus an extra membership
+    // under /system (multi-root prefixes — the experiment).
+    route_prefixes: ['/crm', '/system/crm'],
     is_reserved: false,
+    is_default: true,
   },
 ];
 
@@ -77,6 +81,12 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   it('resolves the crm root level correctly', () => {
     expect(shellNav.resolveModuleFromRoute('/crm/customers')).toBe('crm');
     expect(shellNav.resolveModuleFromRoute('/crm/pipeline')).toBe('crm');
+  });
+
+  it('resolves an extra-root page to its owner — /system/crm is crm, not settings', () => {
+    // crm declares ['/crm', '/system/crm']: the pipeline page under the
+    // system app still belongs to the crm module (longest prefix wins).
+    expect(shellNav.resolveModuleFromRoute('/system/crm/pipeline')).toBe('crm');
   });
 
   it('does not let a trailing-slash-less prefix over-match', () => {
@@ -106,9 +116,27 @@ describe('root levels — part_of grouping', () => {
     expect(shellNav.roots).toEqual(['system', 'crm']);
   });
 
-  it('groups modules by root level', () => {
-    expect(shellNav.modulesForRoot('system').map((m) => m.id)).toEqual(['job', 'settings']);
+  it('groups modules by root level — extra prefixes count as membership', () => {
+    // crm owns pages under BOTH roots: /crm (own) and /system/crm (extra).
+    expect(shellNav.modulesForRoot('system').map((m) => m.id)).toEqual(['job', 'settings', 'crm']);
     expect(shellNav.modulesForRoot('crm').map((m) => m.id)).toEqual(['crm']);
+  });
+
+  it('rootForRoute follows the URL, not the module registry root', () => {
+    // Same module, two apps: the breadcrumb/switcher root is where the
+    // page LIVES (/system/crm → System), not the module's part_of.
+    expect(shellNav.rootForRoute('/system/crm/pipeline')).toBe('system');
+    expect(shellNav.rootForRoute('/crm/customers')).toBe('crm');
+    expect(shellNav.rootForRoute('/system/job')).toBe('system');
+    // Unknown first segment falls back to the selected module's root.
+    expect(shellNav.rootForRoute('/unclaimed/deep')).toBe('system');
+  });
+
+  it('defaultModuleForRoot prefers is_default among own-root members', () => {
+    // settings is the declared default of 'system' even though job and
+    // crm also list under it; crm's is_default claim is for 'crm' only.
+    expect(shellNav.defaultModuleForRoot('system')?.id).toBe('settings');
+    expect(shellNav.defaultModuleForRoot('crm')?.id).toBe('crm');
   });
 
   it('selectedRoot derives from the selected module, defaulting to system', () => {

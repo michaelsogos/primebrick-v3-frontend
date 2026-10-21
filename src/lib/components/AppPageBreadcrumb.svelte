@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import * as Breadcrumb from '$lib/components/ui/breadcrumb';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -19,22 +20,22 @@
   } = $props();
 
   /**
-   * Root-level segment — `/{part_of}` of the selected module, menu across
-   * sibling roots (each item navigates to that root's first module home).
-   * Single source of truth: every page gets `root / module / …` without
-   * per-page wiring.
+   * Root-level segment — the ROUTE's root (`/system/crm/pipeline` shows
+   * 'System', not 'CRM'), menu across sibling roots (each item navigates
+   * to that root's declared default module home). Single source of truth:
+   * every page gets `root / module / …` without per-page wiring.
    */
   const rootSegment = $derived.by((): AppBreadcrumbMenuSegment | null => {
     const roots = shellNav.roots;
     if (roots.length === 0) return null;
-    const current = shellNav.selectedRoot;
+    const current = shellNav.rootForRoute(page.url.pathname);
     return {
       kind: 'menu',
       label: $t(`app.nav.roots.${current}`),
       menuAriaLabel: $t('app.nav.rootLevel'),
       items: roots.map((r) => ({
         label: $t(`app.nav.roots.${r}`),
-        href: shellNav.modulesForRoot(r)[0]?.route_prefixes?.[0] ?? '/',
+        href: (shellNav.defaultModuleForRoot(r)?.route_prefixes?.[0] ?? '/') as '/',
         current: r === current
       }))
     };

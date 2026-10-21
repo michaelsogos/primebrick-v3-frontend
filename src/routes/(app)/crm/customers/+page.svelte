@@ -3,8 +3,7 @@
   import { page as appPage } from '$app/state';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { crmModuleMenuSegment } from '$lib/breadcrumb/crm-breadcrumb';
-  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
 </script>
 
 <EntityTablePage
@@ -16,8 +15,7 @@
   {#snippet breadcrumb()}
     <AppPageBreadcrumb
       segments={[
-        crmModuleMenuSegment({
-          modules: shellNav.modules,
+        moduleMenuSegment({
           pathname: appPage.url.pathname,
           t: (key) => $t(key)
         })

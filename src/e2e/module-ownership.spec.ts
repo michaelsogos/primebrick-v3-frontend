@@ -35,10 +35,13 @@ type ModuleInfo = {
   name: string;
   enabled: boolean;
   icon?: string;
-  /** Root level — every route_prefix must live under /{part_of}/{id}. */
+  /** Own root level — the primary prefix is /{part_of}/{id} (collapses to /{id} when part_of === id). */
   part_of: string;
+  /** Primary prefix plus optional EXTRA app memberships — each extra is /{root}/{id}. */
   route_prefixes?: string[];
   is_reserved?: boolean;
+  /** Declared default module of its root level. */
+  is_default?: boolean;
 };
 
 type NavLink = { id: string; label_key: string; href: string; icon?: string; children?: NavLink[] };
@@ -46,12 +49,22 @@ type NavLink = { id: string; label_key: string; href: string; icon?: string; chi
 const RAW_KEY = /\b(?:app|system|custom|job|crm|emailsender|webhook|ai)\.[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+\b/i;
 
 const pathOf = (page: Page) => new URL(page.url()).pathname;
-const SWITCHER_TRIGGER = "[data-testid='module-switcher-trigger']";
-const MENU_ITEM = "[data-slot='dropdown-menu-item']";
+const LAUNCHER_TRIGGER = "[data-testid='app-launcher-trigger']";
+const LAUNCHER_APPS = "[data-testid='app-launcher-apps']";
+const LAUNCHER_MODULES = "[data-testid='app-launcher-modules']";
+const LAUNCHER_PAGES = "[data-testid='app-launcher-pages']";
+const LAUNCHER_OPTION = "button[role='option']";
 
 /** Modules that own FE pages — headless services (no nav decl) are excluded. */
 const pageModules = (modules: ModuleInfo[]) =>
   modules.filter((m) => (m.route_prefixes?.length ?? 0) > 0);
+
+/** First URL segment — the root level a prefix/href lives under. */
+const rootOf = (path: string) => path.split("/").filter(Boolean)[0] ?? "";
+
+/** Distinct root levels a module owns pages under (all its prefixes). */
+const moduleRoots = (m: ModuleInfo) =>
+  [...new Set((m.route_prefixes ?? []).map(rootOf).filter(Boolean))];
 
 /** Longest-prefix ownership — the same rule the shell applies. */
 function expectedOwner(modules: ModuleInfo[], pathname: string): string | null {
@@ -84,6 +97,27 @@ function flattenHrefs(links: NavLink[]): string[] {
   return links.flatMap((l) => [l.href, ...flattenHrefs(l.children ?? [])]);
 }
 
+async function openLauncher(page: Page) {
+  await page.locator(LAUNCHER_TRIGGER).first().click();
+  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 10000 });
+}
+
+/** Hover (not click) an app column item — previews its modules. */
+async function launcherHoverApp(page: Page, root: string) {
+  await page
+    .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
+    .filter({ hasText: new RegExp(root, "i") })
+    .first()
+    .hover();
+}
+
+async function launcherClickModule(page: Page, name: string) {
+  await page
+    .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: name })
+    .first()
+    .click();
+}
+
 function attachHygiene(page: Page) {
   const httpFailures: string[] = [];
   const consoleErrors: string[] = [];
@@ -112,7 +146,7 @@ test.describe("module ownership — observable contract", () => {
     await loginAsTestAdmin(page);
   });
 
-  test("every page-owning module: switcher select → owning route → declared nav", async ({
+  test("every page-owning module×root: launcher select → owning route → declared nav", async ({
     page,
   }) => {
     const modules = await fetchModules(page);
@@ -122,122 +156,133 @@ test.describe("module ownership — observable contract", () => {
       "at least one page-owning module must be enabled"
     ).toBeGreaterThan(0);
 
+    // A module may own pages under MULTIPLE roots (extra /{root}/{code}
+    // prefixes — e.g. crm under both /crm and /system/crm): each
+    // (module, root) pair is its own selectable slice.
     for (const m of pageModules_) {
-      // Root level first: the module switcher only lists modules under the
-      // selected root — pick the module's root (label app.nav.roots.<part_of>,
-      // same string the sidebar shows) when it isn't the current root.
-      const currentRootBtn = page.locator("[data-testid='root-switcher-trigger']").first();
-      const currentRootLabel = (await currentRootBtn.textContent())?.trim();
-      const targetRootLabel = new RegExp(`^${m.part_of}$`, "i");
-      if (!currentRootLabel || !targetRootLabel.test(currentRootLabel)) {
-        await currentRootBtn.click();
-        await page
-          .getByRole("menuitem", { name: targetRootLabel })
-          .first()
-          .click();
-      }
-      // Then pick THIS module by name in the module switcher.
-      await page.locator(SWITCHER_TRIGGER).first().click();
-      await page.locator(MENU_ITEM, { hasText: m.name }).first().click();
+      for (const root of moduleRoots(m)) {
+        await page.goto("/system", { waitUntil: "domcontentloaded" });
+        await openLauncher(page);
+        // Hover (not click) the app → its modules column previews; then
+        // click THIS module by name — click = module home under that app.
+        await launcherHoverApp(page, root);
+        await launcherClickModule(page, m.name);
 
-      // Wait for the client-side navigation to a prefix-owned route.
-      await page.waitForFunction(
-        (prefixes) => {
-          const p = location.pathname;
-          return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
-        },
-        m.route_prefixes ?? [],
-        { timeout: 15000 }
-      );
+        // Wait for the client-side navigation to a prefix-owned route
+        // under THIS app root.
+        const rootPrefixes = (m.route_prefixes ?? []).filter((p) => rootOf(p) === root);
+        await page.waitForFunction(
+          (prefixes) => {
+            const p = location.pathname;
+            return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
+          },
+          rootPrefixes,
+          { timeout: 15000 }
+        );
 
-      // Contract 1: the landed route must resolve to the module that was
-      // selected — never swallowed by a broader foreign prefix.
-      const owner = expectedOwner(modules, pathOf(page));
-      expect(
-        owner,
-        `route ${page.url()} must resolve to '${m.id}' (got '${owner}')`
-      ).toBe(m.id);
+        // Contract 1: the landed route must resolve to the module that was
+        // selected — never swallowed by a broader foreign prefix.
+        const owner = expectedOwner(modules, pathOf(page));
+        expect(
+          owner,
+          `route ${page.url()} must resolve to '${m.id}' (got '${owner}')`
+        ).toBe(m.id);
 
-      // Contract 2: switcher must display the module that was selected —
-      // no stale label, no fake fallback.
-      const trigger = page.locator(SWITCHER_TRIGGER).first();
-      await expect(trigger).toContainText(m.name, { timeout: 10000 });
+        // Contract 2: launcher trigger must display the module that was
+        // selected — no stale label, no fake fallback.
+        const trigger = page.locator(LAUNCHER_TRIGGER).first();
+        await expect(trigger).toContainText(m.name, { timeout: 10000 });
 
-      // Contract 3: the sidebar must render exactly the module's declared
-      // nav hrefs — nothing missing, nothing exceeding.
-      const declared = (await fetchModuleNav(page, m.id)).filter((l) => l.href);
-      const expectedHrefs = new Set(flattenHrefs(declared));
-      await expect
-        .poll(async () => {
-          const hrefs = await page
-            .locator("[data-sidebar='content'] a[href]")
-            .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
-          return hrefs.filter((h) => h && expectedHrefs.has(h)).sort().join("|");
-        }, `sidebar must render all ${m.id} nav links`)
-        .toBe([...expectedHrefs].sort().join("|"));
+        // Contract 3: the sidebar must render exactly the module's nav
+        // hrefs under THIS root — nothing missing, nothing exceeding
+        // (a multi-root module shows only this app's slice).
+        const declared = (await fetchModuleNav(page, m.id))
+          .filter((l) => l.href && rootOf(l.href) === root);
+        const expectedHrefs = new Set(flattenHrefs(declared));
+        await expect
+          .poll(async () => {
+            const hrefs = await page
+              .locator("[data-sidebar='content'] a[href]")
+              .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+            return hrefs.filter((h) => h && expectedHrefs.has(h)).sort().join("|");
+          }, `sidebar must render all ${m.id} nav links under /${root}`)
+          .toBe([...expectedHrefs].sort().join("|"));
 
-      // No foreign links either: every rendered link href must be declared
-      // by THIS module or point outside the module nav entirely (shared
-      // chrome links are not declared by any module).
-      const renderedHrefs = await page
-        .locator("[data-sidebar='content'] a[href]")
-        .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
-      for (const href of renderedHrefs) {
-        if (!href) continue;
-        const linkOwner = expectedOwner(modules, href);
-        // A link pointing at a route owned by a DIFFERENT module may only
-        // exist if this module actually declared it in its nav.
-        if (linkOwner && linkOwner !== m.id) {
-          expect(
-            expectedHrefs.has(href),
-            `${m.id} sidebar must not render foreign link ${href} (owned by ${linkOwner})`
-          ).toBeTruthy();
+        // No foreign links either: every rendered link href must be
+        // declared by THIS module or point outside the module nav
+        // entirely (shared chrome links are not declared by any module).
+        const renderedHrefs = await page
+          .locator("[data-sidebar='content'] a[href]")
+          .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+        for (const href of renderedHrefs) {
+          if (!href) continue;
+          const linkOwner = expectedOwner(modules, href);
+          // A link pointing at a route owned by a DIFFERENT module may
+          // only exist if this module actually declared it in its nav.
+          if (linkOwner && linkOwner !== m.id) {
+            expect(
+              expectedHrefs.has(href),
+              `${m.id} sidebar must not render foreign link ${href} (owned by ${linkOwner})`
+            ).toBeTruthy();
+          }
         }
       }
     }
   });
 
-  test("root level: every module is namespaced under /{part_of}/{code}", async ({
-    page,
-  }) => {
+  test("root level: every module is namespaced under /{root}/{code}", async ({ page }) => {
     const modules = await fetchModules(page);
     expect(modules.length, "at least one module must be enabled").toBeGreaterThan(0);
 
     for (const m of modules) {
-      // Root==code collapses: crm (part_of 'crm') lives under /crm,
-      // not /crm/crm — same rule the BE validates at registration.
-      const expectedPrefix = m.part_of === m.id ? `/${m.id}` : `/${m.part_of}/${m.id}`;
-      for (const p of m.route_prefixes ?? []) {
+      // The primary prefix is derived: /{part_of}/{code}, collapsing to
+      // /{code} when part_of === code. Extras may only add /{root}/{code}
+      // — the code stays the URL's second segment under every root.
+      const expectedPrimary = m.part_of === m.id ? `/${m.id}` : `/${m.part_of}/${m.id}`;
+      const prefixes = m.route_prefixes ?? [];
+      // Headless services (ai, emailsender, webhook) declare no nav/prefixes
+      // — the primary-prefix contract only applies to page-owning modules.
+      if (prefixes.length > 0) {
         expect(
-          p === expectedPrefix || p.startsWith(expectedPrefix + "/"),
-          `module '${m.id}' prefix '${p}' must live under '${expectedPrefix}'`
+          prefixes.includes(expectedPrimary),
+          `module '${m.id}' must declare its primary prefix '${expectedPrimary}'`
         ).toBeTruthy();
       }
-      // The module's home link (nav[0].href) is namespaced too. Modules
-      // without a nav declaration (headless services — offline ai/
-      // emailsender/webhook carry no endpoints.nav) legitimately 404 on
-      // /modules/:code/meta: nothing to check for them.
-      const nav = (m.route_prefixes?.length ?? 0) > 0 ? await fetchModuleNav(page, m.id) : [];
+      for (const p of prefixes) {
+        const segs = p.split("/").filter(Boolean);
+        expect(
+          segs.length === 1 ? segs[0] === m.id : segs[1] === m.id,
+          `module '${m.id}' prefix '${p}' must keep '${m.id}' as its last declared segment`
+        ).toBeTruthy();
+      }
+      // Every nav href lives under SOME declared prefix. Modules without
+      // a nav declaration (headless services — offline ai/emailsender/
+      // webhook carry no endpoints.nav) legitimately 404 on meta.
+      const nav = prefixes.length > 0 ? await fetchModuleNav(page, m.id) : [];
       for (const href of flattenHrefs(nav)) {
         expect(
-          href === expectedPrefix || href.startsWith(expectedPrefix + "/"),
-          `module '${m.id}' nav link '${href}' must live under '${expectedPrefix}'`
+          prefixes.some((px) => href === px || href.startsWith(px + "/")),
+          `module '${m.id}' nav link '${href}' must live under one of ${JSON.stringify(prefixes)}`
         ).toBeTruthy();
       }
     }
 
-    // The root-level selector is always visible — even with a single root.
+    // The app launcher is always visible and lists every root level —
+    // including roots that exist only via extra-prefix membership.
     await page.goto("/system", { waitUntil: "domcontentloaded" });
     await expect(
-      page.locator("[data-testid='root-switcher-trigger']").first(),
-      "root-level switcher must be visible in the sidebar"
+      page.locator(LAUNCHER_TRIGGER).first(),
+      "app launcher must be visible in the sidebar"
     ).toBeVisible({ timeout: 10000 });
-    const roots = new Set(modules.map((m) => m.part_of));
-    await page.locator("[data-testid='root-switcher-trigger']").first().click();
+    const roots = new Set(modules.flatMap((m) => moduleRoots(m)));
+    await openLauncher(page);
     for (const root of roots) {
       await expect(
-        page.locator(MENU_ITEM).filter({ hasText: new RegExp(root, "i") }).first(),
-        `root '${root}' must appear in the root switcher`
+        page
+          .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
+          .filter({ hasText: new RegExp(root, "i") })
+          .first(),
+        `root '${root}' must appear in the launcher app column`
       ).toBeVisible();
     }
     await page.keyboard.press("Escape");
@@ -283,20 +328,21 @@ test.describe("module ownership — observable contract", () => {
 
     const modules = await fetchModules(page);
 
-    // Switcher dropdown: every module icon must render an <svg>, never the
-    // '?' error marker. The module switcher is root-scoped — on `/system`
-    // it lists only the selected root's modules.
-    const systemRootModules = modules.filter((m) => m.part_of === "system");
-    await page.locator(SWITCHER_TRIGGER).first().click();
-    await page.locator(MENU_ITEM).first().waitFor({ state: "visible", timeout: 10000 });
+    // Launcher modules column: every module icon must render an <svg>,
+    // never the '?' error marker. The column is app-scoped — previewing
+    // 'system' lists the modules owning /system/* pages.
+    const systemRootModules = modules.filter((m) => moduleRoots(m).includes("system"));
+    await openLauncher(page);
+    await launcherHoverApp(page, "system");
+    await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 10000 });
     const markers = await page
-      .locator("[data-slot='dropdown-menu-content'] [aria-label^='Icon not found']")
+      .locator(`${LAUNCHER_MODULES} [aria-label^='Icon not found']`)
       .count();
-    expect(markers, "missing-icon markers in module switcher").toBe(0);
+    expect(markers, "missing-icon markers in launcher modules column").toBe(0);
     // DynamicIcon resolves each icon via a lazy import — poll so the count
     // is taken only after the async components actually render.
     await expect
-      .poll(async () => page.locator(`${MENU_ITEM} svg`).count(), {
+      .poll(async () => page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION} svg`).count(), {
         timeout: 10000,
       })
       .toBeGreaterThanOrEqual(systemRootModules.length);
@@ -314,6 +360,122 @@ test.describe("module ownership — observable contract", () => {
     }
 
     expect(iconWarnings, "console must not log missing-icon warnings").toEqual([]);
+  });
+
+  test("app click loads the declared default module → its default page", async ({ page }) => {
+    const modules = await fetchModules(page);
+    // Every enabled root: click = select app → is_default module → its
+    // first nav page under that app. Falls back to first member when no
+    // module claims is_default.
+    const roots = [...new Set(modules.flatMap((m) => moduleRoots(m)))];
+    expect(roots.length, "at least one app root must exist").toBeGreaterThan(0);
+
+    for (const root of roots) {
+      const members = modules.filter((m) => moduleRoots(m).includes(root));
+      const target =
+        members.find((m) => m.part_of === root && m.is_default) ?? members[0];
+      const rootPrefixes = (target.route_prefixes ?? []).filter((p) => rootOf(p) === root);
+      if (rootPrefixes.length === 0) continue; // no pages under this root
+
+      await page.goto("/system", { waitUntil: "domcontentloaded" });
+      await openLauncher(page);
+      await page
+        .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
+        .filter({ hasText: new RegExp(root, "i") })
+        .first()
+        .click();
+
+      // The cascade must land under the clicked app's root, on a route
+      // owned by the declared default module.
+      await page.waitForFunction(
+        (prefixes) => {
+          const p = location.pathname;
+          return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
+        },
+        rootPrefixes,
+        { timeout: 15000 }
+      );
+      const owner = expectedOwner(modules, pathOf(page));
+      expect(
+        owner,
+        `clicking app '${root}' must land on its default module '${target.id}' (got '${owner}')`
+      ).toBe(target.id);
+      await expect(page.locator(LAUNCHER_TRIGGER).first()).toContainText(target.name);
+    }
+  });
+
+  test("multi-root module: same module under different apps shows different pages", async ({
+    page,
+  }) => {
+    const modules = await fetchModules(page);
+    // The experiment: a module declaring extra /{root}/{code} prefixes
+    // owns distinct page slices under each root (crm → /crm + /system/crm).
+    const multi = pageModules(modules).filter((m) => moduleRoots(m).length > 1);
+    if (multi.length === 0) test.skip(true, "no multi-root module registered — experiment off");
+
+    for (const m of multi) {
+      const nav = await fetchModuleNav(page, m.id);
+      for (const root of moduleRoots(m)) {
+        await page.goto("/system", { waitUntil: "domcontentloaded" });
+        await openLauncher(page);
+        // The module must appear in EVERY root's module column.
+        await launcherHoverApp(page, root);
+        await expect(
+          page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: m.name }).first(),
+          `module '${m.id}' must appear under app '${root}'`
+        ).toBeVisible();
+
+        // Its Pages column under this root only lists this root's slice —
+        // hovering the module loads the column; a visible page option must
+        // exist for every nav link declared under this root.
+        await page
+          .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: m.name })
+          .first()
+          .hover();
+        const rootNav = nav.filter((l) => l.href && rootOf(l.href) === root);
+        await expect
+          .poll(
+            async () => page.locator(`${LAUNCHER_PAGES} ${LAUNCHER_OPTION}`).count(),
+            `${LAUNCHER_PAGES} must preview ${m.id} pages under /${root}`
+          )
+          .toBeGreaterThanOrEqual(rootNav.length);
+        // Navigate to the module home under this root via click.
+        await launcherClickModule(page, m.name);
+        const rootPrefixes = (m.route_prefixes ?? []).filter((p) => rootOf(p) === root);
+        await page.waitForFunction(
+          (prefixes) => {
+            const p = location.pathname;
+            return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
+          },
+          rootPrefixes,
+          { timeout: 15000 }
+        );
+        // Sidebar nav under this root = the root-scoped nav slice.
+        // moduleNav loads async after selectModule — poll until the
+        // rendered links match (same pattern as contract 3 above).
+        const expectedHrefs = new Set(
+          flattenHrefs(nav.filter((l) => l.href && rootOf(l.href) === root))
+        );
+        await expect
+          .poll(async () => {
+            const renderedHrefs = await page
+              .locator("[data-sidebar='content'] a[href]")
+              .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+            return renderedHrefs.filter((h) => h && expectedHrefs.has(h)).sort().join("|");
+          }, `under /${root} the '${m.id}' sidebar must show its root-scoped nav`)
+          .toBe([...expectedHrefs].sort().join("|"));
+        // And never leak the OTHER root's slice.
+        const renderedHrefs = await page
+          .locator("[data-sidebar='content'] a[href]")
+          .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+        for (const href of flattenHrefs(nav.filter((l) => l.href && rootOf(l.href) !== root))) {
+          expect(
+            renderedHrefs,
+            `under /${root} the '${m.id}' sidebar must NOT show foreign-root page ${href}`
+          ).not.toContain(href);
+        }
+      }
+    }
   });
 
   test("network + console hygiene across module routes", async ({ page }) => {

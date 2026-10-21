@@ -38,10 +38,13 @@ primitives.
 <AppPageBreadcrumb {segments} />
 ```
 
-The **root-level segment** (`System`, `CRM`, … — the current module's
-`part_of`, resolved via `shellNav`) is prepended automatically by the
-component — pages never declare it themselves. Result:
-`{root} / {module-level segments…}`.
+The **root-level segment** (`System`, `CRM`, …) is prepended
+automatically by the component — pages never declare it themselves. It
+follows the **route's** root (`shellNav.rootForRoute(pathname)` — the
+URL's first segment), not the module's `part_of`: a crm page at
+`/system/crm/pipeline` shows `System / CRM / …`. Each menu item
+navigates to that app's declared `is_default` module home. Result:
+`{app} / {module-level segments…}`.
 
 ### With a menu segment (sibling switcher)
 

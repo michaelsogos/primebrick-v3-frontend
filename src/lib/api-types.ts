@@ -23,6 +23,8 @@ export type ModuleInfo = {
   part_of: string;
   route_prefixes?: string[];
   is_reserved?: boolean;
+  /** Declared default module of its root level — at most one per part_of. */
+  is_default?: boolean;
 };
 
 export type ModuleNavLink = {

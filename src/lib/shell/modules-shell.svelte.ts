@@ -1,3 +1,4 @@
+import { SvelteSet } from 'svelte/reactivity';
 import { fetchModules, fetchModuleMeta, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
@@ -68,14 +69,30 @@ function resolveModuleFromRoute(pathname: string): string | null {
   return resolveModuleIdFromPrefixes(_state.modules, pathname);
 }
 
+/** First URL segment of a route prefix — the root level it lives under. */
+function prefixRoot(prefix: string): string {
+  return prefix.split('/').filter(Boolean)[0] ?? '';
+}
+
 /**
- * Distinct root levels (`part_of`) across the registered modules —
- * 'system' first (the platform root), the rest alphabetical. Drives the
- * sidebar's root-level selector and the breadcrumb root segment.
+ * Distinct root levels across the registered modules — 'system' first
+ * (the platform root), the rest alphabetical. The universe is `part_of`
+ * ∪ the first segment of every declared `route_prefixes` entry: a module
+ * with an extra membership (`/shop/mymodule`) materializes that root in
+ * the switcher without a registry entry — roots are prefix-derived, open
+ * by design.
  */
 function listRoots(modules: readonly ModuleInfo[]): string[] {
-  const roots = [...new Set(modules.filter((m) => m.enabled !== false).map((m) => m.part_of).filter(Boolean))];
-  return roots.sort((a, b) => (a === 'system' ? -1 : b === 'system' ? 1 : a.localeCompare(b)));
+  const set = new SvelteSet<string>();
+  for (const m of modules) {
+    if (m.enabled === false) continue;
+    if (m.part_of) set.add(m.part_of);
+    for (const p of m.route_prefixes ?? []) {
+      const r = prefixRoot(p);
+      if (r) set.add(r);
+    }
+  }
+  return [...set].sort((a, b) => (a === 'system' ? -1 : b === 'system' ? 1 : a.localeCompare(b)));
 }
 
 export const shellNav = {
@@ -95,9 +112,31 @@ export const shellNav = {
   get selectedRoot(): string {
     return _state.modules.find((m) => m.id === _state.selected_module_id)?.part_of ?? 'system';
   },
-  /** Modules living under a root level (sidebar filtering). */
+  /**
+   * Root level for a ROUTE — the URL's first segment when it is a known
+   * root (a crm page under /system/crm/* reports 'system', not 'crm');
+   * falls back to the selected module's `part_of` for rootless paths.
+   * Drives breadcrumb/app-switcher highlight: the shown app is where the
+   * page lives, not where its module is registered.
+   */
+  rootForRoute(pathname: string): string {
+    const seg = pathname.split('/').filter(Boolean)[0];
+    if (seg && this.roots.includes(seg)) return seg;
+    return this.selectedRoot;
+  },
+  /** Modules owning pages under a root level — `part_of` members plus
+   *  extra-root members (a module with prefix `/{root}/{code}` owns pages
+   *  in that app too). */
   modulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter((m) => m.part_of === root);
+    return _state.modules.filter(
+      (m) => m.part_of === root || (m.route_prefixes ?? []).some((p) => prefixRoot(p) === root),
+    );
+  },
+  /** Declared default module for a root — `is_default` among `part_of`
+   *  members (the claim is for the module's OWN root), else first member. */
+  defaultModuleForRoot(root: string): ModuleInfo | undefined {
+    const members = this.modulesForRoot(root);
+    return members.find((m) => m.part_of === root && m.is_default) ?? members[0];
   },
   loadShellNav,
   selectModule,

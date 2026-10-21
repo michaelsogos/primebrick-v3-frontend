@@ -511,7 +511,7 @@
           "column": 0
         },
         "end": {
-          "line": 110,
+          "line": 111,
           "column": 0
         }
       },
@@ -531,11 +531,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 16,
+              "line": 17,
               "column": 4
             },
             "end": {
-              "line": 16,
+              "line": 17,
               "column": 12
             }
           }
@@ -816,7 +816,7 @@
           "column": 0
         },
         "end": {
-          "line": 208,
+          "line": 210,
           "column": 0
         }
       },
@@ -26280,8 +26280,8 @@
     }
   },
   {
-    "file": "src/lib/components/sidebar/SidebarHealthBadge.svelte",
-    "component": "SidebarHealthBadge",
+    "file": "src/lib/components/sidebar/SidebarAppLauncher.svelte",
+    "component": "SidebarAppLauncher",
     "data": {
       "source": {
         "start": {
@@ -26289,7 +26289,7 @@
           "column": 0
         },
         "end": {
-          "line": 56,
+          "line": 318,
           "column": 0
         }
       },
@@ -26308,11 +26308,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 14,
+              "line": 21,
               "column": 8
             },
             "end": {
-              "line": 14,
+              "line": 21,
               "column": 17
             }
           }
@@ -26328,8 +26328,8 @@
     }
   },
   {
-    "file": "src/lib/components/sidebar/SidebarModuleSwitcher.svelte",
-    "component": "SidebarModuleSwitcher",
+    "file": "src/lib/components/sidebar/SidebarHealthBadge.svelte",
+    "component": "SidebarHealthBadge",
     "data": {
       "source": {
         "start": {
@@ -26337,7 +26337,7 @@
           "column": 0
         },
         "end": {
-          "line": 101,
+          "line": 56,
           "column": 0
         }
       },
@@ -26500,54 +26500,6 @@
             "end": {
               "line": 18,
               "column": 12
-            }
-          }
-        }
-      ],
-      "moduleExports": [],
-      "slots": [],
-      "events": [],
-      "typedefs": [],
-      "generics": null,
-      "contexts": [],
-      "diagnostics": []
-    }
-  },
-  {
-    "file": "src/lib/components/sidebar/SidebarRootSwitcher.svelte",
-    "component": "SidebarRootSwitcher",
-    "data": {
-      "source": {
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 80,
-          "column": 0
-        }
-      },
-      "syntaxMode": "runes",
-      "scriptLanguage": "ts",
-      "props": [
-        {
-          "name": "collapsed",
-          "kind": "let",
-          "type": "boolean",
-          "typeSource": "typescript",
-          "isFunction": false,
-          "isFunctionDeclaration": false,
-          "isRequired": true,
-          "constant": false,
-          "reactive": false,
-          "source": {
-            "start": {
-              "line": 13,
-              "column": 8
-            },
-            "end": {
-              "line": 13,
-              "column": 17
             }
           }
         }

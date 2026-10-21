@@ -10,8 +10,7 @@
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
-  import SidebarModuleSwitcher from '$lib/components/sidebar/SidebarModuleSwitcher.svelte';
-  import SidebarRootSwitcher from '$lib/components/sidebar/SidebarRootSwitcher.svelte';
+  import SidebarAppLauncher from '$lib/components/sidebar/SidebarAppLauncher.svelte';
   import SidebarProfileMenu from '$lib/components/sidebar/SidebarProfileMenu.svelte';
   import SidebarHealthBadge from '$lib/components/sidebar/SidebarHealthBadge.svelte';
   import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
@@ -26,7 +25,17 @@
 
   const user = $derived(userProfileState.current);
 
-  const navItems = $derived(shellNav.moduleNav?.nav ?? []);
+  /**
+   * Nav items scoped to the ROUTE's root — a module with pages under two
+   * roots (crm → /crm/* + /system/crm/*) only shows the slice owned by
+   * the current app level. Links whose first segment differs from the
+   * route root are hidden; children inherit their parent's scope.
+   */
+  const navItems = $derived.by(() => {
+    const nav = shellNav.moduleNav?.nav ?? [];
+    const root = shellNav.rootForRoute(page.url.pathname);
+    return nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root);
+  });
   const moduleNavLoading = $derived(shellNav.moduleNavLoading);
   const moduleNavError = $derived(shellNav.moduleNavError);
 
@@ -97,14 +106,7 @@
     <Sidebar.Group class="pt-0 pb-0">
       <Sidebar.GroupLabel class="h-7">{$t('app.nav.rootLevel')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <SidebarRootSwitcher {collapsed} />
-      </Sidebar.GroupContent>
-    </Sidebar.Group>
-
-    <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('app.nav.module')}</Sidebar.GroupLabel>
-      <Sidebar.GroupContent>
-        <SidebarModuleSwitcher {collapsed} />
+        <SidebarAppLauncher {collapsed} />
       </Sidebar.GroupContent>
     </Sidebar.Group>
 

@@ -14,6 +14,10 @@ import { shellNav } from '$lib/shell/modules-shell.svelte';
  * Current-item detection uses LONGEST-MATCH semantics: on `/system/job/rules`
  * only the `/system/job/rules` item is marked current — `/system/job` is a prefix of
  * it, not a second current entry.
+ *
+ * Items are scoped to the ROUTE's root (same rule as the sidebar): a module
+ * with pages under two roots (crm → /crm/* + /system/crm/*) only lists the
+ * slice owned by the current app level.
  */
 export function moduleMenuSegment(args: {
   pathname: string;
@@ -21,13 +25,17 @@ export function moduleMenuSegment(args: {
 }): AppBreadcrumbMenuSegment {
   const nav = shellNav.moduleNav;
   const module = shellNav.modules.find((m) => m.id === shellNav.selectedModuleId);
+  const root = shellNav.rootForRoute(args.pathname);
 
-  const hrefs = (nav?.nav ?? []).map((i) => i.href);
+  const rootNav = (nav?.nav ?? []).filter(
+    (i) => i.href.split('/').filter(Boolean)[0] === root
+  );
+  const hrefs = rootNav.map((i) => i.href);
   const activeHref = hrefs
     .filter((h) => args.pathname === h || args.pathname.startsWith(h + '/'))
     .sort((a, b) => b.length - a.length)[0];
 
-  const items = (nav?.nav ?? []).map((item) => ({
+  const items = rootNav.map((item) => ({
     label: args.t(item.label_key),
     href: item.href,
     icon: item.icon,

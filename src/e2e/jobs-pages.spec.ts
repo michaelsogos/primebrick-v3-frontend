@@ -332,10 +332,10 @@ test.describe("/system/job pages (module-owned)", () => {
     await page.goto("/system/job", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // The module switcher shows the OWNING module (service display name),
-    // and its nav contains the self-declared links.
-    const switcher = page.locator("button[title='Job Handler']");
-    await expect(switcher).toBeVisible({ timeout: 15000 });
+    // The app launcher shows the OWNING module (`App / Module`), and its
+    // nav contains the self-declared links.
+    const switcher = page.locator("[data-testid='app-launcher-trigger']");
+    await expect(switcher).toContainText(/job handler/i, { timeout: 15000 });
     await expect(page.locator("a[href='/system/job']").first()).toBeVisible();
     await expect(page.locator("a[href='/system/job/rules']").first()).toBeVisible();
 
@@ -343,26 +343,37 @@ test.describe("/system/job pages (module-owned)", () => {
     await page.goto("/system/settings/profile", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("button[title='Settings']")).toBeVisible({
-      timeout: 15000,
-    });
+    await expect(page.locator("[data-testid='app-launcher-trigger']")).toContainText(
+      /settings/i,
+      { timeout: 15000 },
+    );
     await expect(page.locator("a[href='/system/job']")).toHaveCount(0);
   });
 
-  test("is reachable through the module switcher (job module home)", async ({
+  test("is reachable through the app launcher (job module home)", async ({
     page,
   }) => {
     await page.goto("/system/settings/profile", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("button[title='Settings']")).toBeVisible({
-      timeout: 15000,
-    });
+    const trigger = page.locator("[data-testid='app-launcher-trigger']");
+    await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
-    // Module switcher → Job Handler: nav[0].href (/system/job) is the module
-    // home — selection navigates straight onto the page.
-    await page.locator("button[title='Settings']").click();
-    await page.getByRole("menuitem", { name: "Job Handler" }).click();
+    // App launcher → hover System (module column previews) → click Job
+    // Handler: nav[0].href (/system/job) is the module home — selection
+    // navigates straight onto the page.
+    await trigger.click();
+    await page
+      .locator("[data-testid='app-launcher-apps'] button[role='option']")
+      .filter({ hasText: /system/i })
+      .first()
+      .hover();
+    await page
+      .locator("[data-testid='app-launcher-modules'] button[role='option']", {
+        hasText: "Job Handler",
+      })
+      .first()
+      .click();
 
     await page.waitForURL("**/system/job", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
