@@ -7,7 +7,7 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
-  import ImageOff from '@lucide/svelte/icons/image-off';
+  import BuildingComplex from '@lucide/svelte/icons/building-complex';
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 
   let { collapsed }: { collapsed: boolean } = $props();
@@ -55,7 +55,7 @@
                   <img src={selectedOrg.avatar} alt={selectedOrg.display_name} class="size-8 rounded-md object-cover" />
                 </Avatar>
               {:else}
-                <ImageOff class="size-4 opacity-90 text-muted-foreground" aria-hidden="true" />
+                <BuildingComplex class="size-4 opacity-90 text-muted-foreground" aria-hidden="true" />
               {/if}
             </div>
             {#if !collapsed}
@@ -85,7 +85,7 @@
                 <img src={org.avatar} alt={org.display_name} class="size-6 rounded-none object-cover" />
               {:else}
                 <AvatarFallback class="rounded-none flex items-center justify-center">
-                  <ImageOff class="size-3.5 text-muted-foreground" />
+                  <BuildingComplex class="size-3.5 text-muted-foreground" />
                 </AvatarFallback>
               {/if}
             </Avatar>
