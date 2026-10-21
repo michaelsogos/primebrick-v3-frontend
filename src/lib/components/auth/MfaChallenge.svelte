@@ -110,7 +110,7 @@
 
       const data = await response.json();
       if (data.success && data.user) {
-        userProfileStore.set(data.user);
+        userProfileStore.setSession(data.user);
       }
       // Clear before onsuccess triggers re-render/navigation: a complete
       // OTP left bound makes PinInput re-fire onComplete in the effect
