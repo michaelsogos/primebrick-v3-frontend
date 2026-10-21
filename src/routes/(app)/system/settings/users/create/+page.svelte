@@ -28,7 +28,7 @@
   import ImageOff from '@lucide/svelte/icons/image-off';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { AvatarPreview } from '$lib/components/ui/avatar-preview';
   import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '$lib/components/ui/combo-select';
@@ -342,8 +342,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings' },
-          settingsTabMenuSegment({ pathname: page.url.pathname, searchParams: page.url.searchParams, t: $t }),
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
           { label: entityPageTitle(meta, 'create', $t) }
         ]}
       />

@@ -5,7 +5,7 @@
   import { page as appPage } from '$app/state';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 
   type RoleMappingListRow = {
@@ -52,12 +52,7 @@
   {#snippet breadcrumb()}
     <AppPageBreadcrumb
       segments={[
-        { label: $t('system.settings.title'), href: '/system/settings/profile' },
-        settingsTabMenuSegment({
-          pathname: appPage.url.pathname,
-          searchParams: appPage.url.searchParams,
-          t: (key) => $t(key)
-        })
+        ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
       ]}
     />
   {/snippet}

@@ -8,6 +8,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { updateService, fetchModuleConfig, updateModuleConfigKey } from '$lib/api';
@@ -124,8 +125,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings/modules' },
-          { label: $t('system.settings.modules.title'), href: '/system/settings/modules' },
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
           { label: resolveModuleLabel(service, $t) || service.code },
         ]}
       />

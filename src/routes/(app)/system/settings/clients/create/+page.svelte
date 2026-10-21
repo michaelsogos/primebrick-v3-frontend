@@ -16,7 +16,7 @@
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { extJsonStringify } from '$lib/api-ext';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
@@ -158,12 +158,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: $t,
-          }),
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
           { label: $t('system.entities.client_registry.new.title') }
         ]}
       />

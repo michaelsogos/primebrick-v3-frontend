@@ -18,7 +18,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { extJsonStringify } from '$lib/api-ext';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
@@ -257,12 +257,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          }),
-          { label: $t('system.settings.tabs.clients'), href: '/system/settings/clients' },
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
           { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
         ]}
       />

@@ -46,7 +46,7 @@ export function moduleBreadcrumbSegments(args: {
   const items = rootNav.map((item) => ({
     label: args.t(item.label_key),
     href: item.href,
-    icon: item.icon,
+    icon: item.icon ?? 'circle',
     current: item.href === activeHref
   }));
 
@@ -58,14 +58,14 @@ export function moduleBreadcrumbSegments(args: {
     segments.push({
       label: moduleLabel,
       href: rootNav[0]?.href,
-      icon: module?.icon
+      icon: module?.icon ?? 'layout-grid'
     });
   }
   if (items.length > 0) {
     segments.push({
       kind: 'menu',
       label: currentItem?.label ?? moduleLabel,
-      icon: currentItem?.icon ?? module?.icon,
+      icon: currentItem?.icon ?? module?.icon ?? 'circle',
       menuAriaLabel: moduleLabel || undefined,
       items
     });

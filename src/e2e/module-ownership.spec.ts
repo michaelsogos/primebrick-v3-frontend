@@ -462,6 +462,16 @@ test.describe("module ownership — observable contract", () => {
           timeout: 15000,
         });
 
+        // The module/page segments render once the module's nav meta
+        // resolves (async) — wait for the full 3-item structure before
+        // reading the labels, or the snapshot can catch the root-only
+        // first paint.
+        const items = bc.locator("li[data-slot='breadcrumb-item']");
+        await expect(
+          items,
+          `on ${first.href} breadcrumb must render all 3 segments`,
+        ).toHaveCount(3, { timeout: 15000 });
+
         // Ordered labels — exactly {app} / {module} / {page}.
         const texts = await bc.locator("li").allTextContents();
         expect(
@@ -471,9 +481,18 @@ test.describe("module ownership — observable contract", () => {
 
         // The module segment is a LINK to the module home in this root —
         // the page segment is the dropdown (a button, current page).
-        const items = bc.locator("li[data-slot='breadcrumb-item']");
         await expect(items.nth(1).locator("a")).toHaveAttribute("href", first.href);
         await expect(items.nth(2).locator("button")).toBeVisible();
+
+        // Icon identity — same sources as the launcher: app root icon on
+        // segment 0, service_registry.icon on the module, nav icon on the
+        // page dropdown. Each segment must render an svg.
+        for (const n of [0, 1, 2]) {
+          await expect(
+            items.nth(n).locator("svg").first(),
+            `segment ${n} of ${first.href} must render its icon`
+          ).toBeVisible();
+        }
       }
     }
   });

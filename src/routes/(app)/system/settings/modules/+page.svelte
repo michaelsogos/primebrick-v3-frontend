@@ -26,7 +26,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
@@ -189,12 +189,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings/profile' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          })
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>

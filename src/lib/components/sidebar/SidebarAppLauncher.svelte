@@ -21,7 +21,7 @@
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
-  import Layers from '@lucide/svelte/icons/layers';
+  import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
@@ -290,7 +290,7 @@
             <div
               class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"
             >
-              <Layers class="size-4" />
+              <DynamicIcon name={APP_ROOT_ICON} size={16} />
             </div>
             {#if !collapsed}
               <div class="grid min-w-0 flex-1 text-left leading-tight">
@@ -342,7 +342,7 @@
                 onkeydown={(e) => handleRowKeydown(e, 0, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <Layers class="size-3.5" />
+                  <DynamicIcon name={APP_ROOT_ICON} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(`app.nav.roots.${root}`)}</span>
                 <button

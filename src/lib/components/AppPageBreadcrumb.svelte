@@ -9,6 +9,7 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
@@ -32,9 +33,11 @@
     return {
       kind: 'menu',
       label: $t(`app.nav.roots.${current}`),
+      icon: APP_ROOT_ICON,
       menuAriaLabel: $t('app.nav.rootLevel'),
       items: roots.map((r) => ({
         label: $t(`app.nav.roots.${r}`),
+        icon: APP_ROOT_ICON,
         href: (shellNav.defaultModuleForRoot(r)?.route_prefixes?.[0] ?? '/') as '/',
         current: r === current
       }))

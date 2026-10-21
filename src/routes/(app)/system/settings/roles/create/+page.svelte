@@ -6,7 +6,7 @@
   import { goto } from '$app/navigation';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Button } from '$lib/components/ui/button';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -133,12 +133,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings/profile' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          })
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle('role_mapping', 'create', $t)}</h1>

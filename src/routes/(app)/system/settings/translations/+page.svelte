@@ -16,7 +16,7 @@
   } from '$lib/api';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { page as appPage } from '$app/state';
 
   type TranslationRow = {
@@ -163,12 +163,7 @@
 <AppPageScaffold>
   <AppPageBreadcrumb
     segments={[
-      { label: $t('system.settings.title'), href: '/system/settings/profile' },
-      settingsTabMenuSegment({
-        pathname: appPage.url.pathname,
-        searchParams: appPage.url.searchParams,
-        t: (key) => $t(key)
-      })
+      ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
     ]}
   />
 

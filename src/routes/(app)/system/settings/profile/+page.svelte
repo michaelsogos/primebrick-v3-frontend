@@ -29,7 +29,7 @@
   import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
   import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
-  import { settingsTabMenuSegment } from "$lib/breadcrumb/settings-breadcrumb";
+  import { moduleBreadcrumbSegments } from "$lib/breadcrumb/module-breadcrumb";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import { orderedColumns } from "$lib/entity-list";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
@@ -289,12 +289,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          { label: $t('system.settings.title'), href: '/system/settings/profile' },
-          settingsTabMenuSegment({
-            pathname: page.url.pathname,
-            searchParams: page.url.searchParams,
-            t: (key) => $t(key)
-          })
+          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.profile.title')}</h1>

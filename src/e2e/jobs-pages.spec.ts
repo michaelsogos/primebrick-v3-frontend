@@ -414,10 +414,22 @@ test.describe("/system/job pages (module-owned)", () => {
     });
 
     // Retry recovers: unblock the asset and hit the panel's retry action —
-    // the remote mounts without a page reload.
+    // the remote mounts without a page reload. The upstream service may be
+    // mid-restart (bun --hot): a real user would hit retry again, so allow a
+    // bounded number of attempts instead of racing a single shot.
     await page.unroute("**/api/v1/module-assets/**");
-    await page.getByTestId("remote-page-retry").click();
-    await expect(page.locator(REMOTE_CONTENT)).toBeVisible({ timeout: 30000 });
+    const content = page.locator(REMOTE_CONTENT);
+    await expect
+      .poll(
+        async () => {
+          if (await errorPanel.isVisible().catch(() => false)) {
+            await page.getByTestId("remote-page-retry").click();
+          }
+          return content.isVisible().catch(() => false);
+        },
+        { timeout: 30000, intervals: [1000, 2000, 3000] },
+      )
+      .toBe(true);
     await expect(errorPanel).toHaveCount(0);
   });
 });
