@@ -102,6 +102,15 @@ The current route marks its ancestors in all three columns; the shown
 "current app" is the ROUTE's root (`shellNav.rootForRoute`), so a crm
 page at `/system/crm/pipeline` marks **System**, not CRM.
 
+**Module labels** come from ONE source: `service_registry.label_key`
+(`ModuleInfo.label_key`), resolved by `resolveModuleLabel(module, t)`
+against the module's own dictionary with the raw `name` as the only
+fallback. The launcher trigger, the Modules column, `moduleMenuSegment`
+(breadcrumb) and the service-admin pages all share it — "Impostazioni"
+everywhere, never a registry-name drift. Row goto CTAs and the keyboard
+footer use `app.nav.goTo` ("Vai a"/"Go to"); `app.nav.open` stays on the
+sidebar open-trigger where "open navigation" is the literal action.
+
 The root segment is also the first breadcrumb segment (auto-prepended by
 `AppPageBreadcrumb`), giving `{app} / {module} / {page}`. The sidebar nav
 links are likewise root-scoped — under `/system/crm/*` only the crm

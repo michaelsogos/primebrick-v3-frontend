@@ -1,5 +1,6 @@
 import type { AppBreadcrumbMenuSegment } from './types';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
+import { resolveModuleLabel } from '$lib/shell/module-label';
 
 /**
  * Generic module menu segment for page breadcrumbs — works for ANY
@@ -7,9 +8,10 @@ import { shellNav } from '$lib/shell/modules-shell.svelte';
  *
  * Reads `shellNav.moduleNav` — the nav the resolved module declares via
  * `endpoints.nav` — and renders a dropdown listing the module's own links
- * (same sibling links as the sidebar). Label = the module's display name
- * (from `/modules`), so a job page shows "Job Handler ▾", never a foreign
- * module's label.
+ * (same sibling links as the sidebar). Label = the module's LOCALIZED
+ * display name via `service_registry.label_key` (resolveModuleLabel),
+ * so a job page shows "Job Handler ▾" and a settings page "Impostazioni ▾"
+ * — identical to what the launcher renders, never a foreign label.
  *
  * Current-item detection uses LONGEST-MATCH semantics: on `/system/job/rules`
  * only the `/system/job/rules` item is marked current — `/system/job` is a prefix of
@@ -43,11 +45,12 @@ export function moduleMenuSegment(args: {
   }));
 
   const currentItem = items.find((item) => item.current);
+  const moduleLabel = resolveModuleLabel(module, args.t);
   return {
     kind: 'menu',
-    label: module?.name ?? currentItem?.label ?? items[0]?.label ?? '',
+    label: moduleLabel || currentItem?.label || items[0]?.label || '',
     icon: module?.icon ?? currentItem?.icon,
-    menuAriaLabel: module?.name,
+    menuAriaLabel: moduleLabel || undefined,
     items
   };
 }

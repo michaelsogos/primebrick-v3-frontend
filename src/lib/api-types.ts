@@ -25,6 +25,13 @@ export type ModuleInfo = {
   is_reserved?: boolean;
   /** Declared default module of its root level — at most one per part_of. */
   is_default?: boolean;
+  /**
+   * i18n key for the module's localized display name — resolved against
+   * the module's own translation namespace (same contract as
+   * `nav[].label_key`). Single display-name source for every UI surface;
+   * falls back to `name` when absent or unresolved.
+   */
+  label_key?: string;
 };
 
 export type ModuleNavLink = {
@@ -97,6 +104,8 @@ export type ServiceInfo = {
   icon?: string;
   icon_type: IconType;
   is_reserved?: boolean;
+  /** i18n key for the module's localized display name (module's own namespace). */
+  label_key?: string;
   uuid?: string;
 };
 

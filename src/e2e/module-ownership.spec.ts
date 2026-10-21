@@ -42,6 +42,8 @@ type ModuleInfo = {
   is_reserved?: boolean;
   /** Declared default module of its root level. */
   is_default?: boolean;
+  /** i18n key for the module's localized display name (module's own dict). */
+  label_key?: string;
 };
 
 type NavLink = { id: string; label_key: string; href: string; icon?: string; children?: NavLink[] };
@@ -53,7 +55,8 @@ const LAUNCHER_TRIGGER = "[data-testid='app-launcher-trigger']";
 const LAUNCHER_APPS = "[data-testid='app-launcher-apps']";
 const LAUNCHER_MODULES = "[data-testid='app-launcher-modules']";
 const LAUNCHER_PAGES = "[data-testid='app-launcher-pages']";
-const LAUNCHER_OPTION = "button[role='option']";
+const LAUNCHER_OPTION = "[role='option']";
+const LAUNCHER_CTA = "[data-testid='launcher-cta']";
 
 /** Modules that own FE pages — headless services (no nav decl) are excluded. */
 const pageModules = (modules: ModuleInfo[]) =>
@@ -105,17 +108,43 @@ async function openLauncher(page: Page) {
 /** Hover (not click) an app column item — previews its modules. */
 async function launcherHoverApp(page: Page, root: string) {
   await page
-    .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
-    .filter({ hasText: new RegExp(root, "i") })
+    .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}[data-app-root="${root}"]`)
     .first()
     .hover();
 }
 
-async function launcherClickModule(page: Page, name: string) {
+/** Click a module row's goto CTA (row itself only previews — the CTA navigates). */
+async function launcherClickModule(page: Page, moduleId: string) {
   await page
-    .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: name })
+    .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="${moduleId}"]`)
     .first()
+    .locator(LAUNCHER_CTA)
     .click();
+}
+
+/** Click an app row's goto CTA — runs the declared default-module chain. */
+async function launcherClickApp(page: Page, root: string) {
+  await page
+    .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}[data-app-root="${root}"]`)
+    .first()
+    .locator(LAUNCHER_CTA)
+    .click();
+}
+
+/**
+ * The module's localized display name — mirrors the FE `resolveModuleLabel`
+ * contract: the registry `label_key` resolved in the module's OWN dict,
+ * raw `name` as fallback. Dict fetch goes through the same endpoint the
+ * shell uses, so the assertion tracks the real data path.
+ */
+async function expectedModuleLabel(page: Page, m: ModuleInfo): Promise<string> {
+  if (!m.label_key) return m.name;
+  const res = await page.request.get(
+    `/api/v1/system/translations/${m.id}/en-GB`
+  );
+  if (!res.ok()) return m.name;
+  const dict: Record<string, string> = await res.json();
+  return dict[m.label_key] ?? m.name;
 }
 
 function attachHygiene(page: Page) {
@@ -166,7 +195,7 @@ test.describe("module ownership — observable contract", () => {
         // Hover (not click) the app → its modules column previews; then
         // click THIS module by name — click = module home under that app.
         await launcherHoverApp(page, root);
-        await launcherClickModule(page, m.name);
+        await launcherClickModule(page, m.id);
 
         // Wait for the client-side navigation to a prefix-owned route
         // under THIS app root.
@@ -188,10 +217,13 @@ test.describe("module ownership — observable contract", () => {
           `route ${page.url()} must resolve to '${m.id}' (got '${owner}')`
         ).toBe(m.id);
 
-        // Contract 2: launcher trigger must display the module that was
-        // selected — no stale label, no fake fallback.
+        // Contract 2: launcher trigger must display the module's LOCALIZED
+        // label (service_registry.label_key, same string as the breadcrumb)
+        // — never the raw registry name and never a foreign module's.
         const trigger = page.locator(LAUNCHER_TRIGGER).first();
-        await expect(trigger).toContainText(m.name, { timeout: 10000 });
+        await expect(trigger).toContainText(await expectedModuleLabel(page, m), {
+          timeout: 10000
+        });
 
         // Contract 3: the sidebar must render exactly the module's nav
         // hrefs under THIS root — nothing missing, nothing exceeding
@@ -279,8 +311,7 @@ test.describe("module ownership — observable contract", () => {
     for (const root of roots) {
       await expect(
         page
-          .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
-          .filter({ hasText: new RegExp(root, "i") })
+          .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}[data-app-root="${root}"]`)
           .first(),
         `root '${root}' must appear in the launcher app column`
       ).toBeVisible();
@@ -379,11 +410,8 @@ test.describe("module ownership — observable contract", () => {
 
       await page.goto("/system", { waitUntil: "domcontentloaded" });
       await openLauncher(page);
-      await page
-        .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}`)
-        .filter({ hasText: new RegExp(root, "i") })
-        .first()
-        .click();
+      // The app ROW only previews — the CTA runs the default-module chain.
+      await launcherClickApp(page, root);
 
       // The cascade must land under the clicked app's root, on a route
       // owned by the declared default module.
@@ -400,7 +428,9 @@ test.describe("module ownership — observable contract", () => {
         owner,
         `clicking app '${root}' must land on its default module '${target.id}' (got '${owner}')`
       ).toBe(target.id);
-      await expect(page.locator(LAUNCHER_TRIGGER).first()).toContainText(target.name);
+      await expect(page.locator(LAUNCHER_TRIGGER).first()).toContainText(
+        await expectedModuleLabel(page, target)
+      );
     }
   });
 
@@ -421,7 +451,9 @@ test.describe("module ownership — observable contract", () => {
         // The module must appear in EVERY root's module column.
         await launcherHoverApp(page, root);
         await expect(
-          page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: m.name }).first(),
+          page
+            .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="${m.id}"]`)
+            .first(),
           `module '${m.id}' must appear under app '${root}'`
         ).toBeVisible();
 
@@ -429,7 +461,7 @@ test.describe("module ownership — observable contract", () => {
         // hovering the module loads the column; a visible page option must
         // exist for every nav link declared under this root.
         await page
-          .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`, { hasText: m.name })
+          .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="${m.id}"]`)
           .first()
           .hover();
         const rootNav = nav.filter((l) => l.href && rootOf(l.href) === root);
@@ -440,7 +472,7 @@ test.describe("module ownership — observable contract", () => {
           )
           .toBeGreaterThanOrEqual(rootNav.length);
         // Navigate to the module home under this root via click.
-        await launcherClickModule(page, m.name);
+        await launcherClickModule(page, m.id);
         const rootPrefixes = (m.route_prefixes ?? []).filter((p) => rootOf(p) === root);
         await page.waitForFunction(
           (prefixes) => {

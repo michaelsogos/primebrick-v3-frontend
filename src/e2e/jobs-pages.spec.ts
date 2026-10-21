@@ -360,19 +360,16 @@ test.describe("/system/job pages (module-owned)", () => {
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
     // App launcher → hover System (module column previews) → click Job
-    // Handler: nav[0].href (/system/job) is the module home — selection
-    // navigates straight onto the page.
+    // Handler's goto CTA: nav[0].href (/system/job) is the module home.
     await trigger.click();
     await page
-      .locator("[data-testid='app-launcher-apps'] button[role='option']")
-      .filter({ hasText: /system/i })
+      .locator("[data-testid='app-launcher-apps'] [role='option'][data-app-root='system']")
       .first()
       .hover();
     await page
-      .locator("[data-testid='app-launcher-modules'] button[role='option']", {
-        hasText: "Job Handler",
-      })
+      .locator("[data-testid='app-launcher-modules'] [role='option'][data-module-id='job']")
       .first()
+      .locator("[data-testid='launcher-cta']")
       .click();
 
     await page.waitForURL("**/system/job", { timeout: 10000 });

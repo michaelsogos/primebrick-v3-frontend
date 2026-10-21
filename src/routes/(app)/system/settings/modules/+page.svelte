@@ -29,6 +29,7 @@
   import { settingsTabMenuSegment } from '$lib/breadcrumb/settings-breadcrumb';
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
+  import { resolveModuleLabel } from '$lib/shell/module-label';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
   import { backendState } from '$lib/backend-availability';
@@ -278,7 +279,7 @@
 
                     <div class="min-w-0">
                       <div class="flex items-center gap-2">
-                        <p class="font-medium truncate">{module.name || module.code}</p>
+                        <p class="font-medium truncate">{resolveModuleLabel(module, $t) || module.code}</p>
                         {#if module.service_version}
                           <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                             v{module.service_version}

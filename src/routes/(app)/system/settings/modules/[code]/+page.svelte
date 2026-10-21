@@ -12,6 +12,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { updateService, fetchModuleConfig, updateModuleConfigKey } from '$lib/api';
   import type { ServiceInfo, ModuleConfigEntry, IconType } from '$lib/api-types';
+  import { resolveModuleLabel } from '$lib/shell/module-label';
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -125,11 +126,11 @@
         segments={[
           { label: $t('system.settings.title'), href: '/system/settings/modules' },
           { label: $t('system.settings.modules.title'), href: '/system/settings/modules' },
-          { label: service.name || service.code },
+          { label: resolveModuleLabel(service, $t) || service.code },
         ]}
       />
       <h1 class="truncate text-xl font-semibold leading-tight">
-        {service.name || service.code}
+        {resolveModuleLabel(service, $t) || service.code}
       </h1>
     </div>
   {/snippet}
