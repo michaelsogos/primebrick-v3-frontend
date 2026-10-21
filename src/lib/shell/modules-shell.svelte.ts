@@ -1,5 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { fetchModules, fetchModuleMeta, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
+import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 const _state = $state({
@@ -172,24 +172,25 @@ async function loadShellNav(): Promise<void> {
 async function selectModule(moduleId: string): Promise<void> {
   if (_state.selected_module_id === moduleId && _state.module_nav) return;
   _state.selected_module_id = moduleId;
-  _state.module_nav = null;
   _state.module_nav_error = null;
-  _state.module_nav_loading = true;
-  try {
-    _state.module_nav = await fetchModuleMeta(moduleId);
-  } catch (e) {
-    _state.module_nav_error = e instanceof Error ? e.message : 'Failed to load module navigation';
-    _state.module_nav = null;
-  } finally {
-    _state.module_nav_loading = false;
-  }
+  // No fetch — the discovery payload already embeds every reachable
+  // module's nav + routes (access-filtered server-side). The nav is
+  // available from the first paint, not a second request later.
+  const mod = _state.modules.find((m) => m.id === moduleId);
+  // A page-less module (headless service) yields an empty nav, not an error.
+  _state.module_nav = mod ? { module: mod.id, nav: mod.nav ?? [], routes: mod.routes } : null;
+  _state.module_nav_error = mod ? null : `Unknown or unreachable module '${moduleId}'`;
+  _state.module_nav_loading = false;
 }
 
 async function reloadModuleNav(): Promise<void> {
-  if (!_state.selected_module_id) return;
   const id = _state.selected_module_id;
   _state.selected_module_id = null;
-  await selectModule(id);
+  _state.module_nav = null;
+  // The nav lives inside the discovery payload — a real reload re-fetches
+  // it, then re-derives the selection.
+  await loadShellNav();
+  if (id) await selectModule(id);
 }
 
 async function syncModuleFromRoute(pathname: string): Promise<void> {

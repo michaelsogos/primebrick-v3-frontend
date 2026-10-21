@@ -12,8 +12,7 @@
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { resolveModuleLabel } from '$lib/shell/module-label';
-  import { fetchModuleMeta } from '$lib/api';
-  import type { ModuleInfo, ModuleNav, ModuleNavLink } from '$lib/api-types';
+  import type { ModuleInfo, ModuleNavLink } from '$lib/api-types';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
@@ -23,7 +22,6 @@
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
@@ -58,11 +56,6 @@
   // Height ratchet — only grows while the panel is open.
   let shownRows = $state(ROWS_MIN);
 
-  // Per-module nav cache for the Pages column — `shellNav.moduleNav` only
-  // holds the SELECTED module; previewing siblings fetches meta lazily.
-  const metaCache = new SvelteMap<string, ModuleNav>();
-  const metaLoading = new SvelteSet<string>();
-
   const currentRoot = $derived(shellNav.rootForRoute(page.url.pathname));
   const currentModuleId = $derived(shellNav.selectedModuleId);
   const activeApp = $derived(previewApp ?? currentRoot);
@@ -83,22 +76,17 @@
   });
 
   /** Pages of the active module scoped to the previewed app root — a
-   *  multi-root module only shows the slice owned by this column's app. */
+   *  multi-root module only shows the slice owned by this column's app.
+   *  Read straight from the discovery payload (`ModuleInfo.nav`) — it is
+   *  already access-filtered server-side and needs no second fetch. */
   const previewPages = $derived.by((): ModuleNavLink[] => {
     if (!activeModuleId) return [];
-    const meta =
-      activeModuleId === currentModuleId
-        ? (shellNav.moduleNav ?? metaCache.get(activeModuleId))
-        : metaCache.get(activeModuleId);
-    if (!meta) return [];
-    return meta.nav.filter(
+    const nav =
+      shellNav.modules.find((m) => m.id === activeModuleId)?.nav ?? [];
+    return nav.filter(
       (i) => i.href.split('/').filter(Boolean)[0] === activeApp
     );
   });
-
-  const pagesLoading = $derived(
-    !!activeModuleId && metaLoading.has(activeModuleId) && previewPages.length === 0
-  );
 
   /** Tallest content across the three columns, clamped to the 4..12 band.
    *  Within an open session `shownRows` only ratchets UP — the panel grows
@@ -117,23 +105,9 @@
     return href.split('/').filter(Boolean)[0] ?? '';
   }
 
-  /** Lazy-fetch a module's nav meta + dictionary for the Pages column —
-   *  deduped by cache/loading state; the shell store is untouched (the
-   *  preview must not mutate the app's real selection). */
+  /** Lazy-load a module's translation dictionary for the Pages column —
+   *  nav data itself is already in the discovery payload, no fetch needed. */
   function ensureModuleData(moduleId: string) {
-    if (metaCache.has(moduleId) || metaLoading.has(moduleId)) return;
-    metaLoading.add(moduleId);
-    void fetchModuleMeta(moduleId)
-      .then((meta) => {
-        metaCache.set(moduleId, meta);
-      })
-      .catch(() => {
-        // Preview stays empty — the module may be offline; the CTA path
-        // still surfaces the real error via selectModule/moduleNavError.
-      })
-      .finally(() => {
-        metaLoading.delete(moduleId);
-      });
     void loadModuleTranslations(moduleId, get(uiLang));
   }
 
@@ -152,16 +126,13 @@
     ensureModuleData(m.id);
   }
 
-  /** Home href of a module under a specific app root — first declared nav
-   *  link of that slice (nav[0] of the module's own root may live in a
-   *  different app), else the module's prefix in that root. */
+  /** Home href of a module under a specific app root — the discovery
+   *  payload's per-root `home` (nav[0] of that slice, access-filtered),
+   *  else the module's prefix in that root. */
   function moduleHomeInApp(m: ModuleInfo, root: string): string {
-    const nav =
-      m.id === currentModuleId
-        ? (shellNav.moduleNav ?? metaCache.get(m.id))?.nav
-        : metaCache.get(m.id)?.nav;
     return (
-      nav?.find((i) => firstSegment(i.href) === root)?.href ??
+      m.home?.[root] ??
+      m.nav?.find((i) => firstSegment(i.href) === root)?.href ??
       m.route_prefixes?.find((p) => firstSegment(p) === root) ??
       '/'
     );
@@ -424,36 +395,30 @@
             data-launcher-col="2"
             data-testid="app-launcher-pages"
           >
-            {#if pagesLoading}
-              <div class="px-2 py-1.5 text-xs text-muted-foreground">
-                {$t('app.common.loading')}
+            {#each previewPages as item, i (item.id)}
+              <div
+                role="option"
+                aria-selected={page.url.pathname === item.href}
+                tabindex={colFocusIdx[2] === i ? 0 : -1}
+                data-launcher-row
+                class={cn(
+                  rowBase,
+                  menuListHoverNeutral,
+                  page.url.pathname === item.href && menuListSelectedSurfaceDropdownClasses
+                )}
+                onfocus={() => trackFocus(2, i)}
+                onclick={() => activatePage(item.href)}
+                onkeydown={(e) => handleRowKeydown(e, 2, i)}
+              >
+                <div class="flex size-5 shrink-0 items-center justify-center">
+                  <DynamicIcon name={item.icon ?? 'circle'} size={14} />
+                </div>
+                <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
+                <ArrowUpRight class="size-4 shrink-0 opacity-40" aria-hidden="true" />
               </div>
             {:else}
-              {#each previewPages as item, i (item.id)}
-                <div
-                  role="option"
-                  aria-selected={page.url.pathname === item.href}
-                  tabindex={colFocusIdx[2] === i ? 0 : -1}
-                  data-launcher-row
-                  class={cn(
-                    rowBase,
-                    menuListHoverNeutral,
-                    page.url.pathname === item.href && menuListSelectedSurfaceDropdownClasses
-                  )}
-                  onfocus={() => trackFocus(2, i)}
-                  onclick={() => activatePage(item.href)}
-                  onkeydown={(e) => handleRowKeydown(e, 2, i)}
-                >
-                  <div class="flex size-5 shrink-0 items-center justify-center">
-                    <DynamicIcon name={item.icon ?? 'circle'} size={14} />
-                  </div>
-                  <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
-                  <ArrowUpRight class="size-4 shrink-0 opacity-40" aria-hidden="true" />
-                </div>
-              {:else}
-                <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
-              {/each}
-            {/if}
+              <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
+            {/each}
           </div>
         </div>
         <!-- Keyboard hints footer -->

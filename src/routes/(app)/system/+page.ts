@@ -1,5 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
-import { fetchModuleMeta, fetchModules, type ModuleInfo } from '$lib/api';
+import { fetchModules, type ModuleInfo } from '$lib/api';
 
 // Client-only: every authenticated API call in this app happens from the
 // browser — SSR-side fetch has no session cookie and the BE would 401.
@@ -9,8 +9,9 @@ export const ssr = false;
 // the ROOT level (`service_registry.part_of`), not a module prefix — no
 // module declares it. Resolve the level's reserved module (settings is
 // the platform landing for the system area), then send the user to its
-// declared home — the first nav link (`nav[0].href`, may itself redirect
-// deeper e.g. /system/settings → /system/settings/profile).
+// declared home for that root — `ModuleInfo.home[root]`, the first nav
+// link of the root slice (may itself redirect deeper e.g.
+// /system/settings → /system/settings/profile).
 // A fetch/ownership failure surfaces as an error page, not an arbitrary
 // redirect to a module the route does not belong to.
 export async function load() {
@@ -20,21 +21,15 @@ export async function load() {
   } catch (e) {
     error(500, `Cannot resolve module for '/system': ${e instanceof Error ? e.message : String(e)}`);
   }
-  const ownerId =
-    modules.find((m) => m.part_of === 'system' && m.is_reserved)?.id ??
-    modules.find((m) => m.part_of === 'system' && m.enabled)?.id;
-  if (!ownerId) {
+  const owner =
+    modules.find((m) => m.part_of === 'system' && m.is_reserved) ??
+    modules.find((m) => m.part_of === 'system' && m.enabled);
+  if (!owner) {
     error(500, "No module declares ownership of route '/system'");
   }
-  let home: string | undefined;
-  try {
-    const nav = await fetchModuleMeta(ownerId);
-    home = nav.nav?.[0]?.href;
-  } catch (e) {
-    error(500, `Cannot load nav meta for module '${ownerId}': ${e instanceof Error ? e.message : String(e)}`);
-  }
+  const home = owner.home?.['system'];
   if (!home) {
-    error(500, `Module '${ownerId}' owns '/system' but declares no nav home`);
+    error(500, `Module '${owner.id}' owns '/system' but declares no nav home`);
   }
   redirect(307, home);
 }

@@ -19,7 +19,7 @@
  */
 import type { TransformContext } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import type { AiAction, AiSource } from '$lib/components/ui/smart-ai/ai-assistant.types';
-import { searchDocs, fetchRoutesCensus, fetchDoc, fetchModuleTranslations, type CensusRoute } from '$lib/api';
+import { searchDocs, fetchModules, routesCensusFromModules, fetchDoc, fetchModuleTranslations, type CensusRoute } from '$lib/api';
 import { parseGuideResponse } from './guide-response';
 import { get } from 'svelte/store';
 import { uiLang } from '$lib/i18n/store.svelte';
@@ -521,8 +521,11 @@ export async function runGuideRetrievalLoop(
   minSimilarity: number,
 ): Promise<GuideLoopResult> {
   const cfg = resolveLoopConfig(ctx.exec_config);
-  // Route census is fetched in parallel with the first agent turn.
-  const censusPromise = fetchRoutesCensus().catch(() => [] as CensusRoute[]);
+  // Route census is derived from the discovery payload, fetched in
+  // parallel with the first agent turn.
+  const censusPromise = fetchModules()
+    .then(routesCensusFromModules)
+    .catch(() => [] as CensusRoute[]);
 
   const seen = new Set<string>();
   const fetchedPaths = new Set<string>();

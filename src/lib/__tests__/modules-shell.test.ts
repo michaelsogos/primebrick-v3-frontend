@@ -13,12 +13,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   fetchModules: vi.fn(),
-  fetchModuleMeta: vi.fn(),
 }));
 
 vi.mock('$lib/api', () => ({
   fetchModules: mocks.fetchModules,
-  fetchModuleMeta: mocks.fetchModuleMeta,
   ApiUnreachableError: class ApiUnreachableError extends Error {},
 }));
 

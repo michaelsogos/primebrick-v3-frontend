@@ -53,9 +53,9 @@ Module loading and selection is centralized in
 
 | Function | Purpose |
 |----------|---------|
-| `loadShellNav()` | Fetches the available modules from the backend |
-| `selectModule(id)` | Selects a module and fetches its navigation tree |
-| `reloadModuleNav()` | Reloads the current module's navigation (retry) |
+| `loadShellNav()` | Fetches the access-filtered `GET /api/v1/modules` payload — every record embeds `nav`, `routes` and per-root `home` |
+| `selectModule(id)` | Selects a module — navigation comes from the already-loaded `ModuleInfo`, no second request |
+| `reloadModuleNav()` | Rebuilds the current module's navigation from the loaded payload |
 | `syncModuleFromRoute(pathname)` | Auto-selects the module that owns the current route via `route_prefixes` |
 | `getLastRoute()` / `saveLastRoute(pathname)` | localStorage persistence of the last visited route |
 
@@ -84,17 +84,22 @@ entries of the form `/{other-root}/{code}` (e.g. crm owns `/crm/*` plus
 level the module lists under; `part_of` alone decides where `is_default`
 applies.
 
-Columns, hover-previewed left to right:
+The payload is already **access-filtered server-side** — a user only ever
+sees the modules/pages their `access.{app}.{module}.{page}` grants cover
+(see the BE dev-guide for the grammar). The FE never re-filters.
+
+Columns, left to right — **click/tap descends** into the next column
+(Finder-style), hover only highlights, and every row carries an
+icon-only **goto CTA** (Enter/Space) that navigates without descending:
 
 1. **Applications** — every root level (`part_of` ∪ first segment of
-   every declared prefix). Click = the default chain: the app's declared
-   `is_default` module loads, then navigates to its first page **under
-   that app**.
-2. **Modules** — modules owning pages under the previewed app (`part_of`
-   members plus extra-prefix members). Click = module home under that
-   app. Meta + dictionary are lazy-fetched on hover so the Pages column
-   resolves translated labels for any module.
-3. **Pages** — the previewed module's nav links **scoped to the previewed
+   every declared prefix). Click = descend; goto CTA = the app's declared
+   `is_default` module's first page **under that app** (`home[root]`).
+2. **Modules** — modules owning pages under the selected app (`part_of`
+   members plus extra-prefix members). Click = descend; goto CTA =
+   `home[root]`. Labels resolve from the embedded `nav`/`label_key` in
+   the same payload — no per-module meta fetch.
+3. **Pages** — the selected module's nav links **scoped to the selected
    app** (a multi-root module shows only that app's slice). Click =
    direct navigation.
 
@@ -105,7 +110,7 @@ page at `/system/crm/pipeline` marks **System**, not CRM.
 **Module labels** come from ONE source: `service_registry.label_key`
 (`ModuleInfo.label_key`), resolved by `resolveModuleLabel(module, t)`
 against the module's own dictionary with the raw `name` as the only
-fallback. The launcher trigger, the Modules column, `moduleMenuSegment`
+fallback. The launcher trigger, the Modules column, `moduleBreadcrumbSegments`
 (breadcrumb) and the service-admin pages all share it — "Impostazioni"
 everywhere, never a registry-name drift. Row goto CTAs and the keyboard
 footer use `app.nav.goTo` ("Vai a"/"Go to"); `app.nav.open` stays on the

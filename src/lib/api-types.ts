@@ -6,6 +6,8 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
+import type { PageRouteDeclaration } from '@primebrick/ui';
+
 export type EntityWritePayload<E> = {
   entity: E;
   translations?: PendingTranslationRow[];
@@ -32,6 +34,21 @@ export type ModuleInfo = {
    * falls back to `name` when absent or unresolved.
    */
   label_key?: string;
+  /**
+   * The module's declared nav, ALREADY access-filtered server-side —
+   * present only when the module owns pages (absent for headless services).
+   * `/api/v1/modules` is the single discovery document; there is no
+   * per-module meta endpoint anymore.
+   */
+  nav?: ModuleNavLink[];
+  /** Route census declared by the module — access-filtered like `nav`. */
+  routes?: ModuleRouteDecl[];
+  /**
+   * nav[0].href of each root slice, post-filter — the first page the user
+   * is actually allowed to see in that root. `{crm: "/crm/customers",
+   * system: "/system/crm/pipeline"}`.
+   */
+  home?: Record<string, string>;
 };
 
 export type ModuleNavLink = {
@@ -39,6 +56,12 @@ export type ModuleNavLink = {
   label_key: string;
   href: string;
   icon?: string;
+  /**
+   * Access-axis gate (`access.{app}.{module}.{page}`) — server-side
+   * filtered already; kept on the wire so clients can reason about the
+   * declaration (e.g. admin views), not to re-filter.
+   */
+  access?: string;
   children?: ModuleNavLink[];
 };
 
@@ -49,17 +72,12 @@ export type ModuleNav = {
   routes?: ModuleRouteDecl[];
 };
 
-/** Route census entry declared inside `ModuleNav.routes`. */
-export type ModuleRouteDecl = {
-  route: string;
-  kind: 'list' | 'detail' | 'create' | 'page';
-  entity?: string;
-  label_key?: string;
-  icon?: string;
-  component_url?: string;
-  component_format?: string;
-  integrity?: string;
-};
+/**
+ * Route census entry declared inside `ModuleNav.routes` — the canonical
+ * `PageRouteDeclaration` contract (carries `component_*` remote-delivery
+ * fields and the `access` axis gate).
+ */
+export type ModuleRouteDecl = PageRouteDeclaration;
 
 export type HealthModule = { id: string; version: string };
 

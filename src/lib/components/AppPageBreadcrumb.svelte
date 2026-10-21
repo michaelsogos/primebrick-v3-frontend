@@ -38,7 +38,9 @@
       items: roots.map((r) => ({
         label: $t(`app.nav.roots.${r}`),
         icon: APP_ROOT_ICON,
-        href: (shellNav.defaultModuleForRoot(r)?.route_prefixes?.[0] ?? '/') as '/',
+        // `home[root]` = nav[0] of that root's slice — the first page the
+        // user is actually allowed to reach (post-filter).
+        href: (shellNav.defaultModuleForRoot(r)?.home?.[r] ?? '/') as '/',
         current: r === current
       }))
     };

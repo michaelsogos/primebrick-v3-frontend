@@ -67,9 +67,9 @@ degenerating to `/`.
 ## Module switching & route-aware translations
 
 Selecting a module in the sidebar switcher calls
-`shellNav.selectModule(id)` **and navigates** to the module's first
-`route_prefixes` entry (metadata-driven; modules without prefixes land
-on `/`). `/system/settings` itself redirects to `/system/settings/profile`
+`shellNav.selectModule(id)` **and navigates** to the module home — the
+first `nav` entry of the current root slice (`home[root]` from the
+`/api/v1/modules` payload; `nav[0].href` is the single source of truth). `/system/settings` itself redirects to `/system/settings/profile`
 via a `+page.ts` universal `load()` — `redirect()` inside a component
 `<script>` only works on SSR; on client-side navigation it surfaces as
 an unhandled "Redirect" error and a blank page.

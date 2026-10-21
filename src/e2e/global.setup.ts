@@ -22,7 +22,7 @@ import {
   upsertFakeBrevoProvider,
 } from "./helpers/db";
 import { getBrevoProviderSnapshot, setBrevoProviderSnapshot, setFakeBrevo } from "./helpers/global-state";
-import { createE2eAdminActor } from "./helpers/test-users";
+import { createE2eAdminActor, createE2eUserActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -78,6 +78,17 @@ export default async function globalSetup(): Promise<void> {
     }
     await fakeBrevo.close();
     throw new Error(`[globalSetup] Failed to create E2E test actor: ${err}`);
+  }
+
+  // 7. Mint the ephemeral NON-admin actor (dedicated `e2e_user` role —
+  //    access-axis + entity grants only, no is_admin) for the
+  //    access-filtering suite.
+  try {
+    const actor = await createE2eUserActor();
+    console.log(`[globalSetup] Ephemeral non-admin actor created: ${actor.username}`);
+  } catch (err) {
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create non-admin E2E actor: ${err}`);
   }
 
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");

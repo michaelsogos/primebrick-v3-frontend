@@ -57,6 +57,58 @@ export function hasRequiredPermission(requiredPermission?: string | string[]): b
   return list.some(checkOne);
 }
 
+/* ------------------------------------------------------------------ */
+/* Access axis — `access.{app}.{module}.{page}`                         */
+/* ------------------------------------------------------------------ */
+/*
+ * FE-local mirror of the SDK `isAccessGranted` (the FE intentionally does
+ * NOT import @primebrick/sdk — keep the two implementations in sync).
+ *
+ * Same grammar, same semantics:
+ * - deny-first, hierarchical — a bare grant covers its subtree
+ *   (`access.system.job` ⇒ `access.system.job.rules`), `*` at any level;
+ * - `is_admin` implies ONLY `access.system` — business roots (crm, shop…)
+ *   require explicit grants even for admins.
+ *
+ * NOTE: `/modules` is already access-filtered server-side — the nav the
+ * FE renders only contains what the user can reach. `hasAccess` exists
+ * for client-side gating that needs the same vocabulary (e.g. guarding a
+ * local route that has no metadata yet); it is NOT a re-filter of the
+ * discovery payload.
+ */
+const ACCESS_KEY_RE = /^access(\.[a-z0-9_-]+)+$/i;
+const ADMIN_INHERITED_ACCESS = "access.system";
+
+function accessGrantCovers(grant: string, required: string): boolean {
+  if (grant === required) return true;
+  if (required.startsWith(grant + ".")) return true;
+  if (grant.includes("*")) {
+    const regex = new RegExp(
+      "^" + grant.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"
+    );
+    return regex.test(required);
+  }
+  return false;
+}
+
+/**
+ * Evaluate an `access.*` requirement against the current user's grants.
+ * - `undefined`/empty → true (undeclared = open to authenticated users)
+ * - non-access key → false (never a silent grant)
+ * - admin → only `access.system.*` covered implicitly
+ */
+export function hasAccess(requiredAccess?: string | null): boolean {
+  if (!requiredAccess) return true;
+  if (!ACCESS_KEY_RE.test(requiredAccess)) return false;
+  const profile = userProfileStore.current;
+  const grants = profile?.permissions ?? [];
+  if (grants.some((g) => accessGrantCovers(g, requiredAccess))) return true;
+  return (
+    profile?.is_admin === true &&
+    accessGrantCovers(ADMIN_INHERITED_ACCESS, requiredAccess)
+  );
+}
+
 /** Sentinel values emitted by the BE (`_authenticated_admin`, ...) mapped to
  *  the checker names used by `hasRequiredPermission`. */
 const SENTINEL_TO_CHECK: Record<string, string> = {

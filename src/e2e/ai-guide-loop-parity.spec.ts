@@ -192,7 +192,12 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
             w.__loop_debug!.docs_search_keywords.push(body.keywords);
           } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
         }
-        if (url.includes("/api/v1/system/routes")) w.__loop_debug!.routes_census_calls++;
+        // The route census is derived client-side from the /modules
+        // discovery payload (the /system/routes endpoint is retired) —
+        // the loop's own fetch of /api/v1/modules is the census load.
+        if (url.includes("/api/v1/system/routes") || url.includes("/api/v1/modules")) {
+          w.__loop_debug!.routes_census_calls++;
+        }
         return origFetch(input, init);
       };
     });

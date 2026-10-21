@@ -11,16 +11,18 @@ import { resolveModuleLabel } from '$lib/shell/module-label';
  * auto-prepended by `AppPageBreadcrumb`; detail pages append their own
  * trailing segment):
  *
- *   1. MODULE segment — plain link labeled with the module's LOCALIZED
+ *   1. MODULE segment — dropdown labeled with the module's LOCALIZED
  *      display name (`service_registry.label_key` via resolveModuleLabel),
- *      pointing to the module's home WITHIN the route's root (first nav
- *      item of that root's slice — `nav[0].href` is the canonical home).
+ *      listing the SIBLING modules of the same root level; each item
+ *      points to that module's home WITHIN this root (`ModuleInfo.home[root]`
+ *      — nav[0] of that root's slice, access-filtered server-side).
  *   2. PAGE segment — dropdown labeled with the CURRENT page's nav label
  *      (e.g. "Clienti"), listing the module's sibling pages in this root
  *      with the current one marked.
  *
- * Reads `shellNav.moduleNav` — the nav the resolved module declares via
- * `endpoints.nav`. Current-item detection uses LONGEST-MATCH semantics:
+ * Reads `shellNav.moduleNav` (current module's nav) and `shellNav.modules`
+ * (sibling module list) — both come from the single `/modules` discovery
+ * payload. Current-item detection uses LONGEST-MATCH semantics:
  * on `/crm/customers/new` the `/crm/customers` item is current — `/crm`
  * is a prefix, not a second current entry. Items are scoped to the
  * ROUTE's root (same rule as the sidebar): a module with pages under two
@@ -54,11 +56,26 @@ export function moduleBreadcrumbSegments(args: {
   const moduleLabel = resolveModuleLabel(module, args.t);
   const segments: AppBreadcrumbSegment[] = [];
 
+  // Sibling modules of this root — every level of the breadcrumb is a
+  // switcher of its own level (Finder-style, symmetric with app/page).
+  // A module without a reachable home in this root is not listed.
+  const siblings = shellNav
+    .modulesForRoot(root)
+    .map((m) => ({
+      label: resolveModuleLabel(m, args.t) || m.name,
+      href: m.home?.[root],
+      icon: m.icon ?? 'layout-grid',
+      current: m.id === module?.id
+    }))
+    .filter((i): i is typeof i & { href: string } => !!i.href);
+
   if (moduleLabel) {
     segments.push({
+      kind: 'menu',
       label: moduleLabel,
-      href: rootNav[0]?.href,
-      icon: module?.icon ?? 'layout-grid'
+      icon: module?.icon ?? 'layout-grid',
+      menuAriaLabel: moduleLabel,
+      items: siblings.length > 0 ? siblings : [{ label: moduleLabel, href: rootNav[0]?.href ?? '/', icon: module?.icon ?? 'layout-grid', current: true }]
     });
   }
   if (items.length > 0) {
@@ -66,7 +83,10 @@ export function moduleBreadcrumbSegments(args: {
       kind: 'menu',
       label: currentItem?.label ?? moduleLabel,
       icon: currentItem?.icon ?? module?.icon ?? 'circle',
-      menuAriaLabel: moduleLabel || undefined,
+      // Accessible name = the current page (module name lives on the
+      // module switcher — distinct aria-labels keep the two triggers
+      // addressable and truthful).
+      menuAriaLabel: currentItem?.label || moduleLabel || undefined,
       items
     });
   }

@@ -14,7 +14,7 @@
    */
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
-  import { fetchRoutesCensus, type CensusRoute } from '$lib/api';
+  import { fetchModules, routesCensusFromModules, type CensusRoute } from '$lib/api';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
@@ -37,7 +37,7 @@
   async function resolveDecl() {
     resolve_error = null;
     try {
-      const routes = await fetchRoutesCensus();
+      const routes = routesCensusFromModules(await fetchModules());
       const found = routes.find((r) => r.route === '/system/job/rules/new' && r.component_url);
       if (found) {
         decl = found;

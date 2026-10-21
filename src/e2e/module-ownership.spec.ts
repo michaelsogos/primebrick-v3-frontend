@@ -30,6 +30,15 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * are running (job :3006, crm :3007, …).
  */
 
+type NavLink = {
+  id: string;
+  label_key: string;
+  href: string;
+  icon?: string;
+  access?: string;
+  children?: NavLink[];
+};
+
 type ModuleInfo = {
   id: string;
   name: string;
@@ -44,9 +53,12 @@ type ModuleInfo = {
   is_default?: boolean;
   /** i18n key for the module's localized display name (module's own dict). */
   label_key?: string;
+  /** Declared nav — embedded in the single /modules discovery payload,
+   *  already access-filtered server-side. */
+  nav?: NavLink[];
+  /** nav[0].href per root slice, post-filter. */
+  home?: Record<string, string>;
 };
-
-type NavLink = { id: string; label_key: string; href: string; icon?: string; children?: NavLink[] };
 
 const RAW_KEY = /\b(?:app|system|custom|job|crm|emailsender|webhook|ai)\.[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+\b/i;
 
@@ -89,11 +101,14 @@ async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   return mods.filter((m) => m.enabled !== false);
 }
 
+/**
+ * The module's access-filtered nav — read from the SAME /modules payload
+ * the shell consumes (`ModuleInfo.nav`). `/modules/:code/meta` is retired:
+ * the discovery document is the single source.
+ */
 async function fetchModuleNav(page: Page, code: string): Promise<NavLink[]> {
-  const res = await page.request.get(`/api/v1/modules/${code}/meta`);
-  expect(res.ok(), `GET /api/v1/modules/${code}/meta must succeed`).toBeTruthy();
-  const body = await res.json();
-  return body.nav ?? [];
+  const modules = await fetchModules(page);
+  return modules.find((m) => m.id === code)?.nav ?? [];
 }
 
 function flattenHrefs(links: NavLink[]): string[] {
@@ -479,9 +494,26 @@ test.describe("module ownership — observable contract", () => {
           `on ${first.href} expected '${rootLabel} / ${moduleLabel} / ${pageLabel}'`
         ).toEqual([rootLabel, moduleLabel, pageLabel]);
 
-        // The module segment is a LINK to the module home in this root —
-        // the page segment is the dropdown (a button, current page).
-        await expect(items.nth(1).locator("a")).toHaveAttribute("href", first.href);
+        // The module segment is a DROPDOWN of the root's sibling modules
+        // (Finder-style: every breadcrumb level switches its own level) —
+        // the page segment is the sibling-pages dropdown. Both buttons.
+        const moduleTrigger = items.nth(1).locator("button");
+        await expect(moduleTrigger).toBeVisible();
+        await moduleTrigger.click();
+        const menu = page.locator("[data-slot='dropdown-menu-content']").last();
+        await expect(menu).toBeVisible();
+        // Sibling modules of this root, each pointing at its home[root] —
+        // including the current module marked as current.
+        const expectedSiblings = modules.filter(
+          (s) => moduleRoots(s).includes(root) && s.home?.[root],
+        );
+        for (const s of expectedSiblings) {
+          await expect(
+            menu.locator("[data-slot='dropdown-menu-item']").filter({ hasText: await expectedModuleLabel(page, s) }).first(),
+            `module dropdown must list sibling '${s.id}' under root '${root}'`,
+          ).toBeVisible();
+        }
+        await page.keyboard.press("Escape");
         await expect(items.nth(2).locator("button")).toBeVisible();
 
         // Icon identity — same sources as the launcher: app root icon on
