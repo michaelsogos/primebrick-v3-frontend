@@ -76,11 +76,11 @@ test.describe("access axis — server-side discovery filtering", () => {
 
   test("non-admin: launcher System column shows job/crm, never settings", async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     // Wait for the shell to settle — the job nav must be rendered before
     // the launcher trigger is interactive.
     await page
-      .locator("[data-sidebar='content'] a[href='/system/job']")
+      .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
       .first()
       .waitFor({ state: "visible", timeout: 15000 });
     await openLauncher(page);
@@ -99,7 +99,7 @@ test.describe("access axis — server-side discovery filtering", () => {
 
   test("non-admin: sidebar on a job page carries no settings links", async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await page
       .locator("[data-sidebar='content'] a[href]")
       .first()
@@ -113,7 +113,7 @@ test.describe("access axis — server-side discovery filtering", () => {
       "no /system/settings links may render for a user without the grant",
     ).toEqual([]);
     // Job nav renders (the module is reachable).
-    expect(hrefs.some((h) => h === "/system/job")).toBeTruthy();
+    expect(hrefs.some((h) => h === "/system/job/job-schedules")).toBeTruthy();
   });
 
   test("non-admin: direct URL to a gated module's page → non-disclosure", async ({ page }) => {

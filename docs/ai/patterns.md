@@ -273,8 +273,9 @@ table/cards/cards-list.
   `entity-create-cta` (label_key/icon from the census route), gated by
   `create.single`. `headerActions` stays for non-entity page CTAs only.
 - Composite/module pages bypass `EntityTablePage` and drive
-  `useEntityList`+`EntityListTable` directly — `system/job` is the
-  standing example (remote-page host).
+  `useEntityList`+`EntityListTable` directly. Remote-module pages mount
+  through `RemotePageMount` instead — `system/job/job-schedules/create`
+  and `system/job/rules/create` are the standing examples.
 - Rule of record: `.devin/rules/entity-list-pages.md`.
 
 Reusable abstractions should be **app components** composing primitives,

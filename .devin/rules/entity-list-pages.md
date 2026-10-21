@@ -96,9 +96,9 @@ custom CTAs come from `meta.table.row_custom_actions` +
 `customActionHandlers`.
 
 - Any CTA rendered OUTSIDE the table (e.g. `headerActions` snippet with a
-  page-level `<Button href="/entity/new">`) MUST be gated with
+  page-level `<Button href="/entity/create">`) MUST be gated with
   `isEntityOpAllowed(meta?.actions, 'create.single')` from
-  `$lib/permissions.svelte` — see `system/customers/+page.svelte`.
+  `$lib/permissions.svelte` — see `crm/customers/+page.svelte`.
 - `EntityAction.sentinel` values are the BE strings verbatim:
   `_public`, `_authenticated_user`, `_authenticated_admin`.
 
@@ -142,10 +142,10 @@ variants MAY render icon + label + secondary description.
 ## Exceptions
 - **Composite/module pages** — a page hosting several list instances or
   extra UI drives `useEntityList` + `EntityListTable` directly. Remote
-  module-owned pages (e.g. the job service's `/system/job/new` schedule form,
-  mounted via `mountPage`) are the standing example — the `/system/job`,
-  `/system/job/runs`, `/system/job/rules` lists themselves are plain `EntityTablePage`
-  hosts like any other module list.
+  module-owned pages (e.g. the job service's `/system/job/job-schedules/create`
+  schedule form, mounted via `mountPage`) are the standing example — the
+  `/system/job/job-schedules`, `/system/job/runs`, `/system/job/rules` lists
+  themselves are plain `EntityTablePage` hosts like any other module list.
 - **Non-table archetypes** (list, cards, kanban, timeline, custom pages)
   follow their own page components — this rule covers only routes that
   resolve to the table archetype.

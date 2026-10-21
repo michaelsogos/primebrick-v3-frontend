@@ -23,7 +23,7 @@ import { resolveModuleLabel } from '$lib/shell/module-label';
  * Reads `shellNav.moduleNav` (current module's nav) and `shellNav.modules`
  * (sibling module list) — both come from the single `/modules` discovery
  * payload. Current-item detection uses LONGEST-MATCH semantics:
- * on `/crm/customers/new` the `/crm/customers` item is current — `/crm`
+ * on `/crm/customers/create` the `/crm/customers` item is current — `/crm`
  * is a prefix, not a second current entry. Items are scoped to the
  * ROUTE's root (same rule as the sidebar): a module with pages under two
  * roots (crm → /crm/* + /system/crm/*) only lists the slice owned by the

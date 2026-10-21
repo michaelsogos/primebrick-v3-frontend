@@ -17,7 +17,7 @@ beforeAll(() => {
 });
 
 const DECL: PageRouteDeclaration = {
-	route: '/system/job/new',
+	route: '/system/job/job-schedules/create',
 	kind: 'page',
 	component_url: '/ws/job/api/v1/module-assets/jobs-page.js',
 	component_format: 'esm-mount',

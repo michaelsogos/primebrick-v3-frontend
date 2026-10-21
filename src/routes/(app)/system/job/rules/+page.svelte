@@ -7,7 +7,7 @@
    *
    * The breadcrumb renders the JOB module's nav menu — the page is owned
    * by the `job` module (route_prefix `/system/job`), never by settings.
-   * The create CTA is census-derived (`/system/job/rules/new` is
+   * The create CTA is census-derived (`/system/job/rules/create` is
    * `kind:"create"` on `job_rule`).
    */
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';

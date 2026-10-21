@@ -31,7 +31,7 @@ const MODULES = [
     part_of: 'system',
     route_prefixes: ['/system/job'],
     is_reserved: false,
-    home: { system: '/system/job' },
+    home: { system: '/system/job/job-schedules' },
   },
   {
     id: 'settings',

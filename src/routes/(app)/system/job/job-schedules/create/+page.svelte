@@ -1,16 +1,19 @@
 <script lang="ts">
   /**
-   * /system/job/rules/new — module-owned REMOTE page (rule creation form).
+   * /system/job/job-schedules/create — module-owned REMOTE page (manual
+   * schedule creation).
    *
-   * Same esm-mount contract as /system/job/new: the job service ships this page's
-   * UI inside its precompiled chunk (mountPage dispatches on ctx.nav.route);
-   * the route resolves the declaration from the routes census and mounts it
-   * via RemotePageMount. The list page it belongs to (/system/job/rules) is a
-   * host-rendered EntityTablePage archetype declared kind:"list".
+   * The job service ships this page's UI as a precompiled ESM chunk; the
+   * route only resolves the declaration from the routes census and mounts
+   * it via RemotePageMount. It's the module's one custom surface — the
+   * list pages (/system/job/job-schedules, /system/job/runs,
+   * /system/job/rules) are host-rendered EntityTablePage archetypes
+   * declared kind:"list" by the same service.
    *
-   * components.AppPageBreadcrumb / Button / moduleBreadcrumbSegments → host surface
-   * mounted as separate roots via ctx.mount_host. NO snippets cross the
-   * bundle boundary. Resolution failures render an in-content error panel.
+   * components.AppPageBreadcrumb / Button / moduleBreadcrumbSegments /
+   * moduleBreadcrumbSegments → host surface mounted as separate roots via
+   * ctx.mount_host. NO snippets cross the bundle boundary.
+   * Resolution failures render an in-content error panel — the shell stays.
    */
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
@@ -38,7 +41,9 @@
     resolve_error = null;
     try {
       const routes = routesCensusFromModules(await fetchModules());
-      const found = routes.find((r) => r.route === '/system/job/rules/new' && r.component_url);
+      const found = routes.find(
+        (r) => r.route === '/system/job/job-schedules/create' && r.component_url
+      );
       if (found) {
         decl = found;
         return;
@@ -46,7 +51,7 @@
       decl = null;
       resolve_error = {
         kind: 'contract',
-        detail: 'route /system/job/rules/new is not declared for remote delivery',
+        detail: 'route /system/job/job-schedules/create is not declared for remote delivery',
       };
     } catch (e) {
       decl = null;
@@ -63,7 +68,7 @@
 </script>
 
 <svelte:head>
-  <title>{$t('job.jobs.ruleForm.title')} · Primebrick</title>
+  <title>{$t('job.jobs.scheduleDialog.title')} · Primebrick</title>
 </svelte:head>
 
 {#if decl}

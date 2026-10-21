@@ -14,7 +14,7 @@ Record<string, unknown>` and lives in
 `EntityTablePage` (see [Route-level usage](#route-level-usage-entitytablepage)
 below), which owns data/state via `useEntityList` and feeds this component.
 Use `EntityListTable` directly only in composite hosts (multiple list
-instances, extra UI — e.g. `system/job`).
+instances, extra UI).
 
 ## Component overview
 
@@ -230,7 +230,7 @@ route-level host for the table archetype. A page is ~50 lines: config props
 
 Canonical examples: `system/settings/users` (popup nav + `extraDialogs`),
 `system/settings/roles` (`deletionFilter={false}`), `crm/customers`
-(census-derived create CTA). Composite host example: `system/job`.
+(census-derived create CTA).
 
 ## Persistence
 

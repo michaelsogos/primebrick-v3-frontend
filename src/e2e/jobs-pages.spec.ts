@@ -8,14 +8,16 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * `endpoints.nav`). Three pages are HOST-rendered standard list
  * archetypes (kind:"list" → EntityTablePage over /ws/job):
  *
- *   /system/job        job_schedule — `schedule_kind` toolbar preset +
- *                builtin sparkline column
- *   /system/job/runs   job_run      — duration_ms humanizer cell
- *   /system/job/rules  job_rule
+ *   /system/job/job-schedules  job_schedule — `schedule_kind` toolbar
+ *                              preset + builtin sparkline column
+ *   /system/job/runs           job_run      — duration_ms humanizer cell
+ *   /system/job/rules          job_rule
  *
- * The module's only custom surface is REMOTE-delivered:
+ * The module's only custom surfaces are REMOTE-delivered (jobs-page.js
+ * esm-mount chunk):
  *
- *   /system/job/new    manual schedule form (jobs-page.js esm-mount chunk)
+ *   /system/job/job-schedules/create  manual schedule form
+ *   /system/job/rules/create          rule form
  *
  * These specs verify: standard single-table rendering, preset AND-ing on
  * the wire, sparkline batch fetch, exactly-one-active nav item
@@ -31,15 +33,15 @@ const REMOTE_ERROR = "[data-testid='remote-page-error']";
 const SYSTEM_ERROR_PAGE = "[data-testid='error-page']";
 const SIDEBAR_LINKS = "[data-sidebar='content'] a[href]";
 
-test.describe("/system/job pages (module-owned)", () => {
+test.describe("/system/job/* pages (module-owned)", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
   });
 
-  test("/system/job renders ONE standard list table for job_schedule", async ({
+  test("/system/job/job-schedules renders ONE standard list table for job_schedule", async ({
     page,
   }) => {
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
 
     // Standard archetype: a single EntityTablePage table — not the old
@@ -47,11 +49,11 @@ test.describe("/system/job pages (module-owned)", () => {
     const tables = page.locator("table");
     await expect(tables).toHaveCount(1, { timeout: 30000 });
     // Schedule CTA — census-driven toolbar create (`kind:"create"` on
-    // job_schedule → /system/job/new remote form, label job.jobs.scheduleNew).
+    // job_schedule → /system/job/job-schedules/create remote form, label job.jobs.scheduleNew).
     const createBtn = page.getByTestId("entity-create-cta");
     await expect(createBtn).toBeVisible();
     await createBtn.click();
-    await page.waitForURL("**/system/job/new", { timeout: 10000 });
+    await page.waitForURL("**/system/job/job-schedules/create", { timeout: 10000 });
   });
 
   test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
@@ -63,7 +65,7 @@ test.describe("/system/job pages (module-owned)", () => {
         listUrls.push(decodeURIComponent(req.url()));
     });
 
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Every segmented toolbar group that RENDERS options (view mode,
@@ -166,7 +168,7 @@ test.describe("/system/job pages (module-owned)", () => {
         statsRequests.push(req.url());
     });
 
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The run_stats column is meta-declared (type:"sparkline") — the engine
@@ -209,7 +211,7 @@ test.describe("/system/job pages (module-owned)", () => {
     }
   });
 
-  test("/system/job/rules exposes the create CTA → /system/job/rules/new remote form", async ({
+  test("/system/job/rules exposes the create CTA → /system/job/rules/create remote form", async ({
     page,
   }) => {
     await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
@@ -221,7 +223,7 @@ test.describe("/system/job pages (module-owned)", () => {
     await expect(createBtn).toBeVisible();
     await createBtn.click();
 
-    await page.waitForURL("**/system/job/rules/new", { timeout: 10000 });
+    await page.waitForURL("**/system/job/rules/create", { timeout: 10000 });
     const content = page.locator(REMOTE_CONTENT);
     await expect(content).toBeVisible({ timeout: 30000 });
     await expect(content.locator("input#rule-name")).toBeVisible();
@@ -265,7 +267,7 @@ test.describe("/system/job pages (module-owned)", () => {
     });
 
     // Full document loads — every hydration path must stay orphan-free.
-    for (const route of ["/system/job", "/system/job/rules", "/system/settings/profile"]) {
+    for (const route of ["/system/job/job-schedules", "/system/job/rules", "/system/settings/profile"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
     }
@@ -289,7 +291,7 @@ test.describe("/system/job pages (module-owned)", () => {
       page.locator(`${SIDEBAR_LINKS}[href='/system/job/rules']`),
     ).toHaveAttribute("data-active", "true");
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job']`),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/job-schedules']`),
     ).not.toHaveAttribute("data-active", "true");
 
     // Invariant: never more than one active nav link in the sidebar.
@@ -329,14 +331,14 @@ test.describe("/system/job pages (module-owned)", () => {
   });
 
   test("is owned by the job module — not by Settings", async ({ page }) => {
-    await page.goto("/system/job", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The app launcher shows the OWNING module (`App / Module`), and its
     // nav contains the self-declared links.
     const switcher = page.locator("[data-testid='app-launcher-trigger']");
     await expect(switcher).toContainText(/job handler/i, { timeout: 15000 });
-    await expect(page.locator("a[href='/system/job']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible();
     await expect(page.locator("a[href='/system/job/rules']").first()).toBeVisible();
 
     // Settings' nav does NOT present another module's pages.
@@ -347,7 +349,7 @@ test.describe("/system/job pages (module-owned)", () => {
       /settings/i,
       { timeout: 15000 },
     );
-    await expect(page.locator("a[href='/system/job']")).toHaveCount(0);
+    await expect(page.locator("a[href='/system/job/job-schedules']")).toHaveCount(0);
   });
 
   test("is reachable through the app launcher (job module home)", async ({
@@ -360,7 +362,8 @@ test.describe("/system/job pages (module-owned)", () => {
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
     // App launcher → select System (module column descends) → click Job
-    // Handler's goto CTA: nav[0].href (/system/job) is the module home.
+    // Handler's goto CTA: nav[0].href (/system/job/job-schedules) is the
+    // module home.
     await trigger.click();
     await page
       .locator("[data-testid='app-launcher-apps'] [role='option'][data-app-root='system']")
@@ -372,12 +375,12 @@ test.describe("/system/job pages (module-owned)", () => {
       .locator("[data-testid='launcher-cta']")
       .click();
 
-    await page.waitForURL("**/system/job", { timeout: 10000 });
+    await page.waitForURL("**/system/job/job-schedules", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
-  test("/system/job/new mounts the remote schedule form", async ({ page }) => {
-    await page.goto("/system/job/new", { waitUntil: "domcontentloaded" });
+  test("/system/job/job-schedules/create mounts the remote schedule form", async ({ page }) => {
+    await page.goto("/system/job/job-schedules/create", { waitUntil: "domcontentloaded" });
 
     const content = page.locator(REMOTE_CONTENT);
     await expect(content).toBeVisible({ timeout: 30000 });
@@ -399,7 +402,7 @@ test.describe("/system/job pages (module-owned)", () => {
       route.abort("connectionrefused"),
     );
 
-    await page.goto("/system/job/new", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job-schedules/create", { waitUntil: "domcontentloaded" });
 
     // In-content error panel — classified 'network' (fetch threw).
     const errorPanel = page.locator(REMOTE_ERROR);
@@ -409,7 +412,7 @@ test.describe("/system/job pages (module-owned)", () => {
     // The app shell survives: sidebar nav is still rendered, and the
     // failure NEVER escalated to the system full-page error.
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
-    await expect(page.locator("a[href='/system/job']").first()).toBeVisible({
+    await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible({
       timeout: 15000,
     });
 
