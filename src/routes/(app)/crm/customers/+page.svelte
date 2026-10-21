@@ -3,7 +3,7 @@
   import { page as appPage } from '$app/state';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 </script>
 
 <EntityTablePage
@@ -15,7 +15,7 @@
   {#snippet breadcrumb()}
     <AppPageBreadcrumb
       segments={[
-        moduleMenuSegment({
+        ...moduleBreadcrumbSegments({
           pathname: appPage.url.pathname,
           t: (key) => $t(key)
         })

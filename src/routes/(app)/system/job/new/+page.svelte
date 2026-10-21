@@ -8,8 +8,8 @@
    * list pages (/system/job, /system/job/runs, /system/job/rules) are host-rendered
    * EntityTablePage archetypes declared kind:"list" by the same service.
    *
-   * components.AppPageBreadcrumb / Button / moduleMenuSegment /
-   * moduleMenuSegment → host surface mounted as separate roots via
+   * components.AppPageBreadcrumb / Button / moduleBreadcrumbSegments /
+   * moduleBreadcrumbSegments → host surface mounted as separate roots via
    * ctx.mount_host. NO snippets cross the bundle boundary.
    * Resolution failures render an in-content error panel — the shell stays.
    */
@@ -20,7 +20,7 @@
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 
@@ -32,7 +32,7 @@
   const components: Record<string, unknown> = {
     AppPageBreadcrumb,
     Button,
-    moduleMenuSegment,
+    moduleBreadcrumbSegments,
   };
 
   async function resolveDecl() {

@@ -1,30 +1,36 @@
-import type { AppBreadcrumbMenuSegment } from './types';
+import type { AppBreadcrumbSegment } from './types';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { resolveModuleLabel } from '$lib/shell/module-label';
 
 /**
- * Generic module menu segment for page breadcrumbs — works for ANY
- * module-owned page (job, crm, …), not just settings.
+ * Generic module breadcrumb segments — works for ANY module-owned page
+ * (job, crm, …), not just settings.
+ *
+ * Returns the two mechanical middle segments of the standard breadcrumb
+ * shape `{root} / {module} / {page} [/ {detail}]` (the root segment is
+ * auto-prepended by `AppPageBreadcrumb`; detail pages append their own
+ * trailing segment):
+ *
+ *   1. MODULE segment — plain link labeled with the module's LOCALIZED
+ *      display name (`service_registry.label_key` via resolveModuleLabel),
+ *      pointing to the module's home WITHIN the route's root (first nav
+ *      item of that root's slice — `nav[0].href` is the canonical home).
+ *   2. PAGE segment — dropdown labeled with the CURRENT page's nav label
+ *      (e.g. "Clienti"), listing the module's sibling pages in this root
+ *      with the current one marked.
  *
  * Reads `shellNav.moduleNav` — the nav the resolved module declares via
- * `endpoints.nav` — and renders a dropdown listing the module's own links
- * (same sibling links as the sidebar). Label = the module's LOCALIZED
- * display name via `service_registry.label_key` (resolveModuleLabel),
- * so a job page shows "Job Handler ▾" and a settings page "Impostazioni ▾"
- * — identical to what the launcher renders, never a foreign label.
- *
- * Current-item detection uses LONGEST-MATCH semantics: on `/system/job/rules`
- * only the `/system/job/rules` item is marked current — `/system/job` is a prefix of
- * it, not a second current entry.
- *
- * Items are scoped to the ROUTE's root (same rule as the sidebar): a module
- * with pages under two roots (crm → /crm/* + /system/crm/*) only lists the
- * slice owned by the current app level.
+ * `endpoints.nav`. Current-item detection uses LONGEST-MATCH semantics:
+ * on `/crm/customers/new` the `/crm/customers` item is current — `/crm`
+ * is a prefix, not a second current entry. Items are scoped to the
+ * ROUTE's root (same rule as the sidebar): a module with pages under two
+ * roots (crm → /crm/* + /system/crm/*) only lists the slice owned by the
+ * current app level.
  */
-export function moduleMenuSegment(args: {
+export function moduleBreadcrumbSegments(args: {
   pathname: string;
   t: (key: string) => string;
-}): AppBreadcrumbMenuSegment {
+}): AppBreadcrumbSegment[] {
   const nav = shellNav.moduleNav;
   const module = shellNav.modules.find((m) => m.id === shellNav.selectedModuleId);
   const root = shellNav.rootForRoute(args.pathname);
@@ -46,11 +52,23 @@ export function moduleMenuSegment(args: {
 
   const currentItem = items.find((item) => item.current);
   const moduleLabel = resolveModuleLabel(module, args.t);
-  return {
-    kind: 'menu',
-    label: moduleLabel || currentItem?.label || items[0]?.label || '',
-    icon: module?.icon ?? currentItem?.icon,
-    menuAriaLabel: moduleLabel || undefined,
-    items
-  };
+  const segments: AppBreadcrumbSegment[] = [];
+
+  if (moduleLabel) {
+    segments.push({
+      label: moduleLabel,
+      href: rootNav[0]?.href,
+      icon: module?.icon
+    });
+  }
+  if (items.length > 0) {
+    segments.push({
+      kind: 'menu',
+      label: currentItem?.label ?? moduleLabel,
+      icon: currentItem?.icon ?? module?.icon,
+      menuAriaLabel: moduleLabel || undefined,
+      items
+    });
+  }
+  return segments;
 }

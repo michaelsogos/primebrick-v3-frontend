@@ -3,7 +3,7 @@
   import { t } from '$lib/i18n';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 </script>
 
 <AppPageScaffold>
@@ -11,11 +11,11 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          moduleMenuSegment({
+          ...moduleBreadcrumbSegments({
             pathname: page.url.pathname,
             t: (key) => $t(key)
           }),
-          { label: $t('system.entities.customer.title'), href: '/crm/customers' }
+          { label: $t('system.entities.customer.new.title') }
         ]}
       />
       <h1 class="text-xl font-semibold leading-tight">{$t('system.entities.customer.new.title')}</h1>

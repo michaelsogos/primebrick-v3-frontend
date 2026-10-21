@@ -277,20 +277,20 @@ test.describe("/system/job pages (module-owned)", () => {
   }) => {
     await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
-    // Wait for module nav to resolve.
+    // Wait for module nav to resolve (scoped to the sidebar — the
+    // breadcrumb's module link shares the same href).
     await expect(
-      page.locator("a[href='/system/job/rules']").first(),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/rules']`).first(),
     ).toBeVisible({ timeout: 15000 });
 
     // Longest-match wins: /system/job/rules is active, /system/job is NOT (it is a
     // prefix of the current route, not the route itself).
     await expect(
-      page.locator("a[href='/system/job/rules']"),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/rules']`),
     ).toHaveAttribute("data-active", "true");
-    await expect(page.locator("a[href='/system/job']")).not.toHaveAttribute(
-      "data-active",
-      "true",
-    );
+    await expect(
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job']`),
+    ).not.toHaveAttribute("data-active", "true");
 
     // Invariant: never more than one active nav link in the sidebar.
     const activeCount = await page

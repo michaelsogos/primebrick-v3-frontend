@@ -46,6 +46,35 @@ URL's first segment), not the module's `part_of`: a crm page at
 navigates to that app's declared `is_default` module home. Result:
 `{app} / {module-level segments…}`.
 
+### Module pages — the mechanical contract
+
+Module-owned pages never hand-build the middle segments: they call
+`moduleBreadcrumbSegments({ pathname, t })` from
+`$lib/breadcrumb/module-breadcrumb`, which returns exactly two segments
+from `shellNav.moduleNav` (the module's declared `endpoints.nav`):
+
+1. **module** — plain link labeled with the module's localized display
+   name (`service_registry.label_key`), pointing at the module's home
+   *within the route's root* (first nav item of that root's slice).
+2. **page** — dropdown labeled with the current page's nav label
+   (longest-prefix match), listing the module's sibling pages in the
+   same root with the current one marked.
+
+Detail/create pages append their own trailing segment, so the rendered
+shape is always `{app} / {module} / {page} [/ {detail}]`:
+
+```svelte
+<AppPageBreadcrumb
+  segments={[
+    ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (k) => $t(k) }),
+    { label: $t('system.entities.customer.new.title') } // create/detail only
+  ]}
+/>
+```
+
+Remote ESM pages receive the same function via `mountPage` host
+components (`c.moduleBreadcrumbSegments`).
+
 ### With a menu segment (sibling switcher)
 
 ```svelte

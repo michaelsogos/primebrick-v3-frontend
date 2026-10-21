@@ -434,6 +434,50 @@ test.describe("module ownership — observable contract", () => {
     }
   });
 
+  test("breadcrumb: {app} / {module} / {page} — dropdown on the page segment", async ({
+    page,
+  }) => {
+    const modules = await fetchModules(page);
+    const appDictRes = await page.request.get("/api/v1/system/translations/public/en-GB");
+    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.json() : {};
+
+    for (const m of pageModules(modules)) {
+      const nav = await fetchModuleNav(page, m.id);
+      const moduleLabel = await expectedModuleLabel(page, m);
+      const dictRes = await page.request.get(`/api/v1/system/translations/${m.id}/en-GB`);
+      const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
+
+      // One probe per root slice — the first declared nav link of each
+      // root the module serves (crm → /crm/customers + /system/crm/pipeline).
+      for (const root of moduleRoots(m)) {
+        const rootNav = nav.filter((l) => l.href && rootOf(l.href) === root);
+        const first = rootNav[0];
+        if (!first?.href) continue;
+        const rootLabel = appDict[`app.nav.roots.${root}`] ?? root;
+        const pageLabel = dict[first.label_key] ?? first.label_key;
+
+        await page.goto(first.href, { waitUntil: "domcontentloaded" });
+        const bc = page.locator('nav[aria-label="breadcrumb"]');
+        await expect(bc, `breadcrumb must render on ${first.href}`).toBeVisible({
+          timeout: 15000,
+        });
+
+        // Ordered labels — exactly {app} / {module} / {page}.
+        const texts = await bc.locator("li").allTextContents();
+        expect(
+          texts.map((x) => x.trim()).filter((x) => x && x !== "/"),
+          `on ${first.href} expected '${rootLabel} / ${moduleLabel} / ${pageLabel}'`
+        ).toEqual([rootLabel, moduleLabel, pageLabel]);
+
+        // The module segment is a LINK to the module home in this root —
+        // the page segment is the dropdown (a button, current page).
+        const items = bc.locator("li[data-slot='breadcrumb-item']");
+        await expect(items.nth(1).locator("a")).toHaveAttribute("href", first.href);
+        await expect(items.nth(2).locator("button")).toBeVisible();
+      }
+    }
+  });
+
   test("multi-root module: same module under different apps shows different pages", async ({
     page,
   }) => {

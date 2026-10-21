@@ -3,7 +3,7 @@
   import { t } from '$lib/i18n';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import { moduleMenuSegment } from '$lib/breadcrumb/module-breadcrumb';
+  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 </script>
 
 <AppPageScaffold>
@@ -11,7 +11,7 @@
     <div class="min-w-0 space-y-1">
       <AppPageBreadcrumb
         segments={[
-          moduleMenuSegment({
+          ...moduleBreadcrumbSegments({
             pathname: page.url.pathname,
             t: (key) => $t(key)
           })
