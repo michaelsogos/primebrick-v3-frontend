@@ -60,6 +60,15 @@ from `shellNav.moduleNav` (the module's declared `endpoints.nav`):
    (longest-prefix match), listing the module's sibling pages in the
    same root with the current one marked.
 
+Each segment renders an icon from the same source of truth as the app
+launcher — never declared per-page:
+
+| segment | icon source |
+|---|---|
+| `{app}` (root) | `APP_ROOT_ICON` (`$lib/shell/app-icons`) — shared with the launcher's apps column |
+| `{module}` | `service_registry.icon` (fallback `layout-grid`) |
+| `{page}` / menu items | the nav item's declared `icon` (fallback `circle`) |
+
 Detail/create pages append their own trailing segment, so the rendered
 shape is always `{app} / {module} / {page} [/ {detail}]`:
 
