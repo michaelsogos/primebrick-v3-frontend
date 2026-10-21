@@ -31,7 +31,7 @@
    * Finder-style app launcher — three columns Apps | Modules | Pages.
    *
    * SELECT vs ACTIVATE semantics (touch + keyboard parity):
-   *   selecting a row (tap / hover / arrow focus) PREVIEWS the next column;
+   *   selecting a row (tap / click / arrow focus) PREVIEWS the next column;
    *   the goto action lives on the trailing icon-only CTA, or on
    *   Enter/Space for keyboard users (a page row is a leaf — its whole row
    *   IS the goto).
@@ -137,7 +137,7 @@
     void loadModuleTranslations(moduleId, get(uiLang));
   }
 
-  /** Row SELECTED (hover/tap/focus) — preview only, never navigates. */
+  /** Row SELECTED (tap/click/focus) — descends into the column, never navigates. */
   function selectApp(root: string) {
     previewApp = root;
     previewModuleId = null;
@@ -190,9 +190,9 @@
   }
 
   /* ---- Keyboard navigation (roving tabindex across the 3 columns) ----
-   * Arrows move focus — focus PREVIEWS the next column (same handler as
-   * hover, so pointer and keyboard share one code path). Enter/Space
-   * activates the row's goto CTA (a page row is a leaf — it IS the goto). */
+   * Arrows move focus — focus PREVIEWS the next column (the keyboard
+   * equivalent of the row's tap/click descend). Enter/Space activates
+   * the row's goto CTA (a page row is a leaf — it IS the goto). */
 
   let panelEl = $state<HTMLDivElement | null>(null);
   // Roving tabindex per column — Tab always re-enters on the last-focused row.
@@ -334,7 +334,6 @@
                   menuListHoverNeutral,
                   currentRoot === root && menuListSelectedSurfaceDropdownClasses
                 )}
-                onmouseenter={() => selectApp(root)}
                 onfocus={() => {
                   trackFocus(0, i);
                   selectApp(root);
@@ -386,7 +385,6 @@
                   currentModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
                   m.enabled === false && 'pointer-events-none opacity-50'
                 )}
-                onmouseenter={() => selectModulePreview(m)}
                 onfocus={() => {
                   trackFocus(1, i);
                   selectModulePreview(m);

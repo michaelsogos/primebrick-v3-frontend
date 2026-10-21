@@ -359,13 +359,13 @@ test.describe("/system/job pages (module-owned)", () => {
     const trigger = page.locator("[data-testid='app-launcher-trigger']");
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
-    // App launcher → hover System (module column previews) → click Job
+    // App launcher → select System (module column descends) → click Job
     // Handler's goto CTA: nav[0].href (/system/job) is the module home.
     await trigger.click();
     await page
       .locator("[data-testid='app-launcher-apps'] [role='option'][data-app-root='system']")
       .first()
-      .hover();
+      .click();
     await page
       .locator("[data-testid='app-launcher-modules'] [role='option'][data-module-id='job']")
       .first()

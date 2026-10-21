@@ -105,12 +105,12 @@ async function openLauncher(page: Page) {
   await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 10000 });
 }
 
-/** Hover (not click) an app column item — previews its modules. */
-async function launcherHoverApp(page: Page, root: string) {
+/** Select an app column item (row click descends — the CTA navigates). */
+async function launcherSelectApp(page: Page, root: string) {
   await page
     .locator(`${LAUNCHER_APPS} ${LAUNCHER_OPTION}[data-app-root="${root}"]`)
     .first()
-    .hover();
+    .click();
 }
 
 /** Click a module row's goto CTA (row itself only previews — the CTA navigates). */
@@ -194,7 +194,7 @@ test.describe("module ownership — observable contract", () => {
         await openLauncher(page);
         // Hover (not click) the app → its modules column previews; then
         // click THIS module by name — click = module home under that app.
-        await launcherHoverApp(page, root);
+        await launcherSelectApp(page, root);
         await launcherClickModule(page, m.id);
 
         // Wait for the client-side navigation to a prefix-owned route
@@ -364,7 +364,7 @@ test.describe("module ownership — observable contract", () => {
     // 'system' lists the modules owning /system/* pages.
     const systemRootModules = modules.filter((m) => moduleRoots(m).includes("system"));
     await openLauncher(page);
-    await launcherHoverApp(page, "system");
+    await launcherSelectApp(page, "system");
     await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 10000 });
     const markers = await page
       .locator(`${LAUNCHER_MODULES} [aria-label^='Icon not found']`)
@@ -493,7 +493,7 @@ test.describe("module ownership — observable contract", () => {
         await page.goto("/system", { waitUntil: "domcontentloaded" });
         await openLauncher(page);
         // The module must appear in EVERY root's module column.
-        await launcherHoverApp(page, root);
+        await launcherSelectApp(page, root);
         await expect(
           page
             .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="${m.id}"]`)
@@ -502,12 +502,12 @@ test.describe("module ownership — observable contract", () => {
         ).toBeVisible();
 
         // Its Pages column under this root only lists this root's slice —
-        // hovering the module loads the column; a visible page option must
+        // selecting the module loads the column; a visible page option must
         // exist for every nav link declared under this root.
         await page
           .locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="${m.id}"]`)
           .first()
-          .hover();
+          .click();
         const rootNav = nav.filter((l) => l.href && rootOf(l.href) === root);
         await expect
           .poll(
