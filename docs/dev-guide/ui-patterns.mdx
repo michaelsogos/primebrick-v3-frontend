@@ -309,7 +309,8 @@ NOT user passwords, NOT subject to the password policy.
   `email-providers/+page.svelte` (API key).
 
 OTP/code inputs (6-digit verification codes) are NOT password fields —
-use plain `Input` with `inputmode="numeric" autocomplete="one-time-code"`.
+use `OtpInput` + `useOtpInput` (digits-only cells, paste, auto-submit;
+never a plain `Input`).
 
 ## In-card list pattern
 

@@ -27,8 +27,9 @@
   form (`login-username-input`) OR a redirect, submit the E2E test actor
   credentials (`E2E_ADMIN_USERNAME`/`E2E_ADMIN_PASSWORD` from
   `helpers/admin-login.ts`), then re-verify `/api/v1/auth/me`.
-  NEVER use the dev bootstrap `admin` user — tests authenticate as the seeded
-  E2E actors (`test-admin` / `test-user`) only.
+  NEVER use the dev bootstrap `admin` user — tests authenticate as the
+  ephemeral ad-hoc E2E actors minted per run by `global.setup.ts`
+  (`e2e_test_admin` / `e2e_test_user`, destroyed at teardown) only.
 - `beforeAll`: `deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME)` +
   `setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true)` via
   `helpers/db.ts` so the login cannot stall on an MFA challenge. Both helpers

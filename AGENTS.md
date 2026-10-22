@@ -83,6 +83,7 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
 5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
 6. **`docs/ai/`** — skills selection and suggested workflows.
+7. **`docs/ai/e2e-browser-session.md`** — E2E procedure (shared Edge CDP session, ephemeral test actors, auth/me gating, bounded waits). NEVER use the dev `admin` account in tests.
 
 ## List pages
 

@@ -100,21 +100,11 @@ manages the type dynamically based on toggle state.
 
 ## Exceptions
 
-OTP/code inputs (6-digit verification codes) are NOT password fields.
-Use plain `Input` with:
-
-```svelte
-<Input
-  type="text"
-  inputmode="numeric"
-  autocomplete="one-time-code"
-  maxlength={6}
-/>
-```
-
-These should NOT use `Password.PasswordInput` — they don't need a
-visibility toggle and the `inputmode="numeric"` triggers a numeric
-keyboard on mobile.
+OTP/code inputs (6-digit verification codes) are NOT password fields —
+use **`OtpInput` + `useOtpInput`** (see `.devin/rules/otp-input.md`).
+Never a raw `<Input>` for codes, and NOT `Password.PasswordInput` (no
+visibility toggle needed; the component handles digits-only, paste,
+auto-submit, and duplicate-completion dedup).
 
 ## Enforcement
 - AI agent MUST use `Password.PasswordInput` for all password/secret
@@ -126,5 +116,5 @@ keyboard on mobile.
   `passwordPolicy.regex` for Category 2 (data-entry) password fields.
 - AI agent MUST NOT add `PasswordChecklist` or policy `.refine()` for
   Category 1 (access) or Category 3 (secrets) fields.
-- AI agent MUST use plain `Input` with `inputmode="numeric"` for OTP
-  code inputs, NOT `Password.PasswordInput`.
+- AI agent MUST use `OtpInput` + `useOtpInput` for OTP code inputs —
+  NOT `Password.PasswordInput` and NOT a plain `Input`.
