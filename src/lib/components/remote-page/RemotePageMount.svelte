@@ -6,8 +6,10 @@
    * The host shell is NEVER torn down: every failure mode (service offline,
    * asset 404/400, integrity mismatch, mount throw) renders a localized
    * in-content error panel with a retry action, while header/sidebar/nav keep
-   * working. The remote chunk is self-contained (bundles its own svelte +
-   * `@primebrick/ui`) and receives a plain-values `ModulePageHost` ctx.
+   * working. The remote chunk emits bare imports for the closed vendor list
+   * (resolved via the document import map to `/vendor/*.js`) — the loader
+   * verifies the chunk's `vendor_requires` against `vendor-manifest.json`
+   * before importing. It receives a plain-values `ModulePageHost` ctx.
    */
   import { mount, onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -16,7 +18,11 @@
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { Skeleton } from '$lib/components/ui/skeleton';
+  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import RemotePageErrorPanel from './RemotePageErrorPanel.svelte';
+  import PageSectionSlot from './PageSectionSlot.svelte';
+  import { buildHostComponents } from './host-bridges';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import type { EntityMeta, ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
   import {
@@ -29,7 +35,9 @@
     parseWsServiceCode,
     resolveMountable,
     type RemoteErrorKind,
+    type RemoteModule,
   } from './remote-loader';
+  import { layoutGridStyle } from './section-layout';
 
   let {
     decl,
@@ -61,13 +69,29 @@
   let error_detail = $state<string | null>(null);
   let mountEl = $state<HTMLDivElement>();
   let mounted: unknown = null;
+  // Section mode state — the loaded chunk + host ctx shared by every cell.
+  let remote_mod = $state<RemoteModule | null>(null);
+  let page_ctx = $state<ModulePageHost | null>(null);
   // Stale-load guard — an older in-flight load must never touch state once a
   // newer attempt (retry / url change / destroy) has started.
   let generation = 0;
 
+  // Host-side step-up MFA driver — the `mfaStepUp` ctx bridge delegates here;
+  // the dialog lives in this component's own markup (host runtime).
+  const stepUp = useMfaStepUp();
+
   const service_code = $derived(
     service ?? (decl.component_url ? parseWsServiceCode(decl.component_url) : undefined),
   );
+
+  /**
+   * Section mode — `page_props.layout.sections` composes the page from
+   * mountable blocks instead of a single `mountPage`. A sectioned decl may
+   * carry NO `component_url` at all: all-`host:` pages render from the
+   * registry alone (descriptor page — zero remote bytes).
+   */
+  const layout = $derived(decl.page_props?.layout);
+  const is_sectioned = $derived((layout?.sections.length ?? 0) > 0);
 
   function buildCtx(): ModulePageHost {
     const base = service_code ? `/ws/${service_code}` : '';
@@ -87,7 +111,9 @@
       notify: (input) => {
         pushNotification(input);
       },
-      ...(components ? { components } : {}),
+      // Built-in bridges (mfaStepUp/openSheet) merged into the caller record —
+      // the same object keeps the `components.remote` back-channel intact.
+      components: buildHostComponents(stepUp, components),
       mount_host: mountHostComponent,
     };
   }
@@ -108,7 +134,9 @@
       await disposeMounted(prev).catch(() => undefined);
     }
     mountEl?.replaceChildren();
-    if (!url) {
+    remote_mod = null;
+    page_ctx = null;
+    if (!url && !is_sectioned) {
       setError('contract', null, 'route declaration has no component_url');
       return;
     }
@@ -118,10 +146,29 @@
     error_detail = null;
 
     // CSS first — stylesheet and JS fetch in parallel, page never unstyled.
-    ensureStylesheet(css_url ?? deriveStylesheetUrl(url));
+    if (url) ensureStylesheet(css_url ?? deriveStylesheetUrl(url));
 
     try {
-      const { mod, dispose_source } = await loader(url, decl.integrity);
+      if (is_sectioned) {
+        // Descriptor page — no chunk to load; remote:* cells self-classify.
+        if (!url) {
+          page_ctx = buildCtx();
+          phase = 'mounted';
+          return;
+        }
+        const { mod, dispose_source } = await loader(url, decl.integrity);
+        if (gen !== generation) {
+          dispose_source?.();
+          return;
+        }
+        if (components) components.remote = mod;
+        remote_mod = mod;
+        page_ctx = buildCtx();
+        dispose_source?.();
+        phase = 'mounted';
+        return;
+      }
+      const { mod, dispose_source } = await loader(url!, decl.integrity);
       if (gen !== generation) {
         dispose_source?.();
         return;
@@ -219,11 +266,35 @@
   {/if}
   <!-- Always in the DOM so mountEl binds before the first import() resolves.
        Hidden (not destroyed) while loading/error overlays are up. -->
-  <div
-    bind:this={mountEl}
-    class="min-h-0 flex-1 flex-col"
-    class:flex={phase === 'mounted'}
-    class:hidden={phase !== 'mounted'}
-    data-testid="remote-page-content"
-  ></div>
+  {#if !is_sectioned}
+    <div
+      bind:this={mountEl}
+      class="min-h-0 flex-1 flex-col"
+      class:flex={phase === 'mounted'}
+      class:hidden={phase !== 'mounted'}
+      data-testid="remote-page-content"
+    ></div>
+  {/if}
+  {#if is_sectioned && phase === 'mounted' && page_ctx && layout}
+    <!-- Section grid — #key on the chunk so a re-load remounts every cell. -->
+    {#key remote_mod}
+      <div
+        class="min-h-0 min-w-0 flex-1"
+        style={layoutGridStyle(layout)}
+        data-testid="remote-page-sections"
+      >
+        {#each layout.sections as s (s.id)}
+          <PageSectionSlot section={s} mod={remote_mod} ctx={page_ctx} />
+        {/each}
+      </div>
+    {/key}
+  {/if}
+  <!-- Step-up MFA dialog — host-rendered; driven by the ctx `mfaStepUp`
+       bridge (remote ops never see the dialog, only the final Response). -->
+  <MfaStepUpDialog
+    bind:open={stepUp.dialogOpen}
+    action={stepUp.pendingAction}
+    target_resource={stepUp.pendingTargetResource}
+    onauthorized={stepUp.handleAuthorized}
+  />
 </div>

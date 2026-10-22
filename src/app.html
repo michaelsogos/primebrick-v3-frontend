@@ -21,6 +21,26 @@
 				}
 			})();
 		</script>
+		<!--
+			Vendor plane — closed specifier list shared by ALL remote module
+			chunks (esm-mount pages). Remote chunks import bare specifiers for
+			by-design libraries; they resolve here to the host-published,
+			versioned vendor bundles. Keep in sync with
+			vendor/vite.vendor.config.ts (VENDOR_ENTRIES) and
+			static/vendor/vendor-manifest.json.
+		-->
+		<script type="importmap">
+			{
+				"imports": {
+					"svelte": "/vendor/svelte.js",
+					"svelte/internal/client": "/vendor/svelte.js",
+					"svelte/internal/disclose-version": "/vendor/svelte.js",
+					"@primebrick/core": "/vendor/primebrick-core.js",
+					"@primebrick/ui": "/vendor/primebrick-ui.js",
+					"@primebrick/ui/transformers": "/vendor/transformers.js"
+				}
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

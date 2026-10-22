@@ -445,7 +445,7 @@ export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: Type
   return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
 }
 
-// === AI models (AI-owned ai_models entity — WebLLM model catalog, via /ws/ai proxy) ===
+// === AI models (AI-owned ai_models entity — Transformers.js model catalog, via /ws/ai proxy) ===
 
 export async function fetchAiCerebellum(filters?: {
   assistant_key?: string;

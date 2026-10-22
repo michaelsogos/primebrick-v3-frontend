@@ -227,8 +227,8 @@ export type ConfigEntry = {
 };
 
 /**
- * AI model entity — mirrors the BE `ai_models` table (WebLLM model catalog).
- * Legacy per-case test shape (WebLLM `regex_test_score` entries).
+ * AI model entity — mirrors the BE `ai_models` table (Transformers.js/ONNX
+ * model catalog). Legacy per-case test shape (`regex_test_score` entries).
  */
 export type TestCaseScore = {
   runs: number[];
@@ -325,8 +325,8 @@ export type AiCerebellum = {
   uuid: string;
   assistant_key: string;
   model_id: string;
-  /** Model variant dtype (e.g. 'q4f16'); null/undefined = WebLLM variant.
-   *  Runtime variant key = `${model_id}#${dtype}` (modelVariantKey()). */
+  /** Model variant dtype (e.g. 'q4f16'); null/undefined = unquantized/default
+   *  variant. Runtime variant key = `${model_id}#${dtype}` (modelVariantKey()). */
   dtype?: string | null;
   /** Tuning name shown in the chat footer dropdown (e.g. 'default', 'precise'). */
   name: string;

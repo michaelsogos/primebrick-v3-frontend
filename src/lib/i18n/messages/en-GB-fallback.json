@@ -494,5 +494,6 @@
   "app.remote_page.error.integrity": "The downloaded page did not pass its integrity check and was not loaded. This may indicate a corrupted or tampered asset.",
   "app.remote_page.error.import": "The page module was downloaded but could not be loaded by the browser.",
   "app.remote_page.error.contract": "The page module is not compatible with this application version.",
+  "app.remote_page.error.vendor": "The page module requires different library versions than this application provides. The module needs to be rebuilt.",
   "app.remote_page.error.mount": "The page failed while rendering."
 }

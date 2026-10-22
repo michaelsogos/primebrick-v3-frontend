@@ -5,7 +5,8 @@
    * Extends TextInput with two inner CTAs on the right side:
    * 1. Flags CTA — opens a right-panel sheet to toggle regex flags (g, i, m)
    * 2. Brain CTA — opens a right-panel AI chat that converts natural language
-   *    descriptions to regex patterns using WebLLM (Qwen2.5-0.5B-Instruct).
+   *    descriptions to regex patterns via Transformers.js (ONNX Runtime
+   *    WebGPU, model selected from the ai_models registry).
    *
    * The "Smart" prefix establishes the convention for AI-powered components.
    *

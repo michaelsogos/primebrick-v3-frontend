@@ -18,7 +18,7 @@ import {
   InterruptableStoppingCriteria,
   pipeline,
   DynamicCache,
-} from '@huggingface/transformers';
+} from '@primebrick/ui/transformers';
 import { resumableFetch, setByteReporter } from './resumable-fetch';
 
 // ─── TEMP: WebGPU kernel profiling instrumentation ───────────────────────

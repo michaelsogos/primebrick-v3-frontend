@@ -7,10 +7,11 @@
     "node": "24"
   },
   "scripts": {
-    "dev": "vite dev",
+    "dev": "pnpm vendor:build && vite dev",
+    "vendor:build": "vite build --config vendor/vite.vendor.config.ts",
     "version:auto": "node scripts/version-sync.mjs",
     "prebuild": "node scripts/version-sync.mjs && pnpm extract-docs",
-    "build": "vite build",
+    "build": "pnpm vendor:build && vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo .",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
@@ -84,7 +85,7 @@
     "@codemirror/view": "6.43.15",
     "@eslint-community/regexpp": "4.12.2",
     "@fontsource-variable/inter": "5.3.0",
-    "@huggingface/transformers": "4.3.1",
+
     "@lezer/highlight": "1.2.5",
     "@microsoft/fetch-event-source": "2.0.1",
     "@primebrick/ui": "link:../primebrick-v3-ui",

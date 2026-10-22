@@ -13,24 +13,38 @@
  * | `network`   | fetch threw — service unreachable/offline            |
  * | `http`      | fetch answered non-2xx — 404/400/5xx on the asset    |
  * | `integrity` | declared sha256 did not match the fetched bytes      |
+ * | `vendor`    | chunk's `vendor_requires` incompatible with host     |
  * | `import`    | bytes served but `import()` rejected (syntax, MIME)  |
  * | `contract`  | module exposes neither `mountPage` nor a default     |
  * | `mount`     | `mountPage()`/default mount threw (component-owned)  |
  */
 import { mount, unmount, type Component } from 'svelte';
-import type { HostMountHandle, MountPageFn } from '@primebrick/ui';
+import {
+	diffVendorRequirements,
+	type HostMountHandle,
+	type MountPageFn,
+	type RemoteDepsManifest,
+	type VendorManifest,
+	type VendorMismatch,
+} from '@primebrick/ui';
 import HostMountShell from './HostMountShell.svelte';
 
 /** The `esm-mount` chunk shape: preferred self-mount export, default fallback. */
 export type RemoteModule = {
 	mountPage?: MountPageFn;
 	default?: unknown;
+	/**
+	 * Named section mounts — `layout.sections` `remote:<export>` sources
+	 * resolve the chunk export by this name (`mountModels`, `cell_mount`, …).
+	 */
+	[export_name: string]: unknown;
 };
 
 export type RemoteErrorKind =
 	| 'network'
 	| 'http'
 	| 'integrity'
+	| 'vendor'
 	| 'import'
 	| 'contract'
 	| 'mount';
@@ -59,7 +73,12 @@ export type RemoteLoadResult = {
 export type RemoteLoadDeps = {
 	fetch_fn?: typeof fetch;
 	import_fn?: (url: string) => Promise<unknown>;
+	/** Host vendor manifest URL — defaults to the app.html-published path. */
+	vendor_manifest_url?: string;
 };
+
+/** Where the host publishes its vendor version manifest (see `app.html`). */
+export const VENDOR_MANIFEST_URL = '/vendor/vendor-manifest.json';
 
 function errorMessage(e: unknown): string {
 	return e instanceof Error ? e.message : String(e);
@@ -91,18 +110,99 @@ export function normalizeIntegrity(integrity: string): string | null {
 }
 
 /**
+ * Predictable sibling convention — `pages/jobs-page.js` →
+ * `pages/jobs-page.deps.json`. The chunk build emits it next to the chunk
+ * (`vendor_requires` handshake); a missing manifest means a self-contained
+ * chunk with no vendor requirements (404 is legal, not an error).
+ */
+export function deriveDepsManifestUrl(component_url: string): string {
+	return component_url.replace(/\.m?js(\?.*)?$/, '.deps.json$1');
+}
+
+function mismatchDetail(mismatches: VendorMismatch[]): string {
+	return mismatches
+		.map((m) =>
+			m.kind === 'missing'
+				? `${m.specifier}@${m.required} (not vendored by host)`
+				: `${m.specifier}: requires ${m.required}, host provides ${m.provided}`,
+		)
+		.join('; ');
+}
+
+/**
+ * Vendor handshake — verify the chunk's declared `vendor_requires` against
+ * the host `vendor-manifest.json` BEFORE importing. Exact-match policy: a
+ * chunk compiled against different vendor versions must be rebuilt, not
+ * imported — the alternative is an opaque `import()` TypeError or, worse, a
+ * split-instance runtime.
+ */
+async function verifyVendorDeps(
+	component_url: string,
+	fetchFn: typeof fetch,
+	manifest_url: string,
+): Promise<void> {
+	let res: Response;
+	try {
+		res = await fetchFn(deriveDepsManifestUrl(component_url));
+	} catch (e) {
+		throw new RemoteLoadError('network', errorMessage(e));
+	}
+	if (res.status === 404) return; // self-contained chunk — nothing declared
+	if (!res.ok) {
+		throw new RemoteLoadError(
+			'http',
+			`${deriveDepsManifestUrl(component_url)} answered HTTP ${res.status}`,
+			res.status,
+		);
+	}
+	let deps_manifest: RemoteDepsManifest;
+	try {
+		deps_manifest = (await res.json()) as RemoteDepsManifest;
+	} catch {
+		throw new RemoteLoadError('vendor', 'unreadable deps manifest (invalid JSON)');
+	}
+	const requires = deps_manifest.vendor_requires ?? {};
+	if (Object.keys(requires).length === 0) return;
+
+	let host_res: Response;
+	try {
+		host_res = await fetchFn(manifest_url);
+	} catch (e) {
+		throw new RemoteLoadError('network', errorMessage(e));
+	}
+	if (!host_res.ok) {
+		throw new RemoteLoadError(
+			'http',
+			`${manifest_url} answered HTTP ${host_res.status}`,
+			host_res.status,
+		);
+	}
+	let host_manifest: VendorManifest;
+	try {
+		host_manifest = (await host_res.json()) as VendorManifest;
+	} catch {
+		throw new RemoteLoadError('vendor', 'unreadable host vendor manifest (invalid JSON)');
+	}
+	const mismatches = diffVendorRequirements(requires, host_manifest);
+	if (mismatches.length > 0) {
+		throw new RemoteLoadError(
+			'vendor',
+			`vendor mismatch — rebuild the module chunk: ${mismatchDetail(mismatches)}`,
+		);
+	}
+}
+
+/**
  * Fetch + import a remote ESM page module.
  *
- * The probe `fetch` always runs first — `import()` failures are opaque
- * TypeErrors and cannot distinguish 404 from offline; the fetch status gives
- * real HTTP classification.
- *
- * - `integrity` declared → the fetched bytes are hashed and verified; the
- *   import then happens from a `blob:` URL over the *verified* bytes.
- *   NOTE: blob-URL imports cannot resolve relative sub-chunks — a module that
- *   wants integrity must ship a single-file chunk (e.g. `inlineDynamicImports`).
- * - no `integrity` → native `import(component_url)` so relative dynamic
- *   sub-chunks resolve against the real module URL.
+ * Pipeline order — each step can short-circuit before the next runs:
+ * 1. vendor handshake: `<chunk>.deps.json` `vendor_requires` vs host manifest
+ * 2. probe `fetch`: real HTTP classification (import() failures are opaque)
+ * 3. integrity: sha256 verify → `blob:` import over the verified bytes
+ * 4. native `import()` — bare specifiers resolve via the document import map
+ *    (blob-URL imports cannot resolve relative sub-chunks — a module that
+ *    wants integrity must ship a single-file chunk, e.g. `inlineDynamicImports`;
+ *    without integrity relative sub-chunks resolve against the real URL).
  */
 export async function loadRemoteModule(
 	component_url: string,
@@ -112,6 +212,8 @@ export async function loadRemoteModule(
 	const fetchFn = deps.fetch_fn ?? fetch;
 	const importFn =
 		deps.import_fn ?? ((url: string) => import(/* @vite-ignore */ url) as Promise<unknown>);
+
+	await verifyVendorDeps(component_url, fetchFn, deps.vendor_manifest_url ?? VENDOR_MANIFEST_URL);
 
 	let res: Response;
 	try {

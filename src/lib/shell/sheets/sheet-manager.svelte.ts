@@ -1,26 +1,36 @@
 export type SheetSide = 'left' | 'right';
 
-export type SheetPanelId =
-  | 'shell.errors'
-  | 'shell.versions'
-  | 'shell.aiChat'
-  | 'shell.aiGuide'
-  | 'entity.searchIn'
-  | 'entity.columns'
-  | 'entity.filters'
-  | 'entity.versionHistory'
-  | 'config.currencySelect'
-  | 'config.protocolSelect'
-  | 'config.phonePrefixSelect'
-  | 'config.regexFlags'
-  | 'config.regexAiChat'
-  | 'config.jsonAiChat'
-  | 'config.badgeValueEdit'
-  | 'shell.aiModelTestReport'
-  | 'shell.aiCerebellum'
-  | 'shell.aiModelImport'
-  | 'shell.aiModelCache'
-  | 'shell.docs';
+/**
+ * Runtime list of every registered panel key — the type below derives from
+ * it (single source). Remote pages reach this registry only through
+ * `ctx.components.openSheet`, which validates `panelKey` against this list:
+ * an unknown key is rejected with a notification instead of opening an
+ * empty sheet.
+ */
+export const SHEET_PANEL_IDS = [
+  'shell.errors',
+  'shell.versions',
+  'shell.aiChat',
+  'shell.aiGuide',
+  'entity.searchIn',
+  'entity.columns',
+  'entity.filters',
+  'entity.versionHistory',
+  'config.currencySelect',
+  'config.protocolSelect',
+  'config.phonePrefixSelect',
+  'config.regexFlags',
+  'config.regexAiChat',
+  'config.jsonAiChat',
+  'config.badgeValueEdit',
+  'shell.aiModelTestReport',
+  'shell.aiCerebellum',
+  'shell.aiModelImport',
+  'shell.aiModelCache',
+  'shell.docs',
+] as const;
+
+export type SheetPanelId = (typeof SHEET_PANEL_IDS)[number];
 
 export type SheetOpenOptions = {
   side?: SheetSide;
