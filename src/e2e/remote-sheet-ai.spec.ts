@@ -84,11 +84,21 @@ async function aiEntityRows(page: import('@playwright/test').Page, entity: strin
 }
 
 test.beforeEach(async ({ page }) => {
+  // The remote-page warm prefetch floods the performance resource buffer
+  // (default 250 entries, oldest evicted first) — the sheet-manager module
+  // URL fetched at layout mount would be evicted before the helper polls.
+  await page.addInitScript(() => performance.setResourceTimingBufferSize(8192));
   await loginAsTestAdmin(page);
   await page.goto('/system/ai', { waitUntil: 'domcontentloaded' });
   await page.getByTestId('sidebar-profile-menu-trigger').waitFor({ state: 'visible', timeout: 15_000 });
   // Let the app settle so every shell module URL is in the resource buffer.
   await page.waitForTimeout(2000);
+});
+
+test('remote page mounts ai-pages.js content on /system/ai', async ({ page }) => {
+  // The remote page chunk loads through the same module-assets route as the
+  // sheets — a degraded service 502/503s it. Assert the content root mounts.
+  await expect(page.getByTestId('remote-page-content')).toBeVisible({ timeout: 30_000 });
 });
 
 test('ai.modelCache remote sheet mounts ModelCacheSection', async ({ page }) => {
