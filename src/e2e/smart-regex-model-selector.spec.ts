@@ -32,7 +32,7 @@ import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
 const PAGE_URL = "/system/settings/configurations/create";
 
-const test = base.extend<object, { pwContext: BrowserContext }>({
+const test = base.extend<object, { pwContext: BrowserContext; suitePage: Page }>({
   // eslint-disable-next-line no-empty-pattern
   pwContext: [
     async ({}, use) => {
@@ -45,8 +45,18 @@ const test = base.extend<object, { pwContext: BrowserContext }>({
     },
     { scope: "worker" },
   ],
-  page: async ({ pwContext }, use) => {
-    await use(await focusedPage(pwContext));
+  // Worker-scoped page: the suite's design opens the panel + loads the model
+  // ONCE (suiteReady flag) and both tests drive the same ready tab. A
+  // per-test page would hand test 2 a blank tab while suiteReady skips the
+  // setup → it waits forever on panel rows that never exist.
+  suitePage: [
+    async ({ pwContext }, use) => {
+      await use(await focusedPage(pwContext));
+    },
+    { scope: "worker" },
+  ],
+  page: async ({ suitePage }, use) => {
+    await use(suitePage);
   },
 });
 
