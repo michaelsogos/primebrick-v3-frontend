@@ -27,10 +27,10 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as ColorPicker from '$lib/components/ui/color-picker';
   import { badgeClassesFromToken } from '$lib/colors/badge';
-  import Eraser from '@lucide/svelte/icons/eraser';
-  import Ban from '@lucide/svelte/icons/ban';
-  import Pencil from '@lucide/svelte/icons/pencil';
-  import Plus from '@lucide/svelte/icons/plus';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
+  import { Ban } from '@primebrick/ui/vendor/lucide';
+  import { Pencil } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
 
   let {

@@ -30,18 +30,18 @@
   import { renderDoc, hydrateMermaid, resolveDocTarget, type DocsTocItem } from '$lib/shell/docs/docs-render';
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';
   import { cn } from '$lib/utils';
-  import BookOpen from '@lucide/svelte/icons/book-open';
-  import LibraryBig from '@lucide/svelte/icons/library-big';
-  import ChevronUp from '@lucide/svelte/icons/chevron-up';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-  import Maximize2 from '@lucide/svelte/icons/maximize-2';
-  import Minimize2 from '@lucide/svelte/icons/minimize-2';
-  import Search from '@lucide/svelte/icons/search';
-  import ExternalLink from '@lucide/svelte/icons/external-link';
-  import FileText from '@lucide/svelte/icons/file-text';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-  import XIcon from '@lucide/svelte/icons/x';
+  import { BookOpen } from '@primebrick/ui/vendor/lucide';
+  import { LibraryBig } from '@primebrick/ui/vendor/lucide';
+  import { ChevronUp } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
+  import { Maximize2 } from '@primebrick/ui/vendor/lucide';
+  import { Minimize2 } from '@primebrick/ui/vendor/lucide';
+  import { Search } from '@primebrick/ui/vendor/lucide';
+  import { ExternalLink } from '@primebrick/ui/vendor/lucide';
+  import { FileText } from '@primebrick/ui/vendor/lucide';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 
   type DocRef = { repo: string; path: string };
 

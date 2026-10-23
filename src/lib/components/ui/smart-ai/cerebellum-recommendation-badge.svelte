@@ -14,9 +14,9 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
 
   import { t } from '$lib/i18n';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
-  import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
+  import { ThumbsUp } from '@primebrick/ui/vendor/lucide';
+  import { ThumbsDown } from '@primebrick/ui/vendor/lucide';
 
   let {
     recommendation,

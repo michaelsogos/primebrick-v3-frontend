@@ -13,13 +13,13 @@
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import SheetPanelLayout from "$lib/shell/sheets/SheetPanelLayout.svelte";
   import SheetHeaderAction from "$lib/shell/sheets/SheetHeaderAction.svelte";
-  import XIcon from '@lucide/svelte/icons/x';
-  import Funnel from '@lucide/svelte/icons/funnel';
-  import Eraser from '@lucide/svelte/icons/eraser'
-  import ChevronDown from '@lucide/svelte/icons/chevron-down'
-  import Play from '@lucide/svelte/icons/play'
-  import Pencil from '@lucide/svelte/icons/pencil'
-  import X from '@lucide/svelte/icons/x'
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
+  import { Funnel } from '@primebrick/ui/vendor/lucide';
+  import { Eraser } from '@primebrick/ui/vendor/lucide'
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide'
+  import { Play } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
+  import { X } from '@primebrick/ui/vendor/lucide'
 import Switch from "$lib/components/ui/switch/switch.svelte";
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";

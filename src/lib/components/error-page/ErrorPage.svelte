@@ -7,8 +7,8 @@
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { resolveSafeHome } from '$lib/navigation/safe-home';
   import { httpReasonPhrase } from '$lib/errors/http-status';
-  import House from '@lucide/svelte/icons/house';
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import { House } from '@primebrick/ui/vendor/lucide';
+  import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
 
   let {
     status,

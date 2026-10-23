@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import CircleAlert from '@lucide/svelte/icons/circle-alert'
-  import Info from '@lucide/svelte/icons/info'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import { CircleAlert } from '@primebrick/ui/vendor/lucide'
+  import { Info } from '@primebrick/ui/vendor/lucide'
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { CircleCheck } from '@primebrick/ui/vendor/lucide';
 
 	type EventColor = "critical" | "error" | "warning" | "info" | "success";
 

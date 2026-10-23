@@ -16,7 +16,7 @@
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
-  import { Trash2, RefreshCw, HardDrive, TriangleAlert, PanelRightOpen } from '@lucide/svelte';
+  import { Trash2, RefreshCw, HardDrive, TriangleAlert, PanelRightOpen } from '@primebrick/ui/vendor/lucide';
   import { Button } from '$lib/components/ui/button';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { onMount } from 'svelte';

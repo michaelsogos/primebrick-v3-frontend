@@ -13,7 +13,7 @@
   import { Spinner } from '$lib/components/ui/spinner';
   import * as Password from '$lib/components/ui/password';
   import { t } from '$lib/i18n';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import PasskeyButton from './PasskeyButton.svelte';
   import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';

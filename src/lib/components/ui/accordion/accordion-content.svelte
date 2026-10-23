@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Accordion as AccordionPrimitive } from "bits-ui";
+	import { Accordion as AccordionPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn, type WithoutChild } from "$lib/utils.js";
 
 	let {

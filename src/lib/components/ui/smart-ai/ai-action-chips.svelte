@@ -11,7 +11,7 @@
    * the parser).
    */
   import { t } from '$lib/i18n';
-  import { Navigation, Wrench, Loader2, CircleCheck, CircleX } from '@lucide/svelte';
+  import { Navigation, Wrench, Loader2, CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
   import {
     registerBuiltinClientTools,
     invokeClientTool,

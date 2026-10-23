@@ -28,7 +28,7 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
 
   let {
     models,

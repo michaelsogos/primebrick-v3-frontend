@@ -10,7 +10,7 @@
    * from the model-cache popover in AI chat panels.
    */
   import { t } from '$lib/i18n';
-  import { HardDrive } from '@lucide/svelte';
+  import { HardDrive } from '@primebrick/ui/vendor/lucide';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
 

@@ -3,9 +3,9 @@
   import { cn } from '$lib/utils.js';
   import { Button } from '$lib/components/ui/button';
   import { ButtonGroup } from '$lib/components/ui/button-group';
-  import ListCheck from '@lucide/svelte/icons/list-check'
-  import ListX from '@lucide/svelte/icons/list-x'
-  import TextAlignJustify from '@lucide/svelte/icons/text-align-justify';
+  import { ListCheck } from '@primebrick/ui/vendor/lucide'
+  import { ListX } from '@primebrick/ui/vendor/lucide'
+  import { TextAlignJustify } from '@primebrick/ui/vendor/lucide';
 
   let {
     deletionFilterMode,

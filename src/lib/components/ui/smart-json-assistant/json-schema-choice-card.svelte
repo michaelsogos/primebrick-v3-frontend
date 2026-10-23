@@ -25,13 +25,13 @@
   import type { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
   import { topicsToChoices, valueOptionsToChoices, errorLabelRuleFromPath } from './json-schema-explorer';
   import type { JsonAssistantChoice, SchemaTopic } from './json-schema.types';
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import Sparkles from '@lucide/svelte/icons/sparkles';
-  import Check from '@lucide/svelte/icons/check';
-  import X from '@lucide/svelte/icons/x';
-  import CircleAlert from '@lucide/svelte/icons/circle-alert';
-  import CircleCheck from '@lucide/svelte/icons/circle-check';
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { Sparkles } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { CircleAlert } from '@primebrick/ui/vendor/lucide';
+  import { CircleCheck } from '@primebrick/ui/vendor/lucide';
 
   type AiHandle = ReturnType<typeof useAiAssistant<JsonAssistantChoice>> & {
     /** Bypasses the key_picker free-text interception — programmatic prompts

@@ -17,9 +17,9 @@
   import * as Sortable from '$lib/components/ui/sortable';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Pencil from '@lucide/svelte/icons/pencil';
-  import Plus from '@lucide/svelte/icons/plus';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Pencil } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
 
   let {

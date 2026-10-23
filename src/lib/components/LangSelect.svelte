@@ -9,7 +9,7 @@
     type UiLang,
     uiLangTopBarTwoLetterSuffix
   } from '$lib/i18n/languages';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
   const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
     { code: 'en-GB', label: 'British English', flagCode: 'gb' },

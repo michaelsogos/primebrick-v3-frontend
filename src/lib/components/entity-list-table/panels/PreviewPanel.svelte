@@ -8,16 +8,16 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
-  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import Pencil from '@lucide/svelte/icons/pencil'
-  import PencilOff from '@lucide/svelte/icons/pencil-off'
-  import MoreVertical from '@lucide/svelte/icons/more-vertical'
-  import Copy from '@lucide/svelte/icons/copy'
-  import FileClock from '@lucide/svelte/icons/file-clock'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line'
-  import X from '@lucide/svelte/icons/x';
+  import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
+  import { PencilOff } from '@primebrick/ui/vendor/lucide'
+  import { MoreVertical } from '@primebrick/ui/vendor/lucide'
+  import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { FileClock } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide'
+  import { X } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '$lib/i18n/date-format';

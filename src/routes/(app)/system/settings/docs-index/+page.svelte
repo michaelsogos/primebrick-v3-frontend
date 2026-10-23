@@ -24,13 +24,13 @@
   import { Badge } from '$lib/components/ui/badge';
   import { pushNotification } from '$lib/errors/app-errors';
   import { fetchDocsIndexStatus, reindexDocsPacks, type DocsIndexStatus } from '$lib/api';
-  import Hourglass from '@lucide/svelte/icons/hourglass';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-  import BookSearch from '@lucide/svelte/icons/book-search';
-  import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
-  import XCircle from '@lucide/svelte/icons/x-circle';
-  import Database from '@lucide/svelte/icons/database';
+  import { Hourglass } from '@primebrick/ui/vendor/lucide';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
+  import { BookSearch } from '@primebrick/ui/vendor/lucide';
+  import { CheckCircle2 } from '@primebrick/ui/vendor/lucide';
+  import { XCircle } from '@primebrick/ui/vendor/lucide';
+  import { Database } from '@primebrick/ui/vendor/lucide';
   import { cn } from '$lib/utils';
 
   let status = $state<DocsIndexStatus | null>(null);

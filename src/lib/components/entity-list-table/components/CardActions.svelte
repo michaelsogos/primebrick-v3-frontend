@@ -5,13 +5,13 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { cn } from '$lib/utils.js';
-  import MoreVertical from '@lucide/svelte/icons/more-vertical'
-  import Pencil from '@lucide/svelte/icons/pencil'
-  import Copy from '@lucide/svelte/icons/copy'
-  import FileClock from '@lucide/svelte/icons/file-clock'
-  import Eye from '@lucide/svelte/icons/eye'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
+  import { MoreVertical } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
+  import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { FileClock } from '@primebrick/ui/vendor/lucide'
+  import { Eye } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
   let {

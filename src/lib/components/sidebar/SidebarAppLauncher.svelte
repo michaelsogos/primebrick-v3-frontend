@@ -17,9 +17,9 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+  import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide';
+  import { ArrowUpRight } from '@primebrick/ui/vendor/lucide';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
 

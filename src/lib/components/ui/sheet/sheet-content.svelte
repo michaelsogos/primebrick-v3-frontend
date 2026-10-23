@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { tv, type VariantProps } from "tailwind-variants";
+	import { tv, type VariantProps } from '@primebrick/ui/vendor/tailwind-variants';
 	export const sheetVariants = tv({
 		base: "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-100 gap-4 p-6 transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
 		variants: {
@@ -19,8 +19,8 @@
 </script>
 
 <script lang="ts">
-	import { Dialog as SheetPrimitive, type WithoutChildrenOrChild } from "bits-ui";
-	import X from '@lucide/svelte/icons/x';
+	import { Dialog as SheetPrimitive, type WithoutChildrenOrChild } from '@primebrick/ui/vendor/bits-ui';
+	import { X } from '@primebrick/ui/vendor/lucide';
 	import type { Snippet } from "svelte";
 	import SheetOverlay from "./sheet-overlay.svelte";
 	import { cn } from "$lib/utils.js";

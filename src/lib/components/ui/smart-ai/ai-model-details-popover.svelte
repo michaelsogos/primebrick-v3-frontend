@@ -14,15 +14,15 @@
   import type { AiCerebellum, AiModel } from '$lib/api-types';
   import type { EffectiveAiParams } from '$lib/ai/ai-cerebellum';
   import { t } from '$lib/i18n';
-  import Microchip from '@lucide/svelte/icons/microchip';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import Cpu from '@lucide/svelte/icons/cpu';
-  import Thermometer from '@lucide/svelte/icons/thermometer';
-  import Gauge from '@lucide/svelte/icons/gauge';
-  import Brackets from '@lucide/svelte/icons/brackets';
-  import Gavel from '@lucide/svelte/icons/gavel';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import Database from '@lucide/svelte/icons/database';
+  import { Microchip } from '@primebrick/ui/vendor/lucide';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { Cpu } from '@primebrick/ui/vendor/lucide';
+  import { Thermometer } from '@primebrick/ui/vendor/lucide';
+  import { Gauge } from '@primebrick/ui/vendor/lucide';
+  import { Brackets } from '@primebrick/ui/vendor/lucide';
+  import { Gavel } from '@primebrick/ui/vendor/lucide';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
+  import { Database } from '@primebrick/ui/vendor/lucide';
 
   let {
     model,

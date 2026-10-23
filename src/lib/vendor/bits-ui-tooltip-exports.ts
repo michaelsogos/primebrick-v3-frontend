@@ -1,5 +1,5 @@
 /**
- * Re-export Bits UI tooltip primitives without `import { Tooltip } from "bits-ui"`.
+ * Re-export Bits UI tooltip primitives without `import { Tooltip } from '@primebrick/ui/vendor/bits-ui'`.
  * Vite 8 SSR can evaluate that namespace as undefined in barrels, breaking `Tooltip.Root`.
  */
 export {

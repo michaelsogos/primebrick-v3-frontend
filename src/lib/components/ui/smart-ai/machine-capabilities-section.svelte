@@ -14,7 +14,7 @@
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import GpuVendorIcon from '$lib/components/ui/smart-ai/gpu-vendor-icon.svelte';
   import { RefreshButton } from '$lib/components/ui/refresh-button';
-  import { Cpu, Gauge, Gpu, Hourglass, MemoryStick, TriangleAlert, Zap } from '@lucide/svelte';
+  import { Cpu, Gauge, Gpu, Hourglass, MemoryStick, TriangleAlert, Zap } from '@primebrick/ui/vendor/lucide';
   import { NumberTicker } from '$lib/components/ui/number-ticker';
   import { StatCard } from '$lib/components/ui/stat-card';
 

@@ -6,9 +6,9 @@
   import { badgeClassesFromToken } from '$lib/colors/badge';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import CircleCheck from '@lucide/svelte/icons/circle-check'
-  import CircleX from '@lucide/svelte/icons/circle-x'
-  import Ban from '@lucide/svelte/icons/ban';
+  import { CircleCheck } from '@primebrick/ui/vendor/lucide'
+  import { CircleX } from '@primebrick/ui/vendor/lucide'
+  import { Ban } from '@primebrick/ui/vendor/lucide';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { cn } from '$lib/utils.js';
   import TableCell from '../table/TableCell.svelte';

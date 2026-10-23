@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { tv, type VariantProps } from "tailwind-variants";
+	import { tv, type VariantProps } from '@primebrick/ui/vendor/tailwind-variants';
 
 	const inputGroupButtonVariants = tv({
 		base: "gap-2 text-sm flex items-center shadow-none",

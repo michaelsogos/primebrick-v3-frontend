@@ -3,9 +3,9 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Badge } from '$lib/components/ui/badge';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Undo2 from '@lucide/svelte/icons/undo-2';
-  import Info from '@lucide/svelte/icons/info';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Undo2 } from '@primebrick/ui/vendor/lucide';
+  import { Info } from '@primebrick/ui/vendor/lucide';
   import { Button } from '$lib/components/ui/button';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { ConfigEntry } from '$lib/api-types';

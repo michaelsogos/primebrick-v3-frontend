@@ -9,9 +9,9 @@
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Smartphone from '@lucide/svelte/icons/smartphone';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { Smartphone } from '@primebrick/ui/vendor/lucide';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();

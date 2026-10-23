@@ -25,9 +25,9 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { pushNotification } from '$lib/errors/app-errors';
-  import Dices from '@lucide/svelte/icons/dices';
-  import Copy from '@lucide/svelte/icons/copy';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
+  import { Dices } from '@primebrick/ui/vendor/lucide';
+  import { Copy } from '@primebrick/ui/vendor/lucide';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_client_registry_sync', { mode: 'sender' });
 

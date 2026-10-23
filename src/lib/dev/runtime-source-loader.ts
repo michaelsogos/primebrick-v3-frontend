@@ -11,10 +11,13 @@
  *     — the host instance (api, i18n, rune singletons, ui barrels). In production
  *     these arrive via ctx / vendored ui, never compiled. Proxy preserves named,
  *     default AND namespace imports without a flat-export collision.
- *   @lucide/svelte                       → host-env.ts shim (export *)
- *   bits-ui                              → host-env-bits.ts shim (own file —
- *                                          `export *` collides with lucide names)
+ *   raw vendor packages (VENDOR_BLOCKED) → hard error — mirrors the remote
+ *                                          chunk build contract: the ONLY way
+ *                                          to consume them is the sanctioned
+ *                                          @primebrick/ui/vendor/<lib> subpath.
  */
+
+import { VENDOR_BLOCKED_PACKAGES, specifierTopPackage } from '@primebrick/ui';
 
 export interface LoadResult {
 	url: string;
@@ -36,7 +39,6 @@ export interface LoaderReport {
 // (blob: is not a hierarchical scheme). All rewritten URLs must be absolute.
 const abs = (p: string) => new URL(p, location.origin).href;
 const HOST_ENV = () => abs('/src/lib/dev/host-env.ts');
-const HOST_ENV_BITS = () => abs('/src/lib/dev/host-env-bits.ts');
 const SPEC_RE = /(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g;
 
 type Compiler = typeof import('svelte/compiler');
@@ -55,15 +57,7 @@ function toDevPath(spec: string): string {
 type Resolved =
 	| { mode: 'bare' }
 	| { mode: 'shim'; url: string }
-	| { mode: 'source' | 'proxy'; url: string; proxyCode?: string };
-
-/** kebab-case → PascalCase (for @lucide/svelte/icons/<name> default imports). */
-const pascal = (s: string) => s.split('-').map((w) => w[0].toUpperCase() + w.slice(1)).join('');
-
-/** Named-shim proxy: `export { <name> as default } from '<shim>'`. */
-function namedDefaultProxy(shimUrl: string, name: string): string {
-	return blobUrl(`export { ${name} as default } from ${JSON.stringify(shimUrl)};`);
-}
+	| { mode: 'source' | 'proxy'; url: string };
 
 /** Files using Vite-only APIs (import.meta.glob etc.) cannot compile at
  *  runtime — they are host components → proxy. In production this must be a
@@ -78,14 +72,18 @@ function resolveSpecifier(spec: string, importerUrl: string): Resolved {
 	if (spec.startsWith('~icons/')) {
 		return { mode: 'proxy', url: abs(`/@id/virtual:icons/${spec.slice(7)}`) };
 	}
-	if (spec === 'bits-ui' || spec.startsWith('bits-ui/')) return { mode: 'shim', url: HOST_ENV_BITS() };
-	// per-icon subpath imports: `import Cpu from '@lucide/svelte/icons/cpu'`
-	// → derive `export { Cpu as default }` against the lucide shim
-	if (spec.startsWith('@lucide/svelte/icons/')) {
-		const name = pascal(spec.split('/').pop()!);
-		return { mode: 'proxy', url: '', proxyCode: `export { ${name} as default } from ${JSON.stringify(HOST_ENV())};` } as Resolved;
+	// raw vendor packages — contract violation. The sanctioned surface is
+	// `@primebrick/ui/vendor/<lib>` (bare → importmap); importing the raw
+	// package would bundle/resolve a second instance. Same verdict the
+	// remote chunk build emits via resolveVendorSpecifier().
+	if (
+		(VENDOR_BLOCKED_PACKAGES as readonly string[]).includes(specifierTopPackage(spec))
+	) {
+		throw new Error(
+			`remote source imports raw vendor package '${spec}' — ` +
+				`use the sanctioned @primebrick/ui/vendor/* subpath instead`,
+		);
 	}
-	if (spec === '@lucide/svelte' || spec.startsWith('@lucide/')) return { mode: 'shim', url: HOST_ENV() };
 	// .svelte component files — compiled recursively (probe .ts variant later)
 	if (spec.endsWith('.svelte')) {
 		const resolved = new URL(toDevPath(spec), importerUrl).href;
@@ -181,12 +179,8 @@ export async function loadSourceModule(entryUrl: string): Promise<LoaderReport> 
 					continue;
 				}
 				if (r.mode === 'proxy') {
-					if (r.proxyCode) {
-						replacements.set(spec, blobUrl(r.proxyCode));
-					} else {
-						const tsUrl = r.url ? ((await probeTsVariant(r.url)) ?? r.url) : r.url;
-						replacements.set(spec, proxyBlobUrl(tsUrl));
-					}
+					const tsUrl = (await probeTsVariant(r.url)) ?? r.url;
+					replacements.set(spec, proxyBlobUrl(tsUrl));
 					report.renamedImports.push({ from: spec, to: 'proxy' });
 					continue;
 				}

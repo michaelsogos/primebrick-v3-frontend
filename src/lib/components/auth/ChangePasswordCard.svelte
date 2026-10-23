@@ -24,7 +24,7 @@
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { onMount } from 'svelte';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   const passwordPolicy = usePasswordPolicy();
 

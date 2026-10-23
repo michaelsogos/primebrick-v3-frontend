@@ -5,7 +5,7 @@
   import { Spinner } from "$lib/components/ui/spinner";
   import { t } from "$lib/i18n";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-  import Fingerprint from "@lucide/svelte/icons/fingerprint";
+  import { Fingerprint } from '@primebrick/ui/vendor/lucide';
   import {
     decodeCredentialRequestOptions,
     encodeAuthenticatorAssertion,

@@ -11,8 +11,8 @@
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   // Props:
   //   mfa_challenge_token: from the login response (mfa_required branch)

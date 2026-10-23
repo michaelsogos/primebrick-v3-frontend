@@ -6,9 +6,9 @@
   import { getAllCurrencies } from '$lib/currency';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
   import { onMount } from 'svelte';
-  import Coins from '@lucide/svelte/icons/coins';
-  import Check from '@lucide/svelte/icons/check';
-  import Search from '@lucide/svelte/icons/search';
+  import { Coins } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
+  import { Search } from '@primebrick/ui/vendor/lucide';
 
   interface Props {
     currentCurrency: string;

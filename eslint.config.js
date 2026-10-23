@@ -61,6 +61,64 @@ export default ts.config(
     },
   },
   {
+    /**
+     * Vendor plane — vendor libraries are consumed ONLY through their
+     * sanctioned `@primebrick/ui/vendor/<lib>` subpaths (mirrors core's
+     * VENDOR_BLOCKED_PACKAGES: the remote chunk build rejects the same raw
+     * imports). A raw import would resolve a second, unsanctioned instance
+     * outside the host-controlled vendor plane — forbidden by design.
+     */
+    files: ['src/**/*.{ts,svelte}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          // paths = exact package names (anchored — a bare name pattern
+          // would also match the sanctioned '@primebrick/ui/vendor/<lib>'
+          // specifier's last segment). patterns = the same packages' deep
+          // subpath imports, anchored so they cannot match the ui subpaths.
+          paths: [
+            'clsx',
+            'tailwind-merge',
+            'tailwind-variants',
+            '@lucide/svelte',
+            'bits-ui',
+            '@huggingface/transformers',
+          ].map((name) => ({
+            name,
+            message:
+              'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/transformers for transformers). See ai-plans/vendor-plane-unification.md.',
+          })),
+          patterns: [
+            {
+              group: [
+                'clsx/*',
+                'tailwind-merge/*',
+                'tailwind-variants/*',
+                '@lucide/svelte/*',
+                'bits-ui/*',
+                '@huggingface/transformers/*',
+              ],
+              message:
+                'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/transformers for transformers). See ai-plans/vendor-plane-unification.md.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    /**
+     * vendor/ is the vendor-plane BUILD — its entry files legitimately
+     * re-export svelte internals (that is the bundle's whole purpose), so
+     * the svelte-internal prohibition does not apply there.
+     */
+    files: ['vendor/**/*.{ts,js}'],
+    rules: {
+      'svelte/no-svelte-internal': 'off',
+    },
+  },
+  {
     // Project-specific rule overrides
     rules: {
       // Align with AGENTS.md: prefer $derived() over $derived.by() when possible

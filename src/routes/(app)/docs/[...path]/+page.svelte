@@ -17,9 +17,9 @@
   import { fetchDocsIndex, fetchDoc, type DocsIndexRepo } from '$lib/api';
   import { renderDoc, hydrateMermaid } from '$lib/shell/docs/docs-render';
   import { cn } from '$lib/utils';
-  import FileText from '@lucide/svelte/icons/file-text';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-  import BookOpen from '@lucide/svelte/icons/book-open';
+  import { FileText } from '@primebrick/ui/vendor/lucide';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { BookOpen } from '@primebrick/ui/vendor/lucide';
 
   type LoadedDoc = { repo: string; path: string; title: string; html: string };
 

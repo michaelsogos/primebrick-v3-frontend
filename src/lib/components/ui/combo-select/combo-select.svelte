@@ -5,10 +5,10 @@
   import * as Command from "$lib/components/ui/command";
   import Badge from "$lib/components/ui/badge/badge.svelte";
   import { badgeClassesFromToken } from "$lib/colors/badge";
-  import X from "@lucide/svelte/icons/x";
-  import Eraser from "@lucide/svelte/icons/eraser";
-  import ChevronDown from "@lucide/svelte/icons/chevron-down";
-  import Check from "@lucide/svelte/icons/check";
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
   import { tick, type Snippet } from "svelte";
   import { inputTrailingIconColorClasses, inputGhostChromeClasses } from "$lib/components/ui/input/input-chrome.js";
   import { menuListSelectedSurfaceDropdownClasses } from "$lib/components/ui/menu-row-chrome.js";

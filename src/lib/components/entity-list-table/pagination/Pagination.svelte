@@ -1,10 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
-  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
+  import { ChevronsLeft } from '@primebrick/ui/vendor/lucide'
+  import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide'
+  import { ChevronsRight } from '@primebrick/ui/vendor/lucide';
 
   let {
     currentPage,

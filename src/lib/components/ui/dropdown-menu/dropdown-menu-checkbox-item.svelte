@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+	import { DropdownMenu as DropdownMenuPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { Checkbox, checkboxBaseClass } from "$lib/components/ui/checkbox";
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from "../menu-row-chrome.js";

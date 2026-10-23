@@ -28,7 +28,7 @@
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
   import { cn } from '$lib/utils';
   import type { Snippet } from 'svelte';
-  import XIcon from '@lucide/svelte/icons/x';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 
   let {
     icon,

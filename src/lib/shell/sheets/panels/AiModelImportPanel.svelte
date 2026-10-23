@@ -18,9 +18,9 @@
   import { SliderField } from '$lib/components/ui/slider-field';  import { SwitchField } from '$lib/components/ui/switch-field';
   import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
   import { Button } from '$lib/components/ui/button';
-  import Download from '@lucide/svelte/icons/download';
-  import ExternalLink from '@lucide/svelte/icons/external-link';
-  import MemoryStick from '@lucide/svelte/icons/memory-stick';
+  import { Download } from '@primebrick/ui/vendor/lucide';
+  import { ExternalLink } from '@primebrick/ui/vendor/lucide';
+  import { MemoryStick } from '@primebrick/ui/vendor/lucide';
   import HuggingFaceIcon from '$lib/components/ui/smart-regex-input/HuggingFaceIcon.svelte';
   import { formatMB } from '$lib/utils/format-bytes';
   import {

@@ -11,9 +11,9 @@
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { enforcerStore, hideEnforcer } from '$lib/auth-enforcer-store.svelte';
   import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Fingerprint from '@lucide/svelte/icons/fingerprint';
-  import Smartphone from '@lucide/svelte/icons/smartphone';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { Fingerprint } from '@primebrick/ui/vendor/lucide';
+  import { Smartphone } from '@primebrick/ui/vendor/lucide';
   import PasskeyEnrollmentSection from './PasskeyEnrollmentSection.svelte';
   import MfaEnrollmentSection from './MfaEnrollmentSection.svelte';
 

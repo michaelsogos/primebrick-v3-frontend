@@ -4,12 +4,12 @@
 	import type { Snippet } from "svelte";
 	import { cn } from "$lib/utils.js";
 	import TooltipPortal from "./tooltip-portal.svelte";
-	import Info from "@lucide/svelte/icons/info";
-	import BadgeAlert from "@lucide/svelte/icons/badge-alert";
-	import BadgeX from "@lucide/svelte/icons/badge-x";
-	import BadgeQuestionMark from "@lucide/svelte/icons/badge-question-mark";
-	import Lightbulb from "@lucide/svelte/icons/lightbulb";
-	import BadgeCheck from "@lucide/svelte/icons/badge-check";
+	import { Info } from '@primebrick/ui/vendor/lucide';
+	import { BadgeAlert } from '@primebrick/ui/vendor/lucide';
+	import { BadgeX } from '@primebrick/ui/vendor/lucide';
+	import { BadgeQuestionMark } from '@primebrick/ui/vendor/lucide';
+	import { Lightbulb } from '@primebrick/ui/vendor/lucide';
+	import { BadgeCheck } from '@primebrick/ui/vendor/lucide';
 
 	// Canonical union lives in @primebrick/core — re-exported for consumers by ./index.ts.
 	import type { TooltipPriority } from '@primebrick/ui';

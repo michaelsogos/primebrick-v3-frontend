@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { Switch as SwitchPrimitive } from "bits-ui";
-  import type { SwitchRootProps } from "bits-ui";
+  import { Switch as SwitchPrimitive } from '@primebrick/ui/vendor/bits-ui';
+  import type { SwitchRootProps } from '@primebrick/ui/vendor/bits-ui';
   import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 
   let {

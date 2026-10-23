@@ -17,9 +17,9 @@
    */
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { PriorityTooltipContent, type TooltipPriority } from '$lib/components/ui/tooltip';
-  import HelpCircle from '@lucide/svelte/icons/help-circle';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import OctagonX from '@lucide/svelte/icons/octagon-x';
+  import { HelpCircle } from '@primebrick/ui/vendor/lucide';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { OctagonX } from '@primebrick/ui/vendor/lucide';
   import type { Component } from 'svelte';
   import { t } from '$lib/i18n';
   import type { FieldHelp } from './field-help';

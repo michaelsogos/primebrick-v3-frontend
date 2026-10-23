@@ -21,7 +21,7 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { callMcpTool } from '$lib/api';
-  import { CircleCheck, CircleX, ExternalLink, Loader2 } from '@lucide/svelte';
+  import { CircleCheck, CircleX, ExternalLink, Loader2 } from '@primebrick/ui/vendor/lucide';
   import type { AiAction } from './ai-assistant.types';
 
   const NS = 'app.smart.guide.ai.action';

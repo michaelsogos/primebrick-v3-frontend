@@ -47,9 +47,27 @@ const VENDOR_ENTRIES: Record<string, { file: string; pkg?: string }> = {
 	svelte: { file: 'svelte.js' },
 	'svelte/internal/client': { file: 'svelte.js' },
 	'svelte/internal/disclose-version': { file: 'svelte.js' },
+	'svelte/internal/flags/legacy': { file: 'svelte.js' },
+	// public svelte subpaths get their own file: their export names can
+	// collide with the internal signal API (store's get/derived vs
+	// internal/client's signal accessors — a union file cannot hold both),
+	// so each specifier maps to a dedicated bundle and shared internals
+	// dedupe through rolldown's shared-[hash] chunks.
+	'svelte/events': { file: 'svelte-events.js' },
+	'svelte/reactivity': { file: 'svelte-reactivity.js' },
+	'svelte/store': { file: 'svelte-store.js' },
+	'svelte/attachments': { file: 'svelte-attachments.js' },
 	'@primebrick/core': { file: 'primebrick-core.js' },
 	'@primebrick/ui': { file: 'primebrick-ui.js' },
 	'@primebrick/ui/transformers': { file: 'transformers.js', pkg: '@huggingface/transformers' },
+	'@primebrick/ui/vendor/clsx': { file: 'vendor-clsx.js', pkg: 'clsx' },
+	'@primebrick/ui/vendor/tailwind-merge': { file: 'vendor-tailwind-merge.js', pkg: 'tailwind-merge' },
+	'@primebrick/ui/vendor/tailwind-variants': {
+		file: 'vendor-tailwind-variants.js',
+		pkg: 'tailwind-variants',
+	},
+	'@primebrick/ui/vendor/lucide': { file: 'vendor-lucide.js', pkg: '@lucide/svelte' },
+	'@primebrick/ui/vendor/bits-ui': { file: 'vendor-bits-ui.js', pkg: 'bits-ui' },
 };
 
 const entryKeys = Object.keys(VENDOR_ENTRIES).sort();
@@ -62,19 +80,61 @@ if (JSON.stringify(entryKeys) !== JSON.stringify(specKeys)) {
 	);
 }
 
-/** input name → entry file (one entry per package). */
+/** input name → entry file (one entry per emitted bundle). */
 const VENDOR_INPUTS: Record<string, string> = {
 	svelte: 'entries/svelte.ts',
 	'primebrick-core': 'entries/primebrick-core.ts',
 	'primebrick-ui': 'entries/primebrick-ui.ts',
+	'svelte-events': 'entries/svelte-events.ts',
+	'svelte-reactivity': 'entries/svelte-reactivity.ts',
+	'svelte-store': 'entries/svelte-store.ts',
+	'svelte-attachments': 'entries/svelte-attachments.ts',
+	'vendor-clsx': 'entries/vendor-clsx.ts',
+	'vendor-tailwind-merge': 'entries/vendor-tailwind-merge.ts',
+	'vendor-tailwind-variants': 'entries/vendor-tailwind-variants.ts',
+	'vendor-lucide': 'entries/vendor-lucide.ts',
+	'vendor-bits-ui': 'entries/vendor-bits-ui.ts',
 };
 
 /** entry file name → the package it bundles (importer attribution). */
 const ENTRY_FILE_PKG: Record<string, string> = {
 	'svelte.ts': 'svelte',
+	'svelte-events.ts': 'svelte',
+	'svelte-reactivity.ts': 'svelte',
+	'svelte-store.ts': 'svelte',
+	'svelte-attachments.ts': 'svelte',
 	'primebrick-core.ts': '@primebrick/core',
 	'primebrick-ui.ts': '@primebrick/ui',
+	// the vendor/* entries import the sanctioned @primebrick/ui wrapper —
+	// their bundle content IS the ui wrapper's re-export surface
+	'vendor-clsx.ts': '@primebrick/ui',
+	'vendor-tailwind-merge.ts': '@primebrick/ui',
+	'vendor-tailwind-variants.ts': '@primebrick/ui',
+	'vendor-lucide.ts': '@primebrick/ui',
+	'vendor-bits-ui.ts': '@primebrick/ui',
 };
+
+/**
+ * Packages vendored through a dedicated `@primebrick/ui/vendor/*` wrapper —
+ * derived from VENDOR_ENTRIES' `pkg` field so the list stays single-source.
+ * `@primebrick/ui`'s own raw imports of these inline into the emitted
+ * bundle (the wrappers ARE the plane); everywhere else the blocked-package
+ * `reject` verdict keeps them external — a remote chunk importing them raw
+ * is still a contract violation in its own build.
+ */
+const UI_WRAPPED_PACKAGES = new Set(
+	Object.entries(VENDOR_ENTRIES)
+		.filter(([specifier]) => specifier.startsWith('@primebrick/ui/vendor/'))
+		.map(([, entry]) => entry.pkg)
+		.filter((pkg): pkg is string => pkg != null)
+);
+
+/** wrapped package name → its sanctioned specifier (output.paths rewrite). */
+const WRAPPED_SPECIFIER_BY_PKG = new Map(
+	Object.entries(VENDOR_ENTRIES)
+		.filter(([specifier]) => specifier.startsWith('@primebrick/ui/vendor/'))
+		.map(([specifier, entry]) => [entry.pkg, specifier] as const)
+);
 
 const require = createRequire(import.meta.url);
 
@@ -102,11 +162,19 @@ function vendorExternals(): Plugin {
 		enforce: 'pre',
 		resolveId(source, importer) {
 			if (resolveVendorSpecifier(source) === 'bundle') return null;
+			const importerPkg = importer ? pkgOfImporter(importer) : undefined;
 			// Same-package imports always bundle (entry's own package AND
 			// internal subpath imports inside that package's tree). Cross-package
 			// vendor specifiers stay bare → resolved via the import map.
-			const importerPkg = importer ? pkgOfImporter(importer) : undefined;
 			if (importerPkg && importerPkg === specifierTopPackage(source)) return null;
+			// @primebrick/ui owns the vendor wrappers — its raw imports of the
+			// wrapped packages ARE the sanctioned surface and inline into the
+			// per-package bundle. Every other 'reject' specifier (blocked
+			// packages for other importers, non-allowlisted vendor deep paths)
+			// stays bare so misuse fails loudly instead of silently duplicating
+			// a runtime instance.
+			if (importerPkg === '@primebrick/ui' && UI_WRAPPED_PACKAGES.has(specifierTopPackage(source)))
+				return null;
 			return { id: source, external: true };
 		},
 	};
@@ -183,6 +251,40 @@ function vendorCopies(): Plugin {
 	};
 }
 
+/**
+ * Post-build audit — every external import emitted inside a vendor bundle
+ * must resolve through the document import map, so it must be an allowlisted
+ * specifier. A `reject` verdict that slips through `vendorExternals` (e.g. a
+ * non-allowlisted svelte deep path a new lib version starts importing)
+ * would otherwise ship as a bare specifier with no map entry and fail
+ * opaquely at remote-load time.
+ */
+function vendorExternalAudit(): Plugin {
+	return {
+		name: 'primebrick-vendor-external-audit',
+		generateBundle(_options, bundle) {
+			const allowed = new Set<string>(VENDOR_SPECIFIERS);
+			for (const [fileName, chunk] of Object.entries(bundle)) {
+				if (chunk.type !== 'chunk') continue;
+				for (const imported of [...chunk.imports, ...chunk.dynamicImports]) {
+					if (imported.startsWith('./') || imported.startsWith('../')) continue;
+					// rolldown may emit sibling-chunk imports without the './'
+					// prefix — an import that names a file in this bundle is
+					// intra-bundle, not a bare specifier
+					if (bundle[imported]) continue;
+					if (!allowed.has(imported)) {
+						this.error(
+							`vendor:build: ${fileName} emits bare import '${imported}' ` +
+								`which is not in VENDOR_SPECIFIERS — every emitted external ` +
+								`must resolve through the document import map`
+						);
+					}
+				}
+			}
+		},
+	};
+}
+
 function vendorManifest(): Plugin {
 	return {
 		name: 'primebrick-vendor-manifest',
@@ -203,20 +305,18 @@ function vendorManifest(): Plugin {
 }
 
 export default defineConfig({
-	plugins: [vendorExternals(), svelte(), vendorManifest(), vendorCopies()],
+	plugins: [vendorExternals(), svelte(), vendorExternalAudit(), vendorManifest(), vendorCopies()],
 	resolve: {
-		alias: Object.fromEntries(
-			// '@primebrick/core' is reached only transitively (ui → core) —
-			// FE never depends on it directly (layering rule: core is
-			// accessed through @primebrick/ui). The vendor build still
-			// needs its physical sources to bundle, so the alias maps the
-			// specifier to the sibling workspace repo — a build-tool
-			// mechanism, not a package dependency.
-			Object.entries(WORKSPACE_PACKAGE_DIRS).map(([pkg, dir]) => [
-				pkg,
-				fileURLToPath(new URL(`../../${dir}`, import.meta.url)),
-			])
-		),
+		// Exact-match aliases: the bare package specifier maps to the sibling
+		// workspace repo ('@primebrick/core' is reached only transitively —
+		// ui → core — so FE never depends on it directly; the alias is a
+		// build-tool mechanism, not a package dependency). Subpath specifiers
+		// like '@primebrick/ui/vendor/clsx' intentionally fall through to
+		// normal package resolution → the repo's own exports map → dist/.
+		alias: Object.entries(WORKSPACE_PACKAGE_DIRS).map(([pkg, dir]) => ({
+			find: new RegExp(`^${pkg.replace(/[/@]/g, (c) => `\\${c}`)}$`),
+			replacement: fileURLToPath(new URL(`../../${dir}`, import.meta.url)),
+		})),
 	},
 	build: {
 		outDir: 'static/vendor',
@@ -239,6 +339,12 @@ export default defineConfig({
 		rollupOptions: {
 			output: {
 				chunkFileNames: 'shared-[name]-[hash].js',
+				// Vendor bundles that legitimately pull a wrapped package
+				// (svelte's runtime imports clsx internally) re-emit it as the
+				// SANCTIONED specifier — the import map then resolves it to the
+				// same per-package bundle every consumer uses: one instance,
+				// no extra map entries, no raw-package surface.
+				paths: (id) => WRAPPED_SPECIFIER_BY_PKG.get(specifierTopPackage(id)) ?? id,
 			},
 		},
 	},

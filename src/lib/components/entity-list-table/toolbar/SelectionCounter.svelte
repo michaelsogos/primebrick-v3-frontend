@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
-  import Eye from '@lucide/svelte/icons/eye'
-  import EyeOff from '@lucide/svelte/icons/eye-off';
+  import { Eye } from '@primebrick/ui/vendor/lucide'
+  import { EyeOff } from '@primebrick/ui/vendor/lucide';
 
   interface SelectionCounterProps {
     selectionCount: number;

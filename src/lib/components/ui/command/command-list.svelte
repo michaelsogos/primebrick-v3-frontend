@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Command as CommandPrimitive } from "bits-ui";
+	import { Command as CommandPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn } from "$lib/utils.js";
 
 	let {

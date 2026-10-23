@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Accordion as AccordionPrimitive } from "bits-ui";
+	import { Accordion as AccordionPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn, type WithoutChild } from "$lib/utils.js";
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
+	import { ChevronDown as ChevronDownIcon } from '@primebrick/ui/vendor/lucide';
+	import { ChevronUp as ChevronUpIcon } from '@primebrick/ui/vendor/lucide';
 
 	let {
 		ref = $bindable(null),

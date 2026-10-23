@@ -1,6 +1,6 @@
 import Root from "./toolbar.svelte";
 import ToolbarDivider from "./toolbar-divider.svelte";
-import { Toolbar as ToolbarPrimitive } from "bits-ui";
+import { Toolbar as ToolbarPrimitive } from '@primebrick/ui/vendor/bits-ui';
 
 const ToolbarButton = ToolbarPrimitive.Button;
 const ToolbarLink = ToolbarPrimitive.Link;

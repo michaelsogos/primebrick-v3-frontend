@@ -2,8 +2,8 @@
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
-  import Link from '@lucide/svelte/icons/link';
-  import Check from '@lucide/svelte/icons/check';
+  import { Link } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
 
   interface Props {
     currentProtocol: string;

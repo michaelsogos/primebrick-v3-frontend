@@ -8,9 +8,11 @@
  *
  * It deliberately mixes:
  *  - host singletons  (i18n store, api, openSheet, $app/state page, composables)
- *  - svelte component libraries compiled on the HOST runtime (lucide, bits-ui)
- *    → this is the cross-runtime seam we are measuring.
  *  - pure helpers     (cn, cerebellum, test-scores)
+ *
+ * Vendor libraries are NOT here — remote source imports them through the
+ * sanctioned `@primebrick/ui/vendor/<lib>` subpaths, resolved bare via the
+ * host import map (raw package imports are rejected upstream).
  */
 
 export { page } from '$app/state';
@@ -32,10 +34,3 @@ export { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 export { useAiModels } from '$lib/composables/useAiModels.svelte';
 export { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
 export { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
-
-export * from 'clsx';
-export * from 'tailwind-merge';
-export * from 'tailwind-variants';
-export * from '@lucide/svelte';
-// bits-ui lives in host-env-bits.ts — `export *` of both in one module
-// collides (Calendar/Command/Ellipsis exist in both libraries).

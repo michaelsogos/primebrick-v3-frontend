@@ -5,7 +5,7 @@
   import { cn } from '$lib/utils.js';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { TableCell } from '../table';
-  import Ban from '@lucide/svelte/icons/ban';
+  import { Ban } from '@primebrick/ui/vendor/lucide';
   import { datetimeIanaCardFieldHighlightClass, isDatetimeIanaRecordMode } from '../utils/cell-styling';
   import { isCardFieldEmpty } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';

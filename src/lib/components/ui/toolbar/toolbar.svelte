@@ -17,8 +17,8 @@
    *   look. `false` = bare strip (bg-muted, no border) — the embedded
    *   EntityListTable style.
    */
-  import { Toolbar as ToolbarPrimitive } from 'bits-ui';
-  import type { ToolbarRootProps } from 'bits-ui';
+  import { Toolbar as ToolbarPrimitive } from '@primebrick/ui/vendor/bits-ui';
+  import type { ToolbarRootProps } from '@primebrick/ui/vendor/bits-ui';
   import { cn, type WithElementRef } from '$lib/utils.js';
   import type { Snippet } from 'svelte';
   import { RefreshButton } from '$lib/components/ui/refresh-button';

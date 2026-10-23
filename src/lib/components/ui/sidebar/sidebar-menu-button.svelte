@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { tv, type VariantProps } from "tailwind-variants";
+	import { tv, type VariantProps } from '@primebrick/ui/vendor/tailwind-variants';
 	import {
 		menuListHoverNeutral,
 		menuListOpenSurface,
@@ -44,7 +44,7 @@
 <script lang="ts">
 	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 	import { cn } from "$lib/utils.js";
-	import { mergeProps, type WithElementRef, type WithoutChildrenOrChild } from "bits-ui";
+	import { mergeProps, type WithElementRef, type WithoutChildrenOrChild } from '@primebrick/ui/vendor/bits-ui';
 	import type { ComponentProps, Snippet } from "svelte";
 	import type { HTMLButtonAttributes } from "svelte/elements";
 	import { useSidebar } from "./context.svelte.js";

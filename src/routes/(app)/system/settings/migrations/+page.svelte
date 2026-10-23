@@ -21,10 +21,10 @@
   import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-  import Hourglass from '@lucide/svelte/icons/hourglass';
-  import CloudOff from '@lucide/svelte/icons/cloud-off';
-  import DatabaseZap from '@lucide/svelte/icons/database-zap';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
+  import { Hourglass } from '@primebrick/ui/vendor/lucide';
+  import { CloudOff } from '@primebrick/ui/vendor/lucide';
+  import { DatabaseZap } from '@primebrick/ui/vendor/lucide';
   import { pushNotification } from '$lib/errors/app-errors';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';

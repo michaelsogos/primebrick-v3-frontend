@@ -3,7 +3,7 @@ import type {
 	WithoutChildren,
 	Meter as MeterPrimitive,
 	Toggle as TogglePrimitive
-} from 'bits-ui';
+} from '@primebrick/ui/vendor/bits-ui';
 import type { HTMLAttributes, HTMLInputAttributes } from 'svelte/elements';
 import type { CopyButtonProps } from '$lib/components/ui/copy-button/copy-button.svelte';
 import type { ZxcvbnResult } from '@zxcvbn-ts/core';

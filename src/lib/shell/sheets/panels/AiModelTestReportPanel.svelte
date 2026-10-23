@@ -19,12 +19,12 @@
   import { t, formatUiDate } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
-  import Award from '@lucide/svelte/icons/award';
-  import CalendarFold from '@lucide/svelte/icons/calendar-fold';
-  import CircleGauge from '@lucide/svelte/icons/circle-gauge';
-  import FlaskConical from '@lucide/svelte/icons/flask-conical';
-  import Gauge from '@lucide/svelte/icons/gauge';
-  import Trophy from '@lucide/svelte/icons/trophy';
+  import { Award } from '@primebrick/ui/vendor/lucide';
+  import { CalendarFold } from '@primebrick/ui/vendor/lucide';
+  import { CircleGauge } from '@primebrick/ui/vendor/lucide';
+  import { FlaskConical } from '@primebrick/ui/vendor/lucide';
+  import { Gauge } from '@primebrick/ui/vendor/lucide';
+  import { Trophy } from '@primebrick/ui/vendor/lucide';
 
   let { model }: { model: AiModel; modal?: boolean } = $props();
 

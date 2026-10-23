@@ -37,8 +37,8 @@
   import { computeInitials } from '$lib/utils/avatar-initials';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema } from '$lib/validation/display-name';
-  import ShieldUser from '@lucide/svelte/icons/shield-user';
-  import ShieldOff from '@lucide/svelte/icons/shield-off';
+  import { ShieldUser } from '@primebrick/ui/vendor/lucide';
+  import { ShieldOff } from '@primebrick/ui/vendor/lucide';
 
   const uuid = $derived(page.params.uuid);
 

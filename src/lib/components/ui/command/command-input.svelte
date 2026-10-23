@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Command as CommandPrimitive } from "bits-ui";
+	import { Command as CommandPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn } from "$lib/utils.js";
-	import SearchIcon from '@lucide/svelte/icons/search';
-	import Eraser from '@lucide/svelte/icons/eraser';
+	import { Search as SearchIcon } from '@primebrick/ui/vendor/lucide';
+	import { Eraser } from '@primebrick/ui/vendor/lucide';
 	import { inputTrailingIconButtonClasses } from "$lib/components/ui/input/input-chrome.js";
 
 	let {

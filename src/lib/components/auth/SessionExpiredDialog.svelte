@@ -8,7 +8,7 @@
   import { goToLoginPage } from '$lib/auth/redirect-cache';
   import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
   import LoginForm from './LoginForm.svelte';
-  import ShieldUser from '@lucide/svelte/icons/shield-user';
+  import { ShieldUser } from '@primebrick/ui/vendor/lucide';
 
   function handleLoginSuccess() {
     // Close dialog, drain pending requests, retry each with _sessionRetry flag

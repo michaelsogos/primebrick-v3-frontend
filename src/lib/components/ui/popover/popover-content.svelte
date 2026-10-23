@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import { Popover as PopoverPrimitive } from "bits-ui";
+	import { Popover as PopoverPrimitive } from '@primebrick/ui/vendor/bits-ui';
 
 	let {
 		ref = $bindable(null),

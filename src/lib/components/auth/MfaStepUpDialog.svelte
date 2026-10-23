@@ -9,8 +9,8 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   // Props:
   //   open: bindable — controls dialog visibility

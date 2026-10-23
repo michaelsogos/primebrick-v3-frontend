@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PinInput as InputOTPPrimitive } from "bits-ui";
+	import { PinInput as InputOTPPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	let {

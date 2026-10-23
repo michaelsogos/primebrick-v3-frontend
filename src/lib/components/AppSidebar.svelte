@@ -16,7 +16,7 @@
   import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
   import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
 
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide';
 
   let openGroups = $state<Record<string, boolean>>({});
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Checkbox } from "bits-ui";
-	import type { CheckboxRootProps } from "bits-ui";
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import MinusIcon from '@lucide/svelte/icons/minus';
+	import { Checkbox } from '@primebrick/ui/vendor/bits-ui';
+	import type { CheckboxRootProps } from '@primebrick/ui/vendor/bits-ui';
+	import { Check as CheckIcon } from '@primebrick/ui/vendor/lucide';
+	import { Minus as MinusIcon } from '@primebrick/ui/vendor/lucide';
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 
 	export type CheckboxTone = "primary" | "destructive" | "warning";

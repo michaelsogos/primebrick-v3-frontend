@@ -52,20 +52,20 @@
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { AI_BUBBLE_STYLE, chatAvatarChrome } from './chat-avatar-chrome';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import Send from '@lucide/svelte/icons/send';
-  import X from '@lucide/svelte/icons/x';
-  import AlertCircle from '@lucide/svelte/icons/alert-circle';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import CircleStop from '@lucide/svelte/icons/circle-stop';
-  import Cpu from '@lucide/svelte/icons/cpu';
-  import Server from '@lucide/svelte/icons/server';
-  import Info from '@lucide/svelte/icons/info';
-  import StickyNotePlus from '@lucide/svelte/icons/sticky-note-plus';
-  import ArrowDown from '@lucide/svelte/icons/arrow-down';
-  import HardDrive from '@lucide/svelte/icons/hard-drive';
-  import BookOpen from '@lucide/svelte/icons/book-open';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { Send } from '@primebrick/ui/vendor/lucide';
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { AlertCircle } from '@primebrick/ui/vendor/lucide';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { CircleStop } from '@primebrick/ui/vendor/lucide';
+  import { Cpu } from '@primebrick/ui/vendor/lucide';
+  import { Server } from '@primebrick/ui/vendor/lucide';
+  import { Info } from '@primebrick/ui/vendor/lucide';
+  import { StickyNotePlus } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDown } from '@primebrick/ui/vendor/lucide';
+  import { HardDrive } from '@primebrick/ui/vendor/lucide';
+  import { BookOpen } from '@primebrick/ui/vendor/lucide';
   import type { AiSource } from './ai-assistant.types';
 
   /** Build the docs site URL for a citation (path like "guide/overview.mdx"). */

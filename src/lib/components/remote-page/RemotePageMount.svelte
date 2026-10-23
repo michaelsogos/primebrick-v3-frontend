@@ -23,7 +23,7 @@
   import RemotePageErrorPanel from './RemotePageErrorPanel.svelte';
   import PageSectionSlot from './PageSectionSlot.svelte';
   import { buildHostComponents } from './host-bridges';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
   import type { EntityMeta, ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
   import {
     RemoteLoadError,

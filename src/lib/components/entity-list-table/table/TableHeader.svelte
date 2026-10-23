@@ -4,9 +4,9 @@
   import { cn } from '$lib/utils.js';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
-  import ArrowUp from '@lucide/svelte/icons/arrow-up'
-  import ArrowDown from '@lucide/svelte/icons/arrow-down';
+  import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUp } from '@primebrick/ui/vendor/lucide'
+  import { ArrowDown } from '@primebrick/ui/vendor/lucide';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
 
   let {

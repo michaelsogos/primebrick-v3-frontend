@@ -2,7 +2,7 @@
 	// Probe component for the runtime-source-compile spike.
 	// Exercises: $state, $derived, event handlers, scoped styles,
 	// a host-env import (lucide → cross-runtime seam) and a snippet.
-	import { Zap } from '@lucide/svelte';
+	import { Zap } from '@primebrick/ui/vendor/lucide';
 
 	let { label = 'probe' }: { label?: string } = $props();
 	let count = $state(0);

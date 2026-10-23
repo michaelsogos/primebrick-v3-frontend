@@ -15,9 +15,9 @@
   import { summarizeTestScores, rankColor } from '$lib/ai/ai-model-test-scores';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import { t } from '$lib/i18n';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import ArrowDownWideNarrow from '@lucide/svelte/icons/arrow-down-wide-narrow';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide';
 
   type ModelSortKey = 'rank' | 'alphabetic' | 'speed' | 'quality' | 'power';
 

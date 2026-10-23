@@ -14,7 +14,7 @@
   import { cn } from '$lib/utils.js';
   import { t } from '$lib/i18n';
   import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   let {
     value = $bindable<number | null>(null),

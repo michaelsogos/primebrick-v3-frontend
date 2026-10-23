@@ -15,11 +15,11 @@
   import type { Component } from 'svelte';
   import { t } from '$lib/i18n';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import Award from '@lucide/svelte/icons/award';
-  import CircleGauge from '@lucide/svelte/icons/circle-gauge';
-  import FlaskConical from '@lucide/svelte/icons/flask-conical';
-  import Gauge from '@lucide/svelte/icons/gauge';
-  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import { Award } from '@primebrick/ui/vendor/lucide';
+  import { CircleGauge } from '@primebrick/ui/vendor/lucide';
+  import { FlaskConical } from '@primebrick/ui/vendor/lucide';
+  import { Gauge } from '@primebrick/ui/vendor/lucide';
+  import { Maximize2 } from '@primebrick/ui/vendor/lucide';
 
   let { model }: { model: AiModel } = $props();
 

@@ -24,7 +24,7 @@
   import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import { HardDrive, BrainCircuit, CircuitBoard, Cpu, Thermometer, Gauge, Trophy, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, Star, TriangleAlert } from '@lucide/svelte';
+  import { HardDrive, BrainCircuit, CircuitBoard, Cpu, Thermometer, Gauge, Trophy, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, Star, TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { modelVariantKey, type AiModel, type AiCerebellum } from '$lib/api-types';
   import { fetchAiCerebellum } from '$lib/api';
   import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';

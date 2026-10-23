@@ -5,8 +5,8 @@
   import { cn } from '$lib/utils.js';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import Search from '@lucide/svelte/icons/search'
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Search } from '@primebrick/ui/vendor/lucide'
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   let {
     search,

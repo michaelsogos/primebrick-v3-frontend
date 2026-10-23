@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import { SwitchField } from '$lib/components/ui/switch-field';
-  import Flag from '@lucide/svelte/icons/flag';
+  import { Flag } from '@primebrick/ui/vendor/lucide';
 
   interface Props {
     current_flags: string;

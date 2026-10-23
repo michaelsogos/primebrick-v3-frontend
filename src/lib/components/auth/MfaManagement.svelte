@@ -13,11 +13,11 @@
   import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
   import { t } from "$lib/i18n";
   import { authConfigState, loadAuthConfig } from "$lib/auth-config-store.svelte";
-  import Smartphone from "@lucide/svelte/icons/smartphone";
-  import Plus from "@lucide/svelte/icons/plus";
-  import Trash2 from "@lucide/svelte/icons/trash-2";
-  import QrCode from "@lucide/svelte/icons/qr-code";
-  import ShieldCheck from "@lucide/svelte/icons/shield-check";
+  import { Smartphone } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { QrCode } from '@primebrick/ui/vendor/lucide';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import LoadingWatermark from "./LoadingWatermark.svelte";
 
   // Trigger the auth config fetch to check if MFA is enabled.

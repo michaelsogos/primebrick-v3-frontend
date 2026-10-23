@@ -1,4 +1,4 @@
-import { Popover as PopoverPrimitive } from "bits-ui";
+import { Popover as PopoverPrimitive } from '@primebrick/ui/vendor/bits-ui';
 import Content from "./popover-content.svelte";
 import Trigger from "./popover-trigger.svelte";
 import RootCloseOnScroll from "./popover-close-on-scroll.svelte";

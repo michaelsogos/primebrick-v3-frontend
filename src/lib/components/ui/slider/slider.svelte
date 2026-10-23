@@ -11,7 +11,7 @@
    * warning (yellow→amber), info (sky→blue), success (emerald). Same color
    * pairs as the `border-{tone}-gradient` utilities.
    */
-  import { Slider as SliderPrimitive } from 'bits-ui';
+  import { Slider as SliderPrimitive } from '@primebrick/ui/vendor/bits-ui';
   import { cn } from '$lib/utils.js';
 
   export type SliderTone = 'primary' | 'destructive' | 'warning' | 'info' | 'success';

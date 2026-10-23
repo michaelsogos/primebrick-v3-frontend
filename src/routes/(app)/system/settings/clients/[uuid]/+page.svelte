@@ -29,11 +29,11 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { pushNotification } from '$lib/errors/app-errors';
-  import Dices from '@lucide/svelte/icons/dices';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-  import Copy from '@lucide/svelte/icons/copy';
-  import KeyRound from '@lucide/svelte/icons/key-round';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import { Dices } from '@primebrick/ui/vendor/lucide';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
+  import { Copy } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
 
   const uuid = $derived(page.params.uuid);
 

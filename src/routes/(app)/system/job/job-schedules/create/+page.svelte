@@ -24,7 +24,7 @@
   import { Button } from '$lib/components/ui/button';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Skeleton } from '$lib/components/ui/skeleton';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
 
   type ResolveError = { kind: 'network' | 'contract'; detail: string | null };
 

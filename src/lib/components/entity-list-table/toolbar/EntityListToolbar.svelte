@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { SearchBar, ViewModeToggle, DeletionFilterToggle, FilterPresetToolbar } from '.';
-  import Columns3 from '@lucide/svelte/icons/columns-3'
-  import Funnel from '@lucide/svelte/icons/funnel';
+  import { Columns3 } from '@primebrick/ui/vendor/lucide'
+  import { Funnel } from '@primebrick/ui/vendor/lucide';
   import { Button } from '$lib/components/ui/button';
   import { RefreshButton } from '$lib/components/ui/refresh-button';
   import { Toolbar } from '$lib/components/ui/toolbar';

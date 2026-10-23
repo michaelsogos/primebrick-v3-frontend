@@ -16,8 +16,8 @@
   import type { AiCerebellum } from '$lib/api-types';
   import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
   import { t } from '$lib/i18n';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
   let {
     tunings,

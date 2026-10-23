@@ -3,8 +3,8 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
-  import XIcon from '@lucide/svelte/icons/x';
-  import EraserIcon from '@lucide/svelte/icons/eraser';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
+  import { Eraser as EraserIcon } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 
   interface FilterBarProps {

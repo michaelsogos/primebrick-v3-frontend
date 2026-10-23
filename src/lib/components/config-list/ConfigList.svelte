@@ -4,9 +4,9 @@
   import ConfigListRow from './ConfigListRow.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Undo2 from '@lucide/svelte/icons/undo-2';
-  import Plus from '@lucide/svelte/icons/plus';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Undo2 } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import { buildConfigFormSchema } from '$lib/validation/config-validation';
   import { pushNotification } from '$lib/errors/app-errors';
   import { bulkUpdateConfigEntries } from '$lib/api';

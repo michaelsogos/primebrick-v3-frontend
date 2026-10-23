@@ -19,9 +19,9 @@
   import { explainRegex, summarizeRegex, type RegexSummary } from '$lib/components/ui/smart-regex-input/regex-explainer';
   import type { DeepReadonly } from '$lib/types/deep-readonly';
   import { AiIcon } from '$lib/components/ui/ai-icon';
-  import Bot from '@lucide/svelte/icons/bot';
-  import Check from '@lucide/svelte/icons/check';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import { Bot } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
   let {
     on_apply_regex,

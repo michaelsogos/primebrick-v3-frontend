@@ -15,7 +15,7 @@
 	 * Pair with `useOtpInput` for the shared code/submit/reset controller.
 	 */
 	import * as InputOTP from "$lib/components/ui/input-otp/index.js";
-	import { REGEXP_ONLY_DIGITS } from "bits-ui";
+	import { REGEXP_ONLY_DIGITS } from '@primebrick/ui/vendor/bits-ui';
 	import { cn } from "$lib/utils.js";
 	import { onMount, tick } from "svelte";
 

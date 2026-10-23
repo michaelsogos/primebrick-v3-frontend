@@ -25,7 +25,7 @@
   import DeepSeekIcon from '$lib/components/ui/smart-regex-input/DeepSeekIcon.svelte';
   import HuggingFaceIcon from '$lib/components/ui/smart-regex-input/HuggingFaceIcon.svelte';
   import OpenAIIcon from '$lib/components/ui/smart-regex-input/OpenAIIcon.svelte';
-  import Cpu from '@lucide/svelte/icons/cpu';
+  import { Cpu } from '@primebrick/ui/vendor/lucide';
 
   let {
     model_id,

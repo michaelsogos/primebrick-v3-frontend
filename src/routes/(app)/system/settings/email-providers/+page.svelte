@@ -13,13 +13,13 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import Mail from '@lucide/svelte/icons/mail';
-  import Plus from '@lucide/svelte/icons/plus';
-  import Pencil from '@lucide/svelte/icons/pencil';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Save from '@lucide/svelte/icons/save';
-  import X from '@lucide/svelte/icons/x';
-  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import { Mail } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
+  import { Pencil } from '@primebrick/ui/vendor/lucide';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Save } from '@primebrick/ui/vendor/lucide';
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { Loader2 } from '@primebrick/ui/vendor/lucide';
 
   interface EmailProvider {
     uuid: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
-	import Clock from '@lucide/svelte/icons/clock';
+	import { Clock } from '@primebrick/ui/vendor/lucide';
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	let {

@@ -9,11 +9,11 @@
   import { Button } from '$lib/components/ui/button';
   import { ButtonGroup } from '$lib/components/ui/button-group';
   import { cn } from '$lib/utils.js';
-  import Phone from '@lucide/svelte/icons/phone';
-  import Check from '@lucide/svelte/icons/check';
-  import Search from '@lucide/svelte/icons/search';
-  import ArrowDownAZ from '@lucide/svelte/icons/arrow-down-a-z';
-  import ArrowDown01 from '@lucide/svelte/icons/arrow-down-0-1';
+  import { Phone } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
+  import { Search } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDownAZ } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDown01 } from '@primebrick/ui/vendor/lucide';
 
   interface Props {
     currentCountry: string;

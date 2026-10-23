@@ -17,7 +17,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
   import { AiIcon } from '$lib/components/ui/ai-icon';
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 

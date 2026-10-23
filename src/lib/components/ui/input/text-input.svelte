@@ -16,7 +16,7 @@
 	import Input from "./input.svelte";
 	import { CopyButton } from "$lib/components/ui/copy-button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import Eraser from "@lucide/svelte/icons/eraser";
+	import { Eraser } from '@primebrick/ui/vendor/lucide';
 	import { inputTrailingIconButtonClasses } from "./input-chrome.js";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;

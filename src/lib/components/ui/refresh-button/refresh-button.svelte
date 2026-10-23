@@ -10,7 +10,7 @@
 	 */
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import { RefreshCw } from '@primebrick/ui/vendor/lucide';
 
 	let {
 		onclick,

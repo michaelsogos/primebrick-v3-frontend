@@ -5,7 +5,7 @@
    * Same anatomy/tones as `Slider`, but `value` is `[min, max]` — used for
    * inclusive filters (e.g. rank range 1–5 in the AI model import sheet).
    */
-  import { Slider as SliderPrimitive } from 'bits-ui';
+  import { Slider as SliderPrimitive } from '@primebrick/ui/vendor/bits-ui';
   import { cn } from '$lib/utils.js';
   import type { SliderTone } from './slider.svelte';
 

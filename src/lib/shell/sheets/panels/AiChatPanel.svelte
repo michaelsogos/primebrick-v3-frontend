@@ -21,20 +21,20 @@
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { aiChatStore } from '$lib/shell/ai-chat/use-ai-chat.svelte';
   import { registerBuiltinClientTools } from '$lib/shell/ai-chat/client-tool-registry';
-  import MessageSquare from '@lucide/svelte/icons/message-square';
-  import Send from '@lucide/svelte/icons/send';
-  import Plus from '@lucide/svelte/icons/plus';
-  import X from '@lucide/svelte/icons/x';
-  import Square from '@lucide/svelte/icons/square';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Bot from '@lucide/svelte/icons/bot';
+  import { MessageSquare } from '@primebrick/ui/vendor/lucide';
+  import { Send } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { Square } from '@primebrick/ui/vendor/lucide';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Bot } from '@primebrick/ui/vendor/lucide';
   import { BotIcon } from '$lib/components/ui/bot-icon';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { AI_BUBBLE_STYLE, chatAvatarChrome } from '$lib/components/ui/smart-ai/chat-avatar-chrome';
-  import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
-  import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
-  import FileText from '@lucide/svelte/icons/file-text';
+  import { ThumbsUp } from '@primebrick/ui/vendor/lucide';
+  import { ThumbsDown } from '@primebrick/ui/vendor/lucide';
+  import { FileText } from '@primebrick/ui/vendor/lucide';
   import type { AiCitation } from '$lib/shell/ai-chat/use-ai-chat.svelte';
 
   /** Build the docs site URL for a citation. */

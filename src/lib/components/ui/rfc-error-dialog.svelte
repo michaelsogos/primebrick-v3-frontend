@@ -6,11 +6,11 @@
   import { formatUiDateTime, t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
-  import Code from '@lucide/svelte/icons/code'
-  import FileJson from '@lucide/svelte/icons/file-json'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import Info from '@lucide/svelte/icons/info'
-  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import { Code } from '@primebrick/ui/vendor/lucide'
+  import { FileJson } from '@primebrick/ui/vendor/lucide'
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
+  import { Info } from '@primebrick/ui/vendor/lucide'
+  import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import JsonTableViewer from './JsonTableViewer.svelte';
   import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
   import { onMount } from 'svelte';

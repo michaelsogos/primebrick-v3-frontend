@@ -13,7 +13,7 @@
 	 *
 	 * Usage: drop-in replacement for `Popover.Root`.
 	 */
-	import { Popover as PopoverPrimitive } from 'bits-ui';
+	import { Popover as PopoverPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import type { Snippet } from 'svelte';
 	import { popoverCloseOnScroll } from './close-on-scroll.svelte';
 

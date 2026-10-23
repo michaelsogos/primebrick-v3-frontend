@@ -4,8 +4,8 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import LoadingWatermark from '$lib/components/auth/LoadingWatermark.svelte';
-  import Cookie from '@lucide/svelte/icons/cookie';
-  import RotateCcwKey from '@lucide/svelte/icons/rotate-ccw-key';
+  import { Cookie } from '@primebrick/ui/vendor/lucide';
+  import { RotateCcwKey } from '@primebrick/ui/vendor/lucide';
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -17,12 +17,12 @@
   import { APP_VERSION } from '$lib/version';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
-  import Cloud from '@lucide/svelte/icons/cloud'
-  import CloudOff from '@lucide/svelte/icons/cloud-off'
-  import Database from '@lucide/svelte/icons/database'
-  import DatabaseZap from '@lucide/svelte/icons/database-zap'
-  import Radio from '@lucide/svelte/icons/radio'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import { Cloud } from '@primebrick/ui/vendor/lucide'
+  import { CloudOff } from '@primebrick/ui/vendor/lucide'
+  import { Database } from '@primebrick/ui/vendor/lucide'
+  import { DatabaseZap } from '@primebrick/ui/vendor/lucide'
+  import { Radio } from '@primebrick/ui/vendor/lucide'
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { apiFetch } from '$lib/api';

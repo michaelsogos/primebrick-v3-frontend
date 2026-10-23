@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { t } from '$lib/i18n';
-  import Moon from '@lucide/svelte/icons/moon'
-  import Sun from '@lucide/svelte/icons/sun';
+  import { Moon } from '@primebrick/ui/vendor/lucide'
+  import { Sun } from '@primebrick/ui/vendor/lucide';
 
   const STORAGE_KEY = 'pb.theme';
 

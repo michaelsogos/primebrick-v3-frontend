@@ -19,12 +19,12 @@
  * https://lucide.dev/icons/ and confirmed present in the installed
  * @lucide/svelte package.
  */
-import Laptop from "@lucide/svelte/icons/laptop";
-import ScanFace from "@lucide/svelte/icons/scan-face";
-import Fingerprint from "@lucide/svelte/icons/fingerprint";
-import Usb from "@lucide/svelte/icons/usb";
-import Smartphone from "@lucide/svelte/icons/smartphone";
-import KeyRound from "@lucide/svelte/icons/key-round";
+import { Laptop } from '@primebrick/ui/vendor/lucide';
+import { ScanFace } from '@primebrick/ui/vendor/lucide';
+import { Fingerprint } from '@primebrick/ui/vendor/lucide';
+import { Usb } from '@primebrick/ui/vendor/lucide';
+import { Smartphone } from '@primebrick/ui/vendor/lucide';
+import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
 import type { Component } from "svelte";
 

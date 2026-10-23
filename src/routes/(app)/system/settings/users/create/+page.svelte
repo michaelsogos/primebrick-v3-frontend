@@ -25,7 +25,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
-  import ImageOff from '@lucide/svelte/icons/image-off';
+  import { ImageOff } from '@primebrick/ui/vendor/lucide';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
@@ -38,8 +38,8 @@
   import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
-  import ShieldUser from '@lucide/svelte/icons/shield-user';
-  import ShieldOff from '@lucide/svelte/icons/shield-off';
+  import { ShieldUser } from '@primebrick/ui/vendor/lucide';
+  import { ShieldOff } from '@primebrick/ui/vendor/lucide';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';

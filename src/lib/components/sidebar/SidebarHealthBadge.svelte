@@ -4,12 +4,12 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { useHealthChip, chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { t } from '$lib/i18n';
-  import Cloud from '@lucide/svelte/icons/cloud';
-  import CloudOff from '@lucide/svelte/icons/cloud-off';
-  import Database from '@lucide/svelte/icons/database';
-  import DatabaseZap from '@lucide/svelte/icons/database-zap';
-  import Radio from '@lucide/svelte/icons/radio';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import { Cloud } from '@primebrick/ui/vendor/lucide';
+  import { CloudOff } from '@primebrick/ui/vendor/lucide';
+  import { Database } from '@primebrick/ui/vendor/lucide';
+  import { DatabaseZap } from '@primebrick/ui/vendor/lucide';
+  import { Radio } from '@primebrick/ui/vendor/lucide';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
