@@ -87,7 +87,7 @@ export default ts.config(
           ].map((name) => ({
             name,
             message:
-              'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/vendor/transformers for transformers). See ai-plans/vendor-plane-unification.md.',
+              'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/vendor/transformers for transformers). See ai-plans/COMPLETED/vendor-plane-unification.md.',
           })),
           patterns: [
             {
@@ -100,7 +100,7 @@ export default ts.config(
                 '@huggingface/transformers/*',
               ],
               message:
-                'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/vendor/transformers for transformers). See ai-plans/vendor-plane-unification.md.',
+                'Raw vendor imports are forbidden — use the sanctioned @primebrick/ui/vendor/<lib> subpath (@primebrick/ui/vendor/transformers for transformers). See ai-plans/COMPLETED/vendor-plane-unification.md.',
             },
           ],
         },
