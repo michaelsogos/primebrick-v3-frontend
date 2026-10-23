@@ -22,6 +22,10 @@ export const E2E_ADMIN_USERNAME = process.env.E2E_ADMIN_USERNAME ?? "";
 export const E2E_ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "";
 export const E2E_USER_USERNAME = process.env.E2E_USER_USERNAME ?? "";
 export const E2E_USER_PASSWORD = process.env.E2E_USER_PASSWORD ?? "";
+// Dedicated MFA-suite actor — enrolling TOTP on the shared admin actor would
+// gate every concurrent suite's login with a challenge until afterAll.
+export const E2E_MFA_USERNAME = process.env.E2E_MFA_USERNAME ?? "";
+export const E2E_MFA_PASSWORD = process.env.E2E_MFA_PASSWORD ?? "";
 
 /** Guard: refuses to authenticate as a reserved dev identity in tests. */
 function assertTestActor(username: string): void {

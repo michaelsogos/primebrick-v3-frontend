@@ -22,7 +22,7 @@ import {
   upsertFakeBrevoProvider,
 } from "./helpers/db";
 import { getBrevoProviderSnapshot, setBrevoProviderSnapshot, setFakeBrevo } from "./helpers/global-state";
-import { createE2eAdminActor, createE2eUserActor } from "./helpers/test-users";
+import { createE2eAdminActor, createE2eMfaActor, createE2eUserActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -89,6 +89,19 @@ export default async function globalSetup(): Promise<void> {
   } catch (err) {
     await fakeBrevo.close();
     throw new Error(`[globalSetup] Failed to create non-admin E2E actor: ${err}`);
+  }
+
+  // 8. Mint the dedicated MFA-suite actor. Enrolling a TOTP factor on the
+  //    shared admin actor gates EVERY concurrent login with a TOTP challenge
+  //    until the suite's afterAll removes it — under parallel workers that
+  //    window caused ~40 collateral failures. This twin keeps MFA churn
+  //    isolated; only auth-mfa.spec.ts may authenticate as it.
+  try {
+    const actor = await createE2eMfaActor();
+    console.log(`[globalSetup] Ephemeral MFA actor created: ${actor.username}`);
+  } catch (err) {
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create MFA E2E actor: ${err}`);
   }
 
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");
