@@ -9,12 +9,16 @@
  * - `openSheet` — opens a host-registered sheet panel by key. The key is
  *   validated against `SHEET_PANEL_IDS`: an unknown panel is rejected with
  *   a notification instead of rendering an empty sheet.
+ * - `hostApi` — plain `apiFetch` (full-path BE fetch): remote pages bind it
+ *   via `bindRemoteCtx(ctx)` so ui composables can reach BE-owned
+ *   `/api/v1/…` endpoints that `ctx.api` (ws-bound) cannot.
  *
  * A caller-provided `components` record keeps precedence (`??=`) — tests
  * inject fakes for either bridge.
  */
 import type { ModulePageHostComponents } from '@primebrick/ui';
 import type { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+import { apiFetch } from '$lib/api';
 import { openSheet, SHEET_PANEL_IDS, type SheetOpenOptions } from '$lib/shell/sheets/sheet-manager.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 
@@ -56,5 +60,6 @@ export function buildHostComponents(
   const comps = (caller ?? {}) as ModulePageHostComponents;
   comps.mfaStepUp ??= (requestFn, context) => stepUp.executeWithToken(requestFn, context);
   comps.openSheet ??= openSheetBridge;
+  comps.hostApi ??= apiFetch;
   return comps;
 }

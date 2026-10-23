@@ -20,7 +20,7 @@
   import { modelVariantKey } from '$lib/api-types';
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
-  import { useSelection } from '$lib/composables/useSelection.svelte';
+  import { useSelection } from '@primebrick/ui';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';

@@ -10,7 +10,7 @@
   import { buildConfigFormSchema } from '$lib/validation/config-validation';
   import { pushNotification } from '$lib/errors/app-errors';
   import { bulkUpdateConfigEntries } from '$lib/api';
-  import { useSelection } from '$lib/composables/useSelection.svelte';
+  import { useSelection } from '@primebrick/ui';
   import { SelectableToolbar, SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
 
   let {
