@@ -21,32 +21,29 @@
 import {
   test as base,
   expect,
-  chromium,
   type BrowserContext,
   type Page,
   type Locator,
 } from "@playwright/test";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const PAGE_URL = "/system/settings/configurations/create";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 
 const test = base.extend<object, { pwContext: BrowserContext }>({
   // eslint-disable-next-line no-empty-pattern
   pwContext: [
     async ({}, use) => {
-      const ctx = await chromium.launchPersistentContext(E2E_PROFILE, {
-        channel: "msedge",
-        headless: false,
-        viewport: { width: 1280, height: 900 },
-      });
-      await use(ctx);
-      await ctx.close();
+      // Shared Edge session (helpers/edge-context): attach to the live CDP
+      // session or launch a sanitized one — never a second Edge on the same
+      // profile (that was the profile-lock "Target closed" failure). The
+      // session is deliberately left running for Cache API model reuse.
+      const { context } = await getSharedContext();
+      await use(context);
     },
     { scope: "worker" },
   ],
   page: async ({ pwContext }, use) => {
-    const page = pwContext.pages()[0] ?? (await pwContext.newPage());
-    await use(page);
+    await use(await focusedPage(pwContext));
   },
 });
 

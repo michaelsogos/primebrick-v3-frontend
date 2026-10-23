@@ -34,8 +34,6 @@
 import {
   test,
   expect,
-  chromium,
-  type BrowserContext,
   type Page,
 } from "@playwright/test";
 import {
@@ -44,6 +42,7 @@ import {
 } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
@@ -51,9 +50,8 @@ const PREFIX = "smart-json-ai";
 // Dedicated Playwright-owned Edge profile (NOT the user's real profile):
 // persists the Cache API model files across runs so the ~2GB model does not
 // re-download every time. Login is still programmatic — the profile only
-// carries cache, not required auth state.
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
+// carries cache, not required auth state. Session management lives in
+// helpers/edge-context (sanitized profile, per-worker focused tabs).
 
 const log = (m: string) =>
   console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
@@ -70,34 +68,11 @@ const TARGET_MODEL_IDS = (process.env.AI_E2E_MODEL_IDS ?? "")
   .filter(Boolean);
 
 /**
- * Session strategy: REUSE over relaunch.
- * - If an Edge debug session is already listening on CDP_URL, attach to it
- *   (connectOverCDP) and reuse its persistent context — the same Cache API
- *   (downloaded models), cookies and open pages are shared.
- * - Otherwise launch a fresh persistent context WITH a CDP port so later
- *   specs in the same — or a subsequent — run can attach to it.
+ * Session strategy: REUSE over relaunch — getSharedContext() attaches to a
+ * live CDP session (same Cache API models, cookies) or launches one.
  * The browser is NEVER closed by the spec: the session is deliberately left
  * running for observation and reuse by the next spec/model run.
  */
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
 
 // ─── Scoring: shared formulas + merged-turn persistence live in
 //     helpers/test-scores.ts — this spec owns the "conversation" phase of the
@@ -368,8 +343,8 @@ test.describe("AI quality — json_editor_with_schema", () => {
     test.setTimeout(Math.max(600_000, TARGET_MODEL_IDS.length * 600_000));
     // Attach to a running session or launch a persistent one (CDP :9333).
     // The browser is left open on purpose — next spec reuses it.
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     {
       // 0. Auth gate: /api/v1/auth/me is the deterministic signal — the SPA
       //    renders the form shell even with an expired session (401), so URL
