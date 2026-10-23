@@ -62,6 +62,8 @@ A file is a "truncated sibling" if:
 - AI agent MUST verify file creation after every `write` call
 - AI agent MUST delete any truncated sibling files immediately
 - AI agent MUST NOT proceed to the next task until truncated files are cleaned up
-- AI agent MUST run the cleanup script periodically:
-  `node D:\git\primebrick\temp\cleanup-fake-files.mjs <target-dir>`
-  (with DELETE=1 to actually delete)
+- The periodic sweep is internalized in tooling: `check-standards.ts` rule
+  `truncated-sibling` scans the whole tree on every `pnpm check:standards`
+  run (wired into `pnpm test`/`prebuild`) and flags any file whose name is a
+  proper prefix of a sibling's name with byte-identical content. There is no
+  external cleanup script — enforcement is lint, not a manual helper.
