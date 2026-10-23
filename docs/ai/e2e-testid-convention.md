@@ -70,7 +70,7 @@ await item.getByTestId('passkey-enrollment-delete-button').click();
 All E2E locators use `page.getByTestId(...)` as the primary selector:
 
 ```ts
-// Login uses the seeded E2E test actor — NEVER the dev bootstrap `admin` user
+// Login uses the ephemeral E2E test actor — NEVER the dev bootstrap `admin` user
 // (see helpers/admin-login.ts; reserved usernames are refused at runtime).
 await page.getByTestId('login-username-input').fill(E2E_ADMIN_USERNAME);
 await page.getByTestId('login-password-input').fill(E2E_ADMIN_PASSWORD);

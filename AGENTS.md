@@ -22,7 +22,7 @@ You are an expert Svelte™ 5 and TypeScript® developer. You MUST EXCLUSIVELY u
 4. **EVENTS**: Do NOT use `createEventDispatcher`. Use callbacks passed as props, typing them as functions.
    - Example: `let { onchange }: { onchange: (v: string) => void } = $props();`
 5. **CHILDREN & SNIPPETS**: To pass HTML elements or components as children, use the `Snippet` type.
-   - Example: `let { children }: { children: Snippet } = $props();` inside `{#render children()}`
+   - Example: `let { children }: { children: Snippet } = $props();` inside `{@render children()}`
 6. **REACTIVITY**: Any value computed from `$props()`, `$state`, or other reactive
    sources MUST be declared with `$derived` (or `$derived.by` for complex logic).
    Never read reactive sources into a plain `const`/`let` at component top level —

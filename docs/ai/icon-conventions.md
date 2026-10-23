@@ -32,9 +32,11 @@ already has a canonical one — check this table first.
   (`compact` variant) alike.
 - `Eraser` = mutate/clear data in place; `X` = close/remove; `RotateCcw` =
   restore deleted. Don't cross these semantics.
-- Import single icons (`@lucide/svelte/icons/<name>`). Named barrel imports
-  (`import { X } from '@lucide/svelte'`) are still present in a few files —
-  prefer single-icon imports in new code.
+- Icons import ONLY from the sanctioned vendor subpath — named imports
+  (`import { X } from '@primebrick/ui/vendor/lucide'`). Raw `@lucide/svelte`
+  and per-icon `@lucide/svelte/icons/<name>` imports are contract violations
+  (eslint `no-restricted-imports` rejects them — remote code resolves the
+  same subpath through the host import map).
 - Flagged debt: `AlertTriangle` legacy alias still imported in
   `ModelCachePanel`, `ModelCacheSection`, `MfaEnrollmentSection`,
   `async-validated-input`, `rfc-error-dialog`, `VersionHistoryPanel` —

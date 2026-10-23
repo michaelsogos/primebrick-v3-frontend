@@ -25,7 +25,7 @@
  * Auth: dedicated Playwright-owned Edge profile (E2E_PROFILE — persists the
  *   Cache API so completed model files survive across runs; HF resume is
  *   per-file, a mid-file interruption restarts that file) + programmatic
- *   E2E test-actor (test-admin) login. Same convention as auth-mfa.spec.ts: test actor MFA
+ *   E2E test-actor (e2e_test_admin) login. Same convention as auth-mfa.spec.ts: test actor MFA
  *   factors are deleted via DB in beforeAll so the password login cannot
  *   stall on an MFA challenge.
  * Requires WebGPU — skips cleanly when no adapter is present.

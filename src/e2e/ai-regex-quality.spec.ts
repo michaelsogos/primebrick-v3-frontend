@@ -30,7 +30,7 @@
  *
  * Auth: dedicated Playwright-owned Edge profile (E2E_PROFILE — persists the
  *   Cache API so completed model files survive across runs) + programmatic
- *   E2E test-actor (test-admin) login. Test actor MFA factors are deleted via DB in beforeAll so
+ *   E2E test-actor (e2e_test_admin) login. Test actor MFA factors are deleted via DB in beforeAll so
  *   the password login cannot stall on an MFA challenge.
  * Requires WebGPU — skips cleanly when no adapter is present.
  * Locators: data-testid only (brittle-on-purpose convention).

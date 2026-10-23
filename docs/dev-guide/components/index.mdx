@@ -5,18 +5,21 @@ description: Every custom, wrapped, and vendored component in the Primebrick fro
 
 # Component catalog
 
-Every component in `src/lib/components/` is listed here, grouped by origin.
+Every component **unit** in `src/lib/components/` is listed here — a unit is a
+component file or a directory of coordinated parts — grouped by origin.
 **Custom** and **wrapped** components (we wrote or extended them) link to a
-dedicated page on this site. **Vendored primitives** used unmodified link to
-their official registry docs.
+dedicated page on this site where one exists; **vendored primitives** used
+unmodified link to their official registry docs.
 
 Provenance is recorded in
 `docs/dev-guide/_extracted/component-provenance.json` (hand-maintained). See
 [UI stack](/docs/dev-guide/ui-stack) for how the registries layer.
 
-## Custom components (41)
+## Custom components (81)
 
-Built from scratch for Primebrick. Each has a dedicated page.
+Built from scratch for Primebrick. Rows marked `—` have no dedicated page yet —
+their props are still in the auto-generated
+[API reference](/docs/dev-guide/api-reference).
 
 ### App shell
 
@@ -33,18 +36,54 @@ Built from scratch for Primebrick. Each has a dedicated page.
 | `BrowserClientInfo` | `src/lib/components/BrowserClientInfo.svelte` | Browser capability detection | [page](/docs/dev-guide/components/browser-client-info) |
 | `LangSelect` | `src/lib/components/LangSelect.svelte` | Language selector | [page](/docs/dev-guide/components/lang-select) |
 | `ThemeToggle` | `src/lib/components/ThemeToggle.svelte` | Light/dark toggle | [page](/docs/dev-guide/components/theme-toggle) |
+| `SidebarAppLauncher` | `src/lib/components/sidebar/SidebarAppLauncher.svelte` | Finder-style app/module/page launcher | [page](/docs/dev-guide/components/sidebar-app-launcher) |
 | `SidebarHealthBadge` | `src/lib/components/sidebar/SidebarHealthBadge.svelte` | Backend health badge | [page](/docs/dev-guide/components/sidebar-health-badge) |
-| `SidebarModuleSwitcher` | `src/lib/components/sidebar/SidebarModuleSwitcher.svelte` | Module switcher | [page](/docs/dev-guide/components/sidebar-module-switcher) |
 | `SidebarOrgSwitcher` | `src/lib/components/sidebar/SidebarOrgSwitcher.svelte` | Org switcher | [page](/docs/dev-guide/components/sidebar-org-switcher) |
 | `SidebarProfileMenu` | `src/lib/components/sidebar/SidebarProfileMenu.svelte` | Profile menu | [page](/docs/dev-guide/components/sidebar-profile-menu) |
 | `SidebarVersionBadge` | `src/lib/components/sidebar/SidebarVersionBadge.svelte` | Version badge | [page](/docs/dev-guide/components/sidebar-version-badge) |
 
-### Entity list
+### Entity list & metadata-driven pages
 
 | Component | Path | Summary | Page |
 |-----------|------|---------|------|
 | `EntityListTable` | `src/lib/components/entity-list-table/` | Generic controlled list/table/card system | [page](/docs/dev-guide/components/entity-list-table) |
 | `EntityTablePage` | `src/lib/components/entity-table-page/` | Route-level host for entity table pages — owns `useEntityList` and renders `EntityListTable` | [section](/docs/dev-guide/components/entity-list-table#route-level-usage-entitytablepage) |
+
+### Config entries (metadata-driven config)
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `config-list` | `src/lib/components/config-list/` | Config entries list — `ConfigList` + `ConfigListRow` + `ConfigBulkActionBar` + `ConfigValueInput` | — |
+| `config-builder` | `src/lib/components/config-builder/` | TypeConfigBuilder + sections (validation rules, widget config, select-source, JSON preview) | — |
+| `BadgeValuesEditor` | `src/lib/components/config-builder/BadgeValuesEditor.svelte` | Badge value list editor | [page](/docs/dev-guide/components/badge-values-editor) |
+
+### Anchor tabs
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `anchor-tabs` | `src/lib/components/anchor-tabs/` | URL-anchor tab set — `anchor-tabs` + `anchor-tabs-list` + `anchor-tabs-trigger` + `anchor-tabs-content` + `anchor-tabs-mode-switch` | — |
+
+### Remote pages
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `RemotePageMount` | `src/lib/components/remote-page/RemotePageMount.svelte` | Mount point for remote ESM page modules (`mountPage(el, ctx)`) | — |
+| `RemoteMountSlot` | `src/lib/components/remote-page/RemoteMountSlot.svelte` | Named slot that a remote module mounts into | — |
+| `PageSectionSlot` | `src/lib/components/remote-page/PageSectionSlot.svelte` | Layout-section dispatch host (`layout.sections`) | — |
+| `HostMountShell` | `src/lib/components/remote-page/HostMountShell.svelte` | Shell wrapper hosting remote mounts | — |
+| `RemotePageErrorPanel` | `src/lib/components/remote-page/RemotePageErrorPanel.svelte` | Remote-page load/mount error surface | — |
+
+### Error page
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `ErrorPage` | `src/lib/components/error-page/ErrorPage.svelte` | Full-page error surface | — |
+
+### Shell infrastructure
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `sheet-panel` | `src/lib/shell/sheets/` | Global side-sheet host + panels (`ErrorsPanel`, `DocsPanel`, `VersionsPanel`, …) | [page](/docs/dev-guide/components/sheet-panel) |
 
 ### Forms
 
@@ -54,6 +93,7 @@ Built from scratch for Primebrick. Each has a dedicated page.
 | `FormPageLayout` | `src/lib/components/FormPageLayout.svelte` | Entity form page layout | [page](/docs/dev-guide/components/form-page-layout) |
 | `FormLabelWithPriorityHelp` | `src/lib/components/forms/FormLabelWithPriorityHelp.svelte` | Label with priority tooltip | [page](/docs/dev-guide/components/form-label-with-priority-help) |
 | `PasswordChecklist` | `src/lib/components/forms/PasswordChecklist.svelte` | Password policy checklist | [page](/docs/dev-guide/components/password-checklist) |
+| `otp-input` | `src/lib/components/otp-input/otp-input.svelte` | OTP code input (over `input-otp` primitive) | — |
 | `ComboSelect` | `src/lib/components/ui/combo-select/` | Searchable single/multi select with typed `display` templates | [page](/docs/dev-guide/components/combo-select) |
 | `SliderField` | `src/lib/components/ui/slider-field/` | Nullable range slider — NULL = inherit, no numeric input | [page](/docs/dev-guide/components/slider-field) |
 | `SwitchField` | `src/lib/components/ui/switch-field/` | Labelled switch — switch + label + optional sublabel + help tooltip (mandatory standard) | [page](/docs/dev-guide/components/switch-field) |
@@ -61,24 +101,44 @@ Built from scratch for Primebrick. Each has a dedicated page.
 | `ColorSelector` | `src/lib/components/ui/color-selector/` | Curated palette + native color input | [page](/docs/dev-guide/components/color-selector) |
 | `Choicebox` | `src/lib/components/ui/choicebox/` | Radiogroup-style selectable card list | [page](/docs/dev-guide/components/choicebox) |
 | `date-wheel-picker` | `src/lib/components/date-dropper/date-wheel-picker.svelte` | Date/time picker on wheel-picker | [page](/docs/dev-guide/components/date-wheel-picker) |
+| `email-input` | `src/lib/components/ui/email-input/` | Email input with validation chrome | — |
+| `numeric-input` | `src/lib/components/ui/numeric-input/` | Numeric input with formatting | — |
+| `phone-input` | `src/lib/components/ui/phone-input/` | Phone input with prefix selection | — |
+| `url-input` | `src/lib/components/ui/url-input/` | URL input with validation chrome | — |
 
 ### Display & feedback
 
 | Component | Path | Summary | Page |
 |-----------|------|---------|------|
 | `DynamicIcon` | `src/lib/components/ui/dynamic-icon/` | Runtime Lucide™ icon by name | [page](/docs/dev-guide/components/dynamic-icon) |
+| `ai-icon` | `src/lib/components/ui/ai-icon/` | AI feature icon | — |
+| `bot-icon` | `src/lib/components/ui/bot-icon/` | Bot/agent icon | — |
+| `gradient-icon` | `src/lib/components/ui/gradient-icon/` | Gradient-tinted icon tile | — |
 | `AvatarPreview` | `src/lib/components/ui/avatar-preview/` | Initials + color avatar preview | [page](/docs/dev-guide/components/avatar-preview) |
 | `EventCard` | `src/lib/components/ui/event-card/` | Error/notification event card | [page](/docs/dev-guide/components/event-card) |
 | `EventToast` | `src/lib/components/toasts/EventToast.svelte` | Event toast via svelte-sonner | [page](/docs/dev-guide/components/event-toast) |
 | `LoadingBar` | `src/lib/components/ui/loading-bar/` | Indeterminate loading bar | [page](/docs/dev-guide/components/loading-bar) |
 | `MetadataLoading` | `src/lib/components/ui/metadata-loading/` | List metadata loading placeholder | [page](/docs/dev-guide/components/metadata-loading) |
 | `JsonTableViewer` | `src/lib/components/ui/JsonTableViewer.svelte` | JSON as readable table | [page](/docs/dev-guide/components/json-table-viewer) |
+| `json-code-block` | `src/lib/components/ui/json-code-block/` | JSON code block with syntax chrome | — |
 | `NumberTicker` | `src/lib/components/ui/number-ticker/` | Animated count-up number for KPI values (UoM attached) | [page](/docs/dev-guide/components/number-ticker) |
 | `StatCard` | `src/lib/components/ui/stat-card/` | KPI stat card — label + animated value + icon column | [page](/docs/dev-guide/components/stat-card) |
 | `Toolbar` | `src/lib/components/ui/toolbar/` | Action strip — enforced CTA ordering (groups/refresh/primary), card or bare | [page](/docs/dev-guide/components/toolbar) |
+| `realtime-meter` | `src/lib/components/ui/realtime-meter/` | Realtime metric meter | — |
+| `refresh-button` | `src/lib/components/ui/refresh-button/` | Refresh action button | — |
 | `dialog-bordered` | `src/lib/components/ui/dialog-bordered.svelte` | Severity-accented dialog wrapper | [page](/docs/dev-guide/components/dialog-bordered) |
 | `entity-confirm-dialogs` | `src/lib/components/entity-list-table/dialogs/` | Entity delete/restore dialogs (title + body from translation keys) | [page](/docs/dev-guide/components/entity-confirm-dialogs) |
 | `rfc-error-dialog` | `src/lib/components/ui/rfc-error-dialog.svelte` | RFC7807 error dialog | [page](/docs/dev-guide/components/rfc-error-dialog) |
+
+### Smart components
+
+| Component | Path | Summary | Page |
+|-----------|------|---------|------|
+| `smart-regex-input` | `src/lib/components/ui/smart-regex-input/` | Regex input with AI assistance | [page](/docs/dev-guide/components/smart-regex-input) |
+| `smart-ai` | `src/lib/components/ui/smart-ai/` | AI assistant surfaces (action chips, chat panel, cerebellum selector, …) | — |
+| `smart-guide` | `src/lib/components/ui/smart-guide/` | AI guided-flow surfaces | — |
+| `smart-json-assistant` | `src/lib/components/ui/smart-json-assistant/` | AI-assisted JSON editing | — |
+| `smart-json-config` | `src/lib/components/ui/smart-json-config/` | AI-assisted JSON config editing | — |
 
 ### Auth
 
@@ -87,16 +147,25 @@ Built from scratch for Primebrick. Each has a dedicated page.
 | `LoginForm` | `src/lib/components/auth/LoginForm.svelte` | Login form | [page](/docs/dev-guide/components/login-form) |
 | `PasskeyButton` | `src/lib/components/auth/PasskeyButton.svelte` | WebAuthn passkey trigger | [page](/docs/dev-guide/components/passkey-button) |
 | `PasskeyEnrollment` | `src/lib/components/auth/PasskeyEnrollment.svelte` | Passkey enrollment UI | [page](/docs/dev-guide/components/passkey-enrollment) |
+| `PasskeyEnrollmentSection` | `src/lib/components/auth/PasskeyEnrollmentSection.svelte` | Settings-section wrapper for passkey enrollment | — |
 | `AuthMethodsPromptDialog` | `src/lib/components/auth/AuthMethodsPromptDialog.svelte` | Post-login passkey/MFA prompt | [page](/docs/dev-guide/components/auth-methods-prompt-dialog) |
 | `SessionExpiredDialog` | `src/lib/components/auth/SessionExpiredDialog.svelte` | Session expiry dialog | [page](/docs/dev-guide/components/session-expired-dialog) |
+| `ChangePasswordCard` | `src/lib/components/auth/ChangePasswordCard.svelte` | Change-password card | — |
+| `LoadingWatermark` | `src/lib/components/auth/LoadingWatermark.svelte` | Watermark shown while auth screens load | — |
+| `MfaChallenge` | `src/lib/components/auth/MfaChallenge.svelte` | MFA challenge step | — |
+| `MfaEnrollmentSection` | `src/lib/components/auth/MfaEnrollmentSection.svelte` | Settings-section wrapper for MFA enrollment | — |
+| `MfaManagement` | `src/lib/components/auth/MfaManagement.svelte` | Manage enrolled MFA factors | — |
+| `MfaStepUpDialog` | `src/lib/components/auth/MfaStepUpDialog.svelte` | Step-up MFA verification dialog | — |
 
-## Wrapped shadcn-svelte™ primitives (3)
+## Wrapped shadcn-svelte™ primitives (6)
 
 Vendored from shadcn-svelte™ and extended with Primebrick-specific additions.
 
 | Component | Path | Extension | Page |
 |-----------|------|-----------|------|
+| `button` | `src/lib/components/ui/button/` | variant × tone matrix (gradient semantic tones) | [page](/docs/dev-guide/components/button) |
 | `input` | `src/lib/components/ui/input/` | `async-validated-input`, `text-input`, `input-chrome.ts` | [page](/docs/dev-guide/components/input) |
+| `slider` | `src/lib/components/ui/slider/` | `range-slider.svelte` | [page](/docs/dev-guide/components/slider) |
 | `tooltip` | `src/lib/components/ui/tooltip/` | `tooltip-portal`, `priority-tooltip-content` | [page](/docs/dev-guide/components/tooltip) |
 | `form` | `src/lib/components/ui/form/` | `TranslatedFieldErrors` | [page](/docs/dev-guide/components/form) |
 | `PrimeField` | `src/lib/components/ui/form/prime-field.svelte` | Standalone field-row wrapper (label + help + hint + errors, non-superforms) | [page](/docs/dev-guide/components/prime-field) |
@@ -125,17 +194,17 @@ Assumed unmodified; phase 2 page authoring will confirm.
 | `password` | `src/lib/components/ui/password/` | [password](https://www.shadcn-svelte-extras.com/components/password) |
 | `window` | `src/lib/components/ui/window/` | [window](https://www.shadcn-svelte-extras.com/components/window) |
 
-## shadcn-svelte™ primitives (28, unmodified)
+## shadcn-svelte™ primitives (30, unmodified)
 
 Vendored from [shadcn-svelte™](https://www.shadcn-svelte.com) and used as-is.
 Learn them on the official site; full prop tables are in the
 [API reference](/docs/dev-guide/api-reference).
 
-`alert` · `avatar` · `badge` · `breadcrumb` · `button` · `button-group` ·
+`accordion` · `alert` · `avatar` · `badge` · `breadcrumb` · `button-group` ·
 `card` · `checkbox` · `command` · `dialog` · `dropdown-menu` · `input-group` ·
-`kbd` · `label` · `popover` · `resizable` · `scroll-area` · `separator` ·
-`sheet` · `sidebar` · `skeleton` · `sonner` · `spinner` · `switch` · `table` ·
-`tabs` · `textarea` · `toggle`
+`input-otp` · `kbd` · `label` · `popover` · `resizable` · `scroll-area` ·
+`separator` · `sheet` · `sidebar` · `skeleton` · `sonner` · `spinner` ·
+`switch` · `table` · `tabs` · `textarea` · `toggle`
 
 ## Next steps
 

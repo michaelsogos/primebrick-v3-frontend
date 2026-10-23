@@ -15,7 +15,7 @@
  *
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
- *   - Seeded E2E test actor (test-admin — never the dev bootstrap admin).
+ *   - Ephemeral E2E test actor (e2e_test_admin — never the dev bootstrap admin).
  *   - MFA enabled in auth config.
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention).

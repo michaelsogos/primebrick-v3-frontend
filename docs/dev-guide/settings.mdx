@@ -30,6 +30,12 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
 | `/system/settings/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
+| `/system/settings/clients` | List registered service clients (client_registry entity list) |
+| `/system/settings/clients/create` | Register a new service client |
+| `/system/settings/clients/[uuid]` | Edit a service client |
+| `/system/settings/credentials` | Manage service credentials |
+| `/system/settings/docs-index` | Docs knowledge-base index status and reindexing |
+| `/system/settings/translations` | Browse and edit translation dictionaries per module/language |
 
 ## Modules
 
@@ -51,7 +57,7 @@ via `useHealthChip()` (`chipLabel`, `chipClass`).
 ```svelte
 <script lang="ts">
   import { servicesStore, toggleModule, deleteModule } from "$lib/services-store.svelte.ts";
-  import { useHealthChip } from "$lib/composables/use-health-chip.svelte.ts";
+  import { useHealthChip } from "$lib/composables/useHealthChip.svelte.ts";
 
   const health = useHealthChip();
   const services = $derived(servicesStore.services);
@@ -95,7 +101,7 @@ For the end-user procedure see
 ```svelte
 <script lang="ts">
   import { superForm } from "sveltekit-superforms";
-  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/use-form-guard.svelte.ts";
+  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/useFormGuard.svelte.ts";
 
   const { form, $tainted, $errors, isTainted } = superForm(data.form);
   const formGuard = useFormGuard(() => $tainted, () => $errors, (p) => isTainted(p));

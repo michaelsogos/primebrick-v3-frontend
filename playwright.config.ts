@@ -34,6 +34,6 @@ export default defineConfig({
     },
   ],
   // We do NOT start a webServer here because the dev server is managed
-  // externally (see AGENTS.md dev-server rule). The axe audit script also
+  // externally (see .devin/rules/dev-server.md). The axe audit script also
   // connects to an already-running dev server.
 });

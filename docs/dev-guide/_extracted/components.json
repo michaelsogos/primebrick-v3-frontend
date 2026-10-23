@@ -6085,7 +6085,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      edit?: boolean;\n      duplicate?: boolean;\n      preview?: boolean;\n      delete?: boolean;\n      restore?: boolean;\n      versionHistory?: boolean;\n      custom_actions?: Array<{\n        action_name: string;\n        translation_key: string;\n        icon: string;\n        text_color?: string;\n        disabled_when_deleted?: boolean;\n        required_permission?: string | string[];\n      }>;\n    }",
+          "type": "{\r\n      edit?: boolean;\r\n      duplicate?: boolean;\r\n      preview?: boolean;\r\n      delete?: boolean;\r\n      restore?: boolean;\r\n      versionHistory?: boolean;\r\n      custom_actions?: Array<{\r\n        action_name: string;\r\n        translation_key: string;\r\n        icon: string;\r\n        text_color?: string;\r\n        disabled_when_deleted?: boolean;\r\n        required_permission?: string | string[];\r\n      }>;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -13719,7 +13719,7 @@
         {
           "name": "previewPanel",
           "kind": "let",
-          "type": "{\n      state: {\n        previewPanelOpen: boolean;\n        previewRow: TRow | null;\n        focusedRowIndex: number | null;\n        previewEditMode: boolean;\n        previewRowIndex: number;\n      };\n      openPreview: (row: TRow) => void;\n      closePreview: () => void;\n      setPreviewEditMode: (mode: boolean) => void;\n    }",
+          "type": "{\r\n      state: {\r\n        previewPanelOpen: boolean;\r\n        previewRow: TRow | null;\r\n        focusedRowIndex: number | null;\r\n        previewEditMode: boolean;\r\n        previewRowIndex: number;\r\n      };\r\n      openPreview: (row: TRow) => void;\r\n      closePreview: () => void;\r\n      setPreviewEditMode: (mode: boolean) => void;\r\n    }",
           "typeSource": "typescript",
           "isFunction": true,
           "isFunctionDeclaration": false,
@@ -25878,6 +25878,101 @@
     }
   },
   {
+    "file": "src/lib/components/remote-page/PageSectionSlot.svelte",
+    "component": "PageSectionSlot",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 99,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "section",
+          "kind": "let",
+          "type": "PageSectionDecl",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 23,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 11
+            }
+          }
+        },
+        {
+          "name": "mod",
+          "kind": "let",
+          "type": "RemoteModule | null",
+          "typeSource": "typescript",
+          "value": "undefined",
+          "defaultValue": {
+            "raw": "undefined",
+            "kind": "expression"
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 24,
+              "column": 4
+            },
+            "end": {
+              "line": 24,
+              "column": 19
+            }
+          }
+        },
+        {
+          "name": "ctx",
+          "kind": "let",
+          "type": "ModulePageHost",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 25,
+              "column": 4
+            },
+            "end": {
+              "line": 25,
+              "column": 7
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/remote-page/RemoteMountSlot.svelte",
     "component": "RemoteMountSlot",
     "data": {
@@ -26111,7 +26206,7 @@
           "column": 0
         },
         "end": {
-          "line": 230,
+          "line": 301,
           "column": 0
         }
       },
@@ -26130,11 +26225,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 35,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 35,
+              "line": 43,
               "column": 8
             }
           }
@@ -26156,11 +26251,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 36,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 36,
+              "line": 44,
               "column": 20
             }
           }
@@ -26182,11 +26277,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 45,
               "column": 26
             }
           }
@@ -26208,11 +26303,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 46,
               "column": 23
             }
           }
@@ -26234,11 +26329,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 47,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 47,
               "column": 23
             }
           }
@@ -26260,11 +26355,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 48,
               "column": 29
             }
           }
@@ -56341,7 +56436,7 @@
           "column": 0
         },
         "end": {
-          "line": 225,
+          "line": 226,
           "column": 0
         }
       },
@@ -56367,11 +56462,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 49,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 50,
               "column": 25
             }
           }
@@ -56395,11 +56490,11 @@
           "reactive": true,
           "source": {
             "start": {
-              "line": 50,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 51,
               "column": 25
             }
           }
@@ -56416,11 +56511,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 52,
               "column": 13
             }
           }
@@ -56437,11 +56532,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 53,
               "column": 11
             }
           }
@@ -56458,11 +56553,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 54,
               "column": 15
             }
           }
@@ -56485,11 +56580,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 55,
               "column": 20
             }
           }
@@ -56512,11 +56607,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 56,
               "column": 20
             }
           }
@@ -56533,11 +56628,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 57,
               "column": 6
             }
           }
@@ -56555,11 +56650,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 58,
               "column": 20
             }
           }
@@ -56583,11 +56678,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 59,
               "column": 51
             }
           }
@@ -56610,11 +56705,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 60,
               "column": 26
             }
           }

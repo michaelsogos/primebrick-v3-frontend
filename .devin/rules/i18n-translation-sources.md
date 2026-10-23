@@ -60,7 +60,10 @@ Authenticated pages get translations per-module, resolved **from the URL**:
 
 Consequences:
 
-- Bootstrap always loads `app` + `custom` only.
+- Bootstrap loads the shared `CORE_DICT_MODULES` list — currently
+  `['app', 'custom', 'system']` (single source: `src/lib/i18n/index.ts`,
+  iterated in `src/routes/(app)/+layout.svelte`). Do not hardcode module
+  names for bootstrap loading — extend `CORE_DICT_MODULES` instead.
 - **A page outside every registered `route_prefix` gets NO module dict** —
   its keys render raw. Example: `/customers` was unrouted (the `crm` module
   is not registered in `service_registry`), so `system.entities.customer.*`

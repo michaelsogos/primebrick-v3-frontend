@@ -14,7 +14,9 @@
    refresh = `RefreshCw`. Do not cross these semantics.
 4. **Booleans**: `CircleCheck` / `CircleX` — never `CheckCircle`/`XCircle`.
    **Warnings**: `TriangleAlert` — never the legacy `AlertTriangle` alias.
-5. Prefer single-icon imports (`@lucide/svelte/icons/<name>`).
+5. Icons import ONLY from `@primebrick/ui/vendor/lucide` (named imports) —
+   raw `@lucide/svelte` and `@lucide/svelte/icons/<name>` are rejected by
+   eslint (vendor-plane contract).
 6. Verify icon names empirically (lucide.dev) before importing.
 7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
    `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons

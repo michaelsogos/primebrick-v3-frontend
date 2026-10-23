@@ -3,7 +3,7 @@
  *
  * Responsibilities:
  *   1. Precondition checks: verify the dev stack is reachable
- *      (FE 5173, BE 3001, Postgres 5432). Per the AGENTS.md dev-server rule,
+ *      (FE 5173, BE 3001, Postgres 5432). Per .devin/rules/dev-server.md,
  *      we do NOT start any dev server — we connect to already-running ones.
  *   2. Start the fake Brevo HTTP server (random port).
  *   3. Upsert the `emailsender.providers` row pointing at the fake Brevo URL
@@ -102,7 +102,7 @@ async function assertReachable(url: string, label: string): Promise<void> {
     console.log(`[globalSetup] ${label} reachable (${res.status}).`);
   } catch (err) {
     throw new Error(
-      `[globalSetup] ${label} not reachable at ${url}: ${err}. Per AGENTS.md dev-server rule, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
+      `[globalSetup] ${label} not reachable at ${url}: ${err}. Per .devin/rules/dev-server.md, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
     );
   }
 }

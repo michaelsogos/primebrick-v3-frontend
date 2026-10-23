@@ -67,6 +67,7 @@ The chat/tool loop itself lives in `shell/ai-chat/` — see
 - **Rune-backed classes, not function closures** — `.svelte.ts` files
   expose `$state`-reactive objects; instantiate per component tree, not
   module-scope singletons.
-- **Name = `use<Purpose>`**; file = kebab of the same.
+- **Name = `use<Purpose>`**; file = `use<Purpose>.svelte.ts` (camelCase,
+  same name as the hook — e.g. `useFormGuard.svelte.ts`).
 - **Composables fetch through `api.ts`** — never raw `fetch`; errors flow
   through the [errors pipeline](./error-handling.mdx).
