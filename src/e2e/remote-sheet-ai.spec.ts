@@ -85,7 +85,7 @@ async function aiEntityRows(page: import('@playwright/test').Page, entity: strin
 
 test.beforeEach(async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto('/system/settings/ai', { waitUntil: 'domcontentloaded' });
+  await page.goto('/system/ai', { waitUntil: 'domcontentloaded' });
   await page.getByTestId('sidebar-profile-menu-trigger').waitFor({ state: 'visible', timeout: 15_000 });
   // Let the app settle so every shell module URL is in the resource buffer.
   await page.waitForTimeout(2000);

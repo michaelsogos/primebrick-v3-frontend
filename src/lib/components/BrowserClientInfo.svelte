@@ -18,7 +18,7 @@
   import { Cpu } from '@primebrick/ui/vendor/lucide';
   import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
   import { RankMeter } from '@primebrick/ui';
-  import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
+  import { useMachineCapabilities } from '@primebrick/ui';
 
   type Snapshot = {
     ianaTz: string;

@@ -112,7 +112,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('temperature')}
               class:font-semibold={tunedKeys.has('temperature')}
-              title={$t('system.entities.ai_model.fields.temperature')}
+              title={$t('ai.entities.ai_model.fields.temperature')}
             >
               <Thermometer class="size-3" />
               T={params.temperature}
@@ -121,7 +121,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('top_p')}
               class:font-semibold={tunedKeys.has('top_p')}
-              title={$t('system.entities.ai_model.fields.top_p')}
+              title={$t('ai.entities.ai_model.fields.top_p')}
             >
               <Gauge class="size-3" />
               top_p={params.top_p}
@@ -130,7 +130,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('repetition_penalty')}
               class:font-semibold={tunedKeys.has('repetition_penalty')}
-              title={$t('system.entities.ai_model.fields.repetition_penalty')}
+              title={$t('ai.entities.ai_model.fields.repetition_penalty')}
             >
               <Gavel class="size-3" />
               rep_penalty={params.repetition_penalty}
@@ -141,7 +141,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('max_tokens')}
               class:font-semibold={tunedKeys.has('max_tokens')}
-              title={$t('system.entities.ai_model.fields.max_tokens')}
+              title={$t('ai.entities.ai_model.fields.max_tokens')}
             >
               <Brackets class="size-3" />
               max_tokens={params.max_tokens}
@@ -150,14 +150,14 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('enable_thinking')}
               class:font-semibold={tunedKeys.has('enable_thinking')}
-              title={$t('system.entities.ai_model.fields.enable_thinking')}
+              title={$t('ai.entities.ai_model.fields.enable_thinking')}
             >
               {#if params.enable_thinking}
                 <BrainCircuit class="size-3" />
-                <span>{$t('system.entities.ai_model.thinking.true')}</span>
+                <span>{$t('ai.entities.ai_model.thinking.true')}</span>
               {:else}
                 <Cpu class="size-3" />
-                <span>{$t('system.entities.ai_model.thinking.false')}</span>
+                <span>{$t('ai.entities.ai_model.thinking.false')}</span>
               {/if}
             </span>
             <span

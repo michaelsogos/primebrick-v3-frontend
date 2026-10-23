@@ -2,6 +2,7 @@ import { SvelteSet } from 'svelte/reactivity';
 import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
 import type { ModuleSheetDecl } from '@primebrick/ui';
 import type { DeepReadonly } from '@primebrick/ui';
+import { warmRemoteModules } from '$lib/components/remote-page/remote-loader';
 
 const _state = $state({
   loading: true,
@@ -164,6 +165,10 @@ async function loadShellNav(): Promise<void> {
   try {
     _state.modules = await fetchModules();
     _state.unreachable = false;
+    // Warm every declared remote chunk (pages + sheets) in the background —
+    // the load-promise cache makes the real mount instant when the user
+    // asks. Silent by design; on-demand mounts still classify errors.
+    warmRemoteModules(_state.modules);
   } catch (e) {
     if (e instanceof ApiUnreachableError) {
       _state.unreachable = true;

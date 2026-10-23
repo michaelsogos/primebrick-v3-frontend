@@ -37,7 +37,7 @@
     deriveStylesheetUrl,
     disposeMounted,
     ensureStylesheet,
-    loadRemoteModule,
+    loadRemoteModuleCached,
     mountHostComponent,
     parseWsServiceCode,
     type RemoteErrorKind,
@@ -46,14 +46,14 @@
   let {
     decl,
     props = {},
-    loader = loadRemoteModule,
+    loader = loadRemoteModuleCached,
   }: {
     /** The sheet declaration resolved from module discovery. */
     decl: ModuleSheetDecl;
     /** Caller props — forwarded verbatim into `ctx.sheet.props`. */
     props?: Record<string, unknown>;
     /** Loader override — tests inject fakes. */
-    loader?: typeof loadRemoteModule;
+    loader?: typeof loadRemoteModuleCached;
   } = $props();
 
   type Phase = 'loading' | 'mounted' | 'error';

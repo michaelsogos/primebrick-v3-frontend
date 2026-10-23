@@ -84,7 +84,7 @@ const TURNS: TurnSpec[] = [
     expected: "Wildcard-based RBAC permission system with roles and admin bypass",
     keywords: ["permess", "ruol"],
     expected_sources: [["rbac", "authentication", "generated/roles"]],
-    allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/settings/ai"],
+    allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/ai"],
   },
   {
     prompt: "come rendo un utente admin?",

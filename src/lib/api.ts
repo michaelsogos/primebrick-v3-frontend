@@ -16,7 +16,6 @@ import {
   type ConfigEntry,
   type TypeCapabilitiesMap,
   type AiModel,
-  type AiCerebellum,
   type ServiceInfo,
   type DbMigrationStatus,
   type DbMigrationDriftResult
@@ -25,7 +24,7 @@ import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
-import { getCachedETag, setCachedETag } from '@primebrick/ui';
+import { getCachedETag, setCachedETag } from '@primebrick/ui/cache';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType, AiModel } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';
@@ -445,52 +444,9 @@ export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: Type
   return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
 }
 
-// === AI models (AI-owned ai_models entity — Transformers.js model catalog, via /ws/ai proxy) ===
-
-export async function fetchAiCerebellum(filters?: {
-  assistant_key?: string;
-  model_id?: string;
-}): Promise<AiCerebellum[]> {
-  const params = new URLSearchParams();
-  params.set('page_size', '100');
-  // Canonical qs bracket notation — parsed by Express qs into objects the DAL
-  // filter translator consumes directly (no JSON.stringify anywhere).
-  let i = 0;
-  for (const [field, value] of [
-    ['assistant_key', filters?.assistant_key],
-    ['model_id', filters?.model_id],
-  ] as const) {
-    if (!value) continue;
-    params.set(`filters[${i}][field]`, field);
-    params.set(`filters[${i}][op]`, '=');
-    params.set(`filters[${i}][value]`, value);
-    i++;
-  }
-  if (i > 0) params.set('connector', 'AND');
-  const url = `/ws/ai/api/v1/entities/ai_cerebellum/list?${params.toString()}`;
-  const res = await apiFetch(url);
-  if (!res.ok) throw new Error(`AI cerebellum fetch failed (${res.status})`);
-  const data = (await res.json()) as { rows: AiCerebellum[] };
-  return data.rows;
-}
-
-export async function fetchAiModels(deletedRecords?: 'EXCLUDED' | 'ONLY' | 'INCLUDED'): Promise<AiModel[]> {
-  // The selector expects the full catalog. page_size is capped at 100 by the
-  // BE, and deleted+alive rows can exceed that — paginate until exhausted.
-  const rows: AiModel[] = [];
-  let page = 1;
-  for (;;) {
-    const params = new URLSearchParams({ page_size: '100', page: String(page) });
-    if (deletedRecords) params.set('deleted_records', deletedRecords);
-    const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/list?${params}`);
-    if (!res.ok) throw new Error(`AI models fetch failed (${res.status})`);
-    const data = (await res.json()) as { rows: AiModel[]; total?: number };
-    rows.push(...data.rows);
-    if (data.rows.length < 100 || (data.total !== undefined && rows.length >= data.total)) break;
-    page++;
-  }
-  return rows;
-}
+// === AI models / cerebellum fetchers REMOVED — ai-domain fetches live in
+// @primebrick/ui ai/service-api.ts, resolved via getServiceApi('ai') so the
+// same code runs in host and remote realms. ===
 
 // === Docs KB search (system RPC — BE pass-through to ai.docs_kb) ===
 
@@ -588,80 +544,6 @@ export async function fetchDoc(params: {
   if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
   const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } };
   return data.document;
-}
-
-// ─── Docs index admin (/system/settings/docs-index) ─────────────────────────
-
-export interface DocsIndexRepoRow {
-  repo: string;
-  docs: bigint;
-  chunks: bigint;
-  unembedded_chunks: bigint;
-  content_bytes: bigint;
-  vector_bytes: bigint;
-}
-
-export interface DocsIndexDrift {
-  service: string;
-  repo?: string;
-  error?: string;
-  expected_docs?: bigint;
-  expected_chunks?: bigint;
-  missing_from_index?: string[];
-  stale?: string[];
-  orphans?: string[];
-  unembedded_chunks?: bigint;
-}
-
-export interface DocsIngestLogRow {
-  id: bigint;
-  repo: string | null;
-  service_code: string;
-  trigger_source: string;
-  ok: boolean;
-  stats: Record<string, unknown>;
-  error: string | null;
-  created_at: string;
-}
-
-export interface DocsIndexProbe {
-  query: string;
-  expect_path_includes: string;
-  ok: boolean;
-  top: Array<{ repo: string; path: string; similarity: number }>;
-}
-
-export interface DocsIndexStatus {
-  repos: DocsIndexRepoRow[];
-  drift: DocsIndexDrift[];
-  history: DocsIngestLogRow[];
-  probes?: DocsIndexProbe[];
-  storage: { total_bytes: bigint } | null;
-}
-
-export async function fetchDocsIndexStatus(probe = false): Promise<DocsIndexStatus> {
-  const res = await apiFetch(`/ws/ai/api/v1/ai/docs/index-status${probe ? '?probe=1' : ''}`);
-  if (!res.ok) throw new Error(`Docs index status failed (${res.status})`);
-  return (await res.json()) as DocsIndexStatus;
-}
-
-export interface DocsReindexResult {
-  service: string;
-  repo?: string;
-  ok: boolean;
-  stats?: Record<string, unknown>;
-  error?: string;
-}
-
-export async function reindexDocsPacks(repo?: string): Promise<DocsReindexResult[]> {
-  const res = await apiFetch('/ws/ai/api/v1/ai/reindex', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode: 'packs', ...(repo ? { repo } : {}) }),
-  });
-  if (!res.ok) throw new Error(`Reindex failed (${res.status})`);
-  const data = (await res.json()) as { results: DocsReindexResult[] };
-  return data.results;
 }
 
 /**

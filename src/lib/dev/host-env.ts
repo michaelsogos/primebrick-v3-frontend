@@ -33,4 +33,4 @@ export * from '$lib/breadcrumb/types';
 export { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 export { useAiModels } from '@primebrick/ui';
 export { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
-export { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
+export { useMachineCapabilities } from '@primebrick/ui';

@@ -30,7 +30,7 @@
     deriveStylesheetUrl,
     disposeMounted,
     ensureStylesheet,
-    loadRemoteModule,
+    loadRemoteModuleCached,
     mountHostComponent,
     parseWsServiceCode,
     resolveMountable,
@@ -45,7 +45,7 @@
     components = undefined,
     service = undefined,
     css_url = undefined,
-    loader = loadRemoteModule,
+    loader = loadRemoteModuleCached,
   }: {
     /** This page's route declaration — carries component_url/integrity. */
     decl: PageRouteDeclaration;
@@ -58,7 +58,7 @@
     /** Stylesheet override; defaults to `<component_url>` with .css extension. */
     css_url?: string;
     /** Loader override — tests inject fakes. */
-    loader?: typeof loadRemoteModule;
+    loader?: typeof loadRemoteModuleCached;
   } = $props();
 
   type Phase = 'loading' | 'mounted' | 'error';

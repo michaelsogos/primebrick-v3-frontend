@@ -31,7 +31,7 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
+  import { fetchModuleConfig } from '$lib/api';
   import { useAiModels } from '@primebrick/ui';
   import { useAiCerebellum } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
@@ -117,7 +117,6 @@
     }]>;
   } = $props();
 
-  const config = useConfigEntries();
   const aiModels = useAiModels();
   // svelte-ignore state_referenced_locally — assistant_key is a static
   // prop for the lifetime of the panel (the chat is remounted on change).
@@ -226,8 +225,10 @@
   onMount(() => {
     void (async () => {
       // 1. Resolve the configured model ID before creating the AI composable.
-      await config.ensureLoaded();
-      const entry = config.getEntry('ai_assistant_model');
+      //    `ai_assistant_model` lives in the AI-SCHEMA config table — read
+      //    it through the ai service, never the host config API.
+      const moduleConfig = await fetchModuleConfig('ai');
+      const entry = moduleConfig.find((e) => e.key === 'ai_assistant_model');
       const configuredId = entry?.value ? String(entry.value) : null;
       if (!configuredId) {
         // Mandatory config missing — surface the error instead of faking a model.
