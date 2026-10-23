@@ -88,7 +88,7 @@
 
     "@lezer/highlight": "1.2.5",
     "@microsoft/fetch-event-source": "2.0.1",
-    "@primebrick/ui": "link:../primebrick-v3-ui",
+    "@primebrick/ui": "workspace:*",
     "class-variance-authority": "0.7.1",
     "codemirror": "6.0.2",
     "countries-list": "3.4.1",
