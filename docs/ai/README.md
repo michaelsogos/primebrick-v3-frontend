@@ -20,5 +20,42 @@ These files help humans and agents collaborate consistently on the **Primebrick 
 | [`SKILLS.md`](./SKILLS.md) | **Skill selection** — check `[x]` the skills that apply to this repository |
 | [`WORKFLOWS.md`](./WORKFLOWS.md) | Optional workflows (plan → implement → verify) |
 | Root [`../../AGENTS.md`](../../AGENTS.md) | Project facts, commands, and UI conventions |
+| [`always-check-rules-first.md`](./always-check-rules-first.md) | Always Check Rules Before Action |
+| [`button-variant-standard.md`](./button-variant-standard.md) | Button Variant Standard |
+| [`card-content-layout.md`](./card-content-layout.md) | Card Content Layout Standard |
+| [`code-guardrails.md`](./code-guardrails.md) | Code Execution Guardrails |
+| [`cross-repo-release-order.md`](./cross-repo-release-order.md) | Cross-Repo Release Ordering |
+| [`data-model-conventions.md`](./data-model-conventions.md) | Data Model Conventions |
+| [`detail-page-cta-placement.md`](./detail-page-cta-placement.md) | Detail-Page Primary CTA Placement |
+| [`dialog-footer-cta-order.md`](./dialog-footer-cta-order.md) | Dialog Footer CTA Order |
+| [`docs-audience.md`](./docs-audience.md) | Documentation Audience (3 tiers) |
+| [`docs-dev-guide.md`](./docs-dev-guide.md) | Developer Documentation |
+| [`docs-order.md`](./docs-order.md) | Documentation Page Order |
+| [`docs-pipeline.md`](./docs-pipeline.md) | Documentation Pipeline (trigger-based, end to end) |
+| [`docs-sync-on-close.md`](./docs-sync-on-close.md) | Sync Docs on GitFlow Close |
+| [`docs-user-pages.md`](./docs-user-pages.md) | End-User Page Structure (docs/user-guide) |
+| [`dropdown-surface-standard.md`](./dropdown-surface-standard.md) | Dropdown Surface Shadow Standard |
+| [`e2e-test-users.md`](./e2e-test-users.md) | E2E Test Users — NEVER the dev `admin` |
+| [`e2e-webauthn-auth.md`](./e2e-webauthn-auth.md) | E2E Auth & WebAuthn (Playwright) |
+| [`entity-confirm-dialogs.md`](./entity-confirm-dialogs.md) | Entity Confirm Dialogs (delete/restore) |
+| [`entity-list-pages.md`](./entity-list-pages.md) | Entity Table Pages Must Use EntityTablePage |
+| [`entity-meta-schema.md`](./entity-meta-schema.md) | Entity Metadata Schema (FE consumer view) |
+| [`entity-write-payload.md`](./entity-write-payload.md) | Entity Write Payload (`{entity}` envelope) |
+| [`error-notification.md`](./error-notification.md) | Error Notification — Never Use Toast Directly |
+| [`file-operations.md`](./file-operations.md) | File Operations |
+| [`form-field-standard.md`](./form-field-standard.md) | Form Field Anatomy Standard |
+| [`i18n-translation-sources.md`](./i18n-translation-sources.md) | i18n Translation Sources |
+| [`otp-input.md`](./otp-input.md) | OTP / PIN Code Input |
+| [`package-versioning.md`](./package-versioning.md) | Fixed Package Versions (No Ranges) |
+| [`page-title-standard.md`](./page-title-standard.md) | Entity Page Titles — single source of truth |
+| [`password-input-standard.md`](./password-input-standard.md) | Password Input Standard |
+| [`smart-components.md`](./smart-components.md) | Smart Components (AI-powered) |
+| [`ssr-safe-async-loads.md`](./ssr-safe-async-loads.md) | SSR-Safe Async Loads |
+| [`svelte4-legacy-idioms.md`](./svelte4-legacy-idioms.md) | No Svelte 4 Legacy Idioms |
+| [`temp-files.md`](./temp-files.md) | Temporary Files Location |
+| [`translation-key-convention.md`](./translation-key-convention.md) | Translation Key Convention — snake_case singular |
+| [`ui-input-components.md`](./ui-input-components.md) | Mandatory UI Input Components |
+| [`verify-file-creation.md`](./verify-file-creation.md) | Verify File Creation (Prevent Truncated Filename Bug) |
+| [`workflow.md`](./workflow.md) | Devin Workflow Rule: Tic-Toc Planning |
 
 **Start here for agents:** read root `AGENTS.md`, then `patterns.md` for UI conventions, then `SKILLS.md` for skill selection.

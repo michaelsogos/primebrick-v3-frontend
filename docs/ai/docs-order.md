@@ -1,0 +1,23 @@
+# Devin Rule: Documentation Page Order
+
+> Canonical body of `.devin/rules/docs-order.md` — the rule file is a pointer to this page.
+
+## Trigger
+- Applies whenever AI agent creates or deletes a page in `docs/dev-guide/` or `docs/user-guide/`.
+
+## Actions
+1. When creating a new `.mdx` page, add its slug to `docs/dev-guide/_order.json` (or `docs/user-guide/_order.json` for manual pages)
+   in the logical reading position (not at the end, not alphabetically).
+2. When deleting a page, remove its slug from `_order.json`.
+3. The `_order.json` `pages` array defines the sidebar order on
+   docs.primebrick.dev. Pages not listed are appended alphabetically after
+   listed pages.
+4. `index.mdx` is always excluded — it's the category landing page, not a
+   sidebar item.
+
+## _order.json format
+```json
+{
+  "pages": ["overview", "authentication", "rbac", "..."]
+}
+```
