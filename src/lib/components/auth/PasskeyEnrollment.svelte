@@ -2,10 +2,10 @@
   import { onMount } from "svelte";
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from '@primebrick/ui';
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
+  import { Badge } from '@primebrick/ui';
   import { t } from "$lib/i18n";
   import { Plus } from '@primebrick/ui/vendor/lucide';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';

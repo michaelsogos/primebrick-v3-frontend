@@ -2,14 +2,14 @@
   /**
    * AiModelTestReport — ScoreGauge trigger + minimal popover with the test
    * score summary; a "details" CTA opens the global right-side sheet
-   * (`shell.aiModelTestReport` panel) with the full per-case report.
+   * (`ai.modelTestReport` panel) with the full per-case report.
    *
    * Used on the AI settings page — extracted so the popover stays readable.
    */
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import { buttonVariants } from '$lib/components/ui/button/index.js';
+  import { Popover } from '@primebrick/ui';
+  import { buttonVariants } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
-  import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import { ScoreGauge, gaugeColor } from '@primebrick/ui';
   import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { Component } from 'svelte';
@@ -40,7 +40,7 @@
   });
 
   function openDetails() {
-    openSheet('shell.aiModelTestReport', { model });
+    openSheet('ai.modelTestReport', { model });
   }
 </script>
 

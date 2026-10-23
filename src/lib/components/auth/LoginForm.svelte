@@ -6,7 +6,7 @@
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';

@@ -6,7 +6,7 @@
    * content area — the surrounding app shell is never replaced.
    */
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { CloudOff } from '@primebrick/ui/vendor/lucide';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { RefreshCw } from '@primebrick/ui/vendor/lucide';

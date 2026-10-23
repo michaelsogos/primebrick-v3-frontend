@@ -1,9 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
   import { Eye } from '@primebrick/ui/vendor/lucide'

@@ -30,7 +30,7 @@
  * automatically only when the TTL expired (and the page is opened), or on
  * explicit CTA.
  */
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export interface MachineCapabilities {
   available: boolean;

@@ -14,7 +14,7 @@
   import SidebarProfileMenu from '$lib/components/sidebar/SidebarProfileMenu.svelte';
   import SidebarHealthBadge from '$lib/components/sidebar/SidebarHealthBadge.svelte';
   import SidebarVersionBadge from '$lib/components/sidebar/SidebarVersionBadge.svelte';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { DynamicIcon } from '@primebrick/ui';
 
   import { ChevronRight } from '@primebrick/ui/vendor/lucide';
 

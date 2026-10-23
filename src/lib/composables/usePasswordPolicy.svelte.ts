@@ -10,7 +10,7 @@
  *   - $derived values exposed via individual getters
  */
 
-import type { DeepReadonly } from "$lib/types/deep-readonly";
+import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import {
   PasswordPolicy,

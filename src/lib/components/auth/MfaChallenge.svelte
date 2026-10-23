@@ -4,7 +4,7 @@
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import OtpInput from '$lib/components/otp-input/otp-input.svelte';
   import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';

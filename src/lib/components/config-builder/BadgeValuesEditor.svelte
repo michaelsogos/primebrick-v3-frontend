@@ -12,10 +12,10 @@
    * through `openSheet()`.
    */
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import Badge from '$lib/components/ui/badge/badge.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import * as Sortable from '$lib/components/ui/sortable';
-  import { badgeClassesFromToken } from '$lib/colors/badge';
+  import { badgeClassesFromToken } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';
   import { Pencil } from '@primebrick/ui/vendor/lucide';

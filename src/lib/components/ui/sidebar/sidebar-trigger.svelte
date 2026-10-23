@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button/index.js";
+	import { Button } from '@primebrick/ui';
 	import { cn } from "$lib/utils.js";
 	import { PanelLeft } from '@primebrick/ui/vendor/lucide';
 	import type { ComponentProps } from "svelte";

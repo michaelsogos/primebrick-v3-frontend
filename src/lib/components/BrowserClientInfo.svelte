@@ -17,7 +17,7 @@
   import { MemoryStick } from '@primebrick/ui/vendor/lucide';
   import { Cpu } from '@primebrick/ui/vendor/lucide';
   import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
-  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
+  import { RankMeter } from '@primebrick/ui';
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
 
   type Snapshot = {

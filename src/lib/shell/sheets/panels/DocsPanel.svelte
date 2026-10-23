@@ -20,9 +20,9 @@
   import { onMount, tick } from 'svelte';
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
-  import * as Accordion from '$lib/components/ui/accordion/index.js';
+  import { Accordion } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { closeSheet, sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Sheet } from "@primebrick/ui";

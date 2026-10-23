@@ -1,13 +1,13 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUp } from '@primebrick/ui/vendor/lucide'
   import { ArrowDown } from '@primebrick/ui/vendor/lucide';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
 
   let {
     columns,

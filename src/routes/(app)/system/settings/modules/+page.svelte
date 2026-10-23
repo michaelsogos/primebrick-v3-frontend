@@ -2,10 +2,10 @@
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
-  import { Switch } from '$lib/components/ui/switch';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
+  import { Switch } from '@primebrick/ui';
+  import { DynamicIcon } from '@primebrick/ui';
   import { Package } from '@primebrick/ui/vendor/lucide';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';
   import { Settings } from '@primebrick/ui/vendor/lucide';

@@ -16,10 +16,10 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import { callMcpTool } from '$lib/api';
   import { CircleCheck, CircleX, ExternalLink, Loader2 } from '@primebrick/ui/vendor/lucide';
   import type { AiAction } from './ai-assistant.types';
@@ -220,7 +220,7 @@
   });
 </script>
 
-<DialogBordered bind:open>
+<BorderedDialog bind:open>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{action?.label}</Dialog.Title>
     <Dialog.Description>{$t(`${NS}.confirm_desc`, { tool: action?.tool ?? '' })}</Dialog.Description>
@@ -339,4 +339,4 @@
       </Button>
     {/if}
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

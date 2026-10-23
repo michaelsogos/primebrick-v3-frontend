@@ -20,8 +20,8 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import { pushNotification } from '$lib/errors/app-errors';
   import { fetchDocsIndexStatus, reindexDocsPacks, type DocsIndexStatus } from '$lib/api';
   import { Hourglass } from '@primebrick/ui/vendor/lucide';

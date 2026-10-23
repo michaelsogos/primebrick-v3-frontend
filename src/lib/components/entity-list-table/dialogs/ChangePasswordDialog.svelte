@@ -1,10 +1,10 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
   import { Label } from '$lib/components/ui/label';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch } from '$lib/api';
   import type { RFC7807Error } from '$lib/errors/rfc7807';
@@ -108,7 +108,7 @@
   }
 </script>
 
-<DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('system.settings.users.changePasswordTitle')}</Dialog.Title>
     <Dialog.Description>{$t('system.settings.users.changePasswordDescription')}</Dialog.Description>
@@ -170,4 +170,4 @@
       {/if}
     </Button>
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

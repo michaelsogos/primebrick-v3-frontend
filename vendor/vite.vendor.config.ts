@@ -35,15 +35,80 @@ import { createRequire } from 'node:module';
  */
 
 /**
+ * Workspace-linked packages (`link:` deps — they resolve to sibling repos,
+ * NOT into this repo's node_modules when they're transitive). Used for both
+ * manifest version lookup and importer→package attribution.
+ */
+const WORKSPACE_PACKAGE_DIRS: Record<string, string> = {
+	'@primebrick/core': 'primebrick-v3-core',
+	'@primebrick/ui': 'primebrick-v3-ui',
+	'@primebrick/dal-pg': 'primebrick-dal-v3',
+	'@primebrick/sdk': 'primebrick-v3-sdk',
+	'@primebrick/decimal': 'primebrick-decimal',
+};
+
+/**
+ * Resolve a package's install dir — direct node_modules first, then through
+ * the workspace-linked repo (link: deps land outside this repo's graph).
+ */
+function pkgDir(pkgName: string): string {
+	const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+	const candidates = [
+		join(repoRoot, 'node_modules', pkgName, 'package.json'),
+		...(WORKSPACE_PACKAGE_DIRS[pkgName]
+			? [join(repoRoot, '..', WORKSPACE_PACKAGE_DIRS[pkgName], 'package.json')]
+			: []),
+		// transitive: reached through a workspace package's own node_modules
+		...Object.values(WORKSPACE_PACKAGE_DIRS).map((dir) =>
+			join(repoRoot, '..', dir, 'node_modules', pkgName, 'package.json')
+		),
+	];
+	for (const candidate of candidates) {
+		if (existsSync(candidate)) return dirname(candidate);
+	}
+	throw new Error(`vendor-manifest: cannot resolve ${pkgName}`);
+}
+
+function pkgVersionAt(dir: string): string {
+	const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as {
+		version?: string;
+	};
+	if (!pkg.version) throw new Error(`vendor-manifest: no version in ${dir}`);
+	return pkg.version;
+}
+
+function pkgVersion(pkgName: string): string {
+	return pkgVersionAt(pkgDir(pkgName));
+}
+
+/**
+ * `@primebrick/ui` owns the `vendor/*` wrapper surface — `vendor-map.json`
+ * is the single source for "which real package sits behind each
+ * `@primebrick/ui/vendor/<x>` specifier". Both sides of the handshake read
+ * it: the host manifest (here) and each remote chunk's `deps.json` emitter.
+ * Version truth lives inside ui's own node_modules — that IS the version
+ * the vendored bundle was compiled against.
+ */
+const UI_DIR = pkgDir('@primebrick/ui');
+const UI_VENDOR_MAP = JSON.parse(
+	readFileSync(join(UI_DIR, 'vendor-map.json'), 'utf8')
+) as Record<string, string>;
+
+function specifierVersion(specifier: string): string {
+	const wrapped = UI_VENDOR_MAP[specifier];
+	if (wrapped) return pkgVersionAt(join(UI_DIR, 'node_modules', wrapped));
+	return pkgVersion(specifierTopPackage(specifier));
+}
+
+/**
  * specifier → emitted file. All specifiers of one npm package map to ONE
  * file (union namespace): the browser dedupes by URL → guaranteed single
  * runtime instance, and `import * as $` / named imports both resolve.
  * Keys must equal core's VENDOR_SPECIFIERS — asserted at config load.
- * `pkg` overrides the manifest version source when the vendored file is a
- * raw prebuilt copy of a different package (transformers behind the ui
- * vendor subpath).
+ * Manifest versions resolve through `specifierVersion` — wrapped packages
+ * read ui's vendor-map.json, everything else its own top package.
  */
-const VENDOR_ENTRIES: Record<string, { file: string; pkg?: string }> = {
+const VENDOR_ENTRIES: Record<string, { file: string }> = {
 	svelte: { file: 'svelte.js' },
 	'svelte/internal/client': { file: 'svelte.js' },
 	'svelte/internal/disclose-version': { file: 'svelte.js' },
@@ -59,15 +124,12 @@ const VENDOR_ENTRIES: Record<string, { file: string; pkg?: string }> = {
 	'svelte/attachments': { file: 'svelte-attachments.js' },
 	'@primebrick/core': { file: 'primebrick-core.js' },
 	'@primebrick/ui': { file: 'primebrick-ui.js' },
-	'@primebrick/ui/vendor/transformers': { file: 'vendor-transformers.js', pkg: '@huggingface/transformers' },
-	'@primebrick/ui/vendor/clsx': { file: 'vendor-clsx.js', pkg: 'clsx' },
-	'@primebrick/ui/vendor/tailwind-merge': { file: 'vendor-tailwind-merge.js', pkg: 'tailwind-merge' },
-	'@primebrick/ui/vendor/tailwind-variants': {
-		file: 'vendor-tailwind-variants.js',
-		pkg: 'tailwind-variants',
-	},
-	'@primebrick/ui/vendor/lucide': { file: 'vendor-lucide.js', pkg: '@lucide/svelte' },
-	'@primebrick/ui/vendor/bits-ui': { file: 'vendor-bits-ui.js', pkg: 'bits-ui' },
+	'@primebrick/ui/vendor/transformers': { file: 'vendor-transformers.js' },
+	'@primebrick/ui/vendor/clsx': { file: 'vendor-clsx.js' },
+	'@primebrick/ui/vendor/tailwind-merge': { file: 'vendor-tailwind-merge.js' },
+	'@primebrick/ui/vendor/tailwind-variants': { file: 'vendor-tailwind-variants.js' },
+	'@primebrick/ui/vendor/lucide': { file: 'vendor-lucide.js' },
+	'@primebrick/ui/vendor/bits-ui': { file: 'vendor-bits-ui.js' },
 };
 
 const entryKeys = Object.keys(VENDOR_ENTRIES).sort();
@@ -77,6 +139,19 @@ if (JSON.stringify(entryKeys) !== JSON.stringify(specKeys)) {
 		`vendor:build: VENDOR_ENTRIES keys diverged from @primebrick/core VENDOR_SPECIFIERS\n` +
 			`  entries:    ${entryKeys.join(', ')}\n` +
 			`  specifiers: ${specKeys.join(', ')}`
+	);
+}
+
+// vendor-map coverage: the ui-published map must describe exactly the
+// `@primebrick/ui/vendor/*` slice of VENDOR_ENTRIES — drift either way is a
+// contract break, not a soft warning.
+const entryVendorKeys = entryKeys.filter((k) => k.startsWith('@primebrick/ui/vendor/'));
+const mapKeys = Object.keys(UI_VENDOR_MAP).sort();
+if (JSON.stringify(entryVendorKeys) !== JSON.stringify(mapKeys)) {
+	throw new Error(
+		`vendor:build: @primebrick/ui vendor-map.json diverged from VENDOR_ENTRIES\n` +
+			`  entries: ${entryVendorKeys.join(', ')}\n` +
+			`  map:     ${mapKeys.join(', ')}`
 	);
 }
 
@@ -116,24 +191,17 @@ const ENTRY_FILE_PKG: Record<string, string> = {
 
 /**
  * Packages vendored through a dedicated `@primebrick/ui/vendor/*` wrapper —
- * derived from VENDOR_ENTRIES' `pkg` field so the list stays single-source.
- * `@primebrick/ui`'s own raw imports of these inline into the emitted
- * bundle (the wrappers ARE the plane); everywhere else the blocked-package
- * `reject` verdict keeps them external — a remote chunk importing them raw
- * is still a contract violation in its own build.
+ * derived from ui's published `vendor-map.json` so the list stays
+ * single-source. `@primebrick/ui`'s own raw imports of these inline into
+ * the emitted bundle (the wrappers ARE the plane); everywhere else the
+ * blocked-package `reject` verdict keeps them external — a remote chunk
+ * importing them raw is still a contract violation in its own build.
  */
-const UI_WRAPPED_PACKAGES = new Set(
-	Object.entries(VENDOR_ENTRIES)
-		.filter(([specifier]) => specifier.startsWith('@primebrick/ui/vendor/'))
-		.map(([, entry]) => entry.pkg)
-		.filter((pkg): pkg is string => pkg != null)
-);
+const UI_WRAPPED_PACKAGES = new Set(Object.values(UI_VENDOR_MAP));
 
 /** wrapped package name → its sanctioned specifier (output.paths rewrite). */
 const WRAPPED_SPECIFIER_BY_PKG = new Map(
-	Object.entries(VENDOR_ENTRIES)
-		.filter(([specifier]) => specifier.startsWith('@primebrick/ui/vendor/'))
-		.map(([specifier, entry]) => [entry.pkg, specifier] as const)
+	Object.entries(UI_VENDOR_MAP).map(([specifier, pkg]) => [pkg, specifier] as const)
 );
 
 const require = createRequire(import.meta.url);
@@ -178,49 +246,6 @@ function vendorExternals(): Plugin {
 			return { id: source, external: true };
 		},
 	};
-}
-
-/**
- * Workspace-linked packages (`link:` deps — they resolve to sibling repos,
- * NOT into this repo's node_modules when they're transitive). Used for both
- * manifest version lookup and importer→package attribution.
- */
-const WORKSPACE_PACKAGE_DIRS: Record<string, string> = {
-	'@primebrick/core': 'primebrick-v3-core',
-	'@primebrick/ui': 'primebrick-v3-ui',
-	'@primebrick/dal-pg': 'primebrick-dal-v3',
-	'@primebrick/sdk': 'primebrick-v3-sdk',
-	'@primebrick/decimal': 'primebrick-decimal',
-};
-
-/**
- * Resolve a package's install dir — direct node_modules first, then through
- * the workspace-linked repo (link: deps land outside this repo's graph).
- */
-function pkgDir(pkgName: string): string {
-	const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-	const candidates = [
-		join(repoRoot, 'node_modules', pkgName, 'package.json'),
-		...(WORKSPACE_PACKAGE_DIRS[pkgName]
-			? [join(repoRoot, '..', WORKSPACE_PACKAGE_DIRS[pkgName], 'package.json')]
-			: []),
-		// transitive: reached through a workspace package's own node_modules
-		...Object.values(WORKSPACE_PACKAGE_DIRS).map((dir) =>
-			join(repoRoot, '..', dir, 'node_modules', pkgName, 'package.json')
-		),
-	];
-	for (const candidate of candidates) {
-		if (existsSync(candidate)) return dirname(candidate);
-	}
-	throw new Error(`vendor-manifest: cannot resolve ${pkgName}`);
-}
-
-function pkgVersion(pkgName: string): string {
-	const pkg = JSON.parse(readFileSync(join(pkgDir(pkgName), 'package.json'), 'utf8')) as {
-		version?: string;
-	};
-	if (!pkg.version) throw new Error(`vendor-manifest: no version for ${pkgName}`);
-	return pkg.version;
 }
 
 /**
@@ -290,10 +315,10 @@ function vendorManifest(): Plugin {
 		name: 'primebrick-vendor-manifest',
 		closeBundle() {
 			const manifest: Record<string, { url: string; version: string }> = {};
-			for (const [specifier, { file, pkg }] of Object.entries(VENDOR_ENTRIES)) {
+			for (const [specifier, { file }] of Object.entries(VENDOR_ENTRIES)) {
 				manifest[specifier] = {
 					url: `/vendor/${file}`,
-					version: pkgVersion(pkg ?? specifierTopPackage(specifier)),
+					version: specifierVersion(specifier),
 				};
 			}
 			writeFileSync(

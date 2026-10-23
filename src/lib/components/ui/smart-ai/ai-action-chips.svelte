@@ -18,7 +18,7 @@
   } from '$lib/shell/ai-chat/client-tool-registry';
   import { callMcpTool } from '$lib/api';
   import AiActionConfirmDialog from './ai-action-confirm-dialog.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import type { AiAction } from './ai-assistant.types';
 
   const NS = 'app.smart.guide.ai.action';

@@ -1,7 +1,7 @@
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { UiLang } from '$lib/i18n/languages';
 import { isBlankish as isBlankishUtil } from '../utils';
-import { formatListCellValue } from '$lib/i18n/date-format';
+import { formatListCellValue } from '@primebrick/ui';
 import { formatDatetimeCellDisplay } from '$lib/entity-list';
 import { getAuditableDisplayValue, isAuditableColumn, isAuditableFieldEmpty } from './auditable-fields';
 

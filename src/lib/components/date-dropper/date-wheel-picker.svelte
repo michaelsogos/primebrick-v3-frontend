@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as Popover from "$lib/components/ui/popover";
-	import { Button } from "$lib/components/ui/button";
+	import { Popover } from '@primebrick/ui';
+	import { Button } from '@primebrick/ui';
 	import { Calendar } from '@primebrick/ui/vendor/lucide'
 	import { Clock } from '@primebrick/ui/vendor/lucide'
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';

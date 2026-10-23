@@ -8,7 +8,7 @@
  *   - _state is internal (underscore prefix)
  *   - Exposed via get state() returning DeepReadonly
  */
-import type { DeepReadonly } from "$lib/types/deep-readonly";
+import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import { onMount } from "svelte";
 

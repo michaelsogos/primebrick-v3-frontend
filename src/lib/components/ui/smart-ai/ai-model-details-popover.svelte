@@ -5,13 +5,13 @@
    *
    * Shared by all Smart* assistant panels (i18n_ns + testid_prefix props).
    */
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
+  import { Popover } from '@primebrick/ui';
+  import { ScoreGauge } from '@primebrick/ui';
+  import { ModelIcon } from '@primebrick/ui';
   import { summarizeTestScores } from '@primebrick/ui';
   import { formatBytes } from '@primebrick/ui';
   import { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
-  import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
+  import { CerebellumRecommendationBadge } from '@primebrick/ui';
   import type { AiCerebellum, AiModel } from '$lib/api-types';
   import type { EffectiveAiParams } from '@primebrick/ui';
   import { t } from '$lib/i18n';

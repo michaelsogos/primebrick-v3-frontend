@@ -14,10 +14,10 @@
    */
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { ButtonGroup } from '$lib/components/ui/button-group';
-  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { ComboSelect } from '@primebrick/ui';
+  import { DynamicIcon } from '@primebrick/ui';
   import type { FilterPreset } from '$lib/entity-list';
 
   let {

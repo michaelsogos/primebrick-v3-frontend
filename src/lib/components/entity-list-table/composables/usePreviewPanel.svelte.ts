@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
   viewRows: () => TRow[];

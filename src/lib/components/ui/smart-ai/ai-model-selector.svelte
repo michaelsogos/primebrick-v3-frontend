@@ -10,8 +10,8 @@
    */
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
-  import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
+  import { RankMeter } from '@primebrick/ui';
+  import { ModelIcon } from '@primebrick/ui';
   import { summarizeTestScores, rankColor } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import { t } from '$lib/i18n';

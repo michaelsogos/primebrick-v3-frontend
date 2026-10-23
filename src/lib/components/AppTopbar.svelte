@@ -1,10 +1,10 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';

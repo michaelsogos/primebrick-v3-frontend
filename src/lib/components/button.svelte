@@ -34,11 +34,11 @@
 		}
 	} as const;
 
-	export { type ButtonSize, type ButtonVariant } from '$lib/components/ui/button';
+	export { type ButtonSize, type ButtonVariant } from '@primebrick/ui';
 </script>
 
 <script lang="ts">
-	import { Button, type ButtonProps as ButtonPrimitiveProps } from '$lib/components/ui/button';
+	import { Button, type ButtonProps as ButtonPrimitiveProps } from '@primebrick/ui';
 	import { Spinner } from '$lib/components/ui/spinner';
 
 	let {

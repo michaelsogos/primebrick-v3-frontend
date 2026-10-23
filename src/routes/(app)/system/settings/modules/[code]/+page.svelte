@@ -1,11 +1,11 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { PrimeField } from '$lib/components/ui/form';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import { Badge } from '$lib/components/ui/badge';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
+  import { Checkbox } from '@primebrick/ui';
   import * as Choicebox from '$lib/components/ui/choicebox';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';

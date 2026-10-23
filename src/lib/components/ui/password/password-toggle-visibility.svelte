@@ -5,7 +5,7 @@
 	import { usePasswordToggleVisibility } from './password.svelte.js';
 	import type { PasswordToggleVisibilityProps } from './types.js';
 	import { cn } from '$lib/utils.js';
-	import { inputTrailingIconButtonClasses } from '$lib/components/ui/input/input-chrome.js';
+	import { inputTrailingIconButtonClasses } from '@primebrick/ui';
 
 	let { ref = $bindable(null), class: className }: PasswordToggleVisibilityProps = $props();
 

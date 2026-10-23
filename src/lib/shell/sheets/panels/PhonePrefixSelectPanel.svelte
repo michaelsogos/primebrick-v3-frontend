@@ -1,12 +1,12 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { getCountryData, countries } from 'countries-list';
   import type { TCountryCode } from 'countries-list';
   import { UI_LANGS } from '$lib/i18n/languages';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { ButtonGroup } from '$lib/components/ui/button-group';
   import { cn } from '$lib/utils.js';
   import { Phone } from '@primebrick/ui/vendor/lucide';

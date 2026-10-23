@@ -1,7 +1,7 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
 import type { ModuleSheetDecl } from '@primebrick/ui';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 const _state = $state({
   loading: true,

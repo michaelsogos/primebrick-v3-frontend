@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
   import OtpInput from '$lib/components/otp-input/otp-input.svelte';
   import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
   import { Label } from '$lib/components/ui/label';

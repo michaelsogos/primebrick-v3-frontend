@@ -19,7 +19,7 @@
  *   - Exposed via get state() returning DeepReadonly
  *   - Mutations only through the setMode() mutator
  */
-import type { DeepReadonly } from "$lib/types/deep-readonly";
+import type { DeepReadonly } from '@primebrick/ui';
 
 export type TabsMode = "hide" | "show-all";
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { ChevronsLeft } from '@primebrick/ui/vendor/lucide'
   import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
   import { ChevronRight } from '@primebrick/ui/vendor/lucide'

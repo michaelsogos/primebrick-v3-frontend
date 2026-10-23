@@ -1,4 +1,4 @@
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export function useDialogs<TRow extends Record<string, unknown>>() {
   const _state = $state({

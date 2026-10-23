@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import * as Password from '$lib/components/ui/password';
   import { Label } from '$lib/components/ui/label';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { apiFetchExt } from '$lib/api-ext';
   import { ApiUnreachableError } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';

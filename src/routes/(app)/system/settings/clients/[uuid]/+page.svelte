@@ -2,10 +2,10 @@
   import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
-  import { Switch } from '$lib/components/ui/switch';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Switch } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {

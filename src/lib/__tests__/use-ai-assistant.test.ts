@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   api_fetch: vi.fn(),
 }));
 
-vi.mock('$lib/composables/useAiModels.svelte', () => ({
+vi.mock('@primebrick/ui', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@primebrick/ui')>()),
   useAiModels: () => mocks.ai_models,
 }));
 vi.mock('$lib/api', () => ({ apiFetch: mocks.api_fetch }));

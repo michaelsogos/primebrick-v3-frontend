@@ -13,15 +13,17 @@
  * The remote realm binds its own vendored copy via `bindRemoteCtx(ctx)` —
  * these bindings never cross the boundary.
  */
-import { bindI18n, bindServiceApi, bindSheet } from '@primebrick/ui';
+import { bindI18n, bindNotify, bindServiceApi, bindSheet } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { t } from '$lib/i18n';
 import { uiLang } from '$lib/i18n/store.svelte';
-import { uiLocaleTag } from '$lib/i18n/date-format';
+import { uiLocaleTag } from '@primebrick/ui';
+import { pushNotification } from '$lib/errors/app-errors';
 import { get } from 'svelte/store';
 import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
 bindI18n(t, () => uiLocaleTag(get(uiLang)));
 bindSheet(openSheet as (panelKey: string, props?: Record<string, unknown>, options?: Record<string, unknown>) => void);
+bindNotify(pushNotification);
 bindServiceApi('host', apiFetch);
 bindServiceApi('ai', (path, init) => apiFetch(`/ws/ai${path}`, init));

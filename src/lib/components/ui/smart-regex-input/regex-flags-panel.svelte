@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
-  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { SheetPanelLayout } from '@primebrick/ui';
+  import { SwitchField } from '@primebrick/ui';
   import { Flag } from '@primebrick/ui/vendor/lucide';
 
   interface Props {

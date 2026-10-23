@@ -13,7 +13,7 @@
 
 	const TARGETS = [
 		{ id: 'probe', label: 'probe (trivial)', url: '/src/lib/dev/rc-probe.svelte', props: { label: 'rc-probe' } },
-		{ id: 'gauge', label: 'ScoreGauge (real)', url: '/src/lib/components/ui/smart-regex-input/ScoreGauge.svelte', props: { value: 3.7, label: 'POWER' } },
+		{ id: 'gauge', label: 'ScoreGauge (real)', url: '/@fs/D:/git/primebrick/primebrick-v3-ui/src/lib/components/ai/ScoreGauge.svelte', props: { value: 3.7, label: 'POWER' } },
 		{ id: 'page', label: '+page.svelte (real /ai)', url: '/src/routes/(app)/system/settings/ai/+page.svelte', props: {} },
 	];
 

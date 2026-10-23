@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { ButtonGroup } from '$lib/components/ui/button-group';
   import type { ViewName } from '$lib/entity-list/types';
   import { Table2 } from '@primebrick/ui/vendor/lucide'

@@ -11,7 +11,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { DynamicIcon } from '@primebrick/ui';
 
   /** Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. */
   let {

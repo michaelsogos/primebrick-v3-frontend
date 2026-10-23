@@ -3,14 +3,14 @@
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { cn } from '$lib/utils.js';
-  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { Tooltip } from '@primebrick/ui';
   import { TableCell } from '../table';
   import { Ban } from '@primebrick/ui/vendor/lucide';
   import { datetimeIanaCardFieldHighlightClass, isDatetimeIanaRecordMode } from '../utils/cell-styling';
   import { isCardFieldEmpty } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
-  import { formatListCellValue } from '$lib/i18n/date-format';
+  import { formatListCellValue } from '@primebrick/ui';
   import { stickyCardFieldChromeClass } from '../utils/card-styling';
   import type { MetaColumn } from '$lib/entity-list/types';
 

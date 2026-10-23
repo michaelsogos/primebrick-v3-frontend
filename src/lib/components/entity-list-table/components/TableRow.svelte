@@ -2,10 +2,10 @@
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
   import { t } from '$lib/i18n';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TableCell } from '../table';
   import CellRenderer from './CellRenderer.svelte';
   import {
@@ -26,7 +26,7 @@
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { DynamicIcon } from '@primebrick/ui';
   import type { CellArgs } from '../types';
 
   type TableRowCellArgs = CellArgs<TRow>;

@@ -7,7 +7,7 @@
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
-  import { inputTrailingIconButtonClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { inputTrailingIconButtonClasses } from "@primebrick/ui";
 
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, "type" | "files"> & {

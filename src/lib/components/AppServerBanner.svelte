@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { shellNav, loadShellNav } from '$lib/shell/modules-shell.svelte';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';

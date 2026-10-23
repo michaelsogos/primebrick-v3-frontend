@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from '@primebrick/ui/vendor/bits-ui';
-	import { Checkbox, checkboxBaseClass } from "$lib/components/ui/checkbox";
+	import { Checkbox, checkboxBaseClass } from '@primebrick/ui';
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
-	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from "../menu-row-chrome.js";
+	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from '@primebrick/ui';
 	import type { Snippet } from "svelte";
 
 	let {

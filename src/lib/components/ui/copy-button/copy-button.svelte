@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
-	import type { ButtonProps } from '$lib/components/ui/button';
+	import type { ButtonProps } from '@primebrick/ui';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import type { WithChildren, WithoutChildren } from '@primebrick/ui/vendor/bits-ui';
 

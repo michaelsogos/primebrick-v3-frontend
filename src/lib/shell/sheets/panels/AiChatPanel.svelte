@@ -11,13 +11,13 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { Sheet } from "@primebrick/ui";
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { aiChatStore } from '$lib/shell/ai-chat/use-ai-chat.svelte';
   import { registerBuiltinClientTools } from '$lib/shell/ai-chat/client-tool-registry';

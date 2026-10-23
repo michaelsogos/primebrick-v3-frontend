@@ -15,9 +15,9 @@
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import Input from "./input.svelte";
 	import { CopyButton } from "$lib/components/ui/copy-button";
-	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { Tooltip } from '@primebrick/ui';
 	import { Eraser } from '@primebrick/ui/vendor/lucide';
-	import { inputTrailingIconButtonClasses } from "./input-chrome.js";
+	import { inputTrailingIconButtonClasses } from '@primebrick/ui';
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
 

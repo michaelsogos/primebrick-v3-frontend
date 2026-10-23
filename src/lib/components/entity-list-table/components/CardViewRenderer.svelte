@@ -5,11 +5,11 @@
   import { CircleX } from '@primebrick/ui/vendor/lucide'
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
-  import { Button } from '$lib/components/ui/button';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import { Switch } from '$lib/components/ui/switch';
+  import { Switch } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';

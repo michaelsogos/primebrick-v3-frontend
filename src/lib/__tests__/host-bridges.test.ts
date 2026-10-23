@@ -61,8 +61,8 @@ describe('buildHostComponents', () => {
 
   it('openSheet delegates to the engine — the engine owns resolution + rejection', () => {
     const comps = buildHostComponents(fakeStepUp() as never);
-    comps.openSheet!('shell.aiCerebellum', { models: [] }, { side: 'right' });
-    expect(openSheet).toHaveBeenCalledWith('shell.aiCerebellum', { models: [] }, { side: 'right' });
+    comps.openSheet!('ai.cerebellum', { models: [] }, { side: 'right' });
+    expect(openSheet).toHaveBeenCalledWith('ai.cerebellum', { models: [] }, { side: 'right' });
     // A remote-declared key travels the same path — no bridge-side split.
     comps.openSheet!('ai.modelCache', { active_model_id: 'm1' });
     expect(openSheet).toHaveBeenCalledWith('ai.modelCache', { active_model_id: 'm1' }, undefined);

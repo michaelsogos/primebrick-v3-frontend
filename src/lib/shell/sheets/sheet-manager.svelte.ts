@@ -26,10 +26,6 @@ export const SHEET_PANEL_IDS = [
   'config.regexAiChat',
   'config.jsonAiChat',
   'config.badgeValueEdit',
-  'shell.aiModelTestReport',
-  'shell.aiCerebellum',
-  'shell.aiModelImport',
-  'shell.aiModelCache',
   'shell.docs',
 ] as const;
 
@@ -120,26 +116,6 @@ export type SheetPanelPropsMap = {
     config_key?: string | (() => string);
     config_type: import('$lib/api-types').ConfigEntryType;
   };
-  'shell.aiModelTestReport': {
-    /** The ai_model row whose test_scores report is rendered. */
-    model: import('$lib/api-types').AiModel;
-  };
-  'shell.aiCerebellum': {
-    /** Enabled ai_model rows for the model ComboSelect. */
-    models: readonly import('$lib/api-types').AiModel[];
-    /** Known assistants: key + stored `name` i18n key for that assistant. */
-    assistants: readonly { key: string; name: string }[];
-    /** Existing cerebellum rows — a matching (assistant, model) pair turns the sheet into edit mode. */
-    rows?: readonly import('$lib/api-types').AiCerebellum[];
-    /** Called after a successful save so the caller can reload rows. */
-    onCreated?: () => void;
-  };
-  'shell.aiModelImport': {
-    /** model_id values already in the catalog — excluded from HF results. */
-    existing_model_ids?: readonly string[];
-    /** Called after a model row is created so the caller can reload. */
-    on_added?: () => void;
-  };
   'config.badgeValueEdit': {
     /** 'add' = create a new badge value; 'edit' = mutate `value_key` live. */
     mode: 'add' | 'edit';
@@ -150,12 +126,6 @@ export type SheetPanelPropsMap = {
     /** The type-config builder instance — mutations are live (same object
      *  the page reads), so edits appear without a save callback. */
     builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
-  };
-  'shell.aiModelCache': {
-    /** The model currently loaded in VRAM — its cache cannot be deleted. */
-    active_model_id?: string | null;
-    /** model_id → quality rank, from the compatible catalog snapshot. */
-    model_ranks?: Record<string, number | null>;
   };
   'shell.docs': Record<string, never>;
 };

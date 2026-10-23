@@ -7,9 +7,9 @@
    * rendering: choice preview cards (tokenized pattern), deterministic
    * explain/summarize bullets, and the Yes/No + A/B/C apply flow.
    */
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { CopyButton } from '$lib/components/ui/copy-button';
-  import * as Accordion from '$lib/components/ui/accordion/index.js';
+  import { Accordion } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import AiChatPanel from '$lib/components/ui/smart-ai/ai-chat-panel.svelte';
   import type { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
@@ -17,7 +17,7 @@
   import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
   import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { explainRegex, summarizeRegex, type RegexSummary } from '$lib/components/ui/smart-regex-input/regex-explainer';
-  import type { DeepReadonly } from '$lib/types/deep-readonly';
+  import type { DeepReadonly } from '@primebrick/ui';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { Bot } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';

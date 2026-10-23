@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import { formatUiDateTime, t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';

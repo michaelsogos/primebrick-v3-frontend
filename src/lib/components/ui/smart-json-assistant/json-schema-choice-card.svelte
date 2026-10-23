@@ -13,9 +13,9 @@
    * the i18n namespace arrive via props.
    */
   import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
-  import { Button } from '$lib/components/ui/button';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { Button } from '@primebrick/ui';
+  import { Checkbox } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
   import { t, dict, getDictKeys } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';

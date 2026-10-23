@@ -7,7 +7,7 @@
 		menuListHoverNeutral,
 		menuSidebarActiveChrome,
 		menuSoftRowBorderBase,
-	} from "../menu-row-chrome.js";
+	} from '@primebrick/ui';
 
 	let {
 		ref = $bindable(null),

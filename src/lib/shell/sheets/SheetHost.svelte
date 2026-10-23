@@ -24,10 +24,6 @@
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
   import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
-  import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
-  import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
-  import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
-  import AiModelImportPanel from '$lib/shell/sheets/panels/AiModelImportPanel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
 
@@ -46,10 +42,6 @@
     'config.regexAiChat': RegexAiChatPanel,
     'config.jsonAiChat': JsonConfigAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
-    'shell.aiModelTestReport': AiModelTestReportPanel,
-    'shell.aiCerebellum': AiCerebellumPanel,
-    'shell.aiModelCache': AiModelCachePanel,
-    'shell.aiModelImport': AiModelImportPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel
   };

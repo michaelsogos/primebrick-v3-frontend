@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import EntityConfirmQuestion from './EntityConfirmQuestion.svelte';
   import { getEntitiesNsContext } from '../context';
 
@@ -39,7 +39,7 @@
   let entityName = $derived($t(`${ns}.entities.${entity}.singular`));
 </script>
 
-<DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>
       {$t('app.common.restoreEntityTitle', { entity: entityName })}
@@ -70,4 +70,4 @@
       {/if}
     </Button>
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

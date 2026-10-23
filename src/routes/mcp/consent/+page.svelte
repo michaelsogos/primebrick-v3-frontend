@@ -2,9 +2,9 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { PUBLIC_API_ORIGIN } from '$env/static/public';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Spinner } from '$lib/components/ui/spinner';

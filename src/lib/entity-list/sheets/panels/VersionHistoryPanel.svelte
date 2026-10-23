@@ -3,7 +3,7 @@
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
-  import SheetPanelLayout from "$lib/shell/sheets/SheetPanelLayout.svelte";
+  import { SheetPanelLayout } from '@primebrick/ui';
   import { History } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide'
@@ -13,12 +13,12 @@
   import { AlertCircle } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';
-  import { Button } from "$lib/components/ui/button";
-  import { Badge } from "$lib/components/ui/badge";
-  import { badgeClassesFromToken } from "$lib/colors/badge";
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
+  import { badgeClassesFromToken } from '@primebrick/ui';
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
-  import * as Tooltip from "$lib/components/ui/tooltip";
+  import { Tooltip } from '@primebrick/ui';
   import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
 
   interface Props {

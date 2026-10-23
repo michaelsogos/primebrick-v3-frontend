@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { EyeOff } from '@primebrick/ui/vendor/lucide';
 

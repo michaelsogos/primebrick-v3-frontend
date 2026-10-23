@@ -1,6 +1,6 @@
 import type { MetaColumn } from './types';
 import type { UiLang } from '$lib/i18n/languages';
-import { formatListCellValue, formatUiDateTimeInTimeZone } from '$lib/i18n/date-format';
+import { formatListCellValue, formatUiDateTimeInTimeZone } from '@primebrick/ui';
 
 /** Shared by `EntityListTable` and route `{#snippet cell}` when a custom snippet wraps default formatting. */
 export function formatDatetimeIanaListCell(

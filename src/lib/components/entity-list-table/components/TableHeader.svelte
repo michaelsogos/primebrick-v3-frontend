@@ -1,8 +1,8 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
-  import { Button } from '$lib/components/ui/button';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
   import { datetimeIanaHeadHighlightClass } from '../utils/cell-styling';

@@ -7,7 +7,7 @@
   import { t } from '$lib/i18n';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
   import OtpInput from '$lib/components/otp-input/otp-input.svelte';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';

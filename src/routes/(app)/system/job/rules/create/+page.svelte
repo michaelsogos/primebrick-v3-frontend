@@ -18,7 +18,7 @@
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';

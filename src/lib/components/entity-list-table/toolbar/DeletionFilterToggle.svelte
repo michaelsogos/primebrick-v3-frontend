@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { ButtonGroup } from '$lib/components/ui/button-group';
   import { ListCheck } from '@primebrick/ui/vendor/lucide'
   import { ListX } from '@primebrick/ui/vendor/lucide'

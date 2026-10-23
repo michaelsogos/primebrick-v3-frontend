@@ -3,10 +3,10 @@
   import { SearchBar, ViewModeToggle, DeletionFilterToggle, FilterPresetToolbar } from '.';
   import { Columns3 } from '@primebrick/ui/vendor/lucide'
   import { Funnel } from '@primebrick/ui/vendor/lucide';
-  import { Button } from '$lib/components/ui/button';
-  import { RefreshButton } from '$lib/components/ui/refresh-button';
+  import { Button } from '@primebrick/ui';
+  import { RefreshButton } from '@primebrick/ui';
   import { Toolbar } from '$lib/components/ui/toolbar';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { DynamicIcon } from '@primebrick/ui';
   import type { FilterPreset, ViewName } from '$lib/entity-list/types';
 
   interface ToolbarProps {

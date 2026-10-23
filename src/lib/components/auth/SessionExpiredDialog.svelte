@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';

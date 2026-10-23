@@ -23,10 +23,10 @@
  * - Mutations only through exposed mutator functions
  * - `$derived` values exposed via individual getters
  */
-import type { DeepReadonly } from '$lib/types/deep-readonly';
-import { useAiModels } from '$lib/composables/useAiModels.svelte';
+import type { DeepReadonly } from '@primebrick/ui';
+import { useAiModels } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
-import { useAiCerebellum } from '$lib/composables/useAiCerebellum.svelte';
+import { useAiCerebellum } from '@primebrick/ui';
 import { resolveEffectiveParams, type EffectiveAiParams } from '@primebrick/ui';
 import type { AiCerebellum } from '$lib/api-types';
 import type {

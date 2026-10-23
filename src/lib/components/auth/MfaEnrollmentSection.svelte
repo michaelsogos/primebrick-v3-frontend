@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { TextInput } from '$lib/components/ui/input';
   import OtpInput from '$lib/components/otp-input/otp-input.svelte';

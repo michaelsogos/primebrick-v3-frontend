@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { getAllCurrencies } from '$lib/currency';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';

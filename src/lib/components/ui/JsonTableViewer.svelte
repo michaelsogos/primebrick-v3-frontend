@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Table from "$lib/components/ui/table";
-  import { Badge } from "$lib/components/ui/badge";
+  import { Badge } from '@primebrick/ui';
   import JsonTableViewer from "./JsonTableViewer.svelte";
 
   // Riceve i dati e un flag opzionale per capire se è un nodo annidato

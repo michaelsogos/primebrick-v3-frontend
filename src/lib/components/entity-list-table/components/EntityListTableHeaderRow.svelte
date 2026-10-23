@@ -8,8 +8,8 @@
   import { PanelRightClose } from '@primebrick/ui/vendor/lucide'
   import { PanelRightOpen } from '@primebrick/ui/vendor/lucide';
   import * as Table from '$lib/components/ui/table';
-  import { Button } from '$lib/components/ui/button';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Button } from '@primebrick/ui';
+  import { Checkbox } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { stickyCellClassWithCompute, datetimeIanaHeadHighlightClass } from '../utils/cell-styling';
 

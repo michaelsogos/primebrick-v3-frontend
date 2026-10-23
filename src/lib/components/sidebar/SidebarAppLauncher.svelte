@@ -1,11 +1,8 @@
 <script lang="ts">
-  import * as Popover from '$lib/components/ui/popover';
+  import { Popover } from '@primebrick/ui';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Kbd } from '$lib/components/ui/kbd';
-  import {
-    menuListSelectedSurfaceDropdownClasses,
-    menuListHoverNeutral,
-  } from '$lib/components/ui/menu-row-chrome';
+  import { menuListSelectedSurfaceDropdownClasses, menuListHoverNeutral } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -16,7 +13,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { DynamicIcon } from '@primebrick/ui';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
   import { ChevronRight } from '@primebrick/ui/vendor/lucide';
   import { ArrowUpRight } from '@primebrick/ui/vendor/lucide';

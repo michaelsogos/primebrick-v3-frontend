@@ -4,9 +4,9 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { entityPageTitle } from '$lib/utils/entity-meta';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { FilterBar } from '../toolbar';
   import { fly } from 'svelte/transition';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';

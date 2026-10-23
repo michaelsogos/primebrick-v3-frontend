@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { useAuditBox } from '$lib/composables/useAuditBox';
   import { entitiesNs } from '$lib/utils/entity-meta';

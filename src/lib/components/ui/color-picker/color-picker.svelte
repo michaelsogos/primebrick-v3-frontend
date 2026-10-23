@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '@primebrick/ui';
 	import { ChevronDown } from '@primebrick/ui/vendor/lucide';
-	import * as Popover from '$lib/components/ui/popover';
-	import * as Command from '$lib/components/ui/command';
+	import { Popover } from '@primebrick/ui';
+	import { Command } from '@primebrick/ui';
 	import { Input } from '$lib/components/ui/input';
-	import { ComboSelect } from '$lib/components/ui/combo-select';
-	import { inputGhostChromeClasses } from '$lib/components/ui/input/input-chrome';
-	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '$lib/colors/badge';
+	import { ComboSelect } from '@primebrick/ui';
+	import { inputGhostChromeClasses } from '@primebrick/ui';
+	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '@primebrick/ui';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Check } from '@primebrick/ui/vendor/lucide';
 	import { Hash } from '@primebrick/ui/vendor/lucide';

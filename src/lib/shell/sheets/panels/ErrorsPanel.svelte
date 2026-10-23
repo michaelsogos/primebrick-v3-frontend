@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import * as EventCard from '$lib/components/ui/event-card';
   import { Sheet } from "@primebrick/ui";
   import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
@@ -9,7 +9,7 @@
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { ThumbsUp } from '@primebrick/ui/vendor/lucide'

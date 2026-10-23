@@ -2,7 +2,7 @@
 	import { DropdownMenu as DropdownMenuPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { Circle as CircleIcon } from '@primebrick/ui/vendor/lucide';
 	import { cn, type WithoutChild } from "$lib/utils.js";
-	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from "../menu-row-chrome.js";
+	import { menuSoftRowBorderBase, menuSoftFocusKeyboard, menuSoftRowHighlightData } from '@primebrick/ui';
 
 	let {
 		ref = $bindable(null),

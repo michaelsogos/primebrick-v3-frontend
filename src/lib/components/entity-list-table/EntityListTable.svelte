@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
-  import { checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { checkboxInteractiveClass } from '@primebrick/ui';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
   import EntityListTableDialogs from './components/EntityListTableDialogs.svelte';
   import EntityListTableContent from './components/EntityListTableContent.svelte';

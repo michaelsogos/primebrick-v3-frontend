@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';

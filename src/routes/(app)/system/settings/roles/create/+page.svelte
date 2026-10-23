@@ -7,12 +7,12 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
+  import { Checkbox } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
   import {
     AnchorTabs,
     AnchorTabsList,

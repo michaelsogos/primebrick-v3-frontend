@@ -14,11 +14,11 @@
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { page as appPage } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { RefreshCw } from '@primebrick/ui/vendor/lucide';
@@ -462,7 +462,7 @@
     {/if}
   </div>
 
-  <DialogBordered bind:open={patchDialogOpen} class="sm:max-w-lg">
+  <BorderedDialog bind:open={patchDialogOpen} class="sm:max-w-lg">
     <Dialog.Header>
       <Dialog.Title>
         {patchDialogMode === 'approve'
@@ -493,5 +493,5 @@
         {$t('app.common.confirm')}
       </Button>
     </Dialog.Footer>
-  </DialogBordered>
+  </BorderedDialog>
 </AppPageScaffold>

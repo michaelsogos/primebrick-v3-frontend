@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge';
-  import * as Accordion from '$lib/components/ui/accordion/index.js';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { Badge } from '@primebrick/ui';
+  import { Accordion } from '@primebrick/ui';
+  import { DynamicIcon } from '@primebrick/ui';
   import BrowserClientInfo from '$lib/components/BrowserClientInfo.svelte';
   import { APP_VERSION } from '$lib/version';
   import { backendState } from '$lib/backend-availability';
   import { t } from '$lib/i18n';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import { servicesState, aggregateStatus, groupByCode } from '$lib/services-store.svelte';

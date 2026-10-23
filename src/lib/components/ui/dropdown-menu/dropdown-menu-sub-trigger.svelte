@@ -2,7 +2,7 @@
 	import { DropdownMenu as DropdownMenuPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { ChevronRight as ChevronRightIcon } from '@primebrick/ui/vendor/lucide';
 	import { cn } from "$lib/utils.js";
-	import { menuSoftRowBorderBase, menuSoftRowHighlightData, menuSoftSubTriggerOpenData } from "../menu-row-chrome.js";
+	import { menuSoftRowBorderBase, menuSoftRowHighlightData, menuSoftSubTriggerOpenData } from '@primebrick/ui';
 
 	let {
 		ref = $bindable(null),

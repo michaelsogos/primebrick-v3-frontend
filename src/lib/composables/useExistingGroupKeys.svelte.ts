@@ -9,7 +9,7 @@
  *   - Exposed via get state() returning DeepReadonly
  *   - $derived values exposed via individual getters
  */
-import type { DeepReadonly } from "$lib/types/deep-readonly";
+import type { DeepReadonly } from '@primebrick/ui';
 import { useConfigEntries } from "$lib/composables/useConfigEntries.svelte";
 import { onMount } from "svelte";
 

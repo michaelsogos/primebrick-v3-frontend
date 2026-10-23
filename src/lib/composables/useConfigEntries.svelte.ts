@@ -20,7 +20,7 @@
  *   - Exposed via `get state()` returning `DeepReadonly`
  *   - Mutations only through exposed mutator functions
  */
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 import { fetchConfigEntries } from '$lib/api';
 import type { ConfigEntry } from '$lib/api-types';
 import { clearCachedETag } from '@primebrick/ui';

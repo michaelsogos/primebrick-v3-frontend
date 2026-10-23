@@ -1,16 +1,16 @@
 <script lang="ts">
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Checkbox } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';
   import { Undo2 } from '@primebrick/ui/vendor/lucide';
   import { Info } from '@primebrick/ui/vendor/lucide';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigValueInput from './ConfigValueInput.svelte';
-  import { SelectableRow } from '$lib/components/ui/selectable-fieldset';
+  import { SelectableRow } from '@primebrick/ui';
 
   let {
     entry,

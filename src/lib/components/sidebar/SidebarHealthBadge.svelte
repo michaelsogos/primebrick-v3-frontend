@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { useHealthChip, chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';

@@ -19,27 +19,27 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { useAiModels } from '$lib/composables/useAiModels.svelte';
+  import { useAiModels } from '@primebrick/ui';
   import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
-  import ModelCacheSection from '$lib/components/ui/smart-regex-input/ModelCacheSection.svelte';
-  import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import { ModelCacheSection } from '@primebrick/ui';
+  import { ModelIcon } from '@primebrick/ui';
+  import { ScoreGauge, gaugeColor } from '@primebrick/ui';
   import { HardDrive, BrainCircuit, CircuitBoard, Cpu, Thermometer, Gauge, Trophy, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, Star, TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { modelVariantKey, type AiModel, type AiCerebellum } from '$lib/api-types';
   import { fetchAiCerebellum } from '$lib/api';
   import { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
-  import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
+  import { Popover } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
+  import { CerebellumRecommendationBadge } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import DeletionFilterToggle from '$lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelte';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch, updateConfigEntry } from '$lib/api';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { summarizeTestScores } from '@primebrick/ui';
   import AiModelTestReport from '$lib/components/ui/smart-ai/ai-model-test-report.svelte';
   import MachineCapabilitiesSection from '$lib/components/ui/smart-ai/machine-capabilities-section.svelte';
@@ -145,7 +145,7 @@
   }
 
   function openCerebellumCreate() {
-    openSheet('shell.aiCerebellum', {
+    openSheet('ai.cerebellum', {
       models: aiModels.getAliveCompatibleModels(),
       assistants: cerebellumAssistants,
       rows: cerebellumRows,
@@ -390,7 +390,7 @@
           size="sm"
           type="button"
           onclick={() =>
-            openSheet('shell.aiModelImport', {
+            openSheet('ai.modelImport', {
               existing_model_ids: aiModels.state.models.map((m) => m.model_id),
               on_added: () => aiModels.reload(),
             })}

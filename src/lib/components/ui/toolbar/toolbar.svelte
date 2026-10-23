@@ -21,7 +21,7 @@
   import type { ToolbarRootProps } from '@primebrick/ui/vendor/bits-ui';
   import { cn, type WithElementRef } from '$lib/utils.js';
   import type { Snippet } from 'svelte';
-  import { RefreshButton } from '$lib/components/ui/refresh-button';
+  import { RefreshButton } from '@primebrick/ui';
   import ToolbarDivider from './toolbar-divider.svelte';
 
   let {

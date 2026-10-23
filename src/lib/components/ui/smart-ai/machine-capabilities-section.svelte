@@ -11,9 +11,9 @@
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';
-  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
+  import { ScoreGauge } from '@primebrick/ui';
   import GpuVendorIcon from '$lib/components/ui/smart-ai/gpu-vendor-icon.svelte';
-  import { RefreshButton } from '$lib/components/ui/refresh-button';
+  import { RefreshButton } from '@primebrick/ui';
   import { Cpu, Gauge, Gpu, Hourglass, MemoryStick, TriangleAlert, Zap } from '@primebrick/ui/vendor/lucide';
   import { NumberTicker } from '$lib/components/ui/number-ticker';
   import { StatCard } from '$lib/components/ui/stat-card';

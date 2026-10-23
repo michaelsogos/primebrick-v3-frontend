@@ -3,7 +3,7 @@
   import { tick, onMount } from 'svelte';
   import { Command } from '@primebrick/ui/vendor/bits-ui';
   import { cn } from '$lib/utils';
-  import { commandMenuItemClassName } from '$lib/components/ui/menu-row-chrome';
+  import { commandMenuItemClassName } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { Calculator as CalculatorIcon } from '@primebrick/ui/vendor/lucide';
   import { Calendar as CalendarIcon } from '@primebrick/ui/vendor/lucide';

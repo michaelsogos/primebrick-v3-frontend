@@ -2,12 +2,12 @@
   import type { Snippet } from 'svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
-  import { Switch } from '$lib/components/ui/switch';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
+  import { Switch } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { badgeClassesFromToken } from '$lib/colors/badge';
-  import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';
+  import { badgeClassesFromToken } from '@primebrick/ui';
+  import { SheetHeader } from '@primebrick/ui';
   import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
   import { ChevronRight } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
@@ -20,7 +20,7 @@
   import { X } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
-  import { formatListCellValue } from '$lib/i18n/date-format';
+  import { formatListCellValue } from '@primebrick/ui';
   import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';
   import {

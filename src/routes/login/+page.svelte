@@ -7,9 +7,9 @@
   import { Cookie } from '@primebrick/ui/vendor/lucide';
   import { RotateCcwKey } from '@primebrick/ui/vendor/lucide';
   import { backendState, probeHealth } from '$lib/backend-availability';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';

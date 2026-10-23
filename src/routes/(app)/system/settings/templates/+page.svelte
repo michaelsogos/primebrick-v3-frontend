@@ -1,9 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { FileText } from '@primebrick/ui/vendor/lucide'
   import { Mail } from '@primebrick/ui/vendor/lucide'
   import { FileSpreadsheet } from '@primebrick/ui/vendor/lucide'
