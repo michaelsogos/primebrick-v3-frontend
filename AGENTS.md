@@ -1,5 +1,23 @@
 # AI AGENT INSTRUCTIONS - Primebrick Frontend
 
+## Documentation is the contract — code is the proof
+
+- Docs (AGENTS.md, .devin/rules/, docs/ai/, docs/dev-guide/, docs/user-guide/)
+  are the source of truth for HOW things work. Source code is NEVER
+  documentation: pages are composed dynamically (mountPage, remote chunks,
+  layout.sections, runtime wiring) — reading a +page.svelte alone tells you
+  little about what actually renders.
+- Need to know how to do something (tests, auth, dev servers, conventions)?
+  Find it in the doc FIRST. Read code only as the "prova del 9" — to verify
+  the code behaves as the doc says. Never the reverse.
+- Doc and code disagree? Report the discrepancy — the doc is probably stale.
+  Do NOT fix docs silently and do NOT create new files in .devin/rules/,
+  docs/, or AGENTS.md on your own initiative: propose the text, write only
+  after approval.
+- Before claiming "a doc is missing", check the indexes:
+  docs/ai/README.md, .devin/rules/, docs/dev-guide/_order.json.
+  The missing doc is usually a doc you haven't read.
+
 ## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
 
 **AI agents MUST NEVER commit changes without explicit user instruction.**
@@ -84,6 +102,9 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
 6. **`docs/ai/`** — skills selection and suggested workflows.
 7. **`docs/ai/e2e-browser-session.md`** — E2E procedure (shared Edge CDP session, ephemeral test actors, auth/me gating, bounded waits). NEVER use the dev `admin` account in tests.
+8. **`docs/ai/e2e-test-users.md`** — ⚠️ CRITICAL: all tests authenticate as ephemeral E2E actors (`e2e_test_admin`/`e2e_test_user`, minted per run) — NEVER the dev `admin`.
+9. **`docs/ai/e2e-testid-convention.md`** — `data-testid` naming convention for interactive elements (brittle-on-purpose).
+10. **`docs/ai/e2e-webauthn-auth.md`** — Playwright auth flows: login, invitations, passkeys, MFA, `helpers/webauthn.ts` virtual authenticator.
 
 ## List pages
 
