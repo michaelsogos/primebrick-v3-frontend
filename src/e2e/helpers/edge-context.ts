@@ -94,9 +94,12 @@ export function killEdgeZombies(): void {
 export function sanitizeEdgeProfileSession(): void {
   const def = join(E2E_PROFILE, "Default");
   if (!existsSync(def)) return;
+  // NOTE: "Session Storage" is NOT in this list — it is per-origin app state
+  // (the FE keeps its session token there), not a tab-restore artifact.
+  // Wiping it destroys the human-authenticated session that some specs
+  // (smart-regex-model-selector) rely on.
   const targets = [
     "Sessions",
-    "Session Storage",
     "Current Session",
     "Current Tabs",
     "Last Session",
@@ -138,13 +141,50 @@ export async function launchEdge(): Promise<BrowserContext> {
   });
 }
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
+
+/**
+ * Verify a freshly-launched session BEFORE the launch lock is released. A
+ * fresh Edge occasionally boots with a dead renderer or a wedged network
+ * service (app shows "Offline", in-page fetches hang while curl works).
+ * Callers holding attached tabs can only fail on a wedged session — a spec
+ * that relaunches the shared context kills every other worker's page. The
+ * launch lock is the ONLY safe window to relaunch: no other worker has
+ * attached yet.
+ */
+async function probeFreshContext(context: BrowserContext): Promise<boolean> {
+  let page: Page | undefined;
+  try {
+    page = await context.newPage();
+    const alive = await Promise.race([
+      page.evaluate(() => true).then(() => true),
+      new Promise<false>((r) => setTimeout(() => r(false), 15_000)),
+    ]);
+    if (!alive) return false;
+    await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 20_000 });
+    return await page.evaluate(() =>
+      fetch("/api/v1/health", { signal: AbortSignal.timeout(5000) })
+        .then((r) => r.ok)
+        .catch(() => false),
+    );
+  } catch {
+    return false;
+  } finally {
+    await page?.close().catch(() => {});
+  }
+}
+
 /**
  * Get the shared Edge context. Deterministic under parallel workers:
  * 1. CDP already up → attach.
  * 2. Otherwise serialize launches through a lockfile — ONE worker launches
- *    (zombie-kill + profile sanitize + launchPersistentContext), the rest
- *    poll CDP and attach. `launched` tells the caller the context is fresh
- *    (useful to gate the "wedged network on fresh launch → relaunch" probe).
+ *    (zombie-kill + profile sanitize + launchPersistentContext + health
+ *    probe; a wedged fresh session is relaunched inside the lock), the rest
+ *    poll CDP and attach. `launched` tells the caller the context is fresh.
+ *
+ * Callers must NEVER `context.close()` the returned context — it is the
+ * shared browser for every attached worker. If a page misbehaves, fail the
+ * test; never relaunch.
  */
 export async function getSharedContext(
   cdpTimeoutMs = 60_000,
@@ -162,7 +202,13 @@ export async function getSharedContext(
         // binds the CDP port a few seconds after launch resolves.
         const ctx = await waitForCdp(8000);
         if (ctx) return { context: ctx, launched: false };
-        return { context: await launchEdge(), launched: true };
+        let fresh = await launchEdge();
+        if (!(await probeFreshContext(fresh))) {
+          log("fresh session wedged — relaunching once inside the launch lock");
+          await fresh.close().catch(() => {});
+          fresh = await launchEdge();
+        }
+        return { context: fresh, launched: true };
       } finally {
         releaseLaunchLock();
       }

@@ -15,7 +15,9 @@
  *   - The panel is opened ONCE per suite (beforeAll): the model loads once,
  *     then both tests share the ready page.
  *
- * Auth: persistent headed Edge profile (login+MFA done once by a human).
+ * Auth: programmatic login as the ephemeral e2e_test_admin (same pattern as
+ * the other Edge specs). It carries no TOTP factor — MFA enrollment lives
+ * on the dedicated e2e_mfa_user — so form login never hits a challenge.
  * Locators: data-testid only (brittle-on-purpose convention).
  */
 import {
@@ -26,6 +28,7 @@ import {
   type Locator,
 } from "@playwright/test";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
+import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
 const PAGE_URL = "/system/settings/configurations/create";
 
@@ -78,30 +81,34 @@ async function waitPhase(page: Page, phase: string): Promise<void> {
  */
 async function gotoAuthed(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  // The session-expired dialog renders asynchronously — require two
-  // consecutive clean checks before declaring the page authenticated.
+  // Authenticate programmatically when the session is absent/expired — the
+  // LoginForm renders both on /login and inside the in-app session-expired
+  // dialog, so the same fill covers both. e2e_test_admin has no TOTP factor
+  // (MFA churn lives on e2e_mfa_user) → the submit never hits a challenge.
+  // Two consecutive clean checks are required (the dialog is async).
+  const blocked = async () =>
+    page.url().includes("/login") ||
+    (await page
+      .locator('[data-dialog-overlay], [role="dialog"]')
+      .first()
+      .isVisible()
+      .catch(() => false));
   let cleanChecks = 0;
   for (let i = 0; i < 12; i++) {
-    const blocked =
-      page.url().includes("/login") ||
-      (await page
-        .locator('[data-dialog-overlay], [role="dialog"]')
-        .first()
-        .isVisible()
-        .catch(() => false));
-    if (!blocked) {
+    if (!(await blocked())) {
       if (++cleanChecks >= 2) return;
     } else {
       cleanChecks = 0;
+      const input = page.getByTestId("login-username-input");
+      if (await input.isVisible().catch(() => false)) {
+        await input.fill(E2E_ADMIN_USERNAME);
+        await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+        await page.getByTestId("login-submit-button").click();
+      }
     }
     await page.waitForTimeout(5000); // ≤5s per slot, 12 slots = 60s max
   }
-  throw new Error(
-    `authentication required (url=${page.url()}, dialog=${await page
-      .locator('[role="dialog"]')
-      .isVisible()
-      .catch(() => false)}) — complete login+MFA in the E2E browser window`,
-  );
+  throw new Error(`authentication failed for ${E2E_ADMIN_USERNAME} (url=${page.url()})`);
 }
 
 /** Click brain CTA; verify the panel mounted (data-ai-phase appears). */

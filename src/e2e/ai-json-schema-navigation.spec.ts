@@ -192,8 +192,8 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
    * phase got its own test so each phase keeps its own 10min budget.
    */
   async function bootAssistant(): Promise<{ page: Page; model_id: string }> {
-    let { context, launched } = await getSharedContext();
-    let page = await focusedPage(context);
+    const { context, launched } = await getSharedContext();
+    const page = await focusedPage(context);
 
     // ── Auth gate ──
     const isAuthed = () =>
@@ -207,7 +207,9 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
 
     // ── Connectivity probe — a freshly-launched Edge occasionally boots with
     // a wedged network service (app shows "Offline", every in-page fetch
-    // hangs while curl works). Detect it fast and relaunch the context once.
+    // hangs while curl works). The launch-lock probe in getSharedContext
+    // covers this for the launcher; if it still wedges here, fail — never
+    // relaunch the shared context from a spec.
     const online = () =>
       page.evaluate(async () => {
         try {
@@ -217,11 +219,7 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
         }
       });
     if (launched && !(await online().catch(() => false))) {
-      log("in-page fetch wedged on fresh launch — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context } = await getSharedContext());
-      page = await focusedPage(context);
-      if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
+      throw new Error("in-page fetch wedged on fresh shared Edge session");
     }
 
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));

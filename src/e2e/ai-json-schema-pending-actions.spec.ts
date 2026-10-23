@@ -131,22 +131,18 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
   });
 
   test("free text on the same topic as a pending cascade must NOT emit pick", async () => {
-    let { context, launched } = await getSharedContext();
-    let page = await focusedPage(context);
+    const { context, launched } = await getSharedContext();
+    const page = await focusedPage(context);
 
     // Liveness probe — an attached CDP browser can be alive while the page's
     // renderer is dead (zombie session from a killed run): evaluate would
-    // hang forever. Bounded probe → relaunch the context once.
+    // hang forever. Fail fast — relaunching the shared context would kill
+    // every other worker's page (relaunch lives inside the launch lock).
     const alive = await Promise.race([
       page.evaluate(() => true).then(() => true),
       new Promise<false>((r) => setTimeout(() => r(false), 10_000)),
     ]).catch(() => false);
-    if (!alive) {
-      log("page renderer wedged — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context, launched } = await getSharedContext());
-      page = await focusedPage(context);
-    }
+    if (!alive) throw new Error("shared Edge page renderer unresponsive");
 
     page.on("pageerror", (e) => log(`  pageerror: ${e.message}`));
     page.on("console", (m) => {
@@ -166,13 +162,11 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
 
     // A freshly-launched Edge occasionally boots with a wedged network
     // service (app shows "Offline", every in-page fetch hangs while curl
-    // works). Detect it fast and relaunch the context once.
+    // works). The launch-lock probe in getSharedContext already covers this
+    // for the launcher; if it still wedges here, fail — never relaunch the
+    // shared context from a spec.
     if (launched && !(await online().catch(() => false))) {
-      log("in-page fetch wedged on fresh launch — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context } = await getSharedContext());
-      page = await focusedPage(context);
-      if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
+      throw new Error("in-page fetch wedged on fresh shared Edge session");
     }
 
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
