@@ -22,7 +22,7 @@
   import { ExternalLink } from '@primebrick/ui/vendor/lucide';
   import { MemoryStick } from '@primebrick/ui/vendor/lucide';
   import HuggingFaceIcon from '$lib/components/ui/smart-regex-input/HuggingFaceIcon.svelte';
-  import { formatMB } from '$lib/utils/format-bytes';
+  import { formatMB } from '@primebrick/ui';
   import {
     searchHfModels,
     fetchHfDtypeVariants,

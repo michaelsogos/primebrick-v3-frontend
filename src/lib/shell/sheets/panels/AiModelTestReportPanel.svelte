@@ -9,8 +9,8 @@
    * Opened via `openSheet('shell.aiModelTestReport', { model })` from the
    * AI settings page test-scores popover. Anatomy: SheetPanelLayout.
    */
-  import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '$lib/ai/ai-model-test-scores';
-  import type { TestTurn } from '$lib/ai/ai-model-test-scores';
+  import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '@primebrick/ui';
+  import type { TestTurn } from '@primebrick/ui';
   import { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import * as Accordion from '$lib/components/ui/accordion/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';

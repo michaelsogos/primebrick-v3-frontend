@@ -16,9 +16,12 @@
 import { bindI18n, bindServiceApi, bindSheet } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { t } from '$lib/i18n';
+import { uiLang } from '$lib/i18n/store.svelte';
+import { uiLocaleTag } from '$lib/i18n/date-format';
+import { get } from 'svelte/store';
 import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
-bindI18n(t);
+bindI18n(t, () => uiLocaleTag(get(uiLang)));
 bindSheet(openSheet as (panelKey: string, props?: Record<string, unknown>, options?: Record<string, unknown>) => void);
 bindServiceApi('host', apiFetch);
 bindServiceApi('ai', (path, init) => apiFetch(`/ws/ai${path}`, init));

@@ -27,7 +27,7 @@
   import { HardDrive, BrainCircuit, CircuitBoard, Cpu, Thermometer, Gauge, Trophy, Brackets, Gavel, Download, MemoryStick, ShieldCheck, ShieldX, Trash2, RotateCcw, Star, TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { modelVariantKey, type AiModel, type AiCerebellum } from '$lib/api-types';
   import { fetchAiCerebellum } from '$lib/api';
-  import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
+  import { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
   import CerebellumRecommendationBadge from '$lib/components/ui/smart-ai/cerebellum-recommendation-badge.svelte';
@@ -40,7 +40,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch, updateConfigEntry } from '$lib/api';
   import { Badge } from '$lib/components/ui/badge';
-  import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
+  import { summarizeTestScores } from '@primebrick/ui';
   import AiModelTestReport from '$lib/components/ui/smart-ai/ai-model-test-report.svelte';
   import MachineCapabilitiesSection from '$lib/components/ui/smart-ai/machine-capabilities-section.svelte';
   import { useMachineCapabilities } from '$lib/composables/useMachineCapabilities.svelte';

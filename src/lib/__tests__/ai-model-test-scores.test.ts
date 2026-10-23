@@ -5,7 +5,7 @@ import {
   parseScoreValue,
   summarizeTestScores,
   testCaseLabel,
-} from "$lib/ai/ai-model-test-scores";
+} from "@primebrick/ui";
 import { buildTestScoreUpdate } from "../../e2e/helpers/test-scores";
 
 describe("E2E test-score update parameter binding", () => {

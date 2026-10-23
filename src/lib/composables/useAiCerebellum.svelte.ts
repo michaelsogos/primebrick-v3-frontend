@@ -13,7 +13,7 @@
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { fetchAiCerebellum } from '$lib/api';
 import { modelVariantKey, type AiCerebellum } from '$lib/api-types';
-import { clearCachedETag } from '$lib/cache/fe-cache-store';
+import { clearCachedETag } from '@primebrick/ui';
 
 const AI_CEREBELLUM_URL = '/ws/ai/api/v1/entities/ai_cerebellum/list';
 

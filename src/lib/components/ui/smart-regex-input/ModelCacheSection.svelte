@@ -21,6 +21,7 @@
   import { useAiModels } from '$lib/composables/useAiModels.svelte';
   import { useModelCache, friendlyModelName } from '$lib/ai/use-model-cache.svelte';
   import { useSelection } from '@primebrick/ui';
+  import { formatBytes } from '@primebrick/ui';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
@@ -59,13 +60,6 @@
     );
   });
 
-  function formatBytes(bytes: number | null | undefined): string {
-    if (!bytes || bytes <= 0) return '—';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
 
   // ─── Delete confirmation dialog ─────────────────────────────────────────
   // Pending deletion descriptor: ids to delete + user-friendly display name

@@ -8,11 +8,12 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
-  import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
+  import { summarizeTestScores } from '@primebrick/ui';
+  import { formatBytes } from '@primebrick/ui';
+  import { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
   import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
   import type { AiCerebellum, AiModel } from '$lib/api-types';
-  import type { EffectiveAiParams } from '$lib/ai/ai-cerebellum';
+  import type { EffectiveAiParams } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { Microchip } from '@primebrick/ui/vendor/lucide';
   import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
@@ -58,10 +59,6 @@
     return value >= 1024 ? `${(value / 1024).toFixed(1)} GB` : `${Math.round(value)} MB`;
   }
 
-  function formatBytes(value: number): string {
-    if (value <= 0) return '—';
-    return value >= 1024 ** 3 ? `${(value / 1024 ** 3).toFixed(1)} GB` : `${Math.round(value / 1024 ** 2)} MB`;
-  }
 </script>
 
 <Popover.RootCloseOnScroll>

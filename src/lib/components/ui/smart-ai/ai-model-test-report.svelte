@@ -10,7 +10,7 @@
   import { buttonVariants } from '$lib/components/ui/button/index.js';
   import { cn } from '$lib/utils.js';
   import ScoreGauge, { gaugeColor } from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '$lib/ai/ai-model-test-scores';
+  import { summarizeTestScores, testCaseLabel, turnSpeedScore } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { Component } from 'svelte';
   import { t } from '$lib/i18n';

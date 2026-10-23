@@ -25,7 +25,7 @@ import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
-import { getCachedETag, setCachedETag } from '$lib/cache/fe-cache-store';
+import { getCachedETag, setCachedETag } from '@primebrick/ui';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType, AiModel } from '$lib/api-types';
 export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableError, isUnreachableHttpStatus } from '$lib/api-types';

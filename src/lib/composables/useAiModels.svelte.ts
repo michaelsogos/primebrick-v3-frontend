@@ -23,7 +23,7 @@
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { fetchAiModels, apiFetch } from '$lib/api';
 import { modelVariantKey, type AiModel } from '$lib/api-types';
-import { clearCachedETagsByPrefix } from '$lib/cache/fe-cache-store';
+import { clearCachedETagsByPrefix } from '@primebrick/ui';
 import type { DeletionFilterMode } from '$lib/entity-list/types';
 
 const AI_MODELS_URL = '/ws/ai/api/v1/entities/ai_model/list';

@@ -12,6 +12,7 @@
    * Used by ModelCacheSection (settings page) and ModelCachePanel (popover).
    */
   import { t } from '$lib/i18n';
+  import { formatBytes } from '@primebrick/ui';
   import type { Snippet } from 'svelte';
 
   let {
@@ -36,13 +37,6 @@
     legendAction?: Snippet;
   } = $props();
 
-  function formatBytes(bytes: number | null | undefined): string {
-    if (!bytes || bytes <= 0) return '—';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
 
   const segments = $derived(
     [

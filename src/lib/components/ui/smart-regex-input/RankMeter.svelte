@@ -11,7 +11,7 @@
    * `score_below` puts the score under the bar — used when two meters
    * are stacked so the bars sit adjacent in the middle.
    */
-  import { rankColor } from '$lib/ai/ai-model-test-scores';
+  import { rankColor } from '@primebrick/ui';
   import { cn } from '$lib/utils';
 
   let {

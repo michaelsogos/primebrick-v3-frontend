@@ -17,6 +17,7 @@
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import StorageBreakdownBar from '$lib/components/ui/smart-regex-input/StorageBreakdownBar.svelte';
   import { Trash2, RefreshCw, HardDrive, TriangleAlert, PanelRightOpen } from '@primebrick/ui/vendor/lucide';
+  import { formatBytes } from '@primebrick/ui';
   import { Button } from '$lib/components/ui/button';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { onMount } from 'svelte';
@@ -40,13 +41,6 @@
     );
   });
 
-  function formatBytes(bytes: number | null | undefined): string {
-    if (!bytes || bytes <= 0) return '—';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
 
   function handleDelete(model_id: string) {
     void cache.deleteModel(model_id, active_model_id);

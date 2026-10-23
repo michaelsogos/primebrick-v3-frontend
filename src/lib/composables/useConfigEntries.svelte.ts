@@ -23,7 +23,7 @@
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 import { fetchConfigEntries } from '$lib/api';
 import type { ConfigEntry } from '$lib/api-types';
-import { clearCachedETag } from '$lib/cache/fe-cache-store';
+import { clearCachedETag } from '@primebrick/ui';
 
 const CONFIG_ENTRIES_URL = '/api/v1/entities/config_entry/list';
 

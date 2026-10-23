@@ -12,7 +12,7 @@
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
   import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import { summarizeTestScores, rankColor } from '$lib/ai/ai-model-test-scores';
+  import { summarizeTestScores, rankColor } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import { t } from '$lib/i18n';
   import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
