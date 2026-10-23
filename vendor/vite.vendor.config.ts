@@ -41,7 +41,7 @@ import { createRequire } from 'node:module';
  * Keys must equal core's VENDOR_SPECIFIERS — asserted at config load.
  * `pkg` overrides the manifest version source when the vendored file is a
  * raw prebuilt copy of a different package (transformers behind the ui
- * subpath).
+ * vendor subpath).
  */
 const VENDOR_ENTRIES: Record<string, { file: string; pkg?: string }> = {
 	svelte: { file: 'svelte.js' },
@@ -59,7 +59,7 @@ const VENDOR_ENTRIES: Record<string, { file: string; pkg?: string }> = {
 	'svelte/attachments': { file: 'svelte-attachments.js' },
 	'@primebrick/core': { file: 'primebrick-core.js' },
 	'@primebrick/ui': { file: 'primebrick-ui.js' },
-	'@primebrick/ui/transformers': { file: 'transformers.js', pkg: '@huggingface/transformers' },
+	'@primebrick/ui/vendor/transformers': { file: 'vendor-transformers.js', pkg: '@huggingface/transformers' },
 	'@primebrick/ui/vendor/clsx': { file: 'vendor-clsx.js', pkg: 'clsx' },
 	'@primebrick/ui/vendor/tailwind-merge': { file: 'vendor-tailwind-merge.js', pkg: 'tailwind-merge' },
 	'@primebrick/ui/vendor/tailwind-variants': {
@@ -230,7 +230,7 @@ function pkgVersion(pkgName: string): string {
  * at the same `/vendor/` path.
  */
 const COPY_FILES: Array<{ src: string; pkg: string; dest: string }> = [
-	{ src: 'dist/transformers.web.min.js', pkg: '@huggingface/transformers', dest: 'transformers.js' },
+	{ src: 'dist/transformers.web.min.js', pkg: '@huggingface/transformers', dest: 'vendor-transformers.js' },
 	{
 		src: 'dist/ort-wasm-simd-threaded.jsep.mjs',
 		pkg: '@huggingface/transformers',

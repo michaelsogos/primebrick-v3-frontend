@@ -26,7 +26,7 @@ All AI-powered components MUST use the `Smart` prefix:
 
 | Component | File | AI Engine | Model |
 |----------|------|-----------|-------|
-| `SmartRegexInput` | `smart-regex-input.svelte` | Transformers.js via `@primebrick/ui/transformers` (ONNX Runtime WebGPU — no WASM/CPU fallback) | Config-driven via `ai_assistant_model` config row (selected from the `ai_models` registry) |
+| `SmartRegexInput` | `smart-regex-input.svelte` | Transformers.js via `@primebrick/ui/vendor/transformers` (ONNX Runtime WebGPU — no WASM/CPU fallback) | Config-driven via `ai_assistant_model` config row (selected from the `ai_models` registry) |
 
 ## Enforcement
 - AI agent MUST use the `Smart` prefix for any new AI-powered component.
