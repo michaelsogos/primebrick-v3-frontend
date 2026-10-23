@@ -10,7 +10,7 @@
    */
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import { Button } from '$lib/components/ui/button';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ScrollArea } from '$lib/components/ui/scroll-area';

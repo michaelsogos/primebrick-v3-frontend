@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
   import * as Sortable from '$lib/components/ui/sortable';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';

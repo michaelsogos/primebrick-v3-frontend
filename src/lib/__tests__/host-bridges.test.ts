@@ -1,22 +1,19 @@
 /**
- * host-bridges — the built-in `ctx.components` entries every remote page
- * receives: `openSheet` (panel-key validated) and `mfaStepUp` (delegates to
- * the host step-up composable). These are contract-level tests: the bridges
- * are what D5/D6 grant every remote chunk.
+ * host-bridges — the built-in `ctx.components` entries every remote
+ * page/sheet receives: `openSheet` (delegates to the engine — validation
+ * lives there: host registry ∪ remote `nav.sheets[]` decls) and
+ * `mfaStepUp` (delegates to the host step-up composable). These are
+ * contract-level tests: the bridges are what D5/D6 grant every remote
+ * chunk.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('$lib/errors/app-errors', () => ({
-  pushNotification: vi.fn(),
-}));
 vi.mock('$lib/shell/sheets/sheet-manager.svelte', () => ({
-  SHEET_PANEL_IDS: ['shell.errors', 'shell.aiCerebellum'],
   openSheet: vi.fn(),
 }));
 
 import { buildHostComponents } from '$lib/components/remote-page/host-bridges';
-import { openSheet, SHEET_PANEL_IDS } from '$lib/shell/sheets/sheet-manager.svelte';
-import { pushNotification } from '$lib/errors/app-errors';
+import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
 const fakeStepUp = () => ({
   dialogOpen: false,
@@ -62,24 +59,12 @@ describe('buildHostComponents', () => {
     });
   });
 
-  it('openSheet opens a registered panel', () => {
+  it('openSheet delegates to the engine — the engine owns resolution + rejection', () => {
     const comps = buildHostComponents(fakeStepUp() as never);
     comps.openSheet!('shell.aiCerebellum', { models: [] }, { side: 'right' });
     expect(openSheet).toHaveBeenCalledWith('shell.aiCerebellum', { models: [] }, { side: 'right' });
-    expect(pushNotification).not.toHaveBeenCalled();
-  });
-
-  it('openSheet rejects an unknown panel key with a notification', () => {
-    const comps = buildHostComponents(fakeStepUp() as never);
-    comps.openSheet!('evil.nonexistent', {});
-    expect(openSheet).not.toHaveBeenCalled();
-    expect(pushNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ impact: 'MEDIUM', scope: 'RemotePage' }),
-    );
-  });
-
-  it('SHEET_PANEL_IDS is the runtime source SheetPanelId derives from', () => {
-    expect(SHEET_PANEL_IDS.length).toBeGreaterThan(0);
-    expect(SHEET_PANEL_IDS).toContain('shell.aiCerebellum');
+    // A remote-declared key travels the same path — no bridge-side split.
+    comps.openSheet!('ai.modelCache', { active_model_id: 'm1' });
+    expect(openSheet).toHaveBeenCalledWith('ai.modelCache', { active_model_id: 'm1' }, undefined);
   });
 });

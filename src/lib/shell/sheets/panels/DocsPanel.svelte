@@ -25,7 +25,7 @@
   import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { closeSheet, sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import { docsContext } from '$lib/shell/docs/docs-context.svelte';
   import { renderDoc, hydrateMermaid, resolveDocTarget, type DocsTocItem } from '$lib/shell/docs/docs-render';
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';

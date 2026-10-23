@@ -1,11 +1,14 @@
+import { pushNotification } from '$lib/errors/app-errors';
+import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
+
 export type SheetSide = 'left' | 'right';
 
 /**
- * Runtime list of every registered panel key — the type below derives from
- * it (single source). Remote pages reach this registry only through
- * `ctx.components.openSheet`, which validates `panelKey` against this list:
- * an unknown key is rejected with a notification instead of opening an
- * empty sheet.
+ * Runtime list of every HOST-REGISTERED panel key — the type below derives
+ * from it (single source). Remote-declared sheets (`<module>.<name>`,
+ * `nav.sheets[]`) live outside this list: `openSheet` resolves host keys
+ * first, then remote declarations via the module discovery payload, and
+ * rejects anything else with a notification.
  */
 export const SHEET_PANEL_IDS = [
   'shell.errors',
@@ -172,8 +175,9 @@ export function shouldSuppressSheetDialogClose(): boolean {
 
 type SheetState = {
   open: boolean;
-  panelId: SheetPanelId | null;
-  props: AnyPanelProps | null;
+  /** Host registry key OR remote `<module>.<name>` decl key. */
+  panelId: string | null;
+  props: Record<string, unknown> | null;
   side: SheetSide;
   contentClass: string;
   keepMountedState: boolean;
@@ -192,17 +196,53 @@ export const sheetState = $state<SheetState>({
   expanded: false
 });
 
+/**
+ * Is `panelId` openable right now? Host registry first, then a remote
+ * declaration from the module discovery payload. Anything else gets the
+ * standard rejection notification — callers never branch on the result.
+ */
+export function isSheetPanelKnown(panelId: string): boolean {
+  return (
+    (SHEET_PANEL_IDS as readonly string[]).includes(panelId) ||
+    resolveRemoteSheetDecl(panelId) !== null
+  );
+}
+
 export function openSheet<T extends SheetPanelId>(
   panelId: T,
   props: SheetPanelPropsMap[T],
   options?: SheetOpenOptions
+): void;
+export function openSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
+): void;
+export function openSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
 ) {
+  const isHostPanel = (SHEET_PANEL_IDS as readonly string[]).includes(panelId);
+  const remoteDecl = isHostPanel ? null : resolveRemoteSheetDecl(panelId);
+  if (!isHostPanel && !remoteDecl) {
+    pushNotification({
+      impact: 'MEDIUM',
+      message: `Unknown sheet panel: ${panelId}`,
+      scope: 'Sheets',
+      toast: true
+    });
+    return;
+  }
+  // Declared chrome defaults — the caller's options always win.
+  const defaults = remoteDecl?.default_options;
   sheetState.panelId = panelId;
-  sheetState.props = props as AnyPanelProps;
-  sheetState.side = options?.side ?? 'right';
-  sheetState.contentClass = options?.contentClass ?? sheetState.contentClass;
+  sheetState.props = (props ?? {}) as Record<string, unknown>;
+  sheetState.side = options?.side ?? defaults?.side ?? 'right';
+  sheetState.contentClass =
+    options?.contentClass ?? defaults?.content_class ?? sheetState.contentClass;
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
-  sheetState.modal = options?.modal ?? true;
+  sheetState.modal = options?.modal ?? defaults?.modal ?? true;
   sheetState.expanded = false;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
@@ -217,9 +257,19 @@ export function replaceSheet<T extends SheetPanelId>(
   panelId: T,
   props: SheetPanelPropsMap[T],
   options?: SheetOpenOptions
+): void;
+export function replaceSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
+): void;
+export function replaceSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
 ) {
   // For now `replace` is identical to `open` (keeps sheet open while switching content).
-  openSheet(panelId, props, options);
+  openSheet(panelId as SheetPanelId, props as AnyPanelProps, options);
 }
 
 export function closeSheet() {

@@ -1,5 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
+import type { ModuleSheetDecl } from '@primebrick/ui';
 import type { DeepReadonly } from '$lib/types/deep-readonly';
 
 const _state = $state({
@@ -67,6 +68,21 @@ function resolveModuleFromRoute(pathname: string): string | null {
   // switcher shows a neutral state instead of falsely attributing the
   // page to the reserved module.
   return resolveModuleIdFromPrefixes(_state.modules, pathname);
+}
+
+/**
+ * Resolve a remote sheet declaration by open-sheet key (`<module>.<name>`)
+ * across every discovered module's `sheets[]` — the declarations arrive
+ * inside the `/modules` payload already access-filtered server-side, so a
+ * resolved decl is always one this user may open. `null` = no module
+ * declared that key (or discovery hasn't landed yet).
+ */
+export function resolveRemoteSheetDecl(key: string): ModuleSheetDecl | null {
+  for (const m of _state.modules) {
+    const decl = m.sheets?.find((s) => s.key === key);
+    if (decl) return decl;
+  }
+  return null;
 }
 
 /**

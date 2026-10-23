@@ -22,7 +22,7 @@
    *     <p>…</p>
    *   </SheetPanelLayout>
    */
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeader from '$lib/shell/sheets/SheetHeader.svelte';

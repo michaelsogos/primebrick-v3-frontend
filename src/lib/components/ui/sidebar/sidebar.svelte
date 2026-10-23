@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Sheet from "$lib/components/ui/sheet/index.js";
+	import { Sheet } from "@primebrick/ui";
 	import { cn } from "$lib/utils.js";
 	import type { WithElementRef } from '@primebrick/ui/vendor/bits-ui';
 	import type { HTMLAttributes } from "svelte/elements";

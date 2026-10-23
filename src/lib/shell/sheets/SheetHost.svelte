@@ -1,11 +1,13 @@
 <script lang="ts">
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import {
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
     type SheetPanelId
   } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
+  import RemoteSheetMount from '$lib/components/remote-page/RemoteSheetMount.svelte';
   import { cn } from '$lib/utils';
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
@@ -53,7 +55,15 @@
   };
 
   const panelId = $derived(sheetState.panelId);
-  const Panel = $derived(panelId ? registry[panelId] : null);
+  /**
+   * Dispatch: host registry first, then a remote declaration — the key
+   * passed `openSheet` validation so exactly one of them resolves. Remote
+   * sheets mount through the same loader/ctx discipline as remote pages.
+   */
+  const Panel = $derived(
+    panelId && panelId in registry ? (registry as Record<string, any>)[panelId] : null
+  );
+  const remoteDecl = $derived(Panel ? null : panelId ? resolveRemoteSheetDecl(panelId) : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);
 
   /**
@@ -74,6 +84,8 @@
   <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
     {#if Panel}
       <Panel {...panelProps} modal={sheetState.modal} />
+    {:else if remoteDecl}
+      <RemoteSheetMount decl={remoteDecl} props={panelProps} />
     {/if}
   </Sheet.Content>
 </Sheet.Root>

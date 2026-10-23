@@ -6,7 +6,7 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
-import type { PageRouteDeclaration } from '@primebrick/ui';
+import type { ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
 
 export type EntityWritePayload<E> = {
   entity: E;
@@ -43,6 +43,12 @@ export type ModuleInfo = {
   nav?: ModuleNavLink[];
   /** Route census declared by the module — access-filtered like `nav`. */
   routes?: ModuleRouteDecl[];
+  /**
+   * Remote sheet panels declared by the module — access-filtered like
+   * `routes`. The sheet engine is host-side; each decl ships a
+   * `mountSheet` chunk mounted at runtime.
+   */
+  sheets?: ModuleSheetDecl[];
   /**
    * nav[0].href of each root slice, post-filter — the first page the user
    * is actually allowed to see in that root. `{crm: "/crm/customers",

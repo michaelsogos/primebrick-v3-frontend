@@ -3,7 +3,7 @@
   import { Button } from "$lib/components/ui/button";
   import { TextInput } from "$lib/components/ui/input";
   import PrimeField from "$lib/components/ui/form/prime-field.svelte";
-  import * as Sheet from "$lib/components/ui/sheet";
+  import { Sheet } from "@primebrick/ui";
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Badge } from "$lib/components/ui/badge";

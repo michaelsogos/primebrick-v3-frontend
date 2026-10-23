@@ -23,6 +23,7 @@ import {
 	diffVendorRequirements,
 	type HostMountHandle,
 	type MountPageFn,
+	type MountSheetFn,
 	type RemoteDepsManifest,
 	type VendorManifest,
 	type VendorMismatch,
@@ -32,6 +33,8 @@ import HostMountShell from './HostMountShell.svelte';
 /** The `esm-mount` chunk shape: preferred self-mount export, default fallback. */
 export type RemoteModule = {
 	mountPage?: MountPageFn;
+	/** Remote sheet entry — chunks declared in `nav.sheets[]` export this. */
+	mountSheet?: MountSheetFn;
 	default?: unknown;
 	/**
 	 * Named section mounts — `layout.sections` `remote:<export>` sources
