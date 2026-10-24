@@ -17,9 +17,9 @@ import {
  * never leaks whether the page exists at all.
  *
  * Open surface: paths no module owns (`/`, `/login`, `/docs`, `/dev`)
- * and bare-prefix paths themselves — the module-root shims resolve the
- * declared `default` leaf there (the guard denies first when the whole
- * module is `accessible:false`).
+ * and bare-prefix paths themselves — the `(app)/[...path]` catch-all
+ * resolves the declared `default` leaf there via `resolvePageForPath`
+ * (the guard denies first when the whole module is `accessible:false`).
  */
 export function isRouteAccessible(
   pathname: string,
@@ -44,7 +44,7 @@ export function isRouteAccessible(
  * `[param]` segments are per-leaf wildcards — `/x/[uuid]` matches `/x/abc`.
  * Segment count must match exactly (a leaf never swallows deeper paths).
  */
-function routePatternMatches(pattern: string, pathname: string): boolean {
+export function routePatternMatches(pattern: string, pathname: string): boolean {
   const p = pattern.split('/').filter(Boolean);
   const u = pathname.split('/').filter(Boolean);
   if (p.length !== u.length) return false;
