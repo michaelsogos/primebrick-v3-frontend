@@ -1,15 +1,11 @@
 <script lang="ts">
   /**
-   * /system/ai — module-owned REMOTE page (AI console).
+   * /system/ai/console — module-owned REMOTE page (the AI console).
    *
-   * The ai service ships this page's UI as a precompiled ESM chunk
-   * (`ai-pages.js`); the route only resolves the declaration from the
-   * routes census and mounts it via RemotePageMount.
-   *
-   * components.AppPageBreadcrumb / moduleBreadcrumbSegments → host surface
-   * mounted as separate roots via ctx.mount_host. NO snippets cross the
-   * bundle boundary.
-   * Resolution failures render an in-content error panel — the shell stays.
+   * Same mount contract as /system/ai/docs-index — the ai-pages chunk
+   * dispatches on ctx.nav.route. The module ROOT /system/ai is a
+   * namespace, never a page: the root shim redirects here because
+   * `console` is the declared `default` leaf.
    */
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
@@ -36,7 +32,7 @@
     try {
       const routes = routesCensusFromModules(await fetchModules());
       const found = routes.find(
-        (r) => r.route === '/system/ai' && r.component_url
+        (r) => r.route === '/system/ai/console' && r.component_url
       );
       if (found) {
         decl = found;
@@ -45,7 +41,7 @@
       decl = null;
       resolve_error = {
         kind: 'contract',
-        detail: 'route /system/ai is not declared for remote delivery',
+        detail: 'route /system/ai/console is not declared for remote delivery',
       };
     } catch (e) {
       decl = null;
@@ -74,7 +70,7 @@
     on_retry={() => void resolveDecl()}
   />
 {:else}
-  <div class="flex flex-1 flex-col gap-3 p-6" data-testid="ai-page-resolving" aria-busy="true">
+  <div class="flex flex-1 flex-col gap-3 p-6" data-testid="ai-console-page-resolving" aria-busy="true">
     <div class="flex items-center gap-2 text-sm text-muted-foreground">
       <LoaderCircle class="size-4 animate-spin" />
       {$t('app.remote_page.loading')}

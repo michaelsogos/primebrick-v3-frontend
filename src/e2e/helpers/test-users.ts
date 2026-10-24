@@ -41,9 +41,13 @@ const USER_ACTOR_DISPLAY = "E2E Test User";
 const USER_ACTOR_EMAIL = `${USER_ACTOR_NAME}@e2e.local`;
 const USER_ROLE = "e2e_user";
 const USER_ROLE_PERMISSIONS = [
-  // Access axis: sees the System app's job module (module-level grant).
-  "access.system.job",
-  // Entity RBAC: customer reads so CRM pages/APIs work for this actor.
+  // Access axis: every leaf of the job module — wildcard grant (bare
+  // namespaces like `access.system.job` are ILLEGAL under the access
+  // grammar: only exact leaf keys or `.*` wildcards may be granted).
+  "access.system.job.*",
+  // Entity RBAC: customer reads so CRM entity APIs work for this actor —
+  // WITHOUT `access.crm.*` the crm module stays navigation-inaccessible:
+  // the two axes are deliberately separate.
   "customer.read.all",
   "customer.read.single",
 ];

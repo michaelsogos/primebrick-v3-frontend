@@ -62,8 +62,8 @@
     size="xs"
     disabled={footerPage <= 1}
     onclick={handleFirstPage}
-    aria-label={$t('system.entities.list.firstPage')}
-    title={$t('system.entities.list.firstPage')}
+    aria-label={$t('system.entities.list.pagination.firstPage')}
+    title={$t('system.entities.list.pagination.firstPage')}
   >
     <ChevronsLeft class="size-4" />
   </Button>
@@ -72,8 +72,8 @@
     size="xs"
     disabled={footerPage <= 1}
     onclick={handlePreviousPage}
-    aria-label={$t('system.entities.list.previousPage')}
-    title={$t('system.entities.list.previousPage')}
+    aria-label={$t('system.entities.list.pagination.previousPage')}
+    title={$t('system.entities.list.pagination.previousPage')}
   >
     <ChevronLeft class="size-4" />
   </Button>
@@ -87,8 +87,8 @@
     size="xs"
     disabled={footerPage >= footerTotalPages}
     onclick={handleNextPage}
-    aria-label={$t('system.entities.list.nextPage')}
-    title={$t('system.entities.list.nextPage')}
+    aria-label={$t('system.entities.list.pagination.nextPage')}
+    title={$t('system.entities.list.pagination.nextPage')}
   >
     <ChevronRight class="size-4" />
   </Button>
@@ -97,8 +97,8 @@
     size="xs"
     disabled={footerPage >= footerTotalPages}
     onclick={handleLastPage}
-    aria-label={$t('system.entities.list.lastPage')}
-    title={$t('system.entities.list.lastPage')}
+    aria-label={$t('system.entities.list.pagination.lastPage')}
+    title={$t('system.entities.list.pagination.lastPage')}
   >
     <ChevronsRight class="size-4" />
   </Button>

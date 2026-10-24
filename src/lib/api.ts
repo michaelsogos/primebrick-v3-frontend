@@ -44,6 +44,7 @@ const ENTITY_SERVICE_MAP: Record<string, string> = {
   job_schedule: 'job',
   job_run: 'job',
   job_rule: 'job',
+  provider: 'emailsender',
 };
 
 export function entityApiBase(entity: string): string {
@@ -287,10 +288,11 @@ export async function apiFetchWithTimeout(
 /**
  * THE module discovery document — `GET /api/v1/modules` is the single
  * access-filtered payload feeding every nav surface (launcher, sidebar,
- * breadcrumb, route census). It embeds each module's `nav`/`routes`/`home`
+ * breadcrumb, route census). It embeds each module's `nav`/`routes`/`sheets`
  * already filtered by the caller's `access.*` grants — there is no
- * per-module meta endpoint; a module the user cannot reach is simply
- * absent from the list.
+ * per-module meta endpoint. A module with ZERO reachable leaves stays
+ * present flagged `accessible:false` (+ `nav_hidden`) so the launcher's
+ * reveal switch can render it disabled.
  */
 export async function fetchModules(): Promise<ModuleInfo[]> {
   const res = await apiFetch('/api/v1/modules');

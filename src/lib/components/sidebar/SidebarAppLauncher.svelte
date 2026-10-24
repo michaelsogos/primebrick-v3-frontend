@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Popover } from '@primebrick/ui';
+  import { Popover, Switch } from '@primebrick/ui';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Kbd } from '$lib/components/ui/kbd';
   import { menuListSelectedSurfaceDropdownClasses, menuListHoverNeutral } from '@primebrick/ui';
@@ -7,7 +7,7 @@
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
-  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { defaultLeafHref, shellNav } from '$lib/shell/modules-shell.svelte';
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import type { ModuleInfo, ModuleNavLink } from '$lib/api-types';
   import { goto } from '$app/navigation';
@@ -16,7 +16,7 @@
   import { DynamicIcon } from '@primebrick/ui';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
   import { ChevronRight } from '@primebrick/ui/vendor/lucide';
-  import { ArrowUpRight } from '@primebrick/ui/vendor/lucide';
+  import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
 
@@ -52,6 +52,10 @@
   let previewModuleId = $state<string | null>(null);
   // Height ratchet — only grows while the panel is open.
   let shownRows = $state(ROWS_MIN);
+  // Reveal switch — when ON, roots/modules/pages the access axis filtered
+  // out are rendered DISABLED (visible but never navigable: no row goto,
+  // no CTA). Selection/preview stays allowed — that IS the reveal.
+  let showAll = $state(false);
 
   const currentRoot = $derived(shellNav.rootForRoute(page.url.pathname));
   const currentModuleId = $derived(shellNav.selectedModuleId);
@@ -59,14 +63,49 @@
 
   const modules = $derived(shellNav.modulesForRoot(activeApp));
 
+  /** Root levels rendered in column 1 — navigable roots first, then
+   *  (reveal ON) roots whose every module is `accessible:false`, marked
+   *  `hidden`. A hidden root previews its disabled modules but never
+   *  activates. */
+  const displayRoots = $derived.by((): { root: string; hidden: boolean }[] => {
+    const items = shellNav.roots.map((root) => ({ root, hidden: false }));
+    if (!showAll) return items;
+    const navigable = new Set(shellNav.roots);
+    const hidden = new Set<string>();
+    for (const m of shellNav.modules) {
+      if (m.accessible !== false) continue;
+      for (const p of m.route_prefixes ?? []) hidden.add(firstSegment(p));
+    }
+    return [
+      ...items,
+      ...[...hidden]
+        .filter((r) => r && !navigable.has(r))
+        .map((root) => ({ root, hidden: true })),
+    ];
+  });
+
+  /** Modules rendered in column 2 — navigable first, then (reveal ON)
+   *  `accessible:false` modules claiming this root, marked `hidden`. */
+  const displayModules = $derived.by((): { m: ModuleInfo; hidden: boolean }[] => {
+    const items = modules.map((m) => ({ m, hidden: false }));
+    if (!showAll) return items;
+    return [
+      ...items,
+      ...shellNav
+        .inaccessibleModulesForRoot(activeApp)
+        .map((m) => ({ m, hidden: true })),
+    ];
+  });
+
   /** The module column's effective selection — the previewed row, else
    *  the current module when it belongs to the previewed app, else the
    *  app's declared default (the target of an app CTA). */
   const activeModuleId = $derived.by(() => {
-    if (previewModuleId && modules.some((m) => m.id === previewModuleId)) {
+    const all = displayModules.map((d) => d.m);
+    if (previewModuleId && all.some((m) => m.id === previewModuleId)) {
       return previewModuleId;
     }
-    if (currentModuleId && modules.some((m) => m.id === currentModuleId)) {
+    if (currentModuleId && all.some((m) => m.id === currentModuleId)) {
       return currentModuleId;
     }
     return shellNav.defaultModuleForRoot(activeApp)?.id ?? null;
@@ -75,14 +114,19 @@
   /** Pages of the active module scoped to the previewed app root — a
    *  multi-root module only shows the slice owned by this column's app.
    *  Read straight from the discovery payload (`ModuleInfo.nav`) — it is
-   *  already access-filtered server-side and needs no second fetch. */
-  const previewPages = $derived.by((): ModuleNavLink[] => {
+   *  already access-filtered server-side and needs no second fetch. With
+   *  the reveal ON, `nav_hidden` items append after, marked `hidden`. */
+  const previewPages = $derived.by((): (ModuleNavLink & { hidden?: boolean })[] => {
     if (!activeModuleId) return [];
-    const nav =
-      shellNav.modules.find((m) => m.id === activeModuleId)?.nav ?? [];
-    return nav.filter(
-      (i) => i.href.split('/').filter(Boolean)[0] === activeApp
-    );
+    const mod = shellNav.modules.find((m) => m.id === activeModuleId);
+    const inRoot = (i: ModuleNavLink) =>
+      i.href.split('/').filter(Boolean)[0] === activeApp;
+    const nav = (mod?.nav ?? []).filter(inRoot);
+    if (!showAll) return nav;
+    const hidden = (mod?.nav_hidden ?? [])
+      .filter(inRoot)
+      .map((i) => ({ ...i, hidden: true as const }));
+    return [...nav, ...hidden];
   });
 
   /** Tallest content across the three columns, clamped to the 4..12 band.
@@ -91,7 +135,7 @@
   const targetRows = $derived(
     Math.min(
       ROWS_MAX,
-      Math.max(ROWS_MIN, shellNav.roots.length, modules.length, previewPages.length)
+      Math.max(ROWS_MIN, displayRoots.length, displayModules.length, previewPages.length)
     )
   );
   $effect(() => {
@@ -123,13 +167,13 @@
     ensureModuleData(m.id);
   }
 
-  /** Home href of a module under a specific app root — the discovery
-   *  payload's per-root `home` (nav[0] of that slice, access-filtered),
-   *  else the module's prefix in that root. */
+  /** GOTO(module, root) target — the declared `default` leaf under this
+   *  root (access-filtered server-side; first accessible leaf wins when
+   *  the default itself is filtered out), else the module's prefix shim
+   *  in that root which resolves the same way. */
   function moduleHomeInApp(m: ModuleInfo, root: string): string {
     return (
-      m.home?.[root] ??
-      m.nav?.find((i) => firstSegment(i.href) === root)?.href ??
+      defaultLeafHref(m, root) ??
       m.route_prefixes?.find((p) => firstSegment(p) === root) ??
       '/'
     );
@@ -145,6 +189,7 @@
   }
 
   async function activateModule(m: ModuleInfo) {
+    if (m.accessible === false || m.enabled === false) return; // hidden/disabled — reveal only
     const root = activeApp;
     open = false;
     ensureModuleData(m.id);
@@ -152,9 +197,10 @@
     void goto(resolve(moduleHomeInApp(m, root) as '/'));
   }
 
-  function activatePage(href: string) {
+  function activatePage(item: ModuleNavLink & { hidden?: boolean }) {
+    if (item.hidden) return; // access-filtered — reveal only
     open = false;
-    void goto(resolve(href as '/'));
+    void goto(resolve(item.href as '/'));
   }
 
   /* ---- Keyboard navigation (roving tabindex across the 3 columns) ----
@@ -182,13 +228,15 @@
   }
 
   function activateAt(col: number, idx: number) {
-    if (col === 0) void activateApp(shellNav.roots[idx]);
-    else if (col === 1) {
-      const m = modules[idx];
-      if (m && m.enabled !== false) void activateModule(m);
+    if (col === 0) {
+      const d = displayRoots[idx];
+      if (d && !d.hidden) void activateApp(d.root);
+    } else if (col === 1) {
+      const d = displayModules[idx];
+      if (d && !d.hidden) void activateModule(d.m);
     } else if (col === 2) {
       const item = previewPages[idx];
-      if (item) activatePage(item.href);
+      if (item) activatePage(item);
     }
   }
 
@@ -240,6 +288,13 @@
     'flex h-11 w-full cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 text-left text-sm outline-hidden select-none touch-manipulation focus-visible:ring-2 focus-visible:ring-ring';
   const ctaBtn =
     'ms-auto flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-hidden hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring';
+  /** Lucide `external-link` path data — the "open link" affordance, stroked
+   *  with the primary gradient (same convention as the topbar AI/FARO CTAs). */
+  const externalLinkPaths = [
+    'M15 3h6v6',
+    'M10 14 21 3',
+    'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'
+  ];
 </script>
 
 <Sidebar.Menu>
@@ -290,17 +345,21 @@
             data-launcher-col="0"
             data-testid="app-launcher-apps"
           >
-            {#each shellNav.roots as root, i (root)}
+            {#each displayRoots as d, i (d.root)}
+              {@const root = d.root}
               <div
                 role="option"
                 aria-selected={currentRoot === root}
+                aria-disabled={d.hidden}
                 tabindex={colFocusIdx[0] === i ? 0 : -1}
                 data-launcher-row
                 data-app-root={root}
+                data-hidden={d.hidden || undefined}
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  currentRoot === root && menuListSelectedSurfaceDropdownClasses
+                  currentRoot === root && menuListSelectedSurfaceDropdownClasses,
+                  d.hidden && 'opacity-50'
                 )}
                 onfocus={() => {
                   trackFocus(0, i);
@@ -319,12 +378,13 @@
                   class={ctaBtn}
                   aria-label={$t('app.nav.goTo')}
                   data-testid="launcher-cta"
+                  disabled={d.hidden}
                   onclick={(e) => {
                     e.stopPropagation();
                     void activateApp(root);
                   }}
                 >
-                  <ArrowUpRight class="size-4" />
+                  <GradientIcon size={16} paths={externalLinkPaths} />
                 </button>
                 <ChevronRight class="size-4 shrink-0 opacity-60" aria-hidden="true" />
               </div>
@@ -339,19 +399,22 @@
             data-launcher-col="1"
             data-testid="app-launcher-modules"
           >
-            {#each modules as m, i (m.id)}
+            {#each displayModules as d, i (d.m.id)}
+              {@const m = d.m}
               <div
                 role="option"
                 aria-selected={currentModuleId === m.id}
-                aria-disabled={m.enabled === false}
+                aria-disabled={d.hidden || m.enabled === false}
                 tabindex={colFocusIdx[1] === i ? 0 : -1}
                 data-launcher-row
                 data-module-id={m.id}
+                data-hidden={d.hidden || undefined}
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
                   currentModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
-                  m.enabled === false && 'pointer-events-none opacity-50'
+                  (d.hidden || m.enabled === false) && 'opacity-50',
+                  m.enabled === false && 'pointer-events-none'
                 )}
                 onfocus={() => {
                   trackFocus(1, i);
@@ -370,12 +433,13 @@
                   class={ctaBtn}
                   aria-label={$t('app.nav.goTo')}
                   data-testid="launcher-cta"
+                  disabled={d.hidden}
                   onclick={(e) => {
                     e.stopPropagation();
                     void activateModule(m);
                   }}
                 >
-                  <ArrowUpRight class="size-4" />
+                  <GradientIcon size={16} paths={externalLinkPaths} />
                 </button>
                 <ChevronRight class="size-4 shrink-0 opacity-60" aria-hidden="true" />
               </div>
@@ -396,22 +460,24 @@
               <div
                 role="option"
                 aria-selected={page.url.pathname === item.href}
+                aria-disabled={item.hidden}
                 tabindex={colFocusIdx[2] === i ? 0 : -1}
                 data-launcher-row
+                data-hidden={item.hidden || undefined}
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  page.url.pathname === item.href && menuListSelectedSurfaceDropdownClasses
+                  page.url.pathname === item.href && menuListSelectedSurfaceDropdownClasses,
+                  item.hidden && 'pointer-events-none opacity-50'
                 )}
                 onfocus={() => trackFocus(2, i)}
-                onclick={() => activatePage(item.href)}
+                onclick={() => activatePage(item)}
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
                   <DynamicIcon name={item.icon ?? 'circle'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
-                <ArrowUpRight class="size-4 shrink-0 opacity-40" aria-hidden="true" />
               </div>
             {:else}
               <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
@@ -434,6 +500,13 @@
             <Kbd size="modifier">esc</Kbd>
             <span>{$t('app.common.close')}</span>
           </span>
+          <label
+            class="ms-auto inline-flex cursor-pointer items-center gap-1.5"
+            data-testid="app-launcher-show-all"
+          >
+            <Switch bind:checked={showAll} class="scale-[0.65]" />
+            <span>{$t('app.nav.show_all')}</span>
+          </label>
         </div>
       </Popover.Content>
     </Popover.Root>

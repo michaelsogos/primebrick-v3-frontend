@@ -59,11 +59,17 @@ export type ModuleInfo = {
    */
   sheets?: ModuleSheetDecl[];
   /**
-   * nav[0].href of each root slice, post-filter — the first page the user
-   * is actually allowed to see in that root. `{crm: "/crm/customers",
-   * system: "/system/crm/pipeline"}`.
+   * `false` = the module declares FE surface but ZERO leaves are
+   * accessible to this user — present ONLY so the launcher's reveal
+   * switch can render it disabled. Absent/true = navigable.
    */
-  home?: Record<string, string>;
+  accessible?: boolean;
+  /**
+   * Nav items the access filter dropped — flat, declaration order. The
+   * launcher reveal switch renders them disabled; never a navigation
+   * source (`nav` remains the only actionable document).
+   */
+  nav_hidden?: ModuleNavLink[];
 };
 
 export type ModuleNavLink = {
@@ -72,11 +78,11 @@ export type ModuleNavLink = {
   href: string;
   icon?: string;
   /**
-   * Access-axis gate (`access.{app}.{module}.{page}`) — server-side
-   * filtered already; kept on the wire so clients can reason about the
-   * declaration (e.g. admin views), not to re-filter.
+   * The module's DEFAULT leaf — exactly one per declaration. GOTO(module)
+   * resolves it; when access filtering removed it, the first accessible
+   * leaf wins. Leaf items only (never a `children` parent).
    */
-  access?: string;
+  default?: boolean;
   children?: ModuleNavLink[];
 };
 

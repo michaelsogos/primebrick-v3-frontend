@@ -5,7 +5,7 @@
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
-  import { resolveSafeHome } from '$lib/navigation/safe-home';
+  import { resolveSafePage } from '$lib/navigation/safe-page';
   import { httpReasonPhrase } from '$lib/errors/http-status';
   import { House } from '@primebrick/ui/vendor/lucide';
   import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
@@ -35,7 +35,7 @@
 
   onMount(async () => {
     void loadPublicTranslations(get(uiLang));
-    homeHref = await resolveSafeHome(page.url.pathname);
+    homeHref = await resolveSafePage(page.url.pathname);
   });
 
   function goBack() {

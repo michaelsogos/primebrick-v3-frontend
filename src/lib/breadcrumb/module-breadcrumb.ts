@@ -1,5 +1,5 @@
 import type { AppBreadcrumbSegment } from './types';
-import { shellNav } from '$lib/shell/modules-shell.svelte';
+import { defaultLeafHref, shellNav } from '$lib/shell/modules-shell.svelte';
 import { resolveModuleLabel } from '$lib/shell/module-label';
 
 /**
@@ -14,8 +14,9 @@ import { resolveModuleLabel } from '$lib/shell/module-label';
  *   1. MODULE segment — dropdown labeled with the module's LOCALIZED
  *      display name (`service_registry.label_key` via resolveModuleLabel),
  *      listing the SIBLING modules of the same root level; each item
- *      points to that module's home WITHIN this root (`ModuleInfo.home[root]`
- *      — nav[0] of that root's slice, access-filtered server-side).
+ *      points to that module's DEFAULT leaf WITHIN this root
+ *      (`defaultLeafHref` — declared `default` flag, access-filtered
+ *      server-side, first accessible leaf as fallback).
  *   2. PAGE segment — dropdown labeled with the CURRENT page's nav label
  *      (e.g. "Clienti"), listing the module's sibling pages in this root
  *      with the current one marked.
@@ -63,7 +64,7 @@ export function moduleBreadcrumbSegments(args: {
     .modulesForRoot(root)
     .map((m) => ({
       label: resolveModuleLabel(m, args.t) || m.name,
-      href: m.home?.[root],
+      href: defaultLeafHref(m, root),
       icon: m.icon ?? 'layout-grid',
       current: m.id === module?.id
     }))
