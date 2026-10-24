@@ -249,7 +249,7 @@ component **enforces** the presentation order — do not reorder manually:
    size="sm"`.
 
 Canonical example: `/ai` models header in
-`src/routes/(app)/system/settings/ai/+page.svelte`
+`ai/fe/src/AiSettingsPage.svelte` (remote page mounted at `/system/ai`)
 (`data-testid="ai-models-toolbar"`). User docs:
 `docs/dev-guide/components/toolbar.mdx`.
 

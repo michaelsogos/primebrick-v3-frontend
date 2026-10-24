@@ -31,4 +31,4 @@
 
 ## Reference
 - Docs: `docs/dev-guide/components/entity-confirm-dialogs.mdx`
-- Canonical usage: `src/routes/(app)/system/settings/ai/+page.svelte`
+- Canonical usage: `ai/fe/src/AiSettingsPage.svelte` (remote page mounted at `/system/ai`)
