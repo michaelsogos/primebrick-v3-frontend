@@ -300,3 +300,116 @@ describe('resolveMountable / disposeMounted', () => {
 		await expect(disposeMounted(undefined)).resolves.toBeUndefined();
 	});
 });
+
+describe('sibling .sha256 — content-addressed loads', () => {
+	const url = '/ws/job/api/v1/module-assets/pages/jobs-page.js';
+	const shaUrl = '/ws/job/api/v1/module-assets/pages/jobs-page.sha256';
+	const mod = { mountPage: () => ({}) };
+
+	/** Server double: `.deps.json` 404s; `.sha256` + chunk come from `state`. */
+	const server = (state: { sha: string | null; body: string; chunkStatus?: number }) =>
+		vi.fn(async (u: RequestInfo | URL) => {
+			const s = String(u);
+			if (s.includes('.deps.json')) return new Response('nf', { status: 404 });
+			if (s.includes('.sha256'))
+				return state.sha == null
+					? new Response('nf', { status: 404 })
+					: new Response(state.sha + '\n', { status: 200 });
+			return new Response(state.body, { status: state.chunkStatus ?? 200 });
+		});
+
+	it('derives the sha256 sibling url', async () => {
+		const { deriveIntegrityUrl } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		expect(deriveIntegrityUrl(url)).toBe(shaUrl);
+		expect(deriveIntegrityUrl('/p/x.mjs?v=3')).toBe('/p/x.sha256?v=3');
+	});
+
+	it('fetches the sibling hash, verifies bytes, imports via blob:', async () => {
+		const bytes = new TextEncoder().encode('real-chunk()');
+		const sha = await sha256Hex(bytes.buffer as ArrayBuffer);
+		const import_fn = vi.fn(async () => mod);
+		const fetch_fn = vi.fn(async (u: RequestInfo | URL) => {
+			const s = String(u);
+			if (s.includes('.deps.json')) return new Response('nf', { status: 404 });
+			if (s.includes('.sha256')) return new Response(sha + '\n', { status: 200 });
+			return new Response(bytes, { status: 200 });
+		});
+		const { loadRemoteModuleCached } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		const result = await loadRemoteModuleCached(url, undefined, { fetch_fn, import_fn });
+		expect(result.mod).toBe(mod);
+		expect(import_fn).toHaveBeenCalledWith(expect.stringMatching(/^blob:/));
+		expect(fetch_fn.mock.calls.map((c) => String(c[0]))).toContain(shaUrl);
+	});
+
+	it('falls back to native import when no sibling exists (404)', async () => {
+		const import_fn = vi.fn(async () => mod);
+		const { loadRemoteModuleCached } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		const result = await loadRemoteModuleCached(url + '?nosib=1', undefined, {
+			fetch_fn: server({ sha: null, body: 'js' }),
+			import_fn,
+		});
+		expect(result.mod).toBe(mod);
+		expect(import_fn).toHaveBeenCalledWith(expect.stringContaining('?nosib=1'));
+	});
+
+	it('declared integrity wins — the sibling is never fetched', async () => {
+		const bytes = new TextEncoder().encode('decl()');
+		const sha = await sha256Hex(bytes.buffer as ArrayBuffer);
+		const fetch_fn = server({ sha: null, body: 'decl()' });
+		const import_fn = vi.fn(async () => mod);
+		const { loadRemoteModuleCached } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		await loadRemoteModuleCached(url + '?decl=1', sha, { fetch_fn, import_fn });
+		expect(fetch_fn.mock.calls.map((c) => String(c[0]))).not.toContainEqual(
+			expect.stringContaining('.sha256'),
+		);
+	});
+
+	it('rebuild scenario: new sibling hash → cache miss → fresh verified bytes', async () => {
+		const { loadRemoteModuleCached } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		const makeState = async (body: string) => {
+			const sha = await sha256Hex(new TextEncoder().encode(body).buffer as ArrayBuffer);
+			return { sha, body };
+		};
+		const v1 = await makeState('chunk-v1()');
+		const modV1 = { marker: 'v1' };
+		const import1 = vi.fn(async () => modV1);
+		const r1 = await loadRemoteModuleCached(url + '?rb=1', undefined, {
+			fetch_fn: server(v1),
+			import_fn: import1,
+		});
+		expect(r1.mod).toBe(modV1);
+
+		// Same URL, but the service now serves rebuilt bytes + a new sha.
+		const v2 = await makeState('chunk-v2()');
+		const modV2 = { marker: 'v2' };
+		const import2 = vi.fn(async () => modV2);
+		const r2 = await loadRemoteModuleCached(url + '?rb=1', undefined, {
+			fetch_fn: server(v2),
+			import_fn: import2,
+		});
+		expect(r2.mod).toBe(modV2);
+		expect(import2).toHaveBeenCalledWith(expect.stringMatching(/^blob:/));
+	});
+
+	it('classifies a non-404 sibling fetch failure as http', async () => {
+		const { loadRemoteModuleCached } = await import(
+			'../components/remote-page/remote-loader'
+		);
+		await expect(
+			loadRemoteModuleCached(url + '?err=1', undefined, {
+				fetch_fn: async (u) =>
+					new Response('x', { status: String(u).includes('.sha256') ? 500 : 200 }),
+			}),
+		).rejects.toMatchObject({ kind: 'http', status: 500 });
+	});
+});

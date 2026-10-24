@@ -122,6 +122,56 @@ export function deriveDepsManifestUrl(component_url: string): string {
 	return component_url.replace(/\.m?js(\?.*)?$/, '.deps.json$1');
 }
 
+/**
+ * Integrity sibling convention — `pages/jobs-page.js` →
+ * `pages/jobs-page.sha256`, a build-emitted hex digest of the chunk bytes.
+ * Because it is a build artifact served from the same module-assets
+ * directory as the chunk, it can never disagree with a fresh rebuild the
+ * way a registry-frozen declaration can: `fe:build` rewrites both files
+ * together, and the next fetch sees the new hash.
+ *
+ * Content (sha256 hex or `sha256-<base64>`) is normalized through
+ * {@link normalizeIntegrity}. A 404 means the build predates the
+ * convention — legal, the load proceeds unverified.
+ */
+export function deriveIntegrityUrl(component_url: string): string {
+	return component_url.replace(/\.m?js(\?.*)?$/, '.sha256$1');
+}
+
+/**
+ * Resolve the integrity value a load should verify against.
+ * An explicitly declared value always wins (registry-pinned deployments);
+ * otherwise the build-emitted `<chunk>.sha256` sibling is fetched.
+ * Returns `undefined` when neither exists — the load runs unverified.
+ * The raw value is returned as found: validation (and its `integrity`
+ * error) belongs to the load pipeline itself.
+ */
+export async function resolveRemoteIntegrity(
+	component_url: string,
+	declared: string | undefined,
+	fetchFn: typeof fetch,
+): Promise<string | undefined> {
+	if (declared !== undefined) return declared;
+	let res: Response;
+	try {
+		// The /ws proxy does not forward the service's Cache-Control, so the
+		// request itself opts out — a rebuilt sibling must be re-read, never
+		// served from browser heuristics.
+		res = await fetchFn(deriveIntegrityUrl(component_url), { cache: 'no-cache' });
+	} catch (e) {
+		throw new RemoteLoadError('network', errorMessage(e));
+	}
+	if (res.status === 404) return undefined;
+	if (!res.ok) {
+		throw new RemoteLoadError(
+			'http',
+			`${deriveIntegrityUrl(component_url)} answered HTTP ${res.status}`,
+			res.status,
+		);
+	}
+	return (await res.text()).trim() || undefined;
+}
+
 function mismatchDetail(mismatches: VendorMismatch[]): string {
 	return mismatches
 		.map((m) =>
@@ -146,7 +196,7 @@ async function verifyVendorDeps(
 ): Promise<void> {
 	let res: Response;
 	try {
-		res = await fetchFn(deriveDepsManifestUrl(component_url));
+		res = await fetchFn(deriveDepsManifestUrl(component_url), { cache: 'no-cache' });
 	} catch (e) {
 		throw new RemoteLoadError('network', errorMessage(e));
 	}
@@ -169,7 +219,7 @@ async function verifyVendorDeps(
 
 	let host_res: Response;
 	try {
-		host_res = await fetchFn(manifest_url);
+		host_res = await fetchFn(manifest_url, { cache: 'no-cache' });
 	} catch (e) {
 		throw new RemoteLoadError('network', errorMessage(e));
 	}
@@ -220,7 +270,9 @@ export async function loadRemoteModule(
 
 	let res: Response;
 	try {
-		res = await fetchFn(component_url);
+		// Byte-fresh fetch — the integrity comparison below is meaningless
+		// if a heuristic cache serves bytes older than the emitted hash.
+		res = await fetchFn(component_url, { cache: 'no-cache' });
 	} catch (e) {
 		throw new RemoteLoadError('network', errorMessage(e));
 	}
@@ -264,25 +316,38 @@ export async function loadRemoteModule(
 }
 
 /**
- * Load-promise cache keyed by `component_url` (+integrity). `import()` is
- * already deduped by the browser module map, but the handshake+probe work
- * (deps manifest fetch, vendor diff, integrity hash) is not — caching the
- * whole pipeline result means a warmed chunk mounts with zero async work.
+ * Load-promise cache keyed by `component_url` + RESOLVED integrity.
+ * `import()` is already deduped by the browser module map, but the
+ * handshake+probe work (deps manifest fetch, vendor diff, integrity hash)
+ * is not — caching the whole pipeline result means a warmed chunk mounts
+ * with zero async work.
+ *
+ * The integrity is resolved BEFORE keying (`declared ?? <chunk>.sha256`
+ * sibling): the cache becomes content-addressed — a rebuilt chunk hashes
+ * differently, so the very next call misses the old entry and loads fresh
+ * verified bytes through the `blob:` path (which also bypasses the
+ * browser's own URL-keyed module map). This is what makes the error
+ * panel's retry meaningful: a redeployed chunk is actually picked up.
  *
  * Failed loads are EVICTED, never cached: a prefetch failure must not
  * poison the user's real mount — the next call retries fresh.
  */
 const remoteLoadCache = new Map<string, Promise<RemoteLoadResult>>();
 
-export function loadRemoteModuleCached(
+export async function loadRemoteModuleCached(
 	component_url: string,
 	integrity?: string,
 	deps: RemoteLoadDeps = {},
 ): Promise<RemoteLoadResult> {
-	const key = `${component_url}#${integrity ?? ''}`;
+	const resolved = await resolveRemoteIntegrity(
+		component_url,
+		integrity,
+		deps.fetch_fn ?? fetch,
+	);
+	const key = `${component_url}#${resolved ?? ''}`;
 	const cached = remoteLoadCache.get(key);
 	if (cached) return cached;
-	const promise = loadRemoteModule(component_url, integrity, deps);
+	const promise = loadRemoteModule(component_url, resolved, deps);
 	remoteLoadCache.set(key, promise);
 	promise.catch(() => remoteLoadCache.delete(key));
 	return promise;
