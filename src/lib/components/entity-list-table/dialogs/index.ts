@@ -1,4 +1,3 @@
-export { default as DeleteDialog } from './DeleteDialog.svelte';
 export { default as RestoreDialog } from './RestoreDialog.svelte';
 export { default as BulkDeleteDialog } from './BulkDeleteDialog.svelte';
 export { default as BulkRestoreDialog } from './BulkRestoreDialog.svelte';

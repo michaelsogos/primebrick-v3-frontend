@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+// Static side-effect import: the whole @primebrick/ui dist graph gets
+// transformed+evaluated at test-file load — outside any test/hook timeout.
+// After vi.resetModules() the re-import is pure re-evaluation (transform
+// cache is warm), so per-test dynamic imports stay fast.
+import '@primebrick/ui';
 
 // ─── flattenDictKeys was deleted — dict is now flat (keys are dot-paths) ──
 // Object.keys($dict) replaces flattenDictKeys(). The tests below verify
@@ -99,28 +104,38 @@ vi.mock('svelte', async (importOriginal) => {
   };
 });
 
-// Top-level mock: useExistingGroupKeys delegates fetching to
-// useConfigEntries → fetchConfigEntries(). We mock at that boundary.
-const mockFetchConfigEntries = vi.fn();
-vi.mock('$lib/api', () => ({
-  fetchConfigEntries: mockFetchConfigEntries,
-}));
+// Top-level mock: useExistingGroupKeys delegates fetching to the ui-owned
+// useConfigEntries, which calls the 'host' service-api bridge — the test
+// binds a mock ServiceApiFn to that slot (the same entrypoint the host
+// app binds apiFetch to). The mock returns a Response carrying `{rows}` —
+// the exact envelope the composable parses.
+const mockHostApi = vi.fn();
 
 describe('useExistingGroupKeys composable', () => {
   beforeEach(() => {
-    mockFetchConfigEntries.mockReset();
+    mockHostApi.mockReset();
   });
+
+  function rowsResponse(rows: unknown[]): Response {
+    return new Response(JSON.stringify({ rows }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   async function loadComposable() {
     // useConfigEntries keeps module-level singleton $state — reset modules
-    // so each test starts with a fresh, unfetched cache.
+    // so each test starts with a fresh, unfetched cache, then re-bind the
+    // 'host' api on the fresh bridge instance.
     vi.resetModules();
+    const ui = await import('@primebrick/ui');
+    ui.bindServiceApi('host', mockHostApi);
     const mod = await import('$lib/composables/useExistingGroupKeys.svelte');
     return mod.useExistingGroupKeys();
   }
 
   it('extracts unique group_keys from API response', async () => {
-    mockFetchConfigEntries.mockResolvedValue([
+    mockHostApi.mockResolvedValue(rowsResponse([
       { group_key: 'idp_parameters' },
       { group_key: 'security_parameters' },
       { group_key: 'idp_parameters' }, // duplicate
@@ -129,7 +144,7 @@ describe('useExistingGroupKeys composable', () => {
       { group_key: '' },               // empty — skipped
       { group_key: '  ' },             // whitespace — skipped
       { group_key: 'advanced_features' },
-    ]);
+    ]));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -144,7 +159,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('handles API failure gracefully — empty list, not loading', async () => {
-    mockFetchConfigEntries.mockRejectedValue(new Error('Network error'));
+    mockHostApi.mockRejectedValue(new Error('Network error'));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -154,7 +169,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('handles empty response — empty list, not loading', async () => {
-    mockFetchConfigEntries.mockResolvedValue([]);
+    mockHostApi.mockResolvedValue(rowsResponse([]));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -165,7 +180,7 @@ describe('useExistingGroupKeys composable', () => {
 
   it('updates groupKeys after a delayed fetch resolution', async () => {
     let resolveRows: (v: unknown) => void = () => {};
-    mockFetchConfigEntries.mockImplementation(
+    mockHostApi.mockImplementation(
       () => new Promise((resolve) => { resolveRows = resolve; }),
     );
 
@@ -173,7 +188,7 @@ describe('useExistingGroupKeys composable', () => {
     // Allow the fetch promise chain to start (still pending)
     await new Promise((r) => setTimeout(r, 0));
 
-    resolveRows([{ group_key: 'test_group' }]);
+    resolveRows(rowsResponse([{ group_key: 'test_group' }]));
     await new Promise((r) => setTimeout(r, 0));
 
     expect(c.loading).toBe(false);
@@ -181,10 +196,10 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('trims whitespace from group_key values', async () => {
-    mockFetchConfigEntries.mockResolvedValue([
+    mockHostApi.mockResolvedValue(rowsResponse([
       { group_key: '  idp_parameters  ' },
       { group_key: 'security_parameters' },
-    ]);
+    ]));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));
@@ -193,7 +208,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   it('exposes state as DeepReadonly', async () => {
-    mockFetchConfigEntries.mockResolvedValue([{ group_key: 'test' }]);
+    mockHostApi.mockResolvedValue(rowsResponse([{ group_key: 'test' }]));
 
     const c = await loadComposable();
     await new Promise((r) => setTimeout(r, 0));

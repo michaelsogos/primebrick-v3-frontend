@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import OtpInput from "$lib/components/otp-input/otp-input.svelte";
-import { useOtpInput } from "$lib/composables/useOtpInput.svelte";
+import { OtpInput } from "@primebrick/ui";
+import { useOtpInput } from "@primebrick/ui";
 
 function getInput(container: HTMLElement): HTMLInputElement {
   const input = container.querySelector("input");

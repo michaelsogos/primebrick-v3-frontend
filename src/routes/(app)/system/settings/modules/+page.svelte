@@ -30,7 +30,7 @@
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
-  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import { DeleteDialog } from '@primebrick/ui';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
   import { backendState } from '$lib/backend-availability';
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';

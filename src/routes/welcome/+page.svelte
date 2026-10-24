@@ -9,7 +9,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { OtpInput } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';

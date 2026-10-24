@@ -5,8 +5,8 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '@primebrick/ui';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
-  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';

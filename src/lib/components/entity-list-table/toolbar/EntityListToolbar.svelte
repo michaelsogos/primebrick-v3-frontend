@@ -1,11 +1,12 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { SearchBar, ViewModeToggle, DeletionFilterToggle, FilterPresetToolbar } from '.';
+  import { SearchBar, ViewModeToggle, FilterPresetToolbar } from '.';
+  import { DeletionFilterToggle } from '@primebrick/ui';
   import { Columns3 } from '@primebrick/ui/vendor/lucide'
   import { Funnel } from '@primebrick/ui/vendor/lucide';
   import { Button } from '@primebrick/ui';
   import { RefreshButton } from '@primebrick/ui';
-  import { Toolbar } from '$lib/components/ui/toolbar';
+  import { Toolbar } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
   import type { FilterPreset, ViewName } from '$lib/entity-list/types';
 

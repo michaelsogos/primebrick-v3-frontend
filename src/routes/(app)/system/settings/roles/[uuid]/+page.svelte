@@ -8,7 +8,7 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Button } from '@primebrick/ui';
-  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import { DeleteDialog } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';

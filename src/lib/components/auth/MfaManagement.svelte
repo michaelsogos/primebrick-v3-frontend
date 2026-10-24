@@ -4,8 +4,8 @@
   import { pushNotification } from "$lib/errors/app-errors";
   import { Button } from '@primebrick/ui';
   import { TextInput } from "$lib/components/ui/input";
-  import OtpInput from "$lib/components/otp-input/otp-input.svelte";
-  import { useOtpInput } from "$lib/composables/useOtpInput.svelte";
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from "$lib/components/ui/label";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";

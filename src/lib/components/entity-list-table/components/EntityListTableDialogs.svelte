@@ -1,5 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from '../dialogs';
+  import { DeleteDialog } from '@primebrick/ui';
+  import { RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from '../dialogs';
 
   let {
     dialogs,

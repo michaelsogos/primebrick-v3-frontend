@@ -15,7 +15,7 @@
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
   import { Button } from '@primebrick/ui';
-  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { ButtonGroup } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
   import type { FilterPreset } from '$lib/entity-list';

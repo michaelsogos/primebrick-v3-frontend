@@ -3,7 +3,7 @@
   import { Button } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
-  import EntityConfirmQuestion from './EntityConfirmQuestion.svelte';
+  import { EntityConfirmQuestion } from '@primebrick/ui';
   import { getEntitiesNsContext } from '../context';
 
   interface RestoreDialogProps {

@@ -19,5 +19,5 @@ pointer; the normative text lives in the canonical doc.
   `passwordPolicy.regex` for Category 2 (data-entry) password fields.
 - AI agent MUST NOT add `PasswordChecklist` or policy `.refine()` for
   Category 1 (access) or Category 3 (secrets) fields.
-- AI agent MUST use `OtpInput` + `useOtpInput` for OTP code inputs —
+- AI agent MUST use `OtpInput` + `useOtpInput` (from `@primebrick/ui`) for OTP code inputs —
   NOT `Password.PasswordInput` and NOT a plain `Input`.

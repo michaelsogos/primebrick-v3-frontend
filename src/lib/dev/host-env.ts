@@ -32,5 +32,5 @@ export * from '$lib/shell/app-icons';
 export * from '$lib/breadcrumb/types';
 export { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 export { useAiModels } from '@primebrick/ui';
-export { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
+export { useConfigEntries } from '@primebrick/ui';
 export { useMachineCapabilities } from '@primebrick/ui';

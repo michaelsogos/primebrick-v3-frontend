@@ -15,6 +15,14 @@ Provenance is recorded in
 `docs/dev-guide/_extracted/component-provenance.json` (hand-maintained). See
 [UI stack](/docs/dev-guide/ui-stack) for how the registries layer.
 
+> **Where new components live.** Every component/composable judged reusable
+> lands in `@primebrick/ui` (`primebrick-v3-ui`) **at creation** — never in
+> `src/lib/components`. Remote module bundles can only consume vendored
+> packages, so anything FE-local is unreachable to remotes: "reusable" and
+> "FE-local" are contradictory by definition. FE-local code is reserved for
+> host-shell-only pieces; domain-specific components consumed only by one
+> service's remote bundle stay in that service's `fe/`.
+
 ## Custom components (81)
 
 Built from scratch for Primebrick. Rows marked `—` have no dedicated page yet —
@@ -93,7 +101,7 @@ their props are still in the auto-generated
 | `FormPageLayout` | `src/lib/components/FormPageLayout.svelte` | Entity form page layout | [page](/docs/dev-guide/components/form-page-layout) |
 | `FormLabelWithPriorityHelp` | `src/lib/components/forms/FormLabelWithPriorityHelp.svelte` | Label with priority tooltip | [page](/docs/dev-guide/components/form-label-with-priority-help) |
 | `PasswordChecklist` | `src/lib/components/forms/PasswordChecklist.svelte` | Password policy checklist | [page](/docs/dev-guide/components/password-checklist) |
-| `otp-input` | `src/lib/components/otp-input/otp-input.svelte` | OTP code input (over `input-otp` primitive) | — |
+| `otp-input` | `@primebrick/ui` (`OtpInput`) | OTP code input (over the `input-otp` primitive, also `@primebrick/ui`) | — |
 | `ComboSelect` | `src/lib/components/ui/combo-select/` | Searchable single/multi select with typed `display` templates | [page](/docs/dev-guide/components/combo-select) |
 | `SliderField` | `src/lib/components/ui/slider-field/` | Nullable range slider — NULL = inherit, no numeric input | [page](/docs/dev-guide/components/slider-field) |
 | `SwitchField` | `src/lib/components/ui/switch-field/` | Labelled switch — switch + label + optional sublabel + help tooltip (mandatory standard) | [page](/docs/dev-guide/components/switch-field) |
@@ -202,7 +210,7 @@ Learn them on the official site; full prop tables are in the
 
 `accordion` · `alert` · `avatar` · `badge` · `breadcrumb` · `button-group` ·
 `card` · `checkbox` · `command` · `dialog` · `dropdown-menu` · `input-group` ·
-`input-otp` · `kbd` · `label` · `popover` · `resizable` · `scroll-area` ·
+`kbd` · `label` · `popover` · `resizable` · `scroll-area` ·
 `separator` · `sheet` · `sidebar` · `skeleton` · `sonner` · `spinner` ·
 `switch` · `table` · `tabs` · `textarea` · `toggle`
 

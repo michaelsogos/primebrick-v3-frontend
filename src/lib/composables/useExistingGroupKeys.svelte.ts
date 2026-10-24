@@ -10,7 +10,7 @@
  *   - $derived values exposed via individual getters
  */
 import type { DeepReadonly } from '@primebrick/ui';
-import { useConfigEntries } from "$lib/composables/useConfigEntries.svelte";
+import { useConfigEntries } from "@primebrick/ui";
 import { onMount } from "svelte";
 
 export function useExistingGroupKeys() {

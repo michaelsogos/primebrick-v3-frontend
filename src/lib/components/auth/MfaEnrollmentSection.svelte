@@ -2,8 +2,8 @@
   import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { TextInput } from '$lib/components/ui/input';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
-  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';

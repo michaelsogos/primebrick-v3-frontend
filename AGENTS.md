@@ -106,6 +106,17 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 9. **`docs/ai/e2e-testid-convention.md`** — `data-testid` naming convention for interactive elements (brittle-on-purpose).
 10. **`docs/ai/e2e-webauthn-auth.md`** — Playwright auth flows: login, invitations, passkeys, MFA, `helpers/webauthn.ts` virtual authenticator.
 
+## Reusable components (MANDATORY)
+
+Every new component/composable judged reusable lands in `@primebrick/ui`
+(`primebrick-v3-ui`) **at creation** — never in `$lib/components` or
+`$lib/composables`. Remote module bundles can only consume vendored
+packages; anything FE-local is unreachable to remotes, so "reusable" and
+"FE-local" are contradictory by definition. FE-local code is reserved for
+host-shell-only pieces (AppShell, sidebar, entity-list host pages) that no
+remote consumes by design. Domain-specific components consumed only by
+one service's remote bundle stay in that service's `fe/`.
+
 ## List pages
 
 Any settings or module page that lists entity rows MUST use `EntityListTable` from `$lib/components/entity-list-table`. See `.devin/rules/entity-list-pages.md` for the full rule and the canonical pattern (mirror `users/+page.svelte`).

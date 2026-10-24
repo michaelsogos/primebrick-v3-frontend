@@ -4,7 +4,7 @@
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { getAllCurrencies } from '$lib/currency';
-  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
+  import { useConfigEntries } from "@primebrick/ui";
   import { onMount } from 'svelte';
   import { Coins } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';

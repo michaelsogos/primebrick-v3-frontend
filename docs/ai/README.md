@@ -45,7 +45,7 @@ These files help humans and agents collaborate consistently on the **Primebrick 
 | [`file-operations.md`](./file-operations.md) | File Operations |
 | [`form-field-standard.md`](./form-field-standard.md) | Form Field Anatomy Standard |
 | [`i18n-translation-sources.md`](./i18n-translation-sources.md) | i18n Translation Sources |
-| [`otp-input.md`](./otp-input.md) | OTP / PIN Code Input |
+| `otp-input.md` — moved to `primebrick-v3-ui/docs/ai/` | OTP / PIN Code Input (component now ships from `@primebrick/ui`) |
 | [`package-versioning.md`](./package-versioning.md) | Fixed Package Versions (No Ranges) |
 | [`page-title-standard.md`](./page-title-standard.md) | Entity Page Titles — single source of truth |
 | [`password-input-standard.md`](./password-input-standard.md) | Password Input Standard |

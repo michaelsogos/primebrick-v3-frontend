@@ -1,8 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { ButtonGroup } from '$lib/components/ui/button-group';
-  import { Toolbar } from '$lib/components/ui/toolbar';
+  import { ButtonGroup, Toolbar } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';

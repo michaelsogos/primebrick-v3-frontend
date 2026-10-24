@@ -7,7 +7,7 @@
   import type { TCountryCode } from 'countries-list';
   import { UI_LANGS } from '$lib/i18n/languages';
   import { Button } from '@primebrick/ui';
-  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { ButtonGroup } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import { Phone } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
