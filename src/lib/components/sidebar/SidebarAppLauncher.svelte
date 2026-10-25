@@ -133,19 +133,6 @@
     return [...nav, ...hidden];
   });
 
-  /** The leaf the header's virtual path resolves to: explicit leaf
-   *  preview, else the row matching the current route, else the
-   *  module's declared default — the same target Enter's goto resolves. */
-  const effectiveLeafId = $derived.by(() => {
-    const leaf = previewLeaf;
-    if (leaf && previewPages.some((i) => i.id === leaf.id)) {
-      return leaf.id;
-    }
-    const route = previewPages.find((i) => i.href === page.url.pathname);
-    if (route) return route.id;
-    return previewPages.find((i) => i.default)?.id ?? null;
-  });
-
   /* Selection (gradient) = ONLY what the user previewed or the route
    * context — never the fallbacks used to populate content. The route
    * rows get the primary dot marker whenever the preview diverges. */
@@ -164,28 +151,73 @@
       ? (previewPages.find((i) => i.href === page.url.pathname)?.id ?? null)
       : null;
   });
-  const effectiveLeaf = $derived(
-    previewPages.find((i) => i.id === effectiveLeafId) ?? null
-  );
   const previewModule = $derived(
     shellNav.modules.find((m) => m.id === activeModuleId) ?? null
   );
 
-  /** The virtual path the user is composing — header line 1 (labels). */
+  /** The module's URL under a given root — its declared route_prefix,
+   *  NOT the default-leaf resolution (that's a goto target, not a path
+   *  segment). Membership guarantees a prefix exists for the root. */
+  function modulePathInApp(m: ModuleInfo, root: string): string {
+    return (
+      m.route_prefixes?.find((p) => firstSegment(p) === root) ?? `/${root}`
+    );
+  }
+
+  /** The virtual path the user is composing — header line 1 (labels).
+   *  Segments appear only for levels actually selected (previewed or
+   *  route chain): the path is composed 1-1 with the selection, never
+   *  auto-completed by content fallbacks. */
+  const selLeaf = $derived(
+    previewPages.find((i) => i.id === selLeafId) ?? null
+  );
+  const selModule = $derived(
+    shellNav.modules.find((m) => m.id === selModuleId) ?? null
+  );
   const pathLabel = $derived(
     [
       $t(`app.nav.roots.${activeApp ?? currentRoot}`),
-      previewModule ? resolveModuleLabel(previewModule, $t) : null,
-      effectiveLeaf ? $t(effectiveLeaf.label_key) : null,
+      selModule ? resolveModuleLabel(selModule, $t) : null,
+      selLeaf ? $t(selLeaf.label_key) : null,
     ]
       .filter(Boolean)
       .join(' › ')
   );
-  /** The URL the composed path resolves to — identical to what Enter
-   *  would open from the current preview position (header line 2). */
+  /** The URL of the composed path — one segment per selected level:
+   *  leaf → its href, module → its route_prefix in the root, root →
+   *  /root. NOT the goto resolution — the literal path. */
   const previewHref = $derived(
-    effectiveLeaf?.href ??
-      (previewModule ? moduleHomeInApp(previewModule, activeApp ?? 'system') : null)
+    selLeaf?.href ??
+      (selModule
+        ? modulePathInApp(selModule, activeApp ?? currentRoot)
+        : `/${activeApp ?? currentRoot}`)
+  );
+
+  /* Hover preview — mouse-only, display-only. Hovering a row shows ITS
+   * composed path in the header without touching selection or
+   * navigation (click/keyboard stay the only activation paths). */
+  let hoverPath = $state<{ label: string; href: string } | null>(null);
+
+  function moduleHoverPath(m: ModuleInfo): { label: string; href: string } {
+    const root = activeApp ?? currentRoot;
+    return {
+      label: `${$t(`app.nav.roots.${root}`)} › ${resolveModuleLabel(m, $t)}`,
+      href: modulePathInApp(m, root),
+    };
+  }
+
+  function leafHoverPath(item: ModuleNavLink): { label: string; href: string } {
+    const root = activeApp ?? currentRoot;
+    const parts = [
+      $t(`app.nav.roots.${root}`),
+      previewModule ? resolveModuleLabel(previewModule, $t) : null,
+      $t(item.label_key),
+    ];
+    return { label: parts.filter(Boolean).join(' › '), href: item.href };
+  }
+
+  const shownPath = $derived(
+    hoverPath ?? { label: pathLabel, href: previewHref }
   );
 
   /** Tallest content across the three columns, clamped to the 4..12 band.
@@ -336,6 +368,7 @@
       previewApp = null;
       previewModuleId = null;
       previewLeaf = null;
+      hoverPath = null;
       shownRows = Math.max(ROWS_MIN, targetRows);
       if (currentModuleId) ensureModuleData(currentModuleId);
       void tick().then(() => {
@@ -407,16 +440,18 @@
           class="border-b border-border px-3 py-1.5"
           data-testid="app-launcher-path"
         >
-          <div class="truncate text-sm font-medium">{pathLabel}</div>
-          {#if previewHref}
-            <div class="truncate font-mono text-[11px] text-muted-foreground">{previewHref}</div>
+          <div class="truncate text-sm font-medium">{shownPath.label}</div>
+          {#if shownPath.href}
+            <div class="truncate font-mono text-[11px] text-muted-foreground">{shownPath.href}</div>
           {/if}
         </div>
         <div
           bind:this={panelEl}
+          role="presentation"
           class="flex divide-x divide-border"
           style:height={`${shownRows * ROW_HEIGHT_REM}rem`}
           style:transition="height 200ms ease-out"
+          onmouseleave={() => (hoverPath = null)}
         >
           <!-- Column 1 — Applications (root levels) -->
           <div
@@ -446,6 +481,8 @@
                   trackFocus(0, i);
                   selectApp(root);
                 }}
+                onmouseenter={() =>
+                  (hoverPath = { label: $t(`app.nav.roots.${root}`), href: `/${root}` })}
                 onclick={() => selectApp(root)}
                 onkeydown={(e) => handleRowKeydown(e, 0, i)}
               >
@@ -504,6 +541,7 @@
                   trackFocus(1, i);
                   selectModulePreview(m);
                 }}
+                onmouseenter={() => (hoverPath = moduleHoverPath(m))}
                 onclick={() => selectModulePreview(m)}
                 onkeydown={(e) => handleRowKeydown(e, 1, i)}
               >
@@ -561,6 +599,7 @@
                   trackFocus(2, i);
                   previewLeaf = item;
                 }}
+                onmouseenter={() => (hoverPath = leafHoverPath(item))}
                 onclick={() => activatePage(item)}
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
