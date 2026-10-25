@@ -1,6 +1,6 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
-  import { checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { checkboxInteractiveClass } from '@primebrick/ui';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
   import EntityListTableDialogs from './components/EntityListTableDialogs.svelte';
   import EntityListTableContent from './components/EntityListTableContent.svelte';
@@ -33,6 +33,7 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { setAuditColumnsContext, setEntitiesNsContext } from './context';
+  import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
 
   import type { EntityListTableProps, CellArgs } from './types';
@@ -114,9 +115,12 @@
 
   // Entity-label i18n namespace for the whole subtree (dialogs, panels,
   // version history) — `meta.entities_ns` served by the owning module;
-  // `system` for BE/core-owned entities.
+  // `system` for BE/core-owned entities. Both contexts are set: the local
+  // one for FE-resident dialogs and the @primebrick/ui one for ui-owned
+  // entity-list components (DeleteDialog / EntityConfirmQuestion).
   $effect(() => {
     setEntitiesNsContext(entities_ns ?? 'system');
+    uiSetEntitiesNsContext(entities_ns ?? 'system');
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the

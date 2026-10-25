@@ -1,5 +1,23 @@
 # AI AGENT INSTRUCTIONS - Primebrick Frontend
 
+## Documentation is the contract — code is the proof
+
+- Docs (AGENTS.md, .devin/rules/, docs/ai/, docs/dev-guide/, docs/user-guide/)
+  are the source of truth for HOW things work. Source code is NEVER
+  documentation: pages are composed dynamically (mountPage, remote chunks,
+  layout.sections, runtime wiring) — reading a +page.svelte alone tells you
+  little about what actually renders.
+- Need to know how to do something (tests, auth, dev servers, conventions)?
+  Find it in the doc FIRST. Read code only as the "prova del 9" — to verify
+  the code behaves as the doc says. Never the reverse.
+- Doc and code disagree? Report the discrepancy — the doc is probably stale.
+  Do NOT fix docs silently and do NOT create new files in .devin/rules/,
+  docs/, or AGENTS.md on your own initiative: propose the text, write only
+  after approval.
+- Before claiming "a doc is missing", check the indexes:
+  docs/ai/README.md, .devin/rules/, docs/dev-guide/_order.json.
+  The missing doc is usually a doc you haven't read.
+
 ## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
 
 **AI agents MUST NEVER commit changes without explicit user instruction.**
@@ -22,7 +40,7 @@ You are an expert Svelte™ 5 and TypeScript® developer. You MUST EXCLUSIVELY u
 4. **EVENTS**: Do NOT use `createEventDispatcher`. Use callbacks passed as props, typing them as functions.
    - Example: `let { onchange }: { onchange: (v: string) => void } = $props();`
 5. **CHILDREN & SNIPPETS**: To pass HTML elements or components as children, use the `Snippet` type.
-   - Example: `let { children }: { children: Snippet } = $props();` inside `{#render children()}`
+   - Example: `let { children }: { children: Snippet } = $props();` inside `{@render children()}`
 6. **REACTIVITY**: Any value computed from `$props()`, `$state`, or other reactive
    sources MUST be declared with `$derived` (or `$derived.by` for complex logic).
    Never read reactive sources into a plain `const`/`let` at component top level —
@@ -83,6 +101,21 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
 5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
 6. **`docs/ai/`** — skills selection and suggested workflows.
+7. **`docs/ai/e2e-browser-session.md`** — E2E procedure (shared Edge CDP session, ephemeral test actors, auth/me gating, bounded waits). NEVER use the dev `admin` account in tests.
+8. **`docs/ai/e2e-test-users.md`** — ⚠️ CRITICAL: all tests authenticate as ephemeral E2E actors (`e2e_test_admin`/`e2e_test_user`, minted per run) — NEVER the dev `admin`.
+9. **`docs/ai/e2e-testid-convention.md`** — `data-testid` naming convention for interactive elements (brittle-on-purpose).
+10. **`docs/ai/e2e-webauthn-auth.md`** — Playwright auth flows: login, invitations, passkeys, MFA, `helpers/webauthn.ts` virtual authenticator.
+
+## Reusable components (MANDATORY)
+
+Every new component/composable judged reusable lands in `@primebrick/ui`
+(`primebrick-v3-ui`) **at creation** — never in `$lib/components` or
+`$lib/composables`. Remote module bundles can only consume vendored
+packages; anything FE-local is unreachable to remotes, so "reusable" and
+"FE-local" are contradictory by definition. FE-local code is reserved for
+host-shell-only pieces (AppShell, sidebar, entity-list host pages) that no
+remote consumes by design. Domain-specific components consumed only by
+one service's remote bundle stay in that service's `fe/`.
 
 ## List pages
 

@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { TextInput } from '$lib/components/ui/input';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
-  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Smartphone from '@lucide/svelte/icons/smartphone';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { Smartphone } from '@primebrick/ui/vendor/lucide';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();

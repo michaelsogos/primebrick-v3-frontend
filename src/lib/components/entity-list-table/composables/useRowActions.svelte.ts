@@ -3,7 +3,7 @@ import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, EntityAction } from '$lib/entity-list/types';
 import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;

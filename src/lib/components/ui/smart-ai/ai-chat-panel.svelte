@@ -22,26 +22,26 @@
    */
   import { onMount, type Snippet } from 'svelte';
   import { browser } from '$app/environment';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Textarea } from '$lib/components/ui/textarea';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import * as Popover from '$lib/components/ui/popover/index.js';
+  import { Popover } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
-  import { useAiModels } from '$lib/composables/useAiModels.svelte';
-  import { useAiCerebellum } from '$lib/composables/useAiCerebellum.svelte';
+  import { fetchModuleConfig } from '$lib/api';
+  import { useAiModels } from '@primebrick/ui';
+  import { useAiCerebellum } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { ChatMessage } from './ai-assistant.types';
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
   import type { useAiAssistant } from './use-ai-assistant.svelte';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import ModelCachePanel from '$lib/components/ui/smart-regex-input/ModelCachePanel.svelte';
-  import { useModelCache } from '$lib/ai/use-model-cache.svelte';
+  import { ModelCachePanel } from '@primebrick/ui';
+  import { useModelCache } from '@primebrick/ui';
   import AiActionChips from './ai-action-chips.svelte';
   import AiModelSelector from './ai-model-selector.svelte';
   import AiModelDetailsPopover from './ai-model-details-popover.svelte';
@@ -52,20 +52,20 @@
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { AI_BUBBLE_STYLE, chatAvatarChrome } from './chat-avatar-chrome';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import Send from '@lucide/svelte/icons/send';
-  import X from '@lucide/svelte/icons/x';
-  import AlertCircle from '@lucide/svelte/icons/alert-circle';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import CircleStop from '@lucide/svelte/icons/circle-stop';
-  import Cpu from '@lucide/svelte/icons/cpu';
-  import Server from '@lucide/svelte/icons/server';
-  import Info from '@lucide/svelte/icons/info';
-  import StickyNotePlus from '@lucide/svelte/icons/sticky-note-plus';
-  import ArrowDown from '@lucide/svelte/icons/arrow-down';
-  import HardDrive from '@lucide/svelte/icons/hard-drive';
-  import BookOpen from '@lucide/svelte/icons/book-open';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { Send } from '@primebrick/ui/vendor/lucide';
+  import { X } from '@primebrick/ui/vendor/lucide';
+  import { AlertCircle } from '@primebrick/ui/vendor/lucide';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { CircleStop } from '@primebrick/ui/vendor/lucide';
+  import { Cpu } from '@primebrick/ui/vendor/lucide';
+  import { Server } from '@primebrick/ui/vendor/lucide';
+  import { Info } from '@primebrick/ui/vendor/lucide';
+  import { StickyNotePlus } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDown } from '@primebrick/ui/vendor/lucide';
+  import { HardDrive } from '@primebrick/ui/vendor/lucide';
+  import { BookOpen } from '@primebrick/ui/vendor/lucide';
   import type { AiSource } from './ai-assistant.types';
 
   /** Build the docs site URL for a citation (path like "guide/overview.mdx"). */
@@ -117,7 +117,6 @@
     }]>;
   } = $props();
 
-  const config = useConfigEntries();
   const aiModels = useAiModels();
   // svelte-ignore state_referenced_locally — assistant_key is a static
   // prop for the lifetime of the panel (the chat is remounted on change).
@@ -226,8 +225,10 @@
   onMount(() => {
     void (async () => {
       // 1. Resolve the configured model ID before creating the AI composable.
-      await config.ensureLoaded();
-      const entry = config.getEntry('ai_assistant_model');
+      //    `ai_assistant_model` lives in the AI-SCHEMA config table — read
+      //    it through the ai service, never the host config API.
+      const moduleConfig = await fetchModuleConfig('ai');
+      const entry = moduleConfig.find((e) => e.key === 'ai_assistant_model');
       const configuredId = entry?.value ? String(entry.value) : null;
       if (!configuredId) {
         // Mandatory config missing — surface the error instead of faking a model.

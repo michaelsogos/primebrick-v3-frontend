@@ -21,6 +21,38 @@
 				}
 			})();
 		</script>
+		<!--
+			Vendor plane — closed specifier list shared by ALL remote module
+			chunks (esm-mount pages). Remote chunks import bare specifiers for
+			by-design libraries; they resolve here to the host-published,
+			versioned vendor bundles. Keep in sync with
+			vendor/vite.vendor.config.ts (VENDOR_ENTRIES) and
+			static/vendor/vendor-manifest.json.
+		-->
+		<script type="importmap">
+			{
+				"imports": {
+					"svelte": "/vendor/svelte.js",
+					"svelte/internal/client": "/vendor/svelte.js",
+					"svelte/internal/disclose-version": "/vendor/svelte.js",
+					"svelte/internal/flags/legacy": "/vendor/svelte.js",
+					"svelte/events": "/vendor/svelte-events.js",
+					"svelte/reactivity": "/vendor/svelte-reactivity.js",
+					"svelte/store": "/vendor/svelte-store.js",
+					"svelte/attachments": "/vendor/svelte-attachments.js",
+					"svelte/motion": "/vendor/svelte-motion.js",
+					"svelte/easing": "/vendor/svelte-easing.js",
+					"@primebrick/core": "/vendor/primebrick-core.js",
+					"@primebrick/ui": "/vendor/primebrick-ui.js",
+					"@primebrick/ui/vendor/transformers": "/vendor/vendor-transformers.js",
+					"@primebrick/ui/vendor/clsx": "/vendor/vendor-clsx.js",
+					"@primebrick/ui/vendor/tailwind-merge": "/vendor/vendor-tailwind-merge.js",
+					"@primebrick/ui/vendor/tailwind-variants": "/vendor/vendor-tailwind-variants.js",
+					"@primebrick/ui/vendor/lucide/icons/": "/vendor/icons/lucide/",
+					"@primebrick/ui/vendor/bits-ui": "/vendor/vendor-bits-ui.js"
+				}
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

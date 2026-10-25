@@ -24,7 +24,7 @@ import { typeConfigJsonSchema } from "$lib/config/type-config-schema";
 import {
   AI_TEST_CASES,
   summarizeTestScores,
-} from "$lib/ai/ai-model-test-scores";
+} from "@primebrick/ui";
 
 describe("extractJsonCandidate", () => {
   it("extracts a bare JSON object", () => {

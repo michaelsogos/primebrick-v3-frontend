@@ -1,12 +1,12 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { InputGroup, InputGroupAddon, InputGroupButton, HighlightedInput } from '$lib/components/ui/input-group';
-  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { Checkbox } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import Search from '@lucide/svelte/icons/search'
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Search } from '@primebrick/ui/vendor/lucide'
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   let {
     search,

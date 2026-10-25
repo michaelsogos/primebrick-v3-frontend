@@ -15,38 +15,48 @@
  *   - The panel is opened ONCE per suite (beforeAll): the model loads once,
  *     then both tests share the ready page.
  *
- * Auth: persistent headed Edge profile (login+MFA done once by a human).
+ * Auth: programmatic login as the ephemeral e2e_test_admin (same pattern as
+ * the other Edge specs). It carries no TOTP factor — MFA enrollment lives
+ * on the dedicated e2e_mfa_user — so form login never hits a challenge.
  * Locators: data-testid only (brittle-on-purpose convention).
  */
 import {
   test as base,
   expect,
-  chromium,
   type BrowserContext,
   type Page,
   type Locator,
 } from "@playwright/test";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
+import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
 const PAGE_URL = "/system/settings/configurations/create";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
 
-const test = base.extend<object, { pwContext: BrowserContext }>({
+const test = base.extend<object, { pwContext: BrowserContext; suitePage: Page }>({
   // eslint-disable-next-line no-empty-pattern
   pwContext: [
     async ({}, use) => {
-      const ctx = await chromium.launchPersistentContext(E2E_PROFILE, {
-        channel: "msedge",
-        headless: false,
-        viewport: { width: 1280, height: 900 },
-      });
-      await use(ctx);
-      await ctx.close();
+      // Shared Edge session (helpers/edge-context): attach to the live CDP
+      // session or launch a sanitized one — never a second Edge on the same
+      // profile (that was the profile-lock "Target closed" failure). The
+      // session is deliberately left running for Cache API model reuse.
+      const { context } = await getSharedContext();
+      await use(context);
     },
     { scope: "worker" },
   ],
-  page: async ({ pwContext }, use) => {
-    const page = pwContext.pages()[0] ?? (await pwContext.newPage());
-    await use(page);
+  // Worker-scoped page: the suite's design opens the panel + loads the model
+  // ONCE (suiteReady flag) and both tests drive the same ready tab. A
+  // per-test page would hand test 2 a blank tab while suiteReady skips the
+  // setup → it waits forever on panel rows that never exist.
+  suitePage: [
+    async ({ pwContext }, use) => {
+      await use(await focusedPage(pwContext));
+    },
+    { scope: "worker" },
+  ],
+  page: async ({ suitePage }, use) => {
+    await use(suitePage);
   },
 });
 
@@ -81,30 +91,34 @@ async function waitPhase(page: Page, phase: string): Promise<void> {
  */
 async function gotoAuthed(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  // The session-expired dialog renders asynchronously — require two
-  // consecutive clean checks before declaring the page authenticated.
+  // Authenticate programmatically when the session is absent/expired — the
+  // LoginForm renders both on /login and inside the in-app session-expired
+  // dialog, so the same fill covers both. e2e_test_admin has no TOTP factor
+  // (MFA churn lives on e2e_mfa_user) → the submit never hits a challenge.
+  // Two consecutive clean checks are required (the dialog is async).
+  const blocked = async () =>
+    page.url().includes("/login") ||
+    (await page
+      .locator('[data-dialog-overlay], [role="dialog"]')
+      .first()
+      .isVisible()
+      .catch(() => false));
   let cleanChecks = 0;
   for (let i = 0; i < 12; i++) {
-    const blocked =
-      page.url().includes("/login") ||
-      (await page
-        .locator('[data-dialog-overlay], [role="dialog"]')
-        .first()
-        .isVisible()
-        .catch(() => false));
-    if (!blocked) {
+    if (!(await blocked())) {
       if (++cleanChecks >= 2) return;
     } else {
       cleanChecks = 0;
+      const input = page.getByTestId("login-username-input");
+      if (await input.isVisible().catch(() => false)) {
+        await input.fill(E2E_ADMIN_USERNAME);
+        await page.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+        await page.getByTestId("login-submit-button").click();
+      }
     }
     await page.waitForTimeout(5000); // ≤5s per slot, 12 slots = 60s max
   }
-  throw new Error(
-    `authentication required (url=${page.url()}, dialog=${await page
-      .locator('[role="dialog"]')
-      .isVisible()
-      .catch(() => false)}) — complete login+MFA in the E2E browser window`,
-  );
+  throw new Error(`authentication failed for ${E2E_ADMIN_USERNAME} (url=${page.url()})`);
 }
 
 /** Click brain CTA; verify the panel mounted (data-ai-phase appears). */

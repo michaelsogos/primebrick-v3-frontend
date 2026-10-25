@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export function useRowRangeSelection<T>(options: {
   rowSelectionEnabled: () => boolean;

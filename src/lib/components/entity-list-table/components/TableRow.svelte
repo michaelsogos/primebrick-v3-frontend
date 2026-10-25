@@ -2,10 +2,10 @@
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
   import { t } from '$lib/i18n';
-  import { Checkbox, checkboxInteractiveClass } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TableCell } from '../table';
   import CellRenderer from './CellRenderer.svelte';
   import {
@@ -19,14 +19,14 @@
     isDatetimeIanaRecordMode,
     entityListDataCellValignClass
   } from '../utils/cell-styling';
-  import MoreVertical from '@lucide/svelte/icons/more-vertical'
-  import Pencil from '@lucide/svelte/icons/pencil'
-  import Copy from '@lucide/svelte/icons/copy'
-  import FileClock from '@lucide/svelte/icons/file-clock'
-  import Eye from '@lucide/svelte/icons/eye'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { MoreVertical } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
+  import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { FileClock } from '@primebrick/ui/vendor/lucide'
+  import { Eye } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
+  import { DynamicIcon } from '@primebrick/ui';
   import type { CellArgs } from '../types';
 
   type TableRowCellArgs = CellArgs<TRow>;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import type { WithElementRef } from "bits-ui";
+	import type { WithElementRef } from '@primebrick/ui/vendor/bits-ui';
 	import type { Snippet } from "svelte";
 	import type { HTMLButtonAttributes } from "svelte/elements";
 

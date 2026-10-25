@@ -9,10 +9,10 @@
   import { parseTypeConfig } from "$lib/config/type-config-schema";
 
   import { AsYouType } from "libphonenumber-js";
-  import ChevronDown from "@lucide/svelte/icons/chevron-down";
-  import Eraser from "@lucide/svelte/icons/eraser";
-  import Copy from "@lucide/svelte/icons/copy";
-  import Check from "@lucide/svelte/icons/check";
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
+  import { Copy } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
 
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, "type" | "files"> & {

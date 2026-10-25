@@ -25,9 +25,9 @@
    */
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import type { FieldHelp } from '$lib/components/forms/field-help';
-  import type { TooltipPriority } from '$lib/components/ui/tooltip';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
+  import type { FieldHelp } from '@primebrick/ui';
+  import type { TooltipPriority } from '@primebrick/ui';
   import type { Snippet } from 'svelte';
 
   /**

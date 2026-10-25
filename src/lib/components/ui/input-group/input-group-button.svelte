@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { tv, type VariantProps } from "tailwind-variants";
+	import { tv, type VariantProps } from '@primebrick/ui/vendor/tailwind-variants';
 
 	const inputGroupButtonVariants = tv({
 		base: "gap-2 text-sm flex items-center shadow-none",
@@ -22,7 +22,7 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
 	import type { ComponentProps } from "svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
+	import { Button } from '@primebrick/ui';
 
 	let {
 		ref = $bindable(null),

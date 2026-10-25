@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { type VariantProps, tv } from "tailwind-variants";
+	import { type VariantProps, tv } from '@primebrick/ui/vendor/tailwind-variants';
 
 	/**
 	 * shadcn-svelte–style alert; `impact*` variants mirror toast / Sonner semantics: tinted

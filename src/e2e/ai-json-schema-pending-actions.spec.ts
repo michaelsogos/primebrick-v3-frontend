@@ -20,17 +20,15 @@
  * "navigation" and "chat" phases owned by the other specs) — aggregates and
  * the model rank cover ALL turns across phases.
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { execSync } from "node:child_process";
+import { test, expect, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[pending] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
@@ -44,54 +42,6 @@ async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 1
   throw new Error(`Timeout waiting for ${what} (${maxRetries * 5}s)`);
 }
 
-/**
- * Kill zombie Edge processes that hold the E2E profile. Killed playwright
- * runs leave a browser with the profile locked but a wedged CDP/renderer —
- * the next launch then exits instantly ("opening in existing browser
- * session") and every evaluate hangs. These processes are test-owned.
- */
-function killEdgeZombies(): void {
-  try {
-    execSync(
-      `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='msedge.exe'\\" | Where-Object { \\$_.CommandLine -like '*pw-edge-profile*' } | ForEach-Object { Stop-Process -Id \\$_.ProcessId -Force }"`,
-      { timeout: 20_000, stdio: "ignore" },
-    );
-    log("killed zombie pw-edge-profile Edge processes");
-  } catch {
-    /* none running or query failed — proceed */
-  }
-}
-
-async function launchEdge(): Promise<BrowserContext> {
-  log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
-
-async function getSharedContext(): Promise<{ context: BrowserContext; launched: boolean }> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 15000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return { context: ctx, launched: false };
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  try {
-    return { context: await launchEdge(), launched: true };
-  } catch {
-    // Singleton handoff to a zombie — kill it and retry once.
-    killEdgeZombies();
-    await new Promise((r) => setTimeout(r, 3000));
-    return { context: await launchEdge(), launched: true };
-  }
-}
 
 async function waitPanelPhase(page: Page, want: string): Promise<string> {
   const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
@@ -181,22 +131,18 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
   });
 
   test("free text on the same topic as a pending cascade must NOT emit pick", async () => {
-    let { context, launched } = await getSharedContext();
-    let page = context.pages()[0] ?? (await context.newPage());
+    const { context, launched } = await getSharedContext();
+    const page = await focusedPage(context);
 
     // Liveness probe — an attached CDP browser can be alive while the page's
     // renderer is dead (zombie session from a killed run): evaluate would
-    // hang forever. Bounded probe → relaunch the context once.
+    // hang forever. Fail fast — relaunching the shared context would kill
+    // every other worker's page (relaunch lives inside the launch lock).
     const alive = await Promise.race([
       page.evaluate(() => true).then(() => true),
       new Promise<false>((r) => setTimeout(() => r(false), 10_000)),
     ]).catch(() => false);
-    if (!alive) {
-      log("page renderer wedged — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context, launched } = await getSharedContext());
-      page = context.pages()[0] ?? (await context.newPage());
-    }
+    if (!alive) throw new Error("shared Edge page renderer unresponsive");
 
     page.on("pageerror", (e) => log(`  pageerror: ${e.message}`));
     page.on("console", (m) => {
@@ -216,13 +162,11 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
 
     // A freshly-launched Edge occasionally boots with a wedged network
     // service (app shows "Offline", every in-page fetch hangs while curl
-    // works). Detect it fast and relaunch the context once.
+    // works). The launch-lock probe in getSharedContext already covers this
+    // for the launcher; if it still wedges here, fail — never relaunch the
+    // shared context from a spec.
     if (launched && !(await online().catch(() => false))) {
-      log("in-page fetch wedged on fresh launch — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context } = await getSharedContext());
-      page = context.pages()[0] ?? (await context.newPage());
-      if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
+      throw new Error("in-page fetch wedged on fresh shared Edge session");
     }
 
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));

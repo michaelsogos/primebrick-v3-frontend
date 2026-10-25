@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/svelte";
-import ScoreGauge from "$lib/components/ui/smart-regex-input/ScoreGauge.svelte";
+import { ScoreGauge } from '@primebrick/ui';
 
 describe("ScoreGauge", () => {
   it("renders a missing score as a red dash instead of disappearing", () => {

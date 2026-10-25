@@ -1,172 +1,105 @@
-# E2E browser session, auth & determinism
+# Devin Rule: E2E Browser Session, Auth & Determinism
 
-> **Audience:** AI agents and humans writing Playwright specs in `src/e2e/`.
-> The enforcing rule lives in `.devin/rules/e2e-browser-session.md`; this doc
-> is the full reference, including every pitfall we hit empirically.
+> Canonical body of `.devin/rules/e2e-browser-session.md` — the rule file is a pointer to this page.
 
-## The shared Edge session (CDP :9333)
+## Trigger
+- Applies whenever an AI agent writes or modifies E2E specs in `src/e2e/`
+  that drive a real browser (Playwright), especially specs that need an
+  authenticated session, WebGPU, or a warm Cache API (AI model files).
 
-Specs reuse a single, Playwright-owned Edge instance instead of launching a
-fresh browser per run:
+## Mandatory conventions
 
-```ts
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
+### Browser session — reuse over relaunch
+- Attach to the shared Edge debug session via `chromium.connectOverCDP(
+  "http://127.0.0.1:9333")` first; only launch `launchPersistentContext(
+  E2E_PROFILE, { channel: "msedge", headless: false, args: [
+  "--remote-debugging-port=9333"] })` when nothing listens.
+- `E2E_PROFILE = D:\git\primebrick\temp\pw-edge-profile` — a Playwright-owned
+  Edge profile. NEVER the user's real profile. It persists the Cache API so
+  downloaded AI models survive across runs (Transformers.js commits a cache
+  entry only for COMPLETE files — a mid-file interruption restarts that file).
+- NEVER close the browser/context in the spec — the session is deliberately
+  left alive for observation and reuse by the next spec.
 
-async function getSharedContext() {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) return ctx;                       // reuse: cache, cookies, tabs
-  } catch { /* nothing listening — launch */ }
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge", headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
-```
+### Auth — endpoint, not URL
+- Gate on `GET /api/v1/auth/me` via `page.evaluate(fetch)` — the SPA renders
+  the form shell even with an expired session (401), so URL/DOM checks lie.
+- On 401: navigate to `/login` and treat it as a state machine — the login
+  page auto-attempts a session refresh before showing the form; poll for the
+  form (`login-username-input`) OR a redirect, submit the E2E test actor
+  credentials (`E2E_ADMIN_USERNAME`/`E2E_ADMIN_PASSWORD` from
+  `helpers/admin-login.ts`), then re-verify `/api/v1/auth/me`.
+  NEVER use the dev bootstrap `admin` user — tests authenticate as the
+  ephemeral ad-hoc E2E actors minted per run by `global.setup.ts`
+  (`e2e_test_admin` / `e2e_test_user`, destroyed at teardown) only.
+- `beforeAll`: `deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME)` +
+  `setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true)` via
+  `helpers/db.ts` so the login cannot stall on an MFA challenge. Both helpers
+  REFUSE to run against the dev `admin` user — its credentials/MFA state are
+  not test data and must never be destroyed/recreated by tests.
 
-Why this design:
+### Locale — pin before first load
+- `sessionStorage["pb.lang"] = "it-IT"` then reload once if it differed.
+- A `UiLang` listed in `UI_LANGS`/`LangSelect` MUST have a dictionary in the
+  BE translations tables — `normalizeLang` exact-matches listed tags and only
+  falls back to the primary subtag (`en`→`en-GB`) for UNLISTED tags, so a
+  listed language without dicts renders raw `system.*` keys everywhere.
+- NEVER scan all DOM text for raw `system.*` keys: user-entered values (e.g.
+  `label_key` fields) legitimately contain them.
 
-- **Cache API survives.** Transformers.js writes a cache entry only for a
-  COMPLETE file (`cache.put` after the body stream reaches `done`). A ~2GB
-  model re-downloads on every fresh context; the persistent profile keeps
-  completed files, so warm runs load in ~10s. Sharded models resume at shard
-  granularity; a partially-downloaded shard restarts from byte 0 — there is
-  no byte-level resume in Transformers.js.
-- **Not the user's profile.** The profile is dedicated to E2E; login is still
-  programmatic every run (see below).
-- **Never close the context.** The spec intentionally leaves the browser
-  open — the next spec attaches to it via CDP.
+### Determinism — evidence, not sleeps
+- Every wait polls DOM evidence in ≤5s slots, ≤6 retries (30s cap) via
+  `locator.waitFor({ state: "visible", timeout: 5000 })` in a loop.
+- The same bound applies to the AGENT observing a run: read shell output in
+  ≤30s windows (`get_output` timeout ≤30s), never multi-minute blocking
+  reads — a test that is silent for >30s is already telling you something.
+- Hydration gate: wait for a sidebar nav link (`a[href^="/system/"]`) —
+  rendered only after `onMount` + module-nav fetch. Clicking SSR DOM hits
+  dead (unhydrated) handlers. If a click may have raced hydration, retry the
+  click inside the poll until the expected element mounts.
+- The assistant sheet MUST be proven mounted (`*-panel` testid) BEFORE any
+  `data-ai-phase` wait — never wait for a model that cannot load because the
+  sheet never opened.
+- Model load: `loading_*` phases get an 8-minute budget (5s slots); any other
+  phase unchanged for 30s = fail fast. `webgpu_required`/`error` fail
+  immediately.
+- `page.goto()` to the SAME URL aborts (ERR_ABORTED) or stalls on a reused
+  tab — navigate only when the current URL differs.
+- Nav/group locators must be scoped to `[data-sidebar="content"]` and must
+  exclude elements carrying `title` (org/module switchers) — a loose
+  `button[aria-expanded]` selector also matches in-page disclosures and
+  hijacks clicks.
+- If in-page `fetch()` hangs while `curl` succeeds, the browser instance's
+  connection pool is wedged (stalled streams from killed runs) — close the
+  E2E Edge instance and relaunch; do not add retries.
 
-### Pitfall: wedged connection pool
+### Assertions of completeness
+- When a UI renders a data-driven set (nav links, explorer topics), assert
+  BOTH directions: missing (expected but not rendered) AND exceeding
+  (rendered but not expected). Compute the expected set from the app's own
+  source of truth — fetch the same API the app uses, or `await import(
+  "/src/lib/...")` inside `page.evaluate` (Vite dev serves the real modules).
 
-If in-page `fetch()` hangs on EVERYTHING (even `/favicon.ico`) while `curl`
-succeeds, and `navigator.serviceWorker` is empty, the browser's per-host
-connection pool is stalled by killed runs. Symptom: the spec prints "landed"
-then goes silent. Fix: kill the E2E Edge instance (the `pw-edge-profile`
-processes) and relaunch — do NOT add retries around a dead network stack.
+### Persistence of test evidence
+- `ai_models.test_scores` cases live under `*_test_score` keys with canonical
+  `turns[]`; aggregates (quality/speed/score/rank) are computed at READ time —
+  never persist precomputed score fields.
+- One case may collect turns from MULTIPLE specs/sessions: each spec owns a
+  `phase` (e.g. `conversation`, `navigation`), starts a clean chat via the
+  `{prefix}-new-session` CTA, and merges through
+  `mergeTestScoreTurns(model_id, caseKey, phase, turns)` in
+  `src/e2e/helpers/test-scores.ts` — which replaces same-phase turns,
+  preserves the rest, and recomputes rank. Never write a whole case
+  destructively when another phase's turns exist.
 
-## Auth: gate on the endpoint, not the URL
+## Reference
+- Full doc + pitfalls: `docs/ai/e2e-browser-session.md`
+- Reference specs: `src/e2e/ai-json-schema-quality.spec.ts`,
+  `src/e2e/ai-json-schema-navigation.spec.ts`, `src/e2e/auth-mfa.spec.ts`
+- Testid convention: `.devin/rules/e2e-testid-convention.md`
 
-The SPA renders pages (and even the login auto-refresh UI) on expired
-sessions. Only `GET /api/v1/auth/me` is truthful:
-
-```ts
-const isAuthed = () => page.evaluate(async () => {
-  try { return (await fetch("/api/v1/auth/me")).ok; } catch { return false; }
-});
-```
-
-On 401, `/login` is a **state machine**: `bootSessionCheck()` first tries the
-HttpOnly refresh cookie (`checking → refreshing → form`); a successful
-refresh redirects away before the form renders. So poll for EITHER the form
-(`login-username-input`) OR navigation, submit the E2E test actor credentials (`E2E_ADMIN_USERNAME`/`E2E_ADMIN_PASSWORD` from `helpers/admin-login.ts`), then re-verify
-`auth/me`. Strip the TEST ACTOR's MFA in `beforeAll` via `helpers/db.ts`
-(`deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME)`, `setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, ...)`) — the
-documented convention from `auth-mfa.spec.ts`. These helpers refuse to run
-against the dev `admin` user — never destroy/recreate its credentials, MFA
-factors, or passkeys to bypass MFA in tests.
-
-## Locale
-
-Pin `sessionStorage["pb.lang"] = "it-IT"` before the app boots (it is read at
-startup; reload once if it differed). Watch out for languages offered by the
-selector but missing DB dictionaries — `normalizeLang` exact-matches listed
-tags and only falls back to the primary subtag for unlisted ones, so e.g. an
-`en-US` browser with no `en-US` dictionary rendered raw keys until the dict
-was seeded (see `docs/ai/i18n.md` — UiLang ↔ dictionary parity). Never treat
-user-entered `label_key` values (which legitimately look like
-`system.settings.config.*`) as untranslated UI.
-
-## Multi-phase score cases
-
-One `*_test_score` case can be fed by several specs in separate chat
-sessions. Convention for `json_editor_with_schema_test_score`:
-
-- `ai-json-schema-quality.spec.ts` → `phase: "conversation"` turns (prompts)
-- `ai-json-schema-navigation.spec.ts` → `phase: "navigation"` turns (clicks)
-
-Each spec clicks `{prefix}-new-session` after model-ready so phases never
-share a conversation, then calls `mergeTestScoreTurns(model_id, caseKey,
-phase, turns)` from `src/e2e/helpers/test-scores.ts`. The helper replaces
-same-phase turns, preserves the other phases, and recomputes the model rank
-— quality/speed/score come from ALL merged turns at read time.
-
-## Deterministic waits
-
-- ≤5s `waitFor({ state: "visible" })` slots, ≤6 retries → 30s cap per step.
-- **Hydration gate**: wait for `a[href^="/system/"]` (sidebar links render
-  only after `onMount` + module-nav fetch). SSR DOM is visible before Svelte
-  attaches handlers — a click there does nothing. If a click can race
-  hydration, put the click INSIDE the poll and retry until the target mounts.
-- **Sheet before model**: prove `[data-testid="smart-json-ai-panel"]` exists
-  before waiting on `data-ai-phase`; otherwise you wait for a model that
-  cannot load because the sheet never opened.
-- **Phase budget**: `loading_*` phases (model download) get 8min in 5s slots
-  and exit the moment the phase advances; `init`/`idle`/anything else stuck
-  30s = fail; `webgpu_required`/`error` = immediate fail.
-- **Same-URL goto**: `page.goto(currentUrl)` aborts (`ERR_ABORTED`) or stalls
-  on a reused tab — check `page.url()` first.
-- **Selector scoping**: `button[aria-expanded]` matches nav group toggles AND
-  unrelated in-page disclosures and the org/module switchers (those carry a
-  `title` attribute). Scope to `[data-sidebar="content"]` + `:not([title])`,
-  and `Escape` stray dropdown overlays before clicking links.
-- **Click fallback**: if an overlay intercepts pointer events, retry with
-  `click({ force: true })` — the landed-URL/DOM assertion is what proves the
-  navigation, not the click mechanics.
-
-## Missing/exceeding assertions
-
-When a UI renders a data-driven set (nav links, schema-explorer topics),
-assert BOTH directions per level:
-
-- **missing** — the source of truth says it, the DOM does not render it;
-- **exceeding** — the DOM renders something the source never declared.
-
-Compute the expected set from the app's own truth — either the same API the
-app fetches (`/api/v1/modules`, `/api/v1/modules/:id/meta`) or the app's own
-modules imported in-page via Vite dev:
-
-```ts
-const tree = await page.evaluate(async () => {
-  const [{ buildSchemaTopics, indexSchemaTopics }, { typeConfigJsonSchema },
-         { schemaForCapabilities }, { localizeTopics }, i18n] = await Promise.all([
-    import("/src/lib/components/ui/smart-json-assistant/json-schema-explorer.ts"),
-    import("/src/lib/config/type-config-schema.ts"),
-    import("/src/lib/components/ui/smart-json-config/type-config-explorer.ts"),
-    import("/src/lib/components/ui/smart-json-config/type-config-i18n.ts"),
-    import("/src/lib/i18n/index.ts"),
-  ]);
-  let translate; i18n.t.subscribe((v) => { translate = v; })();
-  // …rebuild the exact localized tree the panel renders…
-});
-```
-
-`i18n.t` is a Svelte `Readable` — read the current translator via
-`subscribe()` (the `get()` helper is not importable in-page).
-
-## Persisting AI test evidence
-
-`ai_models.test_scores` stores per-case objects under `*_test_score` keys with
-canonical `turns[]` (`{ n, prompt, expected, actual, score, verdict, reason,
-response_s }`). Aggregates (`quality`, `speed`, `score`, `rank`) are computed
-at READ time by `ai-model-test-scores.ts` — never persist them. Speed follows
-ONE rule at every level: average the `response_s` values first, then bucket
-the average via `turnSpeedScore` (case avg → case speed; mean of case avgs →
-model speed). `response_s` is recorded for every turn including fast UI-driven
-outcomes — sub-second latencies are real signal (command perception), not
-outliers. The E2E writes
-the case via SQL through `helpers/db.ts` (`UPDATE ai_models SET test_scores …,
-rank = mean(case scores)`), matching the original harness.
-
-## Reference specs
-
-- `src/e2e/ai-json-schema-quality.spec.ts` — 5-turn prompt-driven quality case.
-  Multi-model: `AI_E2E_MODEL_IDS="id1,id2"` runs the whole phase serially per
-  model in the SAME browser (live model switch via the assistant selector,
-  no relaunch); unset = default model only. Scores persist per `model_id`.
-- `src/e2e/ai-json-schema-navigation.spec.ts` — click-through of every
-  explorer topic link with per-level missing/exceeding checks
-- `src/e2e/auth-mfa.spec.ts` — login + MFA DB-cleanup conventions
+## Enforcement
+- AI agent MUST NOT add `sleep`/`waitForTimeout` outside the 5s poll slots.
+- AI agent MUST NOT modify production components to make a test pass — fix
+  the test against the existing DOM contract.
+- AI agent MUST report the actual DOM/state in failures (bounded, fail-fast).

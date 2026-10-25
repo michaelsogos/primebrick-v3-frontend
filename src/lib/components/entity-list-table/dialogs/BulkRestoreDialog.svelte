@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import { getEntitiesNsContext } from '../context';
 
   interface BulkRestoreDialogProps {
@@ -37,7 +37,7 @@
   let entityPlural = $derived($t(`${ns}.entities.${entity}.plural`));
 </script>
 
-<DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>
       {$t('app.common.restoreEntitiesTitle', { entity: entityPlural })}
@@ -68,4 +68,4 @@
       {/if}
     </Button>
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

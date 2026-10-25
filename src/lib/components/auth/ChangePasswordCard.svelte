@@ -17,14 +17,14 @@
     FormLabel,
     TranslatedFormFieldErrors,
   } from '$lib/components/ui/form';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { onMount } from 'svelte';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   const passwordPolicy = usePasswordPolicy();
 

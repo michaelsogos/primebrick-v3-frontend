@@ -1,6 +1,6 @@
 import { onMount, untrack } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export function useStickyColumns(options: {
   rowSelectionEnabled: () => boolean;

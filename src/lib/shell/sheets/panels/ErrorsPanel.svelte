@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import * as EventCard from '$lib/components/ui/event-card';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import Eye from '@lucide/svelte/icons/eye';
-  import XIcon from '@lucide/svelte/icons/x';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { ThumbsUp } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { Eye } from '@primebrick/ui/vendor/lucide';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 

@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
+  import { Checkbox, checkboxVisualOnlyClass } from '@primebrick/ui';
   import * as Sortable from '$lib/components/ui/sortable';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { t } from '$lib/i18n';
-  import Columns3 from '@lucide/svelte/icons/columns-3';
-  import XIcon from '@lucide/svelte/icons/x';
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Columns3 } from '@primebrick/ui/vendor/lucide';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   type ColumnLike = { key: string; label_key: string; hideable?: boolean };
 

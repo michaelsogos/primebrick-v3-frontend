@@ -1,17 +1,17 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page } from '$app/state';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
-  import FileText from '@lucide/svelte/icons/file-text'
-  import Mail from '@lucide/svelte/icons/mail'
-  import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet'
-  import Code2 from '@lucide/svelte/icons/code-2'
-  import Upload from '@lucide/svelte/icons/upload'
-  import Download from '@lucide/svelte/icons/download'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import Plus from '@lucide/svelte/icons/plus';
+  import { Badge } from '@primebrick/ui';
+  import { FileText } from '@primebrick/ui/vendor/lucide'
+  import { Mail } from '@primebrick/ui/vendor/lucide'
+  import { FileSpreadsheet } from '@primebrick/ui/vendor/lucide'
+  import { Code2 } from '@primebrick/ui/vendor/lucide'
+  import { Upload } from '@primebrick/ui/vendor/lucide'
+  import { Download } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';

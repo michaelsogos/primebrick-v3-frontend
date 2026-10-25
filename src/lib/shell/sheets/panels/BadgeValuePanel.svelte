@@ -18,19 +18,19 @@
    */
   import { t, dict } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { SheetPanelLayout } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { PrimeField } from '$lib/components/ui/form';
-  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
-  import Badge from '$lib/components/ui/badge/badge.svelte';
-  import * as Popover from '$lib/components/ui/popover';
+  import { ComboSelect } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
+  import { Popover } from '@primebrick/ui';
   import * as ColorPicker from '$lib/components/ui/color-picker';
-  import { badgeClassesFromToken } from '$lib/colors/badge';
-  import Eraser from '@lucide/svelte/icons/eraser';
-  import Ban from '@lucide/svelte/icons/ban';
-  import Pencil from '@lucide/svelte/icons/pencil';
-  import Plus from '@lucide/svelte/icons/plus';
+  import { badgeClassesFromToken } from '@primebrick/ui';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
+  import { Ban } from '@primebrick/ui/vendor/lucide';
+  import { Pencil } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
 
   let {

@@ -2,10 +2,10 @@
   import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
-  import { Switch } from '$lib/components/ui/switch';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Switch } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
@@ -29,11 +29,11 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { pushNotification } from '$lib/errors/app-errors';
-  import Dices from '@lucide/svelte/icons/dices';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-  import Copy from '@lucide/svelte/icons/copy';
-  import KeyRound from '@lucide/svelte/icons/key-round';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import { Dices } from '@primebrick/ui/vendor/lucide';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
+  import { Copy } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
 
   const uuid = $derived(page.params.uuid);
 

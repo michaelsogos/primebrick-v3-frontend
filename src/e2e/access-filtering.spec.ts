@@ -2,36 +2,39 @@ import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin, loginAsTestUser } from "./helpers/admin-login";
 
 /**
- * Access-axis E2E — `access.{app}.{module}.{page}`.
+ * Access-axis E2E — `access.{app}.{module}.{leaf}`.
  *
  * The discovery payload (`GET /api/v1/modules`) is filtered SERVER-SIDE by
- * the caller's access grants: what a user cannot reach is simply absent —
- * never emitted and re-hidden client-side (non-disclosure, not obfuscation).
+ * the caller's access grants. A module with ZERO reachable leaves stays in
+ * the payload flagged `accessible:false` (+ `nav_hidden`) so the launcher's
+ * reveal switch can render it disabled — it is never navigable.
+ *
+ * Grants are EXACT leaf keys or `.*` wildcards only — bare namespaces are
+ * illegal, `is_admin` inherits nothing (administrators role carries the
+ * explicit `access.system.*` + `access.crm.*` wildcards).
  *
  * The non-admin actor (`e2e_test_user`, role `e2e_user`) holds:
- *   - `access.system.job`  → Job Handler module under the System app
- *   - `customer.read.all/single` → CRM entity APIs (the crm module itself
- *     is undeclared → open to authenticated users)
- *   - NO `access.system.settings`, NO is_admin → Settings must be absent
- *     EVERYWHERE: payload, launcher, sidebar, breadcrumb.
- *
- * The admin actor (`is_admin`) implicitly holds `access.system` → Settings
- * visible — but ONLY because it lives under the system root; a business
- * root (crm) is not covered by admin-ness.
+ *   - `access.system.job.*` → every Job Handler leaf under the System app
+ *   - `customer.read.all/single` → CRM entity APIs only — WITHOUT
+ *     `access.crm.*` the crm module stays navigation-inaccessible (the two
+ *     axes are deliberately separate)
+ *   - NO `access.system.settings.*` → Settings is fully inaccessible
  */
 
 const LAUNCHER_TRIGGER = "[data-testid='app-launcher-trigger']";
 const LAUNCHER_APPS = "[data-testid='app-launcher-apps']";
 const LAUNCHER_MODULES = "[data-testid='app-launcher-modules']";
 const LAUNCHER_OPTION = "[role='option']";
+const LAUNCHER_SHOW_ALL = "[data-testid='app-launcher-show-all']";
 
-type NavLink = { id: string; href: string; access?: string; children?: NavLink[] };
+type NavLink = { id: string; href: string; default?: boolean; children?: NavLink[] };
 type ModuleInfo = {
   id: string;
   part_of: string;
   route_prefixes?: string[];
   nav?: NavLink[];
-  home?: Record<string, string>;
+  nav_hidden?: NavLink[];
+  accessible?: boolean;
   enabled?: boolean;
 };
 
@@ -55,30 +58,40 @@ async function launcherSelectApp(page: Page, root: string) {
 }
 
 test.describe("access axis — server-side discovery filtering", () => {
-  test("non-admin: payload omits the gated module; open modules stay", async ({ page }) => {
+  test("non-admin: only job is accessible; gated modules stay flagged", async ({ page }) => {
     await loginAsTestUser(page);
     const modules = await fetchModules(page);
-    const ids = modules.map((m) => m.id);
+    const byId = new Map(modules.map((m) => [m.id, m]));
 
-    // Settings declares access 'access.system.settings' — the e2e_user
-    // role does not grant it and the actor is not admin → absent.
-    expect(ids, "settings must be absent from the filtered payload").not.toContain("settings");
-    // Undeclared modules are open to authenticated users.
-    expect(ids).toContain("job");
-    expect(ids).toContain("crm");
-    // And the discovery doc carries the enriched fields the shell needs —
-    // nav + per-root home for every module it lists.
-    for (const m of modules.filter((x) => (x.route_prefixes?.length ?? 0) > 0)) {
-      expect(m.nav?.length, `module '${m.id}' must embed its filtered nav`).toBeGreaterThan(0);
-      expect(m.home, `module '${m.id}' must carry per-root home`).toBeTruthy();
+    // Job is the only accessible module for this actor.
+    const job = byId.get("job");
+    expect(job, "job must be present").toBeTruthy();
+    expect(job!.accessible, "job must be navigable").not.toBe(false);
+    expect(
+      (job!.nav ?? []).length,
+      "job must embed its access-filtered nav",
+    ).toBeGreaterThan(0);
+
+    // Settings/crm: zero reachable leaves → present but flagged, their
+    // dropped nav carried in nav_hidden for the reveal switch.
+    for (const id of ["settings", "crm"] as const) {
+      const m = byId.get(id);
+      expect(m, `'${id}' must stay in the payload for the reveal switch`).toBeTruthy();
+      expect(m!.accessible, `'${id}' must be flagged inaccessible`).toBe(false);
+      expect(
+        (m!.nav ?? []).length,
+        `'${id}' nav must be empty — nothing reachable`,
+      ).toBe(0);
+      expect(
+        (m!.nav_hidden ?? []).length,
+        `'${id}' nav_hidden must carry its dropped leaves`,
+      ).toBeGreaterThan(0);
     }
   });
 
-  test("non-admin: launcher System column shows job/crm, never settings", async ({ page }) => {
+  test("non-admin: launcher hides settings until the reveal switch is on", async ({ page }) => {
     await loginAsTestUser(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    // Wait for the shell to settle — the job nav must be rendered before
-    // the launcher trigger is interactive.
     await page
       .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
       .first()
@@ -86,14 +99,27 @@ test.describe("access axis — server-side discovery filtering", () => {
     await openLauncher(page);
     await launcherSelectApp(page, "system");
 
+    // Default mode: only navigable modules — settings absent entirely.
     await expect(
       page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="job"]`).first(),
-      "job must appear under the System app for an authorized user",
+      "job must appear under the System app",
     ).toBeVisible({ timeout: 10000 });
     await expect(
       page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="settings"]`),
-      "settings must NOT appear — the module is access-gated",
+      "settings must be hidden while the reveal switch is off",
     ).toHaveCount(0);
+
+    // Reveal ON: settings appears DISABLED — visible, never navigable.
+    await page.locator(LAUNCHER_SHOW_ALL).first().click();
+    const settingsRow = page.locator(
+      `${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="settings"]`,
+    );
+    await expect(settingsRow, "settings must appear disabled with reveal on").toBeVisible();
+    await expect(settingsRow.first()).toHaveAttribute("aria-disabled", "true");
+    await expect(
+      settingsRow.locator("[data-testid='launcher-cta']").first(),
+      "the hidden module's GOTO CTA must be disabled",
+    ).toBeDisabled();
     await page.keyboard.press("Escape");
   });
 
@@ -112,33 +138,50 @@ test.describe("access axis — server-side discovery filtering", () => {
       hrefs.filter((h) => h?.startsWith("/system/settings")),
       "no /system/settings links may render for a user without the grant",
     ).toEqual([]);
-    // Job nav renders (the module is reachable).
     expect(hrefs.some((h) => h === "/system/job/job-schedules")).toBeTruthy();
   });
 
-  test("non-admin: direct URL to a gated module's page → non-disclosure", async ({ page }) => {
+  test("non-admin: direct URL to a gated page → deny + RFC notification + safe redirect", async ({
+    page,
+  }) => {
     await loginAsTestUser(page);
+    // First land somewhere reachable so the shell + discovery payload load.
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page
+      .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
+      .first()
+      .waitFor({ state: "visible", timeout: 15000 });
+
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(1200);
 
-    // The module is absent from the payload → the route resolves unowned:
-    // the breadcrumb renders at most the app root, NEVER a Settings module
-    // segment; the sidebar shows no settings nav.
-    const bc = page.locator('nav[aria-label="breadcrumb"]');
-    const bcText = (await bc.textContent().catch(() => "")) ?? "";
-    expect(bcText, "breadcrumb must not disclose the gated module").not.toContain("Settings");
-    expect(bcText).not.toContain("Profile");
+    // The URL guard denies: RFC7807 notification + redirect to the safe
+    // page — the System root's only accessible module default leaf.
+    await page.waitForURL("**/system/job/job-schedules", { timeout: 15000 });
+    await expect(
+      page.locator("[data-sonner-toast]").filter({ hasText: "ACCESS_DENIED" }).first(),
+      "an ACCESS_DENIED notification must surface the denied page",
+    ).toBeVisible({ timeout: 10000 });
 
+    // And the settled page is the job default, not settings.
     const hrefs = await page
       .locator("[data-sidebar='content'] a[href]")
       .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
     expect(hrefs.filter((h) => h?.startsWith("/system/settings"))).toEqual([]);
   });
 
-  test("admin: inherits access.system → Settings module everywhere", async ({ page }) => {
+  test("admin: explicit access.* wildcards → every module reachable", async ({ page }) => {
     await loginAsTestAdmin(page);
     const modules = await fetchModules(page);
-    expect(modules.map((m) => m.id)).toContain("settings");
+    const byId = new Map(modules.map((m) => [m.id, m]));
+
+    // administrators carries access.system.* + access.crm.* — nothing is
+    // inherited by is_admin; the grants are explicit rows.
+    for (const id of ["settings", "job", "crm"] as const) {
+      const m = byId.get(id);
+      expect(m, `'${id}' must be present`).toBeTruthy();
+      expect(m!.accessible, `'${id}' must be navigable for admin`).not.toBe(false);
+      expect((m!.nav ?? []).length).toBeGreaterThan(0);
+    }
 
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
     const bc = page.locator('nav[aria-label="breadcrumb"]');
@@ -147,7 +190,6 @@ test.describe("access axis — server-side discovery filtering", () => {
     const texts = (await bc.locator("li").allTextContents())
       .map((x) => x.trim())
       .filter((x) => x && x !== "/");
-    // System / Settings / Profile — the gated module is fully reachable.
     expect(texts[1]).toBe("Settings");
     expect(texts[2]).toBe("Profile");
   });

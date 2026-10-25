@@ -24,6 +24,15 @@ const ACTOR_DISPLAY = "E2E Test Admin";
 const ACTOR_EMAIL = `${ACTOR_NAME}@e2e.local`;
 const ADMIN_ROLE = "administrators";
 
+// Dedicated actor for the MFA suite: enrolling a TOTP factor on the shared
+// e2e_test_admin gates EVERY concurrent login with a TOTP challenge until
+// the spec's afterAll removes it — under parallel workers that window cost
+// ~40 collateral failures. This actor is an admin twin whose MFA state the
+// suite may mutate freely; nothing else may log in as it.
+const MFA_ACTOR_NAME = process.env.E2E_MFA_ACTOR_NAME ?? "e2e_mfa_user";
+const MFA_ACTOR_DISPLAY = "E2E Test MFA User";
+const MFA_ACTOR_EMAIL = `${MFA_ACTOR_NAME}@e2e.local`;
+
 // Non-admin actor for access-axis E2E — a dedicated role carries only the
 // `access.*` + entity grants the suite needs; `is_admin=false` both in
 // Casdoor and user_profiles so nothing is implicitly inherited.
@@ -32,9 +41,13 @@ const USER_ACTOR_DISPLAY = "E2E Test User";
 const USER_ACTOR_EMAIL = `${USER_ACTOR_NAME}@e2e.local`;
 const USER_ROLE = "e2e_user";
 const USER_ROLE_PERMISSIONS = [
-  // Access axis: sees the System app's job module (module-level grant).
-  "access.system.job",
-  // Entity RBAC: customer reads so CRM pages/APIs work for this actor.
+  // Access axis: every leaf of the job module — wildcard grant (bare
+  // namespaces like `access.system.job` are ILLEGAL under the access
+  // grammar: only exact leaf keys or `.*` wildcards may be granted).
+  "access.system.job.*",
+  // Entity RBAC: customer reads so CRM entity APIs work for this actor —
+  // WITHOUT `access.crm.*` the crm module stays navigation-inaccessible:
+  // the two axes are deliberately separate.
   "customer.read.all",
   "customer.read.single",
 ];
@@ -192,19 +205,29 @@ async function invalidateRoleMappingsCache(): Promise<void> {
  * publishes them as E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD env vars (visible
  * to all Playwright workers — env set in globalSetup propagates to tests).
  */
-export async function createE2eAdminActor(): Promise<{ username: string; password: string }> {
+/**
+ * Mint an admin-capable ephemeral actor (Casdoor `administrators` role +
+ * user_profiles is_admin). Parameterized on identity/env so the same flow
+ * serves the shared admin actor and the MFA-suite twin.
+ */
+async function createE2eAdminLikeActor(
+  name: string,
+  display: string,
+  email: string,
+  envPrefix: string,
+): Promise<{ username: string; password: string }> {
   const cfg = await loadIdpConfig();
   const pool = getPool();
   const password = `E2E-${randomBytes(12).toString("hex")}!`;
 
   // 1. Drop leftovers from a previous crashed run (Casdoor + profile + MFA).
-  await deleteCasdoorUser(cfg, ACTOR_NAME);
+  await deleteCasdoorUser(cfg, name);
   await pool.query(
     `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
        (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
-    [ACTOR_NAME],
+    [name],
   );
-  await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [ACTOR_NAME]);
+  await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [name]);
 
   // 2-4. Create in Casdoor — enabled, verified, administrators role.
   // NOTE: do NOT pass `?id=` — with the machine client creds Casdoor answers
@@ -214,9 +237,9 @@ export async function createE2eAdminActor(): Promise<{ username: string; passwor
     method: "POST",
     body: JSON.stringify({
       owner: cfg.org,
-      name: ACTOR_NAME,
-      displayName: ACTOR_DISPLAY,
-      email: ACTOR_EMAIL,
+      name,
+      displayName: display,
+      email,
       password,
       isAdmin: true,
       isVerified: true,
@@ -234,7 +257,7 @@ export async function createE2eAdminActor(): Promise<{ username: string; passwor
   // get-user is eventually consistent right after creation → retry briefly.
   let casdoorUser: any = null;
   for (let i = 0; i < 10 && !casdoorUser?.id; i++) {
-    const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${ACTOR_NAME}`)}`);
+    const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`);
     casdoorUser = created?.data;
     if (!casdoorUser?.id) await new Promise((r) => setTimeout(r, 500));
   }
@@ -245,7 +268,7 @@ export async function createE2eAdminActor(): Promise<{ username: string; passwor
   // 4b. Link the user into the `administrators` role's `users` list via the
   // Casdoor API — the JWT `roles` claim is only populated from role.users;
   // the body `roles` field alone is ignored.
-  await linkCasdoorUserToRole(cfg, `${cfg.org}/${ACTOR_NAME}`);
+  await linkCasdoorUserToRole(cfg, `${cfg.org}/${name}`);
 
   // 5. Mirror into public.user_profiles (is_admin → admin bypass).
   const uuid = randomUUID();
@@ -257,13 +280,21 @@ export async function createE2eAdminActor(): Promise<{ username: string; passwor
       created_at, created_by, updated_at, updated_by, version,
       auth_method_enforcer_dismissed)
      VALUES ($1,$2,$3,$4,$5,$6,'#4f46e5','TA',true,true,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
-    [uuid, casdoorUser.id, ACTOR_EMAIL, ACTOR_DISPLAY, cfg.org, ACTOR_NAME, cfg.endpoint,
+    [uuid, casdoorUser.id, email, display, cfg.org, name, cfg.endpoint,
      JSON.stringify([ADMIN_ROLE]), now],
   );
 
-  process.env.E2E_ADMIN_USERNAME = ACTOR_NAME;
-  process.env.E2E_ADMIN_PASSWORD = password;
-  return { username: ACTOR_NAME, password };
+  process.env[`${envPrefix}_USERNAME`] = name;
+  process.env[`${envPrefix}_PASSWORD`] = password;
+  return { username: name, password };
+}
+
+export function createE2eAdminActor(): Promise<{ username: string; password: string }> {
+  return createE2eAdminLikeActor(ACTOR_NAME, ACTOR_DISPLAY, ACTOR_EMAIL, "E2E_ADMIN");
+}
+
+export function createE2eMfaActor(): Promise<{ username: string; password: string }> {
+  return createE2eAdminLikeActor(MFA_ACTOR_NAME, MFA_ACTOR_DISPLAY, MFA_ACTOR_EMAIL, "E2E_MFA");
 }
 
 /**
@@ -278,14 +309,14 @@ export async function cleanupCasdoorUser(username: string): Promise<void> {
 }
 
 /**
- * Destroy the ephemeral admin test actor (Casdoor + user_profiles + MFA rows).
- * Safe to call when the actor does not exist.
+ * Destroy an admin-capable ephemeral actor (Casdoor + user_profiles + MFA
+ * rows). Safe to call when the actor does not exist.
  */
-export async function destroyE2eAdminActor(): Promise<void> {
+async function destroyAdminLikeActor(name: string): Promise<void> {
   const pool = getPool();
   try {
     const cfg = await loadIdpConfig();
-    await deleteCasdoorUser(cfg, ACTOR_NAME);
+    await deleteCasdoorUser(cfg, name);
   } catch (e) {
     console.warn("[E2E] Casdoor cleanup of test actor failed:", e);
   }
@@ -294,7 +325,7 @@ export async function destroyE2eAdminActor(): Promise<void> {
   // reference survives the user deletion.
   try {
     const cfg = await loadIdpConfig();
-    await unlinkCasdoorUserFromRole(cfg, `${cfg.org}/${ACTOR_NAME}`);
+    await unlinkCasdoorUserFromRole(cfg, `${cfg.org}/${name}`);
   } catch (e) {
     console.warn("[E2E] Casdoor role unlink of test actor failed:", e);
   }
@@ -302,9 +333,17 @@ export async function destroyE2eAdminActor(): Promise<void> {
   await pool.query(
     `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
        (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
-    [ACTOR_NAME],
+    [name],
   );
-  await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [ACTOR_NAME]);
+  await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [name]);
+}
+
+export function destroyE2eAdminActor(): Promise<void> {
+  return destroyAdminLikeActor(ACTOR_NAME);
+}
+
+export function destroyE2eMfaActor(): Promise<void> {
+  return destroyAdminLikeActor(MFA_ACTOR_NAME);
 }
 
 /**

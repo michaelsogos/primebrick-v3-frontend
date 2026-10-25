@@ -7,9 +7,9 @@
   import { t } from '$lib/i18n';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Input } from '$lib/components/ui/input';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
+  import { OtpInput } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -20,14 +20,14 @@
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import LangSelect from '$lib/components/LangSelect.svelte';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Fingerprint from '@lucide/svelte/icons/fingerprint';
-  import KeyRound from '@lucide/svelte/icons/key-round';
-  import MailCheck from '@lucide/svelte/icons/mail-check';
-  import Lock from '@lucide/svelte/icons/lock';
-  import AlertCircle from '@lucide/svelte/icons/alert-circle';
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { Fingerprint } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { MailCheck } from '@primebrick/ui/vendor/lucide';
+  import { Lock } from '@primebrick/ui/vendor/lucide';
+  import { AlertCircle } from '@primebrick/ui/vendor/lucide';
+  import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
+  import { ArrowRight } from '@primebrick/ui/vendor/lucide';
 
   // ─── Password policy ────────────────────────────────────────────────────────
   const passwordPolicy = usePasswordPolicy();

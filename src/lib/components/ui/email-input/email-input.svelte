@@ -4,10 +4,10 @@
   import Input from "$lib/components/ui/input/input.svelte";
   import { CopyButton } from "$lib/components/ui/copy-button";
   import { t } from "$lib/i18n";
-  import Eraser from "@lucide/svelte/icons/eraser";
-  import Copy from "@lucide/svelte/icons/copy";
-  import Check from "@lucide/svelte/icons/check";
-  import { inputTrailingIconButtonClasses } from "$lib/components/ui/input/input-chrome.js";
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
+  import { Copy } from '@primebrick/ui/vendor/lucide';
+  import { Check } from '@primebrick/ui/vendor/lucide';
+  import { inputTrailingIconButtonClasses } from "@primebrick/ui";
 
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, "type" | "files"> & {

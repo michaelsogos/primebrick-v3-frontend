@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
   import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
   import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
@@ -48,7 +48,7 @@
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
-<DialogBordered bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.exportConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -113,4 +113,4 @@
       </Button>
     </div>
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

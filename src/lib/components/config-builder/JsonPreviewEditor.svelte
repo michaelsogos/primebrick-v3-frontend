@@ -3,8 +3,8 @@
   import { JsonCodeBlock, JsonEditor } from '$lib/components/ui/json-code-block';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import Pencil from '@lucide/svelte/icons/pencil';
-  import Eye from '@lucide/svelte/icons/eye';
+  import { Pencil } from '@primebrick/ui/vendor/lucide';
+  import { Eye } from '@primebrick/ui/vendor/lucide';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
   import type { ConfigEntryType } from '$lib/api-types';
   import { typeConfigJsonSchema } from '$lib/config/type-config-schema';

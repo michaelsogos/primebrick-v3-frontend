@@ -1,45 +1,83 @@
 ---
 title: Error Handling
-description: "How API errors surface — RFC 7807 problem+json parsing, the app-errors layer, http-status mapping, and the toast/dialog presentation split."
+description: "One entry point for every surfaced problem: pushNotification() — RFC 7807 auto-detection, impact-level toast mapping, and the appErrors panel."
 ---
 
 # Error handling
 
 Every backend error arrives as an **RFC 7807 `application/problem+json`**
 body (the BE's errorHandler guarantees it — see the BE api-conventions
-page). `src/lib/errors/` is the single path that parses, classifies and
-presents those problems. Components never inspect `res.status` raw and
-never string-match `error.message`.
+page). `src/lib/errors/` is the single path that parses and presents those
+problems. Components never inspect `res.status` raw and never string-match
+`error.message`.
+
+There is exactly **one surfacing API**: `pushNotification(input)` from
+`src/lib/errors/app-errors.ts`. No direct `toast.*` calls for errors, no
+alternate push helpers.
 
 ## The pipeline
 
 ```
 fetch/api call → non-2xx
-  → rfc7807.ts        parse body → ProblemDetails { type, title, status, detail, errors? }
-  → rfc7807-mapper.ts classify → AppError { code, user_message, ... }
-  → app-errors.ts     typed error taxonomy
-  → toast.ts          non-blocking surfacing   OR
-    rfc-error-dialog  blocking, structured dialog (component)
+  → api.ts               parse problem+json body (handleRFC7807Error / apiFetch)
+  → pushNotification(errorData)
+      → toast.*            always shown (unless toast:false) — impact → severity style
+      → appErrors store    event card added when impact !== NONE
+  → ErrorsPanel            shell sheet panel listing appErrors (50-entry ring buffer)
+  → RfcErrorDialog         structured inspection of a stored RFC7807 entry
 ```
 
 | Layer | Owns |
 |---|---|
-| `rfc7807.ts` | wire shape — `ProblemDetails`, safe parse of problem+json |
-| `rfc7807-mapper.ts` | problem → domain error mapping (field errors, codes) |
-| `app-errors.ts` | the FE error taxonomy — typed `AppError` surfaces |
+| `rfc7807.ts` | wire shape — `RFC7807Error`, safe parse of problem+json |
+| `rfc7807-mapper.ts` | problem → domain error mapping (field errors, auth-domain keys) |
+| `app-errors.ts` | `pushNotification` + `appErrors` store + `ImpactLevel` |
 | `http-status.ts` | status constants/semantics used by api.ts |
-| `toast.ts` | transient error toasts for non-blocking operations |
-| `rfc-error-dialog` (component) | blocking problems — shows `title`/`detail` + per-field `errors[]` |
+| `toast.ts` | the toast primitives pushNotification routes through |
+| `ErrorsPanel.svelte` | the shell panel rendering `appErrors` event cards |
+| `rfc-error-dialog.svelte` | dialog that inspects a stored problem entry |
+
+## `pushNotification` contract
+
+- **Input is `NotificationInput` or an RFC7807 object** — auto-detected by
+  the presence of `type` (string) + `status` (number). RFC7807 input is
+  normalized: `severity` → impact, `title` → scope, `detail` → message,
+  `internal_code`/`status`/`instance` → danger tags.
+- **Always toasts** — unless `toast: false` (silent panel entry, used by
+  flows that render the error in-place, e.g. login/MFA/change-password).
+- **Adds an `appErrors` event card** — for every impact except `NONE`
+  (NONE is success: toast only, no event card).
+- **Impact → toast style**: `CRITICAL` → `toast.critical` (urgent red),
+  `HIGH` → `toast.error`, `MEDIUM` → `toast.warning`, `LOW` → `toast.info`,
+  `NONE` → `toast.success`.
+- **i18n** — `messageKey`/`scopeKey` are translated via `t()`; literal
+  `message`/`scope` are the fallback.
+- **Returns the error id** for programmatic dismissal.
+
+```ts
+// RFC7807 verbatim — the common case (api.ts does this automatically)
+pushNotification(errorData);
+
+// Manual notification with a key + scope
+pushNotification({
+  impact: 'HIGH',
+  messageKey: 'app.errors.saveFailed',
+  scopeKey: 'app.scope.customers',
+});
+
+// Silent panel entry (no toast) for an in-place error
+pushNotification({ ...err, toast: false });
+```
 
 ## Contract rules
 
-- **Parse, don't guess** — always go through the rfc7807 parser; a 500
-  with a non-problem body still degrades to a generic `AppError`.
+- **Parse, don't guess** — api.ts already pushes every detected RFC7807
+  body; callers only push manually when they consumed the body themselves.
 - **Field errors ride the problem** — validation failures carry
-  `errors[]`; forms display them inline rather than toasting the raw
-  `detail`.
-- **Toast for transient, dialog for blocking** — a failed save the user
-  can retry → toast; a permission/validation wall → `rfc-error-dialog`.
-- **`detail` is developer-facing** — user copy comes from the mapped
-  `AppError`, optionally translated through `t()`; never render raw
+  `errors[]`; forms display them inline rather than toasting raw `detail`.
+- **Unhandled rejections are surfaced too** — `AppShell` listens on
+  `unhandledrejection` and pushes a `HIGH` notification, so no async
+  failure is invisible.
+- **`detail` is developer-facing** — user copy comes from `message`/
+  `messageKey`, optionally translated through `t()`; never render raw
   server `detail` as the primary message.

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import type { WithElementRef } from "bits-ui";
+	import type { WithElementRef } from '@primebrick/ui/vendor/bits-ui';
 	import type { HTMLAttributes } from "svelte/elements";
 	import { useSidebar } from "./context.svelte.js";
 	import { t } from "$lib/i18n";

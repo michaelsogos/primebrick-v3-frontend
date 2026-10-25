@@ -7,7 +7,7 @@
   import { useNumericInput } from "$lib/composables/useNumericInput.svelte";
   import { t } from "$lib/i18n";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
-  import ChevronDown from "@lucide/svelte/icons/chevron-down";
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
   type NumericType = "bigint" | "number" | "money";
 

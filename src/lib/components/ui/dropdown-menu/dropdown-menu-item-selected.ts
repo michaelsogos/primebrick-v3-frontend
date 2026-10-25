@@ -1,5 +1,5 @@
 import { cn } from '$lib/utils.js';
-import { menuListSelectedSurfaceDropdownClasses } from '../menu-row-chrome.js';
+import { menuListSelectedSurfaceDropdownClasses } from '@primebrick/ui';
 
 /**
  * Single-select dropdowns: selected row (language, pagination, …).

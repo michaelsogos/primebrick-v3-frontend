@@ -1,8 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
-  import Cloud from '@lucide/svelte/icons/cloud';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import { Cloud } from '@primebrick/ui/vendor/lucide';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
   
   let {
     entityName,

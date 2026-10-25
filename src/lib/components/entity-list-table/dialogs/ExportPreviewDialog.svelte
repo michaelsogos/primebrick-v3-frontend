@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import * as Dialog from '$lib/components/ui/dialog';
-  import DialogBordered from '$lib/components/ui/dialog-bordered.svelte';
+  import { Button } from '@primebrick/ui';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import * as Dock from '$lib/components/ui/dock';
   import * as Resizable from '$lib/components/ui/resizable';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -48,7 +48,7 @@
   }: ExportPreviewDialogProps = $props();
 </script>
 
-<DialogBordered bind:open={open} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+<BorderedDialog bind:open={open} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('app.common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>
@@ -202,4 +202,4 @@
       </Button>
     {/if}
   </Dialog.Footer>
-</DialogBordered>
+</BorderedDialog>

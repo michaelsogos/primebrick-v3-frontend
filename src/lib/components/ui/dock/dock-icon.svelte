@@ -2,7 +2,7 @@
 	import { cn } from '$lib/utils';
 	import { getDockContext } from './ctx';
 	import { Motion, useSpring, useTransform } from 'svelte-motion';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Tooltip } from '@primebrick/ui';
 	import type { Snippet } from 'svelte';
 
 	let {

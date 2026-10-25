@@ -13,7 +13,7 @@
 import { parseTypeConfig, serializeTypeConfig, autoErrorLabelKey } from '$lib/config/type-config-schema';
 import type { ParsedTypeConfig, ConfigValidation } from '$lib/config/type-config-schema';
 import type { ConfigEntryType } from '$lib/api-types';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 interface BuilderState {
   /** The structured type_config being built. */

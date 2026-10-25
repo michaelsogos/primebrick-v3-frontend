@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import type { WithElementRef } from "bits-ui";
+	import type { WithElementRef } from '@primebrick/ui/vendor/bits-ui';
 	import type { Snippet } from "svelte";
 	import type { HTMLAnchorAttributes } from "svelte/elements";
 	import {
 		menuListHoverNeutral,
 		menuSidebarActiveChrome,
 		menuSoftRowBorderBase,
-	} from "../menu-row-chrome.js";
+	} from '@primebrick/ui';
 
 	let {
 		ref = $bindable(null),

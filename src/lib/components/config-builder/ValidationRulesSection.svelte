@@ -1,12 +1,12 @@
 <script lang="ts">
   import { t, dict, getDictKeys } from '$lib/i18n';
-  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { SwitchField } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
-  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
+  import { ComboSelect } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
-  import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import { SelectableFieldset } from '@primebrick/ui';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import type { ConfigEntryType } from '$lib/api-types';
   import { autoErrorLabelKey } from '$lib/config/type-config-schema';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
+	import { Ellipsis as EllipsisIcon } from '@primebrick/ui/vendor/lucide';
 	import type { HTMLAttributes } from "svelte/elements";
 	import { cn, type WithElementRef, type WithoutChildren } from "$lib/utils.js";
 	import { t } from "$lib/i18n";

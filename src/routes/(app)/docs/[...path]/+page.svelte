@@ -17,9 +17,9 @@
   import { fetchDocsIndex, fetchDoc, type DocsIndexRepo } from '$lib/api';
   import { renderDoc, hydrateMermaid } from '$lib/shell/docs/docs-render';
   import { cn } from '$lib/utils';
-  import FileText from '@lucide/svelte/icons/file-text';
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-  import BookOpen from '@lucide/svelte/icons/book-open';
+  import { FileText } from '@primebrick/ui/vendor/lucide';
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { BookOpen } from '@primebrick/ui/vendor/lucide';
 
   type LoadedDoc = { repo: string; path: string; title: string; html: string };
 
@@ -49,8 +49,11 @@
     if (contentEl) await hydrateMermaid(contentEl);
   }
 
-  function hrefFor(repo: string, path: string): string {
-    return `/docs/${repo}/${path.replace(/\.mdx$/i, '')}`;
+  // `resolve` takes a route ID + params — never a prebuilt pathname: a doc
+  // path containing `[...]` would be re-parsed as route param syntax and
+  // crash (params are passed verbatim, so bracket-named docs are safe).
+  function hrefFor(repo: string, path: string) {
+    return resolve('/(app)/docs/[...path]', { path: `${repo}/${path.replace(/\.mdx$/i, '')}` });
   }
 
   function onContentClick(e: MouseEvent) {
@@ -62,7 +65,7 @@
     if (docpath) {
       e.preventDefault();
       const target = hrefFor(docrepo ?? docRef?.repo ?? index?.[0]?.repo ?? 'backend', docpath);
-      void goto(resolve(target as '/')).then(() => {
+      void goto(target).then(() => {
         if (anchor) tick().then(() => contentEl?.querySelector(`#${CSS.escape(anchor)}`)?.scrollIntoView());
       });
       return;
@@ -85,7 +88,7 @@
       index = await fetchDocsIndex();
       if (!docRef && index.length) {
         const first = index.flatMap((r) => r.entries.map((e) => ({ repo: r.repo, path: e.path })))[0];
-        if (first) void goto(resolve(hrefFor(first.repo, first.path) as '/'), { replaceState: true });
+        if (first) void goto(hrefFor(first.repo, first.path), { replaceState: true });
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -116,7 +119,7 @@
                 {@const active = doc?.repo === repo.repo && doc?.path === entry.path}
                 <li>
                   <a
-                    href={resolve(href as '/')}
+                    href={href}
                     class={cn(
                       'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent',
                       active && 'bg-accent font-medium'

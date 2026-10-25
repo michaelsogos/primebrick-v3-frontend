@@ -10,14 +10,14 @@
    */
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import RankMeter from '$lib/components/ui/smart-regex-input/RankMeter.svelte';
-  import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import { summarizeTestScores, rankColor } from '$lib/ai/ai-model-test-scores';
+  import { RankMeter } from '@primebrick/ui';
+  import { ModelIcon } from '@primebrick/ui';
+  import { summarizeTestScores, rankColor } from '@primebrick/ui';
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import { t } from '$lib/i18n';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import ArrowDownWideNarrow from '@lucide/svelte/icons/arrow-down-wide-narrow';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide';
 
   type ModelSortKey = 'rank' | 'alphabetic' | 'speed' | 'quality' | 'power';
 

@@ -1,5 +1,5 @@
 import type { AdvancedFilter } from '$lib/entity-list/types';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export type ToolbarMode = 'filters' | 'bulk';
 

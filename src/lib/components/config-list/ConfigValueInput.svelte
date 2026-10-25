@@ -1,10 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Switch } from '$lib/components/ui/switch';
-  import { SwitchField } from '$lib/components/ui/switch-field';
+  import { Switch } from '@primebrick/ui';
+  import { SwitchField } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
-  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { ComboSelect } from '@primebrick/ui';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
   import * as Password from '$lib/components/ui/password';
   import { NumericInput } from '$lib/components/ui/numeric-input';

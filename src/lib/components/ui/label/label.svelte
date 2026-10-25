@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Label as LabelPrimitive } from "bits-ui";
+	import { Label as LabelPrimitive } from '@primebrick/ui/vendor/bits-ui';
 	import { cn } from "$lib/utils.js";
 
 	let {

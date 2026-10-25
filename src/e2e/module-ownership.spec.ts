@@ -35,7 +35,8 @@ type NavLink = {
   label_key: string;
   href: string;
   icon?: string;
-  access?: string;
+  /** The module's declared default leaf — GOTO(module) target. */
+  default?: boolean;
   children?: NavLink[];
 };
 
@@ -56,8 +57,10 @@ type ModuleInfo = {
   /** Declared nav — embedded in the single /modules discovery payload,
    *  already access-filtered server-side. */
   nav?: NavLink[];
-  /** nav[0].href per root slice, post-filter. */
-  home?: Record<string, string>;
+  /** `false` = zero accessible leaves — present only for the reveal switch. */
+  accessible?: boolean;
+  /** Nav items the access filter dropped (reveal-only, never navigable). */
+  nav_hidden?: NavLink[];
 };
 
 const RAW_KEY = /\b(?:app|system|custom|job|crm|emailsender|webhook|ai)\.[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+\b/i;
@@ -502,10 +505,11 @@ test.describe("module ownership — observable contract", () => {
         await moduleTrigger.click();
         const menu = page.locator("[data-slot='dropdown-menu-content']").last();
         await expect(menu).toBeVisible();
-        // Sibling modules of this root, each pointing at its home[root] —
-        // including the current module marked as current.
+        // Sibling modules of this root — each pointing at its default leaf
+        // under this root (a module lists only when it owns an accessible
+        // leaf there), including the current module marked as current.
         const expectedSiblings = modules.filter(
-          (s) => moduleRoots(s).includes(root) && s.home?.[root],
+          (s) => flattenHrefs(s.nav ?? []).some((h) => rootOf(h) === root),
         );
         for (const s of expectedSiblings) {
           await expect(

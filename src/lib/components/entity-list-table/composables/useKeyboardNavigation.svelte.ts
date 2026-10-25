@@ -1,4 +1,4 @@
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export function useKeyboardNavigation<T>(options: {
   viewRows: () => T[];

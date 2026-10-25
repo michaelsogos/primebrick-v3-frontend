@@ -1,5 +1,5 @@
 import { sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export function useSheetPanelManagement() {
   const _state = $state({

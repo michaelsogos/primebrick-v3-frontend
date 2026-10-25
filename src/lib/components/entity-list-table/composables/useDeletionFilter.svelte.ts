@@ -1,5 +1,5 @@
 import { onMount } from 'svelte';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 import type { DeletionFilterMode } from '$lib/entity-list/types';
 
 export type { DeletionFilterMode };

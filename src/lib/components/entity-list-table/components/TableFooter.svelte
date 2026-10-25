@@ -1,15 +1,14 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import { ButtonGroup } from '$lib/components/ui/button-group';
-  import { Toolbar } from '$lib/components/ui/toolbar';
+  import { Button } from '@primebrick/ui';
+  import { ButtonGroup, Toolbar } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';
-  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left'
-  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
+  import { ChevronsLeft } from '@primebrick/ui/vendor/lucide'
+  import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
+  import { ChevronRight } from '@primebrick/ui/vendor/lucide'
+  import { ChevronsRight } from '@primebrick/ui/vendor/lucide';
 
   let {
     footerRangeTotal,
@@ -112,7 +111,7 @@
     <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
     <div class="flex items-center gap-2">
-      <ButtonGroup segmented aria-label={$t('system.entities.list.firstPage')}>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.firstPage')}>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -121,8 +120,8 @@
             if (footerUsesClientPaging) clientSelectedPage = 1;
             else onPageChange(1);
           }}
-          aria-label={$t('system.entities.list.firstPage')}
-          title={$t('system.entities.list.firstPage')}
+          aria-label={$t('system.entities.list.pagination.firstPage')}
+          title={$t('system.entities.list.pagination.firstPage')}
         >
           <ChevronsLeft class="size-4" />
         </Button>
@@ -134,8 +133,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
             else onPageChange(Math.max(1, page - 1));
           }}
-          aria-label={$t('system.entities.list.previousPage')}
-          title={$t('system.entities.list.previousPage')}
+          aria-label={$t('system.entities.list.pagination.previousPage')}
+          title={$t('system.entities.list.pagination.previousPage')}
         >
           <ChevronLeft class="size-4" />
         </Button>
@@ -145,7 +144,7 @@
           .replace('{page}', String(footerPage))
           .replace('{total}', String(footerTotalPages))}
       </div>
-      <ButtonGroup segmented aria-label={$t('system.entities.list.nextPage')}>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.nextPage')}>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -154,8 +153,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
             else onPageChange(Math.min(totalPages, page + 1));
           }}
-          aria-label={$t('system.entities.list.nextPage')}
-          title={$t('system.entities.list.nextPage')}
+          aria-label={$t('system.entities.list.pagination.nextPage')}
+          title={$t('system.entities.list.pagination.nextPage')}
         >
           <ChevronRight class="size-4" />
         </Button>
@@ -167,8 +166,8 @@
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
             else onPageChange(totalPages);
           }}
-          aria-label={$t('system.entities.list.lastPage')}
-          title={$t('system.entities.list.lastPage')}
+          aria-label={$t('system.entities.list.pagination.lastPage')}
+          title={$t('system.entities.list.pagination.lastPage')}
         >
           <ChevronsRight class="size-4" />
         </Button>

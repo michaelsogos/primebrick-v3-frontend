@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { t } from '$lib/i18n';
   import { APP_VERSION } from '$lib/version';

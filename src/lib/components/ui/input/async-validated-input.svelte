@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
 	import TextInput from "$lib/components/ui/input/text-input.svelte";
-	import CircleCheckBig from '@lucide/svelte/icons/circle-check-big'
-  import TicketX from '@lucide/svelte/icons/ticket-x'
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { CircleCheckBig } from '@primebrick/ui/vendor/lucide'
+  import { TicketX } from '@primebrick/ui/vendor/lucide'
+  import { LoaderCircle } from '@primebrick/ui/vendor/lucide'
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
 	import type { ValidationResult, ValidationStatus } from "$lib/types/validation.js";
 	import type { HTMLInputTypeAttribute } from "svelte/elements";
 

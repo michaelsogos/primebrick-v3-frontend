@@ -7,8 +7,8 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { onMount } from 'svelte';
-  import BuildingComplex from '@lucide/svelte/icons/building-complex';
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import { BuildingComplex } from '@primebrick/ui/vendor/lucide';
+  import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
 
   let { collapsed }: { collapsed: boolean } = $props();
 

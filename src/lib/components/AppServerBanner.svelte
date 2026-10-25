@@ -1,9 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { shellNav, loadShellNav } from '$lib/shell/modules-shell.svelte';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import AlertCircle from '@lucide/svelte/icons/alert-circle';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
+  import { AlertCircle } from '@primebrick/ui/vendor/lucide';
 </script>
 
 {#if shellNav.unreachable}

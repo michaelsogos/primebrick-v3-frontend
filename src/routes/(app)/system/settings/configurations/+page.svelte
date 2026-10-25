@@ -13,9 +13,9 @@
   } from '$lib/api';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
-  import { useConfigEntries } from '$lib/composables/useConfigEntries.svelte';
+  import { useConfigEntries } from "@primebrick/ui";
   import { pushNotification } from '$lib/errors/app-errors';
-  import DeleteDialog from '$lib/components/entity-list-table/dialogs/DeleteDialog.svelte';
+  import { DeleteDialog } from '@primebrick/ui';
   import BulkDeleteDialog from '$lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import type { ConfigEntry } from '$lib/api-types';

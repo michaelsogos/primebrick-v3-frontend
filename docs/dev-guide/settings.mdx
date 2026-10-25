@@ -25,11 +25,15 @@ platform administration pages. Each page uses `AppPageScaffold` +
 | `/system/settings/roles/create` | Create a role mapping |
 | `/system/settings/roles/[uuid]` | Edit a role mapping |
 | `/system/settings/profile` | Edit the current user's profile |
-| `/system/settings/ai` | Manage browser-local AI models, cache/storage, and test scores |
 | `/system/settings/configurations` | Security settings |
 | `/system/settings/email-providers` | Manage email provider configurations |
 | `/system/settings/templates` | Manage templates |
 | `/system/settings/migrations` | Per-service `db_patch` registry and migration remediation (retry/approve/resolve/drift-check) |
+| `/system/settings/clients` | List registered service clients (client_registry entity list) |
+| `/system/settings/clients/create` | Register a new service client |
+| `/system/settings/clients/[uuid]` | Edit a service client |
+| `/system/settings/credentials` | Manage service credentials |
+| `/system/settings/translations` | Browse and edit translation dictionaries per module/language |
 
 ## Modules
 
@@ -51,7 +55,7 @@ via `useHealthChip()` (`chipLabel`, `chipClass`).
 ```svelte
 <script lang="ts">
   import { servicesStore, toggleModule, deleteModule } from "$lib/services-store.svelte.ts";
-  import { useHealthChip } from "$lib/composables/use-health-chip.svelte.ts";
+  import { useHealthChip } from "$lib/composables/useHealthChip.svelte.ts";
 
   const health = useHealthChip();
   const services = $derived(servicesStore.services);
@@ -95,7 +99,7 @@ For the end-user procedure see
 ```svelte
 <script lang="ts">
   import { superForm } from "sveltekit-superforms";
-  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/use-form-guard.svelte.ts";
+  import { useFormGuard, useUnsavedChangesGuard } from "$lib/composables/useFormGuard.svelte.ts";
 
   const { form, $tainted, $errors, isTainted } = superForm(data.form);
   const formGuard = useFormGuard(() => $tainted, () => $errors, (p) => isTainted(p));
@@ -137,7 +141,17 @@ SuperForms with the form guards and includes avatar preview/color selection
 
 ## AI models
 
-`/system/settings/ai` manages the browser-local AI models used by the Guide/User
+The AI console is a **module-owned remote page** — the `ai` microservice ships
+it as a precompiled ESM chunk (`ai-pages.js`, served via
+`/ws/ai/api/v1/module-assets/*`) and the host mounts it through
+`RemotePageMount` from the routes census. It no longer lives under
+`/system/settings/*`: routes are `/system/ai` (console) and
+`/system/ai/docs-index` (docs knowledge-base index status and reindexing),
+declared in the service's `nav-declaration.ts` under the `access.system.ai`
+module gate. Its configuration (`ai_assistant_model`) is owned by the service
+in `ai.config_entries` and read via `fetchModuleConfig('ai')`.
+
+The console manages the browser-local AI models used by the Guide/User
 Manual assistant and the Regex and JSON assistant panels. Models run in the
 browser via WebGPU — there is no server-side generation. The Guide CTA in the
 top bar retrieves documentation excerpts for grounded answers and citations.

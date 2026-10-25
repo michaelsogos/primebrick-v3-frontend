@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 import { isRowDeleted as isRowDeletedUtil } from '../utils';
 
 export function useClientSelection<T extends Record<string, unknown>>(options: {

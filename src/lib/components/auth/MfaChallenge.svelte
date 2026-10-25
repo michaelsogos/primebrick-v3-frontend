@@ -4,15 +4,15 @@
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
-  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
+  import { Button } from '@primebrick/ui';
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   // Props:
   //   mfa_challenge_token: from the login response (mfa_required branch)

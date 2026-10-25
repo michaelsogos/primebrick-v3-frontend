@@ -161,18 +161,21 @@ function makeCtx(generate_agent: ReturnType<typeof stubAgent>) {
 describe('useGuideAi RAG preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.modules.mockResolvedValue([
-      {
-        id: 'settings',
-        name: 'Settings',
-        enabled: true,
-        part_of: 'system',
-        routes: [
-          { route: '/system/settings/users', kind: 'list', entity: 'user_profiles' },
-          { route: '/system/settings/users/create', kind: 'create', entity: 'user_profiles' },
-        ],
-      },
-    ]);
+    mocks.modules.mockResolvedValue({
+      modules: [
+        {
+          id: 'settings',
+          name: 'Settings',
+          enabled: true,
+          part_of: 'system',
+          routes: [
+            { route: '/system/settings/users', kind: 'list', entity: 'user_profiles' },
+            { route: '/system/settings/users/create', kind: 'create', entity: 'user_profiles' },
+          ],
+        },
+      ],
+      labels: {},
+    });
     mocks.search_docs.mockResolvedValue([SEARCH_HIT]);
     mocks.fetch_doc.mockResolvedValue(FETCHED_DOC);
     mocks.module_translations.mockResolvedValue({});

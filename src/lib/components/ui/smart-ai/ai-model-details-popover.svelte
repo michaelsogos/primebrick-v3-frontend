@@ -5,24 +5,25 @@
    *
    * Shared by all Smart* assistant panels (i18n_ns + testid_prefix props).
    */
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import ScoreGauge from '$lib/components/ui/smart-regex-input/ScoreGauge.svelte';
-  import ModelIcon from '$lib/components/ui/smart-regex-input/ModelIcon.svelte';
-  import { summarizeTestScores } from '$lib/ai/ai-model-test-scores';
-  import { resolveEffectiveParams, tuningOverriddenKeys } from '$lib/ai/ai-cerebellum';
-  import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
+  import { Popover } from '@primebrick/ui';
+  import { ScoreGauge } from '@primebrick/ui';
+  import { ModelIcon } from '@primebrick/ui';
+  import { summarizeTestScores } from '@primebrick/ui';
+  import { formatBytes } from '@primebrick/ui';
+  import { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
+  import { CerebellumRecommendationBadge } from '@primebrick/ui';
   import type { AiCerebellum, AiModel } from '$lib/api-types';
-  import type { EffectiveAiParams } from '$lib/ai/ai-cerebellum';
+  import type { EffectiveAiParams } from '@primebrick/ui';
   import { t } from '$lib/i18n';
-  import Microchip from '@lucide/svelte/icons/microchip';
-  import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
-  import Cpu from '@lucide/svelte/icons/cpu';
-  import Thermometer from '@lucide/svelte/icons/thermometer';
-  import Gauge from '@lucide/svelte/icons/gauge';
-  import Brackets from '@lucide/svelte/icons/brackets';
-  import Gavel from '@lucide/svelte/icons/gavel';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import Database from '@lucide/svelte/icons/database';
+  import { Microchip } from '@primebrick/ui/vendor/lucide';
+  import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
+  import { Cpu } from '@primebrick/ui/vendor/lucide';
+  import { Thermometer } from '@primebrick/ui/vendor/lucide';
+  import { Gauge } from '@primebrick/ui/vendor/lucide';
+  import { Brackets } from '@primebrick/ui/vendor/lucide';
+  import { Gavel } from '@primebrick/ui/vendor/lucide';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
+  import { Database } from '@primebrick/ui/vendor/lucide';
 
   let {
     model,
@@ -58,10 +59,6 @@
     return value >= 1024 ? `${(value / 1024).toFixed(1)} GB` : `${Math.round(value)} MB`;
   }
 
-  function formatBytes(value: number): string {
-    if (value <= 0) return '—';
-    return value >= 1024 ** 3 ? `${(value / 1024 ** 3).toFixed(1)} GB` : `${Math.round(value / 1024 ** 2)} MB`;
-  }
 </script>
 
 <Popover.RootCloseOnScroll>
@@ -115,7 +112,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('temperature')}
               class:font-semibold={tunedKeys.has('temperature')}
-              title={$t('system.entities.ai_model.fields.temperature')}
+              title={$t('ai.entities.ai_model.fields.temperature')}
             >
               <Thermometer class="size-3" />
               T={params.temperature}
@@ -124,7 +121,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('top_p')}
               class:font-semibold={tunedKeys.has('top_p')}
-              title={$t('system.entities.ai_model.fields.top_p')}
+              title={$t('ai.entities.ai_model.fields.top_p')}
             >
               <Gauge class="size-3" />
               top_p={params.top_p}
@@ -133,7 +130,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('repetition_penalty')}
               class:font-semibold={tunedKeys.has('repetition_penalty')}
-              title={$t('system.entities.ai_model.fields.repetition_penalty')}
+              title={$t('ai.entities.ai_model.fields.repetition_penalty')}
             >
               <Gavel class="size-3" />
               rep_penalty={params.repetition_penalty}
@@ -144,7 +141,7 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('max_tokens')}
               class:font-semibold={tunedKeys.has('max_tokens')}
-              title={$t('system.entities.ai_model.fields.max_tokens')}
+              title={$t('ai.entities.ai_model.fields.max_tokens')}
             >
               <Brackets class="size-3" />
               max_tokens={params.max_tokens}
@@ -153,14 +150,14 @@
               class="flex items-center gap-1"
               class:text-foreground={tunedKeys.has('enable_thinking')}
               class:font-semibold={tunedKeys.has('enable_thinking')}
-              title={$t('system.entities.ai_model.fields.enable_thinking')}
+              title={$t('ai.entities.ai_model.fields.enable_thinking')}
             >
               {#if params.enable_thinking}
                 <BrainCircuit class="size-3" />
-                <span>{$t('system.entities.ai_model.thinking.true')}</span>
+                <span>{$t('ai.entities.ai_model.thinking.true')}</span>
               {:else}
                 <Cpu class="size-3" />
-                <span>{$t('system.entities.ai_model.thinking.false')}</span>
+                <span>{$t('ai.entities.ai_model.thinking.false')}</span>
               {/if}
             </span>
             <span

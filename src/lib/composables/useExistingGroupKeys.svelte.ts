@@ -9,8 +9,8 @@
  *   - Exposed via get state() returning DeepReadonly
  *   - $derived values exposed via individual getters
  */
-import type { DeepReadonly } from "$lib/types/deep-readonly";
-import { useConfigEntries } from "$lib/composables/useConfigEntries.svelte";
+import type { DeepReadonly } from '@primebrick/ui';
+import { useConfigEntries } from "@primebrick/ui";
 import { onMount } from "svelte";
 
 export function useExistingGroupKeys() {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useId } from 'bits-ui';
+  import { useId } from '@primebrick/ui/vendor/bits-ui';
   import { t } from '$lib/i18n';
   import type { Component } from 'svelte';
 

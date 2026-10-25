@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import { Button } from '$lib/components/ui/button';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import * as Popover from '$lib/components/ui/popover';
-	import * as Command from '$lib/components/ui/command';
+	import { Button } from '@primebrick/ui';
+	import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+	import { Popover } from '@primebrick/ui';
+	import { Command } from '@primebrick/ui';
 	import { Input } from '$lib/components/ui/input';
-	import { ComboSelect } from '$lib/components/ui/combo-select';
-	import { inputGhostChromeClasses } from '$lib/components/ui/input/input-chrome';
-	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '$lib/colors/badge';
+	import { ComboSelect } from '@primebrick/ui';
+	import { inputGhostChromeClasses } from '@primebrick/ui';
+	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '@primebrick/ui';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import Check from '@lucide/svelte/icons/check';
-	import Hash from '@lucide/svelte/icons/hash';
-	import Palette from '@lucide/svelte/icons/palette';
-	import Droplets from '@lucide/svelte/icons/droplets';
-	import FlaskConical from '@lucide/svelte/icons/flask-conical';
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import { Check } from '@primebrick/ui/vendor/lucide';
+	import { Hash } from '@primebrick/ui/vendor/lucide';
+	import { Palette } from '@primebrick/ui/vendor/lucide';
+	import { Droplets } from '@primebrick/ui/vendor/lucide';
+	import { FlaskConical } from '@primebrick/ui/vendor/lucide';
+	import { LayoutGrid } from '@primebrick/ui/vendor/lucide';
 
 	type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'system';
 

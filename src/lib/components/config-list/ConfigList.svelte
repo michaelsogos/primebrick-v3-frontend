@@ -2,16 +2,16 @@
   import { t } from '$lib/i18n';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigListRow from './ConfigListRow.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import Undo2 from '@lucide/svelte/icons/undo-2';
-  import Plus from '@lucide/svelte/icons/plus';
+  import { Button } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Undo2 } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
   import { buildConfigFormSchema } from '$lib/validation/config-validation';
   import { pushNotification } from '$lib/errors/app-errors';
   import { bulkUpdateConfigEntries } from '$lib/api';
-  import { useSelection } from '$lib/composables/useSelection.svelte';
-  import { SelectableToolbar, SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
+  import { useSelection } from '@primebrick/ui';
+  import { SelectableToolbar, SelectableFieldset } from '@primebrick/ui';
 
   let {
     entries,

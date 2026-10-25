@@ -1,7 +1,7 @@
 import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityMeta } from '$lib/entity-list/types';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 /** @deprecated use `EntityMeta` from `$lib/entity-list/types` — kept as an
  *  alias during the canonical-schema migration. */

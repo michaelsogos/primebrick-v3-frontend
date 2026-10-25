@@ -2,10 +2,10 @@
   import { page } from '$app/state';
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
-  import { SwitchField } from '$lib/components/ui/switch-field';
-  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { SwitchField } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
@@ -32,8 +32,8 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import ConfigValueInput from '$lib/components/config-list/ConfigValueInput.svelte';
   import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
-  import Badge from '$lib/components/ui/badge/badge.svelte';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 

@@ -1,41 +1,37 @@
-# Icon conventions (canonical Lucide map)
+# Devin Rule: Icon Conventions
 
-One icon per semantic action. Never improvise a new icon for an action that
-already has a canonical one — check this table first.
+> Canonical body of `.devin/rules/icon-conventions.md` — the rule file is a pointer to this page.
 
-## Canonical action icons
+## Trigger
+- Applies whenever adding or changing a Lucide icon in any `.svelte`/`.ts` file.
 
-| Semantics | Icon | Component/import | Notes |
-|-----------|------|------------------|-------|
-| **Refresh / reload data** | `RefreshCw` | `<RefreshButton>` (`$lib/components/ui/refresh-button`) | MANDATORY — never hand-roll a refresh CTA. `compact` prop for in-card use. |
-| **Clear / reset value or filters** | `Eraser` | `eraser` | Clearing an input, resetting a form/panel. NOT for close/remove. |
-| **Close / dismiss / remove item** | `X` | `x` | Sheet close, chip remove, dismiss. Do NOT use for "clear value". |
-| **Restore (undo delete)** | `RotateCcw` | `rotate-ccw` | Restore a soft-deleted row — NOT a refresh icon. |
-| **Delete** | `Trash2` | `trash-2` | |
-| **Edit** | `Pencil` | `pencil` | |
-| **Add / create** | `Plus` | `plus` | |
-| **Search** | `Search` | `search` | |
-| **Filters** | `Funnel` | `funnel` | |
-| **Show / hide secret** | `Eye` / `EyeOff` | `eye`, `eye-off` | Password visibility toggle — inner icon left of the clear CTA. |
-| **Copy to clipboard** | `Copy` | `copy` | |
-| **Boolean true / false** | `CircleCheck` / `CircleX` | `circle-check`, `circle-x` | NEVER `CheckCircle` / `XCircle`. |
-| **Warning / empty state** | `TriangleAlert` | `triangle-alert` | Do NOT import the legacy alias `AlertTriangle`. |
-| **Loading watermark** | `Hourglass` | `hourglass` | `pb-watermark-loading` empty-state pattern. |
-| **In-flight spinner** | `LoaderCircle` | `loader-circle` | With `animate-spin`, inside busy controls. |
-| **Disclosure / dropdown caret** | `ChevronDown` | `chevron-down` | |
-| **AI enabled / assistant** | `BrainCircuit` | `brain-circuit` | AI capability indicators. |
+## Actions
+1. **Check the canonical map first** — `docs/ai/icon-conventions.md` defines
+   one icon per semantic action. Never pick a different icon for an action
+   already listed there.
+2. **Refresh CTAs are MANDATORY `<RefreshButton>`** — never hand-roll a
+   refresh button (`Toolbar.refresh` prop for toolbars, `compact` variant
+   inside cards).
+3. **Clear/reset = `Eraser`**, close/remove = `X`, restore = `RotateCcw`,
+   refresh = `RefreshCw`. Do not cross these semantics.
+4. **Booleans**: `CircleCheck` / `CircleX` — never `CheckCircle`/`XCircle`.
+   **Warnings**: `TriangleAlert` — never the legacy `AlertTriangle` alias.
+5. Icons import ONLY from `@primebrick/ui/vendor/lucide` (named imports) —
+   raw `@lucide/svelte` and `@lucide/svelte/icons/<name>` are rejected by
+   eslint (vendor-plane contract).
+6. Verify icon names empirically (lucide.dev) before importing.
+7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
+   `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons
+   self-position left (`right-10` slot 2). Never invent positions.
+8. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
+   every standalone icon-only control inside an input (clear `Eraser`,
+   `Eye`/`EyeOff`, `Copy`, `Check`/status icons, X-remove). Enforced by
+   `[&>svg]:size-4` in `inputTrailingIconColorClasses` —
+   `src/lib/components/ui/input/input-chrome.ts`. Do NOT add size classes on
+   the icon; the chrome owns the glyph size. Excluded: decorative glyphs
+   inside trigger content (e.g. `size-3` carets in prefix selector CTAs)
+   and leading icons.
 
-## Rules
+## Deep dive
 
-- **Refresh is a component, not an icon.** Any refresh/reload CTA MUST use
-  `<RefreshButton>` — toolbar (`Toolbar.refresh` prop) and in-card
-  (`compact` variant) alike.
-- `Eraser` = mutate/clear data in place; `X` = close/remove; `RotateCcw` =
-  restore deleted. Don't cross these semantics.
-- Import single icons (`@lucide/svelte/icons/<name>`). Named barrel imports
-  (`import { X } from '@lucide/svelte'`) are still present in a few files —
-  prefer single-icon imports in new code.
-- Flagged debt: `AlertTriangle` legacy alias still imported in
-  `ModelCachePanel`, `ModelCacheSection`, `MfaEnrollmentSection`,
-  `async-validated-input`, `rfc-error-dialog`, `VersionHistoryPanel` —
-  migrate to `TriangleAlert` when touching those files.
+The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/icon-conventions.mdx` — link, do not duplicate.
