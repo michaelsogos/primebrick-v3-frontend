@@ -51,6 +51,9 @@
   // context so the panel always opens on where the user IS.
   let previewApp = $state<string | null>(null);
   let previewModuleId = $state<string | null>(null);
+  // Third link of the preview chain — set by col-3 row focus, reset
+  // whenever a shallower level changes.
+  let previewLeaf = $state<(ModuleNavLink & { hidden?: boolean }) | null>(null);
   // Height ratchet — only grows while the panel is open.
   let shownRows = $state(ROWS_MIN);
   // Reveal switch — when ON, roots/modules/pages the access axis filtered
@@ -130,6 +133,42 @@
     return [...nav, ...hidden];
   });
 
+  /** The leaf the selection chain points at: explicit leaf preview, else
+   *  the row matching the current route, else the module's declared
+   *  default — the same target Enter's goto resolves. */
+  const effectiveLeafId = $derived.by(() => {
+    const leaf = previewLeaf;
+    if (leaf && previewPages.some((i) => i.id === leaf.id)) {
+      return leaf.id;
+    }
+    const route = previewPages.find((i) => i.href === page.url.pathname);
+    if (route) return route.id;
+    return previewPages.find((i) => i.default)?.id ?? null;
+  });
+  const effectiveLeaf = $derived(
+    previewPages.find((i) => i.id === effectiveLeafId) ?? null
+  );
+  const previewModule = $derived(
+    shellNav.modules.find((m) => m.id === activeModuleId) ?? null
+  );
+
+  /** The virtual path the user is composing — header line 1 (labels). */
+  const pathLabel = $derived(
+    [
+      $t(`app.nav.roots.${activeApp ?? currentRoot}`),
+      previewModule ? resolveModuleLabel(previewModule, $t) : null,
+      effectiveLeaf ? $t(effectiveLeaf.label_key) : null,
+    ]
+      .filter(Boolean)
+      .join(' › ')
+  );
+  /** The URL the composed path resolves to — identical to what Enter
+   *  would open from the current preview position (header line 2). */
+  const previewHref = $derived(
+    effectiveLeaf?.href ??
+      (previewModule ? moduleHomeInApp(previewModule, activeApp ?? 'system') : null)
+  );
+
   /** Tallest content across the three columns, clamped to the 4..12 band.
    *  Within an open session `shownRows` only ratchets UP — the panel grows
    *  as columns populate but never shrinks under the pointer. */
@@ -157,6 +196,7 @@
   function selectApp(root: string) {
     previewApp = root;
     previewModuleId = null;
+    previewLeaf = null;
     // The Pages column previews this app's default module — prefetch its
     // meta so column 3 is populated when the pointer reaches it.
     const dflt = shellNav.defaultModuleForRoot(root);
@@ -165,6 +205,7 @@
 
   function selectModulePreview(m: ModuleInfo) {
     previewModuleId = m.id;
+    previewLeaf = null;
     ensureModuleData(m.id);
   }
 
@@ -275,6 +316,7 @@
     if (next) {
       previewApp = null;
       previewModuleId = null;
+      previewLeaf = null;
       shownRows = Math.max(ROWS_MIN, targetRows);
       if (currentModuleId) ensureModuleData(currentModuleId);
       void tick().then(() => {
@@ -340,6 +382,17 @@
         sideOffset={8}
         data-testid="app-launcher-panel"
       >
+        <!-- Virtual path header — the link the preview chain composes.
+             Line 1 labels (i18n), line 2 the resolved href == Enter's goto. -->
+        <div
+          class="border-b border-border px-3 py-1.5"
+          data-testid="app-launcher-path"
+        >
+          <div class="truncate text-sm font-medium">{pathLabel}</div>
+          {#if previewHref}
+            <div class="truncate font-mono text-[11px] text-muted-foreground">{previewHref}</div>
+          {/if}
+        </div>
         <div
           bind:this={panelEl}
           class="flex divide-x divide-border"
@@ -358,7 +411,7 @@
               {@const root = d.root}
               <div
                 role="option"
-                aria-selected={currentRoot === root}
+                aria-selected={activeApp === root}
                 aria-disabled={d.hidden}
                 tabindex={colFocusIdx[0] === i ? 0 : -1}
                 data-launcher-row
@@ -367,7 +420,7 @@
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  currentRoot === root && menuListSelectedSurfaceDropdownClasses,
+                  activeApp === root && menuListSelectedSurfaceDropdownClasses,
                   d.hidden && 'opacity-50'
                 )}
                 onfocus={() => {
@@ -381,6 +434,9 @@
                   <DynamicIcon name={APP_ROOT_ICON} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(`app.nav.roots.${root}`)}</span>
+                {#if currentRoot === root && activeApp !== root}
+                  <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
+                {/if}
                 <button
                   type="button"
                   tabindex="-1"
@@ -412,7 +468,7 @@
               {@const m = d.m}
               <div
                 role="option"
-                aria-selected={currentModuleId === m.id}
+                aria-selected={activeModuleId === m.id}
                 aria-disabled={d.hidden || m.enabled === false}
                 tabindex={colFocusIdx[1] === i ? 0 : -1}
                 data-launcher-row
@@ -421,7 +477,7 @@
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  currentModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
+                  activeModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
                   (d.hidden || m.enabled === false) && 'opacity-50',
                   m.enabled === false && 'pointer-events-none'
                 )}
@@ -436,6 +492,9 @@
                   <DynamicIcon name={m.icon ?? 'layout-grid'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(m, $t)}</span>
+                {#if currentModuleId === m.id && activeModuleId !== m.id}
+                  <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
+                {/if}
                 <button
                   type="button"
                   tabindex="-1"
@@ -468,7 +527,7 @@
             {#each previewPages as item, i (item.id)}
               <div
                 role="option"
-                aria-selected={page.url.pathname === item.href}
+                aria-selected={effectiveLeafId === item.id}
                 aria-disabled={item.hidden}
                 tabindex={colFocusIdx[2] === i ? 0 : -1}
                 data-launcher-row
@@ -476,10 +535,13 @@
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  page.url.pathname === item.href && menuListSelectedSurfaceDropdownClasses,
+                  effectiveLeafId === item.id && menuListSelectedSurfaceDropdownClasses,
                   item.hidden && 'pointer-events-none opacity-50'
                 )}
-                onfocus={() => trackFocus(2, i)}
+                onfocus={() => {
+                  trackFocus(2, i);
+                  previewLeaf = item;
+                }}
                 onclick={() => activatePage(item)}
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
@@ -487,6 +549,9 @@
                   <DynamicIcon name={item.icon ?? 'circle'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
+                {#if page.url.pathname === item.href && effectiveLeafId !== item.id}
+                  <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
+                {/if}
               </div>
             {:else}
               <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
