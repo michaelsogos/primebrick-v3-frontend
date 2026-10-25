@@ -437,7 +437,7 @@
         <!-- Virtual path header — the link the preview chain composes.
              Line 1 labels (i18n), line 2 the resolved href == Enter's goto. -->
         <div
-          class="border-b border-border px-3 py-1.5"
+          class="border-b border-sidebar-border bg-sidebar-accent px-3 py-1.5 text-sidebar-accent-foreground"
           data-testid="app-launcher-path"
         >
           <div class="truncate text-sm font-medium">{shownPath.label}</div>
@@ -618,7 +618,7 @@
         </div>
         <!-- Keyboard hints footer -->
         <div
-          class="flex items-center gap-3 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground"
+          class="flex items-center gap-3 border-t border-border bg-muted/50 px-3 py-1.5 text-[11px] text-muted-foreground"
           data-testid="app-launcher-footer"
         >
           <span class="inline-flex items-center gap-1">
