@@ -133,9 +133,9 @@
     return [...nav, ...hidden];
   });
 
-  /** The leaf the selection chain points at: explicit leaf preview, else
-   *  the row matching the current route, else the module's declared
-   *  default — the same target Enter's goto resolves. */
+  /** The leaf the header's virtual path resolves to: explicit leaf
+   *  preview, else the row matching the current route, else the
+   *  module's declared default — the same target Enter's goto resolves. */
   const effectiveLeafId = $derived.by(() => {
     const leaf = previewLeaf;
     if (leaf && previewPages.some((i) => i.id === leaf.id)) {
@@ -144,6 +144,25 @@
     const route = previewPages.find((i) => i.href === page.url.pathname);
     if (route) return route.id;
     return previewPages.find((i) => i.default)?.id ?? null;
+  });
+
+  /* Selection (gradient) = ONLY what the user previewed or the route
+   * context — never the fallbacks used to populate content. The route
+   * rows get the primary dot marker whenever the preview diverges. */
+  const onRouteChain = $derived(
+    (previewApp == null || previewApp === currentRoot) &&
+      (previewModuleId == null || previewModuleId === currentModuleId)
+  );
+  const selModuleId = $derived(
+    previewModuleId ??
+      ((previewApp ?? currentRoot) === currentRoot ? currentModuleId : null)
+  );
+  const selLeafId = $derived.by(() => {
+    const leaf = previewLeaf;
+    if (leaf && previewPages.some((i) => i.id === leaf.id)) return leaf.id;
+    return onRouteChain
+      ? (previewPages.find((i) => i.href === page.url.pathname)?.id ?? null)
+      : null;
   });
   const effectiveLeaf = $derived(
     previewPages.find((i) => i.id === effectiveLeafId) ?? null
@@ -468,7 +487,7 @@
               {@const m = d.m}
               <div
                 role="option"
-                aria-selected={activeModuleId === m.id}
+                aria-selected={selModuleId === m.id}
                 aria-disabled={d.hidden || m.enabled === false}
                 tabindex={colFocusIdx[1] === i ? 0 : -1}
                 data-launcher-row
@@ -477,7 +496,7 @@
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  activeModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
+                  selModuleId === m.id && menuListSelectedSurfaceDropdownClasses,
                   (d.hidden || m.enabled === false) && 'opacity-50',
                   m.enabled === false && 'pointer-events-none'
                 )}
@@ -492,7 +511,7 @@
                   <DynamicIcon name={m.icon ?? 'layout-grid'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(m, $t)}</span>
-                {#if currentModuleId === m.id && activeModuleId !== m.id}
+                {#if currentModuleId === m.id && selModuleId !== m.id}
                   <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
                 {/if}
                 <button
@@ -527,7 +546,7 @@
             {#each previewPages as item, i (item.id)}
               <div
                 role="option"
-                aria-selected={effectiveLeafId === item.id}
+                aria-selected={selLeafId === item.id}
                 aria-disabled={item.hidden}
                 tabindex={colFocusIdx[2] === i ? 0 : -1}
                 data-launcher-row
@@ -535,7 +554,7 @@
                 class={cn(
                   rowBase,
                   menuListHoverNeutral,
-                  effectiveLeafId === item.id && menuListSelectedSurfaceDropdownClasses,
+                  selLeafId === item.id && menuListSelectedSurfaceDropdownClasses,
                   item.hidden && 'pointer-events-none opacity-50'
                 )}
                 onfocus={() => {
@@ -549,7 +568,7 @@
                   <DynamicIcon name={item.icon ?? 'circle'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
-                {#if page.url.pathname === item.href && effectiveLeafId !== item.id}
+                {#if page.url.pathname === item.href && selLeafId !== item.id}
                   <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
                 {/if}
               </div>
