@@ -11,7 +11,7 @@ import {
 	// vendored contract module is dependency-free pure JS.
 	// @ts-ignore — sibling repo file, outside this package's graph
 } from '../../primebrick-v3-core/dist/vendor-plane.js';
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -130,8 +130,22 @@ const VENDOR_ENTRIES: Record<string, { file: string }> = {
 	'@primebrick/ui/vendor/clsx': { file: 'vendor-clsx.js' },
 	'@primebrick/ui/vendor/tailwind-merge': { file: 'vendor-tailwind-merge.js' },
 	'@primebrick/ui/vendor/tailwind-variants': { file: 'vendor-tailwind-variants.js' },
-	'@primebrick/ui/vendor/lucide': { file: 'vendor-lucide.js' },
 	'@primebrick/ui/vendor/bits-ui': { file: 'vendor-bits-ui.js' },
+};
+
+/**
+ * Open-ended prefix surfaces — one manifest key covers every file emitted
+ * under a `/vendor/…/` directory, resolved verbatim by the document
+ * import-map prefix entry. `lucide` is NOT a bundle: its catalog is
+ * enumerable (one file per dist icon, aliases included) and remote chunks
+ * pay per-icon, never for a barrel.
+ * `parent` is the ui vendor-map specifier the version truth comes from.
+ */
+const VENDOR_PREFIX_MANIFEST: Record<string, { parent: string; url: string }> = {
+	'@primebrick/ui/vendor/lucide/icons/': {
+		parent: '@primebrick/ui/vendor/lucide',
+		url: '/vendor/icons/lucide/',
+	},
 };
 
 const entryKeys = Object.keys(VENDOR_ENTRIES).sort();
@@ -148,8 +162,13 @@ if (JSON.stringify(entryKeys) !== JSON.stringify(specKeys)) {
 // `@primebrick/ui/vendor/*` slice of VENDOR_ENTRIES — drift either way is a
 // contract break, not a soft warning.
 const entryVendorKeys = entryKeys.filter((k) => k.startsWith('@primebrick/ui/vendor/'));
+// Prefix parents carry the version anchor in vendor-map.json even though
+// they emit no bundle of their own — they count toward map coverage.
+const prefixParents = Object.values(VENDOR_PREFIX_MANIFEST)
+	.map((p) => p.parent)
+	.sort();
 const mapKeys = Object.keys(UI_VENDOR_MAP).sort();
-if (JSON.stringify(entryVendorKeys) !== JSON.stringify(mapKeys)) {
+if (JSON.stringify([...entryVendorKeys, ...prefixParents].sort()) !== JSON.stringify(mapKeys)) {
 	throw new Error(
 		`vendor:build: @primebrick/ui vendor-map.json diverged from VENDOR_ENTRIES\n` +
 			`  entries: ${entryVendorKeys.join(', ')}\n` +
@@ -171,9 +190,27 @@ const VENDOR_INPUTS: Record<string, string> = {
 	'vendor-clsx': 'entries/vendor-clsx.ts',
 	'vendor-tailwind-merge': 'entries/vendor-tailwind-merge.ts',
 	'vendor-tailwind-variants': 'entries/vendor-tailwind-variants.ts',
-	'vendor-lucide': 'entries/vendor-lucide.ts',
 	'vendor-bits-ui': 'entries/vendor-bits-ui.ts',
 };
+
+/**
+ * Per-icon lucide entries — every `.js` file in lucide's dist (canonical
+ * stubs + alias stubs, ~2160) becomes `icons/lucide/<name>.js`, so the
+ * whole catalog has deterministic URLs with zero central allowlisting.
+ * Alias stubs re-export their canonical icon: rolldown dedupes them into
+ * one compiled chunk per icon.
+ */
+const LUCIDE_ICONS_DIR = join(UI_DIR, 'node_modules/@lucide/svelte/dist/icons');
+const LUCIDE_ICON_INPUTS: Record<string, string> = Object.fromEntries(
+	readdirSync(LUCIDE_ICONS_DIR)
+		// `index.js` is lucide's internal barrel — emitting it would leave a
+		// loadable catalog URL nobody should import (fail-closed: 404).
+		.filter((f) => f.endsWith('.js') && f !== 'index.js')
+		.map((f) => [
+			`icons/lucide/${f.replace(/\.js$/, '')}`,
+			join(LUCIDE_ICONS_DIR, f),
+		])
+);
 
 /** entry file name → the package it bundles (importer attribution). */
 const ENTRY_FILE_PKG: Record<string, string> = {
@@ -191,7 +228,6 @@ const ENTRY_FILE_PKG: Record<string, string> = {
 	'vendor-clsx.ts': '@primebrick/ui',
 	'vendor-tailwind-merge.ts': '@primebrick/ui',
 	'vendor-tailwind-variants.ts': '@primebrick/ui',
-	'vendor-lucide.ts': '@primebrick/ui',
 	'vendor-bits-ui.ts': '@primebrick/ui',
 };
 
@@ -327,6 +363,9 @@ function vendorManifest(): Plugin {
 					version: specifierVersion(specifier),
 				};
 			}
+			for (const [prefix, { parent, url }] of Object.entries(VENDOR_PREFIX_MANIFEST)) {
+				manifest[prefix] = { url, version: specifierVersion(parent) };
+			}
 			writeFileSync(
 				fileURLToPath(new URL('../static/vendor/vendor-manifest.json', import.meta.url)),
 				JSON.stringify(manifest, null, 2) + '\n'
@@ -358,12 +397,15 @@ export default defineConfig({
 		// treated as <script> roots); vendor files are modules consumed by
 		// import specifiers, so their exports must be preserved.
 		lib: {
-			entry: Object.fromEntries(
-				Object.entries(VENDOR_INPUTS).map(([name, entry]) => [
-					name,
-					fileURLToPath(new URL(entry, import.meta.url)),
-				])
-			),
+			entry: {
+				...Object.fromEntries(
+					Object.entries(VENDOR_INPUTS).map(([name, entry]) => [
+						name,
+						fileURLToPath(new URL(entry, import.meta.url)),
+					])
+				),
+				...LUCIDE_ICON_INPUTS,
+			},
 			formats: ['es'],
 			fileName: (_format, name) => `${name}.js`,
 		},
