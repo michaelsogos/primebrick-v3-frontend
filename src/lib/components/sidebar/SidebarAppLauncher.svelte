@@ -19,6 +19,7 @@
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
+  import { tick } from 'svelte';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
@@ -264,7 +265,11 @@
     colFocusIdx[col] = idx;
   }
 
-  /** Reset preview to the current route context on every open. */
+  /** Reset preview to the current route context on every open. The
+   *  popover restores focus to the LAST-focused row — without an
+   *  explicit re-focus that row's `onfocus` would re-dirty the just-
+   *  reset preview with stale state. Focusing the route-context row
+   *  makes its `onfocus` produce the correct preview instead. */
   function handleOpenChange(next: boolean) {
     open = next;
     if (next) {
@@ -272,6 +277,10 @@
       previewModuleId = null;
       shownRows = Math.max(ROWS_MIN, targetRows);
       if (currentModuleId) ensureModuleData(currentModuleId);
+      void tick().then(() => {
+        const idx = displayRoots.findIndex((d) => d.root === currentRoot);
+        if (idx >= 0) focusRow(0, idx);
+      });
     }
   }
 
