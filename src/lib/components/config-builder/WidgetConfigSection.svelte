@@ -1,9 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Label } from '$lib/components/ui/label';
-  import ComboSelect from '$lib/components/ui/combo-select/combo-select.svelte';
-  import { SelectableFieldset } from '$lib/components/ui/selectable-fieldset';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import { ComboSelect } from '@primebrick/ui';
+  import { SelectableFieldset } from '@primebrick/ui';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { getAllCurrencies } from '$lib/currency';
   import { getCountryData, countries } from 'countries-list';
   import type { TCountryCode } from 'countries-list';

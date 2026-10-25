@@ -6,7 +6,7 @@
    * AnchorTabs instances.
    */
   import { useTabsMode } from "$lib/composables/useTabsMode.svelte";
-  import { Switch } from "$lib/components/ui/switch";
+  import { Switch } from '@primebrick/ui';
   import { cn } from "$lib/utils.js";
 
   let {

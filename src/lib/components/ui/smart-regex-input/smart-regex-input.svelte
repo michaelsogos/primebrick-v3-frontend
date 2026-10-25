@@ -5,7 +5,8 @@
    * Extends TextInput with two inner CTAs on the right side:
    * 1. Flags CTA — opens a right-panel sheet to toggle regex flags (g, i, m)
    * 2. Brain CTA — opens a right-panel AI chat that converts natural language
-   *    descriptions to regex patterns using WebLLM (Qwen2.5-0.5B-Instruct).
+   *    descriptions to regex patterns via Transformers.js (ONNX Runtime
+   *    WebGPU, model selected from the ai_models registry).
    *
    * The "Smart" prefix establishes the convention for AI-powered components.
    *
@@ -14,9 +15,9 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { inputTrailingIconColorClasses } from '$lib/components/ui/input/input-chrome';
+  import { inputTrailingIconColorClasses } from '@primebrick/ui';
   import { AiIcon } from '$lib/components/ui/ai-icon';
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 

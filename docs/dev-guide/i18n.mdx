@@ -35,7 +35,7 @@ t("system.entities.customer.delete.confirm", { name: "ACME" })
 ## Module-scoped loading — `use-module-translations`
 
 Module pages pull their own dict: `use-module-translations.svelte.ts`
-fetches `GET /api/v1/translations/{module}/{lang}` and **merges** the
+fetches `GET /api/v1/system/translations/{module}/{lang}` and **merges** the
 module dict over the base `app.*`/`system.*` dict — flat merge, module
 keys win their namespace. A page that only declares its module gets its
 strings; no global preload of every module's vocabulary.

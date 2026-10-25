@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { WithChildren } from 'bits-ui';
+	import type { WithChildren } from '@primebrick/ui/vendor/bits-ui';
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	export type WindowPropsWithoutHTML = WithChildren & {

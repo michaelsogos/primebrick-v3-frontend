@@ -8,6 +8,12 @@
    here (an unscanned class degrades silently to a BLACK svg bar). */
 @source inline("fill-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{50,100,200,300,400,500,600,700,800,900,950}");
 
+/* `@primebrick/ui` component classes: the package lives outside this
+   repo's content scan — without this every migrated component renders
+   UNSTYLED (silent drift). Scan its source so moved components' Tailwind
+   classes are generated in this stylesheet. */
+@source "../../primebrick-v3-ui/src";
+
 @import 'flag-icons/css/flag-icons.min.css' layer(base);
 @import '@fontsource-variable/inter' layer(base);
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import CircleCheckBig from '@lucide/svelte/icons/circle-check-big';
-  import Circle from '@lucide/svelte/icons/circle';
+  import { CircleCheckBig } from '@primebrick/ui/vendor/lucide';
+  import { Circle } from '@primebrick/ui/vendor/lucide';
   import { PasswordChecklistRule } from '$lib/types/password-policy';
 
   let {

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from '@primebrick/ui';
   import { Spinner } from "$lib/components/ui/spinner";
   import { t } from "$lib/i18n";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-  import Fingerprint from "@lucide/svelte/icons/fingerprint";
+  import { Fingerprint } from '@primebrick/ui/vendor/lucide';
   import {
     decodeCredentialRequestOptions,
     encodeAuthenticatorAssertion,

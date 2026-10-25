@@ -8,10 +8,10 @@
   import { isMenuSegment, type AppBreadcrumbSegment, type AppBreadcrumbMenuSegment } from '$lib/breadcrumb/types';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { defaultLeafHref, shellNav } from '$lib/shell/modules-shell.svelte';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
-  import DynamicIcon from '$lib/components/ui/dynamic-icon/DynamicIcon.svelte';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
+  import { DynamicIcon } from '@primebrick/ui';
 
   /** Ancestor segments only (current page title is shown separately, e.g. in `h1`). A trailing `/` is always rendered after the last segment. */
   let {
@@ -23,7 +23,8 @@
   /**
    * Root-level segment — the ROUTE's root (`/system/crm/pipeline` shows
    * 'System', not 'CRM'), menu across sibling roots (each item navigates
-   * to that root's declared default module home). Single source of truth:
+   * to that root's declared default module's default leaf). Single source
+   * of truth:
    * every page gets `root / module / …` without per-page wiring.
    */
   const rootSegment = $derived.by((): AppBreadcrumbMenuSegment | null => {
@@ -38,9 +39,9 @@
       items: roots.map((r) => ({
         label: $t(`app.nav.roots.${r}`),
         icon: APP_ROOT_ICON,
-        // `home[root]` = nav[0] of that root's slice — the first page the
-        // user is actually allowed to reach (post-filter).
-        href: (shellNav.defaultModuleForRoot(r)?.home?.[r] ?? '/') as '/',
+        // The root's default module → its declared `default` leaf under
+        // this root (post access-filter — first accessible leaf wins).
+        href: (defaultLeafHref(shellNav.defaultModuleForRoot(r) ?? {}, r) ?? '/') as '/',
         current: r === current
       }))
     };

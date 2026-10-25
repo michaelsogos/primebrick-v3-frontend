@@ -20,16 +20,15 @@
  * leaf clicks share the same 30s cap (warm generation is ~5-10s).
  * Model load keeps the 8min download budget (loading_* phases only).
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[nav] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
@@ -55,26 +54,6 @@ async function waitVisible(locator: ReturnType<Page["locator"]>, what: string, m
   }
 }
 
-async function getSharedContext(): Promise<{ context: BrowserContext; launched: boolean }> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 15000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return { context: ctx, launched: false };
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  log("launching new persistent Edge session (CDP :9333)");
-  const context = await chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-  return { context, launched: true };
-}
 
 async function waitPanelPhase(page: Page, want: string): Promise<string> {
   const panel = page.locator(`[data-testid="${PREFIX}-panel"]`);
@@ -213,8 +192,8 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
    * phase got its own test so each phase keeps its own 10min budget.
    */
   async function bootAssistant(): Promise<{ page: Page; model_id: string }> {
-    let { context, launched } = await getSharedContext();
-    let page = context.pages()[0] ?? (await context.newPage());
+    const { context, launched } = await getSharedContext();
+    const page = await focusedPage(context);
 
     // ── Auth gate ──
     const isAuthed = () =>
@@ -228,7 +207,9 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
 
     // ── Connectivity probe — a freshly-launched Edge occasionally boots with
     // a wedged network service (app shows "Offline", every in-page fetch
-    // hangs while curl works). Detect it fast and relaunch the context once.
+    // hangs while curl works). The launch-lock probe in getSharedContext
+    // covers this for the launcher; if it still wedges here, fail — never
+    // relaunch the shared context from a spec.
     const online = () =>
       page.evaluate(async () => {
         try {
@@ -238,11 +219,7 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
         }
       });
     if (launched && !(await online().catch(() => false))) {
-      log("in-page fetch wedged on fresh launch — relaunching Edge once");
-      await context.close().catch(() => {});
-      ({ context } = await getSharedContext());
-      page = context.pages()[0] ?? (await context.newPage());
-      if (!page.url().startsWith(PAGE_URL)) await page.goto(PAGE_URL);
+      throw new Error("in-page fetch wedged on fresh shared Edge session");
     }
 
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));

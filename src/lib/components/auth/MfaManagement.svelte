@@ -2,22 +2,22 @@
   import { onMount } from "svelte";
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from '@primebrick/ui';
   import { TextInput } from "$lib/components/ui/input";
-  import OtpInput from "$lib/components/otp-input/otp-input.svelte";
-  import { useOtpInput } from "$lib/composables/useOtpInput.svelte";
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from "$lib/components/ui/label";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
-  import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "$lib/components/ui/dialog";
-  import BorderedDialog from "$lib/components/ui/dialog-bordered.svelte";
+  import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
   import { t } from "$lib/i18n";
   import { authConfigState, loadAuthConfig } from "$lib/auth-config-store.svelte";
-  import Smartphone from "@lucide/svelte/icons/smartphone";
-  import Plus from "@lucide/svelte/icons/plus";
-  import Trash2 from "@lucide/svelte/icons/trash-2";
-  import QrCode from "@lucide/svelte/icons/qr-code";
-  import ShieldCheck from "@lucide/svelte/icons/shield-check";
+  import { Smartphone } from '@primebrick/ui/vendor/lucide';
+  import { Plus } from '@primebrick/ui/vendor/lucide';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { QrCode } from '@primebrick/ui/vendor/lucide';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import LoadingWatermark from "./LoadingWatermark.svelte";
 
   // Trigger the auth config fetch to check if MFA is enabled.

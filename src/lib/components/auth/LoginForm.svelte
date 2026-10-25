@@ -6,14 +6,14 @@
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
   import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
   import * as Password from '$lib/components/ui/password';
   import { t } from '$lib/i18n';
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import PasskeyButton from './PasskeyButton.svelte';
   import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';

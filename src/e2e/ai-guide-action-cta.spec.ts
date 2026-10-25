@@ -17,15 +17,13 @@
  *     dialog with editable args → execute → POST verified → done state +
  *     result message; cancel path closes without a POST
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { execSync } from "node:child_process";
+import { test, expect, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[act-cta] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
@@ -38,55 +36,6 @@ type DebugWindow = Window & {
     ) => void;
   }>;
 };
-
-/**
- * Kill zombie Edge processes that hold the E2E profile. Killed playwright
- * runs leave a browser with the profile locked but a wedged CDP/renderer —
- * the next launch then exits instantly ("opening in existing browser
- * session") and every evaluate hangs. These processes are test-owned.
- */
-function killEdgeZombies(): void {
-  try {
-    execSync(
-      `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='msedge.exe'\\" | Where-Object { \\$_.CommandLine -like '*pw-edge-profile*' } | ForEach-Object { Stop-Process -Id \\$_.ProcessId -Force }"`,
-      { timeout: 20_000, stdio: "ignore" },
-    );
-    log("killed zombie pw-edge-profile Edge processes");
-  } catch {
-    /* none running or query failed — proceed */
-  }
-}
-
-async function launchEdge(): Promise<BrowserContext> {
-  log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
-
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 15000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  try {
-    return await launchEdge();
-  } catch {
-    // Singleton handoff to a zombie — kill it and retry once.
-    killEdgeZombies();
-    await new Promise((r) => setTimeout(r, 3000));
-    return launchEdge();
-  }
-}
 
 async function ensureAuth(page: Page): Promise<void> {
   const isAuthed = () =>
@@ -156,8 +105,8 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
   });
 
   test("navigate / read-tool / mutating-tool CTAs execute the real client path", async () => {
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
     page.on("console", (msg) => {
       if (msg.type() === "error" || msg.type() === "warning") {
@@ -295,8 +244,8 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
   });
 
   test("client-registry admin surface — list renders live registry rows", async () => {
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     await ensureAuth(page);
     await page.goto(`${BASE_URL}/system/settings/clients`, { waitUntil: "domcontentloaded" });
     // The live registry (populated by service enrollment) must surface as

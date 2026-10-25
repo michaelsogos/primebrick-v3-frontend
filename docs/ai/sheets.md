@@ -169,7 +169,7 @@ standard close — providing `actions` replaces the default close:
   import * as Sheet from '$lib/components/ui/sheet';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import XIcon from '@lucide/svelte/icons/x';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 </script>
 
 <SheetPanelLayout>

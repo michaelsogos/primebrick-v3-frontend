@@ -14,10 +14,10 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import type { AiCerebellum } from '$lib/api-types';
-  import CerebellumRecommendationBadge from './cerebellum-recommendation-badge.svelte';
+  import { CerebellumRecommendationBadge } from '@primebrick/ui';
   import { t } from '$lib/i18n';
-  import CircuitBoard from '@lucide/svelte/icons/circuit-board';
-  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import { CircuitBoard } from '@primebrick/ui/vendor/lucide';
+  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
   let {
     tunings,

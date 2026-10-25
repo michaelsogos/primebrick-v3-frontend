@@ -1,6 +1,10 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav } from '$lib/api';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import { get } from 'svelte/store';
+import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav, type ModuleNavLink } from '$lib/api';
+import { uiLang } from '$lib/i18n/store.svelte';
+import { mergeModuleDict } from '$lib/i18n';
+import type { ModuleSheetDecl } from '@primebrick/ui';
+import type { DeepReadonly } from '@primebrick/ui';
 
 const _state = $state({
   loading: true,
@@ -70,20 +74,68 @@ function resolveModuleFromRoute(pathname: string): string | null {
 }
 
 /**
+ * Resolve a remote sheet declaration by open-sheet key (`<module>.<name>`)
+ * across every discovered module's `sheets[]` — the declarations arrive
+ * inside the `/modules` payload already access-filtered server-side, so a
+ * resolved decl is always one this user may open. `null` = no module
+ * declared that key (or discovery hasn't landed yet).
+ */
+export function resolveRemoteSheetDecl(key: string): ModuleSheetDecl | null {
+  for (const m of _state.modules) {
+    const decl = m.sheets?.find((s) => s.key === key);
+    if (decl) return decl;
+  }
+  return null;
+}
+
+/** First path segment — the root level a href lives under. */
+function rootOfPath(href: string): string {
+  return href.split('/').filter(Boolean)[0] ?? '';
+}
+
+/**
+ * Every nav leaf in declaration order — children flattened after their
+ * parent. `nav` is already access-filtered server-side, so every entry
+ * here is a page this user may open.
+ */
+export function flattenNavLeaves(
+  links: readonly { children?: readonly unknown[] }[],
+  out: ModuleNavLink[] = [],
+): ModuleNavLink[] {
+  for (const l of links as ModuleNavLink[]) {
+    out.push(l);
+    if (l.children) flattenNavLeaves(l.children, out);
+  }
+  return out;
+}
+
+/**
+ * GOTO(module, root) target — the declared `default` leaf when it lives
+ * under this root AND survived access filtering, else the first
+ * accessible leaf under the root. `undefined` when nothing is navigable
+ * there — the module is routing-domain only in that root.
+ */
+export function defaultLeafHref(
+  mod: Pick<ModuleInfo, 'nav'>,
+  root: string,
+): string | undefined {
+  const leaves = flattenNavLeaves(mod.nav ?? []).filter(
+    (l) => rootOfPath(l.href) === root,
+  );
+  return leaves.find((l) => l.default === true)?.href ?? leaves[0]?.href;
+}
+
+/**
  * Distinct NAVIGABLE root levels — 'system' first (the platform root),
- * the rest alphabetical. A root appears only when at least one module is
- * reachable under it (has `home[root]`); declared prefixes that own no
+ * the rest alphabetical. A root appears only when at least one module
+ * has an accessible leaf under it; declared prefixes that own no
  * navigable page stay in the routing domain, not the launcher.
  */
 function listRoots(modules: readonly ModuleInfo[]): string[] {
   const set = new SvelteSet<string>();
   for (const m of modules) {
-    if (m.enabled === false) continue;
-    // A root is a navigation surface: it exists only when at least one
-    // module has a reachable page under it (`home[root]` = nav[0] of the
-    // root slice, post access-filter). Prefix-declared roots with no
-    // navigable member never appear.
-    for (const r of Object.keys(m.home ?? {})) set.add(r);
+    if (m.enabled === false || m.accessible === false) continue;
+    for (const l of flattenNavLeaves(m.nav ?? [])) set.add(rootOfPath(l.href));
   }
   return [...set].sort((a, b) => (a === 'system' ? -1 : b === 'system' ? 1 : a.localeCompare(b)));
 }
@@ -117,12 +169,26 @@ export const shellNav = {
     if (seg && this.roots.includes(seg)) return seg;
     return this.selectedRoot;
   },
-  /** Modules NAVIGABLE under a root level — `home[root]` present means
-   *  the access-filtered nav has at least one page under that root.
-   *  Membership without a reachable home is routing-domain only (the
-   *  module owns URLs there but has nothing to navigate to). */
+  /** Modules NAVIGABLE under a root level — the access-filtered nav has
+   *  at least one leaf under that root. Prefix-only membership is
+   *  routing-domain (the module owns URLs there but has nothing to
+   *  navigate to). */
   modulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter((m) => !!m.home?.[root]);
+    return _state.modules.filter(
+      (m) =>
+        m.accessible !== false &&
+        flattenNavLeaves(m.nav ?? []).some((l) => rootOfPath(l.href) === root),
+    );
+  },
+  /** Modules that declare surface under `root` but have ZERO accessible
+   *  leaves (`accessible:false`) — the launcher reveal switch renders
+   *  them disabled; never navigable. */
+  inaccessibleModulesForRoot(root: string): ModuleInfo[] {
+    return _state.modules.filter(
+      (m) =>
+        m.accessible === false &&
+        (m.route_prefixes ?? []).some((p) => rootOfPath(p) === root),
+    );
   },
   /** Declared default module for a root — `is_default` among `part_of`
    *  members (the claim is for the module's OWN root), else first member. */
@@ -142,11 +208,35 @@ export const shellNav = {
 
 export { loadShellNav };
 
+/**
+ * Language the current census' `labels` seed was resolved in — a uiLang
+ * change must re-fetch so nav labels follow the new language.
+ */
+let _censusLang: string | null = null;
+
+// The census is the labels' carrier — when the UI language changes the
+// seed must be re-resolved for the new language, otherwise nav labels of
+// never-visited modules would stay in the previous language. Skipped
+// while no census exists yet (the in-flight one seeds itself) and while
+// a fetch is already running.
+if (typeof window !== 'undefined') {
+  uiLang.subscribe((lang) => {
+    if (lang === _censusLang || _state.loading || _state.modules.length === 0) return;
+    void loadShellNav();
+  });
+}
+
 async function loadShellNav(): Promise<void> {
   _state.loading = true;
   _state.error = null;
   try {
-    _state.modules = await fetchModules();
+    const lang = get(uiLang);
+    const doc = await fetchModules(lang);
+    // The labels seed rides the SAME merge path every module dictionary
+    // uses — `$t` stays the only read path, `_mergedDicts` the only store.
+    mergeModuleDict(lang, doc.labels);
+    _censusLang = lang;
+    _state.modules = doc.modules;
     _state.unreachable = false;
   } catch (e) {
     if (e instanceof ApiUnreachableError) {

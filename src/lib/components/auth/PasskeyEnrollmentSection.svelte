@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
@@ -7,9 +7,9 @@
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { isWebauthnSupported, decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
   import { getPlatformVersion } from '$lib/webauthn/platform-info';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import KeyRound from '@lucide/svelte/icons/key-round';
-  import Fingerprint from '@lucide/svelte/icons/fingerprint';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { Fingerprint } from '@primebrick/ui/vendor/lucide';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();

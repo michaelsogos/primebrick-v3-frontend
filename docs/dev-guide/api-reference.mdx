@@ -512,27 +512,6 @@ Source: `src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte`
 | onResetColumnVisibility | () => void | — | no | yes |  |
 | t | (key: string) => string | — | no | yes |  |
 
-### `&lt;DeleteDialog />`
-
-Source: `src/lib/components/entity-list-table/dialogs/DeleteDialog.svelte`
-
-| Prop | Type | Default | Bindable | Required | Description |
-|------|------|---------|----------|----------|-------------|
-| open | boolean | — | yes | yes |  |
-| onOpenChange | (open: boolean) => void | — | no | yes |  |
-| isDeleting | boolean | — | no | yes |  |
-| onConfirm | () => void | — | no | yes |  |
-| onCancel | () => void | — | no | yes |  |
-
-### `&lt;DeletionFilterToggle />`
-
-Source: `src/lib/components/entity-list-table/toolbar/DeletionFilterToggle.svelte`
-
-| Prop | Type | Default | Bindable | Required | Description |
-|------|------|---------|----------|----------|-------------|
-| deletionFilterMode | 'non_deleted' \| 'deleted' \| 'all' | — | no | yes |  |
-| onDeletionFilterModeChange | (mode: 'non_deleted' \| 'deleted' \| 'all') => void | — | no | yes |  |
-
 ### `&lt;DuplicateDialog />`
 
 Source: `src/lib/components/entity-list-table/dialogs/DuplicateDialog.svelte`
@@ -1462,14 +1441,6 @@ Source: `src/lib/components/entity-list-table/toolbar/ViewModeToggle.svelte`
 
 ## forms
 
-### `&lt;FormLabelWithHelp />`
-
-Source: `src/lib/components/forms/FormLabelWithHelp.svelte`
-
-| Prop | Type | Default | Bindable | Required | Description |
-|------|------|---------|----------|----------|-------------|
-| text | string | — | no | yes |  |
-
 ### `&lt;FormLabelWithPriorityHelp />`
 
 Source: `src/lib/components/forms/FormLabelWithPriorityHelp.svelte`
@@ -1500,9 +1471,9 @@ Source: `src/lib/components/sidebar/SidebarHealthBadge.svelte`
 |------|------|---------|----------|----------|-------------|
 | collapsed | boolean | — | no | yes |  |
 
-### `&lt;SidebarModuleSwitcher />`
+### `&lt;SidebarAppLauncher />`
 
-Source: `src/lib/components/sidebar/SidebarModuleSwitcher.svelte`
+Source: `src/lib/components/sidebar/SidebarAppLauncher.svelte`
 
 | Prop | Type | Default | Bindable | Required | Description |
 |------|------|---------|----------|----------|-------------|

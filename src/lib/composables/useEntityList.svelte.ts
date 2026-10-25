@@ -61,7 +61,7 @@ import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, Filt
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export interface FixedFilter {
   field: string;

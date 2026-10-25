@@ -26,7 +26,7 @@
   import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
   import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { onMount } from 'svelte';
-  import Bot from '@lucide/svelte/icons/bot';
+  import { Bot } from '@primebrick/ui/vendor/lucide';
 
   let {
     config_type,

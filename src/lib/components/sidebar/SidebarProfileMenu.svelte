@@ -8,9 +8,9 @@
   import { goto } from '$app/navigation';
   import type { UserProfile } from '$lib/user-profile-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
-  import LogOut from '@lucide/svelte/icons/log-out';
-  import Settings from '@lucide/svelte/icons/settings';
+  import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
+  import { LogOut } from '@primebrick/ui/vendor/lucide';
+  import { Settings } from '@primebrick/ui/vendor/lucide';
 
   let {
     user,

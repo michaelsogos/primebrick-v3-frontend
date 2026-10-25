@@ -1,23 +1,23 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import Bell from '@lucide/svelte/icons/bell'
-  import Globe from '@lucide/svelte/icons/globe'
-  import CircleAlert from '@lucide/svelte/icons/circle-alert'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
-  import BookOpen from '@lucide/svelte/icons/book-open'
-  import Info from '@lucide/svelte/icons/info'
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import XIcon from '@lucide/svelte/icons/x';
+  import { Bell } from '@primebrick/ui/vendor/lucide'
+  import { Globe } from '@primebrick/ui/vendor/lucide'
+  import { CircleAlert } from '@primebrick/ui/vendor/lucide'
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
+  import { ThumbsUp } from '@primebrick/ui/vendor/lucide'
+  import { BookOpen } from '@primebrick/ui/vendor/lucide'
+  import { Info } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';

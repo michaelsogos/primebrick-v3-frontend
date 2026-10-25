@@ -8,7 +8,7 @@
  * Until the fetch resolves, `capabilitiesFor()` returns a permissive
  * fallback (all rules shown) so the form never flickers/hides sections.
  */
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 import { fetchConfigEntryMeta } from '$lib/api';
 import type { ConfigEntryType, TypeCapabilities, TypeCapabilitiesMap } from '$lib/api-types';
 

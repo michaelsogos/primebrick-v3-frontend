@@ -1,17 +1,17 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { tick, onMount } from 'svelte';
-  import { Command } from 'bits-ui';
+  import { Command } from '@primebrick/ui/vendor/bits-ui';
   import { cn } from '$lib/utils';
-  import { commandMenuItemClassName } from '$lib/components/ui/menu-row-chrome';
+  import { commandMenuItemClassName } from '@primebrick/ui';
   import { t } from '$lib/i18n';
-  import CalculatorIcon from '@lucide/svelte/icons/calculator';
-  import CalendarIcon from '@lucide/svelte/icons/calendar';
-  import CreditCardIcon from '@lucide/svelte/icons/credit-card';
-  import SettingsIcon from '@lucide/svelte/icons/settings';
-  import SmileIcon from '@lucide/svelte/icons/smile';
-  import UserIcon from '@lucide/svelte/icons/user';
-  import CommandKeyGlyph from '@lucide/svelte/icons/command';
+  import { Calculator as CalculatorIcon } from '@primebrick/ui/vendor/lucide';
+  import { Calendar as CalendarIcon } from '@primebrick/ui/vendor/lucide';
+  import { CreditCard as CreditCardIcon } from '@primebrick/ui/vendor/lucide';
+  import { Settings as SettingsIcon } from '@primebrick/ui/vendor/lucide';
+  import { Smile as SmileIcon } from '@primebrick/ui/vendor/lucide';
+  import { User as UserIcon } from '@primebrick/ui/vendor/lucide';
+  import { Command as CommandKeyGlyph } from '@primebrick/ui/vendor/lucide';
   import { Kbd } from '$lib/components/ui/kbd';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();

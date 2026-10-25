@@ -11,14 +11,14 @@
    * the parser).
    */
   import { t } from '$lib/i18n';
-  import { Navigation, Wrench, Loader2, CircleCheck, CircleX } from '@lucide/svelte';
+  import { Navigation, Wrench, Loader2, CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
   import {
     registerBuiltinClientTools,
     invokeClientTool,
   } from '$lib/shell/ai-chat/client-tool-registry';
   import { callMcpTool } from '$lib/api';
   import AiActionConfirmDialog from './ai-action-confirm-dialog.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import type { AiAction } from './ai-assistant.types';
 
   const NS = 'app.smart.guide.ai.action';

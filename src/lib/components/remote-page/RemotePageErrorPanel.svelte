@@ -6,10 +6,10 @@
    * content area — the surrounding app shell is never replaced.
    */
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import CloudOff from '@lucide/svelte/icons/cloud-off';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import { Button } from '@primebrick/ui';
+  import { CloudOff } from '@primebrick/ui/vendor/lucide';
+  import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { RefreshCw } from '@primebrick/ui/vendor/lucide';
   import type { RemoteErrorKind } from './remote-loader';
 
   let {

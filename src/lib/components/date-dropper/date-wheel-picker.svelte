@@ -1,9 +1,9 @@
 <script lang="ts">
-	import * as Popover from "$lib/components/ui/popover";
-	import { Button } from "$lib/components/ui/button";
-	import Calendar from '@lucide/svelte/icons/calendar'
-	import Clock from '@lucide/svelte/icons/clock'
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+	import { Popover } from '@primebrick/ui';
+	import { Button } from '@primebrick/ui';
+	import { Calendar } from '@primebrick/ui/vendor/lucide'
+	import { Clock } from '@primebrick/ui/vendor/lucide'
+  import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
 	import { DateFormatter, getLocalTimeZone, today, now, CalendarDate, CalendarDateTime } from "@internationalized/date";
 	import { cn } from "$lib/utils";
 	import WheelPicker from "$lib/components/ui/wheel-picker/wheel-picker.svelte";

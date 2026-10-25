@@ -3,14 +3,14 @@
   import { page } from '$app/state';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { TextInput } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { AvatarPreview } from '$lib/components/ui/avatar-preview';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import FormLabelWithPriorityHelp from '$lib/components/forms/FormLabelWithPriorityHelp.svelte';
+  import { Checkbox } from '@primebrick/ui';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { ColorSelector } from '$lib/components/ui/color-selector';
-  import { ComboSelect } from '$lib/components/ui/combo-select';
+  import { ComboSelect } from '@primebrick/ui';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
@@ -37,8 +37,8 @@
   import { computeInitials } from '$lib/utils/avatar-initials';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema } from '$lib/validation/display-name';
-  import ShieldUser from '@lucide/svelte/icons/shield-user';
-  import ShieldOff from '@lucide/svelte/icons/shield-off';
+  import { ShieldUser } from '@primebrick/ui/vendor/lucide';
+  import { ShieldOff } from '@primebrick/ui/vendor/lucide';
 
   const uuid = $derived(page.params.uuid);
 

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Toggle } from '$lib/components/ui/toggle';
-	import EyeIcon from '@lucide/svelte/icons/eye';
-	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import { Eye as EyeIcon } from '@primebrick/ui/vendor/lucide';
+	import { EyeOff as EyeOffIcon } from '@primebrick/ui/vendor/lucide';
 	import { usePasswordToggleVisibility } from './password.svelte.js';
 	import type { PasswordToggleVisibilityProps } from './types.js';
 	import { cn } from '$lib/utils.js';
-	import { inputTrailingIconButtonClasses } from '$lib/components/ui/input/input-chrome.js';
+	import { inputTrailingIconButtonClasses } from '@primebrick/ui';
 
 	let { ref = $bindable(null), class: className }: PasswordToggleVisibilityProps = $props();
 

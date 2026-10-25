@@ -81,11 +81,9 @@ export const t: Readable<(key: string, params?: Record<string, any>) => string> 
     }
 );
 
-export {
-  formatUiDate,
+export { formatUiDate,
   formatUiDateTime,
   formatUiDateTimeInTimeZone,
   formatListCellValue,
-  uiLocaleTag
-} from './date-format';
+  uiLocaleTag } from '@primebrick/ui';
 export { uiLangRegionSuffix, orderLangEntriesByBrowser } from './languages';

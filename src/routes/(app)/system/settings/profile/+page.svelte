@@ -5,10 +5,10 @@
   import { t } from "$lib/i18n";
   import { page } from "$app/state";
   import { AvatarPreview } from "$lib/components/ui/avatar-preview";
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from '@primebrick/ui';
   import { TextInput } from "$lib/components/ui/input";
-  import { Checkbox } from "$lib/components/ui/checkbox";
-  import FormLabelWithPriorityHelp from "$lib/components/forms/FormLabelWithPriorityHelp.svelte";
+  import { Checkbox } from '@primebrick/ui';
+  import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import {
     FormField,
     FormLabel,
@@ -21,7 +21,7 @@
     avatarChromePaletteToHex,
   } from "$lib/avatar-chrome-palette";
   import { ColorSelector } from "$lib/components/ui/color-selector";
-  import { ComboSelect } from "$lib/components/ui/combo-select";
+  import { ComboSelect } from '@primebrick/ui';
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
   import { userProfileStore } from "$lib/user-profile-store.svelte";

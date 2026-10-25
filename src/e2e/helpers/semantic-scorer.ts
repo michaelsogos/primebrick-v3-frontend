@@ -12,7 +12,7 @@
  * scores are comparable across model benchmarks. Runs in Node over CPU:
  * this is the scoring harness, not the assistant under test.
  */
-import { pipeline } from "@huggingface/transformers";
+import { pipeline } from "@primebrick/ui/vendor/transformers";
 
 const MODEL_ID = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 

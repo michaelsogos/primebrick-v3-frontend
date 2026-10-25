@@ -2,9 +2,9 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { PUBLIC_API_ORIGIN } from '$env/static/public';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Badge } from '@primebrick/ui';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -23,11 +23,11 @@
   } from '$lib/mcp-oauth';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import ShieldX from '@lucide/svelte/icons/shield-x';
-  import Bot from '@lucide/svelte/icons/bot';
-  import KeyRound from '@lucide/svelte/icons/key-round';
-  import Info from '@lucide/svelte/icons/info';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { ShieldX } from '@primebrick/ui/vendor/lucide';
+  import { Bot } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { Info } from '@primebrick/ui/vendor/lucide';
 
   // ─── State ─────────────────────────────────────────────────────────────
   let consent_params = $state<McpConsentParams | null>(null);

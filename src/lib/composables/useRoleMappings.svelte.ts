@@ -17,7 +17,7 @@
  *
  * Follows the composable state exposure pattern from AGENTS.md.
  */
-import type { DeepReadonly } from "$lib/types/deep-readonly";
+import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import { pushNotification } from "$lib/errors/app-errors";
 

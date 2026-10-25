@@ -10,6 +10,9 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { resolve } from '$app/paths';
+  import { isRouteAccessible, safePageFor } from '$lib/navigation/access-guard';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { useModuleTranslations, loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { CORE_DICT_MODULES } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -19,6 +22,31 @@
 
   // Route-aware translation loader — watches route + language changes
   const moduleI18n = useModuleTranslations();
+
+  /**
+   * Access-axis URL guard — every route under a module-owned prefix must
+   * resolve to a leaf that survived the server-side access filter in the
+   * `/modules` payload. A denied path (unknown OR filtered — deliberately
+   * indistinguishable) pushes an RFC7807 notification naming the page and
+   * redirects to the owning module's default leaf (or `/`). Runs on every
+   * navigation — direct URL, last-route restore, and in-app links alike.
+   */
+  $effect(() => {
+    const pathname = page.url.pathname;
+    const mods = shellNav.modules;
+    if (shellNav.loading || mods.length === 0) return;
+    if (isRouteAccessible(pathname, mods)) return;
+    pushNotification({
+      type: '/errors/access-denied',
+      title: 'Access denied',
+      status: 403,
+      detail: `No access to '${pathname}' — it requires an access grant your roles do not hold.`,
+      instance: pathname,
+      internal_code: 'ACCESS_DENIED',
+      severity: 'HIGH',
+    });
+    void goto(resolve(safePageFor(pathname, mods) as '/'));
+  });
 
   onMount(async () => {
     // Ensure auth config is loaded — shouldShowEnforcer needs it to know

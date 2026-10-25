@@ -11,7 +11,7 @@
  *   6. Forced-login flow: 401 → "Go to login" preserves the page as
  *      `?redirect_path=` → post-login lands back on it.
  *
- * Preconditions: same as other auth suites (FE 5173, BE 3001, seeded E2E test actors).
+ * Preconditions: same as other auth suites (FE 5173, BE 3001, ephemeral E2E test actors).
  */
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin, E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
@@ -105,7 +105,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
     // session mirror so apiFetch takes the refresh path, which now fails →
     // the SessionExpiredDialog opens.
     await page.evaluate(() => {
-      sessionStorage.setItem("user", JSON.stringify({ username: "test-admin", expires_at: Date.now() - 1000 }));
+      sessionStorage.setItem("user", JSON.stringify({ username: "e2e_test_admin", expires_at: Date.now() - 1000 }));
     });
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
 

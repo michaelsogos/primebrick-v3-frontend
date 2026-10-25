@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import GripVertical from '@lucide/svelte/icons/grip-vertical';
+	import { GripVertical } from '@primebrick/ui/vendor/lucide';
 	import type { Snippet } from 'svelte';
 
 	let { class: className, children }: { class?: string; children?: Snippet } = $props();

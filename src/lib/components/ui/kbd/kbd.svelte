@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { type VariantProps, tv } from "tailwind-variants";
+	import { type VariantProps, tv } from '@primebrick/ui/vendor/tailwind-variants';
 
 	export const kbdVariants = tv({
 		base: "inline-flex shrink-0 items-center justify-center rounded border border-border/80 bg-muted/50 font-mono font-semibold leading-none text-muted-foreground shadow-sm",

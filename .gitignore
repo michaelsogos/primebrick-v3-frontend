@@ -34,3 +34,4 @@ playwright/.auth
 *.sln
 *.sw?
 docs/.obsidian/
+static/vendor/

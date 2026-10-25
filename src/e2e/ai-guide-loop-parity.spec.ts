@@ -18,14 +18,13 @@
  *   all stage raws → JSON-parseable after fence strip (closed-space contract)
  *   stall guard    → fail if no loop activity for >30s (per-wait, not total)
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[parity] ${new Date().toISOString().slice(11, 19)} ${m}`);
 
@@ -40,26 +39,6 @@ interface LoopDebug {
   loop_events: string[];
 }
 type DebugWindow = Window & { __loop_debug?: LoopDebug };
-
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
-  } catch {
-    /* launch our own */
-  }
-  log("launching persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
 
 async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
@@ -119,8 +98,8 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
   });
 
   test("stage-by-stage parity on baseline questions", async () => {
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     page.on("pageerror", (e) => log(`pageerror: ${e.message}`));
 
     // ── Auth (same flow as the quality spec) ──────────────────────────

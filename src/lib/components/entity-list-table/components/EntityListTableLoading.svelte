@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Hourglass from '@lucide/svelte/icons/hourglass';
+  import { Hourglass } from '@primebrick/ui/vendor/lucide';
   import type { Snippet } from 'svelte';
 
   let {

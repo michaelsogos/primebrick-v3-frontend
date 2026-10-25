@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { tv } from 'tailwind-variants';
+	import { tv } from '@primebrick/ui/vendor/tailwind-variants';
 	import { usePasswordStrength } from './password.svelte.js';
 	import type { PasswordStrengthProps } from './types.js';
-	import { Meter } from 'bits-ui';
+	import { Meter } from '@primebrick/ui/vendor/bits-ui';
 	import { cn } from '$lib/utils.js';
 	import { box } from 'svelte-toolbelt';
 

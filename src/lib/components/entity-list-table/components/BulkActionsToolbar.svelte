@@ -1,16 +1,16 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
+  import { Button } from '@primebrick/ui';
   import { FilterBar } from '../toolbar';
   import { fly } from 'svelte/transition';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
-  import ListCheck from '@lucide/svelte/icons/list-check'
-  import Funnel from '@lucide/svelte/icons/funnel'
-  import Download from '@lucide/svelte/icons/download'
-  import Copy from '@lucide/svelte/icons/copy'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import Trash from '@lucide/svelte/icons/trash'
-  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
+  import { ListCheck } from '@primebrick/ui/vendor/lucide'
+  import { Funnel } from '@primebrick/ui/vendor/lucide'
+  import { Download } from '@primebrick/ui/vendor/lucide'
+  import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { Trash } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
 
   let {
     toolbarMode,

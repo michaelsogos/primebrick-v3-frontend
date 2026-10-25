@@ -22,7 +22,7 @@
  *   - $derived values exposed via individual getters
  *   - Mutations through mutator functions or controlled getter/setter pairs
  */
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 type NumericType = 'bigint' | 'number' | 'money';
 

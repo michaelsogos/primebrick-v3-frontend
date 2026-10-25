@@ -1,26 +1,35 @@
+import { pushNotification } from '$lib/errors/app-errors';
+import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
+
 export type SheetSide = 'left' | 'right';
 
-export type SheetPanelId =
-  | 'shell.errors'
-  | 'shell.versions'
-  | 'shell.aiChat'
-  | 'shell.aiGuide'
-  | 'entity.searchIn'
-  | 'entity.columns'
-  | 'entity.filters'
-  | 'entity.versionHistory'
-  | 'config.currencySelect'
-  | 'config.protocolSelect'
-  | 'config.phonePrefixSelect'
-  | 'config.regexFlags'
-  | 'config.regexAiChat'
-  | 'config.jsonAiChat'
-  | 'config.badgeValueEdit'
-  | 'shell.aiModelTestReport'
-  | 'shell.aiCerebellum'
-  | 'shell.aiModelImport'
-  | 'shell.aiModelCache'
-  | 'shell.docs';
+/**
+ * Runtime list of every HOST-REGISTERED panel key — the type below derives
+ * from it (single source). Remote-declared sheets (`<module>.<name>`,
+ * `nav.sheets[]`) live outside this list: `openSheet` resolves host keys
+ * first, then remote declarations via the module discovery payload, and
+ * rejects anything else with a notification.
+ */
+export const SHEET_PANEL_IDS = [
+  'shell.errors',
+  'shell.versions',
+  'shell.aiChat',
+  'shell.aiGuide',
+  'entity.searchIn',
+  'entity.columns',
+  'entity.filters',
+  'entity.versionHistory',
+  'config.currencySelect',
+  'config.protocolSelect',
+  'config.phonePrefixSelect',
+  'config.regexFlags',
+  'config.regexAiChat',
+  'config.jsonAiChat',
+  'config.badgeValueEdit',
+  'shell.docs',
+] as const;
+
+export type SheetPanelId = (typeof SHEET_PANEL_IDS)[number];
 
 export type SheetOpenOptions = {
   side?: SheetSide;
@@ -107,26 +116,6 @@ export type SheetPanelPropsMap = {
     config_key?: string | (() => string);
     config_type: import('$lib/api-types').ConfigEntryType;
   };
-  'shell.aiModelTestReport': {
-    /** The ai_model row whose test_scores report is rendered. */
-    model: import('$lib/api-types').AiModel;
-  };
-  'shell.aiCerebellum': {
-    /** Enabled ai_model rows for the model ComboSelect. */
-    models: readonly import('$lib/api-types').AiModel[];
-    /** Known assistants: key + stored `name` i18n key for that assistant. */
-    assistants: readonly { key: string; name: string }[];
-    /** Existing cerebellum rows — a matching (assistant, model) pair turns the sheet into edit mode. */
-    rows?: readonly import('$lib/api-types').AiCerebellum[];
-    /** Called after a successful save so the caller can reload rows. */
-    onCreated?: () => void;
-  };
-  'shell.aiModelImport': {
-    /** model_id values already in the catalog — excluded from HF results. */
-    existing_model_ids?: readonly string[];
-    /** Called after a model row is created so the caller can reload. */
-    on_added?: () => void;
-  };
   'config.badgeValueEdit': {
     /** 'add' = create a new badge value; 'edit' = mutate `value_key` live. */
     mode: 'add' | 'edit';
@@ -137,12 +126,6 @@ export type SheetPanelPropsMap = {
     /** The type-config builder instance — mutations are live (same object
      *  the page reads), so edits appear without a save callback. */
     builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
-  };
-  'shell.aiModelCache': {
-    /** The model currently loaded in VRAM — its cache cannot be deleted. */
-    active_model_id?: string | null;
-    /** model_id → quality rank, from the compatible catalog snapshot. */
-    model_ranks?: Record<string, number | null>;
   };
   'shell.docs': Record<string, never>;
 };
@@ -162,8 +145,9 @@ export function shouldSuppressSheetDialogClose(): boolean {
 
 type SheetState = {
   open: boolean;
-  panelId: SheetPanelId | null;
-  props: AnyPanelProps | null;
+  /** Host registry key OR remote `<module>.<name>` decl key. */
+  panelId: string | null;
+  props: Record<string, unknown> | null;
   side: SheetSide;
   contentClass: string;
   keepMountedState: boolean;
@@ -182,17 +166,53 @@ export const sheetState = $state<SheetState>({
   expanded: false
 });
 
+/**
+ * Is `panelId` openable right now? Host registry first, then a remote
+ * declaration from the module discovery payload. Anything else gets the
+ * standard rejection notification — callers never branch on the result.
+ */
+export function isSheetPanelKnown(panelId: string): boolean {
+  return (
+    (SHEET_PANEL_IDS as readonly string[]).includes(panelId) ||
+    resolveRemoteSheetDecl(panelId) !== null
+  );
+}
+
 export function openSheet<T extends SheetPanelId>(
   panelId: T,
   props: SheetPanelPropsMap[T],
   options?: SheetOpenOptions
+): void;
+export function openSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
+): void;
+export function openSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
 ) {
+  const isHostPanel = (SHEET_PANEL_IDS as readonly string[]).includes(panelId);
+  const remoteDecl = isHostPanel ? null : resolveRemoteSheetDecl(panelId);
+  if (!isHostPanel && !remoteDecl) {
+    pushNotification({
+      impact: 'MEDIUM',
+      message: `Unknown sheet panel: ${panelId}`,
+      scope: 'Sheets',
+      toast: true
+    });
+    return;
+  }
+  // Declared chrome defaults — the caller's options always win.
+  const defaults = remoteDecl?.default_options;
   sheetState.panelId = panelId;
-  sheetState.props = props as AnyPanelProps;
-  sheetState.side = options?.side ?? 'right';
-  sheetState.contentClass = options?.contentClass ?? sheetState.contentClass;
+  sheetState.props = (props ?? {}) as Record<string, unknown>;
+  sheetState.side = options?.side ?? defaults?.side ?? 'right';
+  sheetState.contentClass =
+    options?.contentClass ?? defaults?.content_class ?? sheetState.contentClass;
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
-  sheetState.modal = options?.modal ?? true;
+  sheetState.modal = options?.modal ?? defaults?.modal ?? true;
   sheetState.expanded = false;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
@@ -207,9 +227,19 @@ export function replaceSheet<T extends SheetPanelId>(
   panelId: T,
   props: SheetPanelPropsMap[T],
   options?: SheetOpenOptions
+): void;
+export function replaceSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
+): void;
+export function replaceSheet(
+  panelId: string,
+  props?: Record<string, unknown>,
+  options?: SheetOpenOptions
 ) {
   // For now `replace` is identical to `open` (keeps sheet open while switching content).
-  openSheet(panelId, props, options);
+  openSheet(panelId as SheetPanelId, props as AnyPanelProps, options);
 }
 
 export function closeSheet() {

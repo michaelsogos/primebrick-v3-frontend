@@ -31,7 +31,11 @@ const MODULES = [
     part_of: 'system',
     route_prefixes: ['/system/job'],
     is_reserved: false,
-    home: { system: '/system/job/job-schedules' },
+    // Access-filtered nav — job-schedules is the declared DEFAULT leaf.
+    nav: [
+      { id: 'job-schedules', label_key: 'job.nav.schedules', href: '/system/job/job-schedules', default: true },
+      { id: 'rules', label_key: 'job.nav.rules', href: '/system/job/rules' },
+    ],
   },
   {
     id: 'settings',
@@ -44,7 +48,10 @@ const MODULES = [
     route_prefixes: ['/system/settings'],
     is_reserved: true,
     is_default: true,
-    home: { system: '/system/settings/profile' },
+    nav: [
+      { id: 'profile', label_key: 'tabs.profile', href: '/system/settings/profile', default: true },
+      { id: 'users', label_key: 'tabs.users', href: '/system/settings/users' },
+    ],
   },
   {
     id: 'crm',
@@ -57,11 +64,14 @@ const MODULES = [
     route_prefixes: ['/crm', '/system/crm'],
     is_reserved: false,
     is_default: true,
-    home: { crm: '/crm/customers', system: '/system/crm/pipeline' },
+    nav: [
+      { id: 'customers', label_key: 'crm.nav.customers', href: '/crm/customers', default: true },
+      { id: 'pipeline', label_key: 'crm.nav.pipeline', href: '/system/crm/pipeline' },
+    ],
   },
   {
     // Headless service — declares prefixes (owns URLs) but has no
-    // navigable nav slice anywhere: no home, no launcher/breadcrumb row.
+    // navigable nav slice anywhere: no leaves, no launcher/breadcrumb row.
     id: 'webhook',
     name: 'Webhook',
     enabled: true,
@@ -74,7 +84,7 @@ const MODULES = [
 
 describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   beforeEach(async () => {
-    mocks.fetchModules.mockResolvedValue(MODULES);
+    mocks.fetchModules.mockResolvedValue({ modules: MODULES, labels: {} });
     await loadShellNav();
   });
 
@@ -120,7 +130,7 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
 
 describe('root levels — part_of grouping', () => {
   beforeEach(async () => {
-    mocks.fetchModules.mockResolvedValue(MODULES);
+    mocks.fetchModules.mockResolvedValue({ modules: MODULES, labels: {} });
     await loadShellNav();
   });
 
@@ -134,7 +144,7 @@ describe('root levels — part_of grouping', () => {
     expect(shellNav.modulesForRoot('crm').map((m) => m.id)).toEqual(['crm']);
   });
 
-  it('excludes modules with no reachable home — navigation, not routing', () => {
+  it('excludes modules with no accessible leaf — navigation, not routing', () => {
     // webhook owns /system/webhook URLs but declares no nav: nothing to
     // navigate to, so no launcher/breadcrumb row. Route resolution still
     // attributes its URLs correctly.

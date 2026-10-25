@@ -19,7 +19,7 @@
  * Preconditions (enforced by global.setup.ts):
  *   - Full stack up (FE 5173, BE 3001, Postgres 5432, Casdoor 8000).
  *   - Fake Brevo running, providers row upserted.
- *   - Seeded E2E test actors (test-admin / test-user) and enable_web_authn=true.
+ *   - Ephemeral E2E test actors (e2e_test_admin / e2e_test_user) and enable_web_authn=true.
  *
  * The virtual authenticator uses rpId='localhost' (derived from the BE's
  * hostOverride that sends Host: localhost:5173 to Casdoor — see webauthn.ts).

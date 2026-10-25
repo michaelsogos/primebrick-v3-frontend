@@ -3,29 +3,14 @@
  * guide CTA, sends ONE turn, and dumps the user bubble's inline style +
  * computed CSS as empirical evidence. One-off diagnostic spec.
  */
-import { test, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { test, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed, getPool } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const PREFIX = "smart-guide-ai";
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
-
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) return ctx;
-  } catch { /* no debug session */ }
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
 
 async function poll<T>(fn: () => Promise<T | null>, what: string, maxRetries = 6): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
@@ -71,8 +56,8 @@ test.describe("bubble chrome — empirical DOM verification", () => {
   });
 
   test("user bubble gradient evidence", async () => {
-    const context = await getSharedContext();
-    const page = await context.newPage();
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
 
     const isAuthed = () =>
       page.evaluate(async () => {

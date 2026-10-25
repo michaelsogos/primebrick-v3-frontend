@@ -25,3 +25,27 @@ if (typeof document !== "undefined" && typeof document.elementFromPoint !== "fun
 if (typeof Element !== "undefined" && typeof Element.prototype.scrollIntoView !== "function") {
 	Element.prototype.scrollIntoView = () => {};
 }
+
+// jsdom does not implement window.matchMedia — required by svelte/motion
+// (prefersReducedMotion MediaQuery at module scope) pulled in via
+// @primebrick/ui barrel exports (e.g. NumberTicker).
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+	window.matchMedia = (query: string) =>
+		({
+			matches: false,
+			media: query,
+			onchange: null,
+			addListener: () => {},
+			removeListener: () => {},
+			addEventListener: () => {},
+			removeEventListener: () => {},
+			dispatchEvent: () => false,
+		}) as MediaQueryList;
+}
+
+// @primebrick/ui i18n bridge — in the app this is bound at boot via
+// host-bindings.ts; test files act as a host realm, so bind an identity
+// translator (returns the key) that mirrors the standard $lib/i18n mocks.
+import { readable } from "svelte/store";
+import { bindI18n } from "@primebrick/ui/bridges";
+bindI18n(readable((key: string) => key), () => "en-GB");

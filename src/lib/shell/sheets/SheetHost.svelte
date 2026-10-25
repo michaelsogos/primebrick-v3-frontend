@@ -1,11 +1,13 @@
 <script lang="ts">
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Sheet } from "@primebrick/ui";
   import {
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
     type SheetPanelId
   } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
+  import RemoteSheetMount from '$lib/components/remote-page/RemoteSheetMount.svelte';
   import { cn } from '$lib/utils';
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
@@ -22,10 +24,6 @@
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
   import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
-  import AiModelTestReportPanel from '$lib/shell/sheets/panels/AiModelTestReportPanel.svelte';
-  import AiCerebellumPanel from '$lib/shell/sheets/panels/AiCerebellumPanel.svelte';
-  import AiModelCachePanel from '$lib/shell/sheets/panels/AiModelCachePanel.svelte';
-  import AiModelImportPanel from '$lib/shell/sheets/panels/AiModelImportPanel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
 
@@ -44,16 +42,20 @@
     'config.regexAiChat': RegexAiChatPanel,
     'config.jsonAiChat': JsonConfigAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
-    'shell.aiModelTestReport': AiModelTestReportPanel,
-    'shell.aiCerebellum': AiCerebellumPanel,
-    'shell.aiModelCache': AiModelCachePanel,
-    'shell.aiModelImport': AiModelImportPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel
   };
 
   const panelId = $derived(sheetState.panelId);
-  const Panel = $derived(panelId ? registry[panelId] : null);
+  /**
+   * Dispatch: host registry first, then a remote declaration — the key
+   * passed `openSheet` validation so exactly one of them resolves. Remote
+   * sheets mount through the same loader/ctx discipline as remote pages.
+   */
+  const Panel = $derived(
+    panelId && panelId in registry ? (registry as Record<string, any>)[panelId] : null
+  );
+  const remoteDecl = $derived(Panel ? null : panelId ? resolveRemoteSheetDecl(panelId) : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);
 
   /**
@@ -74,6 +76,8 @@
   <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
     {#if Panel}
       <Panel {...panelProps} modal={sheetState.modal} />
+    {:else if remoteDecl}
+      <RemoteSheetMount decl={remoteDecl} props={panelProps} />
     {/if}
   </Sheet.Content>
 </Sheet.Root>

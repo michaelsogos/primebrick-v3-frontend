@@ -1,7 +1,7 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import ArrowUpFromLine from '@lucide/svelte/icons/arrow-up-from-line';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { t } from '$lib/i18n';
 
   let {

@@ -15,7 +15,7 @@
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
  *   - Fake Brevo server running, providers row upserted.
- *   - Seeded E2E test actors (test-admin / test-user — never the dev bootstrap admin).
+ *   - Ephemeral E2E test actors (e2e_test_admin / e2e_test_user — never the dev bootstrap admin).
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention —
  * see docs/ai/e2e-testid-convention.md).

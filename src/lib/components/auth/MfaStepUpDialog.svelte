@@ -1,16 +1,16 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import BorderedDialog from '$lib/components/ui/dialog-bordered.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import OtpInput from '$lib/components/otp-input/otp-input.svelte';
-  import { useOtpInput } from '$lib/composables/useOtpInput.svelte';
+  import { Dialog } from '@primebrick/ui';
+  import { BorderedDialog } from '@primebrick/ui';
+  import { Button } from '@primebrick/ui';
+  import { OtpInput } from '@primebrick/ui';
+  import { useOtpInput } from '@primebrick/ui';
   import { Label } from '$lib/components/ui/label';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import KeyRound from '@lucide/svelte/icons/key-round';
+  import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
+  import { KeyRound } from '@primebrick/ui/vendor/lucide';
 
   // Props:
   //   open: bindable — controls dialog visibility

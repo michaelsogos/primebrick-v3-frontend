@@ -17,7 +17,10 @@ export default defineConfig(({ mode }) => {
 			})
 		],
 		ssr: {
-			noExternal: ['bits-ui', '@lucide/svelte']
+			// Workspace-linked packages carrying .svelte/.svelte.js sources must
+			// be compiled by vite in SSR too — externalizing them hits node's
+			// raw ESM loader (ERR_UNKNOWN_FILE_EXTENSION → 500 on SSR pages).
+			noExternal: ['bits-ui', '@lucide/svelte', '@primebrick/ui', '@primebrick/core']
 		},
 		optimizeDeps: {
 			include: ['html2pdf.js']

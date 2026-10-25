@@ -1,7 +1,7 @@
 import { sheetState, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 import { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
 import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 export interface UseSheetPanelsOptions {
   columnOrder: {

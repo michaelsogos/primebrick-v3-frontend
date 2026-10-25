@@ -1,8 +1,8 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
-	import type { ButtonProps } from '$lib/components/ui/button';
+	import type { ButtonProps } from '@primebrick/ui';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import type { WithChildren, WithoutChildren } from 'bits-ui';
+	import type { WithChildren, WithoutChildren } from '@primebrick/ui/vendor/bits-ui';
 
 	export type CopyButtonPropsWithoutHTML = WithChildren<
 		Pick<ButtonProps, 'size' | 'variant'> & {
@@ -22,10 +22,10 @@
 	import Button from '$lib/components/button.svelte';
 	import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
 	import { cn } from '$lib/utils.js';
-	import { mergeProps } from 'bits-ui';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import CopyIcon from '@lucide/svelte/icons/copy';
-	import XIcon from '@lucide/svelte/icons/x';
+	import { mergeProps } from '@primebrick/ui/vendor/bits-ui';
+	import { Check as CheckIcon } from '@primebrick/ui/vendor/lucide';
+	import { Copy as CopyIcon } from '@primebrick/ui/vendor/lucide';
+	import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 	import { scale } from 'svelte/transition';
 
 	let {

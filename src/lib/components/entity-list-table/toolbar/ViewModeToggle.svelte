@@ -1,12 +1,12 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
-  import { Button } from '$lib/components/ui/button';
-  import { ButtonGroup } from '$lib/components/ui/button-group';
+  import { Button } from '@primebrick/ui';
+  import { ButtonGroup } from '@primebrick/ui';
   import type { ViewName } from '$lib/entity-list/types';
-  import Table2 from '@lucide/svelte/icons/table-2'
-  import LayoutGrid from '@lucide/svelte/icons/layout-grid'
-  import LayoutList from '@lucide/svelte/icons/layout-list';
+  import { Table2 } from '@primebrick/ui/vendor/lucide'
+  import { LayoutGrid } from '@primebrick/ui/vendor/lucide'
+  import { LayoutList } from '@primebrick/ui/vendor/lucide';
 
   let {
     viewMode,

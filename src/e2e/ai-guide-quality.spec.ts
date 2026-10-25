@@ -27,40 +27,19 @@
  * E2E test-actor login. Test actor MFA factors are deleted via DB in
  * beforeAll. Requires WebGPU — skips cleanly when no adapter is present.
  */
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 import { semanticScore } from "./helpers/semantic-scorer";
 import { getPool } from "./helpers/db";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
 const CASE_KEY = "guide_react_test_score";
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
 
 const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
-
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
 
 // ─── Turn definitions ────────────────────────────────────────────────────────
 // Covered turns expect ≥1 keyword (case-insensitive substring) in the answer
@@ -105,7 +84,7 @@ const TURNS: TurnSpec[] = [
     expected: "Wildcard-based RBAC permission system with roles and admin bypass",
     keywords: ["permess", "ruol"],
     expected_sources: [["rbac", "authentication", "generated/roles"]],
-    allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/settings/ai"],
+    allowed_actions: ["/system/settings/roles", "/system/settings/modules", "/system/ai"],
   },
   {
     prompt: "come rendo un utente admin?",
@@ -377,8 +356,8 @@ test.describe("AI quality — guide_test_score", () => {
   });
 
   test("5-turn documentation Q&A → persist guide_test_score", async () => {
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     page.on("request", (req) => {
       if (req.url().includes("/ws/ai/api/v1/system/docs/search")) log("→ docs/search request");
     });

@@ -5,7 +5,7 @@ import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, AdvancedFilter, EntityAction } from '$lib/entity-list/types';
 import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
-import type { DeepReadonly } from '$lib/types/deep-readonly';
+import type { DeepReadonly } from '@primebrick/ui';
 
 interface ExportOptions {
   entity: () => string;

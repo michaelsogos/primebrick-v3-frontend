@@ -1,10 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '$lib/components/ui/button';
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import RotateCcw from '@lucide/svelte/icons/rotate-ccw'
-  import Download from '@lucide/svelte/icons/download'
-  import Copy from '@lucide/svelte/icons/copy';
+  import { Button } from '@primebrick/ui';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide'
+  import { RotateCcw } from '@primebrick/ui/vendor/lucide'
+  import { Download } from '@primebrick/ui/vendor/lucide'
+  import { Copy } from '@primebrick/ui/vendor/lucide';
 
   let {
     selectedCount,

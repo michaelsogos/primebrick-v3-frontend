@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
-  import { Button } from '$lib/components/ui/button';
+  import { Trash2 } from '@primebrick/ui/vendor/lucide';
+  import { Button } from '@primebrick/ui';
 
   let {
     selectedCount,

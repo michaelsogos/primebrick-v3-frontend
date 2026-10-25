@@ -15,14 +15,14 @@
  *
  * Preconditions (enforced by global.setup.ts):
  *   - FE dev server on 5173, BE on 3001, Postgres on 5432.
- *   - Seeded E2E test actor (test-admin — never the dev bootstrap admin).
+ *   - Ephemeral E2E test actor (e2e_test_admin — never the dev bootstrap admin).
  *   - MFA enabled in auth config.
  *
  * Locators use data-testid exclusively (brittle-on-purpose convention).
  */
 import { test, expect, type Page } from "@playwright/test";
 import { generateTotp } from "./helpers/totp";
-import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
+import { E2E_MFA_USERNAME, E2E_MFA_PASSWORD } from "./helpers/admin-login";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 
 // ─── Suite ──────────────────────────────────────────────────────────────────
@@ -34,11 +34,11 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
   test.beforeAll(async ({ browser }) => {
     // Delete any existing MFA factors for the test actor so login doesn't
     // trigger an MFA challenge.
-    await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
+    await deleteMfaFactorsByUsername(E2E_MFA_USERNAME);
     // Dismiss the auth method enforcer dialog via DB so it doesn't block
     // the profile page interaction. The dialog is now DB-persisted, not
     // sessionStorage-based.
-    await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, true);
+    await setAuthMethodEnforcerDismissed(E2E_MFA_USERNAME, true);
 
     const adminContext = await browser.newContext();
     adminPage = await adminContext.newPage();
@@ -47,8 +47,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // which can race with the FE's hydration on IPv6).
     await adminPage.goto("/login", { waitUntil: "networkidle" });
     await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
-    await adminPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
-    await adminPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+    await adminPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
+    await adminPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
     await adminPage.getByTestId("login-submit-button").click();
     await adminPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
   });
@@ -56,9 +56,9 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
   test.afterAll(async () => {
     // Cleanup: delete all MFA factors for the test actor via DB
     try {
-      await deleteMfaFactorsByUsername(E2E_ADMIN_USERNAME);
+      await deleteMfaFactorsByUsername(E2E_MFA_USERNAME);
       // Re-enable the auth method enforcer dialog for other suites
-      await setAuthMethodEnforcerDismissed(E2E_ADMIN_USERNAME, false);
+      await setAuthMethodEnforcerDismissed(E2E_MFA_USERNAME, false);
     } catch (e) {
       console.warn("[MFA E2E] Cleanup failed:", e);
     }
@@ -147,8 +147,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await loginPage.goto("/login", { waitUntil: "networkidle" });
     await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
 
-    await loginPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
-    await loginPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+    await loginPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
+    await loginPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
     await loginPage.getByTestId("login-submit-button").click();
 
     // The MFA challenge should appear (instead of redirecting to the app).
@@ -184,8 +184,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await loginPage.goto("/login", { waitUntil: "networkidle" });
     await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
 
-    await loginPage.getByTestId("login-username-input").fill(E2E_ADMIN_USERNAME);
-    await loginPage.getByTestId("login-password-input").fill(E2E_ADMIN_PASSWORD);
+    await loginPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
+    await loginPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
     await loginPage.getByTestId("login-submit-button").click();
 
     // Wait for MFA challenge.

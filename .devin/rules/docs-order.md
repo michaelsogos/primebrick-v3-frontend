@@ -3,19 +3,9 @@
 ## Trigger
 - Applies whenever AI agent creates or deletes a page in `docs/dev-guide/` or `docs/user-guide/`.
 
-## Actions
-1. When creating a new `.mdx` page, add its slug to `docs/dev-guide/_order.json` (or `docs/user-guide/_order.json` for manual pages)
-   in the logical reading position (not at the end, not alphabetically).
-2. When deleting a page, remove its slug from `_order.json`.
-3. The `_order.json` `pages` array defines the sidebar order on
-   docs.primebrick.dev. Pages not listed are appended alphabetically after
-   listed pages.
-4. `index.mdx` is always excluded — it's the category landing page, not a
-   sidebar item.
+## Canonical doc
+**`docs/ai/docs-order.md` — read it before acting.** This file is a
+pointer; the normative text lives in the canonical doc.
 
-## _order.json format
-```json
-{
-  "pages": ["overview", "authentication", "rbac", "..."]
-}
-```
+## Enforcement
+- Follow the normative body in the canonical doc — it is the contract; this file is only its trigger.

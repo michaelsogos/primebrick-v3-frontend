@@ -26,7 +26,7 @@ concern — signatures live in [api-reference](./api-reference.mdx).
 | `useConfigEntries` | `config_entries` rows — settings pages, feature flags |
 | `useAuditBox` | entity audit-trail panel data |
 | `useExistingGroupKeys` | reserved/group-key existence checks in pickers |
-| `useTypeCapabilities` / `useMachineCapabilities` | what a type/machine supports (feature-gated UI) |
+| `useTypeCapabilities` / `useMachineCapabilities` | what a type/machine supports (feature-gated UI) — `useMachineCapabilities` lives in `@primebrick/ui` |
 
 ## AI
 
@@ -52,7 +52,7 @@ The chat/tool loop itself lives in `shell/ai-chat/` — see
 | Hook | For |
 |---|---|
 | `useSelection` | multi-select state for list/bulk operations |
-| `useNumericInput` / `useOtpInput` | constrained inputs (numeric, OTP boxes) |
+| `useNumericInput` / `useOtpInput` (`@primebrick/ui`) | constrained inputs (numeric, OTP boxes) |
 | `useAvatarPreview` | image preview before upload (component doc: avatar-preview) |
 
 ## Health & realtime
@@ -67,6 +67,7 @@ The chat/tool loop itself lives in `shell/ai-chat/` — see
 - **Rune-backed classes, not function closures** — `.svelte.ts` files
   expose `$state`-reactive objects; instantiate per component tree, not
   module-scope singletons.
-- **Name = `use<Purpose>`**; file = kebab of the same.
+- **Name = `use<Purpose>`**; file = `use<Purpose>.svelte.ts` (camelCase,
+  same name as the hook — e.g. `useFormGuard.svelte.ts`).
 - **Composables fetch through `api.ts`** — never raw `fetch`; errors flow
   through the [errors pipeline](./error-handling.mdx).

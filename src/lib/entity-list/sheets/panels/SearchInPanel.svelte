@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Checkbox, checkboxVisualOnlyClass } from '$lib/components/ui/checkbox';
-  import * as Sheet from '$lib/components/ui/sheet';
+  import { Checkbox, checkboxVisualOnlyClass } from '@primebrick/ui';
+  import { Sheet } from "@primebrick/ui";
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import SheetPanelLayout from '$lib/shell/sheets/SheetPanelLayout.svelte';
+  import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import Search from '@lucide/svelte/icons/search';
-  import XIcon from '@lucide/svelte/icons/x';
-  import Eraser from '@lucide/svelte/icons/eraser';
+  import { Search } from '@primebrick/ui/vendor/lucide';
+  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   type ColumnLike = { key: string; label_key: string };
 

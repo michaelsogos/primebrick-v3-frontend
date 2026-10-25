@@ -3,7 +3,7 @@
  *
  * Responsibilities:
  *   1. Precondition checks: verify the dev stack is reachable
- *      (FE 5173, BE 3001, Postgres 5432). Per the AGENTS.md dev-server rule,
+ *      (FE 5173, BE 3001, Postgres 5432). Per .devin/rules/dev-server.md,
  *      we do NOT start any dev server — we connect to already-running ones.
  *   2. Start the fake Brevo HTTP server (random port).
  *   3. Upsert the `emailsender.providers` row pointing at the fake Brevo URL
@@ -22,7 +22,7 @@ import {
   upsertFakeBrevoProvider,
 } from "./helpers/db";
 import { getBrevoProviderSnapshot, setBrevoProviderSnapshot, setFakeBrevo } from "./helpers/global-state";
-import { createE2eAdminActor, createE2eUserActor } from "./helpers/test-users";
+import { createE2eAdminActor, createE2eMfaActor, createE2eUserActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -91,6 +91,19 @@ export default async function globalSetup(): Promise<void> {
     throw new Error(`[globalSetup] Failed to create non-admin E2E actor: ${err}`);
   }
 
+  // 8. Mint the dedicated MFA-suite actor. Enrolling a TOTP factor on the
+  //    shared admin actor gates EVERY concurrent login with a TOTP challenge
+  //    until the suite's afterAll removes it — under parallel workers that
+  //    window caused ~40 collateral failures. This twin keeps MFA churn
+  //    isolated; only auth-mfa.spec.ts may authenticate as it.
+  try {
+    const actor = await createE2eMfaActor();
+    console.log(`[globalSetup] Ephemeral MFA actor created: ${actor.username}`);
+  } catch (err) {
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create MFA E2E actor: ${err}`);
+  }
+
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");
 }
 
@@ -102,7 +115,7 @@ async function assertReachable(url: string, label: string): Promise<void> {
     console.log(`[globalSetup] ${label} reachable (${res.status}).`);
   } catch (err) {
     throw new Error(
-      `[globalSetup] ${label} not reachable at ${url}: ${err}. Per AGENTS.md dev-server rule, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
+      `[globalSetup] ${label} not reachable at ${url}: ${err}. Per .devin/rules/dev-server.md, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
     );
   }
 }

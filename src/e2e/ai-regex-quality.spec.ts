@@ -30,7 +30,7 @@
  *
  * Auth: dedicated Playwright-owned Edge profile (E2E_PROFILE — persists the
  *   Cache API so completed model files survive across runs) + programmatic
- *   E2E test-actor (test-admin) login. Test actor MFA factors are deleted via DB in beforeAll so
+ *   E2E test-actor (e2e_test_admin) login. Test actor MFA factors are deleted via DB in beforeAll so
  *   the password login cannot stall on an MFA challenge.
  * Requires WebGPU — skips cleanly when no adapter is present.
  * Locators: data-testid only (brittle-on-purpose convention).
@@ -38,8 +38,6 @@
 import {
   test,
   expect,
-  chromium,
-  type BrowserContext,
   type Page,
 } from "@playwright/test";
 import {
@@ -48,14 +46,15 @@ import {
 } from "./helpers/db";
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
+import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-regex-ai";
 // Dedicated Playwright-owned Edge profile (NOT the user's real profile):
 // persists the Cache API model files across runs so models do not re-download.
-const E2E_PROFILE = "D:\\git\\primebrick\\temp\\pw-edge-profile";
-const CDP_URL = "http://127.0.0.1:9333";
+// Session management lives in helpers/edge-context (sanitized profile,
+// per-worker focused tabs).
 
 const log = (m: string) =>
   console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
@@ -70,25 +69,6 @@ const TARGET_MODEL_IDS = (process.env.AI_E2E_MODEL_IDS ?? "")
  * The browser is NEVER closed by the spec: the session is deliberately left
  * running for observation and reuse by the next spec/model run.
  */
-async function getSharedContext(): Promise<BrowserContext> {
-  try {
-    const browser = await chromium.connectOverCDP(CDP_URL, { timeout: 5000 });
-    const ctx = browser.contexts()[0];
-    if (ctx) {
-      log("attached to running Edge session (CDP :9333)");
-      return ctx;
-    }
-  } catch {
-    /* no debug session up — launch one */
-  }
-  log("launching new persistent Edge session (CDP :9333)");
-  return chromium.launchPersistentContext(E2E_PROFILE, {
-    channel: "msedge",
-    headless: false,
-    viewport: { width: 1440, height: 900 },
-    args: ["--remote-debugging-port=9333"],
-  });
-}
 
 type TurnResult = E2ETurn & { actual: string | null };
 
@@ -377,8 +357,8 @@ test.describe("AI quality — regex_test_score", () => {
 
   test("5-turn incremental regex session → persist regex_test_score", async () => {
     test.setTimeout(Math.max(600_000, TARGET_MODEL_IDS.length * 600_000));
-    const context = await getSharedContext();
-    const page = context.pages()[0] ?? (await context.newPage());
+    const { context } = await getSharedContext();
+    const page = await focusedPage(context);
     {
       // 0. Auth gate: /api/v1/auth/me is the deterministic signal.
       const isAuthed = () =>

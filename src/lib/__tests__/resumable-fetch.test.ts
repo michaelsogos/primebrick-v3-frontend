@@ -76,7 +76,7 @@ describe("resumableFetch", () => {
   it("passes non-HF URLs through untouched", async () => {
     const spy = vi.fn(async () => new Response("ok"));
     vi.stubGlobal("fetch", spy);
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     await resumableFetch("https://api.example.com/x");
     expect(spy).toHaveBeenCalledWith("https://api.example.com/x", undefined);
   });
@@ -86,7 +86,7 @@ describe("resumableFetch", () => {
       status: 200,
       headers: { "content-length": "2" },
     }));
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const r = await resumableFetch(FILE_URL.replace(".onnx", ".json"));
     expect(await r.text()).toBe("{}");
     const cache = cachesRegistry.get("hf-resumable");
@@ -104,7 +104,7 @@ describe("resumableFetch", () => {
       }),
       { status: 200, headers: { "content-length": String(size), etag: '"v1"' } },
     ));
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const r = await resumableFetch(FILE_URL);
     expect(r.status).toBe(200);
     expect(await streamBytes(r.body!)).toBe(size);
@@ -132,7 +132,7 @@ describe("resumableFetch", () => {
       }),
       { status: 200, headers: { "content-length": String(size), etag: '"v1"' } },
     ));
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const r = await resumableFetch(FILE_URL);
     const reader = r.body!.getReader();
     await reader.read(); // first shard worth of bytes
@@ -149,7 +149,7 @@ describe("resumableFetch", () => {
   it("resumes an interrupted download via Range and replays stored shards first", async () => {
     const size = SHARD_SIZE + 100;
     // Pre-seed: shard 0 already persisted + manifest
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const cache = cachesRegistry.get("hf-resumable") ?? new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
@@ -174,7 +174,7 @@ describe("resumableFetch", () => {
 
   it("restarts fresh when the stored etag no longer matches", async () => {
     const size = SHARD_SIZE + 100;
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
@@ -197,7 +197,7 @@ describe("resumableFetch", () => {
 
   it("serves fully-sharded files entirely from cache (no network)", async () => {
     const size = SHARD_SIZE;
-    const { resumableFetch } = await import("$lib/ai/resumable-fetch");
+    const { resumableFetch } = await import("@primebrick/ui/ai");
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));

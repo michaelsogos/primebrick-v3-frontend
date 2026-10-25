@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as EventCard from "$lib/components/ui/event-card";
-	import { Badge } from "$lib/components/ui/badge";
+	import { Badge } from '@primebrick/ui';
 	import { cn } from "$lib/utils";
 	import { formatUiDateTime } from "$lib/i18n";
 	import { uiLang } from "$lib/i18n/store.svelte";
