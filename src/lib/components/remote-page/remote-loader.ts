@@ -354,42 +354,6 @@ export async function loadRemoteModuleCached(
 }
 
 /**
- * Background preload — warms every remote chunk declared by the reachable
- * modules (nav.routes[].component_url + nav.sheets[].component_url) plus
- * their stylesheets, so a sheet/page mounts instantly when the user asks.
- * Scheduled on idle after the module census; failures are silent (the real
- * mount path classifies and surfaces them properly on demand).
- */
-export function warmRemoteModules(
-	modules: readonly { routes?: { component_url?: string; integrity?: string }[]; sheets?: { component_url?: string; integrity?: string }[] }[],
-	deps: RemoteLoadDeps = {},
-): void {
-	const urls = new Map<string, string | undefined>();
-	for (const m of modules) {
-		for (const r of m.routes ?? []) {
-			if (r.component_url) urls.set(r.component_url, r.integrity);
-		}
-		for (const s of m.sheets ?? []) {
-			if (s.component_url) urls.set(s.component_url, s.integrity);
-		}
-	}
-	if (urls.size === 0) return;
-	const warm = () => {
-		for (const [url, integrity] of urls) {
-			// Stylesheet and chunk travel in parallel — same order as the
-			// on-demand mount path, so a warm hit is never unstyled either.
-			ensureStylesheet(deriveStylesheetUrl(url));
-			void loadRemoteModuleCached(url, integrity, deps).catch(() => undefined);
-		}
-	};
-	if (typeof requestIdleCallback === 'function') {
-		requestIdleCallback(warm, { timeout: 8000 });
-	} else {
-		setTimeout(warm, 0);
-	}
-}
-
-/**
  * Which mount path the module supports — `mountPage` is the contract; a
  * default component export is the documented fallback. Null = incompatible.
  */
