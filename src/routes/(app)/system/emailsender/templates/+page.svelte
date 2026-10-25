@@ -16,7 +16,9 @@
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { page as appPage } from '$app/state';
+  import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { entityApiBase, fetchModules, routesCensusFromModules } from '$lib/api';
 
   /**
@@ -27,9 +29,9 @@
   let edit_path = $state<string | undefined>(undefined);
 
   onMount(() => {
-    void fetchModules()
-      .then((modules) => {
-        const detail = routesCensusFromModules(modules).find(
+    void fetchModules(get(uiLang))
+      .then((doc) => {
+        const detail = routesCensusFromModules(doc.modules).find(
           (r) => r.route === '/system/emailsender/templates/[uuid]'
         );
         edit_path = detail?.route.replaceAll('[uuid]', ':uuid');

@@ -51,7 +51,7 @@
       // CORE_DICT_MODULES is the single source for this list.
       const staticModules: readonly string[] = CORE_DICT_MODULES;
       // US microservice modules from the existing /api/v1/modules endpoint
-      const serviceModules = (await fetchModules())
+      const serviceModules = (await fetchModules(get(uiLang))).modules
         .map(m => m.id.toLowerCase())
         .filter(id => !staticModules.includes(id));
       modules = [...staticModules, ...serviceModules];

@@ -84,7 +84,7 @@ const MODULES = [
 
 describe('resolveModuleFromRoute — longest-prefix ownership', () => {
   beforeEach(async () => {
-    mocks.fetchModules.mockResolvedValue(MODULES);
+    mocks.fetchModules.mockResolvedValue({ modules: MODULES, labels: {} });
     await loadShellNav();
   });
 
@@ -130,7 +130,7 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
 
 describe('root levels — part_of grouping', () => {
   beforeEach(async () => {
-    mocks.fetchModules.mockResolvedValue(MODULES);
+    mocks.fetchModules.mockResolvedValue({ modules: MODULES, labels: {} });
     await loadShellNav();
   });
 

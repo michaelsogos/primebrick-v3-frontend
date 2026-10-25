@@ -1,5 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
+import { get } from 'svelte/store';
 import { fetchModules } from '$lib/api';
+import { uiLang } from '$lib/i18n/store.svelte';
 import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
 
 // apiFetch does not forward the session cookie during SSR — the census
@@ -15,7 +17,7 @@ export const ssr = false;
 export async function load({ url }) {
 	let resolved: ResolvedPage;
 	try {
-		resolved = resolvePageForPath(url.pathname, await fetchModules());
+		resolved = resolvePageForPath(url.pathname, (await fetchModules(get(uiLang))).modules);
 	} catch (e) {
 		// Census fetch failed — hand the component a retryable network error
 		// rather than a SvelteKit 500 (the remote-page UX contract).

@@ -339,7 +339,7 @@
         >
           <!-- Column 1 — Applications (root levels) -->
           <div
-            class="flex w-48 flex-col overflow-y-auto p-1"
+            class="flex min-w-48 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
             aria-label={$t('app.nav.rootLevel')}
             data-launcher-col="0"
@@ -393,7 +393,7 @@
 
           <!-- Column 2 — Modules of the selected app -->
           <div
-            class="flex w-52 flex-col overflow-y-auto p-1"
+            class="flex min-w-52 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
             aria-label={$t('app.nav.module')}
             data-launcher-col="1"
@@ -450,7 +450,7 @@
 
           <!-- Column 3 — Pages of the selected module under the previewed app -->
           <div
-            class="flex w-52 flex-col overflow-y-auto p-1"
+            class="flex min-w-52 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
             aria-label={$t('app.nav.links')}
             data-launcher-col="2"

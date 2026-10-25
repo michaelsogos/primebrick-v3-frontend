@@ -294,12 +294,19 @@ export async function apiFetchWithTimeout(
  * per-module meta endpoint. A module with ZERO reachable leaves stays
  * present flagged `accessible:false` (+ `nav_hidden`) so the launcher's
  * reveal switch can render it disabled.
+ *
+ * `labels` — the flat key→value graph for every `label_key` the payload
+ * declares (module + nav + routes + sheets), resolved server-side for
+ * `lang`. The caller merges it into the i18n dict store so `$t` resolves
+ * nav labels deterministically, before any module dictionary is
+ * route-loaded.
  */
-export async function fetchModules(): Promise<ModuleInfo[]> {
-  const res = await apiFetch('/api/v1/modules');
+export async function fetchModules(
+  lang: string,
+): Promise<{ modules: ModuleInfo[]; labels: Record<string, string> }> {
+  const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`);
   if (!res.ok) throw new Error(`Modules request failed (${res.status})`);
-  const data = (await res.json()) as { modules: ModuleInfo[] };
-  return data.modules;
+  return (await res.json()) as { modules: ModuleInfo[]; labels: Record<string, string> };
 }
 
 export async function fetchHealth(): Promise<HealthPayload> {

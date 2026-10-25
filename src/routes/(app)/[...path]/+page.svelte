@@ -12,7 +12,9 @@
    * the live channel remote chunks read (emailsender `[uuid]` precedent).
    */
   import { page as appPage } from '$app/state';
+  import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
   import { fetchModules } from '$lib/api';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
@@ -52,7 +54,10 @@
   // fresh sha256 → the rebuild-remount path the loader guarantees.
   async function retry() {
     try {
-      retry_resolved = resolvePageForPath(appPage.url.pathname, await fetchModules());
+      retry_resolved = resolvePageForPath(
+        appPage.url.pathname,
+        (await fetchModules(get(uiLang))).modules,
+      );
     } catch (e) {
       retry_resolved = {
         kind: 'error',

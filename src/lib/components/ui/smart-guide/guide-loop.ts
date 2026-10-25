@@ -523,8 +523,8 @@ export async function runGuideRetrievalLoop(
   const cfg = resolveLoopConfig(ctx.exec_config);
   // Route census is derived from the discovery payload, fetched in
   // parallel with the first agent turn.
-  const censusPromise = fetchModules()
-    .then(routesCensusFromModules)
+  const censusPromise = fetchModules(get(uiLang))
+    .then((doc) => routesCensusFromModules(doc.modules))
     .catch(() => [] as CensusRoute[]);
 
   const seen = new Set<string>();

@@ -111,7 +111,7 @@ describe('safePageFor — fallback resolution', () => {
 describe('resolveSafePage — shell-integrated', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedFetchModules.mockResolvedValue(MODULES);
+    mockedFetchModules.mockResolvedValue({ modules: MODULES, labels: {} });
   });
 
   // NOTE: shellNav is a module-level singleton — this test must run before

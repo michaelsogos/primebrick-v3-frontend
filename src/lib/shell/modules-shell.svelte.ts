@@ -1,5 +1,8 @@
 import { SvelteSet } from 'svelte/reactivity';
+import { get } from 'svelte/store';
 import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav, type ModuleNavLink } from '$lib/api';
+import { uiLang } from '$lib/i18n/store.svelte';
+import { mergeModuleDict } from '$lib/i18n';
 import type { ModuleSheetDecl } from '@primebrick/ui';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -205,11 +208,35 @@ export const shellNav = {
 
 export { loadShellNav };
 
+/**
+ * Language the current census' `labels` seed was resolved in — a uiLang
+ * change must re-fetch so nav labels follow the new language.
+ */
+let _censusLang: string | null = null;
+
+// The census is the labels' carrier — when the UI language changes the
+// seed must be re-resolved for the new language, otherwise nav labels of
+// never-visited modules would stay in the previous language. Skipped
+// while no census exists yet (the in-flight one seeds itself) and while
+// a fetch is already running.
+if (typeof window !== 'undefined') {
+  uiLang.subscribe((lang) => {
+    if (lang === _censusLang || _state.loading || _state.modules.length === 0) return;
+    void loadShellNav();
+  });
+}
+
 async function loadShellNav(): Promise<void> {
   _state.loading = true;
   _state.error = null;
   try {
-    _state.modules = await fetchModules();
+    const lang = get(uiLang);
+    const doc = await fetchModules(lang);
+    // The labels seed rides the SAME merge path every module dictionary
+    // uses — `$t` stays the only read path, `_mergedDicts` the only store.
+    mergeModuleDict(lang, doc.labels);
+    _censusLang = lang;
+    _state.modules = doc.modules;
     _state.unreachable = false;
   } catch (e) {
     if (e instanceof ApiUnreachableError) {
