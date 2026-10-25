@@ -45,6 +45,7 @@ const ENTITY_SERVICE_MAP: Record<string, string> = {
   job_run: 'job',
   job_rule: 'job',
   provider: 'emailsender',
+  email_template: 'emailsender',
 };
 
 export function entityApiBase(entity: string): string {
