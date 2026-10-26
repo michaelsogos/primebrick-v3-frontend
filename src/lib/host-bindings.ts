@@ -7,7 +7,7 @@
  *   reactivity (language switch + BE dict merges).
  * - `sheet` ← the real `openSheet` (validated host registry).
  * - `serviceApi 'host'` ← `apiFetch` full-path (BE-owned `/api/v1/…`).
- * - `serviceApi 'ai'` ← `apiFetch` prefixed with `/ws/ai` — the same
+ * - `serviceApi 'ai'` ← `apiFetch` prefixed with `/svc/ai` — the same
  *   ws-proxy path `useAiModels` et al. call today.
  *
  * The remote realm binds its own vendored copy via `bindRemoteCtx(ctx)` —
@@ -26,4 +26,4 @@ bindI18n(t, () => uiLocaleTag(get(uiLang)));
 bindSheet(openSheet as (panelKey: string, props?: Record<string, unknown>, options?: Record<string, unknown>) => void);
 bindNotify(pushNotification);
 bindServiceApi('host', apiFetch);
-bindServiceApi('ai', (path, init) => apiFetch(`/ws/ai${path}`, init));
+bindServiceApi('ai', (path, init) => apiFetch(`/svc/ai${path}`, init));

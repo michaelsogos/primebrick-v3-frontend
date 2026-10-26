@@ -32,7 +32,7 @@
     ensureStylesheet,
     loadRemoteModuleCached,
     mountHostComponent,
-    parseWsServiceCode,
+    parseSvcServiceCode,
     resolveMountable,
     type RemoteErrorKind,
     type RemoteModule,
@@ -53,7 +53,7 @@
     meta?: EntityMeta;
     /** Optional host-coupled components (plain values only — no rune state). */
     components?: Record<string, unknown>;
-    /** Owning service code; derived from `/ws/<code>/` when omitted. */
+    /** Owning service code; derived from `/svc/<code>/` when omitted. */
     service?: string;
     /** Stylesheet override; defaults to `<component_url>` with .css extension. */
     css_url?: string;
@@ -81,7 +81,7 @@
   const stepUp = useMfaStepUp();
 
   const service_code = $derived(
-    service ?? (decl.component_url ? parseWsServiceCode(decl.component_url) : undefined),
+    service ?? (decl.component_url ? parseSvcServiceCode(decl.component_url) : undefined),
   );
 
   /**
@@ -94,7 +94,7 @@
   const is_sectioned = $derived((layout?.sections.length ?? 0) > 0);
 
   function buildCtx(): ModulePageHost {
-    const base = service_code ? `/ws/${service_code}` : '';
+    const base = service_code ? `/svc/${service_code}` : '';
     return {
       host_version: 1,
       nav: decl,

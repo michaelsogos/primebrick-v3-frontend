@@ -143,7 +143,7 @@ SuperForms with the form guards and includes avatar preview/color selection
 
 The AI console is a **module-owned remote page** — the `ai` microservice ships
 it as a precompiled ESM chunk (`ai-pages.js`, served via
-`/ws/ai/api/v1/module-assets/*`) and the host mounts it through
+`/svc/ai/api/v1/module-assets/*`) and the host mounts it through
 `RemotePageMount` from the routes census. It no longer lives under
 `/system/settings/*`: routes are `/system/ai` (console) and
 `/system/ai/docs-index` (docs knowledge-base index status and reindexing),
@@ -177,7 +177,7 @@ top bar retrieves documentation excerpts for grounded answers and citations.
 `/system/settings/email-providers` manages email provider configurations
 (provider name, API key, endpoint, from email/name, reply-to). It talks to
 the `EMAILSENDER` microservice through the backend proxy at
-`/ws/EMAILSENDER/api/v1/entities/provider` using `apiFetchExt` from
+`/svc/EMAILSENDER/api/v1/entities/provider` using `apiFetchExt` from
 `src/lib/api-ext.ts`. `ApiUnreachableError` is handled gracefully — when
 the microservice is offline and the error has already been notified, the
 page suppresses duplicate notifications.
@@ -192,7 +192,7 @@ page suppresses duplicate notifications.
 `/system/settings/migrations` is the `db_patch` admin remediation surface — one card
 per service: the backend first (direct `/api/v1/system/db-migration/*`),
 then every registered microservice reached through the governed
-`/ws/<code>/api/v1/system/db-migration/*` proxy, which exempts that prefix
+`/svc/<code>/api/v1/system/db-migration/*` proxy, which exempts that prefix
 for `migration_failed` instances so a degraded service stays fixable from
 the UI.
 
@@ -209,7 +209,7 @@ pipeline, so `EntityListTable` does not apply. Actions:
   differences badge under the card header
 
 Helpers live in `src/lib/api.ts` (`dbMigrationBase` resolves `'be'` →
-direct, other codes → `/ws/<code>`); types in `src/lib/api-types.ts`
+direct, other codes → `/svc/<code>`); types in `src/lib/api-types.ts`
 (`DbPatchRow`, `DbMigrationStatus`, `DbMigrationDriftResult`). E2E coverage:
 `src/e2e/system-migrations.spec.ts`.
 

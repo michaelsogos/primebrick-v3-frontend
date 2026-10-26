@@ -3,7 +3,7 @@
    * /system/settings/migrations — db_patch admin remediation page.
    *
    * One card per service: the backend first (direct /api/v1), then every
-   * registered microservice reached through the governed /ws/<code> proxy —
+   * registered microservice reached through the governed /svc/<code> proxy —
    * which exempts the db-migration prefix even for `migration_failed`
    * instances, so a broken patch stays fixable from here.
    *

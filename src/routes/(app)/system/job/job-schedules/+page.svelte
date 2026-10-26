@@ -3,7 +3,7 @@
    * /system/job/job-schedules — job_schedule list, HOST-rendered
    * EntityTablePage (standard archetype). Declared by the job service's
    * `endpoints.nav` census (`kind:"list"`, `entity:"job_schedule"`);
-   * api_base resolves via ENTITY_SERVICE_MAP → /ws/job.
+   * api_base resolves via ENTITY_SERVICE_MAP → /svc/job.
    *
    * The `schedule_kind` filter preset (recurring / once / all) renders in
    * the toolbar from `meta.table.filter_presets`; the `run_stats` column

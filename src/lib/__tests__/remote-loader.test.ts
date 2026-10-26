@@ -7,7 +7,7 @@ import {
 	ensureStylesheet,
 	loadRemoteModule,
 	normalizeIntegrity,
-	parseWsServiceCode,
+	parseSvcServiceCode,
 	resolveMountable,
 	sha256Hex,
 } from '../components/remote-page/remote-loader';
@@ -42,27 +42,27 @@ describe('normalizeIntegrity', () => {
 	});
 });
 
-describe('deriveStylesheetUrl / parseWsServiceCode', () => {
+describe('deriveStylesheetUrl / parseSvcServiceCode', () => {
 	it('derives css from js chunk url', () => {
-		expect(deriveStylesheetUrl('/ws/job/api/v1/module-assets/pages/jobs-page.js')).toBe(
-			'/ws/job/api/v1/module-assets/pages/jobs-page.css',
+		expect(deriveStylesheetUrl('/svc/job/api/v1/module-assets/pages/jobs-page.js')).toBe(
+			'/svc/job/api/v1/module-assets/pages/jobs-page.css',
 		);
 	});
 	it('derives css preserving query string', () => {
 		expect(deriveStylesheetUrl('/p/x.mjs?v=3')).toBe('/p/x.css?v=3');
 	});
-	it('parses service code from /ws prefix', () => {
-		expect(parseWsServiceCode('/ws/job/api/v1/module-assets/pages/jobs-page.js')).toBe('job');
+	it('parses service code from /svc prefix', () => {
+		expect(parseSvcServiceCode('/svc/job/api/v1/module-assets/pages/jobs-page.js')).toBe('job');
 	});
-	it('returns undefined outside /ws', () => {
-		expect(parseWsServiceCode('/api/v1/module-assets/x.js')).toBeUndefined();
+	it('returns undefined outside /svc', () => {
+		expect(parseSvcServiceCode('/api/v1/module-assets/x.js')).toBeUndefined();
 	});
 });
 
 describe('deriveDepsManifestUrl', () => {
 	it('derives deps manifest from js chunk url', () => {
-		expect(deriveDepsManifestUrl('/ws/job/api/v1/module-assets/pages/jobs-page.js')).toBe(
-			'/ws/job/api/v1/module-assets/pages/jobs-page.deps.json',
+		expect(deriveDepsManifestUrl('/svc/job/api/v1/module-assets/pages/jobs-page.js')).toBe(
+			'/svc/job/api/v1/module-assets/pages/jobs-page.deps.json',
 		);
 	});
 	it('handles .mjs and preserves query string', () => {
@@ -81,7 +81,7 @@ describe('sha256Hex', () => {
 
 describe('ensureStylesheet', () => {
 	it('injects a deduped stylesheet link', () => {
-		const url = '/ws/job/api/v1/module-assets/pages/jobs-page.css';
+		const url = '/svc/job/api/v1/module-assets/pages/jobs-page.css';
 		const a = ensureStylesheet(url);
 		const b = ensureStylesheet(url);
 		expect(b).toBe(a);
@@ -92,7 +92,7 @@ describe('ensureStylesheet', () => {
 });
 
 describe('loadRemoteModule', () => {
-	const url = '/ws/job/api/v1/module-assets/pages/jobs-page.js';
+	const url = '/svc/job/api/v1/module-assets/pages/jobs-page.js';
 	const mod = { mountPage: () => ({}) };
 	/** URL-aware fetch: `.deps.json` 404s (self-contained chunk), else `body`. */
 	const fetchJs =
@@ -187,7 +187,7 @@ describe('loadRemoteModule', () => {
 });
 
 describe('loadRemoteModule — vendor handshake', () => {
-	const url = '/ws/job/api/v1/module-assets/pages/jobs-page.js';
+	const url = '/svc/job/api/v1/module-assets/pages/jobs-page.js';
 	const mod = { mountPage: () => ({}) };
 	const manifest = JSON.stringify({
 		svelte: { url: '/vendor/svelte.js', version: '5.57.2' },
@@ -302,8 +302,8 @@ describe('resolveMountable / disposeMounted', () => {
 });
 
 describe('sibling .sha256 — content-addressed loads', () => {
-	const url = '/ws/job/api/v1/module-assets/pages/jobs-page.js';
-	const shaUrl = '/ws/job/api/v1/module-assets/pages/jobs-page.sha256';
+	const url = '/svc/job/api/v1/module-assets/pages/jobs-page.js';
+	const shaUrl = '/svc/job/api/v1/module-assets/pages/jobs-page.sha256';
 	const mod = { mountPage: () => ({}) };
 
 	/** Server double: `.deps.json` 404s; `.sha256` + chunk come from `state`. */

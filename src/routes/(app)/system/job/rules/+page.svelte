@@ -3,7 +3,7 @@
    * /system/job/rules — job_rule list, HOST-rendered EntityTablePage
    * (standard archetype). Declared by the job service's `endpoints.nav`
    * census (`kind:"list"`, `entity:"job_rule"`); api_base resolves via
-   * ENTITY_SERVICE_MAP → /ws/job.
+   * ENTITY_SERVICE_MAP → /svc/job.
    *
    * The breadcrumb renders the JOB module's nav menu — the page is owned
    * by the `job` module (route_prefix `/system/job`), never by settings.

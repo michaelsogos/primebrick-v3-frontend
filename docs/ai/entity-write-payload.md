@@ -4,7 +4,7 @@
 
 ## Trigger
 - Applies to ALL non-bulk single-entity CUD calls to `/api/v1/entities/*`
-  (BE) and `/ws/:module/api/v1/entities/*` (microservices via proxy).
+  (BE) and `/svc/:module/api/v1/entities/*` (microservices via proxy).
 
 ## Rules
 1. **Always wrap**: `POST`/`PUT` bodies MUST be

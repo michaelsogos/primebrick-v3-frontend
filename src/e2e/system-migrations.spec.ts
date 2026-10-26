@@ -5,7 +5,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * /system/settings/migrations — db_patch admin remediation page E2E.
  *
  * Asserts the per-service cards render (BE direct + registered services via
- * the /ws/<code> proxy), the patch registry table lists rows, the drift-check
+ * the /svc/<code> proxy), the patch registry table lists rows, the drift-check
  * action produces a verdict badge, and pending_review rows expose the
  * approve action. Auth: ephemeral E2E admin actor (see helpers/admin-login).
  */

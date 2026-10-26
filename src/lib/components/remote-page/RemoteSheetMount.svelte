@@ -39,7 +39,7 @@
     ensureStylesheet,
     loadRemoteModuleCached,
     mountHostComponent,
-    parseWsServiceCode,
+    parseSvcServiceCode,
     type RemoteErrorKind,
   } from './remote-loader';
 
@@ -72,10 +72,10 @@
   // the same `ctx.components.mfaStepUp` bridge as remote pages.
   const stepUp = useMfaStepUp();
 
-  const service_code = $derived(parseWsServiceCode(decl.component_url));
+  const service_code = $derived(parseSvcServiceCode(decl.component_url));
 
   function buildSheetCtx(): ModuleSheetHost {
-    const base = service_code ? `/ws/${service_code}` : '';
+    const base = service_code ? `/svc/${service_code}` : '';
     return {
       host_version: 1,
       api: (path, init) =>

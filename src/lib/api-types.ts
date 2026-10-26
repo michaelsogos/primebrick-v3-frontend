@@ -267,7 +267,7 @@ export class ApiRedisUnavailableError extends Error {
 
 // ── db_patch system module (migration admin surface) ──────────────────────
 // Wire contract shared by BE (/api/v1/system/db-migration/*) and every US
-// (/ws/<code>/api/v1/system/db-migration/*) — served by the SDK system module.
+// (/svc/<code>/api/v1/system/db-migration/*) — served by the SDK system module.
 
 /** A row of `<schema>.primebrick_database_patches` — the per-service migration registry. */
 export type DbPatchStatus =

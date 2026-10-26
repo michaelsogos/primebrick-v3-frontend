@@ -21,7 +21,7 @@ beforeAll(() => {
 const DECL: PageRouteDeclaration = {
 	route: '/system/job/job-schedules/create',
 	kind: 'page',
-	component_url: '/ws/job/api/v1/module-assets/jobs-page.js',
+	component_url: '/svc/job/api/v1/module-assets/jobs-page.js',
 	component_format: 'esm-mount',
 };
 
@@ -67,7 +67,7 @@ describe('RemotePageMount', () => {
 		expect(typeof seenCtx!.notify).toBe('function');
 	});
 
-	it('binds ctx.api to the owning service /ws/<code> base', async () => {
+	it('binds ctx.api to the owning service /svc/<code> base', async () => {
 		const fetchSpy = vi.fn<typeof fetch>(async () => new Response('{}', { status: 200 }));
 		vi.stubGlobal('fetch', fetchSpy);
 		let seenCtx: ModulePageHost | null = null;
@@ -80,7 +80,7 @@ describe('RemotePageMount', () => {
 
 		await seenCtx!.api('/api/v1/entities/job_schedule');
 		const calledWith = fetchSpy.mock.calls[0]?.[0];
-		expect(String(calledWith)).toContain('/ws/job/api/v1/entities/job_schedule');
+		expect(String(calledWith)).toContain('/svc/job/api/v1/entities/job_schedule');
 		vi.unstubAllGlobals();
 	});
 

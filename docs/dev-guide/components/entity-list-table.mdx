@@ -217,7 +217,7 @@ route-level host for the table archetype. A page is ~50 lines: config props
 
 | Group | Props |
 |-------|-------|
-| Data | `basePath` (entity API base; `/ws/<svc>/api/v1/entities/…` for module entities), `fixedFilters`, `onRowsLoaded` |
+| Data | `basePath` (entity API base; `/svc/<svc>/api/v1/entities/…` for module entities), `fixedFilters`, `onRowsLoaded` |
 | List behavior | `deletionFilter={false}` (no `deleted_records` param — e.g. `role_mapping`), `searchGate`, `searchDebounceMs` |
 | Persistence | `storageKeyPrefix`, `persist` (`'session'` default) + `legacyPersist` (read-only legacy medium, `'local'` default) |
 | Errors | `errorScopeKey`, `errorScopeKeyInit` |

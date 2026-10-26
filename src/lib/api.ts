@@ -34,7 +34,7 @@ const ENTITY_API_PATH = '/api/v1/entities';
 
 /**
  * Entities owned by a microservice are reached through the BE proxy
- * (`/ws/<service>/api/v1/entities/<entity>`); BE-owned entities use the
+ * (`/svc/<service>/api/v1/entities/<entity>`); BE-owned entities use the
  * direct path. Single source of truth for every generic entity layer
  * (entity-list-table composables, version history, dialogs).
  */
@@ -51,7 +51,7 @@ const ENTITY_SERVICE_MAP: Record<string, string> = {
 
 export function entityApiBase(entity: string): string {
   const service = ENTITY_SERVICE_MAP[entity];
-  return service ? `/ws/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
+  return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
@@ -365,12 +365,12 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
 
 // ── db_patch system module (migration admin) ────────────────────────────────
 // BE answers directly; microservices are reached through the governed proxy
-// (/ws/<code>/...), which exempts this prefix for `migration_failed` instances.
+// (/svc/<code>/...), which exempts this prefix for `migration_failed` instances.
 
 export function dbMigrationBase(code: string): string {
   return code === 'be'
     ? '/api/v1/system/db-migration'
-    : `/ws/${encodeURIComponent(code)}/api/v1/system/db-migration`;
+    : `/svc/${encodeURIComponent(code)}/api/v1/system/db-migration`;
 }
 
 export async function fetchDbMigrationStatus(code: string): Promise<DbMigrationStatus> {
@@ -420,14 +420,14 @@ export async function dbMigrationDriftCheck(code: string): Promise<DbMigrationDr
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
+  const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
   const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
   return data.config_entries;
 }
 
 export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ entity: { value, version } }),
@@ -503,7 +503,7 @@ export async function searchDocs(params: {
   oversample?: number;
   graph_max_paths?: number;
 }): Promise<DocsSearchHit[]> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/search', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -530,7 +530,7 @@ export interface DocsIndexRepo {
 }
 
 export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/index', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/index', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
@@ -546,7 +546,7 @@ export async function fetchDoc(params: {
   path: string;
   repo?: string;
 }): Promise<{ repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } | null> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/document', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),

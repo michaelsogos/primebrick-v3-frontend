@@ -27,7 +27,7 @@ import {
 
 const REMOTE_DECL = {
   key: 'ai.modelCache',
-  component_url: '/ws/ai/api/v1/module-assets/sheets/model-cache.js',
+  component_url: '/svc/ai/api/v1/module-assets/sheets/model-cache.js',
   default_options: { side: 'left' as const, modal: false, content_class: 'w-96' },
 };
 

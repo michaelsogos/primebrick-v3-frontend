@@ -23,12 +23,12 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 
 const BASE = "/api/v1/entities";
-// customer is crm-service-owned — reachable only through the /ws/<service>
+// customer is crm-service-owned — reachable only through the /svc/<service>
 // gateway prefix, not the BE-owned /api/v1/entities root.
-const CRM_BASE = "/ws/crm/api/v1/entities";
+const CRM_BASE = "/svc/crm/api/v1/entities";
 // ai_model / ai_cerebellum are ai-service-owned — reachable only through the
-// /ws/<service> gateway prefix, not the BE-owned /api/v1/entities root.
-const AI_BASE = "/ws/ai/api/v1/entities";
+// /svc/<service> gateway prefix, not the BE-owned /api/v1/entities root.
+const AI_BASE = "/svc/ai/api/v1/entities";
 const TS = Date.now();
 const CUSTOMER_CODE = `E2E-${TS}`;
 const E2E_MODEL_ID = `e2e/lifecycle-${TS}`;

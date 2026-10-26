@@ -45,11 +45,11 @@ export default defineConfig(({ mode }) => {
 					timeout: 0,
 					proxyTimeout: 0
 				},
-				// Microservice proxy: BE mounts /ws/:serviceCode/* and forwards
+				// Microservice proxy: BE mounts /svc/:serviceCode/* and forwards
 				// to the registered microservices. Without this rule, Vite
-				// tries to render /ws/... as a SvelteKit route and returns the
+				// tries to render /svc/... as a SvelteKit route and returns the
 				// 404 HTML page instead of proxying to the BE.
-				'/ws': {
+				'/svc': {
 					target: apiOrigin,
 					changeOrigin: true
 				}

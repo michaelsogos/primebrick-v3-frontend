@@ -6,7 +6,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *
  * The job module owns the `/system/job` route prefix (self-declared via
  * `endpoints.nav`). Three pages are HOST-rendered standard list
- * archetypes (kind:"list" → EntityTablePage over /ws/job):
+ * archetypes (kind:"list" → EntityTablePage over /svc/job):
  *
  *   /system/job/job-schedules  job_schedule — `schedule_kind` toolbar
  *                              preset + builtin sparkline column
@@ -32,6 +32,26 @@ const REMOTE_CONTENT = "[data-testid='remote-page-content']";
 const REMOTE_ERROR = "[data-testid='remote-page-error']";
 const SYSTEM_ERROR_PAGE = "[data-testid='error-page']";
 const SIDEBAR_LINKS = "[data-sidebar='content'] a[href]";
+
+/**
+ * The job module's resolved display label — mirrors the FE
+ * `resolveModuleLabel` contract: service_registry `label_key` resolved
+ * in the module's OWN en-GB dict, raw `name` as fallback. Resolved live
+ * so the assertion tracks the declared label, not a stale literal.
+ */
+async function expectedJobModuleLabel(page: import("@playwright/test").Page): Promise<string> {
+  const modsRes = await page.request.get("/api/v1/modules");
+  const mods = (((await modsRes.json()).modules ?? []) as Array<{
+    id: string;
+    name: string;
+    label_key?: string;
+  }>);
+  const job = mods.find((m) => m.id === "job");
+  if (!job?.label_key) return job?.name ?? "job";
+  const dictRes = await page.request.get(`/api/v1/system/translations/${job.id}/en-GB`);
+  const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
+  return dict[job.label_key] ?? job.name;
+}
 
 test.describe("/system/job/* pages (module-owned)", () => {
   test.beforeEach(async ({ page }) => {
@@ -242,14 +262,14 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the endpoint must answer 200 (empty page is fine, the table exists).
     const result = await page.evaluate(async () => {
       const list = await fetch(
-        "/ws/job/api/v1/entities/job_run/list?page=1&page_size=1",
+        "/svc/job/api/v1/entities/job_run/list?page=1&page_size=1",
       )
         .then((r) => r.json())
         .catch(() => null);
       const row = list?.rows?.[0] ?? null;
       if (!row?.uuid) return { status: -1, body: "no job_run row" };
       const res = await fetch(
-        `/ws/job/api/v1/entities/job_run/${row.uuid}/audit?page=1&limit=20`,
+        `/svc/job/api/v1/entities/job_run/${row.uuid}/audit?page=1&limit=20`,
       );
       return { status: res.status, body: await res.text() };
     });
@@ -301,7 +321,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(activeCount).toBe(1);
   });
 
-  test("breadcrumb on /system/job/rules is System / Job Handler — never Settings", async ({
+  test("breadcrumb on /system/job/rules is System / {job module} — never Settings", async ({
     page,
   }) => {
     await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
@@ -312,9 +332,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
     ).toBeVisible({ timeout: 15000 });
 
     // The breadcrumb menu trigger carries the OWNING module's display
-    // name as aria-label — "Job Handler", never "Settings" (the old
-    // copy-paste bug rendered app.system + the settings tab menu here).
-    const trigger = page.getByRole("button", { name: "Job Handler" });
+    // name as aria-label — the resolved job.module.name label, never
+    // "Settings" (the old copy-paste bug rendered app.system + the
+    // settings tab menu here).
+    const trigger = page.getByRole("button", { name: await expectedJobModuleLabel(page) });
     await expect(trigger).toBeVisible();
 
     // The breadcrumb shape is {root} / {module} / … — the root-level
@@ -337,7 +358,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // The app launcher shows the OWNING module (`App / Module`), and its
     // nav contains the self-declared links.
     const switcher = page.locator("[data-testid='app-launcher-trigger']");
-    await expect(switcher).toContainText(/job handler/i, { timeout: 15000 });
+    await expect(switcher).toContainText(await expectedJobModuleLabel(page), { timeout: 15000 });
     await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible();
     await expect(page.locator("a[href='/system/job/rules']").first()).toBeVisible();
 

@@ -154,7 +154,7 @@ export async function resolveRemoteIntegrity(
 	if (declared !== undefined) return declared;
 	let res: Response;
 	try {
-		// The /ws proxy does not forward the service's Cache-Control, so the
+		// The /svc proxy does not forward the service's Cache-Control, so the
 		// request itself opts out — a rebuilt sibling must be re-read, never
 		// served from browser heuristics.
 		res = await fetchFn(deriveIntegrityUrl(component_url), { cache: 'no-cache' });
@@ -407,9 +407,9 @@ export function ensureStylesheet(css_url: string): HTMLLinkElement {
 	return link;
 }
 
-/** `/ws/<service>/…` → `<service>` — the owning module code for ctx.api binding. */
-export function parseWsServiceCode(component_url: string): string | undefined {
-	const m = /^\/ws\/([^/]+)\//.exec(component_url);
+/** `/svc/<service>/…` → `<service>` — the owning module code for ctx.api binding. */
+export function parseSvcServiceCode(component_url: string): string | undefined {
+	const m = /^\/svc\/([^/]+)\//.exec(component_url);
 	return m?.[1];
 }
 

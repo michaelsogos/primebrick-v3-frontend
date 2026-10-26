@@ -68,7 +68,7 @@ missing deletion-filter params, lost sort restoration).
 </EntityTablePage>
 ```
 
-Key props: `basePath` (full entity API base incl. `/ws/<svc>` for module
+Key props: `basePath` (full entity API base incl. `/svc/<svc>` for module
 entities), `storageKeyPrefix`, `navStrategy` (`goto` default | `popup`),
 `createPath`/`editPath` (`:uuid` placeholder), `deletionFilter={false}`
 for entities without audited `deleted_*` columns (e.g. `role_mapping`),

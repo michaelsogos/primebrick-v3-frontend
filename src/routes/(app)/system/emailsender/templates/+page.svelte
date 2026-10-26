@@ -3,7 +3,7 @@
    * /system/emailsender/templates — email template list, HOST-rendered
    * EntityTablePage (standard archetype). Declared by the emailsender
    * service's `endpoints.nav` census (`kind:"list"`, `entity:"email_template"`);
-   * api_base resolves via ENTITY_SERVICE_MAP → /ws/emailsender.
+   * api_base resolves via ENTITY_SERVICE_MAP → /svc/emailsender.
    *
    * The breadcrumb renders the EMAILSENDER module's nav menu — the page is
    * owned by the `emailsender` module (route_prefix `/system/emailsender`),

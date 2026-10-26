@@ -73,7 +73,7 @@ export type { DeletionFilterMode } from '$lib/entity-list/types';
 export type PersistMedium = 'session' | 'local';
 
 export interface UseEntityListOptions<TRow extends Record<string, unknown>> {
-  /** Full list/meta base, e.g. `/api/v1/entities/user_profile` or `/ws/job/api/v1/entities/job_schedule`. */
+  /** Full list/meta base, e.g. `/api/v1/entities/user_profile` or `/svc/job/api/v1/entities/job_schedule`. */
   basePath: string;
   /** Storage prefix for persisted list preferences (e.g. `pb:users:list:`). */
   storageKeyPrefix: string;

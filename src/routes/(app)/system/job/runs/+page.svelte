@@ -3,7 +3,7 @@
    * /system/job/runs — job_run list, HOST-rendered EntityTablePage (standard
    * archetype). Declared by the job service's `endpoints.nav` census
    * (`kind:"list"`, `entity:"job_run"`); api_base resolves via
-   * ENTITY_SERVICE_MAP → /ws/job.
+   * ENTITY_SERVICE_MAP → /svc/job.
    *
    * `duration_ms` is humanized via the page-level `cell` override; every
    * other column defers to the standard <TableCell>.

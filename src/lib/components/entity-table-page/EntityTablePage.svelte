@@ -17,7 +17,7 @@
   } from '$lib/composables/useEntityList.svelte';
 
   interface EntityTablePageProps {
-    /** Full entity API base (`/api/v1/entities/<entity>` or `/ws/<svc>/api/v1/entities/<entity>`). */
+    /** Full entity API base (`/api/v1/entities/<entity>` or `/svc/<svc>/api/v1/entities/<entity>`). */
     basePath: string;
     /** Page storage namespace — `pb:<page>:list:`. */
     storageKeyPrefix: string;
