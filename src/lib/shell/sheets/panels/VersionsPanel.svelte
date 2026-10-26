@@ -122,14 +122,16 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.idp?.ok}
-                  <Badge variant="outline" class="border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class="gap-1 border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-medium">
+                    <Cloud class="size-3.5 opacity-90" />
                     {backendState.health.checks.idp.type || 'Casdoor™'}
                   </Badge>
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {backendState.health.checks.idp.version || 'unknown'}
                   </Badge>
                 {:else}
-                  <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('offline'))}>
+                    <CloudOff class="size-3.5 opacity-90" />
                     Offline
                   </Badge>
                 {/if}
@@ -143,14 +145,16 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.redis?.ok}
-                  <Badge variant="outline" class="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('online'))}>
+                    <Cloud class="size-3.5 opacity-90" />
                     Online
                   </Badge>
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {backendState.health.checks.redis.version || 'unknown'}
                   </Badge>
                 {:else}
-                  <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('offline'))}>
+                    <CloudOff class="size-3.5 opacity-90" />
                     Offline
                   </Badge>
                 {/if}
@@ -164,14 +168,16 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.nats?.ok}
-                  <Badge variant="outline" class="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('online'))}>
+                    <Cloud class="size-3.5 opacity-90" />
                     Online
                   </Badge>
                   <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                     {backendState.health.checks.nats.version || 'unknown'}
                   </Badge>
                 {:else}
-                  <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('offline'))}>
+                    <CloudOff class="size-3.5 opacity-90" />
                     Offline
                   </Badge>
                 {/if}
@@ -186,7 +192,8 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.llm?.ok}
-                  <Badge variant="outline" class="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('online'))}>
+                    <Cloud class="size-3.5 opacity-90" />
                     Online
                   </Badge>
                   {#if backendState.health.checks.llm.model}
@@ -200,7 +207,8 @@
                     </Badge>
                   {/if}
                 {:else}
-                  <Badge variant="outline" class="text-red-600 dark:text-red-400 font-mono text-[11px] font-medium">
+                  <Badge variant="outline" class={cn('gap-1 font-mono text-[11px] font-medium', statusBadgeClass('offline'))}>
+                    <CloudOff class="size-3.5 opacity-90" />
                     Offline
                   </Badge>
                 {/if}

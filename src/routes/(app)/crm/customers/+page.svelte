@@ -4,10 +4,11 @@
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
+  import { entityApiBase } from '$lib/api';
 </script>
 
 <EntityTablePage
-  basePath="/api/v1/entities/customer"
+  basePath={entityApiBase('customer')}
   storageKeyPrefix="pb:customers:list:"
   errorScopeKey="app.common.errors.scope.customersList"
   errorScopeKeyInit="app.common.errors.scope.customersPageInit"

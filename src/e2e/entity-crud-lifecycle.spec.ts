@@ -23,6 +23,9 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 
 const BASE = "/api/v1/entities";
+// customer is crm-service-owned — reachable only through the /ws/<service>
+// gateway prefix, not the BE-owned /api/v1/entities root.
+const CRM_BASE = "/ws/crm/api/v1/entities";
 // ai_model / ai_cerebellum are ai-service-owned — reachable only through the
 // /ws/<service> gateway prefix, not the BE-owned /api/v1/entities root.
 const AI_BASE = "/ws/ai/api/v1/entities";
@@ -45,17 +48,17 @@ test.describe("entity CRUD over the wire", () => {
     // runs (e.g. a run that crashed mid-lifecycle). Only rows whose code
     // matches the E2E- prefix — never real data. ──────────────────────────
     const leftoversRes = await api.get(
-      `${BASE}/customer/list?filters[0][field]=code&filters[0][op]=startsWith&filters[0][value]=E2E-`,
+      `${CRM_BASE}/customer/list?filters[0][field]=code&filters[0][op]=startsWith&filters[0][value]=E2E-`,
     );
     if (leftoversRes.ok()) {
       const leftovers = ((await leftoversRes.json()).rows ?? []) as Array<{ uuid: string; version: number }>;
       for (const row of leftovers) {
-        await api.delete(`${BASE}/customer/${row.uuid}?version=${row.version}`);
+        await api.delete(`${CRM_BASE}/customer/${row.uuid}?version=${row.version}`);
       }
     }
 
     // ── create → 201 + entity (version present) ──────────────────────────
-    const createRes = await api.post(`${BASE}/customer`, {
+    const createRes = await api.post(`${CRM_BASE}/customer`, {
       data: { entity: { code: CUSTOMER_CODE, first_name: "E2E Lifecycle", status: "ACTIVE" } },
     });
     expect(createRes.status()).toBe(201);
@@ -67,12 +70,12 @@ test.describe("entity CRUD over the wire", () => {
     version = created.version;
 
     // ── get → 200 entity ─────────────────────────────────────────────────
-    const getRes = await api.get(`${BASE}/customer/${uuid}`);
+    const getRes = await api.get(`${CRM_BASE}/customer/${uuid}`);
     expect(getRes.status()).toBe(200);
 
     // ── list with canonical QS bracket filters finds the row ────────────
     const listRes = await api.get(
-      `${BASE}/customer/list?filters[0][field]=code&filters[0][op]==&filters[0][value]=${CUSTOMER_CODE}`,
+      `${CRM_BASE}/customer/list?filters[0][field]=code&filters[0][op]==&filters[0][value]=${CUSTOMER_CODE}`,
     );
     expect(listRes.status()).toBe(200);
     const listBody = await listRes.json();
@@ -81,12 +84,12 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── JSON-stringified filters are rejected (wire format removed) ──────
     const jsonRes = await api.get(
-      `${BASE}/customer/list?filters=${encodeURIComponent('[{"field":"code","op":"=","value":"x"}]')}`,
+      `${CRM_BASE}/customer/list?filters=${encodeURIComponent('[{"field":"code","op":"=","value":"x"}]')}`,
     );
     expect(jsonRes.status()).toBe(400);
 
     // ── update → 200 entity, version bumped ──────────────────────────────
-    const putRes = await api.put(`${BASE}/customer/${uuid}`, {
+    const putRes = await api.put(`${CRM_BASE}/customer/${uuid}`, {
       data: { entity: { first_name: "E2E Lifecycle Updated", version } },
     });
     expect(putRes.status()).toBe(200);
@@ -95,7 +98,7 @@ test.describe("entity CRUD over the wire", () => {
     version = updated.version;
 
     // ── duplicate → 200 + new uuid; audit marks the clone CLONE (E.8) ────
-    const dupRes = await api.post(`${BASE}/customer/duplicate`, {
+    const dupRes = await api.post(`${CRM_BASE}/customer/duplicate`, {
       data: { uuids: [uuid] },
     });
     expect(dupRes.status()).toBe(200);
@@ -103,7 +106,7 @@ test.describe("entity CRUD over the wire", () => {
     const cloneUuid: string = dupBody.uuids?.[0];
     expect(cloneUuid).toBeTruthy();
     expect(cloneUuid).not.toBe(uuid);
-    const cloneAudit = await api.get(`${BASE}/customer/${cloneUuid}/audit?page=1&limit=10`);
+    const cloneAudit = await api.get(`${CRM_BASE}/customer/${cloneUuid}/audit?page=1&limit=10`);
     expect(cloneAudit.status()).toBe(200);
     const cloneAuditBody = await cloneAudit.json();
     const cloneActions = (cloneAuditBody.rows ?? cloneAuditBody.data ?? []).map(
@@ -111,42 +114,42 @@ test.describe("entity CRUD over the wire", () => {
     );
     expect(cloneActions).toContain("CLONE");
     // remove the clone residue (fresh row → version 1)
-    const cloneGet = await api.get(`${BASE}/customer/${cloneUuid}`);
+    const cloneGet = await api.get(`${CRM_BASE}/customer/${cloneUuid}`);
     const cloneVersion = (await cloneGet.json()).version ?? 1;
-    await api.delete(`${BASE}/customer/${cloneUuid}?version=${cloneVersion}`);
+    await api.delete(`${CRM_BASE}/customer/${cloneUuid}?version=${cloneVersion}`);
 
     // ── delete without version → 400 VERSION_REQUIRED ────────────────────
-    const noVer = await api.delete(`${BASE}/customer/${uuid}`);
+    const noVer = await api.delete(`${CRM_BASE}/customer/${uuid}`);
     expect(noVer.status()).toBe(400);
     const noVerBody = await noVer.json();
     expect(noVerBody.internal_code).toBe("VERSION_REQUIRED");
 
     // ── delete with STALE version → concurrency error ────────────────────
-    const stale = await api.delete(`${BASE}/customer/${uuid}?version=1`);
+    const stale = await api.delete(`${CRM_BASE}/customer/${uuid}?version=1`);
     expect([400, 409]).toContain(stale.status());
 
     // ── soft delete with the observed version → 200 entity ───────────────
-    const del = await api.delete(`${BASE}/customer/${uuid}?version=${version}`);
+    const del = await api.delete(`${CRM_BASE}/customer/${uuid}?version=${version}`);
     expect(del.status()).toBe(200);
     version = (await del.json()).version ?? version + 1;
 
     // ── restore → 200 entity ─────────────────────────────────────────────
-    const restore = await api.post(`${BASE}/customer/${uuid}/restore?version=${version}`);
+    const restore = await api.post(`${CRM_BASE}/customer/${uuid}/restore?version=${version}`);
     expect(restore.status()).toBe(200);
     version = (await restore.json()).version ?? version + 1;
 
     // ── purge is NOT a customer capability → DELETE /:uuid/purge 404 ─────
-    const purge404 = await api.delete(`${BASE}/customer/${uuid}/purge?version=${version}`);
+    const purge404 = await api.delete(`${CRM_BASE}/customer/${uuid}/purge?version=${version}`);
     expect(purge404.status()).toBe(404);
 
     // ── final soft delete — residue is a flagged-deleted ad-hoc row ──────
-    const finalDel = await api.delete(`${BASE}/customer/${uuid}?version=${version}`);
+    const finalDel = await api.delete(`${CRM_BASE}/customer/${uuid}?version=${version}`);
     expect(finalDel.status()).toBe(200);
   });
 
   test("customer meta.actions: delete.single enabled, purge.single disabled", async ({ page }) => {
     await loginAsTestAdmin(page);
-    const res = await page.request.get(`${BASE}/customer/meta`);
+    const res = await page.request.get(`${CRM_BASE}/customer/meta`);
     expect(res.status()).toBe(200);
     const meta = await res.json();
     const byOp = Object.fromEntries(meta.actions.map((a: { op: string }) => [a.op, a]));
@@ -204,7 +207,7 @@ test.describe("entity CRUD over the wire", () => {
     const api = page.request;
 
     // CSV export — meta-derived columns/labels, same filter builder as list.
-    const res = await api.get(`${BASE}/customer/export?file_type=csv`);
+    const res = await api.get(`${CRM_BASE}/customer/export?file_type=csv`);
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toContain("text/csv");
     expect(res.headers()["content-disposition"]).toMatch(/attachment; filename="customer-export-.*\.csv"/);
@@ -218,7 +221,7 @@ test.describe("entity CRUD over the wire", () => {
 
     // filters propagate into the export stream (same builder as list)
     const filtered = await api.get(
-      `${BASE}/customer/export?file_type=csv&filters[0][field]=code&filters[0][op]==&filters[0][value]=__no_such_code__`,
+      `${CRM_BASE}/customer/export?file_type=csv&filters[0][field]=code&filters[0][op]==&filters[0][value]=__no_such_code__`,
     );
     expect(filtered.status()).toBe(200);
     const filteredCsv = await filtered.text();

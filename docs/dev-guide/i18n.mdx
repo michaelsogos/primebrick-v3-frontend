@@ -17,9 +17,9 @@ The FE renders **zero hardcoded UI strings**. Everything flows through
 exposes `t(key, params?)`:
 
 ```ts
-t("system.entities.customer.singular")            // "Customer"
-t("system.entities.customer.delete.confirm", { name: "ACME" })
-// "Delete customer ACME?"
+t("system.entities.organization.singular")            // "Organization"
+t("system.entities.organization.delete.confirm", { name: "ACME" })
+// "Delete organization ACME?"
 ```
 
 - **Flat dict, dot-path keys** — `{ "app.auth.login.title": "..." }`,

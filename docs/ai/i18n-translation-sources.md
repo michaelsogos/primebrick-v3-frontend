@@ -68,7 +68,7 @@ Consequences:
   names for bootstrap loading — extend `CORE_DICT_MODULES` instead.
 - **A page outside every registered `route_prefix` gets NO module dict** —
   its keys render raw. Example: `/customers` was unrouted (the `crm` module
-  is not registered in `service_registry`), so `system.entities.customer.*`
+  is not registered in `service_registry`), so `crm.entities.customer.*`
   stayed untranslated until the page moved under `/crm/customers` (the crm
   root level — `part_of === code` collapses the namespace).
 - The `settings` module claims `route_prefixes: ["/system/settings"]` → any

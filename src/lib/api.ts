@@ -39,6 +39,7 @@ const ENTITY_API_PATH = '/api/v1/entities';
  * (entity-list-table composables, version history, dialogs).
  */
 const ENTITY_SERVICE_MAP: Record<string, string> = {
+  customer: 'crm',
   ai_model: 'ai',
   ai_cerebellum: 'ai',
   job_schedule: 'job',
