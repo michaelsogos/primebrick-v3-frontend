@@ -35,7 +35,7 @@
   }
 
   function hasExtraFields(e: Record<string, unknown>): boolean {
-    return e.extra != null && Object.keys(e.extra).length > 0;
+    return typeof e.extra === 'object' && e.extra !== null && Object.keys(e.extra).length > 0;
   }
 
   function errorTagBadgeClass(tone: string | undefined) {
@@ -147,7 +147,7 @@
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {e.internalCode}
+                  {String(e.internalCode)}
                 </Badge>
               {/if}
               {#if e.instance}
@@ -155,7 +155,7 @@
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {e.instance}
+                  {String(e.instance)}
                 </Badge>
               {/if}
             </div>

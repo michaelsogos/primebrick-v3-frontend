@@ -71,8 +71,8 @@ import { Switch } from '@primebrick/ui';
   let newFilterValue = $state<AdvancedFilter['value']>("");
 
   // BETWEEN operator state
-  let newFilterStartDate = $state<any>("");
-  let newFilterEndDate = $state<any>("");
+  let newFilterStartDate = $state<unknown>("");
+  let newFilterEndDate = $state<unknown>("");
 
   // Edit mode state
   let editingFilterId = $state<string | null>(null);

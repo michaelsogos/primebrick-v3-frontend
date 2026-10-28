@@ -27,7 +27,7 @@
   }: {
     mfa_challenge_token: string;
     available_factors: Array<{ factor_id: string; factor_type: string; label: string | null }>;
-    onsuccess?: (data: { success: boolean; user: any }) => void;
+    onsuccess?: (data: { success: boolean; user: Record<string, unknown> }) => void;
     oncancel?: () => void;
   } = $props();
 

@@ -105,7 +105,7 @@
         {:else}
           <div class="text-xs border border-neutral-300 shadow-inner rounded-lg overflow-auto h-full">
             {#if error.extra?.issues}
-              <JsonTableViewer data={error.extra.issues} />
+              <JsonTableViewer data={error.extra.issues as object} />
             {:else}
               <JsonTableViewer data={error} />
             {/if}

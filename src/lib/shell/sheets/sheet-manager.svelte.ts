@@ -1,5 +1,6 @@
 import { pushNotification } from '$lib/errors/app-errors';
 import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
+import type { MetaColumn } from '$lib/entity-list/types';
 
 export type SheetSide = 'left' | 'right';
 
@@ -79,7 +80,7 @@ export type SheetPanelPropsMap = {
     /** Entity-label i18n namespace (`meta.entities_ns`) — `system` for BE-owned entities. */
     entities_ns?: string;
     rowUuid: string;
-    columns?: any[];
+    columns?: MetaColumn[];
   };
   'config.currencySelect': {
     currentCurrency: string;

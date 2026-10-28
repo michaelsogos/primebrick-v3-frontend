@@ -48,7 +48,7 @@
     onsuccess,
     onerror,
   }: {
-    onsuccess?: (data: { success: boolean; user: any }) => void;
+    onsuccess?: (data: { success: boolean; user: Record<string, unknown> }) => void;
     onerror?: () => void;
   } = $props();
 

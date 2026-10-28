@@ -185,7 +185,7 @@
     return Info;
   }
 
-  function getChangedByDisplay(entry: any): string {
+  function getChangedByDisplay(entry: VersionHistoryEntry): string {
     // If display_name is available from the join, use it
     if (entry.changed_by_name) {
       return entry.changed_by_name;

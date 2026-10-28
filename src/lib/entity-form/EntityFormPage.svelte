@@ -76,13 +76,16 @@
 	const columnMap = $derived(new Map((meta?.columns ?? []).map((c) => [c.key, c])));
 
 	// superForm needs a stable schema — created once `prepared` resolves.
+	// The destructured pieces are assigned synchronously in the same $effect
+	// that builds formObj — definite-assignment `()` + `!` marks that invariant.
 	let formObj = $state<ReturnType<typeof superForm> | null>(null);
-	let form = $state<any>(null);
-	let errors = $state<any>(null);
-	let enhance = $state<any>(null);
-	let tainted = $state<any>(null);
-	let isTainted = $state<any>(null);
-	let reset = $state<any>(null);
+	type PreparedForm = NonNullable<typeof formObj>;
+	let form = $state<PreparedForm['form']>()!;
+	let errors = $state<PreparedForm['errors']>()!;
+	let enhance = $state<PreparedForm['enhance']>()!;
+	let tainted = $state<PreparedForm['tainted']>()!;
+	let isTainted = $state<PreparedForm['isTainted']>()!;
+	let reset = $state<PreparedForm['reset']>()!;
 	let submitting = $state(false);
 
 	$effect(() => {

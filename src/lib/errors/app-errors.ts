@@ -29,7 +29,7 @@ export type AppError = {
   detail?: string;
   createdAt: number;
   /** Extra fields beyond standard AppError fields (e.g., RFC7807 extra fields) */
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export const appErrors = writable<AppError[]>([]);
@@ -154,7 +154,7 @@ export type NotificationInput = {
   tags?: AppErrorTag[];
   detail?: string;
   toast?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 /**

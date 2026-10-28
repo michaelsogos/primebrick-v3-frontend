@@ -183,9 +183,12 @@ export function useRegexAi(
       const parsed = JSON.parse(sanitized);
       if (parsed && Array.isArray(parsed.patterns)) {
         return parsed.patterns
-          .filter((p: any) => p && typeof p.pattern === 'string')
+          .filter(
+            (p: unknown): p is { pattern: string; flags?: unknown; description?: unknown } =>
+              typeof p === 'object' && p !== null && typeof (p as { pattern?: unknown }).pattern === 'string'
+          )
           .slice(0, 3)
-          .map((p: any) => ({
+          .map((p: { pattern: string; flags?: unknown; description?: unknown }) => ({
             pattern: p.pattern,
             flags: typeof p.flags === 'string' ? p.flags : '',
             description: typeof p.description === 'string' ? p.description : '',
