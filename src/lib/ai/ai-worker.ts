@@ -26,7 +26,7 @@ import {
   type DataType,
   type DeviceType,
 } from '@primebrick/ui/vendor/transformers';
-import { resumableFetch, setByteReporter } from '@primebrick/ui';
+import { resumableFetch, setByteReporter } from '@primebrick/ui/ai';
 
 // ─── TEMP: WebGPU kernel profiling instrumentation ───────────────────────
 // Collects per-kernel GPU execution time via onnxruntime-web's
