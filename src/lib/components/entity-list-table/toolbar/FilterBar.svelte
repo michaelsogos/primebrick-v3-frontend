@@ -9,11 +9,11 @@
 
   interface FilterBarProps {
     hasAppliedFilters: boolean;
-    filterValues: Record<string, any>;
+    filterValues: Record<string, unknown>;
     advancedFilters: AdvancedFilter[];
     filterableColumns: MetaColumn[];
     onResetFilters: () => void;
-    onFilterValuesChange: (values: Record<string, any>) => void;
+    onFilterValuesChange: (values: Record<string, unknown>) => void;
     onAdvancedFiltersChange: (filters: AdvancedFilter[]) => void;
   }
 

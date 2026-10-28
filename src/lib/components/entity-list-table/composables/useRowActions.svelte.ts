@@ -32,7 +32,7 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   rowKey?: (row: TRow) => string;
   onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
-  t?: (key: string, params?: Record<string, any>) => string;
+  t?: (key: string, params?: Record<string, unknown>) => string;
   customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
   dialogs?: {
     openDeleteDialog: () => void;

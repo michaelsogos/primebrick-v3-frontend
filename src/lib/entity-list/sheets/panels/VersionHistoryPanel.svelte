@@ -21,6 +21,8 @@
   import * as Timeline from "$lib/components/ui/timeline";
   import { Tooltip } from '@primebrick/ui';
   import { JsonCodeBlock } from '@primebrick/ui';
+  import type { MetaColumn } from '$lib/entity-list/types';
+  import { tryParseJsonObject } from '$lib/utils/json-object';
 
   interface Props {
     entity: string;
@@ -28,8 +30,28 @@
     /** Entity-label i18n namespace (`meta.entities_ns`) — `system` for BE-owned entities. */
     entities_ns?: string;
     rowUuid: string;
-    columns?: any[];
+    columns?: MetaColumn[];
   }
+
+  /** One field's old/new pair inside an audit `delta` object. */
+  type AuditDeltaChange = {
+    old?: unknown;
+    new?: unknown;
+    from?: unknown;
+    to?: unknown;
+    old_display_name?: string;
+    new_display_name?: string;
+  };
+
+  type VersionHistoryEntry = {
+    id: bigint;
+    action: string;
+    version: bigint;
+    changed_at: string;
+    changed_by: string | null;
+    changed_by_name: string | null;
+    delta: Record<string, AuditDeltaChange>;
+  };
 
   let {
     entity,
@@ -44,16 +66,16 @@
   // $derived: keep reactive link to props (avoids state_referenced_locally).
   const i18nEntity = $derived(translationKey ?? entity);
 
-  let versionHistoryData = $state<any[]>([]);
+  let versionHistoryData = $state<VersionHistoryEntry[]>([]);
   let versionHistoryLoading = $state<boolean>(false);
   let versionHistoryError = $state<string | null>(null);
   let versionHistoryPage = $state<number>(1);
   let versionHistoryLimit = $state<number>(50);
   let versionHistoryHasMore = $state<boolean>(false);
-  let expandedEntries = new SvelteSet<number>();
+  let expandedEntries = new SvelteSet<bigint>();
 
 
-  function toggleEntryExpanded(entryId: number) {
+  function toggleEntryExpanded(entryId: bigint) {
     if (expandedEntries.has(entryId)) {
       expandedEntries.delete(entryId);
     } else {
@@ -74,7 +96,7 @@
         throw new Error('Failed to load version history');
       }
 
-      const data = extJsonParse<{ data: any[]; pagination: { total: bigint; hasMore: boolean } }>(await res.text());
+      const data = extJsonParse<{ data: VersionHistoryEntry[]; pagination: { total: bigint; hasMore: boolean } }>(await res.text());
       versionHistoryData = data.data || [];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
@@ -98,7 +120,7 @@
         throw new Error('Failed to load version history');
       }
 
-      const data = extJsonParse<{ data: any[]; pagination: { hasMore: boolean } }>(await res.text());
+      const data = extJsonParse<{ data: VersionHistoryEntry[]; pagination: { hasMore: boolean } }>(await res.text());
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
@@ -178,7 +200,7 @@
     return translated === key ? action : translated;
   }
 
-  function formatAuditDelta(delta: Record<string, any>, action: string): Array<{
+  function formatAuditDelta(delta: Record<string, AuditDeltaChange>, action: string): Array<{
     field: string,
     operator: string,
     toOperator?: string,
@@ -195,8 +217,8 @@
     colorValue?: string,
     oldColorValue?: string,
     isJson?: boolean,
-    jsonValue?: any,
-    oldJsonValue?: any
+    jsonValue?: unknown,
+    oldJsonValue?: unknown
   }> {
     const descriptions: Array<{
       field: string,
@@ -215,8 +237,8 @@
       colorValue?: string,
       oldColorValue?: string,
       isJson?: boolean,
-      jsonValue?: any,
-      oldJsonValue?: any
+      jsonValue?: unknown,
+      oldJsonValue?: unknown
     }> = [];
 
     for (const [field, change] of Object.entries(delta)) {
@@ -232,28 +254,17 @@
       const newValue = change.new_display_name || change.to || change.new;
 
       // Check if this is a badge or color field using column metadata
-      const column = columns.find((c: any) => c.key === field);
-      const isBadge = column?.type === 'badge' && column?.badge?.values;
+      const column = columns.find((c) => c.key === field);
+      const badgeValues = column?.type === 'badge' && column.badge ? column.badge.values : undefined;
+      const isBadge = !!badgeValues;
       const isColor = column?.type === 'color';
 
       // Detect JSONB/JSON fields: column type is 'json'/'jsonb', or the value
       // is a string that parses as a JSON object (not a scalar or array-only).
       // Arrays are handled by the existing formatValue (emptyList / String).
-      function tryParseJson(val: any): any | undefined {
-        if (val === null || val === undefined) return undefined;
-        // Already an object (from pg jsonb parser) — return as-is
-        if (typeof val === 'object' && !Array.isArray(val)) return val;
-        if (typeof val !== 'string') return undefined;
-        const trimmed = val.trim();
-        if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return undefined;
-        try {
-          const parsed = JSON.parse(trimmed);
-          return (typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : undefined;
-        } catch { return undefined; }
-      }
 
-      const parsedNewJson = tryParseJson(newValue);
-      const parsedOldJson = tryParseJson(oldValue);
+      const parsedNewJson = tryParseJsonObject(newValue);
+      const parsedOldJson = tryParseJsonObject(oldValue);
       // Detect JSONB/JSON values: if either old or new parses as a JSON object,
       // render with JsonTableViewer. This covers INSERT (old=null, new=object)
       // and UPDATE (both present, one may be null if cleared).
@@ -264,15 +275,15 @@
       // which don't have column metadata in the entity columns array.
       const isDateField = column?.type === 'date' || (!column && /_at$/.test(field));
       const isDateTimeField = column?.type === 'datetime' || (!column && /(_at|changed_at|last_synced_at)$/.test(field));
-      function formatValue(value: any): string {
+      function formatValue(value: unknown): string {
         if (value === null || value === undefined) return $t('system.entities.versionHistory.null');
         if (Array.isArray(value) && value.length === 0) return $t('system.entities.versionHistory.emptyList');
         if (value === '') return $t('system.entities.versionHistory.null');
         if (column?.type === 'date' || isDateField) {
-          return formatUiDate(value, $uiLang);
+          return formatUiDate(value as string | number | Date, $uiLang);
         }
         if (column?.type === 'datetime' || isDateTimeField) {
-          return formatUiDateTime(value, $uiLang);
+          return formatUiDateTime(value as string | number | Date, $uiLang);
         }
         return String(value);
       }
@@ -288,13 +299,13 @@
 
       if (isBadge) {
         if (newValue) {
-          const newBadgeConfig = column.badge.values[newValue as string];
+          const newBadgeConfig = badgeValues?.[newValue as string];
           badgeColor = newBadgeConfig?.color;
           badgeLabelText = newBadgeConfig?.label_text;
           badgeLabelKey = newBadgeConfig?.label_key;
         }
         if (oldValue) {
-          const oldBadgeConfig = column.badge.values[oldValue as string];
+          const oldBadgeConfig = badgeValues?.[oldValue as string];
           oldBadgeColor = oldBadgeConfig?.color;
           oldBadgeLabelText = oldBadgeConfig?.label_text;
           oldBadgeLabelKey = oldBadgeConfig?.label_key;
@@ -471,7 +482,7 @@
                     {#if expandedEntries.has(entry.id)}
                       <div class="space-y-2">
                         {#each descriptions as desc (desc)}
-                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: any, oldJsonValue?: any}}
+                          {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: unknown, oldJsonValue?: unknown}}
                           <div class="p-2 bg-muted/30 rounded-md border">
                             <div class="text-xs flex flex-wrap items-center gap-1">
                               <span class="font-bold text-foreground">{delta.field}</span>

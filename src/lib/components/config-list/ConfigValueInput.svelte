@@ -98,7 +98,7 @@
   });
 
   // Select options loaded from values_source, BE API, or static values
-  let selectOptions = $state<Record<string, any>[]>([]);
+  let selectOptions = $state<Record<string, unknown>[]>([]);
   let selectLoading = $state(false);
 
   // Money: extract currency from type_config and derive symbol
@@ -131,7 +131,7 @@
 
     // 1. values_source: "currencies" → load directly from countries-list (no API)
     if (selectConfig?.values_source === 'currencies') {
-      selectOptions = getAllCurrencies() as unknown as Record<string, any>[];
+      selectOptions = getAllCurrencies() as unknown as Record<string, unknown>[];
       return;
     }
 
@@ -144,7 +144,7 @@
           const arr: Record<string, string>[] = Array.isArray(data)
             ? data
             : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
-          selectOptions = arr as Record<string, any>[];
+          selectOptions = arr as Record<string, unknown>[];
         })
         .catch(() => {
           selectOptions = [];
@@ -345,10 +345,10 @@
       data-testid={`config-input-single-select-${fieldKey}`}
     >
       {#snippet itemSnippet({ option, resolvedLabel })}
-        {@const descKey = (option as Record<string, any>).description_key}
+        {@const descKey = (option as Record<string, unknown>).description_key}
         <div class="flex flex-col gap-0.5 flex-1 min-w-0">
           <span class="truncate text-left font-medium">{resolvedLabel}</span>
-          {#if descKey}
+          {#if typeof descKey === 'string'}
             <span class="truncate text-left text-xs text-muted-foreground">{$t(descKey)}</span>
           {/if}
         </div>

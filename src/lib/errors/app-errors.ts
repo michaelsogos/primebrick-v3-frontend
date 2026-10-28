@@ -104,12 +104,17 @@ function mapSeverityToImpact(severity?: string): ImpactLevel {
 }
 
 /** Detect RFC7807 shape: has both `type` (string) and `status` (number) fields. */
-function isRFC7807Input(input: any): input is RFC7807Error & Record<string, any> {
-  return typeof input?.type === 'string' && typeof input?.status === 'number';
+function isRFC7807Input(input: unknown): input is RFC7807Error {
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    typeof (input as RFC7807Error).type === 'string' &&
+    typeof (input as RFC7807Error).status === 'number'
+  );
 }
 
 /** Map RFC7807 fields to NotificationInput params. */
-function normalizeRFC7807(error: RFC7807Error & Record<string, any>): NotificationInput {
+function normalizeRFC7807(error: RFC7807Error): NotificationInput {
   const impact = mapSeverityToImpact(error.severity);
   const tone: AppErrorTag['tone'] = 'danger';
 
@@ -124,10 +129,10 @@ function normalizeRFC7807(error: RFC7807Error & Record<string, any>): Notificati
 
   // Extract extra fields beyond standard RFC7807 fields
   const rfc7807Fields = ['type', 'title', 'status', 'detail', 'instance', 'internal_code', 'severity'];
-  const extraFields: Record<string, any> = {};
-  for (const key in error) {
+  const extraFields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(error)) {
     if (!rfc7807Fields.includes(key)) {
-      extraFields[key] = error[key];
+      extraFields[key] = value;
     }
   }
 
@@ -163,12 +168,12 @@ export type NotificationInput = {
  * @returns the error id (for programmatic dismissal if needed)
  */
 export function pushNotification(
-  input: NotificationInput | (RFC7807Error & Record<string, any>)
+  input: NotificationInput | RFC7807Error
 ): string {
   // 1. Detect RFC7807 and normalize to NotificationInput
-  const normalized = isRFC7807Input(input)
-    ? normalizeRFC7807(input as RFC7807Error & Record<string, any>)
-    : (input as NotificationInput);
+  const normalized: NotificationInput = isRFC7807Input(input)
+    ? normalizeRFC7807(input)
+    : input;
 
   // 2. Translate i18n keys if present
   const tr = translate();

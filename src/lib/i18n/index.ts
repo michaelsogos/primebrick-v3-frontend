@@ -47,7 +47,7 @@ export function getFallbackDict(): Dict {
   return enGBFallback as Dict;
 }
 
-function interpolate(template: string, params: Record<string, any>): string {
+function interpolate(template: string, params: Record<string, unknown>): string {
   return template.replace(/\{(\w+)\}/g, (match, key) => {
     return params[key] !== undefined ? String(params[key]) : match;
   });
@@ -69,10 +69,10 @@ export function getDictKeys(d: Record<string, unknown>): string[] {
   return Object.keys(d);
 }
 
-export const t: Readable<(key: string, params?: Record<string, any>) => string> = derived(
+export const t: Readable<(key: string, params?: Record<string, unknown>) => string> = derived(
   dict,
   ($dict) =>
-    (key: string, params?: Record<string, any>) => {
+    (key: string, params?: Record<string, unknown>) => {
       // 1. Try current language dict (from BE)
       // 2. Return the raw key if nothing found — no en-GB fallback for app.* keys.
       //    This makes missing translations visible (raw key) instead of silently

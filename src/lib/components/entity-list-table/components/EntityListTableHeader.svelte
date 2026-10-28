@@ -84,13 +84,13 @@
     onPresetChange?: (presetId: string, optionId: string) => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
-    filterValues: Record<string, any>;
+    filterValues: Record<string, unknown>;
     advancedFilters: AdvancedFilter[];
     selectedKeys: string[];
     hasDeletedSelected: boolean;
     allSelectedDeleted: boolean;
     onResetFilters: () => void;
-    onFilterValuesChange?: (values: Record<string, any>) => void;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
     onToggleToolbarMode: () => void;
     onBulkExport: () => void;

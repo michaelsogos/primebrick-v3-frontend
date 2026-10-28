@@ -65,7 +65,7 @@ type WorkerMessage =
       cached?: boolean;
       worker_nonce: string;
       files?: string[];
-      model_config?: Record<string, any>;
+      model_config?: Record<string, unknown>;
       fingerprint?: string;
       warmup_ms?: number;
       vram_bytes?: number | null;
@@ -128,7 +128,7 @@ export function useAiAssistant<TChoice = unknown>(
     pending_choices: null as TChoice[] | null,
     webgpu_available: false,
     /** Empirical measurements from the worker (load time, TPS, cache bytes). */
-    measurements: null as Record<string, any> | null,
+    measurements: null as Record<string, unknown> | null,
     /**
      * Identity of the model ACTUALLY resident in VRAM, reported back by the
      * worker at load_complete (files fetched, ONNX config, probe output).
@@ -139,7 +139,7 @@ export function useAiAssistant<TChoice = unknown>(
       dtype: string;
       device: string;
       files: string[];
-      model_config: Record<string, any> | null;
+      model_config: Record<string, unknown> | null;
       fingerprint: string;
       warmup_ms: number;
       vram_bytes: number | null;

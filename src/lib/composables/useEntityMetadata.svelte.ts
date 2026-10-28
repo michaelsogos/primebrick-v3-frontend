@@ -11,7 +11,6 @@ export type EntityMetadata = EntityMeta;
 export interface UseEntityMetadataOptions {
   endpoint: string;
   entityName: string;
-  onError?: (error: any) => void;
 }
 
 export function useEntityMetadata(options: UseEntityMetadataOptions) {

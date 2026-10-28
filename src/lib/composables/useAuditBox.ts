@@ -4,9 +4,10 @@ import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 import { get } from 'svelte/store';
 import { getAuditableDisplayValue } from '$lib/components/entity-list-table/utils/auditable-fields';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { AuditData } from '$lib/utils/audit-data';
 
 export type AuditBoxState = {
-  auditData: Record<string, any>;
+  auditData: Partial<AuditData>;
   auditingColumns: MetaColumn[];
   isCreatePage: boolean;
   entity: string;
@@ -38,7 +39,7 @@ export function useAuditBox(state: AuditBoxState) {
     return cols.find(f => f.key === 'version');
   }
 
-  function formatValue(value: any, column?: MetaColumn): string {
+  function formatValue(value: unknown, column?: MetaColumn): string {
     // Sequential formatter logic (same as TableCell.svelte)
 
     // Skip custom snippet (not applicable for audit box)
@@ -59,13 +60,13 @@ export function useAuditBox(state: AuditBoxState) {
     // Datetime type
     if (column?.type === 'datetime' || column?.key?.endsWith('_at')) {
       if (!value) return '-';
-      return formatUiDateTime(value, get(uiLang));
+      return formatUiDateTime(value as string | number | Date, get(uiLang));
     }
 
     // Date type
     if (column?.type === 'date') {
       if (!value) return '-';
-      return formatUiDate(value, get(uiLang));
+      return formatUiDate(value as string | number | Date, get(uiLang));
     }
 
     // Default case: use getAuditableDisplayValue for _name fallback

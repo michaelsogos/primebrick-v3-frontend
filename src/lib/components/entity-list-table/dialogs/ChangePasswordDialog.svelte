@@ -73,7 +73,7 @@
       });
 
       if (!res.ok) {
-        const errData = await res.json() as RFC7807Error & Record<string, any>;
+        const errData = await res.json() as RFC7807Error & Record<string, unknown>;
         pushNotification(errData);
         return;
       }

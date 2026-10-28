@@ -22,7 +22,7 @@ import type { AdvancedFilter, FilterOperator } from '$lib/entity-list/types';
 
 export interface UrlFiltersResult {
   /** Simple field→value map for the filter bar (e.g. { status: 'ACTIVE' }). */
-  filterValues: Record<string, any>;
+  filterValues: Record<string, unknown>;
   /** Structured filters for the advanced filter panel. */
   advancedFilters: AdvancedFilter[];
   /** Full-text search term (empty string if not in URL). */
@@ -41,7 +41,7 @@ export interface UrlFiltersResult {
  * @returns The parsed filter state.
  */
 export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult {
-  const filterValues: Record<string, any> = {};
+  const filterValues: Record<string, unknown> = {};
   const advancedFilters: AdvancedFilter[] = [];
   const search = searchParams.get('search') ?? '';
   const searchInRaw = searchParams.get('search_in') ?? '';

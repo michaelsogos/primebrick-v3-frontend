@@ -32,8 +32,8 @@ import { Switch } from '@primebrick/ui';
 
   interface Props {
     filterableColumns?: MetaColumn[];
-    filterValues?: Record<string, any>;
-    onFilterValuesChange?: (values: Record<string, any>) => void;
+    filterValues?: Record<string, unknown>;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
@@ -49,7 +49,7 @@ import { Switch } from '@primebrick/ui';
   }: Props = $props();
 
   // Temporary filter values (being edited by user)
-  let tempFilterValues = $state<Record<string, any>>({});
+  let tempFilterValues = $state<Record<string, unknown>>({});
 
   // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
   let dateDropperValues: Record<string, CalendarDate | CalendarDateTime | null> = $state({});
@@ -68,7 +68,7 @@ import { Switch } from '@primebrick/ui';
   // New filter being created
   let newFilterField = $state<string>(""); 
   let newFilterOperator = $state<FilterOperator>("="); 
-  let newFilterValue = $state<any | any[] | { start: any; end: any }>("");
+  let newFilterValue = $state<AdvancedFilter['value']>("");
 
   // BETWEEN operator state
   let newFilterStartDate = $state<any>("");
@@ -88,12 +88,12 @@ import { Switch } from '@primebrick/ui';
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
         const tz = timezoneValues[col.key] || browserTimezone || "UTC";
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type, tz);
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key] as string | undefined, col.type, tz);
       }
     }
   });
 
-  function updateTempFilterValue(key: string, value: any) {
+  function updateTempFilterValue(key: string, value: unknown) {
     tempFilterValues = { ...tempFilterValues, [key]: value };
   }
 
@@ -248,7 +248,7 @@ import { Switch } from '@primebrick/ui';
       type: "input" as const,
       inputType: "text",
       placeholder: $t(`system.entities.list.filterPlaceholder`),
-      value: tempFilterValues[col.key] || "",
+      value: (tempFilterValues[col.key] as string) || "",
     };
   }
 
@@ -285,7 +285,7 @@ import { Switch } from '@primebrick/ui';
     if (!newFilterField) return;
 
     const selectedColumn = filterableColumns.find((c) => c.key === newFilterField);
-    let value: any | any[] | { start: any; end: any } = newFilterValue;
+    let value: AdvancedFilter['value'] = newFilterValue;
 
     // Handle BETWEEN operator
     if (newFilterOperator === "BETWEEN") {
@@ -793,7 +793,7 @@ import { Switch } from '@primebrick/ui';
               {:else}
                 <TextInput
                   placeholder={$t("system.entities.list.filterPlaceholder")}
-                  value={newFilterValue}
+                  value={newFilterValue as string}
                   clearLabel={$t("app.common.clear")}
                   oninput={(e) => (newFilterValue = e.currentTarget.value)}
                   onClear={() => (newFilterValue = "")}

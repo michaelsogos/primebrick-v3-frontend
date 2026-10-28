@@ -28,6 +28,7 @@ import { parseGuideResponse } from './guide-response';
 import {
   runGuideRetrievalLoop,
   selectActions,
+  numOr,
   type GuideLoopResult,
 } from './guide-loop';
 
@@ -129,7 +130,7 @@ export function useGuideAi(model_id: string) {
           text,
           ctx,
           {},
-          ctx.exec_config?.min_similarity ?? DEFAULT_MIN_SIMILARITY,
+          numOr(ctx.exec_config?.min_similarity) ?? DEFAULT_MIN_SIMILARITY,
         );
         if (!pendingDocs.found) {
           return {

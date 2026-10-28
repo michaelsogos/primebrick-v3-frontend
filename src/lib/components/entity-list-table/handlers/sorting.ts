@@ -12,7 +12,7 @@ export function createSortingHandlers(
   dataColumns: () => any,
   auditingColumnsGroup: () => any,
   nonAuditingColumns: () => any,
-  onFilterValuesChange?: () => ((values: Record<string, any>) => void) | undefined,
+  onFilterValuesChange?: () => ((values: Record<string, unknown>) => void) | undefined,
   onAdvancedFiltersChange?: () => ((filters: any[], connector: 'AND' | 'OR') => void) | undefined,
   onResetFilters?: () => (() => void) | undefined
 ) {

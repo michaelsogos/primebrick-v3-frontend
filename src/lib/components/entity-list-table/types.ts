@@ -118,8 +118,8 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
   filtersOpen?: boolean;
-  filterValues?: Record<string, any>;
-  onFilterValuesChange?: (values: Record<string, any>) => void;
+  filterValues?: Record<string, unknown>;
+  onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;
   advancedFilters?: AdvancedFilter[];
   onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;

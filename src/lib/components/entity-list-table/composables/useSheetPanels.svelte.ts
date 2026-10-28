@@ -19,8 +19,8 @@ export interface UseSheetPanelsOptions {
   nonAuditingColumns: () => MetaColumn[];
   auditingColumnsGroup: () => MetaColumn[];
   stickyColumnsGroup: () => MetaColumn[];
-  filterValues: () => Record<string, any> | null;
-  onFilterValuesChange?: () => ((values: Record<string, any>) => void) | undefined;
+  filterValues: () => Record<string, unknown> | null;
+  onFilterValuesChange?: () => ((values: Record<string, unknown>) => void) | undefined;
   onResetFilters?: () => (() => void) | undefined;
   advancedFilters: () => AdvancedFilter[] | null;
   onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined;

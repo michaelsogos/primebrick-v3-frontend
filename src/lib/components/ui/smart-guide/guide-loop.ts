@@ -88,7 +88,11 @@ const LOOP_DEFAULTS: GuideLoopConfig = {
   max_block_chars: 6000,
 };
 
-function resolveLoopConfig(exec_config: Record<string, any> | null): GuideLoopConfig {
+export function numOr(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+
+function resolveLoopConfig(exec_config: Record<string, unknown> | null): GuideLoopConfig {
   const num = (key: keyof GuideLoopConfig): number => {
     const v = exec_config?.[key];
     return typeof v === 'number' && Number.isFinite(v) ? v : LOOP_DEFAULTS[key];
@@ -549,11 +553,11 @@ export async function runGuideRetrievalLoop(
       // (content_type=api) are score-penalized server-side instead.
       path_prefix: undefined,
       min_similarity: minSimilarity,
-      keyword_boost: ctx.exec_config?.keyword_boost,
-      lexical_boost: ctx.exec_config?.lexical_boost,
-      lex_match_min: ctx.exec_config?.lex_match_min,
-      oversample: ctx.exec_config?.oversample,
-      graph_max_paths: ctx.exec_config?.graph_max_paths,
+      keyword_boost: numOr(ctx.exec_config?.keyword_boost),
+      lexical_boost: numOr(ctx.exec_config?.lexical_boost),
+      lex_match_min: numOr(ctx.exec_config?.lex_match_min),
+      oversample: numOr(ctx.exec_config?.oversample),
+      graph_max_paths: numOr(ctx.exec_config?.graph_max_paths),
     });
     // User-guide policy: docs packs carry user-guide docs only, so every
     // mdx row in the KB is in scope — OpenAPI chunks (`<repo>-openapi#…`)

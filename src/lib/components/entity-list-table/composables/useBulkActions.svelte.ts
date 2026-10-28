@@ -19,7 +19,7 @@ export interface BulkActionsOptions {
   onSelectionChange?: (keys: string[]) => void;
   onRefresh?: () => () => void;
   onToolbarModeChange?: () => void;
-  t?: (key: string, params?: Record<string, any>) => string;
+  t?: (key: string, params?: Record<string, unknown>) => string;
   dialogs?: {
     openBulkDeleteDialog: () => void;
     closeBulkDeleteDialog: () => void;
