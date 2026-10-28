@@ -343,7 +343,7 @@
             <div class="space-y-2">
               <p class="text-xs text-muted-foreground">{$t("app.auth.mfa.recoveryCodes")}:</p>
               <div class="bg-muted rounded p-2 space-y-1">
-                {#each recoveryCodes as code}
+                {#each recoveryCodes as code (code)}
                   <code class="block text-xs font-mono">{code}</code>
                 {/each}
               </div>

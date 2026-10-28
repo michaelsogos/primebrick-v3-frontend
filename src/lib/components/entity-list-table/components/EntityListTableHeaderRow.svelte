@@ -77,7 +77,7 @@
         </div>
       </Table.Head>
     {/if}
-    {#each shownColumns as col, colIdx (col.key)}
+    {#each shownColumns as col (col.key)}
       {#if stickyColumnsGroup.some((s) => s.key === col.key)}
         <Table.Head
           style="left: {stickyColumnsState.state.stickyLeftOffsets[col.key] ?? 0}px;"

@@ -1,3 +1,4 @@
+import { SvelteMap } from 'svelte/reactivity';
 import { onMount, untrack } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
@@ -7,12 +8,12 @@ export function useStickyColumns(options: {
   stickyColumnsGroup: () => MetaColumn[];
   visibleKeys: () => string[];
 }) {
-  const safeStickyColumnsGroup = $derived.by(() => options.stickyColumnsGroup() ?? []);
+  const safeStickyColumnsGroup = $derived(options.stickyColumnsGroup() ?? []);
 
   const _state = $state({
     checkboxHeadRef: null as HTMLElement | null,
-    stickyHeadRefs: new Map<string, HTMLElement>(),
-    stickyCellRefs: new Map<string, HTMLElement>(),
+    stickyHeadRefs: new SvelteMap<string, HTMLElement>(),
+    stickyCellRefs: new SvelteMap<string, HTMLElement>(),
     stickyLeftOffsets: {} as Record<string, number>,
   });
   let stickyRO: ResizeObserver | null = null;

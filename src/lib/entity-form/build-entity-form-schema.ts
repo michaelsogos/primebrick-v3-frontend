@@ -18,7 +18,7 @@ import type { EntityMeta } from '$lib/entity-list/types';
 import { parseScheduleSpec } from '@primebrick/ui';
 
 /** NATS subject grammar — mirrors validateEventsDeclaration (sdk). */
-const SUBJECT_SEGMENT = /^[A-Za-z0-9_\-]+$/;
+const SUBJECT_SEGMENT = /^[A-Za-z0-9_-]+$/;
 export function isValidNatsSubject(subject: string): boolean {
 	if (typeof subject !== 'string' || subject.length === 0 || /\s/.test(subject)) return false;
 	const segs = subject.split('.');

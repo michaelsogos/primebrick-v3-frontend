@@ -29,7 +29,6 @@
 
 	let df = $derived(new DateFormatter($uiLang, timeOnly ? { timeStyle: "medium" } : includeTime ? { dateStyle: "long", timeStyle: "medium" } : { dateStyle: "long" }));
 	let monthFormatter = $derived(new DateFormatter($uiLang, { month: "short" }));
-	let timeFormatter = $derived(new DateFormatter($uiLang, { timeStyle: "short" }));
 
 	// Generate date data
 	const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
@@ -73,13 +72,13 @@
 	let hasUserInteracted = $state(false);
 
 	// Timezone state
-	let selectedTimezone = $state<string>("UTC");
+	let selectedTimezone = $state<string>(timezone ?? "UTC");
 	let browserTimezone = $state<string | null>(null);
 	let timezoneSearch = $state("");
 
 	onMount(() => {
 		browserTimezone = getResolvedIanaTimeZone();
-		if (browserTimezone) {
+		if (!timezone && browserTimezone) {
 			selectedTimezone = browserTimezone;
 		}
 	});
@@ -217,7 +216,7 @@
 							parseInt(selectedDay)
 						);
 					}
-				} catch (e) {
+				} catch {
 					// Handle invalid dates (e.g., Feb 30)
 					const tempDate = new CalendarDate(
 						parseInt(selectedYear),
@@ -273,21 +272,21 @@
 			<!-- timeOnly mode: only time wheels, no date, no tabs, no timezone -->
 			<WheelPicker>
 				<WheelPickerGroup bind:value={selectedHour} onValueChange={updateValue}>
-					{#each hours as hour}
+					{#each hours as hour (hour)}
 						<WheelPickerItem value={hour}>
 							{hour}
 						</WheelPickerItem>
 					{/each}
 				</WheelPickerGroup>
 				<WheelPickerGroup bind:value={selectedMinute} onValueChange={updateValue}>
-					{#each minutes as minute}
+					{#each minutes as minute (minute)}
 						<WheelPickerItem value={minute}>
 							{minute}
 						</WheelPickerItem>
 					{/each}
 				</WheelPickerGroup>
 				<WheelPickerGroup bind:value={selectedSecond} onValueChange={updateValue}>
-					{#each seconds as second}
+					{#each seconds as second (second)}
 						<WheelPickerItem value={second}>
 							{second}
 						</WheelPickerItem>
@@ -349,7 +348,7 @@
 										No timezone found
 									</div>
 								{:else}
-									{#each filteredTimezones() as tz}
+									{#each filteredTimezones() as tz (tz)}
 										<DropdownMenu.Item
 											onSelect={() => {
 												selectedTimezone = tz;
@@ -370,21 +369,21 @@
 					{#if activeTab === "date"}
 						<WheelPicker>
 							<WheelPickerGroup bind:value={selectedDay} onValueChange={updateValue}>
-								{#each days as day}
+								{#each days as day (day)}
 									<WheelPickerItem value={day}>
 										{day}
 									</WheelPickerItem>
 								{/each}
 							</WheelPickerGroup>
 							<WheelPickerGroup bind:value={selectedMonth} onValueChange={updateValue}>
-								{#each months as month}
+								{#each months as month (month)}
 									<WheelPickerItem value={month}>
 										{month.slice(0, 3)}
 									</WheelPickerItem>
 								{/each}
 							</WheelPickerGroup>
 							<WheelPickerGroup bind:value={selectedYear} onValueChange={updateValue}>
-								{#each years as year}
+								{#each years as year (year)}
 									<WheelPickerItem value={year}>
 										{year}
 									</WheelPickerItem>
@@ -398,21 +397,21 @@
 					{#if activeTab === "time"}
 						<WheelPicker>
 							<WheelPickerGroup bind:value={selectedHour} onValueChange={updateValue}>
-								{#each hours as hour}
+								{#each hours as hour (hour)}
 									<WheelPickerItem value={hour}>
 										{hour}
 									</WheelPickerItem>
 								{/each}
 							</WheelPickerGroup>
 							<WheelPickerGroup bind:value={selectedMinute} onValueChange={updateValue}>
-								{#each minutes as minute}
+								{#each minutes as minute (minute)}
 									<WheelPickerItem value={minute}>
 										{minute}
 									</WheelPickerItem>
 								{/each}
 							</WheelPickerGroup>
 							<WheelPickerGroup bind:value={selectedSecond} onValueChange={updateValue}>
-								{#each seconds as second}
+								{#each seconds as second (second)}
 									<WheelPickerItem value={second}>
 										{second}
 									</WheelPickerItem>
@@ -425,21 +424,21 @@
 		{:else}
 			<WheelPicker>
 				<WheelPickerGroup bind:value={selectedDay} onValueChange={updateValue}>
-					{#each days as day}
+					{#each days as day (day)}
 						<WheelPickerItem value={day}>
 							{day}
 						</WheelPickerItem>
 					{/each}
 				</WheelPickerGroup>
 				<WheelPickerGroup bind:value={selectedMonth} onValueChange={updateValue}>
-					{#each months as month}
+					{#each months as month (month)}
 						<WheelPickerItem value={month}>
 							{month.slice(0, 3)}
 						</WheelPickerItem>
 					{/each}
 				</WheelPickerGroup>
 				<WheelPickerGroup bind:value={selectedYear} onValueChange={updateValue}>
-					{#each years as year}
+					{#each years as year (year)}
 						<WheelPickerItem value={year}>
 							{year}
 						</WheelPickerItem>

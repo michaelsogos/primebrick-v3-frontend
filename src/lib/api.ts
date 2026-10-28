@@ -11,11 +11,9 @@ import {
   isUnreachableHttpStatus,
   type HealthPayload,
   type ModuleInfo,
-  type ModuleNav,
   type ModuleConfigEntry,
   type ConfigEntry,
   type TypeCapabilitiesMap,
-  type AiModel,
   type ServiceInfo,
   type DbMigrationStatus,
   type DbMigrationDriftResult

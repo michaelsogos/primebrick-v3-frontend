@@ -112,9 +112,7 @@ async function timed<T>(stage: string, fn: () => Promise<T>, extra?: (v: T) => R
   return value;
 }
 
-export interface GuideLoopDeps {
-  /** Reserved for future injectable deps (e.g. search override in tests). */
-}
+export type GuideLoopDeps = Record<string, unknown>;
 
 export interface GuideLoopResult {
   found: boolean;
@@ -451,7 +449,7 @@ function parseToolCalls(raw: string): Array<{ name: string; arguments: Record<st
   const m = raw.trim().match(/^(\w+)\s*([\s\S]*)$/);
   if (m && m[1] in SHORTHAND_ARG) {
     const argName = SHORTHAND_ARG[m[1]];
-    let rest = (m[2] ?? '').replace(/^[:(\s]+/, '').replace(/[\)\s]+$/, '');
+    const rest = (m[2] ?? '').replace(/^[:(\s]+/, '').replace(/[)\s]+$/, '');
     const kv = rest.match(/^(\w+)\s*=\s*["'`]([\s\S]*?)["'`]?$/);
     const value = (kv ? kv[2] : rest.replace(/^["'`]|["'`]$/g, '')).trim();
     calls.push({ name: m[1], arguments: argName && value ? { [argName]: value } : {} });
@@ -860,6 +858,7 @@ export async function runGuideRetrievalLoop(
   } catch (e) {
     throw new Error(
       `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+      { cause: e },
     );
   }
 
@@ -874,6 +873,7 @@ export async function runGuideRetrievalLoop(
     } catch (e) {
       throw new Error(
         `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+        { cause: e },
       );
     }
   }

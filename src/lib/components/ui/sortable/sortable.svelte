@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { cn } from '$lib/utils';
 	import { setSortableContext } from './ctx';
 	import { onDestroy, tick, type Snippet } from 'svelte';
@@ -18,7 +19,7 @@
 	} = $props();
 
 	let draggedId = $state<string | null>(null);
-	let itemNodes = new Map<string, HTMLElement>();
+	let itemNodes = new SvelteMap<string, HTMLElement>();
 	let moveInFlight = $state(false);
 	let rootEl = $state<HTMLElement | null>(null);
 	let windowDragOverHandler: ((e: DragEvent) => void) | null = null;
@@ -84,7 +85,7 @@
 	}
 
 	async function move(fromIdx: number, toIdx: number) {
-		const rects = new Map<string, DOMRect>();
+		const rects = new SvelteMap<string, DOMRect>();
 		itemNodes.forEach((node, id) => rects.set(id, node.getBoundingClientRect()));
 
 		const newItems = [...items];
@@ -104,7 +105,7 @@
 			if (dx || dy) {
 				node.style.transition = 'none';
 				node.style.transform = `translate(${dx}px, ${dy}px)`;
-				node.offsetHeight;
+				void node.offsetHeight;
 				node.style.transition = `transform ${animation}ms cubic-bezier(0.2, 0, 0, 1)`;
 				node.style.transform = '';
 			}

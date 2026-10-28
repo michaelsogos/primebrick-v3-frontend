@@ -16,7 +16,7 @@ export type AuditBoxState = {
 };
 
 export function useAuditBox(state: AuditBoxState) {
-  const { auditData, auditingColumns, isCreatePage, entity, entities_ns, rowUuid } = state;
+  const { auditData, auditingColumns, entity, entities_ns, rowUuid } = state;
 
   function getDeletedFields(cols: MetaColumn[]): MetaColumn[] {
     return cols.filter(f => f.key.startsWith('deleted_'));

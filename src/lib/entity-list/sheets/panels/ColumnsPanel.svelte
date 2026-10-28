@@ -39,12 +39,10 @@
     items={columns.map((c) => ({ id: c.key, col: c }))}
     onSort={(items) => onReorderKeys?.(group, items.map((i) => i.id))}
   >
-    {#snippet children()}
-      <div role="list" class="flex flex-col">
-        {#each columns as col (col.key)}
-          <Sortable.Item id={col.key}>
-            {#snippet children()}
-              <div
+    <div role="list" class="flex flex-col">
+      {#each columns as col (col.key)}
+        <Sortable.Item id={col.key}>
+          <div
                 class={col.hideable === false
                   ? 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm opacity-60 hover:bg-accent'
                   : 'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent'}
@@ -65,12 +63,10 @@
                   </span>
                   <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
                 </button>
-              </div>
-            {/snippet}
-          </Sortable.Item>
-        {/each}
-      </div>
-    {/snippet}
+          </div>
+        </Sortable.Item>
+      {/each}
+    </div>
   </Sortable.Root>
 {/snippet}
 

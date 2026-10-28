@@ -13,7 +13,7 @@
 
   let { collapsed }: { collapsed: boolean } = $props();
 
-  const { backendState, APP_VERSION } = useHealthChip();
+  const { backendState } = useHealthChip();
 
   // Component-level $derived — reactive because declared in component, not in composable
   const healthChip = $derived(backendState.healthChip as HealthChip);

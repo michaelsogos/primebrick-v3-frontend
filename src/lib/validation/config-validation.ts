@@ -19,7 +19,6 @@ import { z } from 'zod';
 import { parsePhoneNumber } from 'libphonenumber-js';
 import type { ConfigEntry, ConfigEntryType } from '$lib/api-types';
 import { extractValidation, parseTypeConfig } from '$lib/config/type-config-schema';
-import type { ConfigValidation } from '$lib/config/type-config-schema';
 
 /**
  * Basic email regex — RFC 5322 simplified. Same as SDK.

@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "$lib/utils.js";
+  import { type WithElementRef } from "$lib/utils.js";
   import { InputGroup, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
-  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -98,7 +97,7 @@
     );
   }
 
-  function handleCountryChange(newCountry: string) {
+  function handleCountryChange() {
     // Re-parse the current value with the new country
     // The value stays in E.164, but the display will re-format
     // For now, just trigger re-render via the effect

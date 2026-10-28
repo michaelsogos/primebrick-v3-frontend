@@ -89,7 +89,7 @@
   // Sync from prop when external value changes (e.g. form reset, SuperForms reset).
   // Normalize to string for comparison — the form value is always a string
   // (the DB stores text, Zod validates z.string(), native coercion happens at the SDK/BE boundary).
-  // svelte-ignore state_referenced_locally -- local mutable state tracking last external value for sync
+  // Local mutable state tracking last external value for sync.
   let lastValue = $state<string>(String(value));
   $effect(() => {
     const str = String(value);

@@ -36,7 +36,7 @@ interface StepUpState {
 }
 
 export function useMfaStepUp() {
-  let state = $state<StepUpState>({
+  const state = $state<StepUpState>({
     dialogOpen: false,
     pendingAction: '',
     pendingTargetResource: '',

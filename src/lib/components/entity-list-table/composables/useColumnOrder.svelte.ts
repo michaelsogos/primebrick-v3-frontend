@@ -1,3 +1,4 @@
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { onMount } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
@@ -48,9 +49,9 @@ export function useColumnOrder(getColumnOrderStorageKey: () => string | undefine
 
   function applyKeyOrder(cols: MetaColumn[], keys: readonly string[] | undefined): MetaColumn[] {
     if (!keys || keys.length === 0) return cols;
-    const byKey = new Map(cols.map((c) => [c.key, c] as const));
+    const byKey = new SvelteMap(cols.map((c) => [c.key, c] as const));
     const out: MetaColumn[] = [];
-    const used = new Set<string>();
+    const used = new SvelteSet<string>();
     for (const k of keys) {
       const c = byKey.get(k);
       if (!c) continue;

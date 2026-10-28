@@ -25,28 +25,23 @@
     showSelectedOnly,
     onShowSelectedOnlyChange
   }: SelectionCounterProps = $props();
+
+  const selectionLabel = $derived.by(() => {
+    const raw =
+      selectionCount === 1
+        ? selectionLabelSingularText ||
+          (selectionLabelSingularKey && $t(selectionLabelSingularKey)) ||
+          selectionLabelText ||
+          (selectionLabelKey && $t(selectionLabelKey))
+        : selectionLabelText || (selectionLabelKey && $t(selectionLabelKey));
+    return raw ? ` ${raw} ` : '';
+  });
 </script>
 
 {#if selectionCount > 0}
   <div class="flex items-center gap-1.5 text-info">
     <span class="inline-flex flex-wrap items-baseline gap-x-1">
-      {selectionCount}
-      {#if selectionCount === 1}
-        {#if selectionLabelSingularText}
-          {' '}{selectionLabelSingularText}{' '}
-        {:else if selectionLabelSingularKey}
-          {' '}{$t(selectionLabelSingularKey)}{' '}
-        {:else if selectionLabelText}
-          {' '}{selectionLabelText}{' '}
-        {:else if selectionLabelKey}
-          {' '}{$t(selectionLabelKey)}{' '}
-        {/if}
-      {:else if selectionLabelText}
-        {' '}{selectionLabelText}{' '}
-      {:else if selectionLabelKey}
-        {' '}{$t(selectionLabelKey)}{' '}
-      {/if}
-      {$t(selectionPastParticipleKey)}
+      {selectionCount}{selectionLabel}{$t(selectionPastParticipleKey)}
     </span>
     <Button
       type="button"

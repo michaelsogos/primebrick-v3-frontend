@@ -15,7 +15,7 @@ export function useAvatarPreview(
   displayName: () => string | undefined,
   fallback = "??",
 ) {
-  const seed = $derived.by(() => computeInitials(displayName(), fallback));
+  const seed = $derived(computeInitials(displayName(), fallback));
   const chromeFallbackClass = $derived(avatarFallbackChromeClasses(seed));
 
   return {

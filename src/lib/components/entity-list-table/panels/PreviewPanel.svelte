@@ -21,12 +21,7 @@
   import type { MetaColumn } from '$lib/entity-list/types';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { formatListCellValue } from '@primebrick/ui';
-  import { isBlankish, getAuditFieldValue, isCardFieldEmpty } from '../utils/cell-formatting';
-  import { getAuditColumnsContext } from '../context';
-  import {
-    isDatetimeIanaRecordMode,
-    datetimeIanaCardFieldHighlightClass
-  } from '../utils/cell-styling';
+  import { isDatetimeIanaRecordMode } from '../utils/cell-styling';
   import type { CellArgs } from '../types';
 
   type PreviewPanelCellArgs = CellArgs<TRow>;
@@ -56,8 +51,6 @@
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     entityRowActions?: { edit?: boolean; duplicate?: boolean; delete?: boolean; preview?: boolean };
     isRowDeleted: (row: TRow) => boolean;
-    rowSelectionEnabled: boolean;
-    rowSelected: boolean;
   }
 
   let {
@@ -84,13 +77,10 @@
     auditingColumns = [],
     datetimeIanaModeByKey,
     entityRowActions,
-    isRowDeleted,
-    rowSelectionEnabled,
-    rowSelected
+    isRowDeleted
   }: PreviewPanelProps = $props();
 
   const rowDeleted = $derived(isRowDeleted(row));
-  const shownColumns = $derived([...(stickyColumns || []), ...(dataColumns || [])]);
 
   // extJsonParse turns every integer into native bigint — the props below can
   // legitimately arrive as bigint. Normalize once; arithmetic on mixed
@@ -100,32 +90,6 @@
   const totalRecordsN = $derived(Number(totalRecords));
   const previewRowIndexN = $derived(Number(previewRowIndex));
 
-  function listDefaultCellValue(row: TRow, col: MetaColumn) {
-    const value = row[col.key];
-    if (col.type === 'boolean') {
-      return value === true ? '✓' : value === false ? '✗' : '-';
-    } else if (col.badge?.values && value) {
-      const badgeValue = value as string;
-      const badgeColors = badgeClassesFromToken(col.badge.values[badgeValue]?.color ?? null);
-      return {
-        type: 'badge',
-        colors: badgeColors,
-        text: col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)
-      };
-    } else if (col.type === 'datetime') {
-      const mode = datetimeIanaModeByKey[col.key] ?? 'browser';
-      const parts = formatDatetimeCellDisplay(col, row as Record<string, unknown>, $uiLang, mode);
-      if (isDatetimeIanaRecordMode(col, datetimeIanaModeByKey) && parts.iana) {
-        return {
-          type: 'datetime-with-iana',
-          text: parts.text,
-          iana: parts.iana
-        };
-      }
-      return parts.text;
-    }
-    return formatListCellValue(col, value, $uiLang);
-  }
 </script>
 
 <div class="flex h-full flex-col bg-background">
@@ -285,11 +249,11 @@
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-          {#each stickyColumns as col}
+          {#each stickyColumns as col (col.key)}
             {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
               <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
-              {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
+              {@render renderPreviewCell(row, col)}
             </div>
           {/each}
         </div>
@@ -304,11 +268,11 @@
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-          {#each dataColumns as col}
+          {#each dataColumns as col (col.key)}
             {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
               <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
-              {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
+              {@render renderPreviewCell(row, col)}
             </div>
           {/each}
         </div>
@@ -323,11 +287,11 @@
           </div>
         </div>
         <div class="px-2 grid grid-cols-2 gap-2 min-w-0">
-          {#each auditingColumns as col}
+          {#each auditingColumns as col (col.key)}
             {@const isIanaRecordMode = col.type === 'datetime' && col.datetime_iana_toggle && (datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
             <div class="flex flex-col gap-1 rounded-md p-2 hover:bg-accent min-w-0 {isIanaRecordMode ? 'border border-amber-200/70 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950' : ''}">
               <span class="text-xs font-semibold text-primary break-words">{$t(col.label_key)}</span>
-              {@render renderPreviewCell(row, col, rowSelected, rowDeleted)}
+              {@render renderPreviewCell(row, col)}
             </div>
           {/each}
         </div>
@@ -336,7 +300,7 @@
   </div>
 </div>
 
-{#snippet renderPreviewCell(row: TRow, col: MetaColumn, rowSelected: boolean, rowDeleted: boolean)}
+{#snippet renderPreviewCell(row: TRow, col: MetaColumn)}
   {@const value = row[col.key]}
   {#if col.type === 'badge' && col.badge?.values && value}
     {@const badgeValue = value as string}

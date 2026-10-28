@@ -12,7 +12,6 @@
       state: {
         previewPanelOpen: boolean;
         previewRow: TRow | null;
-        focusedRowIndex: number | null;
         previewEditMode: boolean;
         previewRowIndex: number;
       };
@@ -32,14 +31,10 @@
     stickyColumns?: MetaColumn[];
     dataColumns?: MetaColumn[];
     auditingColumns?: MetaColumn[];
-    rowActionsEnabled: boolean;
-    rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: { edit?: boolean; duplicate?: boolean; preview?: boolean; delete?: boolean };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     isRowDeleted: (row: TRow) => boolean;
     rowKey: (row: TRow) => string;
-    rowSelectionEnabled: boolean;
-    selectedKeys: Set<string> | string[];
     footerRangeTotal: number;
     footerPage: number;
     pageSize: number;
@@ -68,14 +63,10 @@
     stickyColumns = [],
     dataColumns = [],
     auditingColumns = [],
-    rowActionsEnabled,
-    rowActions,
     entityRowActions,
     datetimeIanaModeByKey,
     isRowDeleted,
     rowKey,
-    rowSelectionEnabled,
-    selectedKeys,
     footerRangeTotal,
     footerPage,
     previewDropdownOpen,
@@ -250,8 +241,6 @@
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         entityRowActions={entityRowActions}
         isRowDeleted={isRowDeleted}
-        rowSelectionEnabled={rowSelectionEnabled}
-        rowSelected={Array.from(selectedKeys).includes(rowKey(previewPanel.state.previewRow!))}
         {cell}
       />
     {/if}

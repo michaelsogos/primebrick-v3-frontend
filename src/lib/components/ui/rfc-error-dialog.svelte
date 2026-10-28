@@ -4,7 +4,6 @@
   import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { formatUiDateTime, t } from '$lib/i18n';
-  import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
   import { Code } from '@primebrick/ui/vendor/lucide'
   import { FileJson } from '@primebrick/ui/vendor/lucide'
@@ -13,7 +12,6 @@
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import JsonTableViewer from './JsonTableViewer.svelte';
   import { JsonCodeBlock } from '@primebrick/ui';
-  import { onMount } from 'svelte';
 
   type RFC7807Error = {
     id?: string;
@@ -55,21 +53,6 @@
     open = false;
   }
 
-  function getToneForImpact(impact?: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
-    if (!impact) return 'neutral';
-    switch (impact) {
-      case 'CRITICAL':
-        return 'danger';
-      case 'HIGH':
-        return 'danger';
-      case 'MEDIUM':
-        return 'warning';
-      case 'LOW':
-        return 'info';
-      default:
-        return 'neutral';
-    }
-  }
 </script>
 
 <BorderedDialog
@@ -168,7 +151,7 @@
               <div>
                 <span class="text-xs font-semibold text-muted-foreground">Tags</span>
                 <div class="flex flex-wrap gap-1 mt-1">
-                  {#each error.tags as tag}
+                  {#each error.tags as tag (tag.label)}
                     <Badge class="text-xs border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
                       {tag.label}
                     </Badge>

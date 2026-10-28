@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet, SvelteMap } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import type { ConfigEntry } from '$lib/api-types';
   import ConfigListRow from './ConfigListRow.svelte';
@@ -44,7 +45,6 @@
   let isBulkSaving = $state(false);
 
   // Initialize/reset form state when entries change
-  // svelte-ignore state_referenced_locally -- intentional reset on entries change
   let lastEntriesKey = $state('');
   $effect(() => {
     const key = entries.map((e) => `${e.uuid}:${e.version}`).join('|');
@@ -57,8 +57,8 @@
   });
 
   // Taint check: a field is tainted if its current value differs from original
-  let taintedUuids = $derived.by<Set<string>>(() => {
-    const tainted = new Set<string>();
+  let taintedUuids = $derived.by<ReadonlySet<string>>(() => {
+    const tainted = new SvelteSet<string>();
     for (const entry of entries) {
       const orig = originalValues[entry.uuid] ?? '';
       const curr = formValues[entry.uuid] ?? '';
@@ -128,7 +128,7 @@
         isBulkSaving = false;
         return;
       }
-      const updated = await bulkUpdateConfigEntries(updates);
+      await bulkUpdateConfigEntries(updates);
       // Update original values to match current (clears taint)
       originalValues = { ...formValues };
       formErrors = {};
@@ -207,7 +207,8 @@
   );
 
   // Clear selection when entries change (e.g. after delete)
-  // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
+  // Local mutable state initialized from a prop, then reassigned on change.
+  // svelte-ignore state_referenced_locally
   let lastEntryCount = $state(entries.length);
   $effect(() => {
     if (entries.length !== lastEntryCount) {
@@ -233,7 +234,7 @@
   );
 
   let groupKeys = $derived.by<string[]>(() => {
-    const seen = new Set<string>();
+    const seen = new SvelteSet<string>();
     const keys: string[] = [];
     for (const e of groupedEntries) {
       const gk = e.group_key!;
@@ -245,8 +246,8 @@
     return keys;
   });
 
-  let entriesByGroup = $derived.by<Map<string, ConfigEntry[]>>(() => {
-    const map = new Map<string, ConfigEntry[]>();
+  let entriesByGroup = $derived.by<ReadonlyMap<string, ConfigEntry[]>>(() => {
+    const map = new SvelteMap<string, ConfigEntry[]>();
     for (const e of groupedEntries) {
       const gk = e.group_key!;
       if (!map.has(gk)) map.set(gk, []);

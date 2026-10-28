@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import { apiFetch, entityApiBase } from "$lib/api";
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
@@ -48,9 +49,8 @@
   let versionHistoryError = $state<string | null>(null);
   let versionHistoryPage = $state<number>(1);
   let versionHistoryLimit = $state<number>(50);
-  let versionHistoryTotal = $state<bigint>(0n);
   let versionHistoryHasMore = $state<boolean>(false);
-  let expandedEntries = $state<Set<number>>(new Set());
+  let expandedEntries = new SvelteSet<number>();
 
 
   function toggleEntryExpanded(entryId: number) {
@@ -59,7 +59,6 @@
     } else {
       expandedEntries.add(entryId);
     }
-    expandedEntries = new Set(expandedEntries);
   }
 
   async function loadVersionHistory() {
@@ -77,7 +76,6 @@
 
       const data = extJsonParse<{ data: any[]; pagination: { total: bigint; hasMore: boolean } }>(await res.text());
       versionHistoryData = data.data || [];
-      versionHistoryTotal = data.pagination?.total || 0n;
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
       versionHistoryError = $t('system.entities.versionHistory.error');
@@ -254,7 +252,6 @@
         } catch { return undefined; }
       }
 
-      const isJsonColumn = column?.type === 'json' || column?.type === 'jsonb';
       const parsedNewJson = tryParseJson(newValue);
       const parsedOldJson = tryParseJson(oldValue);
       // Detect JSONB/JSON values: if either old or new parses as a JSON object,
@@ -473,7 +470,7 @@
                   {#if isUpdate}
                     {#if expandedEntries.has(entry.id)}
                       <div class="space-y-2">
-                        {#each descriptions as desc, i}
+                        {#each descriptions as desc (desc)}
                           {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: any, oldJsonValue?: any}}
                           <div class="p-2 bg-muted/30 rounded-md border">
                             <div class="text-xs flex flex-wrap items-center gap-1">
@@ -555,7 +552,7 @@
                     {/if}
                   {:else}
                     <ul class="space-y-1 text-sm text-muted-foreground">
-                      {#each descriptions as desc}
+                      {#each descriptions as desc, i (i)}
                         {@const text = desc as string}
                         <li>{text}</li>
                       {/each}

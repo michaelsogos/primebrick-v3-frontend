@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts">
   import type { Snippet } from 'svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import EntityListTableLoading from './EntityListTableLoading.svelte';
@@ -71,7 +71,6 @@
     stickyColumns,
     dataColumns,
     auditingColumns,
-    rowActionsEnabled,
     footerRangeTotal,
     footerPage,
     previewDropdownOpen,
@@ -146,7 +145,6 @@
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
     auditingColumns: any[] | undefined;
-    rowActionsEnabled: boolean;
     footerRangeTotal: number;
     footerPage: number;
     previewDropdownOpen: boolean;
@@ -176,7 +174,6 @@
       entityRowActions={entityRowActions}
       dropdownMenuRow={dropdownMenuRow}
       datetimeIanaModeByKey={datetimeIanaModeByKey}
-      datetimeIanaRenderTick={datetimeIanaRenderTick}
       cell={cell}
       stickyColumnsGroup={stickyColumnsGroup}
       sparklineData={sparklineData}
@@ -269,7 +266,6 @@
         stickyColumns={stickyColumns}
         dataColumns={dataColumns}
         auditingColumns={auditingColumns}
-        rowActionsEnabled={rowActionsEnabled}
         selectedKeys={selectedKeys}
         footerRangeTotal={footerRangeTotal}
         footerPage={footerPage}

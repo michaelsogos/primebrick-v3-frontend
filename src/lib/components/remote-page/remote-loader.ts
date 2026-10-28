@@ -382,6 +382,16 @@ export async function disposeMounted(result: unknown): Promise<void> {
 }
 
 /**
+ * Reset the remote mount target. Its children are owned by the mounted remote
+ * module (imperative `mount()`/`mountPage`), never by the host's template —
+ * `disposeMounted` relies on the remote's own teardown, so clearing here is
+ * the boundary guarantee against partial mounts and remotes that leak nodes.
+ */
+export function clearMountTarget(el: HTMLElement): void {
+	el.replaceChildren();
+}
+
+/**
  * Predictable CSS convention — `pages/jobs-page.js` → `pages/jobs-page.css`.
  * The remote build keeps stylesheet and chunk side by side; when a module
  * deviates it passes an explicit `css_url` instead.

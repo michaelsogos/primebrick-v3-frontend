@@ -12,6 +12,7 @@
 	 */
 	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import {
@@ -143,7 +144,7 @@
 					if (window.opener) {
 						window.close();
 					} else {
-						await goto(listHref);
+						await goto(resolve(listHref as '/'));
 					}
 				} catch {
 					pushNotification({
@@ -210,8 +211,7 @@
 		auditingColumns={[]}
 		isCreatePage
 	>
-		{#snippet children()}
-			<form
+		<form
 				id="entity-form"
 				use:enhance
 				data-testid="entity-form-page"
@@ -255,8 +255,7 @@
 						</div>
 					{/each}
 				</div>
-			</form>
-		{/snippet}
+		</form>
 		{#snippet footerActions()}
 			<div class="flex gap-2">
 				<Button variant="outline" onclick={handleCancel}>

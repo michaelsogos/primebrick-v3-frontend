@@ -12,6 +12,7 @@
  * - ETag: apiFetch sends If-None-Match and handles 304 transparently
  */
 
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { browser } from '$app/environment';
 import { page } from '$app/state';
 import { get, type Unsubscriber } from 'svelte/store';
@@ -24,7 +25,7 @@ import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import { pushNotification } from '$lib/errors/app-errors';
 
 const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
-const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
+const LOADED_MODULES = new SvelteMap<string, number>(); // cacheKey → loaded_at epoch
 
 /** Check if a module was loaded recently (within TTL). */
 function isLoadedFresh(cacheKey: string): boolean {
@@ -119,7 +120,7 @@ export function useModuleTranslations(): { stop: () => void } {
     // system.entities.*, shared chrome strings) — NOT settings-owned; every
     // module page needs it (a service-owned page under module `job` still
     // renders system.* keys). CORE_DICT_MODULES is the single source.
-    const modules = new Set<string>(CORE_DICT_MODULES);
+    const modules = new SvelteSet<string>(CORE_DICT_MODULES);
     if (moduleId) modules.add(moduleId);
     for (const id of modules) {
       // Reset the in-memory cache for this module so the (new language or

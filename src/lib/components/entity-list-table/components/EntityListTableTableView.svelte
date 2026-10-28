@@ -1,5 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { Table, Root as TableRoot } from '$lib/components/ui/table';
+  import { Root as TableRoot } from '$lib/components/ui/table';
   import { cn } from '$lib/utils';
   import TableBody from './TableBody.svelte';
   import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';
@@ -67,7 +67,6 @@
     stickyColumns,
     dataColumns,
     auditingColumns,
-    rowActionsEnabled,
     selectedKeys,
     footerRangeTotal,
     footerPage,
@@ -135,7 +134,6 @@
     stickyColumns: any[] | undefined;
     dataColumns: any[] | undefined;
     auditingColumns: any[] | undefined;
-    rowActionsEnabled: boolean;
     selectedKeys: string[];
     footerRangeTotal: number;
     footerPage: number;
@@ -190,7 +188,6 @@
         sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
-        previewPanel={previewPanel}
         actionsEnabled={actionsEnabled}
         rowChromeH={rowChromeH}
         stickyColumnsGroup={stickyColumnsGroup}
@@ -201,7 +198,6 @@
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
-        onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
         onEntityRowClick={onEntityRowClick}
         onPreviewRow={handlePreviewRow}
         onToggleRowSelect={toggleRowSelect}
@@ -240,14 +236,10 @@
     {stickyColumns}
     {dataColumns}
     {auditingColumns}
-    {rowActionsEnabled}
-    {rowActions}
     {entityRowActions}
     {datetimeIanaModeByKey}
     {isRowDeleted}
     {rowKey}
-    {rowSelectionEnabled}
-    selectedKeys={selectedKeys as Set<string> | string[]}
     footerRangeTotal={footerRangeTotal}
     footerPage={footerPage}
     {previewDropdownOpen}

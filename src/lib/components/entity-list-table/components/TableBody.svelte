@@ -30,7 +30,6 @@
     datetimeIanaRenderTick,
     rowKey,
     isRowDeleted,
-    previewPanel,
     actionsEnabled,
     rowChromeH,
     stickyColumnsGroup,
@@ -41,7 +40,6 @@
     rowActions,
     entityRowActions,
     dropdownMenuRow,
-    onRowRangeMouseDown,
     onEntityRowClick,
     onPreviewRow,
     onToggleRowSelect,
@@ -78,9 +76,6 @@
     datetimeIanaRenderTick: number;
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: {
-      focusedRowIndex: number | null;
-    };
     actionsEnabled: boolean;
     rowChromeH: string;
     stickyColumnsGroup: MetaColumn[];
@@ -96,7 +91,6 @@
       preview?: boolean;
     };
     dropdownMenuRow: TRow | null;
-    onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onPreviewRow: (row: TRow) => void;
     onToggleRowSelect: (key: string) => void;
@@ -204,10 +198,8 @@
           shownColumns,
           extraCols,
           rowSelectionEnabled,
-          selectedKeys,
           rowRangeSelection,
           datetimeIanaRenderTick,
-          previewPanel,
           actionsEnabled,
           rowChromeH,
           stickyColumnsGroup,

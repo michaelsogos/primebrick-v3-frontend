@@ -250,7 +250,6 @@ function describeCharacterClassKey(node: AST.CharacterClass): KeyResult {
     } else if (el.type === 'Character') {
       descriptions.push(el.raw.replace('\\', ''));
     } else if (el.type === 'CharacterSet') {
-      const desc = describeCharacterSetKey(el);
       // Use the raw representation for character sets inside classes
       descriptions.push(el.raw);
     }

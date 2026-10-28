@@ -26,7 +26,7 @@
       </Table.Row>
     </Table.Header>
     <Table.Body>
-      {#each Object.entries(data) as [key, value]}
+      {#each Object.entries(data) as [key, value] (key)}
         <Table.Row class="align-top border-b last:border-0 hover:bg-transparent">
           <!-- Chiave di primo livello -->
           <Table.Cell class="font-mono text-sm font-semibold text-foreground/90 select-none truncate pt-3">
@@ -64,7 +64,7 @@
 {:else}
   <!-- LIVELLO ANNIDATO (RICORSIVO): Layout a griglia CSS per non rompere le colonne -->
   <div class="flex flex-col gap-2 w-full text-sm">
-    {#each Object.entries(data) as [key, value]}
+    {#each Object.entries(data) as [key, value] (key)}
       <div class="grid grid-cols-[auto_1fr] gap-x-3 items-start w-full py-0.5">
         
         <!-- Etichetta della chiave interna -->

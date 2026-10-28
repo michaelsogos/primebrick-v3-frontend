@@ -55,7 +55,6 @@
   // svelte-ignore state_referenced_locally
   const initialColor =
     (value_key ? builder.values?.[value_key]?.color : undefined) || undefined;
-  // svelte-ignore state_referenced_locally
   let draftColor = $state<string | undefined>(initialColor);
   // svelte-ignore state_referenced_locally
   let draftLabelKey = $state(value_key ? (builder.values?.[value_key]?.label_key ?? '') : '');

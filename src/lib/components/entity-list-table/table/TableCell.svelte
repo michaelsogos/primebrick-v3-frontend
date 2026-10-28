@@ -17,14 +17,12 @@
     row,
     column,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick,
     sparklineData,
     cellSnippet
   }: {
     row: Record<string, unknown>;
     column: MetaColumn;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick: number;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cellSnippet?: any;
   } = $props();

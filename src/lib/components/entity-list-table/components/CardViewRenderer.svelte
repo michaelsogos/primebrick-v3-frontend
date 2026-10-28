@@ -13,7 +13,6 @@
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
-  import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUpNarrowWide } from '@primebrick/ui/vendor/lucide'
   import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
@@ -33,7 +32,6 @@
     entityRowActions,
     dropdownMenuRow,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick,
     cell,
     stickyColumnsGroup,
     error,
@@ -98,7 +96,6 @@
     };
     dropdownMenuRow: TRow | null;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick: number;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     stickyColumnsGroup: MetaColumn[];
     error: string | null;
@@ -313,14 +310,13 @@
         )}
       >
         {#if viewRows && viewRows.length > 0}
-        {#each viewRows as r, i (rowKey(r))}
+        {#each viewRows as r (rowKey(r))}
           {@const rk = rowKey(r)}
           {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
           {@const rowDeleted = isRowDeleted(r)}
           {@const rowFocused = previewPanel.state.focusedRowIndex !== null && viewRows[previewPanel.state.focusedRowIndex] === r}
           <CardItem
             row={r}
-            index={i}
             rowKey={rk}
             rowSelected={rowSelected}
             rowDeleted={rowDeleted}
@@ -330,7 +326,6 @@
             shownColumns={shownColumns}
             stickyColumnsGroup={stickyColumnsGroup}
             datetimeIanaModeByKey={datetimeIanaModeByKey}
-            datetimeIanaRenderTick={datetimeIanaRenderTick}
             cell={cell}
             rowActions={rowActions}
             entityRowActions={entityRowActions}
@@ -347,7 +342,6 @@
             onRestoreRow={onRestoreRow}
             onPreviewRow={onPreviewRow}
             handleCustomAction={handleCustomAction}
-            selectedKeys={selectedKeys}
             sparklineData={sparklineData}
           />
         {/each}

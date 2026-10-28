@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { SvelteURL } from 'svelte/reactivity';
   import type { HTMLInputAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "$lib/utils.js";
+  import { type WithElementRef } from "$lib/utils.js";
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
-  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
@@ -58,18 +58,6 @@
     }
   });
 
-  // The URL value without the protocol prefix (for display)
-  let urlWithoutProtocol = $derived.by(() => {
-    if (!value) return '';
-    try {
-      const url = new URL(value);
-      // Reconstruct without protocol
-      return value.replace(/^[a-zA-Z]+:\/\//, '');
-    } catch {
-      return value;
-    }
-  });
-
   let hasError = $derived(errors.length > 0);
   let firstError = $derived(errors.length > 0 ? errors[0] : "");
 
@@ -104,7 +92,7 @@
       value = `${protocol}://`;
     } else {
       try {
-        const url = new URL(value);
+        const url = new SvelteURL(value);
         url.protocol = `${protocol}:`;
         value = url.toString();
       } catch {

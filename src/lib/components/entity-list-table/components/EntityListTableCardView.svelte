@@ -16,7 +16,6 @@
     entityRowActions,
     dropdownMenuRow,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick,
     cell,
     stickyColumnsGroup,
     error,
@@ -64,7 +63,6 @@
     entityRowActions: any;
     dropdownMenuRow: TRow | null;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick: number;
     cell: any;
     stickyColumnsGroup: any[];
     error: string | null;
@@ -115,7 +113,6 @@
     entityRowActions={entityRowActions}
     dropdownMenuRow={dropdownMenuRow}
     datetimeIanaModeByKey={datetimeIanaModeByKey}
-    datetimeIanaRenderTick={datetimeIanaRenderTick}
     cell={cell}
     stickyColumnsGroup={stickyColumnsGroup}
     onLoadVersionHistory={(r) => rowActionsComposable.loadVersionHistory(r)}

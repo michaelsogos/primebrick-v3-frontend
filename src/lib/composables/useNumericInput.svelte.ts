@@ -38,7 +38,6 @@ interface UseNumericInputOptions {
 }
 
 import { parseTypeConfig } from '$lib/config/type-config-schema';
-import type { ParsedTypeConfig } from '$lib/config/type-config-schema';
 
 /**
  * Normalize leading zeros in the integer part of a canonical numeric string.
@@ -214,9 +213,6 @@ export function useNumericInput(options: UseNumericInputOptions) {
     _rawValue: String(value()),
   });
 
-  // Track last external value to detect prop changes
-  let _lastExternalValue: string | bigint | number = value();
-
   // Derived values
   const isUnsigned = $derived.by<boolean>(() => {
     const parsed = parseTypeConfig(type_config());
@@ -231,9 +227,7 @@ export function useNumericInput(options: UseNumericInputOptions) {
     return null;
   });
 
-  const inputMode = $derived.by<'numeric' | 'decimal'>(() => {
-    return type() === 'bigint' ? 'numeric' : 'decimal';
-  });
+  const inputMode = $derived<'numeric' | 'decimal'>(type() === 'bigint' ? 'numeric' : 'decimal');
 
   const currency = $derived.by<string>(() => {
     const parsed = parseTypeConfig(type_config());
@@ -261,9 +255,7 @@ export function useNumericInput(options: UseNumericInputOptions) {
   });
 
   // Display value — locale-formatted for the input element
-  const displayValue = $derived.by<string>(() => {
-    return formatDisplay(_state._rawValue, type(), lang());
-  });
+  const displayValue = $derived<string>(formatDisplay(_state._rawValue, type(), lang()));
 
   /**
    * Sync rawValue from the external prop.
@@ -271,7 +263,6 @@ export function useNumericInput(options: UseNumericInputOptions) {
    */
   function syncFromProp() {
     const externalValue = value();
-    _lastExternalValue = externalValue;
     // Sanitize the incoming value through the same filter used on input —
     // a stale/garbage string must never reach `displayValue` (it would get
     // mangled by thousand-separator formatting, e.g. "asdf" → "a.sdf").

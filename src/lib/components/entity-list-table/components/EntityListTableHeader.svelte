@@ -1,6 +1,6 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts">
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
+  import { EntityListToolbar } from '../toolbar';
 
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
   import type { MetaColumn, AdvancedFilter, FilterPreset } from '$lib/entity-list/types';
@@ -51,9 +51,9 @@
     onBulkDelete,
     onBulkRestore,
     bulkCapabilities
-  }: EntityListTableHeaderProps<TRow> = $props();
+  }: EntityListTableHeaderProps = $props();
 
-  type EntityListTableHeaderProps<TRow> = {
+  type EntityListTableHeaderProps = {
     search: string;
     onSearchInput: (value: string) => void;
     searchInKeys: string[] | null;

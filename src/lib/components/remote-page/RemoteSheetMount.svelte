@@ -34,6 +34,7 @@
   import type { ModuleSheetDecl, ModuleSheetHost } from '@primebrick/ui';
   import {
     RemoteLoadError,
+    clearMountTarget,
     deriveStylesheetUrl,
     disposeMounted,
     ensureStylesheet,
@@ -122,7 +123,7 @@
       mounted = null;
       await disposeMounted(prev).catch(() => undefined);
     }
-    mountEl?.replaceChildren();
+    if (mountEl) clearMountTarget(mountEl);
     if (!url) {
       setError('contract', null, 'sheet declaration has no component_url');
       return;

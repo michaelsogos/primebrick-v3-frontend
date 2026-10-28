@@ -1,3 +1,4 @@
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { untrack } from 'svelte';
 import type { DeepReadonly } from '@primebrick/ui';
 import { isRowDeleted as isRowDeletedUtil } from '../utils';
@@ -15,15 +16,15 @@ export function useClientSelection<T extends Record<string, unknown>>(options: {
   setClientSelectedPage: (p: number) => void;
 }) {
   const _state = $state({
-    selectedRowByKey: new Map<string, T>(),
+    selectedRowByKey: new SvelteMap<string, T>(),
   });
 
   // Merge rows into selection map
   $effect(() => {
     const sk = options.selectedKeys();
     const r = options.rows();
-    const sel = new Set(sk);
-    const next = new Map<string, T>();
+    const sel = new SvelteSet(sk);
+    const next = new SvelteMap<string, T>();
     for (const row of r) {
       const k = options.rowKey(row);
       if (sel.has(k)) next.set(k, row);

@@ -6,6 +6,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { resolveSafePage } from '$lib/navigation/safe-page';
+  import { resolve } from '$app/paths';
   import { httpReasonPhrase } from '$lib/errors/http-status';
   import { House } from '@primebrick/ui/vendor/lucide';
   import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
@@ -84,7 +85,7 @@
       {#if homeHref}
         <a
           data-testid="error-page-home-cta"
-          href={homeHref}
+          href={resolve(homeHref as '/')}
           class="inline-flex items-center gap-1.5 hover:underline decoration-primary"
         >
           <House class="h-3.5 w-3.5 text-primary" />

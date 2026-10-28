@@ -207,11 +207,10 @@
 		b /= 255;
 		const max = Math.max(r, g, b),
 			min = Math.min(r, g, b);
-		let h = 0,
-			s = 0,
-			v = max;
+		let h = 0;
+		const v = max;
 		const d = max - min;
-		s = max === 0 ? 0 : d / max;
+		const s = max === 0 ? 0 : d / max;
 		if (max !== min) {
 			switch (max) {
 				case r:
@@ -453,7 +452,7 @@
 	     (e.g. "emerald-500") as the bound value. -->
 	<ScrollArea class="h-56 w-full rounded-md border bg-muted/20">
 		<div class="flex flex-col gap-1.5 p-2">
-			{#each tailwindFamilies as family}
+			{#each tailwindFamilies as family (family)}
 				<div class="flex gap-1.5">
 					{#each tailwindSwatches.filter((sw) => sw.family === family) as sw (sw.token)}
 						<button
@@ -515,7 +514,7 @@
 			<div
 				bind:this={hueRef}
 				class="relative h-3 w-full cursor-pointer rounded-full shadow-sm ring-1 ring-black/5 touch-none"
-				style:background={'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)'}
+				style:background="linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)"
 				role="slider"
 				aria-valuenow={h}
 				tabindex="0"
@@ -576,7 +575,7 @@
 					<Command.Root>
 						<Command.List>
 							<Command.Group>
-								{#each formats as fmt}
+								{#each formats as fmt (fmt)}
 									<Command.Item
 										value={fmt}
 										onSelect={() => setFormat(fmt as ColorFormat)}
@@ -617,7 +616,7 @@
 					class="h-9"
 					onChange={(v) => pickSystemToken(typeof v === 'string' ? v : (v[0] ?? ''))}
 				>
-					{#snippet itemSnippet({ option, selected })}
+					{#snippet itemSnippet({ option })}
 						{@const sw = option as TailwindSwatch}
 						<span class="flex w-full items-center gap-2">
 							<span

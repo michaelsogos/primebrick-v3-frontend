@@ -1,6 +1,6 @@
 <script lang="ts">
   import { z } from 'zod';
-  import { superForm, defaults, setError, setMessage } from 'sveltekit-superforms';
+  import { superForm, defaults, setError } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';

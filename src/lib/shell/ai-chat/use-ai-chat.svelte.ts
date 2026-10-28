@@ -13,6 +13,7 @@
  * Pattern follows `userProfileStore` / `shellNav`: a single `$state` object
  * mutated in place, with a readonly store wrapper exposing getters.
  */
+import { SvelteDate } from 'svelte/reactivity';
 import { apiFetch, callMcpTool, listMcpTools, type McpToolDef } from '$lib/api';
 import { createSsePostStream, parseSseData } from '$lib/sse/create-sse-connection';
 import { invokeClientTool, type ClientToolResult } from './client-tool-registry';
@@ -219,7 +220,7 @@ function commitStreamingText(extra?: { tool_calls?: StoredToolCall[] }): void {
       text: state.streamingText || undefined,
       tool_calls: extra?.tool_calls,
     },
-    created_at: new Date().toISOString(),
+    created_at: new SvelteDate().toISOString(),
     citations: state.streamingCitations.length > 0 ? state.streamingCitations : undefined,
     feedback: null,
   };
@@ -404,7 +405,7 @@ async function executeServerCall(call: LoopToolCall): Promise<void> {
     conversation_uuid: state.currentConversationUuid ?? '',
     role: 'tool',
     content: { tool_call_id: call.tool_call_id, tool_name: call.tool, output },
-    created_at: new Date().toISOString(),
+    created_at: new SvelteDate().toISOString(),
   }];
 }
 
@@ -491,7 +492,7 @@ export const aiChatStore = {
       conversation_uuid: state.currentConversationUuid ?? '',
       role: 'user',
       content: { text },
-      created_at: new Date().toISOString(),
+      created_at: new SvelteDate().toISOString(),
     };
     state.messages = [...state.messages, userMsg];
     state.streamingText = '';
@@ -531,7 +532,7 @@ export const aiChatStore = {
         conversation_uuid: state.currentConversationUuid ?? '',
         role: 'assistant',
         content: { text: state.streamingText + ' […stopped]' },
-        created_at: new Date().toISOString(),
+        created_at: new SvelteDate().toISOString(),
       };
       state.messages = [...state.messages, assistantMsg];
       state.streamingText = '';

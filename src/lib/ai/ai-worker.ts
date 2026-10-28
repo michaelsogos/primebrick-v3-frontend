@@ -78,8 +78,6 @@ interface ChatMessage {
   name?: string;
 }
 
-type DType = 'auto' | 'fp32' | 'fp16' | 'q8' | 'int8' | 'uint8' | 'q4' | 'q4f16' | 'bnb4' | 'q2' | 'q2f16' | 'q1' | 'q1f16';
-
 interface GenerateParams {
   max_new_tokens: number;
   temperature: number;
@@ -108,26 +106,6 @@ interface LoadPayload {
 interface GeneratePayload {
   messages: ChatMessage[];
   params: GenerateParams;
-}
-
-interface MeasurementData {
-  model_id: string;
-  dtype: string;
-  load_time_ms: number;
-  warmup_time_ms: number;
-  generation_time_ms: number;
-  tokens_generated: number;
-  tokens_per_second: number;
-  first_token_latency_ms: number;
-  kv_cache_speedup: number | null;
-  kv_cache_hit_tokens: number;
-  kv_cache_miss_tokens: number;
-  kv_cache_hit_ratio: number;
-  kv_cache_seq_length: number;
-  prompt_token_count: number;
-  cache_bytes: number | null;
-  memory_usage_bytes: number | null;
-  vram_bytes: number | null;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────

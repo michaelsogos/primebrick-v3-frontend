@@ -29,11 +29,6 @@
     errorDetailsDialogOpen = true;
   }
 
-  function closeErrorDetails() {
-    errorDetailsDialogOpen = false;
-    selectedErrorDetails = null;
-  }
-
   function hasExtraFields(e: Record<string, any>): boolean {
     return e.extra != null && Object.keys(e.extra).length > 0;
   }
@@ -50,21 +45,6 @@
         return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       default:
         return 'border-border/60 bg-muted/30 text-muted-foreground';
-    }
-  }
-
-  function impactToAlertVariant(
-    i: ImpactLevel
-  ): 'impactCritical' | 'impactHigh' | 'impactMedium' | 'impactLow' {
-    switch (i) {
-      case 'CRITICAL':
-        return 'impactCritical';
-      case 'HIGH':
-        return 'impactHigh';
-      case 'MEDIUM':
-        return 'impactMedium';
-      case 'LOW':
-        return 'impactLow';
     }
   }
 

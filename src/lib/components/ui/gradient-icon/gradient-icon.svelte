@@ -87,7 +87,7 @@
       {/if}
     </linearGradient>
   </defs>
-  {#each paths as d}
+  {#each paths as d (d)}
     <path {d} />
   {/each}
 </svg>

@@ -1,3 +1,4 @@
+import { SvelteDate } from 'svelte/reactivity';
 import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityMeta } from '$lib/entity-list/types';
@@ -37,7 +38,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
             endpoint,
             entity: entityName,
             response: data,
-            timestamp: new Date().toISOString()
+            timestamp: new SvelteDate().toISOString()
           });
 
           // RFC ERROR TOAST - Metadata parsing error
@@ -61,7 +62,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
           entity: entityName,
           status: res.status,
           statusText: res.statusText,
-          timestamp: new Date().toISOString()
+          timestamp: new SvelteDate().toISOString()
         });
 
         // RFC ERROR TOAST - Metadata endpoint error
@@ -81,7 +82,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
         endpoint,
         entity: entityName,
         error: err instanceof Error ? err.message : String(err),
-        timestamp: new Date().toISOString()
+        timestamp: new SvelteDate().toISOString()
       });
 
       // RFC ERROR TOAST - Network error

@@ -1,4 +1,3 @@
-import type { Snippet } from 'svelte';
 import type { DeepReadonly } from '@primebrick/ui';
 
 export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
@@ -97,6 +96,7 @@ export function usePreviewPanel<TRow extends Record<string, unknown>>(
     setPreviewEditMode,
     handleFieldChange,
     setFocusedRowIndex,
-    navigatePreview
+    navigatePreview,
+    refresh
   };
 }

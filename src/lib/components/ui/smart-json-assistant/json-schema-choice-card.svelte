@@ -12,6 +12,7 @@
    * Fully schema-agnostic: the object name used in generated prompts and
    * the i18n namespace arrive via props.
    */
+  import { SvelteSet } from 'svelte/reactivity';
   import { JsonCodeBlock } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
@@ -172,8 +173,9 @@
   // Bound combo value, seeded with the suggested key — same pattern as
   // ValidationRulesSection (/create): a key that exists in the dict resolves
   // to its translation in the trigger instead of showing the raw key.
-  // svelte-ignore state_referenced_locally — seed only; user selection
-  // immediately resolves the choice via handleKeySelect.
+  // Seed only; user selection immediately resolves the choice via
+  // handleKeySelect.
+  // svelte-ignore state_referenced_locally
   let keyPickerValue = $state(choice.kind === 'key_picker' ? choice.suggested_key : '');
 
   /** Pick an existing (or newly typed) translation key → precise prompt. */
@@ -192,7 +194,7 @@
 
   // ─── translations_preview (new error message → per-language approval) ──
   let previewLang = $state('');
-  let approvedLangs = $state(new Set<string>());
+  let approvedLangs = new SvelteSet<string>();
 
   const previewLangs = $derived(
     choice.kind === 'translations_preview' ? Object.keys(choice.translations) : [],
@@ -206,14 +208,13 @@
   const approvedCount = $derived(approvedLangs.size);
 
   function toggleApproved(lang: string) {
-    const next = new Set(approvedLangs);
-    if (next.has(lang)) next.delete(lang);
-    else next.add(lang);
-    approvedLangs = next;
+    if (approvedLangs.has(lang)) approvedLangs.delete(lang);
+    else approvedLangs.add(lang);
   }
 
   function approveAll() {
-    approvedLangs = new Set(previewLangs);
+    approvedLangs.clear();
+    for (const l of previewLangs) approvedLangs.add(l);
   }
 
   function handleAcceptTranslations() {

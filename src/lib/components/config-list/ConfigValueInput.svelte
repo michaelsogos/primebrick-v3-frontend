@@ -56,12 +56,12 @@
   // or SuperForms via $form.value in the create page).
   // For bigint/number types, the BE sends native types; we convert to string
   // for display in text inputs, and convert back to native on change.
-  // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
+  // Local mutable state initialized from a prop, then reassigned on change.
   let localValue = $state<string>(String(value));
 
   // Sync local value when the prop changes (e.g. after bulk save reset, or
   // when SuperForms resets the form). Supports both bind:value and value+onChange modes.
-  // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
+  // Local mutable state initialized from a prop, then reassigned on change.
   let lastValue = $state<string | bigint | number>(value);
   $effect(() => {
     if (value !== lastValue) {
@@ -273,7 +273,7 @@
     return dv.toString();
   }
 
-  // svelte-ignore state_referenced_locally — synced mirror of the string value, initialized once
+  // Synced mirror of the string value, initialized once.
   let dateValue = $state<CalendarDate | CalendarDateTime | undefined>(parseDateValue(String(value)));
 
   let isDateType = $derived(type === 'date' || type === 'datetime' || type === 'time');
@@ -344,7 +344,7 @@
       display="custom"
       data-testid={`config-input-single-select-${fieldKey}`}
     >
-      {#snippet itemSnippet({ option, resolvedLabel, selected })}
+      {#snippet itemSnippet({ option, resolvedLabel })}
         {@const descKey = (option as Record<string, any>).description_key}
         <div class="flex flex-col gap-0.5 flex-1 min-w-0">
           <span class="truncate text-left font-medium">{resolvedLabel}</span>

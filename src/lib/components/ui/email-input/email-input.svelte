@@ -2,7 +2,6 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import { Input } from "@primebrick/ui";
-  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';

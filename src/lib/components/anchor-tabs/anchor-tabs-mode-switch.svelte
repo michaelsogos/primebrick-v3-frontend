@@ -20,27 +20,25 @@
   } = $props();
 
   const tabsMode = useTabsMode();
-  let checked = $state(tabsMode.mode === "show-all");
+  // Single source of truth is the composable's `mode` — `checked` is a
+  // read-only projection; writes go through `setMode` via the switch change
+  // handler (a bidirectional $state+$effect pair would desync on external
+  // mode changes anyway).
+  let checked = $derived(tabsMode.mode === "show-all");
 
-  // Sync external mode changes → switch state.
-  $effect(() => {
-    checked = tabsMode.mode === "show-all";
-  });
-
-  // Sync switch state → composable (fires when user toggles the switch).
-  $effect(() => {
-    const new_mode = checked ? "show-all" : "hide";
+  function onCheckedChange(v: boolean) {
+    const new_mode = v ? "show-all" : "hide";
     if (tabsMode.mode !== new_mode) {
       tabsMode.setMode(new_mode);
     }
-  });
+  }
 </script>
 
 <div class={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
   <span class={cn(!checked && "font-medium text-foreground")}>
     {label_hide ?? "Tabs"}
   </span>
-  <Switch bind:checked />
+  <Switch checked={checked} {onCheckedChange} />
   <span class={cn(checked && "font-medium text-foreground")}>
     {label_show_all ?? "Show all"}
   </span>

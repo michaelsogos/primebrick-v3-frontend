@@ -8,16 +8,10 @@
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
   import { Bell } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
-  import { CircleAlert } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
-  import { ThumbsUp } from '@primebrick/ui/vendor/lucide'
   import { BookOpen } from '@primebrick/ui/vendor/lucide'
-  import { Info } from '@primebrick/ui/vendor/lucide'
-  import { Trash2 } from '@primebrick/ui/vendor/lucide';
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
@@ -25,21 +19,6 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-
-  function errorTagBadgeClass(tone: string | undefined) {
-    switch (tone) {
-      case 'danger':
-        return 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300';
-      case 'warning':
-        return 'border-amber-500/25 bg-amber-500/10 text-amber-800 dark:text-amber-200';
-      case 'info':
-        return 'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300';
-      case 'success':
-        return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
-      default:
-        return 'border-border/60 bg-muted/30 text-muted-foreground';
-    }
-  }
 
   function impactRank(i: ImpactLevel): number {
     switch (i) {
@@ -73,34 +52,6 @@
         return 'bg-warning text-warning-foreground';
       case 'LOW':
         return 'bg-info text-info-foreground';
-    }
-  }
-
-  function impactToAlertVariant(
-    i: ImpactLevel
-  ): 'impactCritical' | 'impactHigh' | 'impactMedium' | 'impactLow' {
-    switch (i) {
-      case 'CRITICAL':
-        return 'impactCritical';
-      case 'HIGH':
-        return 'impactHigh';
-      case 'MEDIUM':
-        return 'impactMedium';
-      case 'LOW':
-        return 'impactLow';
-    }
-  }
-
-  /** Outline icons aligned with `ui/sonner` (CircleAlert for error-class toasts). */
-  function impactIcon(i: ImpactLevel) {
-    switch (i) {
-      case 'CRITICAL':
-      case 'HIGH':
-        return CircleAlert;
-      case 'MEDIUM':
-        return TriangleAlert;
-      case 'LOW':
-        return Info;
     }
   }
 

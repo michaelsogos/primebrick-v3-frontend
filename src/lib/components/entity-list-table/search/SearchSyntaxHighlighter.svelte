@@ -60,6 +60,6 @@
   }
 </script>
 
-{#each searchSyntaxParts as seg}
+{#each searchSyntaxParts as seg (seg)}
   <span class={searchSyntaxSpanClass(seg)}>{seg.text}</span>
 {/each}

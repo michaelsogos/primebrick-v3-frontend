@@ -23,12 +23,14 @@
  * - Mutations only through exposed mutator functions
  * - `$derived` values exposed via individual getters
  */
+import { SvelteDate } from 'svelte/reactivity';
 import type { DeepReadonly } from '@primebrick/ui';
 import { useAiModels } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { useAiCerebellum } from '@primebrick/ui';
 import { resolveEffectiveParams, type EffectiveAiParams } from '@primebrick/ui';
 import type { AiCerebellum } from '$lib/api-types';
+import AiWorker from '$lib/ai/ai-worker.ts?worker';
 import type {
   AiAction,
   AiAssistantHooks,
@@ -247,9 +249,7 @@ export function useAiAssistant<TChoice = unknown>(
    * The worker file is the shared src/lib/ai/ai-worker.ts.
    */
   function createWorker(): Worker {
-    const w = new Worker(new URL('$lib/ai/ai-worker.ts', import.meta.url), {
-      type: 'module',
-    });
+    const w = new AiWorker();
     w.addEventListener('message', handleWorkerMessage);
     w.addEventListener('error', (e) => {
       const error = new Error(`Worker error: ${e.message}`);
@@ -664,7 +664,7 @@ export function useAiAssistant<TChoice = unknown>(
             working_set_source: 'e2e_measured',
             working_set_detail: {
               measured_vram_bytes: vram_bytes,
-              measured_at: new Date().toISOString(),
+              measured_at: new SvelteDate().toISOString(),
               measured_ctx_tokens: null, // measured at load — pre-generation KV
             },
             version: row.version,

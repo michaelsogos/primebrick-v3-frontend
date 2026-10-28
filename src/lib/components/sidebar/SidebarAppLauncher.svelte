@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import { Popover, Switch } from '@primebrick/ui';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Kbd } from '$lib/components/ui/kbd';
@@ -85,8 +86,8 @@
       ...shellNav.roots.map((root) => ({ root, hidden: false })),
     ];
     if (!showAll) return items;
-    const navigable = new Set(shellNav.roots);
-    const hidden = new Set<string>();
+    const navigable = new SvelteSet(shellNav.roots);
+    const hidden = new SvelteSet<string>();
     for (const m of shellNav.modules) {
       if (m.accessible !== false) continue;
       for (const p of m.route_prefixes ?? []) hidden.add(firstSegment(p));

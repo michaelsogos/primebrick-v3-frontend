@@ -85,9 +85,6 @@
     }
   }
 
-  const currentJsonText = () =>
-    typeof current_json === 'function' ? current_json() : current_json;
-
   let created = $state<JsonAiHandle | null>(null);
 
   function createComposable(id: string): JsonAiHandle {

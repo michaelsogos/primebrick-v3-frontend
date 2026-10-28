@@ -133,7 +133,7 @@
       `Source message (${sourceLang}): ${JSON.stringify(message)}`,
     );
     const match = raw.match(/\{[\s\S]*\}/);
-    let generated: Record<string, string> = {};
+    let generated: Record<string, string>;
     try {
       generated = match ? JSON.parse(match[0]) : {};
     } catch { generated = {}; }
@@ -174,7 +174,7 @@
   function proposeKeyMerge(path: string, key: string) {
     const ai = created;
     if (!ai) return;
-    let merged: Record<string, unknown> = {};
+    let merged: Record<string, unknown>;
     try {
       merged = JSON.parse(currentJsonText() || '{}');
     } catch { merged = {}; }

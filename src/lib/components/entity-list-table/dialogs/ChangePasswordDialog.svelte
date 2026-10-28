@@ -28,7 +28,6 @@
   let newPassword = $state('');
   let confirmPassword = $state('');
   let isSubmitting = $state(false);
-  let localError = $state<string | null>(null);
 
   const passwordPolicy = usePasswordPolicy();
 
@@ -37,7 +36,6 @@
     if (open) {
       newPassword = '';
       confirmPassword = '';
-      localError = null;
       void passwordPolicy.load();
     }
   });
@@ -67,7 +65,6 @@
     if (!uuid) return;
 
     isSubmitting = true;
-    localError = null;
     try {
       const res = await apiFetch(`/api/v1/auth/users/${uuid}/change-password`, {
         method: 'POST',
@@ -108,7 +105,7 @@
   }
 </script>
 
-<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('system.settings.users.changePasswordTitle')}</Dialog.Title>
     <Dialog.Description>{$t('system.settings.users.changePasswordDescription')}</Dialog.Description>

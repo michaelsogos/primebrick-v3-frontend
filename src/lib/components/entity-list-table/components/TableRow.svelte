@@ -6,7 +6,6 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Button } from '@primebrick/ui';
-  import { TableCell } from '../table';
   import CellRenderer from './CellRenderer.svelte';
   import {
     entityListGrayChromeCellClass,
@@ -41,7 +40,6 @@
     rowSelectionEnabled,
     actionsEnabled,
     rowChromeH,
-    selectedKeys,
     shownColumns,
     stickyColumnsGroup,
     stickyColumnsState,
@@ -52,7 +50,6 @@
     rowActions,
     entityRowActions,
     dropdownMenuRow,
-    previewPanel,
     onRowRangeMouseDown,
     onEntityRowClick,
     onPreviewRow,
@@ -77,7 +74,6 @@
     rowSelectionEnabled: boolean;
     actionsEnabled: boolean;
     rowChromeH: string;
-    selectedKeys: string[];
     shownColumns: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsGroup: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsState: {
@@ -106,9 +102,6 @@
       }>;
     };
     dropdownMenuRow: TRow | null;
-    previewPanel: {
-      focusedRowIndex: number | null;
-    };
     onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onPreviewRow: (row: TRow) => void;
@@ -307,7 +300,7 @@
                 </DropdownMenu.Item>
               {/if}
               {#if entityRowActions?.custom_actions && handleCustomAction}
-                {#each entityRowActions.custom_actions as action}
+                {#each entityRowActions.custom_actions as action (action.action_name)}
                   {@const isDisabled = action.disabled_when_deleted && isRowDeleted(row)}
                   <DropdownMenu.Item
                     onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}

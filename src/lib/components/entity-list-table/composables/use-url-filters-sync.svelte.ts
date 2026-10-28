@@ -17,6 +17,7 @@
  * URL filters take precedence over persisted filters (the AI explicitly
  * requested them).
  */
+import { SvelteMap } from 'svelte/reactivity';
 import type { AdvancedFilter, FilterOperator } from '$lib/entity-list/types';
 
 export interface UrlFiltersResult {
@@ -48,7 +49,7 @@ export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult
 
   // Parse filters[N][field|op|value|connector] entries.
   // Group by index, then convert to filterValues / advancedFilters.
-  const filterMap = new Map<number, { field?: string; op?: string; value?: any; connector?: string }>();
+  const filterMap = new SvelteMap<number, { field?: string; op?: string; value?: any; connector?: string }>();
 
   for (const [key, value] of searchParams.entries()) {
     // Match filters[0][field], filters[0][op], filters[0][value], filters[0][connector]

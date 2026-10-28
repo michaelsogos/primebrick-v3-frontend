@@ -1,3 +1,4 @@
+import { SvelteMap } from 'svelte/reactivity';
 import { fetchServices, type ServiceInfo } from '$lib/api';
 import { createSseConnection, parseSseData } from '$lib/sse/create-sse-connection';
 
@@ -104,8 +105,8 @@ export function aggregateStatus(instances: ServiceInfo[]): string {
 }
 
 /** Group services by code, returning a Map for ordered iteration. */
-export function groupByCode(services: ServiceInfo[]): Map<string, ServiceInfo[]> {
-  const map = new Map<string, ServiceInfo[]>();
+export function groupByCode(services: ServiceInfo[]): SvelteMap<string, ServiceInfo[]> {
+  const map = new SvelteMap<string, ServiceInfo[]>();
   for (const s of services) {
     if (!map.has(s.code)) map.set(s.code, []);
     map.get(s.code)!.push(s);

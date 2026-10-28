@@ -140,8 +140,6 @@
             <CardField
               row={r}
               column={col}
-              {rowSelected}
-              {rowDeleted}
               {datetimeIanaModeByKey}
               {viewMode}
               {cell}

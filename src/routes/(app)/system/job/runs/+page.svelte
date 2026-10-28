@@ -45,7 +45,6 @@
       row={args.row}
       column={args.column}
       datetimeIanaModeByKey={args.datetimeIanaModeByKey ?? {}}
-      datetimeIanaRenderTick={args.datetimeIanaRenderTick ?? 0}
       sparklineData={args.sparklineData}
     />
   {/if}

@@ -2,12 +2,8 @@
   import { t } from '$lib/i18n';
   import { formatListCellValue } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
-  import { Badge } from '@primebrick/ui';
-  import { badgeClassesFromToken } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { CircleCheck } from '@primebrick/ui/vendor/lucide'
-  import { CircleX } from '@primebrick/ui/vendor/lucide'
   import { Ban } from '@primebrick/ui/vendor/lucide';
   import { Tooltip } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
@@ -19,8 +15,6 @@
   let {
     row,
     column,
-    rowSelected,
-    rowDeleted,
     datetimeIanaModeByKey,
     viewMode,
     cell,
@@ -29,8 +23,6 @@
   }: {
     row: Record<string, unknown>;
     column: MetaColumn;
-    rowSelected: boolean;
-    rowDeleted: boolean;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     viewMode?: 'cards_grid' | 'cards_list';
     cell?: any;
@@ -39,10 +31,6 @@
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
-  const value = $derived(row[column.key]);
-  const isIanaRecordMode = $derived(
-    column.type === 'datetime' && !!column.datetime_iana_toggle && (datetimeIanaModeByKey[column.key] ?? 'browser') === 'record'
-  );
   const auditingColumns = getAuditColumnsContext();
 
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
@@ -91,7 +79,6 @@
         row={row}
         column={column}
         datetimeIanaModeByKey={datetimeIanaModeByKey}
-        datetimeIanaRenderTick={datetimeIanaRenderTick ?? 0}
         sparklineData={sparklineData}
       />
     {/if}

@@ -68,7 +68,7 @@
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
-      {#each Object.entries(filterValues) as [key, value]}
+      {#each Object.entries(filterValues) as [key, value] (key)}
         {@const col = filterableColumns.find((c) => c.key === key)}
         {#if col}
           {@const operator = col.type === 'text' ? 'contains' : '='}
@@ -97,7 +97,7 @@
       {/each}
     {/if}
     {#if advancedFilters && advancedFilters.length > 0}
-      {#each advancedFilters as filter}
+      {#each advancedFilters as filter (filter.id)}
         {@const col = filterableColumns.find((c) => c.key === filter.field)}
         {#if col}
           {@const formattedValue = (() => {

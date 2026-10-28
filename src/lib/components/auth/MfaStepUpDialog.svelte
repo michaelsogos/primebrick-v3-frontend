@@ -163,7 +163,7 @@
               class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               bind:value={factorId}
             >
-              {#each availableFactors as factor}
+              {#each availableFactors as factor (factor.factor_id)}
                 <option value={factor.factor_id}>
                   {factor.label || $t('app.auth.mfa.defaultLabel')} ({factor.factor_type})
                 </option>

@@ -1,8 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { InputGroup, InputGroupAddon, InputGroupButton, HighlightedInput } from '$lib/components/ui/input-group';
-  import { Checkbox } from '@primebrick/ui';
-  import { cn } from '$lib/utils.js';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { Search } from '@primebrick/ui/vendor/lucide'

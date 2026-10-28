@@ -25,12 +25,10 @@
 
   let {
     on_apply_regex,
-    config_type,
     current_regex = '',
     current_flags = '',
   }: {
     on_apply_regex: (pattern: string, flags: string) => void;
-    config_type: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
     current_regex?: string;
     current_flags?: string;
   } = $props();

@@ -8,8 +8,8 @@ export function useToolbarMode(options: {
   filterValues: () => Record<string, any>;
   advancedFilters: () => AdvancedFilter[];
 }) {
-  const safeFilterValues = $derived.by(() => options.filterValues() ?? {});
-  const safeAdvancedFilters = $derived.by(() => options.advancedFilters() ?? []);
+  const safeFilterValues = $derived(options.filterValues() ?? {});
+  const safeAdvancedFilters = $derived(options.advancedFilters() ?? []);
 
   const _state = $state({
     toolbarMode: 'filters' as ToolbarMode,

@@ -13,7 +13,6 @@
   import { Sheet } from "@primebrick/ui";
   import { Button } from '@primebrick/ui';
   import { Textarea } from '$lib/components/ui/textarea';
-  import { ScrollArea } from '$lib/components/ui/scroll-area';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -269,7 +268,7 @@
                         <a
                           href={citationUrl(cit)}
                           target="_blank"
-                          rel="noopener noreferrer"
+                          rel="noopener noreferrer external"
                           class="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                           title={cit.path}
                         >
@@ -332,7 +331,7 @@
                         <a
                           href={citationUrl(cit)}
                           target="_blank"
-                          rel="noopener noreferrer"
+                          rel="noopener noreferrer external"
                           class="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                           title={cit.path}
                         >

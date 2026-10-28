@@ -24,9 +24,8 @@ import { Switch } from '@primebrick/ui';
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
-  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime, DateFormatter, getLocalTimeZone } from "@internationalized/date";
+  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime } from "@internationalized/date";
   import { badgeClassesFromToken } from '@primebrick/ui';
-  import { cn } from "$lib/utils";
   import { onMount } from "svelte";
   import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
   import { formatListCellValue } from '@primebrick/ui';
@@ -396,12 +395,6 @@ import { Switch } from '@primebrick/ui';
     tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
   }
 
-  function updateAdvancedFilter(id: string, updates: Partial<AdvancedFilter>) {
-    tempAdvancedFilters = tempAdvancedFilters.map((f) =>
-      f.id === id ? { ...f, ...updates } : f
-    );
-  }
-
   function applyAdvancedFilters() {
     // Apply filters with global connector
     onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
@@ -502,7 +495,7 @@ import { Switch } from '@primebrick/ui';
                 align="start"
                 class="w-full max-h-96 overflow-auto"
               >
-                {#each options as option}
+                {#each options as option (option.key)}
                   {@const badgeColors = badgeClassesFromToken(
                     option.color ?? null,
                   )}
@@ -664,7 +657,7 @@ import { Switch } from '@primebrick/ui';
                 {/snippet}
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                {#each filterableColumns as col}
+                {#each filterableColumns as col (col.key)}
                   <DropdownMenu.Item
                     onSelect={() => {
                       newFilterField = col.key;
@@ -713,7 +706,7 @@ import { Switch } from '@primebrick/ui';
                   {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start" class="w-full">
-                  {#each availableOperators as op}
+                  {#each availableOperators as op (op)}
                     <DropdownMenu.Item
                       onSelect={() => {
                         newFilterOperator = op as FilterOperator;
@@ -758,7 +751,7 @@ import { Switch } from '@primebrick/ui';
                     {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value]}
+                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value] (key)}
                       {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
                       <DropdownMenuCheckboxItem
                         checked={selectedBadgeKeys.includes(key)}

@@ -23,7 +23,6 @@
     tunings,
     selected_tuning_uuid,
     on_select,
-    i18n_ns,
     testid_prefix,
   }: {
     /** Enabled tunings for the active model+assistant (sorted). */
@@ -32,8 +31,6 @@
     selected_tuning_uuid: string | null;
     /** Called when the user picks a tuning (null = model defaults). */
     on_select: (uuid: string | null) => void;
-    /** i18n namespace, e.g. 'app.smart.regex.ai'. */
-    i18n_ns: string;
     /** data-testid prefix, e.g. 'smart-regex-ai'. */
     testid_prefix: string;
   } = $props();

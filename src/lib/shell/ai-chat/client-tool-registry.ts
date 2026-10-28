@@ -19,6 +19,7 @@
  * page in the app (e.g. "Show me the customers list" → navigate to /customers).
  */
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 
 /** Arguments for the `navigate` client tool. */
 export interface NavigateToolArgs {
@@ -85,7 +86,7 @@ export function registerBuiltinClientTools(): void {
     const target = args.query
       ? `${args.route}?${new URLSearchParams(args.query).toString()}`
       : args.route;
-    void goto(target);
+    void goto(resolve(target as '/'));
     return { url: target };
   });
 }

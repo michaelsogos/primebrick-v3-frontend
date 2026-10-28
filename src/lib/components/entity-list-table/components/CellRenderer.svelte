@@ -26,5 +26,5 @@
 {#if cell}
   {@render cell({ row, column, datetimeIanaModeByKey, datetimeIanaRenderTick, sparklineData })}
 {:else}
-  <TableCell row={row} column={column} datetimeIanaModeByKey={datetimeIanaModeByKey} datetimeIanaRenderTick={datetimeIanaRenderTick} sparklineData={sparklineData} />
+  <TableCell row={row} column={column} datetimeIanaModeByKey={datetimeIanaModeByKey} sparklineData={sparklineData} />
 {/if}
