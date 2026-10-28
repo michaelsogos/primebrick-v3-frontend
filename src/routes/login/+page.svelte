@@ -7,10 +7,8 @@
   import { Cookie } from '@primebrick/ui/vendor/lucide';
   import { RotateCcwKey } from '@primebrick/ui/vendor/lucide';
   import { backendState, probeHealth } from '$lib/backend-availability';
-  import { Button } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Badge } from '@primebrick/ui';
-  import { Spinner } from '$lib/components/ui/spinner';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { chipLabel as healthChipLabelFn, chipClass as healthChipClassFn } from '$lib/composables/useHealthChip';
@@ -32,8 +30,6 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
 
-  const health = $derived(backendState.health);
-  const healthOffline = $derived(backendState.offline);
   const healthChip = $derived(backendState.healthChip);
 
   const healthChipLabel = $derived(healthChipLabelFn(healthChip));

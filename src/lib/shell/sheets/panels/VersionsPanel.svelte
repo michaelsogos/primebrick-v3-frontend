@@ -246,8 +246,6 @@
                         <img src={module.icon} alt={displayName} class="size-[18px] shrink-0 rounded" />
                       {:else if module.icon && module.icon_type === 'base64'}
                         <img src="data:image/png;base64,{module.icon}" alt={displayName} class="size-[18px] shrink-0 rounded" />
-                      {:else if module.icon && module.icon_type === 'svg'}
-                        <div class="size-[18px] shrink-0">{@html module.icon}</div>
                       {:else}
                         <Package class="size-[18px] shrink-0 text-muted-foreground" />
                       {/if}

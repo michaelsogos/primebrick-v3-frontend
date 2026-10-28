@@ -1,8 +1,7 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
   import { browser } from '$app/environment';
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
@@ -11,7 +10,6 @@
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
   } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
@@ -19,9 +17,9 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { ImageOff } from '@primebrick/ui/vendor/lucide';
   import { Checkbox } from '@primebrick/ui';
@@ -32,7 +30,7 @@
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
-  import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
+  import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import { ShieldUser } from '@primebrick/ui/vendor/lucide';
@@ -159,8 +157,6 @@
     }
   });
 
-  type CreateForm = z.infer<typeof createSchema>;
-
   // Superforms in SPA mode
   let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -238,7 +234,7 @@
         // unsaved-changes guard sees a still-tainted form and cancels the
         // navigation with a spurious confirm() dialog.
         justSaved = true;
-        await goto(`/system/settings/users/${data.profile?.uuid}`);
+        await goto(resolve(`/system/settings/users/${encodeURIComponent(String(data.profile?.uuid))}` as '/'));
       } catch (error) {
         console.error('Failed to create user:', error);
         cancel();
@@ -289,9 +285,6 @@
     }
   }
 
-  // Derived values for IDP fields
-  const idpCode = $derived(''); // Not used anymore - removed from form
-
   // Audit data state
   let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
@@ -336,7 +329,6 @@
   isCreatePage={isCreatePage}
 >
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto">
       <form id="user-create-form" data-testid="admin-user-create-form" use:enhance>
         <!-- Avatar Section -->
@@ -673,7 +665,6 @@
         </div>
       </form>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

@@ -3,6 +3,8 @@
 
   import { t } from '$lib/i18n';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { SvelteSet } from 'svelte/reactivity';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
@@ -35,7 +37,7 @@
   let idp_org = $state('');
   let label_key = $state('');
   let is_admin = $state(false);
-  let selected_permissions = $state<Set<string>>(new Set());
+  const selected_permissions = new SvelteSet<string>();
   let errors = $state<Record<string, string>>({});
 
   const permissionsCatalog = usePermissionsCatalog();
@@ -56,25 +58,21 @@
   });
 
   function togglePermission(code: string) {
-    const next = new Set(selected_permissions);
-    if (next.has(code)) {
-      next.delete(code);
+    if (selected_permissions.has(code)) {
+      selected_permissions.delete(code);
     } else {
-      next.add(code);
+      selected_permissions.add(code);
     }
-    selected_permissions = next;
   }
 
   function toggleModule(code: string) {
     const module_perms = permissionsCatalog.state.modules.find((m) => m.code === code)?.permissions ?? [];
     const all_selected = module_perms.every((p) => selected_permissions.has(p.code));
-    const next = new Set(selected_permissions);
     if (all_selected) {
-      for (const p of module_perms) next.delete(p.code);
+      for (const p of module_perms) selected_permissions.delete(p.code);
     } else {
-      for (const p of module_perms) next.add(p.code);
+      for (const p of module_perms) selected_permissions.add(p.code);
     }
-    selected_permissions = next;
   }
 
   function moduleAllSelected(code: string): boolean {
@@ -112,12 +110,12 @@
     });
     saving = false;
     if (result) {
-      goto('/system/settings/roles');
+      goto(resolve('/system/settings/roles'));
     }
   }
 
   function handleCancel() {
-    goto('/system/settings/roles');
+    goto(resolve('/system/settings/roles'));
   }
 </script>
 

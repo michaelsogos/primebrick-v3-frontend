@@ -119,7 +119,6 @@
   auditingColumns={[]}
 >
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <Tabs bind:value={activeTab}>
         <TabsList>
@@ -163,7 +162,6 @@
                   <select {id} bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
                     <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
                     <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
-                    <option value="svg">{$t('system.settings.modules.config.iconTypeSvg')}</option>
                     <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
                   </select>
                 {/snippet}
@@ -243,7 +241,6 @@
         </TabsContent>
       </Tabs>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     {#if activeTab === 'service-info'}

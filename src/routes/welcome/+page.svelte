@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { get } from 'svelte/store';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -8,7 +9,6 @@
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '@primebrick/ui';
-  import { Input } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
@@ -111,7 +111,7 @@
         _state.step = 'error';
         _state.error_message = $t('app.auth.welcome.error.invalidToken');
       }
-    } catch (err) {
+    } catch {
       _state.step = 'error';
       _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
@@ -136,7 +136,7 @@
       } else {
         _state.error_message = $t('app.auth.welcome.error.otpSendFailed');
       }
-    } catch (err) {
+    } catch {
       _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
@@ -159,7 +159,7 @@
       } else {
         _state.error_message = $t('app.auth.welcome.error.otpInvalid');
       }
-    } catch (err) {
+    } catch {
       _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
@@ -187,7 +187,7 @@
         pushNotification({ ...errorData, toast: false });
         _state.error_message = errorData.detail ?? $t('app.auth.welcome.error.completeFailed');
       }
-    } catch (err) {
+    } catch {
       _state.error_message = $t('app.auth.welcome.error.networkError');
     } finally {
       _state.submitting = false;
@@ -251,7 +251,7 @@
   }
 
   function handleGoToLogin() {
-    void goto('/login');
+    void goto(resolve('/login'));
   }
 
   // ─── Passkey step is informational only ─────────────────────────────────────

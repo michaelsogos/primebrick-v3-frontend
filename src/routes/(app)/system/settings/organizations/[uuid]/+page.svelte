@@ -1,17 +1,14 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
-  import { Badge } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
   } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
@@ -19,14 +16,13 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { apiFetch } from '$lib/api';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
 
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
 
   const uuid = $derived(page.params.uuid);
@@ -45,8 +41,6 @@
     idp_owner: z.string().min(1, { message: 'app.common.validation.required' }).max(255, { message: maxMsg(255) }),
     idp_name: idpNameSchema(z.string()),
   });
-
-  type UpdateForm = z.infer<typeof updateSchema>;
 
   let organization = $state<{
     uuid: string;
@@ -188,7 +182,6 @@
   isCreatePage={isCreatePage}
 >
 
-  {#snippet children()}
     {#if loading}
       <div class="flex items-center justify-center p-8">
         <div class="text-muted-foreground">{$t('app.common.loading')}</div>
@@ -286,7 +279,6 @@
         </form>
       </div>
     {/if}
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

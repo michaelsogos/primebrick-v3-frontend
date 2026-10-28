@@ -1,17 +1,14 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
 
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
-  import { Badge } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
   } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
@@ -19,8 +16,8 @@
   import { z } from 'zod';
   import { tick } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { apiFetch } from '$lib/api';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult } from '$lib/types/validation.js';
   import type { ValidationStatus } from '$lib/types/validation.js';
@@ -29,7 +26,7 @@
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_organizations_sync', { mode: 'sender' });
@@ -50,8 +47,6 @@
       .default('admin'),
     idp_name: idpNameSchema(z.string()),
   });
-
-  type CreateForm = z.infer<typeof createSchema>;
 
   // Superforms in SPA mode
   const superFormObj = superForm(defaults(zod4(createSchema)), {
@@ -95,7 +90,7 @@
           // Reset taint baseline so hasChanges becomes false before navigation
           reset({ data: $form });
           // Navigate to the update page for the newly created organization
-          await goto(`/system/settings/organizations/${organization.uuid}`);
+          await goto(resolve(`/system/settings/organizations/${encodeURIComponent(organization.uuid)}` as '/'));
         }
       } catch (error) {
         console.error('Failed to create organization:', error);
@@ -208,7 +203,6 @@
   isCreatePage={isCreatePage}
 >
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto">
       <form id="org-create-form" use:enhance>
         <div class="grid grid-cols-2 gap-6 p-4">
@@ -305,7 +299,6 @@
         </div>
       </form>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

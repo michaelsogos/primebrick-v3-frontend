@@ -8,7 +8,6 @@
 		loadSourceModule,
 		mountReport,
 		loadCompiler,
-		type LoaderReport,
 	} from '$lib/dev/runtime-source-loader';
 
 	const TARGETS = [
@@ -17,7 +16,7 @@
 	];
 
 	let logs = $state<string[]>([]);
-	let report = $state<LoaderReport | null>(null);
+	let mounted: { unmount: () => Promise<void> } | null = null;
 	let busy = $state(false);
 	let compilerInfo = $state('');
 	let target = $state<HTMLDivElement | undefined>();
@@ -40,11 +39,12 @@
 		if (!target) return;
 		busy = true;
 		logs = [];
-		report = null;
-		target.innerHTML = '';
 		try {
+			if (mounted) {
+				await mounted.unmount();
+				mounted = null;
+			}
 			const rep = await loadSourceModule(t.url);
-			report = rep;
 			log(`compiled ${rep.modules.length} module(s) — total ${rep.totalMs.toFixed(1)}ms`);
 			for (const m of rep.modules) {
 				log(`  [${m.kind}] ${m.url.split('/').pop()} — ${m.compileMs.toFixed(1)}ms, css=${m.css ? m.css.length + 'b' : 'none'}`);
@@ -56,7 +56,7 @@
 				for (const f of rep.failed) log(`FAIL [${f.stage}] ${f.url}\n    ${f.error}`);
 				return;
 			}
-			await mountReport(rep, target, t.props);
+			mounted = await mountReport(rep, target, t.props);
 			log('MOUNTED ✓');
 		} catch (e) {
 			log(`ERROR ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);

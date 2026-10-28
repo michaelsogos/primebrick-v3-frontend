@@ -34,8 +34,11 @@
   const resolved = $derived(retry_resolved ?? data.resolved);
 
   $effect(() => {
-    appPage.url.pathname;
-    retry_resolved = null;
+    // Reading pathname here is the tracking — the effect re-runs on every
+    // navigation and drops the retry override so the fresh `data` wins.
+    if (appPage.url.pathname) {
+      retry_resolved = null;
+    }
   });
 
   const components: Record<string, unknown> = {

@@ -133,7 +133,7 @@ export type HealthPayload = {
   checks: Record<string, HealthCheckEntry>;
 };
 
-export type IconType = 'url' | 'svg' | 'base64' | 'icon';
+export type IconType = 'url' | 'base64' | 'icon';
 
 export type ServiceInfo = {
   code: string;

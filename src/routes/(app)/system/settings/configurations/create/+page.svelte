@@ -11,7 +11,6 @@
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
   } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
@@ -24,7 +23,7 @@
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { useExistingGroupKeys } from '$lib/composables/useExistingGroupKeys.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { maxMsg } from '$lib/validation/zod-messages';
   import { buildConfigValueSchema } from '$lib/validation/config-validation';
   import type { ConfigEntryType } from '$lib/api-types';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -103,8 +102,6 @@
     }
   });
 
-  type CreateForm = z.infer<typeof createSchema>;
-
   let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
 
   const superFormObj = superForm(defaults(zod4(createSchema)), {
@@ -152,7 +149,7 @@
           reserved: updateForm.data.reserved,
           ...(translations.length > 0 ? { translations } : {}),
         };
-        const data = await createConfigEntry(params);
+        await createConfigEntry(params);
         console.log('Config entry created successfully');
 
         notifyParentRefresh();
@@ -346,7 +343,6 @@
   isCreatePage={isCreatePage}
 >
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto">
       <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
         <div class="grid grid-cols-2 gap-6 p-4">
@@ -600,7 +596,6 @@
         </div>
       </form>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

@@ -66,8 +66,10 @@
     }
   }
 
-  // handleSave is now a trigger to reload entries after bulk save in ConfigList
-  async function handleSave(_entry: ConfigEntry, _value: string) {
+  // handleSave is now a trigger to reload entries after bulk save in ConfigList.
+  // The onSave contract passes (entry, value) — both unused here: the reload
+  // is bulk, not per-row. Declared arity stays zero on purpose.
+  async function handleSave() {
     // Invalidate the shared config cache so other consumers (Smart Regex, etc.)
     // pick up the new value on their next read.
     configCache.invalidate();

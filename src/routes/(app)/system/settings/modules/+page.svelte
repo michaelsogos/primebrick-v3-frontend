@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { onMount } from 'svelte';  import { Button } from '@primebrick/ui';
+  import { onMount } from 'svelte';
+  import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { Switch } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
@@ -22,7 +23,8 @@
   import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import { Layers } from '@primebrick/ui/vendor/lucide';
   import { pushNotification } from '$lib/errors/app-errors';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { DeleteDialog } from '@primebrick/ui';
@@ -251,8 +253,6 @@
                       <img src={module.icon} alt={module.name || module.code} class="size-5 rounded shrink-0" />
                     {:else if module.icon && module.icon_type === 'base64'}
                       <img src="data:image/png;base64,{module.icon}" alt={module.name || module.code} class="size-5 rounded shrink-0" />
-                    {:else if module.icon && module.icon_type === 'svg'}
-                      <div class="size-5 shrink-0">{@html module.icon}</div>
                     {:else}
                       <Package class="size-5 text-muted-foreground shrink-0" />
                     {/if}
