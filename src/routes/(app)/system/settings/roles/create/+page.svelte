@@ -23,10 +23,10 @@
   import { useRoleMappings } from '$lib/composables/useRoleMappings.svelte';
   import { apiFetch } from '$lib/api';
 
-  interface OrgOption {
+  type OrgOption = {
     idp_code: string;
     display_name: string | null;
-  }
+  };
 
   let orgs = $state<OrgOption[]>([]);
   let orgsLoading = $state(true);

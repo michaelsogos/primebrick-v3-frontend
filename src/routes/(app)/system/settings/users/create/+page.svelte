@@ -47,11 +47,14 @@
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
+  type RoleOption = { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean };
+
   const { state: rolesState } = useActiveRoles();
-  const availableRoles = $derived([...rolesState.roles] as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]);
+  const availableRoles = $derived([...rolesState.roles] as RoleOption[]);
 
   // Organization dropdown — fetched from API (Section 10)
-  let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
+  type OrgOption = { uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null };
+  let availableOrgs = $state<OrgOption[]>([]);
   let orgsLoading = $state(true);
 
   // Generate random hex color
@@ -421,11 +424,11 @@
                       isLabelTranslated={true}
                       placeholder={$t('system.settings.users.create.rolesPlaceholder')}
                       isOptionDisabled={(opt) => {
-                        const role = opt as Record<string, any>;
+                        const role = opt as RoleOption;
                         return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
                       }}
                       getSearchKeywords={(opt) => {
-                        const role = opt as Record<string, any>;
+                        const role = opt as RoleOption;
                         const kws: string[] = [];
                         if (role.is_admin) kws.push($t('app.auth.roles.systemAdministrator'));
                         if (Array.isArray(role.permissions)) kws.push(...role.permissions);
@@ -435,8 +438,8 @@
                         return kws;
                       }}
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                        {@const role = option as Record<string, any>}
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, unknown>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                        {@const role = option as RoleOption}
                         <div class="flex flex-col min-w-0 flex-1 gap-0.5">
                           <span class="font-medium truncate">{resolvedLabel}</span>
                           {#if role.is_admin}
@@ -483,8 +486,8 @@
                       onChange={onOrgChange}
                       searchPlaceholder={$t('system.settings.users.create.idpOrgSearch')}
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                        {@const org = option as Record<string, any>}
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, unknown>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                        {@const org = option as OrgOption}
                         <Avatar class="size-10 rounded-none shrink-0">
                           {#if org.avatar}
                             <img src={org.avatar} alt={org.display_name} class="size-10 rounded-none object-cover" />

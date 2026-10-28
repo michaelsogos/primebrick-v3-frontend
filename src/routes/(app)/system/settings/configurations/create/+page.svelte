@@ -275,7 +275,9 @@
 
   // Build ComboSelect options: each group_key becomes an object with the
   // raw key as value and the full i18n key as label (translated at render time)
-  const groupKeyOptions = $derived(
+  type GroupKeyOption = { group_key: string; label_key: string };
+
+  const groupKeyOptions = $derived<GroupKeyOption[]>(
     existingGroupKeys.map((gk) => ({
       group_key: gk,
       label_key: `system.settings.config.auth.group.${gk}`,
@@ -530,7 +532,7 @@
                       allowCreate={true}
                       loading={groupKeysLoading}
                       getSearchKeywords={(opt) => {
-                        const gk = (opt as Record<string, any>).group_key;
+                        const gk = (opt as GroupKeyOption).group_key;
                         return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
                       placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
@@ -540,7 +542,7 @@
                       data-testid="config-create-group-key"
                     >
                       {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
-                        {@const gk = (option as Record<string, any>).group_key ?? resolvedValue}
+                        {@const gk = (option as GroupKeyOption).group_key ?? resolvedValue}
                         <div class="flex flex-col min-w-0 flex-1 gap-0.5">
                           <span class="font-medium truncate-start">{resolvedLabel}</span>
                           <span class="text-xs text-muted-foreground truncate-start font-mono">{gk}</span>
