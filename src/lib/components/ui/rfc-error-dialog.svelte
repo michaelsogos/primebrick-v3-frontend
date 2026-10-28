@@ -13,13 +13,15 @@
   import JsonTableViewer from './JsonTableViewer.svelte';
   import { JsonCodeBlock } from '@primebrick/ui';
 
+  // All fields optional: entries come from both RFC7807 BE errors (which carry
+  // type/title/status) and client-side AppError pushes (which may not).
   type RFC7807Error = {
     id?: string;
     impact?: string;
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
     instance?: string;
     internal_code?: string;
     severity?: string;
@@ -29,9 +31,9 @@
     message?: string;
     extra?: {
       viewer?: string;
-      results?: any;
-      issues?: any;
-      [key: string]: any;
+      results?: unknown;
+      issues?: unknown;
+      [key: string]: unknown;
     };
   };
 

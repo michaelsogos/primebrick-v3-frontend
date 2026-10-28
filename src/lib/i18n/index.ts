@@ -28,8 +28,11 @@ export const CORE_DICT_MODULES = ['app', 'custom', 'system'] as const;
 // globalThis singleton: editing this module (or en-GB-fallback.json) during
 // `vite dev` creates a second module instance (?t= URL) — a plain writable
 // would split-brain (loader writes one store, components read the other).
+declare global {
+  var __pb_i18n_merged: Writable<Record<UiLang, Dict>> | undefined;
+}
 const _mergedDicts: Writable<Record<UiLang, Dict>> =
-  ((globalThis as any).__pb_i18n_merged ??= writable({} as Record<UiLang, Dict>));
+  (globalThis.__pb_i18n_merged ??= writable({} as Record<UiLang, Dict>));
 
 /** Merge a partial dict (from API or fallback) into the i18n store for a language. */
 export function mergeModuleDict(lang: UiLang, partial: Dict): void {

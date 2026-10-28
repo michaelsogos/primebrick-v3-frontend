@@ -173,7 +173,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
     // If this is a retry after session-expired login and it's STILL 401, don't re-enqueue
-    if ((nextInit as any)._sessionRetry) {
+    if ((nextInit as RequestInit & { _sessionRetry?: boolean })._sessionRetry) {
       throw new Error('Session retry failed - still 401 after successful login');
     }
     // Skip refresh for auth endpoints - user doesn't have tokens yet.

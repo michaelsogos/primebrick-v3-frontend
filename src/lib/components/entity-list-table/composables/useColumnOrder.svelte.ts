@@ -9,6 +9,27 @@ export type ColumnOrderState = {
   auditing?: string[];
 };
 
+const STRING_LIST = (v: unknown): string[] | undefined =>
+  Array.isArray(v) ? v.filter((k): k is string => typeof k === 'string') : undefined;
+
+/** Parse the sessionStorage payload into a ColumnOrderState — pure, guards
+ *  every group before trusting it (storage is user-writable). */
+export function parseColumnOrderState(raw: string | null): ColumnOrderState {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    const obj = parsed as { sticky?: unknown; data?: unknown; auditing?: unknown };
+    return {
+      sticky: STRING_LIST(obj.sticky),
+      data: STRING_LIST(obj.data),
+      auditing: STRING_LIST(obj.auditing)
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function useColumnOrder(getColumnOrderStorageKey: () => string | undefined) {
   const _state = $state<ColumnOrderState>({});
 
@@ -16,24 +37,7 @@ export function useColumnOrder(getColumnOrderStorageKey: () => string | undefine
     const columnOrderStorageKey = getColumnOrderStorageKey();
     if (!columnOrderStorageKey) return {};
     if (typeof window === 'undefined') return {};
-    try {
-      const raw = window.sessionStorage.getItem(columnOrderStorageKey);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object') return {};
-      const obj = parsed as any;
-      return {
-        sticky: Array.isArray(obj.sticky)
-          ? obj.sticky.filter((k: unknown) => typeof k === 'string')
-          : undefined,
-        data: Array.isArray(obj.data) ? obj.data.filter((k: unknown) => typeof k === 'string') : undefined,
-        auditing: Array.isArray(obj.auditing)
-          ? obj.auditing.filter((k: unknown) => typeof k === 'string')
-          : undefined
-      };
-    } catch {
-      return {};
-    }
+    return parseColumnOrderState(window.sessionStorage.getItem(columnOrderStorageKey));
   }
 
   function writeOrderState(next: ColumnOrderState) {

@@ -7,7 +7,7 @@
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
 
-  import { AsYouType } from "libphonenumber-js";
+  import { AsYouType, isSupportedCountry } from "libphonenumber-js";
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';
@@ -78,7 +78,7 @@
     }
     // If value is E.164, format it for display using AsYouType
     try {
-      const formatter = new AsYouType(country as any);
+      const formatter = new AsYouType(isSupportedCountry(country) ? country : undefined);
       displayValue = formatter.input(value);
     } catch {
       displayValue = value;
@@ -110,7 +110,7 @@
     const raw = input.value;
     // Format as user types using AsYouType
     try {
-      const formatter = new AsYouType(country as any);
+      const formatter = new AsYouType(isSupportedCountry(country) ? country : undefined);
       displayValue = formatter.input(raw);
       // Get the E.164 number from the formatter
       const phoneNumber = formatter.getNumber();

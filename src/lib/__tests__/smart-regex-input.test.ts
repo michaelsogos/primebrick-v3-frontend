@@ -65,9 +65,15 @@ describe("SmartRegexInput", () => {
     render(SmartRegexInput, { props: { config_type: "string" } });
     const brainCta = screen.getByTestId("smart-regex-brain-cta");
     await user.click(brainCta);
+    // The AI panel works on regex/flags/apply-callback — decoupled from
+    // config_type (generalized around column json_schema, not type_config).
     expect(openSheet).toHaveBeenCalledWith(
       "config.regexAiChat",
-      expect.objectContaining({ config_type: "string" }),
+      expect.objectContaining({
+        current_regex: "",
+        current_flags: "",
+        on_apply_regex: expect.any(Function),
+      }),
     );
   });
 
@@ -88,18 +94,21 @@ describe("SmartRegexInput", () => {
     expect(screen.getByTestId("smart-regex-clear")).toBeInTheDocument();
   });
 
-  it("does not show clear button when value is empty", () => {
+  it("disables clear button when value is empty", () => {
     render(SmartRegexInput, { props: { value: "" } });
-    expect(screen.queryByTestId("smart-regex-clear")).not.toBeInTheDocument();
+    // Clear buttons are permanently visible but disabled while empty.
+    expect(screen.getByTestId("smart-regex-clear")).toBeDisabled();
   });
 
   it("clears the value when clear button is clicked", async () => {
     const user = userEvent.setup();
-    const { component } = render(SmartRegexInput, { props: { value: "^[a-z]+$" } });
+    render(SmartRegexInput, { props: { value: "^[a-z]+$" } });
+    const input = screen.getByTestId("smart-regex-input") as HTMLInputElement;
     const clearBtn = screen.getByTestId("smart-regex-clear");
     await user.click(clearBtn);
-    // After clearing, the clear button should disappear
-    expect(screen.queryByTestId("smart-regex-clear")).not.toBeInTheDocument();
+    // After clearing, the input is empty and the button becomes disabled
+    expect(input.value).toBe("");
+    expect(clearBtn).toBeDisabled();
   });
 
   it("calls on_change when value changes", async () => {

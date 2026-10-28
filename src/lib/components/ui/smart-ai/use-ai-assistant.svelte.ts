@@ -79,7 +79,7 @@ type WorkerMessage =
   | { type: 'reset_complete' }
   | { type: 'dispose_complete'; disposed_model_id?: string; worker_nonce?: string }
   | { type: 'status'; worker_nonce: string; loaded_model_id: string | null; dtype: string | null; pipeline_alive: boolean; is_generating: boolean; loaded_files?: string[] }
-  | { type: 'measure'; data: any }
+  | { type: 'measure'; data: Record<string, unknown> }
   | { type: 'debug'; step?: string; [key: string]: unknown };
 
 export function useAiAssistant<TChoice = unknown>(
@@ -473,7 +473,7 @@ export function useAiAssistant<TChoice = unknown>(
   /**
    * Send a control message to the worker.
    */
-  function postToWorker(message: Record<string, any>): void {
+  function postToWorker(message: Record<string, unknown>): void {
     if (!worker) return;
     worker.postMessage(message);
   }
@@ -690,11 +690,19 @@ export function useAiAssistant<TChoice = unknown>(
 
     let js_heap_mb: number | null = null;
     try {
-      if (typeof performance !== 'undefined' && 'measureUserAgentSpecificMemory' in performance) {
-        const result = await (performance as any).measureUserAgentSpecificMemory();
-        js_heap_mb = result.bytes / (1024 * 1024);
-      } else if ((performance as any).memory) {
-        js_heap_mb = (performance as any).memory.usedJSHeapSize / (1024 * 1024);
+      if (typeof performance !== 'undefined') {
+        // measureUserAgentSpecificMemory (Chrome 89+) and performance.memory
+        // (Chrome-only) are not in lib.dom — shaped extension.
+        const perf = performance as Performance & {
+          measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
+          memory?: { usedJSHeapSize: number };
+        };
+        if ('measureUserAgentSpecificMemory' in perf) {
+          const result = await perf.measureUserAgentSpecificMemory!();
+          js_heap_mb = result.bytes / (1024 * 1024);
+        } else if (perf.memory) {
+          js_heap_mb = perf.memory.usedJSHeapSize / (1024 * 1024);
+        }
       }
     } catch { /* noop */ }
 
@@ -724,7 +732,14 @@ export function useAiAssistant<TChoice = unknown>(
       if (typeof navigator !== 'undefined' && navigator.gpu) {
         const adapter = await navigator.gpu.requestAdapter();
         if (adapter) {
-          const info = (adapter as any).info ?? (await (adapter as any).requestAdapterInfo?.());
+          // requestAdapterInfo() is the legacy getter — lib.dom only ships `info`.
+          const info =
+            (adapter.info as GPUAdapterInfo | undefined) ??
+            (await (
+              adapter as GPUAdapter & {
+                requestAdapterInfo?: () => Promise<GPUAdapterInfo>;
+              }
+            ).requestAdapterInfo?.());
           gpu_adapter = `${info?.vendor ?? ''} ${info?.architecture ?? ''}`.trim() || 'unknown';
         }
       }

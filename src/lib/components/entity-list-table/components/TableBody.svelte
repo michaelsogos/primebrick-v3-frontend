@@ -1,5 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import type { Snippet } from 'svelte';
+  import type { ComponentProps, Snippet } from 'svelte';
   import { t } from '$lib/i18n';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import * as Table from '$lib/components/ui/table';
@@ -8,6 +8,7 @@
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import TableRow from './TableRow.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte.js';
 
   let {
     error,
@@ -40,6 +41,7 @@
     rowActions,
     entityRowActions,
     dropdownMenuRow,
+    focusedRowIndex,
     onEntityRowClick,
     onPreviewRow,
     onToggleRowSelect,
@@ -79,7 +81,7 @@
     actionsEnabled: boolean;
     rowChromeH: string;
     stickyColumnsGroup: MetaColumn[];
-    stickyColumnsState: any;
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[ { row: TRow; column: MetaColumn } ]>;
@@ -91,6 +93,7 @@
       preview?: boolean;
     };
     dropdownMenuRow: TRow | null;
+    focusedRowIndex: number | null;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onPreviewRow: (row: TRow) => void;
     onToggleRowSelect: (key: string) => void;
@@ -188,6 +191,7 @@
       {@const rk = rowKey(r)}
       {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
       {@const rowDeleted = isRowDeleted(r)}
+      {@const rowFocused = focusedRowIndex !== null && viewRows[focusedRowIndex] === r}
       <TableRow
         {...({
           index: i,
@@ -195,6 +199,7 @@
           rowKey: rk,
           rowSelected,
           rowDeleted,
+          rowFocused,
           shownColumns,
           extraCols,
           rowSelectionEnabled,
@@ -224,7 +229,7 @@
           onRestoreRow,
           handleCustomAction,
           stickyCellClass
-        } as any)}
+        } as ComponentProps<typeof TableRow>)}
       />
     {/each}
   {/if}

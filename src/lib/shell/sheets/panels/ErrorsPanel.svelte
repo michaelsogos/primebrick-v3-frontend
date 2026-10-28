@@ -6,7 +6,7 @@
   import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { appErrors, clearAppErrors } from '$lib/errors/app-errors';
+  import { appErrors, clearAppErrors, type AppError } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
@@ -20,16 +20,21 @@
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
   let errorDetailsDialogOpen = $state(false);
-  let selectedErrorDetails = $state<any | null>(null);
+  let selectedErrorDetails = $state<AppError | null>(null);
   let selectedErrorColor = $state<'critical' | 'error' | 'warning' | 'info'>('info');
 
-  function openErrorDetails(e: any, color: 'critical' | 'error' | 'warning' | 'info') {
+  function openErrorDetails(e: AppError, color: 'critical' | 'error' | 'warning' | 'info') {
     selectedErrorDetails = e;
     selectedErrorColor = color;
     errorDetailsDialogOpen = true;
   }
 
-  function hasExtraFields(e: Record<string, any>): boolean {
+  function impactOf(e: AppError): ImpactLevel {
+    // Stored entries may lack `impact` at runtime despite the declared type.
+    return (e.impact as ImpactLevel | undefined) ?? 'MEDIUM';
+  }
+
+  function hasExtraFields(e: Record<string, unknown>): boolean {
     return e.extra != null && Object.keys(e.extra).length > 0;
   }
 
@@ -98,7 +103,7 @@
   {:else}
     <div class="space-y-2">
       {#each $appErrors as e (e.id)}
-        {@const imp = ((e as any).impact ?? 'MEDIUM') as ImpactLevel}
+        {@const imp = impactOf(e)}
         {@const eventColor = impactToEventColor(imp)}
         {@const labelKey =
           imp === 'CRITICAL'
@@ -112,21 +117,19 @@
         <EventCard.Root eventColor={eventColor}>
           <EventCard.Label eventColor={eventColor}>{$t(labelKey)}</EventCard.Label>
 
-          {#if (e as any).scopeKey || e.scope}
+          {#if e.scopeKey || e.scope}
             <EventCard.Title class="truncate">
-              {(e as any).scopeKey ? $t((e as any).scopeKey) : e.scope}
+              {e.scopeKey ? $t(e.scopeKey) : e.scope}
             </EventCard.Title>
           {/if}
 
           <EventCard.Message>
-            {(e as any).messageKey
-              ? $t((e as any).messageKey)
-              : ((e as any).message ?? e.message)}
+            {e.messageKey ? $t(e.messageKey) : e.message}
           </EventCard.Message>
 
-          {#if (e as any).tags?.length}
+          {#if e.tags?.length}
             <div class="mt-1 flex flex-wrap gap-1">
-              {#each (e as any).tags as tag (tag.label)}
+              {#each (e.tags ?? []) as tag (tag.label)}
                 <Badge
                   variant="outline"
                   class={cn('h-auto border px-1.5 py-0.5 text-[10px] font-medium', errorTagBadgeClass(tag.tone))}
@@ -137,22 +140,22 @@
             </div>
           {/if}
 
-          {#if (e as any).instance || (e as any).internalCode}
+          {#if e.instance || e.internalCode}
             <div class="mt-1 flex flex-wrap gap-1">
-              {#if (e as any).internalCode}
+              {#if e.internalCode}
                 <Badge
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {(e as any).internalCode}
+                  {e.internalCode}
                 </Badge>
               {/if}
-              {#if (e as any).instance}
+              {#if e.instance}
                 <Badge
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {(e as any).instance}
+                  {e.instance}
                 </Badge>
               {/if}
             </div>

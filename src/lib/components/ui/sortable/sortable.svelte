@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="T extends { id: string }">
 	import { SvelteMap } from 'svelte/reactivity';
 	import { cn } from '$lib/utils';
 	import { setSortableContext } from './ctx';
@@ -11,10 +11,10 @@
 		onSort,
 		animation = 200
 	}: {
-		items: any[];
+		items: T[];
 		class?: string;
 		children: Snippet;
-		onSort?: (items: any[]) => void;
+		onSort?: (items: T[]) => void;
 		animation?: number;
 	} = $props();
 
@@ -32,7 +32,7 @@
 		const t = e.target as Node | null;
 		if (t && root.contains(t)) return true;
 		// Fallback for shadow DOM
-		const path = (e as any).composedPath?.() as unknown[] | undefined;
+		const path = e.composedPath();
 		if (path && path.includes(root)) return true;
 		return false;
 	}
@@ -71,15 +71,15 @@
 	function stopGlobalDragMode() {
 		if (typeof window === 'undefined') return;
 		if (windowDragOverHandler) {
-			window.removeEventListener('dragover', windowDragOverHandler, { capture: true } as any);
+			window.removeEventListener('dragover', windowDragOverHandler, { capture: true });
 			windowDragOverHandler = null;
 		}
 		if (documentDragEnterHandler) {
-			document.removeEventListener('dragenter', documentDragEnterHandler, { capture: true } as any);
+			document.removeEventListener('dragenter', documentDragEnterHandler, { capture: true });
 			documentDragEnterHandler = null;
 		}
 		if (windowDropHandler) {
-			window.removeEventListener('drop', windowDropHandler, { capture: true } as any);
+			window.removeEventListener('drop', windowDropHandler, { capture: true });
 			windowDropHandler = null;
 		}
 	}

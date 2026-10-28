@@ -86,7 +86,7 @@
   // Validate a single field using the dynamic Zod schema
   function validateField(uuid: string) {
     const value = formValues[uuid] ?? '';
-    const fieldSchema = (schema as any).shape[uuid];
+    const fieldSchema = schema.shape[uuid];
     if (!fieldSchema) return;
     const result = fieldSchema.safeParse(value);
     if (result.success) {
@@ -94,7 +94,7 @@
     } else {
       formErrors = {
         ...formErrors,
-        [uuid]: result.error.issues.map((issue: any) => issue.message),
+        [uuid]: result.error.issues.map((issue) => issue.message),
       };
     }
   }

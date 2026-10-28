@@ -18,6 +18,13 @@ import {
   InterruptableStoppingCriteria,
   pipeline,
   DynamicCache,
+  type PreTrainedModel,
+  type PretrainedConfig,
+  type PreTrainedTokenizer,
+  type TextGenerationPipeline,
+  type ProgressInfo,
+  type DataType,
+  type DeviceType,
 } from '@primebrick/ui/vendor/transformers';
 import { resumableFetch, setByteReporter } from '@primebrick/ui';
 
@@ -116,11 +123,11 @@ let current_model_id: string | null = null;
 let current_dtype: string | null = null;
 let current_device: string = 'webgpu';
 let current_kv_cache_reuse: boolean = false;
-let tokenizer: any = null;
-let model: any = null;
-let pipeline_generator: any = null;
+let tokenizer: PreTrainedTokenizer | null = null;
+let model: PreTrainedModel | null = null;
+let pipeline_generator: TextGenerationPipeline | null = null;
 let is_generating = false;
-let current_stopping: any = null;
+let current_stopping: InterruptableStoppingCriteria | null = null;
 let load_seq = 0;
 let load_in_flight = false;
 let loaded_files: string[] = [];
@@ -156,8 +163,11 @@ let vram_tracking_installed = false;
 
 function installVramTracking(): void {
   if (vram_tracking_installed) return;
-  const GPUDeviceCtor = (self as any).GPUDevice;
-  const GPUBufferCtor = (self as any).GPUBuffer;
+  // WebGPU globals exist on window but may be absent in some worker contexts.
+  const { GPUDevice: GPUDeviceCtor, GPUBuffer: GPUBufferCtor } = self as {
+    GPUDevice?: typeof GPUDevice;
+    GPUBuffer?: typeof GPUBuffer;
+  };
   if (!GPUDeviceCtor?.prototype?.createBuffer || !GPUBufferCtor?.prototype?.destroy) return;
   const sizes = new WeakMap<GPUBuffer, number>();
   const origCreate = GPUDeviceCtor.prototype.createBuffer;
@@ -184,7 +194,7 @@ const STOP_STRINGS = ['[END_OF_TEXT]', '<|im_end|>', '<|im_start|>'];
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-function post(message: Record<string, any>): void {
+function post(message: Record<string, unknown>): void {
   self.postMessage(message);
 }
 
@@ -245,7 +255,7 @@ async function inspectRepoFiles(repo_id: string, dtype: string): Promise<RepoFil
 async function checkWebGpu(): Promise<boolean> {
   if (typeof navigator === 'undefined' || !('gpu' in navigator)) return false;
   try {
-    const adapter = await (navigator as any).gpu.requestAdapter();
+    const adapter = await navigator.gpu.requestAdapter();
     return adapter !== null;
   } catch {
     return false;
@@ -334,8 +344,10 @@ async function loadModel(payload: LoadPayload): Promise<void> {
 
     let download_complete_notified = false;
     const completed_file_set = new Set<string>();
-    const progress_callback = (p: any) => {
-      const file = typeof p?.file === 'string' ? p.file : null;
+    const progress_callback = (p: ProgressInfo) => {
+      // `file` exists on initiate/download/progress/done variants, not on
+      // aggregate ones — `in` narrows the union member.
+      const file = 'file' in p && typeof p.file === 'string' ? p.file : null;
       if (file && (file.endsWith('.onnx') || file.includes('.onnx_data')) && !loaded_files.includes(file)) {
         loaded_files.push(file);
       }
@@ -370,8 +382,8 @@ async function loadModel(payload: LoadPayload): Promise<void> {
     };
 
     const load_kwargs = {
-      dtype: dtype as any,
-      device: device as any,
+      dtype: dtype as DataType,
+      device: device as DeviceType,
       ...(external_data ? { use_external_data_format: external_data } : {}),
       ...(model_file_name ? { model_file_name } : {}),
       ...(sessionOptions ? { session_options: sessionOptions } : {}),
@@ -389,10 +401,12 @@ async function loadModel(payload: LoadPayload): Promise<void> {
     clearInterval(profPoll);
     // TEMP: wrap model.forward — total GPU session time per decode step
     // (ORT run + logits materialization). gen_wall - fwd = JS/dispatch cost.
-    const mdl: any = pipeline_generator?.model;
+    const mdl = pipeline_generator?.model as
+      | (PreTrainedModel & { __fwd_wrapped?: boolean })
+      | undefined;
     if (mdl?.forward && !mdl.__fwd_wrapped) {
       const orig = mdl.forward.bind(mdl);
-      mdl.forward = async (...args: any[]) => {
+      mdl.forward = async (...args: Parameters<PreTrainedModel['forward']>) => {
         const t0 = performance.now();
         try {
           return await orig(...args);
@@ -453,7 +467,8 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       cache_valid = false;
     }
 
-    const cfg = model?.config ?? {};
+    // PretrainedConfig does not declare model-specific fields (hidden_size etc.)
+    const cfg = (model?.config ?? {}) as PretrainedConfig & Record<string, unknown>;
     post({
       type: 'load_complete',
       seq,
@@ -515,8 +530,10 @@ async function loadModel(payload: LoadPayload): Promise<void> {
 // ─── Generation ─────────────────────────────────────────────────────────
 
 async function generate(payload: GeneratePayload): Promise<void> {
-  const has_model = !!model && !!pipeline_generator;
-  if (!has_model || !tokenizer) {
+  // Capture into consts — narrowing on module-level `let` does not survive awaits.
+  const generator = pipeline_generator;
+  const has_model = !!model && !!generator;
+  if (!has_model || !tokenizer || !generator) {
     post({ type: 'stream_error', model_id: current_model_id, error: 'Model not loaded' });
     post({ type: 'generation_idle' });
     return;
@@ -693,7 +710,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
     profInstall();
     profReset();
     const result = await Promise.race([
-      pipeline_generator(pipeline_input, {
+      generator(pipeline_input, {
         max_new_tokens: payload.params.max_new_tokens,
         do_sample: payload.params.do_sample ?? (payload.params.temperature > 0),
         temperature: payload.params.temperature,
@@ -726,7 +743,11 @@ async function generate(payload: GeneratePayload): Promise<void> {
     // thinking models can yield an assistant message whose `content` is ''
     // while the streamer already collected reasoning + JSON.
     try {
-      const genText = Array.isArray(result) ? result[0]?.generated_text : result?.generated_text;
+      // Pipeline output is `TextGenerationOutput | TextGenerationOutput[]`;
+      // generated_text is a string or a chat-message array depending on input.
+      const genText = Array.isArray(result)
+        ? (result[0] as { generated_text?: unknown } | undefined)?.generated_text
+        : (result as { generated_text?: unknown } | undefined)?.generated_text;
       if (Array.isArray(genText)) {
         const lastMsg = genText[genText.length - 1];
         const content = lastMsg?.role === 'assistant' ? String(lastMsg.content ?? '') : String(genText ?? '');
@@ -895,6 +916,7 @@ async function disposeModel(): Promise<void> {
   prev_gen_time_ms = null;
 
   const generator = pipeline_generator;
+  const mdl = model;
   const disposed = current_model_id;
   post({ type: 'debug', step: 'dispose_start', model_id: disposed, has_generator: !!generator });
   model = null;
@@ -906,7 +928,8 @@ async function disposeModel(): Promise<void> {
   is_generating = false;
   try {
     await generator?.dispose?.();
-    await model?.dispose?.();
+    // dispose() exists at runtime on PreTrainedModel but is not in the public types.
+    await (mdl as { dispose?: () => Promise<void> } | null)?.dispose?.();
     post({ type: 'debug', step: 'dispose_generator_done', model_id: disposed });
   } catch (e) {
     post({ type: 'debug', step: 'dispose_generator_error', model_id: disposed, error: String(e) });
@@ -945,7 +968,11 @@ async function measureCacheBytes(): Promise<number | null> {
 async function measureMemoryBytes(): Promise<number | null> {
   try {
     if (typeof performance !== 'undefined' && 'measureUserAgentSpecificMemory' in performance) {
-      const result = await (performance as any).measureUserAgentSpecificMemory();
+      const result = await (
+        performance as Performance & {
+          measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
+        }
+      ).measureUserAgentSpecificMemory!();
       return result.bytes;
     }
   } catch {

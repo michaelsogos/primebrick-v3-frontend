@@ -198,6 +198,7 @@
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
+        focusedRowIndex={previewPanel.state.focusedRowIndex}
         onEntityRowClick={onEntityRowClick}
         onPreviewRow={handlePreviewRow}
         onToggleRowSelect={toggleRowSelect}
