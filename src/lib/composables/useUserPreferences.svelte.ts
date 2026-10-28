@@ -112,7 +112,12 @@ export const userPreferences = {
 	async toggleFavorite(route: string): Promise<void> {
 		const favs = favorites();
 		const next = favs.includes(route) ? favs.filter((r) => r !== route) : [...favs, route];
-		await set(FAVORITE_PAGES_KEY, next);
+		// Empty is canonically absent — DELETE the key rather than storing [].
+		if (next.length === 0) {
+			await remove(FAVORITE_PAGES_KEY);
+		} else {
+			await set(FAVORITE_PAGES_KEY, next);
+		}
 	},
 	/** Logout/login transition — mirrors `userProfileStore.clear()`. */
 	clear(): void {
