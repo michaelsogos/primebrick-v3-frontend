@@ -6,7 +6,7 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
-import type { ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
+import type { ModuleEventsDecl, ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
 
 /**
  * AI domain types — canonical home is `@primebrick/ui/ai/types.ts` (the
@@ -58,6 +58,14 @@ export type ModuleInfo = {
    * `mountSheet` chunk mounted at runtime.
    */
   sheets?: ModuleSheetDecl[];
+  /**
+   * The module's emitted-event vocabulary (`events.emits` — NATS subjects
+   * the module publishes, wildcards allowed). Served verbatim like
+   * `route_prefixes` — module metadata, never access-filtered. Domain
+   * subject pickers (job rules, triggers) resolve options from the union
+   * across modules; free entry stays allowed for dynamic subjects.
+   */
+  events?: ModuleEventsDecl;
   /**
    * `false` = the module declares FE surface but ZERO leaves are
    * accessible to this user — present ONLY so the launcher's reveal

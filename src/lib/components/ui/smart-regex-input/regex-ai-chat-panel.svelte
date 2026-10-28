@@ -8,7 +8,7 @@
    * explain/summarize bullets, and the Yes/No + A/B/C apply flow.
    */
   import { Button } from '@primebrick/ui';
-  import { CopyButton } from '$lib/components/ui/copy-button';
+  import { CopyButton } from '@primebrick/ui';
   import { Accordion } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import AiChatPanel from '$lib/components/ui/smart-ai/ai-chat-panel.svelte';

@@ -12,7 +12,7 @@
    * Fully schema-agnostic: the object name used in generated prompts and
    * the i18n namespace arrive via props.
    */
-  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
+  import { JsonCodeBlock } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';

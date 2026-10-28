@@ -1,13 +1,11 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
-  import { page } from '$app/state';
+
   import { t, formatUiDateTime } from '$lib/i18n';
-  import { entityPageTitle } from '$lib/utils/entity-meta';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -15,13 +13,12 @@
     FormControl,
     FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
@@ -210,17 +207,6 @@
   auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: entityPageTitle(meta, 'create', $t) }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'create', $t)}</h1>
-    </div>
-  {/snippet}
 
   {#snippet children()}
     <div class="flex-1 overflow-auto">

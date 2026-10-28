@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { page as appPage } from '$app/state';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 
   type RoleMappingListRow = {
@@ -29,9 +26,6 @@
   const { notifyParentRefresh } = useSyncChannel('primebrick_roles_sync', { mode: 'sender' });
 </script>
 
-<svelte:head>
-  <title>{$t('system.settings.roles.title')} · Primebrick</title>
-</svelte:head>
 
 <EntityTablePage
   basePath="/api/v1/entities/role_mapping"
@@ -49,11 +43,4 @@
     notifyParentRefresh();
   }}
 >
-  {#snippet breadcrumb()}
-    <AppPageBreadcrumb
-      segments={[
-        ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
-      ]}
-    />
-  {/snippet}
 </EntityTablePage>

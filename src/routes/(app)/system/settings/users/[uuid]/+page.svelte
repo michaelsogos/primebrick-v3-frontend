@@ -4,14 +4,13 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { AvatarPreview } from '$lib/components/ui/avatar-preview';
   import { Checkbox } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -19,16 +18,15 @@
     FormControl,
     FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
@@ -95,7 +93,7 @@
   } | null>(null);
 
   let meta = $state<EntityMetadata | null>(null);
-  let pageTitle = $state('');
+
   let loading = $state(true);
   let isCreatePage = $state(false);
 
@@ -210,11 +208,6 @@
           roles: data.roles || [],
         },
       });
-      pageTitle = resolvePageTitle(
-        meta,
-        user as Record<string, unknown> | null,
-        user?.display_name || user?.idp_username || '',
-      );
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {
@@ -241,17 +234,6 @@
   auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
-    </div>
-  {/snippet}
 
   {#snippet children()}
     {#if loading}

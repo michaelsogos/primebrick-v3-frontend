@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { page } from '$app/state';
+
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -14,11 +13,10 @@
     FormControl,
     FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch, createConfigEntry } from '$lib/api';
   import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
@@ -347,18 +345,6 @@
   auditingColumns={[]}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: $t('system.settings.configurations.create.title') }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.configurations.create.title')}</h1>
-      <p class="text-sm text-muted-foreground">{$t('system.settings.configurations.create.description')}</p>
-    </div>
-  {/snippet}
 
   {#snippet children()}
     <div class="flex-1 overflow-auto">

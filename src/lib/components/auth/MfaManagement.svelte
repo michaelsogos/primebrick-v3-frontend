@@ -3,10 +3,10 @@
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
   import { Button } from '@primebrick/ui';
-  import { TextInput } from "$lib/components/ui/input";
+  import { TextInput } from "@primebrick/ui";
   import { OtpInput } from '@primebrick/ui';
   import { useOtpInput } from '@primebrick/ui';
-  import { Label } from "$lib/components/ui/label";
+  import { Label } from "@primebrick/ui";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
   import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@primebrick/ui';

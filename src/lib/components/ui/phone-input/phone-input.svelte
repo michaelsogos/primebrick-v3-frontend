@@ -2,7 +2,7 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import { InputGroup, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
-  import { CopyButton } from "$lib/components/ui/copy-button";
+  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -181,36 +181,37 @@
       name={restProps.name}
     />
 
-    {#if value && !disabled}
-      {#if readonly}
-        <button
-          type="button"
-          onclick={handleCopy}
-          tabindex={-1}
-          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={$t('app.common.copy')}
-          title={$t('app.common.copy')}
-          data-testid="phone-input-copy"
-        >
-          {#if copied}
-            <Check class="size-4 text-primary" />
-          {:else}
-            <Copy class="size-4" />
-          {/if}
-        </button>
-      {:else}
-        <button
-          type="button"
-          onclick={handleClear}
-          tabindex={-1}
-          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={$t('app.common.clear')}
-          title={$t('app.common.clear')}
-          data-testid="phone-input-clear"
-        >
-          <Eraser class="size-4" />
-        </button>
-      {/if}
+    {#if readonly && value && !disabled}
+      <button
+        type="button"
+        onclick={handleCopy}
+        tabindex={-1}
+        class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={$t('app.common.copy')}
+        title={$t('app.common.copy')}
+        data-testid="phone-input-copy"
+      >
+        {#if copied}
+          <Check class="size-4 text-primary" />
+        {:else}
+          <Copy class="size-4" />
+        {/if}
+      </button>
+    {:else if !readonly && !disabled}
+      <!-- Clear CTA always rendered (disabled while empty) — a disappearing
+           CTA shifts the input layout. -->
+      <button
+        type="button"
+        onclick={handleClear}
+        tabindex={-1}
+        disabled={!value}
+        class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground"
+        aria-label={$t('app.common.clear')}
+        title={$t('app.common.clear')}
+        data-testid="phone-input-clear"
+      >
+        <Eraser class="size-4" />
+      </button>
     {/if}
   </InputGroup>
   {#if translatedError}

@@ -23,7 +23,6 @@ export { pushNotification } from '$lib/errors/app-errors';
 export { cn } from '$lib/utils.js';
 export * from '$lib/api';
 export * from '$lib/api-types';
-export { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 export { resolveEffectiveParams, tuningOverriddenKeys } from '@primebrick/ui';
 export { summarizeTestScores } from '@primebrick/ui';
 export { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';

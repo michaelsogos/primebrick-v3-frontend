@@ -3,10 +3,9 @@
   import { superForm, defaults } from "sveltekit-superforms";
   import { zod4 } from "sveltekit-superforms/adapters";
   import { t } from "$lib/i18n";
-  import { page } from "$app/state";
   import { AvatarPreview } from "$lib/components/ui/avatar-preview";
   import { Button } from '@primebrick/ui';
-  import { TextInput } from "$lib/components/ui/input";
+  import { TextInput } from "@primebrick/ui";
   import { Checkbox } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import {
@@ -15,7 +14,7 @@
     FormControl,
     FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from "$lib/components/ui/form";
+  } from "@primebrick/ui";
   import {
     hashSeedToIndex,
     avatarChromePaletteToHex,
@@ -28,8 +27,6 @@
   import { formatUiDateTime } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
-  import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
-  import { moduleBreadcrumbSegments } from "$lib/breadcrumb/module-breadcrumb";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import { orderedColumns } from "$lib/entity-list";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
@@ -285,16 +282,6 @@
     auditingColumns={orderedColumns(metadata.state.meta?.columns).filter((c) => c.audited)}
     isCreatePage={isCreatePage}
   >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.profile.title')}</h1>
-    </div>
-  {/snippet}
   {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <div class="space-y-6">

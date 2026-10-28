@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { JsonCodeBlock, JsonEditor } from '$lib/components/ui/json-code-block';
+  import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Pencil } from '@primebrick/ui/vendor/lucide';

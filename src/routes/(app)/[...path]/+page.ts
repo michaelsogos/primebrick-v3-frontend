@@ -16,8 +16,10 @@ export const ssr = false;
  */
 export async function load({ url }) {
 	let resolved: ResolvedPage;
+	let modules: Awaited<ReturnType<typeof fetchModules>>['modules'] = [];
 	try {
-		resolved = resolvePageForPath(url.pathname, (await fetchModules(get(uiLang))).modules);
+		modules = (await fetchModules(get(uiLang))).modules;
+		resolved = resolvePageForPath(url.pathname, modules);
 	} catch (e) {
 		// Census fetch failed — hand the component a retryable network error
 		// rather than a SvelteKit 500 (the remote-page UX contract).
@@ -30,5 +32,5 @@ export async function load({ url }) {
 	if (resolved.kind === 'redirect') redirect(307, resolved.href);
 	if (resolved.kind === 'denied') error(403, `Access denied — ${resolved.detail}`);
 	if (resolved.kind === 'not-found') error(404, `The page '${url.pathname}' does not exist`);
-	return { resolved };
+	return { resolved, modules };
 }

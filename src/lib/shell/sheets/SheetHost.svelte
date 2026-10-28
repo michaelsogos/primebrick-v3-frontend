@@ -23,6 +23,7 @@
   import RegexFlagsPanel from '$lib/components/ui/smart-regex-input/regex-flags-panel.svelte';
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
   import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
+  import JsonAiChatPanel from '$lib/components/ui/smart-json-assistant/json-ai-chat-panel.svelte';
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
@@ -41,6 +42,7 @@
     'config.regexFlags': RegexFlagsPanel,
     'config.regexAiChat': RegexAiChatPanel,
     'config.jsonAiChat': JsonConfigAiChatPanel,
+    'json.aiChat': JsonAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel

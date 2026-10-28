@@ -15,9 +15,6 @@
     restoreTranslation,
   } from '$lib/api';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { page as appPage } from '$app/state';
 
   type TranslationRow = {
     uuid: string;
@@ -161,16 +158,8 @@
 </script>
 
 <AppPageScaffold>
-  <AppPageBreadcrumb
-    segments={[
-      ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
-    ]}
-  />
-
   <div class="translations-admin">
     <div class="translations-admin__toolbar">
-      <h1>{$t('system.settings.translations.title')}</h1>
-
       <div class="translations-admin__selectors">
         <label>
           <span>{$t('system.settings.translations.module')}</span>

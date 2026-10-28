@@ -20,8 +20,8 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { PrimeField } from '$lib/components/ui/form';
+  import { TextInput } from '@primebrick/ui';
+  import { PrimeField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { Popover } from '@primebrick/ui';

@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
-  import Input from "$lib/components/ui/input/input.svelte";
-  import { CopyButton } from "$lib/components/ui/copy-button";
+  import { Input } from "@primebrick/ui";
+  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';
@@ -38,7 +38,12 @@
   let copied = $state(false);
 
   let mode = $derived(disabled ? "disabled" : readonly ? "readonly" : "editable");
-  let showTrailing = $derived(mode !== "disabled" && (value ?? "").length > 0);
+  // Clear CTA is always rendered in editable mode (disabled while empty);
+  // readonly shows copy only when there is a value to copy.
+  let showTrailing = $derived(
+    mode === "editable" || (mode === "readonly" && (value ?? "").length > 0)
+  );
+  let clearDisabled = $derived((value ?? "").length === 0);
   let hasError = $derived(errors.length > 0);
   let firstError = $derived(errors.length > 0 ? errors[0] : "");
 
@@ -126,6 +131,7 @@
         type="button"
         onclick={handleClear}
         tabindex={-1}
+        disabled={clearDisabled}
         class={inputTrailingIconButtonClasses}
         aria-label={$t('app.common.clear')}
         title={$t('app.common.clear')}

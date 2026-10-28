@@ -4,9 +4,8 @@
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -14,16 +13,15 @@
     FormControl,
     FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -68,7 +66,6 @@
   } | null>(null);
 
   let meta = $state<EntityMetadata | null>(null);
-  let pageTitle = $state(''); // Frozen title, computed once after load
   let loading = $state(true);
   let isCreatePage = $state(false);
 
@@ -82,10 +79,6 @@
       meta = entityMetadata.state.meta as EntityMetadata;
     }
   });
-
-  function getColMeta(key: string) {
-    return getColMetaUtil(meta, key);
-  }
 
   // Superforms in SPA mode
   const superFormObj = superForm(defaults(zod4(updateSchema)), {
@@ -163,12 +156,6 @@
           idp_name: data.idp_name || data.idp_code?.split('/')[1] || data.idp_code || '',
         },
       });
-      // Compute frozen page title from meta expression
-      pageTitle = resolvePageTitle(
-        meta,
-        organization as Record<string, unknown> | null,
-        organization?.display_name || '',
-      );
     } catch (error) {
       console.error('Failed to load organization:', error);
     } finally {
@@ -200,17 +187,6 @@
   auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
-    </div>
-  {/snippet}
 
   {#snippet children()}
     {#if loading}

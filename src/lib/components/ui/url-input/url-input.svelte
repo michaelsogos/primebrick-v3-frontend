@@ -2,7 +2,7 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
-  import { CopyButton } from "$lib/components/ui/copy-button";
+  import { CopyButton } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
@@ -171,40 +171,41 @@
       name={restProps.name}
     />
 
-    {#if value && !disabled}
-      {#if readonly}
-        <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
-          <button
-            type="button"
-            onclick={handleCopy}
-            tabindex={-1}
-            class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={$t('app.common.copy')}
-            title={$t('app.common.copy')}
-            data-testid="url-input-copy"
-          >
-            {#if copied}
-              <Check class="size-4 text-primary" />
-            {:else}
-              <Copy class="size-4" />
-            {/if}
-          </button>
-        </InputGroupAddon>
-      {:else}
-        <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
-          <button
-            type="button"
-            onclick={handleClear}
-            tabindex={-1}
-            class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={$t('app.common.clear')}
-            title={$t('app.common.clear')}
-            data-testid="url-input-clear"
-          >
-            <Eraser class="size-4" />
-          </button>
-        </InputGroupAddon>
-      {/if}
+    {#if readonly && value && !disabled}
+      <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
+        <button
+          type="button"
+          onclick={handleCopy}
+          tabindex={-1}
+          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={$t('app.common.copy')}
+          title={$t('app.common.copy')}
+          data-testid="url-input-copy"
+        >
+          {#if copied}
+            <Check class="size-4 text-primary" />
+          {:else}
+            <Copy class="size-4" />
+          {/if}
+        </button>
+      </InputGroupAddon>
+    {:else if !readonly && !disabled}
+      <!-- Clear CTA always rendered (disabled while empty) — a disappearing
+           CTA shifts the input layout. -->
+      <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
+        <button
+          type="button"
+          onclick={handleClear}
+          tabindex={-1}
+          disabled={!value}
+          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground"
+          aria-label={$t('app.common.clear')}
+          title={$t('app.common.clear')}
+          data-testid="url-input-clear"
+        >
+          <Eraser class="size-4" />
+        </button>
+      </InputGroupAddon>
     {/if}
   </InputGroup>
   {#if translatedError}

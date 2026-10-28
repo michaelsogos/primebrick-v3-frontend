@@ -1,10 +1,6 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
-  import { page as appPage } from '$app/state';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 
   type UserProfileListRow = {
     uuid: string;
@@ -32,7 +28,6 @@
   storageKeyPrefix="pb:users:list:"
   syncChannel="primebrick_users_sync"
   errorScopeKey="app.common.errors.scope.usersList"
-  navStrategy="popup"
   createPath="/system/settings/users/create"
   editPath="/system/settings/users/:uuid"
   customActionHandlers={{
@@ -42,13 +37,6 @@
     }
   }}
 >
-  {#snippet breadcrumb()}
-    <AppPageBreadcrumb
-      segments={[
-        ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
-      ]}
-    />
-  {/snippet}
   {#snippet extraDialogs(uid: string)}
     <ChangePasswordDialog bind:open={changePasswordOpen} row={changePasswordRow} {uid} />
   {/snippet}

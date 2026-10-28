@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Tooltip } from '@primebrick/ui';
-  import { PrimeField, type PrimeFieldHelp } from '$lib/components/ui/form';
+  import { PrimeField, type PrimeFieldHelp } from '@primebrick/ui';
   import type { Snippet } from 'svelte';
 
   let {

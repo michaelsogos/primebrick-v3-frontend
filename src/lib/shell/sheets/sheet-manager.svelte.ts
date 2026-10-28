@@ -25,6 +25,7 @@ export const SHEET_PANEL_IDS = [
   'config.regexFlags',
   'config.regexAiChat',
   'config.jsonAiChat',
+  'json.aiChat',
   'config.badgeValueEdit',
   'shell.docs',
 ] as const;
@@ -115,6 +116,15 @@ export type SheetPanelPropsMap = {
      *  key field while the sheet is open). */
     config_key?: string | (() => string);
     config_type: import('$lib/api-types').ConfigEntryType;
+  };
+  'json.aiChat': {
+    /** The document's JSON Schema — prompts, explorer topics, validation. */
+    schema: Record<string, unknown>;
+    /** Human-readable document name used in prompts — e.g. 'filter'. */
+    object_label?: string;
+    /** Current document text — string or live getter. */
+    current_json?: string | (() => string);
+    on_apply_json: (json: string) => void;
   };
   'config.badgeValueEdit': {
     /** 'add' = create a new badge value; 'edit' = mutate `value_key` live. */

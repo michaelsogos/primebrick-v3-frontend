@@ -21,7 +21,6 @@
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import RemotePageErrorPanel from './RemotePageErrorPanel.svelte';
-  import PageSectionSlot from './PageSectionSlot.svelte';
   import { buildHostComponents } from './host-bridges';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
   import type { EntityMeta, ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
@@ -35,9 +34,7 @@
     parseSvcServiceCode,
     resolveMountable,
     type RemoteErrorKind,
-    type RemoteModule,
   } from './remote-loader';
-  import { layoutGridStyle } from './section-layout';
 
   let {
     decl,
@@ -69,9 +66,6 @@
   let error_detail = $state<string | null>(null);
   let mountEl = $state<HTMLDivElement>();
   let mounted: unknown = null;
-  // Section mode state — the loaded chunk + host ctx shared by every cell.
-  let remote_mod = $state<RemoteModule | null>(null);
-  let page_ctx = $state<ModulePageHost | null>(null);
   // Stale-load guard — an older in-flight load must never touch state once a
   // newer attempt (retry / url change / destroy) has started.
   let generation = 0;
@@ -83,15 +77,6 @@
   const service_code = $derived(
     service ?? (decl.component_url ? parseSvcServiceCode(decl.component_url) : undefined),
   );
-
-  /**
-   * Section mode — `page_props.layout.sections` composes the page from
-   * mountable blocks instead of a single `mountPage`. A sectioned decl may
-   * carry NO `component_url` at all: all-`host:` pages render from the
-   * registry alone (descriptor page — zero remote bytes).
-   */
-  const layout = $derived(decl.page_props?.layout);
-  const is_sectioned = $derived((layout?.sections.length ?? 0) > 0);
 
   function buildCtx(): ModulePageHost {
     const base = service_code ? `/svc/${service_code}` : '';
@@ -134,9 +119,7 @@
       await disposeMounted(prev).catch(() => undefined);
     }
     mountEl?.replaceChildren();
-    remote_mod = null;
-    page_ctx = null;
-    if (!url && !is_sectioned) {
+    if (!url) {
       setError('contract', null, 'route declaration has no component_url');
       return;
     }
@@ -146,29 +129,10 @@
     error_detail = null;
 
     // CSS first — stylesheet and JS fetch in parallel, page never unstyled.
-    if (url) ensureStylesheet(css_url ?? deriveStylesheetUrl(url));
+    ensureStylesheet(css_url ?? deriveStylesheetUrl(url));
 
     try {
-      if (is_sectioned) {
-        // Descriptor page — no chunk to load; remote:* cells self-classify.
-        if (!url) {
-          page_ctx = buildCtx();
-          phase = 'mounted';
-          return;
-        }
-        const { mod, dispose_source } = await loader(url, decl.integrity);
-        if (gen !== generation) {
-          dispose_source?.();
-          return;
-        }
-        if (components) components.remote = mod;
-        remote_mod = mod;
-        page_ctx = buildCtx();
-        dispose_source?.();
-        phase = 'mounted';
-        return;
-      }
-      const { mod, dispose_source } = await loader(url!, decl.integrity);
+      const { mod, dispose_source } = await loader(url, decl.integrity);
       if (gen !== generation) {
         dispose_source?.();
         return;
@@ -266,29 +230,13 @@
   {/if}
   <!-- Always in the DOM so mountEl binds before the first import() resolves.
        Hidden (not destroyed) while loading/error overlays are up. -->
-  {#if !is_sectioned}
-    <div
-      bind:this={mountEl}
-      class="min-h-0 flex-1 flex-col"
-      class:flex={phase === 'mounted'}
-      class:hidden={phase !== 'mounted'}
-      data-testid="remote-page-content"
-    ></div>
-  {/if}
-  {#if is_sectioned && phase === 'mounted' && page_ctx && layout}
-    <!-- Section grid — #key on the chunk so a re-load remounts every cell. -->
-    {#key remote_mod}
-      <div
-        class="min-h-0 min-w-0 flex-1"
-        style={layoutGridStyle(layout)}
-        data-testid="remote-page-sections"
-      >
-        {#each layout.sections as s (s.id)}
-          <PageSectionSlot section={s} mod={remote_mod} ctx={page_ctx} />
-        {/each}
-      </div>
-    {/key}
-  {/if}
+  <div
+    bind:this={mountEl}
+    class="min-h-0 flex-1 flex-col"
+    class:flex={phase === 'mounted'}
+    class:hidden={phase !== 'mounted'}
+    data-testid="remote-page-content"
+  ></div>
   <!-- Step-up MFA dialog — host-rendered; driven by the ctx `mfaStepUp`
        bridge (remote ops never see the dialog, only the final Response). -->
   <MfaStepUpDialog

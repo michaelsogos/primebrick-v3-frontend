@@ -200,14 +200,16 @@
       <AiIcon size={16} />
     </button>
 
-    <!-- Clear button (only when value is present and not disabled/readonly) -->
-    {#if value && !disabled && !readonly}
+    <!-- Clear button: always rendered when editable (disabled while empty)
+         so the CTA never pops the row's layout in and out. -->
+    {#if !disabled && !readonly}
       <button
         type="button"
         onclick={handle_clear}
         aria-label="Clear"
         title="Clear"
         tabindex={-1}
+        disabled={!value}
         class={inputTrailingIconColorClasses}
         data-testid="smart-regex-clear"
       >

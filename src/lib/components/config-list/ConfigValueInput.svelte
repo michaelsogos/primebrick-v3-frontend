@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { Switch } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ComboSelect } from '@primebrick/ui';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';

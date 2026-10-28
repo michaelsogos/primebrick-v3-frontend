@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { pushNotification } from '$lib/errors/app-errors';

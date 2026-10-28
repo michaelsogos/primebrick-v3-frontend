@@ -12,7 +12,7 @@
   import { Info } from '@primebrick/ui/vendor/lucide'
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import JsonTableViewer from './JsonTableViewer.svelte';
-  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
+  import { JsonCodeBlock } from '@primebrick/ui';
   import { onMount } from 'svelte';
 
   type RFC7807Error = {

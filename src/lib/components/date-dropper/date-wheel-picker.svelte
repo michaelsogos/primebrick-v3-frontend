@@ -19,7 +19,7 @@
 	} from "$lib/components/ui/tabs/index.js";
 	import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
 	import { onMount } from "svelte";
-	import { TextInput } from "$lib/components/ui/input";
+	import { TextInput } from "@primebrick/ui";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { dropdownMenuItemWithSelectedClass } from "$lib/components/ui/dropdown-menu/dropdown-menu-item-selected";
 

@@ -119,6 +119,43 @@ export default ts.config(
     },
   },
   {
+    /**
+     * Page chrome is host-owned and MANDATORY — `AppShell` renders the
+     * fixed `PageHeader` (breadcrumb · ★ · h1 · description · presence)
+     * above every (app) route. Route files must never rebuild chrome:
+     * no direct imports of the breadcrumb machinery or the header
+     * component. The ONLY opt-out is the route decl's `chrome:'remote'`
+     * flag (remote pages that own their complete chrome).
+     */
+    files: ['src/routes/**/*.{ts,svelte}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '$lib/components/AppPageBreadcrumb.svelte',
+              message:
+                'Page chrome is host-owned — AppShell renders the mandatory PageHeader. Remove the breadcrumb; the route decl label_key drives the title.',
+            },
+            {
+              name: '$lib/breadcrumb/module-breadcrumb',
+              message:
+                'Page chrome is host-owned — moduleBreadcrumbSegments is PageHeader-internal. Remove it; the route decl label_key drives the title.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/AppPageBreadcrumb*', '**/page-header/**'],
+              message:
+                'Page chrome is host-owned — AppShell renders the mandatory PageHeader. Route files must not import header/breadcrumb components.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Project-specific rule overrides
     rules: {
       // Align with AGENTS.md: prefer $derived() over $derived.by() when possible

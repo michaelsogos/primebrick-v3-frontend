@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CopyButton } from '$lib/components/ui/copy-button';
+	import { CopyButton } from '@primebrick/ui';
 	import type { PasswordCopyButtonProps } from './types.js';
 	import { cn } from '$lib/utils.js';
 	import { usePasswordCopy } from './password.svelte.js';

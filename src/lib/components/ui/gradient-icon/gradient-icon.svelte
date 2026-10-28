@@ -26,9 +26,25 @@
     class?: string;
     /** Animate the gradient with the shimmer sweep (default: static). */
     animated?: boolean;
+    /**
+     * Gradient stop colors, evenly distributed — defaults to the primary
+     * sky-400 → indigo-400 → sky-400 sweep. Pass e.g.
+     * `['#fbbf24', '#fb923c', '#fbbf24']` for the amber favorites star.
+     */
+    stops?: string[];
+    /** Fill the icon's interior with the gradient (filled-star look) instead of stroke-only. */
+    filled?: boolean;
   }
 
-  let { paths, size = 24, stroke_width = 2, class: className, animated = false }: Props = $props();
+  let {
+    paths,
+    size = 24,
+    stroke_width = 2,
+    class: className,
+    animated = false,
+    stops = ['#38bdf8', '#818cf8', '#38bdf8'],
+    filled = false
+  }: Props = $props();
 
   // Unique gradient ID to avoid collisions when multiple instances are on the same page.
   const gradient_id = `gradient-icon-${Math.random().toString(36).slice(2, 10)}`;
@@ -39,7 +55,7 @@
   width={size}
   height={size}
   viewBox="0 0 24 24"
-  fill="none"
+  fill={filled ? `url(#${gradient_id})` : 'none'}
   stroke="url(#{gradient_id})"
   stroke-width={stroke_width}
   stroke-linecap="round"
@@ -57,9 +73,9 @@
       gradientUnits="userSpaceOnUse"
       spreadMethod="repeat"
     >
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="50%" stop-color="#818cf8" />
-      <stop offset="100%" stop-color="#38bdf8" />
+      {#each stops as stop, i (i)}
+        <stop offset="{(i / Math.max(stops.length - 1, 1)) * 100}%" stop-color={stop} />
+      {/each}
       {#if animated}
         <animateTransform
           attributeName="gradientTransform"

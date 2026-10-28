@@ -13,14 +13,13 @@
    */
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
-  import { page as appPage } from '$app/state';
   import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
+  import { TextInput } from '@primebrick/ui';
+  import { Label } from '@primebrick/ui';
   import { RefreshCw } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide';
   import { CloudOff } from '@primebrick/ui/vendor/lucide';
@@ -28,8 +27,6 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { onConnectivityRestored } from '$lib/app-connectivity-events';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import {
     fetchServices,
     fetchDbMigrationStatus,
@@ -238,34 +235,21 @@
   });
 </script>
 
-<svelte:head>
-  <title>{$t('system.migrations.title')} · Primebrick</title>
-</svelte:head>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 flex-1 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <div class="flex items-center justify-between gap-2">
-        <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.migrations.title')}</h1>
-        <Button
-          size="sm"
-          variant="outline"
-          data-testid="migrations-refresh"
-          onclick={() => void init()}
-        >
-          <RefreshCw class="size-4" />
-          {$t('app.common.refresh')}
-        </Button>
-      </div>
-    </div>
-  {/snippet}
 
   <div class="flex flex-col gap-6">
+    <div class="flex items-center justify-end gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        data-testid="migrations-refresh"
+        onclick={() => void init()}
+      >
+        <RefreshCw class="size-4" />
+        {$t('app.common.refresh')}
+      </Button>
+    </div>
     {#if pageLoading}
       <div class="grid min-h-56 place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">

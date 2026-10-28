@@ -1,8 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { onMount } from 'svelte';
-  import { page } from '$app/state';
-  import { Button } from '@primebrick/ui';
+  import { onMount } from 'svelte';  import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { Switch } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
@@ -24,10 +22,7 @@
   import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import { Layers } from '@primebrick/ui/vendor/lucide';
   import { pushNotification } from '$lib/errors/app-errors';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';  import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { DeleteDialog } from '@primebrick/ui';
@@ -185,16 +180,6 @@
 </script>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>
-    </div>
-  {/snippet}
 
   <div class="flex-1 overflow-auto p-4">
     <div class="space-y-6">

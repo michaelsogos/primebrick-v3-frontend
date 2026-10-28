@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
   import { SelectableFieldset } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';

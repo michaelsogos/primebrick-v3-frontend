@@ -69,11 +69,19 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const tables = page.locator("table");
     await expect(tables).toHaveCount(1, { timeout: 30000 });
     // Schedule CTA — census-driven toolbar create (`kind:"create"` on
-    // job_schedule → /system/job/job-schedules/create remote form, label job.jobs.scheduleNew).
+    // job_schedule → /system/job/job-schedules/create remote form, label
+    // job.jobs.scheduleNew). navStrategy defaults to 'popup': the CTA opens
+    // the remote create page in a NEW TAB — the parent stays on the list.
     const createBtn = page.getByTestId("entity-create-cta");
     await expect(createBtn).toBeVisible();
-    await createBtn.click();
-    await page.waitForURL("**/system/job/job-schedules/create", { timeout: 10000 });
+    const [popup] = await Promise.all([
+      page.context().waitForEvent("page", { timeout: 15000 }),
+      createBtn.click(),
+    ]);
+    await popup.waitForLoadState("domcontentloaded");
+    await expect(popup).toHaveURL(/\/system\/job\/job-schedules\/create/);
+    await expect(page).toHaveURL(/\/system\/job\/job-schedules$/);
+    await popup.close();
   });
 
   test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
@@ -231,25 +239,45 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
-  test("/system/job/rules exposes the create CTA → /system/job/rules/create remote form", async ({
+  test("/system/job/rules create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
+    context,
   }) => {
     await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // create.single is enabled for admins — the New CTA must be present
-    // and navigate to the module-owned remote create page.
+    // create.single is enabled for admins — the New CTA opens a CHILD TAB
+    // (navStrategy popup, the platform convention) mounting the
+    // host-rendered entity-form archetype (page_props.form, no component_url).
     const createBtn = page.getByTestId("entity-create-cta");
     await expect(createBtn).toBeVisible();
-    await createBtn.click();
+    const [popup] = await Promise.all([
+      context.waitForEvent("page", { timeout: 15000 }),
+      createBtn.click(),
+    ]);
+    await popup.waitForLoadState("domcontentloaded");
+    await expect(popup).toHaveURL(/\/system\/job\/rules\/create$/);
 
-    await page.waitForURL("**/system/job/rules/create", { timeout: 10000 });
-    const content = page.locator(REMOTE_CONTENT);
-    await expect(content).toBeVisible({ timeout: 30000 });
-    await expect(content.locator("input#rule-name")).toBeVisible();
-    await expect(content.locator("input#rule-event")).toBeVisible();
-    await expect(content.locator("input#rule-spec")).toBeVisible();
-    await expect(content.locator("input#rule-target")).toBeVisible();
+    // Contract: the archetype renders — remote mount must NOT.
+    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.locator(REMOTE_CONTENT)).toHaveCount(0);
+    // The 8 declared fields render in declaration order (meta.columns-driven).
+    for (const key of [
+      "name",
+      "event_subject",
+      "filter",
+      "schedule_spec",
+      "target_subject",
+      "execution_context",
+      "source_subject",
+      "enabled",
+    ]) {
+      await expect(popup.getByTestId(`entity-form-field-${key}`)).toBeVisible();
+    }
+    await expect(popup.getByTestId("entity-form-submit")).toBeVisible();
+    // Header anatomy: module breadcrumb + description line under the title.
+    await expect(popup.locator("nav").first()).toBeVisible();
+    await popup.close();
   });
 
   test("job_run version history endpoint works — audit tables exist", async ({

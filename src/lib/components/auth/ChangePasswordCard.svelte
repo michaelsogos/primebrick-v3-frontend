@@ -16,7 +16,7 @@
     FormControl,
     FormLabel,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';

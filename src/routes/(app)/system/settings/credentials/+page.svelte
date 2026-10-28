@@ -1,27 +1,11 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
-  import { page } from '$app/state';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import ChangePasswordCard from '$lib/components/auth/ChangePasswordCard.svelte';
   import PasskeyEnrollment from '$lib/components/auth/PasskeyEnrollment.svelte';
   import MfaManagement from '$lib/components/auth/MfaManagement.svelte';
 </script>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">
-        {$t('system.settings.credentials.title')}
-      </h1>
-    </div>
-  {/snippet}
 
   <div class="min-h-0 flex-1 overflow-auto p-4">
     <div class="space-y-6">

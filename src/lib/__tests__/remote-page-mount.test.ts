@@ -4,13 +4,11 @@ import userEvent from '@testing-library/user-event';
 import type { Component } from 'svelte';
 import RemotePageMount from '../components/remote-page/RemotePageMount.svelte';
 import { RemoteLoadError, type RemoteLoadResult } from '../components/remote-page/remote-loader';
-import { registerHostSection } from '../components/remote-page/host-sections';
-import type { ModulePageHost, PageRouteDeclaration, PageSectionDecl } from '@primebrick/ui';
+import type { ModulePageHost, PageRouteDeclaration } from '@primebrick/ui';
 import { getFallbackDict, mergeModuleDict } from '../i18n';
 import { DEFAULT_LANG } from '../i18n/languages';
 import Counter from './Counter.svelte';
 import Echo from './Echo.svelte';
-import HostSectionEcho from './HostSectionEcho.svelte';
 
 beforeAll(() => {
 	// t() returns the raw key when the dict is empty — merge the fallback so
@@ -199,113 +197,5 @@ describe('RemotePageMount', () => {
 		expect(dispose).not.toHaveBeenCalled();
 		unmount();
 		await waitFor(() => expect(dispose).toHaveBeenCalledOnce());
-	});
-});
-
-describe('RemotePageMount — sectioned layout', () => {
-	const SECTIONED_DECL: PageRouteDeclaration = {
-		...DECL,
-		page_props: {
-			layout: {
-				columns: '280px 1fr',
-				sections: [
-					{ id: 'side', source: 'remote:mountSide', col: 1 },
-					{ id: 'main', source: 'remote:mountMain', col: 2, props: { value: 'main-prop' } },
-				],
-			},
-		},
-	};
-
-	it('mounts each remote:* section into its own grid cell with (el, ctx, section)', async () => {
-		const calls: Array<{ id: string; ctx: ModulePageHost }> = [];
-		const mod = {
-			mountSide: (el: HTMLElement, ctx: ModulePageHost, s: PageSectionDecl) => {
-				calls.push({ id: s.id, ctx });
-				el.innerHTML = `<div data-testid="sec-${s.id}">side</div>`;
-			},
-			mountMain: (el: HTMLElement, ctx: ModulePageHost, s: PageSectionDecl) => {
-				calls.push({ id: s.id, ctx });
-				el.innerHTML = `<div data-testid="sec-${s.id}">${String(s.props?.value)}</div>`;
-			},
-		};
-		render(RemotePageMount, { props: { decl: SECTIONED_DECL, loader: okLoader(mod) } });
-
-		expect(await screen.findByTestId('remote-page-sections')).toBeInTheDocument();
-		expect(await screen.findByTestId('sec-side')).toBeInTheDocument();
-		expect(await screen.findByTestId('sec-main')).toHaveTextContent('main-prop');
-		expect(calls.map((c) => c.id).sort()).toEqual(['main', 'side']);
-		expect(calls[0].ctx).toMatchObject({ host_version: 1, nav: SECTIONED_DECL });
-		// mountPage path is NOT used for sectioned decls
-		expect(screen.queryByTestId('remote-page-content')).not.toBeInTheDocument();
-		// grid container carries the declared columns
-		expect(screen.getByTestId('remote-page-sections')).toHaveStyle(
-			'grid-template-columns:280px 1fr',
-		);
-	});
-
-	it('isolates a missing remote export to the failing cell', async () => {
-		const mod = {
-			mountMain: (el: HTMLElement) => {
-				el.innerHTML = '<div data-testid="sec-main">ok</div>';
-			},
-			// mountSide absent
-		};
-		render(RemotePageMount, { props: { decl: SECTIONED_DECL, loader: okLoader(mod) } });
-
-		expect(await screen.findByTestId('sec-main')).toBeInTheDocument();
-		const panel = await screen.findByTestId('remote-page-error');
-		expect(panel).toHaveAttribute('data-error-kind', 'contract');
-		expect(panel).toHaveTextContent("mountSide");
-	});
-
-	it('mounts a host:* section from the registry', async () => {
-		registerHostSection('echo', HostSectionEcho);
-		const decl: PageRouteDeclaration = {
-			...DECL,
-			page_props: {
-				layout: {
-					sections: [{ id: 'h', source: 'host:echo', props: { value: 'from-host' } }],
-				},
-			},
-		};
-		render(RemotePageMount, {
-			props: { decl, loader: okLoader({ mountPage: () => undefined }) },
-		});
-		expect(await screen.findByTestId('host-section-h')).toHaveTextContent('from-host');
-	});
-
-	it('renders host-only descriptor pages without any chunk fetch', async () => {
-		registerHostSection('echo', HostSectionEcho);
-		const loader = vi.fn(okLoader({ mountPage: () => undefined }));
-		const decl: PageRouteDeclaration = {
-			route: '/system/job/dashboard',
-			kind: 'page',
-			// no component_url — descriptor page
-			page_props: {
-				layout: { sections: [{ id: 'only', source: 'host:echo' }] },
-			},
-		};
-		render(RemotePageMount, { props: { decl, loader } });
-		expect(await screen.findByTestId('host-section-only')).toBeInTheDocument();
-		expect(loader).not.toHaveBeenCalled();
-	});
-
-	it('remote:* sections on a chunkless decl get a per-cell contract panel', async () => {
-		const decl: PageRouteDeclaration = {
-			route: '/system/job/mixed',
-			kind: 'page',
-			page_props: {
-				layout: {
-					sections: [
-						{ id: 'r', source: 'remote:mountR' },
-						{ id: 'h', source: 'host:echo' },
-					],
-				},
-			},
-		};
-		render(RemotePageMount, { props: { decl, loader: okLoader({}) } });
-		expect(await screen.findByTestId('host-section-h')).toBeInTheDocument();
-		const panel = await screen.findByTestId('remote-page-error');
-		expect(panel).toHaveAttribute('data-error-kind', 'contract');
 	});
 });

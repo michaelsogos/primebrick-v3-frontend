@@ -2,7 +2,7 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import { tick } from "svelte";
-  import Input from "$lib/components/ui/input/input.svelte";
+  import { Input } from "@primebrick/ui";
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
   import { useNumericInput } from "$lib/composables/useNumericInput.svelte";
   import { t } from "$lib/i18n";

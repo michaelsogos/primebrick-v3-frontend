@@ -1,3 +1,5 @@
+import { userPreferences } from '$lib/composables/useUserPreferences.svelte';
+
 export interface UserProfile {
   uuid?: string;
   username?: string;
@@ -89,6 +91,9 @@ export const userProfileStore = {
   clear() {
     userProfileState.current = null;
     sessionStorage.removeItem('user');
+    // Session-bound stores clear together — the preferences mirror holds
+    // per-user data (favorites…) that must never leak across accounts.
+    userPreferences.clear();
   },
 };
 

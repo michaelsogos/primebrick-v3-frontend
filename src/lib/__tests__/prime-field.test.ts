@@ -9,7 +9,7 @@ vi.mock("$lib/i18n", () => ({
   getDictKeys: () => [],
 }));
 
-import PrimeField from "$lib/components/ui/form/prime-field.svelte";
+import { PrimeField } from "@primebrick/ui";
 import PrimeFieldHelpFixture from "./fixtures/prime-field-help-fixture.svelte";
 
 // Control snippet that renders a real input with the injected id.

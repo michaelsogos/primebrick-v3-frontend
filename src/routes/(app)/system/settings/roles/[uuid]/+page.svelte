@@ -1,16 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
-  import { entityPageTitle } from '$lib/utils/entity-meta';
+
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Button } from '@primebrick/ui';
   import { DeleteDialog } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
+  import { TextInput } from '@primebrick/ui';
+  import { Label } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
   import {
@@ -122,39 +120,9 @@
   }
 </script>
 
-<svelte:head>
-  <title>{entityPageTitle('role_mapping', 'edit', $t)} · Primebrick</title>
-</svelte:head>
+
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <div class="flex items-center justify-between gap-4">
-        <h1 class="truncate text-xl font-semibold leading-tight">
-          {entityPageTitle('role_mapping', 'edit', $t)}
-          {#if role}
-            <span class="font-mono text-base text-muted-foreground">{role.idp_role}</span>
-          {/if}
-        </h1>
-        {#if role}
-          <Button
-            variant="destructive"
-            size="sm"
-            onclick={() => (deleteOpen = true)}
-            disabled={deleting}
-            data-testid="roles-edit-delete-btn"
-          >
-            {$t('system.settings.roles.delete')}
-          </Button>
-        {/if}
-      </div>
-    </div>
-  {/snippet}
 
   <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.editSubtitle')}</p>
 

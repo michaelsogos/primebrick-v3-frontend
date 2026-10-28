@@ -1,10 +1,10 @@
 <script lang="ts">
   import { t, dict, getDictKeys } from '$lib/i18n';
   import { SwitchField } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
   import { ComboSelect } from '@primebrick/ui';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { SelectableFieldset } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import type { ConfigEntryType } from '$lib/api-types';

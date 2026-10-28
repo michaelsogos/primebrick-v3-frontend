@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import TextInput from "$lib/components/ui/input/text-input.svelte";
+	import { TextInput } from "@primebrick/ui";
 	import { CircleCheckBig } from '@primebrick/ui/vendor/lucide'
   import { TicketX } from '@primebrick/ui/vendor/lucide'
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide'

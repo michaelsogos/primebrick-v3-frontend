@@ -4,7 +4,7 @@
 	import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 	import { Popover } from '@primebrick/ui';
 	import { Command } from '@primebrick/ui';
-	import { Input } from '$lib/components/ui/input';
+	import { Input } from '@primebrick/ui';
 	import { ComboSelect } from '@primebrick/ui';
 	import { inputGhostChromeClasses } from '@primebrick/ui';
 	import { tailwindSwatches, tailwindFamilies, type TailwindColorToken, type TailwindSwatch } from '@primebrick/ui';

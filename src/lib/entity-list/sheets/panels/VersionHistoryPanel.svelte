@@ -19,7 +19,7 @@
   import { cn } from "$lib/utils";
   import * as Timeline from "$lib/components/ui/timeline";
   import { Tooltip } from '@primebrick/ui';
-  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
+  import { JsonCodeBlock } from '@primebrick/ui';
 
   interface Props {
     entity: string;

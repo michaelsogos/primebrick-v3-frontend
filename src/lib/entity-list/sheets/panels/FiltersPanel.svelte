@@ -1,8 +1,8 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { Button } from '@primebrick/ui';
-  import { TextInput } from "$lib/components/ui/input";
-  import PrimeField from "$lib/components/ui/form/prime-field.svelte";
+  import { TextInput } from "@primebrick/ui";
+  import { PrimeField } from "@primebrick/ui";
   import { Sheet } from "@primebrick/ui";
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';

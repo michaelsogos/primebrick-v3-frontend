@@ -7,8 +7,8 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { FormField, FormLabel, FormControl, FormFieldErrors } from '$lib/components/ui/form';
+  import { TextInput } from '@primebrick/ui';
+  import { FormField, FormLabel, FormControl, FormFieldErrors } from '@primebrick/ui';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
   import * as Password from '$lib/components/ui/password';
