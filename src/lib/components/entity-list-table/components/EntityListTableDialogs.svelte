@@ -1,6 +1,10 @@
-<script lang="ts">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import { DeleteDialog } from '@primebrick/ui';
   import { RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from '../dialogs';
+  import type { useDialogs } from '../composables/useDialogs.svelte';
+  import type { useRowActions } from '../composables/useRowActions.svelte';
+  import type { useBulkActions } from '../composables/useBulkActions.svelte';
+  import type { useExport } from '../composables/useExport.svelte';
 
   let {
     dialogs,
@@ -15,10 +19,10 @@
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
-    dialogs: any;
-    rowActionsComposable: any;
-    bulkActions: any;
-    exportComposable: any;
+    dialogs: ReturnType<typeof useDialogs<TRow>>;
+    rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
+    bulkActions: ReturnType<typeof useBulkActions>;
+    exportComposable: ReturnType<typeof useExport>;
     selectedKeys: string[];
     total: bigint;
     entity: string;

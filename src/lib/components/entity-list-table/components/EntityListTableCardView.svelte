@@ -1,6 +1,10 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import CardViewRenderer from './CardViewRenderer.svelte';
   import type { Snippet } from 'svelte';
+  import type { MetaColumn } from '$lib/entity-list/types';
+  import type { CellArgs, EntityRowActions } from '../types';
+  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
+  import type { useRowActions } from '../composables/useRowActions.svelte';
 
   let {
     viewMode,
@@ -52,19 +56,19 @@
   type EntityListTableCardViewProps = {
     viewMode: 'table' | 'cards' | 'cards_list';
     viewRows: TRow[];
-    shownColumns: any[];
+    shownColumns: MetaColumn[];
     rowSelectionEnabled: boolean;
     selectedKeys: string[];
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: any;
+    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
     actionsEnabled: boolean;
-    rowActions: any;
-    entityRowActions: any;
+    rowActions?: Snippet<[{ row: TRow }]>;
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    cell: any;
-    stickyColumnsGroup: any[];
+    cell?: Snippet<[CellArgs<TRow>]>;
+    stickyColumnsGroup: MetaColumn[];
     error: string | null;
     errorView?: Snippet;
     rowsLoading: boolean;
@@ -79,19 +83,19 @@
     allOnPageSelected: boolean;
     headerIndeterminate: boolean;
     toggleAllOnPage: () => void;
-    allColumns: any[];
+    allColumns: MetaColumn[];
     effectiveSortKey: string | null;
     sortDir: 'asc' | 'desc';
     onSortChange: (key: string | null, dir: 'asc' | 'desc') => void;
-    sortableColumns: any[];
-    datetimeIanaToggleColumns: any[];
-    toggleDatetimeIana: (col: any) => void;
+    sortableColumns: MetaColumn[];
+    datetimeIanaToggleColumns: MetaColumn[];
+    toggleDatetimeIana: (col: MetaColumn) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
     onCloseRowDropdown: () => void;
     onEditRow: (row: TRow) => void;
-    rowActionsComposable: any;
+    rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
     onPreviewRow: (row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;

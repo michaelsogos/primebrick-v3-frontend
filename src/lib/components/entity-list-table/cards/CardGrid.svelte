@@ -1,10 +1,12 @@
-<script lang="ts">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils.js';
   import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Button } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { Snippet } from 'svelte';
+  import type { CellArgs, EntityRowActions } from '../types';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
@@ -39,35 +41,35 @@
     isRowDeleted,
     sparklineData
   }: {
-    rows: Record<string, unknown>[];
+    rows: TRow[];
     columns: MetaColumn[];
     visibleKeys: string[];
     selectedKeys: string[];
     onSelectedKeysChange: (keys: string[]) => void;
     uid: string;
     rowSelectionEnabled: boolean;
-    rowActions?: any;
-    entityRowActions?: { duplicate?: boolean; delete?: boolean; edit?: boolean; preview?: boolean };
+    rowActions?: Snippet<[{ row: TRow }]>;
+    entityRowActions?: EntityRowActions;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick?: number;
     viewMode: 'cards_grid' | 'cards_list';
-    onRowClick?: (row: Record<string, unknown>, key: string, e: MouseEvent) => void;
-    onPreviewRow?: (row: Record<string, unknown>) => void;
-    onEditRow?: (row: Record<string, unknown>) => void;
-    onDeleteRow?: (row: Record<string, unknown>) => void;
-    onRestoreRow?: (row: Record<string, unknown>) => void;
-    onDuplicateRow?: (row: Record<string, unknown>) => void;
-    onVersionHistory?: (row: Record<string, unknown>) => void;
+    onRowClick?: (row: TRow, key: string, e: MouseEvent) => void;
+    onPreviewRow?: (row: TRow) => void;
+    onEditRow?: (row: TRow) => void;
+    onDeleteRow?: (row: TRow) => void;
+    onRestoreRow?: (row: TRow) => void;
+    onDuplicateRow?: (row: TRow) => void;
+    onVersionHistory?: (row: TRow) => void;
     rowFocusedIndex?: number | null;
-    cell?: any;
-    isRowDeleted?: (row: Record<string, unknown>) => boolean;
+    cell?: Snippet<[CellArgs<TRow>]>;
+    isRowDeleted?: (row: TRow) => boolean;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
 
   const renderColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
 
-  function rowKey(row: Record<string, unknown>): string {
+  function rowKey(row: TRow): string {
     const v = row[uid as keyof typeof row] as unknown;
     return typeof v === 'string' ? v : String(v ?? '');
   }

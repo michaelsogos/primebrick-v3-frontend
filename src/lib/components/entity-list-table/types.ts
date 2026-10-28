@@ -26,6 +26,21 @@ export type ColumnOrderState = {
   auditing?: string[];
 };
 
+/**
+ * Row-CTA capability contract derived from `meta.actions` + filtered
+ * `meta.table.row_custom_actions` — drives the per-row dropdown menu
+ * (`EntityListTable.effectiveRowActions` → views → `TableRow`).
+ */
+export type EntityRowActions = {
+  edit?: boolean;
+  duplicate?: boolean;
+  preview?: boolean;
+  delete?: boolean;
+  restore?: boolean;
+  versionHistory?: boolean;
+  custom_actions?: RowCustomAction[];
+};
+
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export type ToolbarMode = 'filters' | 'bulk';

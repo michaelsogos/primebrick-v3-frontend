@@ -26,7 +26,8 @@
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { DynamicIcon } from '@primebrick/ui';
-  import type { CellArgs } from '../types';
+  import type { CellArgs, EntityRowActions } from '../types';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
 
   type TableRowCellArgs = CellArgs<TRow>;
 
@@ -76,31 +77,13 @@
     rowChromeH: string;
     shownColumns: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsGroup: import('$lib/entity-list/types').MetaColumn[];
-    stickyColumnsState: {
-      state: { stickyLeftOffsets: Record<string, number> };
-      stickyRef: any;
-    };
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[TableRowCellArgs]>;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;

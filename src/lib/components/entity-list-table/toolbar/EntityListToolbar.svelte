@@ -8,13 +8,13 @@
   import { RefreshButton } from '@primebrick/ui';
   import { Toolbar } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
-  import type { FilterPreset, ViewName } from '$lib/entity-list/types';
+  import type { FilterPreset, MetaColumn, ViewName } from '$lib/entity-list/types';
 
   interface ToolbarProps {
     search: string;
     onSearchInput: (value: string) => void;
     searchInKeys: string[] | null;
-    searchableColumns: any[];
+    searchableColumns: MetaColumn[];
     onSearchInKeysChange: (keys: string[] | null) => void;
     toggleSearchKey: (key: string) => void;
     viewMode: ViewName;
@@ -25,7 +25,7 @@
     rowsLoading: boolean;
     refreshDisabled: boolean;
     onRefresh: () => void;
-    filterableColumns: any[];
+    filterableColumns: MetaColumn[];
     filtersOpen: boolean;
     onFiltersOpenChange: (open: boolean) => void;
     onColumnSelectorClick: () => void;

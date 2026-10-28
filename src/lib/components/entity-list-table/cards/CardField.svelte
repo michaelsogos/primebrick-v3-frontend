@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { formatListCellValue } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
@@ -8,6 +8,8 @@
   import { Tooltip } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import TableCell from '../table/TableCell.svelte';
+  import type { Snippet } from 'svelte';
+  import type { CellArgs } from '../types';
   import { isCardFieldEmpty } from '../utils/cell-formatting';
   import { getAuditColumnsContext } from '../context';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
@@ -21,11 +23,11 @@
     datetimeIanaRenderTick,
     sparklineData
   }: {
-    row: Record<string, unknown>;
+    row: TRow;
     column: MetaColumn;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     viewMode?: 'cards_grid' | 'cards_list';
-    cell?: any;
+    cell?: Snippet<[CellArgs<TRow>]>;
     datetimeIanaRenderTick?: number;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;

@@ -49,7 +49,7 @@ export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult
 
   // Parse filters[N][field|op|value|connector] entries.
   // Group by index, then convert to filterValues / advancedFilters.
-  const filterMap = new SvelteMap<number, { field?: string; op?: string; value?: any; connector?: string }>();
+  const filterMap = new SvelteMap<number, { field?: string; op?: string; value?: unknown; connector?: string }>();
 
   for (const [key, value] of searchParams.entries()) {
     // Match filters[0][field], filters[0][op], filters[0][value], filters[0][connector]
@@ -102,7 +102,7 @@ export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult
         id: `url-filter-${filterIdCounter++}`,
         field: entry.field,
         operator: 'BETWEEN',
-        value: entry.value as { start: any; end: any },
+        value: entry.value as { start: unknown; end: unknown },
       });
     } else if (op === '=' || op === 'ILIKE' || op === 'LIKE') {
       // Simple equality / ILIKE → filterValues (the filter bar)

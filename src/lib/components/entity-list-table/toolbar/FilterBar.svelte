@@ -27,9 +27,9 @@
     onAdvancedFiltersChange
   }: FilterBarProps = $props();
 
-  function formatBadgeValue(col: MetaColumn, value: any): string {
+  function formatBadgeValue(col: MetaColumn, value: unknown): string {
     if (col.type === 'badge' && col.badge?.values) {
-      const badgeValue = col.badge.values[value];
+      const badgeValue = col.badge.values[value as string];
       if (badgeValue) {
         return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
       }

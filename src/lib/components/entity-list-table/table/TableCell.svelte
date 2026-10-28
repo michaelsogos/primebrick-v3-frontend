@@ -1,10 +1,11 @@
-<script lang="ts">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { formatListCellValue } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { Badge } from '@primebrick/ui';
   import { badgeClassesFromToken } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { Snippet } from 'svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { CircleCheck } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide';
@@ -20,11 +21,11 @@
     sparklineData,
     cellSnippet
   }: {
-    row: Record<string, unknown>;
+    row: TRow;
     column: MetaColumn;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
-    cellSnippet?: any;
+    cellSnippet?: Snippet<[{ row: TRow; column: MetaColumn }]>;
   } = $props();
 
   const value = $derived(row[column.key]);

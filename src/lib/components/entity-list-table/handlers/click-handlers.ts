@@ -1,10 +1,14 @@
+import type { useRowActions } from '../composables/useRowActions.svelte';
+import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
+import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
+
 export function createClickHandlers<TRow extends Record<string, unknown>>(
-  rowActionsComposable: any,
-  previewPanel: any,
+  rowActionsComposable: ReturnType<typeof useRowActions<TRow>>,
+  previewPanel: ReturnType<typeof usePreviewPanel<TRow>>,
   rowSelectionEnabled: () => boolean,
   rowsLoading: () => boolean,
   error: () => string | null,
-  rowRangeSelection: any,
+  rowRangeSelection: ReturnType<typeof useRowRangeSelection>,
   toggleRowSelect: (key: string) => void
 ) {
   function handleEditRow(row: TRow) {

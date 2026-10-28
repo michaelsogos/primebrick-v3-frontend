@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="TRow extends Record<string, unknown>">
   import { t } from '$lib/i18n';
   import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUp } from '@primebrick/ui/vendor/lucide'
@@ -12,6 +12,9 @@
   import { Checkbox } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { stickyCellClassWithCompute, datetimeIanaHeadHighlightClass } from '../utils/cell-styling';
+  import type { MetaColumn } from '$lib/entity-list/types';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
+  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
 
   let {
     rowSelectionEnabled,
@@ -37,24 +40,24 @@
 
   type EntityListTableHeaderRowProps = {
     rowSelectionEnabled: boolean;
-    stickyColumnsState: any;
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     rowChromeH: string;
     checkboxInteractiveClass: string;
     allOnPageSelected: boolean;
     headerIndeterminate: boolean;
     toggleAllOnPage: () => void;
-    shownColumns: any[];
-    stickyColumnsGroup: any[];
+    shownColumns: MetaColumn[];
+    stickyColumnsGroup: MetaColumn[];
     visibleKeys: string[];
     sortKey: string | null;
     sortDir: 'asc' | 'desc';
     rowsLoading: boolean;
-    handleSortClick: (col: any) => void;
+    handleSortClick: (col: MetaColumn) => void;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    toggleDatetimeIana: (col: any) => void;
+    toggleDatetimeIana: (col: MetaColumn) => void;
     actionsEnabled: boolean;
-    previewPanel: any;
-    viewRows: any[];
+    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
+    viewRows: TRow[];
   };
 </script>
 

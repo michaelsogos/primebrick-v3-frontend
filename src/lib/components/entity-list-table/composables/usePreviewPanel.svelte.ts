@@ -3,7 +3,7 @@ import type { DeepReadonly } from '@primebrick/ui';
 export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
   viewRows: () => TRow[];
   rowKey: (row: TRow) => string;
-  onFieldChange?: (row: TRow, field: string, value: any) => void;
+  onFieldChange?: (row: TRow, field: string, value: unknown) => void;
   onRefresh?: () => () => void;
 }
 
@@ -42,7 +42,7 @@ export function usePreviewPanel<TRow extends Record<string, unknown>>(
     _state.previewEditMode = mode;
   }
 
-  function handleFieldChange(field: string, value: any) {
+  function handleFieldChange(field: string, value: unknown) {
     if (_state.previewRow) {
       if (onFieldChange) {
         onFieldChange(_state.previewRow, field, value);

@@ -1,7 +1,8 @@
-import type { MetaColumn } from '$lib/entity-list/types';
+import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+import type { useColumnOrder } from '../composables/useColumnOrder.svelte';
 
 export function createSortingHandlers(
-  columnOrder: any,
+  columnOrder: ReturnType<typeof useColumnOrder>,
   defaultSort: () => { key: string; dir?: 'asc' | 'desc' } | undefined,
   defaultSortDir: () => 'asc' | 'desc',
   onResetColumnVisibility: () => (view: 'table' | 'cards' | 'cards_list') => void,
@@ -9,11 +10,11 @@ export function createSortingHandlers(
   rowsLoading: () => boolean,
   sortKey: () => string | null,
   sortDir: () => 'asc' | 'desc',
-  dataColumns: () => any,
-  auditingColumnsGroup: () => any,
-  nonAuditingColumns: () => any,
+  dataColumns: () => MetaColumn[],
+  auditingColumnsGroup: () => MetaColumn[],
+  nonAuditingColumns: () => MetaColumn[],
   onFilterValuesChange?: () => ((values: Record<string, unknown>) => void) | undefined,
-  onAdvancedFiltersChange?: () => ((filters: any[], connector: 'AND' | 'OR') => void) | undefined,
+  onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined,
   onResetFilters?: () => (() => void) | undefined
 ) {
   function resetColumnsAndSorting() {
