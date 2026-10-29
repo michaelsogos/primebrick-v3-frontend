@@ -21,7 +21,8 @@ the user profile, restores the last visited route, and renders `<AppShell>`.
   SP --> Inset["Sidebar.Inset"]
   Inset --> AppTopbar
   Inset --> Banner["AppServerBanner"]
-  Inset --> Children["page children"]
+  Inset --> Header["PageHeader<br/>breadcrumb · ★ · h1 · description · presence"]
+  Inset --> Children["page children (body only)"]
   AppSidebar --> OrgSwitcher["SidebarOrgSwitcher"]
   AppSidebar --> AppLauncher["SidebarAppLauncher"]
   AppSidebar --> NavMenu["Navigation menu<br/>from module_nav"]
@@ -36,6 +37,33 @@ backend health, loading shell navigation, starting services polling, and
 registering global error handlers (`unhandledrejection`, `window error`).
 When the backend is offline or the DB/IDP is degraded, health is re-probed
 every 5 seconds; on recovery the modules list is reloaded.
+
+## Page header (mandatory)
+
+`AppShell` renders `src/lib/components/page-header/PageHeader.svelte` **once**
+inside `Sidebar.Inset`, above `{@render children()}` — every `(app)` page gets
+the same fixed anatomy, and no `+page.svelte` can render, suppress, or
+duplicate it:
+
+- **Breadcrumb** — auto-built from the route's app root + module + page
+- **★ favorite toggle** — persists `favorite_pages` via
+  `PUT /api/v1/auth/me/preferences`; favorites surface as the first row of
+  the app launcher
+- **H1 title** — resolved via `useRouteDecl` from the census: `decl.label_key`
+  → nav-link label → `entityPageTitle(meta)` for entity routes
+- **Description** — optional, rendered when the route declaration carries
+  `description_key`
+- **Presence** — reserved slot for the collaboration feature (empty until it
+  lands)
+
+Pages render **body content only**. Header machinery
+(`AppPageBreadcrumb`, `moduleBreadcrumbSegments`, header props on
+archetype components) is unreachable from `src/routes/**` — enforced by
+`no-restricted-imports` in ESLint, and E2E-pinned by
+`src/e2e/page-chrome-enforcement.spec.ts` (exactly one header, one `h1`,
+on list/form/remote/custom surfaces). The **only** opt-out is
+`chrome: 'remote'` on the route declaration, honored by `PageHeader`
+itself — used when a remote page owns its entire chrome.
 
 ## Topbar
 

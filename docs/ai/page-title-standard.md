@@ -30,14 +30,15 @@ Always resolve titles through the shared helper in
 ```ts
 import { entityPageTitle } from '$lib/utils/entity-meta';
 
-// pages that load entity metadata
-<h1>{entityPageTitle(meta, 'list', $t)}</h1>
-
-// pages without metadata — pass the bare translation_key
-<h1>{entityPageTitle('role_mapping', 'create', $t)}</h1>
+// the host PageHeader resolves the H1 through this helper —
+// pages NEVER render their own <h1>
 ```
 
-The same helper feeds `<title>` and breadcrumb segments. On record (edit)
+Pages do not render their own `<h1>` or breadcrumb: the mandatory
+`PageHeader` mounted by `AppShell` resolves the title via `useRouteDecl`
+(route declaration `label_key` → nav-link label → `entityPageTitle(meta)`
+for entity routes) and builds the breadcrumb. The same helper feeds
+`<title>` and breadcrumb segments. On record (edit)
 pages the record's display name belongs in the breadcrumb last segment,
 not in the H1 — the H1 stays `Edit {entity_singular}`.
 

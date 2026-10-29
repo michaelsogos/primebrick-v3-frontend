@@ -24,8 +24,10 @@ component `EntityTablePage` drives — use it directly ONLY for composite or
 non-standard hosts (see Exceptions).
 
 ## Rationale
-`EntityTablePage` owns the full route-level shell — scaffold, breadcrumb,
-title, header actions — and drives `useEntityList` (metadata loading +
+`EntityTablePage` renders **body content only** — the route-level header
+(breadcrumb, star, title, description) is host-owned by the mandatory
+`PageHeader` mounted once in `AppShell` (see `docs/dev-guide/app-shell.mdx`).
+`EntityTablePage` drives `useEntityList` (metadata loading +
 globalThis-cached meta, rows, search gate + debounce, sorting, pagination,
 filters, deletion mode, persistence, abort handling, connectivity recovery,
 sync channels, RFC 7807 error notifications). `EntityListTable` renders
@@ -48,7 +50,6 @@ missing deletion-filter params, lost sort restoration).
 ```svelte
 <script lang="ts">
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
 
   type MyRow = { uuid: string } & Record<string, unknown>;
 </script>
@@ -61,11 +62,7 @@ missing deletion-filter params, lost sort restoration).
   navStrategy="goto"
   createPath="/system/my-entity/create"
   editPath="/system/my-entity/:uuid"
->
-  {#snippet breadcrumb()}
-    <AppPageBreadcrumb segments={[{ label: 'My entities' }]} />
-  {/snippet}
-</EntityTablePage>
+/>
 ```
 
 Key props: `basePath` (full entity API base incl. `/svc/<svc>` for module
@@ -74,9 +71,10 @@ entities), `storageKeyPrefix`, `navStrategy` (`goto` default | `popup`),
 for entities without audited `deleted_*` columns (e.g. `role_mapping`),
 `fixedFilters`, `syncChannel`, `onRowsLoaded`, `customActionHandlers`,
 `rowActions={false}` to hide the row-actions column, and the escape-hatch
-snippets `breadcrumb`, `headerExtras`, `headerActions`, `cell`,
-`extraDialogs`, `metaLoadingView`, `rowsLoadingView`, `emptyView`,
-`errorView`.
+snippets `cell`, `extraDialogs`, `metaLoadingView`, `rowsLoadingView`,
+`emptyView`, `errorView`. There is **no** `breadcrumb`/`headerExtras`/
+`headerActions` snippet — the header is host-owned; page-level CTAs live
+in the body (gated per the CTA contract below).
 
 4. The default "all fields" search sends `search_in` = visible ∩ searchable
    text columns — hidden-by-default columns are excluded until shown or
@@ -97,8 +95,8 @@ menu never renders. There is NO parallel row-action boolean map —
 custom CTAs come from `meta.table.row_custom_actions` +
 `customActionHandlers`.
 
-- Any CTA rendered OUTSIDE the table (e.g. `headerActions` snippet with a
-  page-level `<Button href="/entity/create">`) MUST be gated with
+- Any CTA rendered OUTSIDE the table (a page-level
+  `<Button href="/entity/create">` in the page body) MUST be gated with
   `isEntityOpAllowed(meta?.actions, 'create.single')` from
   `$lib/permissions.svelte` — see `crm/customers/+page.svelte`.
 - `EntityAction.sentinel` values are the BE strings verbatim:
