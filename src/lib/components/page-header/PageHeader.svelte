@@ -27,6 +27,7 @@
   import { flattenNavLeaves, shellNav } from '$lib/shell/modules-shell.svelte';
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { Star } from '@primebrick/ui/vendor/lucide';
+  import PresenceAvatars from '$lib/components/collaboration/PresenceAvatars.svelte';
 
   const { decl } = useRouteDecl();
   const routeDecl = $derived(decl());
@@ -35,14 +36,15 @@
   const hostChrome = $derived(routeDecl?.chrome !== 'remote');
 
   /**
-   * Entity-meta title fallback — meta-cache dedupes against the archetype's
+   * Entity-meta — needed for the title fallback AND for the presence mount
+   * (`collaboration.enabled`). Meta-cache dedupes against the archetype's
    * own fetch, so resolving it here costs nothing on entity pages.
    */
   let meta = $state<EntityMeta | null>(null);
   $effect(() => {
     const entity = routeDecl?.entity;
     meta = null;
-    if (!entity || routeDecl?.label_key) return;
+    if (!entity || (routeDecl?.label_key && routeDecl?.kind !== 'detail')) return;
     let cancelled = false;
     void fetchEntityMeta(entityApiBase(entity))
       .then((m) => {
@@ -79,6 +81,22 @@
   const description = $derived(
     routeDecl?.description_key ? $t(routeDecl.description_key) : null,
   );
+
+  /**
+   * Presence mount — update surfaces only (`kind: 'detail'` holding a record
+   * uuid) with `collaboration.enabled` meta. Create/list/other archetypes
+   * render nothing (see ai-plans/collaboration-visual-merge archetype scope).
+   * The uuid is the pathname segment matching the decl's `[param]` slot.
+   */
+  const presence = $derived.by((): { entity: string; uuid: string } | null => {
+    const entity = routeDecl?.entity;
+    if (!entity || routeDecl?.kind !== 'detail' || !meta?.collaboration?.enabled) return null;
+    const p = routeDecl!.route.split('/').filter(Boolean);
+    const u = page.url.pathname.split('/').filter(Boolean);
+    const idx = p.findIndex((s) => s.startsWith('[') && s.endsWith(']'));
+    const uuid = idx >= 0 ? u[idx] : undefined;
+    return uuid ? { entity, uuid } : null;
+  });
 
   const segments = $derived(
     moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
@@ -154,6 +172,13 @@
     </div>
     <!-- Presence area — the reserved collaboration zone (avatars/status).
          The presence consumer renders here; nothing else may. -->
-    <div class="flex shrink-0 items-center gap-2" data-testid="page-header-presence"></div>
+    <div class="flex shrink-0 items-center gap-2" data-testid="page-header-presence">
+      {#if presence}
+        <!-- #key remounts on record change → LEAVE old entity + READING new. -->
+        {#key `${presence.entity}:${presence.uuid}`}
+          <PresenceAvatars entity={presence.entity} uuid={presence.uuid} />
+        {/key}
+      {/if}
+    </div>
   </header>
 {/if}
