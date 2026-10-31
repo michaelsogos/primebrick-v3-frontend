@@ -55,6 +55,43 @@ describe('orderPresenceStack', () => {
     expect(orderPresenceStack([entry({ user_uuid: SELF })], [], SELF)).toEqual([]);
     expect(orderPresenceStack([], [], SELF)).toEqual([]);
   });
+
+  // F13 — session-keyed presence: "self" is THIS TAB, not this user.
+  const MY_SESSION = 'sess-a';
+
+  it('same user in another tab renders as an other session', () => {
+    const ordered = orderPresenceStack(
+      [
+        entry({ user_uuid: SELF, session_id: MY_SESSION }),
+        entry({ user_uuid: SELF, session_id: 'sess-b' }),
+      ],
+      [],
+      SELF,
+      MY_SESSION,
+    );
+    // My own tab is excluded; my OTHER tab is an "other".
+    expect(ordered.map((e) => e.session_id)).toEqual(['sess-b']);
+  });
+
+  it('own tab session is excluded even when it is editing', () => {
+    const ordered = orderPresenceStack(
+      [],
+      [entry({ user_uuid: SELF, session_id: MY_SESSION, status: 'EDITING' })],
+      SELF,
+      MY_SESSION,
+    );
+    expect(ordered).toEqual([]);
+  });
+
+  it('entries without session_id fall back to user_uuid matching', () => {
+    const ordered = orderPresenceStack(
+      [entry({ user_uuid: SELF }), entry({ user_uuid: 'other', session_id: 's-x' })],
+      [],
+      SELF,
+      MY_SESSION,
+    );
+    expect(ordered.map((e) => e.user_uuid)).toEqual(['other']);
+  });
 });
 
 describe('capPresenceStack', () => {

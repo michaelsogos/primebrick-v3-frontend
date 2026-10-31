@@ -25,6 +25,7 @@
   import { computeAvatarGradient, avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { computeInitials } from '$lib/utils/avatar-initials';
   import { cn } from '$lib/utils';
+  import { t } from '$lib/i18n';
   import type { PresenceEntry } from '@primebrick/ui';
   import { untrack } from 'svelte';
 
@@ -36,15 +37,22 @@
    */
   const channel = untrack(() => usePresenceChannel({ entity, uuid }));
   const selfUuid = $derived(userProfileState.current?.uuid);
+  const selfSessionId = channel.sessionId;
 
-  /** Re-evaluate the EDITED ring window — 5-min TTL needs a ticking clock. */
+  /**
+   * Ticking clock for the EDITED ring window AND staleness pruning — dead
+   * tabs that never sent LEAVE drop out once their last heartbeat ages past
+   * the server TTL. 5s cadence keeps pruning responsive.
+   */
   let now = $state(Date.now());
   $effect(() => {
-    const t = setInterval(() => (now = Date.now()), 30_000);
+    const t = setInterval(() => (now = Date.now()), 5_000);
     return () => clearInterval(t);
   });
 
-  const ordered = $derived(orderPresenceStack(channel.readers, channel.editors, selfUuid));
+  const ordered = $derived(
+    orderPresenceStack(channel.readers, channel.editors, selfUuid, selfSessionId, now),
+  );
   const { visible, hiddenCount } = $derived(capPresenceStack(ordered));
   /** DOM order: leftmost +N → least active → most active → self (rightmost). */
   const display = $derived([...visible].reverse());
@@ -56,7 +64,10 @@
   }
 
   function tooltip(entry: PresenceEntry, ring: 'editing' | 'edited' | 'none'): string {
-    const name = entry.user_name;
+    // Same user, different tab — label as "you — other tab" so the viewer
+    // recognizes their own duplicate session immediately.
+    const name =
+      entry.user_uuid === selfUuid ? $t('app.collaboration.you_other_tab') : entry.user_name;
     if (ring === 'editing') {
       return entry.field ? `${name} is editing ${entry.field}` : `${name} is editing`;
     }
@@ -90,7 +101,7 @@
         +{hiddenCount}
       </button>
     {/if}
-    {#each display as entry (entry.user_uuid)}
+    {#each display as entry (entry.session_id ?? entry.user_uuid)}
       {@const ring = presenceRing(entry, now, channel.mountedAt)}
       {@const style = avatarStyle(entry)}
       <div
@@ -113,10 +124,10 @@
         </Avatar>
       </div>
     {/each}
-    <!-- Self — always rightmost, plain. -->
+    <!-- Self (this tab) — always rightmost, plain. -->
     <div
       class="avatar-hex p-[1.5px]"
-      title="You"
+      title={$t('app.collaboration.you')}
       data-testid="presence-self"
       data-presence-user={selfUuid}
     >

@@ -150,6 +150,18 @@
     shellNav.moduleNav?.routes?.find((r) => r.kind === 'create' && r.entity === entity)
   );
   const effectiveCreatePath = $derived(createPath ?? censusCreateRoute?.route);
+
+  /**
+   * Meta-driven edit: census `kind:"detail"` routes end in a `[param]`
+   * segment (e.g. `/system/job/rules/[uuid]`) — convert to the `:uuid`
+   * template `openEdit` substitutes. Explicit `editPath` still wins.
+   */
+  const censusDetailRoute = $derived(
+    shellNav.moduleNav?.routes?.find((r) => r.kind === 'detail' && r.entity === entity)
+  );
+  const effectiveEditPath = $derived(
+    editPath ?? censusDetailRoute?.route.replace(/\[[^\]]*\]/, ':uuid')
+  );
   const createCta = $derived(
     censusCreateRoute
       ? { label_key: censusCreateRoute.label_key, icon: censusCreateRoute.icon }
@@ -168,8 +180,8 @@
   }
 
   function openEdit(row: TRow) {
-    if (!editPath) return;
-    const url = editPath.replace(':uuid', encodeURIComponent(String(row[uid])));
+    if (!effectiveEditPath) return;
+    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(String(row[uid])));
     if (navStrategy === 'popup') {
       const w = window.open(url, '_blank');
       if (w) w.focus();
@@ -180,7 +192,7 @@
   }
 
   const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
-  const effectiveOnEditAction = $derived(onEditAction ?? (editPath ? openEdit : undefined));
+  const effectiveOnEditAction = $derived(onEditAction ?? (effectiveEditPath ? openEdit : undefined));
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );

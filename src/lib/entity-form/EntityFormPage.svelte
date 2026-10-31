@@ -6,13 +6,16 @@
 	 * `{base}/meta`, form placement via `page_props.form`), the host owns
 	 * schema derivation, field dispatch, guards and submit.
 	 *
-	 * Write contract: `POST {entityApiBase}` with `{ entity: {...} }`, then
-	 * navigate back to the owning list route (the route minus its last
-	 * segment — `/…/create` → `/…`).
+	 * `kind: 'create'` → `POST {entityApiBase}` with `{ entity: {...} }`, then
+	 * navigate back to the owning list route. `kind: 'detail'` (the update
+	 * mode of the SAME archetype) → `GET {base}/{uuid}` prefill, `PUT
+	 * {base}/{uuid}` with `{ entity: {...fields, version} }` — same
+	 * `page_props.form`, same dispatchers, optimistic locking on `version`.
 	 */
 	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import {
@@ -29,12 +32,15 @@
 	import { buildEntityFormSchema } from './build-entity-form-schema';
 	import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 	import { entityApiBase, apiFetch, type CensusRoute, type ModuleInfo } from '$lib/api';
-	import { extJsonStringify } from '$lib/api-ext';
+	import { extJsonStringify, extJsonParse, apiFetchExt } from '$lib/api-ext';
+	import { getTabSessionId } from '$lib/collaboration/tab-session';
 	import { t } from '$lib/i18n';
 	import { pushNotification } from '$lib/errors/app-errors';
 	import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
 	import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
 	import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
+	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { buildAuditData } from '$lib/utils/audit-data';
 	import type { MetaColumn } from '@primebrick/ui';
 
@@ -46,9 +52,22 @@
 
 	const basePath = $derived(entityApiBase(decl.entity!));
 	const formDecl = $derived(decl.page_props?.form);
+	const isDetail = $derived(decl.kind === 'detail');
 	const listHref = $derived(decl.route.replace(/\/[^/]*$/, ''));
 
+	/** Record uuid for detail mode — the pathname segment matching the
+	 *  decl's `[param]` slot (same positional rule as PageHeader). */
+	const recordUuid = $derived.by((): string | null => {
+		if (!isDetail) return null;
+		const p = decl.route.split('/').filter(Boolean);
+		const u = page.url.pathname.split('/').filter(Boolean);
+		const idx = p.findIndex((s) => s.startsWith('[') && s.endsWith(']'));
+		return idx >= 0 ? (u[idx] ?? null) : null;
+	});
+
 	let meta = $state<Awaited<ReturnType<typeof fetchEntityMeta>> | null>(null);
+	let record = $state<Record<string, unknown> | null>(null);
+	let recordVersion = $state<number | bigint>(0);
 	let loadError = $state<string | null>(null);
 
 	// Census emits → detailed ComboSelect options — the 3-line event anatomy:
@@ -71,6 +90,7 @@
 
 	const prepared = $derived.by(() => {
 		if (!meta || !formDecl) return null;
+		if (isDetail && !record) return null;
 		return buildEntityFormSchema(meta, formDecl);
 	});
 	const columnMap = $derived(new Map((meta?.columns ?? []).map((c) => [c.key, c])));
@@ -93,9 +113,22 @@
 		if (!p || formObj) return;
 		const initial: Record<string, unknown> = {};
 		for (const placement of formDecl!.fields) {
-			if (placement.default_value !== undefined) initial[placement.key] = placement.default_value;
-			else if (columnMap.get(placement.key)?.type === 'boolean') initial[placement.key] = false;
-			else initial[placement.key] = '';
+			const col = columnMap.get(placement.key);
+			const isJson = col?.format === 'json' || col?.pg_type === 'jsonb' || col?.pg_type === 'json';
+			if (isDetail && record) {
+				const v = record[placement.key];
+				// JSON controls bind a STRING — serialize record objects;
+				// null → '' (schema treats '' as absent on submit).
+				if (isJson) initial[placement.key] = v == null ? '' : extJsonStringify(v);
+				else if (col?.type === 'boolean') initial[placement.key] = v ?? false;
+				else initial[placement.key] = v ?? '';
+			} else if (placement.default_value !== undefined) {
+				initial[placement.key] = placement.default_value;
+			} else if (col?.type === 'boolean') {
+				initial[placement.key] = false;
+			} else {
+				initial[placement.key] = '';
+			}
 		}
 		formObj = superForm(defaults(initial, zod4(p.schema)), {
 			SPA: true,
@@ -119,13 +152,34 @@
 						}
 						entity[placement.key] = v;
 					}
-					const res = await apiFetch(basePath, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+					if (isDetail) entity.version = recordVersion;
+					const res = await apiFetch(isDetail ? `${basePath}/${recordUuid}` : basePath, {
+						method: isDetail ? 'PUT' : 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							// Tab session — the server stamps it on the change marker
+							// (`changed_by_session`) so another tab of the same user is
+							// treated as a foreign writer, not a self-save.
+							'X-Client-Session': getTabSessionId(),
+						},
 						body: extJsonStringify({ entity }),
 					});
 					if (!res.ok) {
 						const detail = await res.json().catch(() => null);
+						// ERR01 — optimistic lock lost: another write landed first.
+						// Realign + surface conflicts; the user saves again after
+						// resolving (version is now current).
+						if (isDetail && res.status === 409 && detail?.internal_code === 'ERR01') {
+							await collab.handleVersionConflict();
+							pushNotification({
+								impact: 'MEDIUM',
+								message: $t('app.collaboration.conflict_count', {
+									count: collab.conflictCount || 1,
+								}),
+								scope: decl.entity!,
+							});
+							return;
+						}
 						pushNotification({
 							impact: 'HIGH',
 							message: detail?.error ?? $t('app.common.saveFailed'),
@@ -138,6 +192,25 @@
 						message: $t('app.common.saveSuccess'),
 						scope: decl.entity!,
 					});
+					if (isDetail) {
+						// RETURNING row is authoritative — realign the optimistic
+						// lock to the new version, rebaseline, keep the page open
+						// (popups still close; same-tab stays on the record).
+						const updated = extJsonParse<Record<string, unknown>>(
+							await res.text(),
+						) as Record<string, unknown> | null;
+						if (
+							updated &&
+							(typeof updated.version === 'number' || typeof updated.version === 'bigint')
+						) {
+							record = updated;
+							recordVersion = updated.version;
+						}
+						reset({ newState: $form });
+						notifyParentRefresh();
+						if (window.opener) window.close();
+						return;
+					}
 					// Rebaseline BEFORE leaving: `newState` becomes the clean
 					// baseline so superforms untaints — the unsaved-changes
 					// beforeNavigate guard then lets the leave through. (Plain
@@ -181,11 +254,49 @@
 		`primebrick_${untrack(() => decl.entity)}_sync`,
 		{ mode: 'sender' },
 	);
+
+	/**
+	 * Collaboration — detail mode ONLY (create has nothing to compare
+	 * against) AND `collaboration.enabled` on the served meta (auditable
+	 * entities). The channel is registry-shared with the PageHeader
+	 * avatars: one SSE connection, one session id, one tab counted.
+	 */
+	const collab = useCollaborativeForm({
+		// decl + route params are immutable per mount (catch-all remounts on
+		// pathname change) — untracked reads are correct here.
+		entity: untrack(() => decl.entity!),
+		uuid: untrack(() => recordUuid ?? ''),
+		enabled: () => isDetail && recordUuid != null && meta?.collaboration?.enabled === true,
+		actorUuid: () => userProfileState.current?.uuid,
+		getField: (k) => ($form as Record<string, unknown>)[k],
+		setField: (k, v) => {
+			($form as Record<string, unknown>)[k] = v;
+		},
+		untaint: (k) => {
+			if ($tainted) ($tainted as Record<string, boolean>)[k] = false;
+		},
+		isTainted: (k) =>
+			formObj ? ((isTainted as (p?: unknown) => boolean)(k) ?? false) : false,
+		columnOf: (k) => columnMap.get(k) as MetaColumn | undefined,
+		getRecordVersion: () => recordVersion,
+		setRecordVersion: (v) => {
+			recordVersion = v;
+		},
+	});
 	const auditData = $derived(buildAuditData());
 
 	onMount(async () => {
 		try {
 			meta = await fetchEntityMeta(basePath);
+			if (isDetail && recordUuid) {
+				// extJson: integer columns (id, version) decode as bigint.
+				const row = await apiFetchExt<Record<string, unknown>>(`${basePath}/${recordUuid}`);
+				record = row;
+				recordVersion =
+					typeof row.version === 'number' || typeof row.version === 'bigint'
+						? row.version
+						: 0;
+			}
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : String(e);
 		}
@@ -198,6 +309,15 @@
 		if (placement.row_span) parts.push(`grid-row-end:span ${placement.row_span}`);
 		return parts.join(';');
 	}
+
+	/** Collaboration field chrome — conflict (destructive, readonly) wins
+	 *  over live-edit (amber ring) wins over silent-merge (emerald flash). */
+	function fieldCollabClass(key: string): string {
+		if (collab.isConflicted(key)) return 'ring-2 ring-destructive/60 rounded-md';
+		if (collab.isFieldBeingEdited(key)) return 'ring-2 ring-amber-500/60 rounded-md';
+		if (collab.isMergedField(key)) return 'ring-2 ring-emerald-500/60 rounded-md';
+		return '';
+	}
 </script>
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
@@ -209,10 +329,10 @@
 {:else}
 	<FormPageLayout
 		entity={decl.entity!}
-		rowUuid=""
+		rowUuid={recordUuid ?? ''}
 		{auditData}
 		auditingColumns={[]}
-		isCreatePage
+		isCreatePage={!isDetail}
 	>
 		<form
 				id="entity-form"
@@ -224,7 +344,19 @@
 				<div class="grid grid-cols-2 gap-6 p-4">
 					{#each formDecl!.fields as placement (placement.key)}
 						{@const col = columnMap.get(placement.key) as MetaColumn}
-						<div style={fieldStyle(placement)} data-testid={`entity-form-field-${placement.key}`}>
+						<!-- focusin/out bubble from any inner control — they drive
+						     the EDITING/READING presence signal for this field. -->
+						<div
+							style={fieldStyle(placement)}
+							data-testid={`entity-form-field-${placement.key}`}
+							class={fieldCollabClass(placement.key)}
+							onfocusin={() =>
+								collab.channel?.sendEditing(
+									placement.key,
+									($form as Record<string, unknown>)[placement.key],
+								)}
+							onfocusout={() => collab.channel?.sendReading()}
+						>
 							<FormField form={formObj!} name={placement.key}>
 								<FormControl>
 									{#snippet children({ props })}
@@ -247,7 +379,7 @@
 												{placement}
 												{emitsOptions}
 												controlProps={props}
-												readonly={placement.readonly}
+												readonly={placement.readonly || collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
 											/>
 											<TranslatedFormFieldErrors />

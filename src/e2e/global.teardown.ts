@@ -10,7 +10,7 @@
  */
 import { getBrevoProviderSnapshot, getFakeBrevo } from "./helpers/global-state";
 import { closePool, restoreBrevoProvider } from "./helpers/db";
-import { destroyE2eAdminActor, destroyE2eMfaActor, destroyE2eUserActor } from "./helpers/test-users";
+import { destroyE2eAdminActor, destroyE2eCollabActor, destroyE2eMfaActor, destroyE2eUserActor } from "./helpers/test-users";
 
 export default async function globalTeardown(): Promise<void> {
   console.log("[globalTeardown] Cleaning up E2E resources...");
@@ -32,6 +32,12 @@ export default async function globalTeardown(): Promise<void> {
     console.log("[globalTeardown] Ephemeral MFA actor destroyed.");
   } catch (e) {
     console.warn("[globalTeardown] MFA actor cleanup failed:", e);
+  }
+  try {
+    await destroyE2eCollabActor();
+    console.log("[globalTeardown] Ephemeral collab actor destroyed.");
+  } catch (e) {
+    console.warn("[globalTeardown] Collab actor cleanup failed:", e);
   }
 
   const fakeBrevo = getFakeBrevo();

@@ -28,6 +28,7 @@
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { Star } from '@primebrick/ui/vendor/lucide';
   import PresenceAvatars from '$lib/components/collaboration/PresenceAvatars.svelte';
+  import PresenceStatusChip from '$lib/components/collaboration/PresenceStatusChip.svelte';
 
   const { decl } = useRouteDecl();
   const routeDecl = $derived(decl());
@@ -176,6 +177,7 @@
       {#if presence}
         <!-- #key remounts on record change → LEAVE old entity + READING new. -->
         {#key `${presence.entity}:${presence.uuid}`}
+          <PresenceStatusChip entity={presence.entity} uuid={presence.uuid} />
           <PresenceAvatars entity={presence.entity} uuid={presence.uuid} />
         {/key}
       {/if}

@@ -21,7 +21,13 @@
    (`/api/v1/auth/*`, `/api/v1/system/*`), and `DELETE`.
 5. **Error paths**: Zod issue paths are now `entity.<field>` — map form
    field errors accordingly.
-6. **Microservices** (e.g. `provider` via `apiFetchExt`): same `{entity}`
+6. **`version` lives inside `entity` on PUT**: optimistic-lock writes send
+   `{ entity: { ...fields, version } }` — the observed version is part of
+   the entity body (DAL `update(uuid, body & { version })`). It is NOT a
+   top-level sibling and NOT a query param (query `?version` is the
+   delete/restore/purge convention only). A stale version returns
+   `409 + internal_code: "ERR01"`.
+7. **Microservices** (e.g. `provider` via `apiFetchExt`): same `{entity}`
    envelope, `translations` sibling is rejected there too.
 
 ## Enforcement

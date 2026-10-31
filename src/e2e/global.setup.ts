@@ -22,7 +22,7 @@ import {
   upsertFakeBrevoProvider,
 } from "./helpers/db";
 import { getBrevoProviderSnapshot, setBrevoProviderSnapshot, setFakeBrevo } from "./helpers/global-state";
-import { createE2eAdminActor, createE2eMfaActor, createE2eUserActor } from "./helpers/test-users";
+import { createE2eAdminActor, createE2eCollabActor, createE2eMfaActor, createE2eUserActor } from "./helpers/test-users";
 
 export default async function globalSetup(): Promise<void> {
   console.log("[globalSetup] Starting E2E preconditions...");
@@ -43,6 +43,7 @@ export default async function globalSetup(): Promise<void> {
   } catch (err) {
     throw new Error(
       `[globalSetup] Postgres not reachable at ${process.env.DATABASE_URL ?? "default"}: ${err}`,
+      { cause: err },
     );
   }
 
@@ -61,7 +62,7 @@ export default async function globalSetup(): Promise<void> {
     console.log("[globalSetup] Upserted fake Brevo provider row.");
   } catch (err) {
     await fakeBrevo.close();
-    throw new Error(`[globalSetup] Failed to snapshot or upsert fake Brevo provider row: ${err}`);
+    throw new Error(`[globalSetup] Failed to snapshot or upsert fake Brevo provider row: ${err}`, { cause: err });
   }
 
   // 6. Mint the ephemeral E2E admin actor (random password, destroyed in
@@ -77,7 +78,7 @@ export default async function globalSetup(): Promise<void> {
       });
     }
     await fakeBrevo.close();
-    throw new Error(`[globalSetup] Failed to create E2E test actor: ${err}`);
+    throw new Error(`[globalSetup] Failed to create E2E test actor: ${err}`, { cause: err });
   }
 
   // 7. Mint the ephemeral NON-admin actor (dedicated `e2e_user` role —
@@ -88,7 +89,7 @@ export default async function globalSetup(): Promise<void> {
     console.log(`[globalSetup] Ephemeral non-admin actor created: ${actor.username}`);
   } catch (err) {
     await fakeBrevo.close();
-    throw new Error(`[globalSetup] Failed to create non-admin E2E actor: ${err}`);
+    throw new Error(`[globalSetup] Failed to create non-admin E2E actor: ${err}`, { cause: err });
   }
 
   // 8. Mint the dedicated MFA-suite actor. Enrolling a TOTP factor on the
@@ -101,7 +102,17 @@ export default async function globalSetup(): Promise<void> {
     console.log(`[globalSetup] Ephemeral MFA actor created: ${actor.username}`);
   } catch (err) {
     await fakeBrevo.close();
-    throw new Error(`[globalSetup] Failed to create MFA E2E actor: ${err}`);
+    throw new Error(`[globalSetup] Failed to create MFA E2E actor: ${err}`, { cause: err });
+  }
+
+  // 9. Mint the collaboration-suite admin twin — merge/conflict assertions
+  //    need a second identity (a same-user save is filtered as self-change).
+  try {
+    const actor = await createE2eCollabActor();
+    console.log(`[globalSetup] Ephemeral collab actor created: ${actor.username}`);
+  } catch (err) {
+    await fakeBrevo.close();
+    throw new Error(`[globalSetup] Failed to create collab E2E actor: ${err}`, { cause: err });
   }
 
   console.log("[globalSetup] All preconditions OK. E2E tests can start.");
@@ -116,6 +127,7 @@ async function assertReachable(url: string, label: string): Promise<void> {
   } catch (err) {
     throw new Error(
       `[globalSetup] ${label} not reachable at ${url}: ${err}. Per .devin/rules/dev-server.md, the E2E tests do NOT start dev servers — start the stack manually before running E2E.`,
+      { cause: err },
     );
   }
 }
