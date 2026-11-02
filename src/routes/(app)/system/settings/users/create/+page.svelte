@@ -38,7 +38,7 @@
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
-  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useFormGuard, useForceFormValidation } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -161,7 +161,7 @@
   });
 
   // Superforms in SPA mode
-  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+  const forceValidate = useForceFormValidation((opts) => superFormObj.validateForm(opts));
 
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
@@ -169,19 +169,7 @@
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
-    onChange() {
-      // Force ALL errors to display on every change, regardless of taint.
-      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
-      // bypassing all taint/event/previous-error checks.
-      // This fulfils: "if a field is invalid, it must be coloured as it should."
-      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
-      // captured at validation start — overlapping validations resolving out of
-      // order would overwrite $form with stale data (typed chars lost).
-      clearTimeout(validateAllTimer);
-      validateAllTimer = setTimeout(() => {
-        void superFormObj.validateForm({ update: true, focusOnError: false });
-      }, 250);
-    },
+    onChange: forceValidate,
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
@@ -306,7 +294,7 @@
     }
   });
 
-  $effect(() => () => clearTimeout(validateAllTimer));
+
 
   function getColMeta(key: string) {
     return getColMetaUtil(meta, key);

@@ -41,7 +41,7 @@
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
 	import { pushNotification } from '$lib/errors/app-errors';
-	import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+	import { useFormGuard, useForceFormValidation } from '$lib/composables/useFormGuard.svelte';
 	import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
 	import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
@@ -197,7 +197,15 @@
 	const prepared = $derived.by(() => {
 		if (!meta || !formDecl) return null;
 		if (isDetail && !record) return null;
-		return buildEntityFormSchema(meta, formDecl);
+		return buildEntityFormSchema(meta, formDecl, {
+			// Live resolution: the closure reads `callableDecls` on every
+			// validation pass — the schema stays static while the contract
+			// follows the selected `target_subject`.
+			resolveCallable: (subject) =>
+				callableDecls.find((c) => c.subject === subject)?.payload_schema as
+					| Record<string, unknown>
+					| undefined,
+		});
 	});
 	const columnMap = $derived(new Map((meta?.columns ?? []).map((c) => [c.key, c])));
 
@@ -239,7 +247,9 @@
 		formObj = superForm(defaults(initial, zod4(p.schema)), {
 			SPA: true,
 			validators: zod4(p.schema),
+			validationMethod: 'oninput',
 			dataType: 'json',
+			onChange: forceValidate,
 			async onUpdate({ form: updateForm, cancel }) {
 				if (!updateForm.valid) return;
 				cancel();
@@ -392,6 +402,7 @@
 		if (!hasSource && data.execution_context === 'user') data.execution_context = 'me';
 	});
 
+	const forceValidate = useForceFormValidation((opts) => formObj!.validateForm(opts));
 	const formGuard = useFormGuard(
 		() => $tainted,
 		() => ($errors as Record<string, unknown>) ?? {},
@@ -581,7 +592,12 @@
 				<Button variant="outline" onclick={handleCancel}>
 					{$t('app.common.cancel')}
 				</Button>
-				<Button type="submit" form="entity-form" disabled={submitting} data-testid="entity-form-submit">
+				<Button
+					type="submit"
+					form="entity-form"
+					disabled={!formGuard.canSave || submitting}
+					data-testid="entity-form-submit"
+				>
 					{$t('app.common.save')}
 				</Button>
 			</div>

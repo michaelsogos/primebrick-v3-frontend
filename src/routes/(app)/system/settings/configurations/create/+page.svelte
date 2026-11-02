@@ -6,6 +6,7 @@
   import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
+  import { isSnakeKey } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -18,7 +19,7 @@
   import { z } from 'zod';
   import { apiFetch, createConfigEntry } from '$lib/api';
   import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
-  import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+  import { useFormGuard, useForceFormValidation } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { useExistingGroupKeys } from '$lib/composables/useExistingGroupKeys.svelte';
@@ -61,7 +62,7 @@
     key: z.string()
       .min(1, { message: 'app.common.validation.required' })
       .max(100, { message: maxMsg(100) })
-      .regex(/^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
+      .refine(isSnakeKey, { message: 'app.common.validation.snake_key' })
       .default(''),
     type: z.string()
       .min(1, { message: 'app.common.validation.required' })
@@ -78,7 +79,7 @@
       .default(''),
     group_key: z.string()
       .max(100, { message: maxMsg(100) })
-      .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
+      .refine((v) => v === '' || isSnakeKey(v), { message: 'app.common.validation.snake_key' })
       .default(''),
     reserved: z.boolean()
       .default(false),
@@ -102,7 +103,7 @@
     }
   });
 
-  let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
+  const forceValidate = useForceFormValidation((opts) => superFormObj.validateForm(opts));
 
   const superFormObj = superForm(defaults(zod4(createSchema)), {
     SPA: true,
@@ -110,23 +111,7 @@
     validationMethod: 'oninput',
     invalidateAll: false,
     resetForm: false,
-    onChange() {
-      // Force ALL errors to display on every change, regardless of taint.
-      // validateForm({ update: true }) sets force=true in Form__displayNewErrors,
-      // bypassing all taint/event/previous-error checks.
-      // This is required because the value field's validation depends on type
-      // and type_config via root-level superRefine — field-level validation
-      // alone (z.string().default('')) won't catch required/type errors.
-      // Same pattern as users/create page.
-      // DEBOUNCED: validateForm internally does Form.set(result.data) with data
-      // captured at validation start — overlapping validations resolving out of
-      // order would overwrite $form with stale data (typed chars lost, taint
-      // reset). One trailing validation per typing burst avoids the race.
-      clearTimeout(validateAllTimer);
-      validateAllTimer = setTimeout(() => {
-        void superFormObj.validateForm({ update: true, focusOnError: false });
-      }, 250);
-    },
+    onChange: forceValidate,
     async onUpdate({ form: updateForm, cancel }) {
       if (!updateForm.valid) return;
 
@@ -208,9 +193,9 @@
   });
 
   // Leaving the page without saving must never persist queued translations —
-  // the pending queue dies with the form (zero orphan rows).
+  // the pending queue dies with the form (zero orphan rows). The validation
+  // timer cleans itself inside useForceFormValidation.
   $effect(() => () => {
-    clearTimeout(validateAllTimer);
     clearPendingTranslations();
   });
 

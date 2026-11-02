@@ -74,12 +74,11 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
       popup.getByTestId("entity-form-field-target_subject").locator('button[aria-label="Help"]'),
     ).toBeVisible();
 
-    // event_subject — census-fed ComboSelect (detailed options: description +
-    // raw subject) with free entry for undeclared subjects.
+    // event_subject — census-fed ComboSelect, closed to declared emits.
     const eventField = popup.getByTestId("entity-form-field-event_subject");
     await eventField.locator('[role="combobox"]').click();
     const commandInput = popup.locator('[data-slot="command-input"]:visible').last();
-    await commandInput.fill("e2e.event.fired");
+    await commandInput.fill("crm.customer_changed");
     await commandInput.press("Enter");
     await popup.keyboard.press("Escape");
 
@@ -90,14 +89,41 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
       .first()
       .fill("@every 1h");
 
-    // target_subject — must match jobs.due.<lane>.* with lane=user.
+    // target_subject — closed census combo (allow_create: false): only
+    // callables declared via real makeNatsRequestRoute/payload_schema
+    // contracts are selectable.
     await popup
       .getByTestId("entity-form-field-target_subject")
-      .locator("input")
-      .fill("jobs.due.user.e2e.test");
+      .locator('[role="combobox"]')
+      .click();
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: "crm.emit_fake_event" })
+      .first()
+      .click();
+    await popup.keyboard.press("Escape");
 
-    // execution_context — badge ComboSelect, default "user".
+    // payload_map — the callable contract requires `event` (enum): map it
+    // to a fixed value before Save unlocks. The row's kind combo is narrow —
+    // click its left edge (center hits the disabled clear button).
+    const eventRow = popup.getByTestId("payload-map-row-event");
+    await eventRow.locator('[role="combobox"]').first().click({ position: { x: 8, y: 18 } });
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: /fixed value|valore fisso|constant|costante/i })
+      .first()
+      .click();
+    await eventRow.locator('[role="combobox"]').nth(1).click({ position: { x: 8, y: 18 } });
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: "crm.customer_changed" })
+      .first()
+      .click();
+    await popup.keyboard.press("Escape");
+
+    // execution_context — badge ComboSelect, default.
     // enabled — SwitchField, default true. Both left at defaults.
+    await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
 
     // 3. Submit → the child broadcasts 'refresh' and CLOSES itself.
     const postCapture = popup.waitForResponse(

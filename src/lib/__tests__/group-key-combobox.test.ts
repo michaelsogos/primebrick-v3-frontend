@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+import { isSnakeKey } from '@primebrick/ui';
 // Static side-effect import: the whole @primebrick/ui dist graph gets
 // transformed+evaluated at test-file load — outside any test/hook timeout.
 // After vi.resetModules() the re-import is pure re-evaluation (transform
@@ -38,7 +39,7 @@ describe('flat dict key filtering (replaces flattenDictKeys)', () => {
 // Mirror of the schema in the create page (allows empty string — group is optional)
 const groupKeySchema = z.string()
   .max(100, { message: maxMsg(100) })
-  .regex(/^$|^[a-z][a-z0-9_]*$/, { message: 'app.common.validation.invalidFormat' })
+  .refine((v) => v === '' || isSnakeKey(v), { message: 'app.common.validation.snake_key' })
   .default('');
 
 describe('group_key Zod validation', () => {

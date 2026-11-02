@@ -151,6 +151,12 @@
   "app.common.validation.invalidJson": "Must be valid JSON",
   "app.common.validation.tooShort": "Must be at least {min}",
   "app.common.validation.tooLong": "Must be at most {max}",
+  "app.common.validation.identifier": "Letters, digits, dots, underscores and hyphens — must start and end with a letter or digit",
+  "app.common.validation.snake_key": "Lowercase letters, digits and underscores — must start with a letter",
+  "app.common.validation.dotted_key": "Dot-separated snake_case segments (e.g. customer.read.all)",
+  "app.common.validation.dotted_glob": "Dot-separated snake_case segments — a whole segment may be the * wildcard",
+  "app.common.validation.slug": "Lowercase letters, digits, underscores and hyphens — must start with a letter",
+  "app.common.validation.no_space": "Must not contain whitespace",
   "app.common.selectTime": "Select time",
   "app.common.tooltipTitle.information": "Info",
   "app.common.tooltipTitle.warning": "Warning",
@@ -495,5 +501,7 @@
   "app.remote_page.error.import": "The page module was downloaded but could not be loaded by the browser.",
   "app.remote_page.error.contract": "The page module is not compatible with this application version.",
   "app.remote_page.error.vendor": "The page module requires different library versions than this application provides. The module needs to be rebuilt.",
-  "app.remote_page.error.mount": "The page failed while rendering."
+  "app.remote_page.error.mount": "The page failed while rendering.",
+  "app.widgets.payload_map.issue.required": "Required — pick where the value comes from",
+  "app.widgets.payload_map.issue.invalid": "Invalid value — {message}"
 }
