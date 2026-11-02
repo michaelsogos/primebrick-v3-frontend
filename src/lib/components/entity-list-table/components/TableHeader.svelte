@@ -5,6 +5,7 @@
   import { Button } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn, SortDir } from '$lib/entity-list/types';
+  import { isColumnSortable } from '$lib/entity-list/types';
   import { datetimeIanaHeadHighlightClass } from '../utils/cell-styling';
   import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUp } from '@primebrick/ui/vendor/lucide'
@@ -86,7 +87,7 @@
         <Table.Head
           style="left: {stickyColumnsState.state.stickyLeftOffsets[col.key] ?? 0}px;"
           class={stickyCellClass(col.key, colIdx, true) ??
-            (col.sortable !== false
+            (isColumnSortable(col)
               ? rowsLoading
                 ? 'relative z-10 select-none opacity-60'
                 : 'relative z-10 cursor-pointer select-none'
@@ -96,7 +97,7 @@
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
             <span class="inline-flex items-center gap-1">
               {$t(col.label_key)}
-              {#if col.sortable !== false}
+              {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
@@ -112,7 +113,7 @@
         <Table.Head
           class={cn(
             stickyCellClass(col.key, colIdx, true) ??
-              (col.sortable !== false
+              (isColumnSortable(col)
                 ? rowsLoading
                   ? 'relative z-10 select-none opacity-60'
                   : 'relative z-10 cursor-pointer select-none'
@@ -129,7 +130,7 @@
             <div class="flex w-full min-w-0 items-center justify-between gap-1">
               <span class="inline-flex min-w-0 items-center gap-1">
                 {$t(col.label_key)}
-                {#if col.sortable !== false}
+                {#if isColumnSortable(col)}
                   {#if sortKey !== col.key}
                     <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                   {:else if sortDir === 'asc'}
@@ -164,7 +165,7 @@
           {:else}
             <span class="inline-flex items-center gap-1">
               {$t(col.label_key)}
-              {#if col.sortable !== false}
+              {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
