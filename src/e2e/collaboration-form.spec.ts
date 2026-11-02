@@ -97,8 +97,9 @@ test.describe("collaborative update surface (job_rule detail)", () => {
       await pageA.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
       await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
-      // Design: "0 others → no avatars" — the whole stack (self included)
-      // renders nothing while A is alone on the record.
+      // Design: "0 others → no avatars" — the stack renders nothing while
+      // A is alone on the record (no self chip — the viewer's own
+      // presence is implicit).
       await expect(presenceZone.getByTestId("presence-avatars")).toHaveCount(0);
 
       await loginAsCollabAdmin(pageB);
@@ -106,11 +107,11 @@ test.describe("collaborative update surface (job_rule detail)", () => {
       await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
 
       // B's READING signal lands on A's snapshot → stack appears: one
-      // other-avatar (B) + self rightmost.
+      // other-avatar (B). No self chip exists anymore.
       await expect(presenceZone.getByTestId("presence-avatar")).toHaveCount(1, {
         timeout: 15000,
       });
-      await expect(presenceZone.getByTestId("presence-self")).toHaveCount(1);
+      await expect(presenceZone.getByTestId("presence-self")).toHaveCount(0);
 
       // --- A taints schedule_spec locally (no save) ----------------------
       const aSpec = pageA.getByTestId("entity-form-field-schedule_spec");
@@ -198,12 +199,14 @@ test.describe("collaborative update surface (job_rule detail)", () => {
 
       const otherTabAvatar = presenceZone.getByTestId("presence-avatar");
       await expect(otherTabAvatar).toHaveCount(1, { timeout: 15000 });
-      await expect(presenceZone.getByTestId("presence-self")).toHaveCount(1);
-      // Same user proof: the "other" avatar carries MY user uuid, and its
-      // tooltip labels it as my other tab (en "other tab" / it "scheda").
-      const selfUuid = await presenceZone
-        .getByTestId("presence-self")
-        .getAttribute("data-presence-user");
+      await expect(presenceZone.getByTestId("presence-self")).toHaveCount(0);
+      // Same user proof: the "other" avatar carries MY user uuid (from
+      // /auth/me) and its tooltip labels it as my other tab
+      // (en "other tab" / it "scheda").
+      const selfUuid = await pageA.evaluate(async () => {
+        const me = await fetch("/api/v1/auth/me").then((r) => r.json());
+        return me.uuid as string;
+      });
       await expect(otherTabAvatar).toHaveAttribute("data-presence-user", selfUuid!);
       await expect(otherTabAvatar).toHaveAttribute("title", /tab|scheda/i);
 

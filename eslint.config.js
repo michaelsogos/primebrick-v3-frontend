@@ -120,6 +120,42 @@ export default ts.config(
   },
   {
     /**
+     * Labelled booleans are `SwitchField` — ALWAYS. The raw `Switch`
+     * primitive exists only for composites that own their labelling
+     * (dual-label mode toggles, icon-thumb toggles, unlabelled row
+     * toggles); every user-facing labelled switch in a form must go
+     * through SwitchField (docs/ai/form-field-standard.md,
+     * ui-input-components.md). A bare import under a form label was the
+     * `EntityFormPage` drift — construction-time enforcement now.
+     */
+    files: ['src/**/*.{ts,svelte}'],
+    ignores: [
+      // Sanctioned composites — each owns its labelling contract.
+      'src/lib/components/config-list/ConfigValueInput.svelte',
+      'src/lib/entity-list/sheets/panels/FiltersPanel.svelte',
+      'src/lib/components/entity-list-table/panels/PreviewPanel.svelte',
+      'src/lib/components/anchor-tabs/anchor-tabs-mode-switch.svelte',
+      'src/lib/components/entity-list-table/components/CardViewRenderer.svelte',
+      'src/routes/(app)/system/settings/modules/+page.svelte',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@primebrick/ui',
+              importNames: ['Switch'],
+              message:
+                'Labelled booleans MUST use SwitchField (switch-first anatomy). Raw Switch is composite-internal only — add to the allowlist only if the file owns its labelling. See docs/ai/form-field-standard.md.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    /**
      * Page chrome is host-owned and MANDATORY — `AppShell` renders the
      * fixed `PageHeader` (breadcrumb · ★ · h1 · description · presence)
      * above every (app) route. Route files must never rebuild chrome:

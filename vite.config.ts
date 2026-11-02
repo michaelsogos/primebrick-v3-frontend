@@ -1,7 +1,13 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import tailwindcss from '@tailwindcss/vite';
+
+const uiSrc = (sub = '') =>
+	fileURLToPath(new URL(`../primebrick-v3-ui/src/lib${sub}`, import.meta.url));
+const coreSrc = (sub = '') =>
+	fileURLToPath(new URL(`../primebrick-v3-core/src${sub}`, import.meta.url));
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
@@ -16,6 +22,27 @@ export default defineConfig(({ mode }) => {
 				autoInstall: true
 			})
 		],
+		resolve: {
+			// Consume workspace libs from SOURCE — HMR on ui/core files with no
+			// svelte-package/tsc rebuild step and no dep-cache staleness. The
+			// `dist` artifacts remain the production surface (exports map
+			// untouched); the lib build stays a release gate.
+			// Every entry mirrors the package's OWN `exports` map one-to-one:
+			// subpaths resolve to real src files (e.g. `./cache` → etag-store.ts,
+			// NOT a directory index that doesn't exist in src). The core alias
+			// is mandatory — ui sources import @primebrick/core across 11 files;
+			// without it we'd get split dist+src instances of the same module.
+			alias: [
+				{ find: /^@primebrick\/ui$/, replacement: uiSrc('/index.ts') },
+				{ find: /^@primebrick\/ui\/utils$/, replacement: uiSrc('/utils/index.ts') },
+				{ find: /^@primebrick\/ui\/ai$/, replacement: uiSrc('/ai/index.ts') },
+				{ find: /^@primebrick\/ui\/cache$/, replacement: uiSrc('/cache/etag-store.ts') },
+				{ find: /^@primebrick\/ui\/bridges$/, replacement: uiSrc('/bridges.ts') },
+				{ find: /^@primebrick\/ui\/vendor\/(.+)$/, replacement: `${uiSrc()}/vendor/$1.ts` },
+				{ find: /^@primebrick\/core$/, replacement: coreSrc('/index.ts') },
+				{ find: /^@primebrick\/core\/(.+)$/, replacement: `${coreSrc()}/$1.ts` }
+			]
+		},
 		ssr: {
 			// Workspace-linked packages carrying .svelte/.svelte.js sources must
 			// be compiled by vite in SSR too — externalizing them hits node's
@@ -23,7 +50,9 @@ export default defineConfig(({ mode }) => {
 			noExternal: ['bits-ui', '@lucide/svelte', '@primebrick/ui', '@primebrick/core']
 		},
 		optimizeDeps: {
-			include: ['html2pdf.js']
+			include: ['html2pdf.js'],
+			// Source-aliased libs are app code — never pre-bundle them.
+			exclude: ['@primebrick/ui', '@primebrick/core']
 		},
 		server: {
 			fs: {

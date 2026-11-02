@@ -12,7 +12,7 @@
 	 * {base}/{uuid}` with `{ entity: {...fields, version} }` — same
 	 * `page_props.form`, same dispatchers, optimistic locking on `version`.
 	 */
-	import { onMount, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -26,8 +26,11 @@
 		FormLabelWithPriorityHelp,
 		Button,
 		DynamicIcon,
+		SwitchField,
 	} from '@primebrick/ui';
 	import FormPageLayout from '$lib/components/FormPageLayout.svelte';
+	import ServiceUnavailableView from '$lib/components/ServiceUnavailableView.svelte';
+	import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
 	import FormFieldDispatcher from './FormFieldDispatcher.svelte';
 	import { buildEntityFormSchema } from './build-entity-form-schema';
 	import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
@@ -35,14 +38,18 @@
 	import { extJsonStringify, extJsonParse, apiFetchExt } from '$lib/api-ext';
 	import { getTabSessionId } from '$lib/collaboration/tab-session';
 	import { t } from '$lib/i18n';
+	import { uiLang } from '$lib/i18n/store.svelte';
+	import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
 	import { pushNotification } from '$lib/errors/app-errors';
 	import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
 	import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
 	import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
+	import FieldEditingBadge from '$lib/components/collaboration/FieldEditingBadge.svelte';
 	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { buildAuditData } from '$lib/utils/audit-data';
 	import type { MetaColumn } from '@primebrick/ui';
+	import { seedPayloadMapEntries, type PayloadMap } from '@primebrick/ui';
 
 	interface Props {
 		decl: CensusRoute;
@@ -69,6 +76,57 @@
 	let record = $state<Record<string, unknown> | null>(null);
 	let recordVersion = $state<number | bigint>(0);
 	let loadError = $state<string | null>(null);
+	let loadStarted = $state(false);
+
+	/** The service the entity fetches actually go through — `/svc/<code>/`
+	 *  in basePath (BE-owned entities → null → always "available"). */
+	const svcCode = $derived(serviceCodeOf(basePath));
+	const svc = useServiceAvailability(() => svcCode);
+
+	async function attemptLoad() {
+		loadStarted = true;
+		loadError = null;
+		try {
+			meta = await fetchEntityMeta(basePath);
+			if (isDetail && recordUuid) {
+				// extJson: integer columns (id, version) decode as bigint.
+				const row = await apiFetchExt<Record<string, unknown>>(`${basePath}/${recordUuid}`);
+				record = row;
+				recordVersion =
+					typeof row.version === 'number' || typeof row.version === 'bigint'
+						? row.version
+						: 0;
+			}
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : String(e);
+		}
+	}
+
+	// SSE registry gate — while the owning microservice is not online no
+	// fetch is fired at all and the dedicated view renders; the next
+	// register/heartbeat event (stamp change) re-arms the load. A failure
+	// while "online" gets a short bounded retry — the respawn race where
+	// the registry row still reads online but the listener is not yet bound.
+	let attempts = 0;
+	let lastStamp: string | null = null;
+	$effect(() => {
+		const stamp = svc.stamp;
+		const avail = svc.available;
+		if (stamp !== lastStamp) {
+			lastStamp = stamp;
+			attempts = 0;
+		}
+		if (!avail) return;
+		if (!loadStarted) {
+			void attemptLoad();
+		} else if (loadError && attempts < 3) {
+			attempts++;
+			const t = setTimeout(() => {
+				if (loadError && svc.available) void attemptLoad();
+			}, 1500);
+			return () => clearTimeout(t);
+		}
+	});
 
 	// Census emits → detailed ComboSelect options — the 3-line event anatomy:
 	// translated display name (`label_key`) on the label line, italic
@@ -86,6 +144,54 @@
 				_icon: 'zap',
 				_icon_color: 'amber-500',
 			})),
+	);
+
+	// Census callables → the same detailed option anatomy, flipped marker:
+	// a callable is a destination you SEND a request to (`send` icon, sky).
+	// Decl lists are kept raw too — `payload_map` reads the selected
+	// callable's payload_schema/permissions and the event's payload_schema.
+	const callableDecls = $derived(modules.flatMap((m) => m.callables?.callables ?? []));
+	const emitDecls = $derived(modules.flatMap((m) => m.events?.emits ?? []));
+	const callablesOptions = $derived(
+		callableDecls.map((c) => ({
+			value: c.subject,
+			label: c.label_key ? $t(c.label_key) : c.subject,
+			_desc: c.description_key ? $t(c.description_key) : '',
+			_sub: c.subject,
+			_icon: 'send',
+			_icon_color: 'sky-500',
+		})),
+	);
+	// Census contributors' dicts — callable/emit label_key+description_key
+	// resolve in the DECLARING module's own namespace, which the route-aware
+	// loader never fetches on a foreign module's page (a `job` form listing
+	// `emailsender.send` needs the `emailsender` dict). Best-effort: an
+	// offline contributor degrades to raw keys without notifications — the
+	// registry census still lists its subjects.
+	const censusModules = $derived(
+		new Set(
+			modules
+				.filter(
+					(m) =>
+						(m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0,
+				)
+				.map((m) => m.id),
+		),
+	);
+	$effect(() => {
+		const lang = $uiLang;
+		for (const code of censusModules) void loadModuleTranslations(code, lang, { bestEffort: true });
+	});
+
+	const targetCallable = $derived(
+		callableDecls.find(
+			(c) => c.subject === (form ? ($form['target_subject'] as string | undefined) : undefined),
+		),
+	);
+	const sourceEmit = $derived(
+		emitDecls.find(
+			(e) => e.subject === (form ? ($form['event_subject'] as string | undefined) : undefined),
+		),
 	);
 
 	const prepared = $derived.by(() => {
@@ -236,6 +342,44 @@
 		({ form, errors, enhance, tainted, isTainted, reset } = formObj);
 	});
 
+	/**
+	 * Declared `payload_map` automation — `x_inject`/`x_semantic` fields
+	 * materialize their entries HERE, at data-assembly level, never as a
+	 * widget side-effect: machine-written values are rebaselined
+	 * (untainted) so they never masquerade as user edits. Runs once per
+	 * (event_subject, target_subject) pair — explicit edits/deletions
+	 * inside the pair stay authoritative (explicit > declaration).
+	 */
+	let seededFor = $state<string | null>(null);
+	$effect(() => {
+		if (!formObj) return;
+		const pairKey = `${$form['event_subject'] as string}|${$form['target_subject'] as string}`;
+		if (pairKey === seededFor) return;
+		const schema = targetCallable?.payload_schema as Record<string, unknown> | undefined;
+		// Decl resolves asynchronously — do NOT consume the once-per-pair
+		// guard before the schema is readable, or the seed never lands.
+		if (!schema?.properties) return;
+		seededFor = pairKey;
+		const field = 'payload_map';
+		let current: PayloadMap = {};
+		try {
+			const parsed = JSON.parse((($form as Record<string, unknown>)[field] as string) || '{}');
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) current = parsed as PayloadMap;
+		} catch {
+			// unparseable authored JSON — the seeds merge onto an empty base
+		}
+		const seeded = seedPayloadMapEntries(
+			schema,
+			sourceEmit?.payload_schema as Record<string, unknown> | undefined,
+			sourceEmit?.entity,
+			current,
+		);
+		if (JSON.stringify(seeded) !== JSON.stringify(current)) {
+			($form as Record<string, unknown>)[field] = JSON.stringify(seeded, null, 2);
+			if ($tainted) ($tainted as Record<string, boolean>)[field] = false;
+		}
+	});
+
 	const formGuard = useFormGuard(
 		() => $tainted,
 		() => ($errors as Record<string, unknown>) ?? {},
@@ -285,36 +429,20 @@
 	});
 	const auditData = $derived(buildAuditData());
 
-	onMount(async () => {
-		try {
-			meta = await fetchEntityMeta(basePath);
-			if (isDetail && recordUuid) {
-				// extJson: integer columns (id, version) decode as bigint.
-				const row = await apiFetchExt<Record<string, unknown>>(`${basePath}/${recordUuid}`);
-				record = row;
-				recordVersion =
-					typeof row.version === 'number' || typeof row.version === 'bigint'
-						? row.version
-						: 0;
-			}
-		} catch (e) {
-			loadError = e instanceof Error ? e.message : String(e);
-		}
-	});
-
-	function fieldStyle(placement: { col?: number; span?: number; row_span?: number }): string {
+	function fieldStyle(placement: { col?: number; span?: number; row?: number; row_span?: number }): string {
 		const parts: string[] = [];
 		if (placement.col) parts.push(`grid-column-start:${placement.col}`);
 		if (placement.span) parts.push(`grid-column-end:span ${placement.span}`);
+		if (placement.row) parts.push(`grid-row-start:${placement.row}`);
 		if (placement.row_span) parts.push(`grid-row-end:span ${placement.row_span}`);
 		return parts.join(';');
 	}
 
 	/** Collaboration field chrome — conflict (destructive, readonly) wins
-	 *  over live-edit (amber ring) wins over silent-merge (emerald flash). */
+	 *  over silent-merge (emerald flash). Live remote-editing surfaces as a
+	 *  label badge (FieldEditingBadge), not a ring. */
 	function fieldCollabClass(key: string): string {
 		if (collab.isConflicted(key)) return 'ring-2 ring-destructive/60 rounded-md';
-		if (collab.isFieldBeingEdited(key)) return 'ring-2 ring-amber-500/60 rounded-md';
 		if (collab.isMergedField(key)) return 'ring-2 ring-emerald-500/60 rounded-md';
 		return '';
 	}
@@ -322,7 +450,13 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-{#if loadError}
+{#if !svc.available}
+	<ServiceUnavailableView
+		service={svcCode ?? decl.module}
+		status={svc.status}
+		onRetry={() => void attemptLoad()}
+	/>
+{:else if loadError}
 	<div class="p-6 text-destructive">{$t('app.common.loadError')}: {loadError}</div>
 {:else if !prepared || !formObj}
 	<div class="p-6 text-muted-foreground">{$t('app.common.loading')}</div>
@@ -360,30 +494,64 @@
 							<FormField form={formObj!} name={placement.key}>
 								<FormControl>
 									{#snippet children({ props })}
-										<div class="space-y-2">
-											<FormLabel for={props.id}>
-												{#if col.icon}
-													<DynamicIcon name={col.icon} size={14} class="inline-block" />
-												{/if}
-												{$t(col.label_key)}
-												{#if col.tooltip && col.show_form_tooltip !== false}
-													<FormLabelWithPriorityHelp
-														text={$t(col.tooltip)}
-														title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
-														priority={col.tooltip_priority}
+										{#if col.type === 'boolean' || col.pg_type === 'boolean'}
+											<!-- Boolean = SwitchField anatomy (control-first,
+											     label beside) — the ONLY sanctioned labelled
+											     switch. The label-above anatomy is for
+											     scalar controls. -->
+											<div class="space-y-2">
+												<div class="flex items-center gap-2 pb-1 pt-6">
+													<SwitchField
+														label={$t(col.label_key)}
+														tooltip={col.tooltip && col.show_form_tooltip !== false
+															? $t(col.tooltip)
+															: undefined}
+														tooltipTitle={col.tooltip_title
+															? $t(col.tooltip_title)
+															: undefined}
+														tooltipPriority={col.tooltip_priority}
+														disabled={placement.readonly || collab.isConflicted(placement.key)}
+														bind:checked={$form[placement.key] as boolean}
+														{...props}
 													/>
-												{/if}
-											</FormLabel>
+													<FieldEditingBadge
+														names={collab.fieldEditorNames(placement.key)}
+													/>
+												</div>
+												<TranslatedFormFieldErrors />
+											</div>
+										{:else}
+										<div class="space-y-2">
+											<div class="flex items-center justify-between gap-2">
+												<FormLabel for={props.id}>
+													{#if col.icon}
+														<DynamicIcon name={col.icon} size={14} class="inline-block" />
+													{/if}
+													{$t(col.label_key)}
+													{#if col.tooltip && col.show_form_tooltip !== false}
+														<FormLabelWithPriorityHelp
+															text={$t(col.tooltip)}
+															title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
+															priority={col.tooltip_priority}
+														/>
+													{/if}
+												</FormLabel>
+												<FieldEditingBadge names={collab.fieldEditorNames(placement.key)} />
+											</div>
 											<FormFieldDispatcher
 												column={col}
 												{placement}
 												{emitsOptions}
+												{callablesOptions}
+												{targetCallable}
+												{sourceEmit}
 												controlProps={props}
 												readonly={placement.readonly || collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
 											/>
 											<TranslatedFormFieldErrors />
 										</div>
+										{/if}
 									{/snippet}
 								</FormControl>
 							</FormField>

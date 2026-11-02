@@ -30,6 +30,7 @@ import {
 	type PresenceChannel,
 } from './presence-channel-registry.svelte';
 import { mergeDelta, type FieldConflict } from './merge-delta';
+import { PRESENCE_STALE_MS } from './presence-stack';
 import { registerCollabStatus, type CollabStatus } from './collab-status-store.svelte';
 import { apiFetchExt, extJsonStringify } from '$lib/api-ext';
 import { entityApiBase } from '$lib/api';
@@ -43,7 +44,7 @@ interface AuditPageRow {
 	id: bigint | number;
 	delta: Record<string, { old: unknown; new: unknown }>;
 	changed_by: string;
-	changed_by_name?: string | null;
+	changed_by_display_name?: string | null;
 	version: number;
 }
 
@@ -88,7 +89,7 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 	let isStale = $state(false);
 	/** Display name of the last foreign saver (for the status chip). */
 	let lastMergerName = $state<string | null>(null);
-	let tick = $state(0);
+	let tick = $state(Date.now());
 	/** Header-readable status — registered only while the channel is live. */
 	let status = $state<CollabStatus | null>(null);
 
@@ -161,7 +162,7 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 		lastMergerName =
 			row.changed_by === opts.actorUuid()
 				? get(t)('app.collaboration.you_other_tab')
-				: (row.changed_by_name ?? row.changed_by);
+				: (row.changed_by_display_name ?? row.changed_by);
 		if (outcome.merged.length) {
 			const now = Date.now();
 			for (const f of outcome.merged) mergedAt[f] = now;
@@ -218,9 +219,27 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 			const t = mergedAt[field];
 			return t !== undefined && tick - t < MERGED_BADGE_MS;
 		},
-		/** Another user is live-editing this field right now. */
-		isFieldBeingEdited(field: string): boolean {
-			return (channel?.editors ?? []).some((e) => e.field === field);
+		/**
+		 * Display names of the OTHER sessions live-editing this field right
+		 * now (my other tab resolves to "you — other tab"). Empty = nobody.
+		 */
+		fieldEditorNames(field: string): string[] {
+			// Prune stale editors — a dead tab that never sent LEAVE would
+			// otherwise keep "N users editing" forever (hash TTL dies only
+			// when EVERYONE stops heartbeating; same rule as the avatar
+			// stack's `orderPresenceStack`).
+			return (channel?.editors ?? [])
+				.filter(
+					(e) =>
+						e.session_id !== channel?.sessionId &&
+						e.field === field &&
+						tick - Number(e.last_seen_at) <= PRESENCE_STALE_MS,
+				)
+				.map((e) =>
+					e.user_uuid === opts.actorUuid()
+						? get(t)('app.collaboration.you_other_tab')
+						: e.user_name,
+				);
 		},
 		/**
 		 * Resolve a conflict — 'use_remote' applies the withheld value and

@@ -5,10 +5,14 @@
    * entity uuid): create pages and other archetypes get nothing.
    *
    * Spec (ai-plans/collaboration-visual-merge §6.4):
-   * - self always rightmost; zero others → renders nothing
+   * - NO self chip — the viewer's own presence is implicit (rightmost
+   *   slot removed by design). Another tab of the SAME user DOES render
+   *   ("you — other tab" with the real profile color).
+   * - zero others → renders nothing
    * - others leftward: editors by activity recency, then readers by
    *   `last_seen_at` — hidden users decay into the `+N` pill (leftmost)
-   * - rings: warning gradient = live EDITING · primary gradient = EDITED
+   * - live EDITING sessions group rightmost, split from readers by a
+   *   vertical divider (no ring); primary gradient ring = EDITED
    *   (saved ≤5min AND after my own mount)
    *
    * TODO(i18n): tooltips are inline EN pending `app.collaboration.*`
@@ -56,9 +60,16 @@
   const { visible, hiddenCount } = $derived(capPresenceStack(ordered));
   /** DOM order: leftmost +N → least active → most active → self (rightmost). */
   const display = $derived([...visible].reverse());
+  /**
+   * Index of the first live-EDITING entry in display order — editors sort
+   * rightmost, so a single vertical divider before this index separates the
+   * reader group from the editor group. `-1` = nobody editing = no divider.
+   */
+  const firstEditingIndex = $derived(
+    display.findIndex((e) => presenceRing(e, now, channel.mountedAt) === 'editing'),
+  );
 
   function ringClass(ring: 'editing' | 'edited' | 'none'): string {
-    if (ring === 'editing') return 'bg-range-warning-gradient';
     if (ring === 'edited') return 'bg-range-primary-gradient';
     return '';
   }
@@ -79,12 +90,24 @@
   }
 
   function initials(entry: PresenceEntry): string {
+    // Same user, other tab — render MY real avatar (local profile), never a
+    // re-derived guess from the wire entry (server initials/color may be null).
+    if (entry.user_uuid === selfUuid) {
+      return (
+        userProfileState.current?.avatar_initials ??
+        computeInitials(userProfileState.current?.display_name)
+      );
+    }
     return entry.avatar_initials ?? computeInitials(entry.user_name);
   }
 
   function avatarStyle(entry: PresenceEntry): string | null {
-    if (!entry.avatar_color) return null;
-    const g = computeAvatarGradient(entry.avatar_color);
+    const color =
+      entry.user_uuid === selfUuid
+        ? (userProfileState.current?.avatar_color ?? null)
+        : entry.avatar_color;
+    if (!color) return null;
+    const g = computeAvatarGradient(color);
     return `background: linear-gradient(135deg, ${g.start}, ${g.end}); color: ${g.textColor};`;
   }
 </script>
@@ -101,11 +124,20 @@
         +{hiddenCount}
       </button>
     {/if}
-    {#each display as entry (entry.session_id ?? entry.user_uuid)}
+    {#each display as entry, i (entry.session_id ?? entry.user_uuid)}
       {@const ring = presenceRing(entry, now, channel.mountedAt)}
       {@const style = avatarStyle(entry)}
+      {#if i === firstEditingIndex && i > 0}
+        <div
+          class="mx-1.5 h-4 w-px shrink-0 bg-border"
+          data-testid="presence-edit-divider"
+        ></div>
+      {/if}
       <div
-        class={cn('avatar-hex mr-[-6px] p-[1.5px]', ring !== 'none' && ringClass(ring))}
+        class={cn(
+          'avatar-hex mr-[-6px] p-[1.5px]',
+          ring !== 'none' && ringClass(ring),
+        )}
         title={tooltip(entry, ring)}
         data-testid="presence-avatar"
         data-presence-ring={ring === 'none' ? undefined : ring}
@@ -124,19 +156,5 @@
         </Avatar>
       </div>
     {/each}
-    <!-- Self (this tab) — always rightmost, plain. -->
-    <div
-      class="avatar-hex p-[1.5px]"
-      title={$t('app.collaboration.you')}
-      data-testid="presence-self"
-      data-presence-user={selfUuid}
-    >
-      <Avatar class="size-7 rounded-none avatar-hex">
-        <AvatarFallback class="rounded-none bg-muted text-[10px] font-semibold">
-          {userProfileState.current?.avatar_initials ??
-            computeInitials(userProfileState.current?.display_name)}
-        </AvatarFallback>
-      </Avatar>
-    </div>
   </div>
 {/if}

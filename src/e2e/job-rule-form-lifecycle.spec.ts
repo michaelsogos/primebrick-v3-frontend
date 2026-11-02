@@ -96,17 +96,8 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
       .locator("input")
       .fill("jobs.due.user.e2e.test");
 
-    // source_subject — readonly selector (fire-time source is disabled
-    // pending the workflow engine): the combobox renders but is
-    // non-interactive (aria-disabled, tabindex -1, popover cannot open).
-    const sourceField = popup.getByTestId("entity-form-field-source_subject");
-    const sourceCombo = sourceField.locator('[role="combobox"]');
-    await expect(sourceCombo).toHaveAttribute("aria-disabled", "true");
-    await sourceCombo.click({ force: true });
-    await expect(popup.locator('[data-slot="command-input"]:visible')).toHaveCount(0);
-
     // execution_context — badge ComboSelect, default "user".
-    // enabled — Switch, default true. Both left at defaults.
+    // enabled — SwitchField, default true. Both left at defaults.
 
     // 3. Submit → the child broadcasts 'refresh' and CLOSES itself.
     const postCapture = popup.waitForResponse(

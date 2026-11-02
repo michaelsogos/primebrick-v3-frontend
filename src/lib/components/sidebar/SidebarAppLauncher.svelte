@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
-  import { Popover, Switch } from '@primebrick/ui';
+  import { Popover, SwitchField } from '@primebrick/ui';
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { Kbd } from '$lib/components/ui/kbd';
   import { menuListSelectedSurfaceDropdownClasses, menuListHoverNeutral } from '@primebrick/ui';
@@ -771,13 +771,15 @@
             <Kbd size="modifier">esc</Kbd>
             <span>{$t('app.common.close')}</span>
           </span>
-          <label
-            class="ms-auto inline-flex cursor-pointer items-center gap-1.5"
-            data-testid="app-launcher-show-all"
-          >
-            <Switch bind:checked={showAll} class="scale-[0.65]" />
-            <span>{$t('app.nav.show_all')}</span>
-          </label>
+          <div class="ms-auto" data-testid="app-launcher-show-all">
+            <SwitchField
+              size="sm"
+              id="app-launcher-show-all-switch"
+              label={$t('app.nav.show_all')}
+              bind:checked={showAll}
+              class="scale-[0.75] origin-right"
+            />
+          </div>
         </div>
       </Popover.Content>
     </Popover.Root>

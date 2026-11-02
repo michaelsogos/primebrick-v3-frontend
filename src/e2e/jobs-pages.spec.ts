@@ -261,16 +261,15 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Contract: the archetype renders — remote mount must NOT.
     await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
     await expect(popup.locator(REMOTE_CONTENT)).toHaveCount(0);
-    // The 8 declared fields render in declaration order (meta.columns-driven).
+    // The 7 declared fields render in declaration order (meta.columns-driven).
     for (const key of [
       "name",
-      "event_subject",
-      "filter",
-      "schedule_spec",
-      "target_subject",
-      "execution_context",
-      "source_subject",
       "enabled",
+      "event_subject",
+      "target_subject",
+      "schedule_spec",
+      "execution_context",
+      "filter",
     ]) {
       await expect(popup.getByTestId(`entity-form-field-${key}`)).toBeVisible();
     }

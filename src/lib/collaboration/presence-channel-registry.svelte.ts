@@ -88,8 +88,16 @@ function createChannel(
 		void sendSignal({ action: 'READING', loaded_version: getLoadedVersion?.() });
 	}
 
+	// Entries of THIS tab's own session must never enter channel state:
+	// the server excludes own-session delta echoes, but the connect-time
+	// SNAPSHOT is unfiltered — after an SSE reconnect our own EDITING/READING
+	// entry (still live in Redis) would surface to consumers as a foreign
+	// session. Filtering once at ingestion keeps every consumer safe.
+	const notSelfSession = (e: PresenceEntry) => e.session_id !== sessionId;
+
 	function applyDelta(delta: PresenceDelta) {
 		const { user_uuid, session_id, action, entry } = delta;
+		if (session_id === sessionId) return;
 		// Entries are session-keyed: a delta affects the writer's session only.
 		// When the delta carries no session (synthetic __expired__ LEAVEs),
 		// fall back to user-level matching.
@@ -135,8 +143,8 @@ function createChannel(
 		onMessage: (msg) => {
 			if (msg.event === 'snapshot') {
 				const snap = parseSseData<PresenceSnapshot>(msg.data);
-				state.readers = snap.readers;
-				state.editors = snap.editors;
+				state.readers = snap.readers.filter(notSelfSession);
+				state.editors = snap.editors.filter(notSelfSession);
 				state.changed = snap.changed;
 				state.currentVersion = snap.current_version;
 			} else if (msg.event === 'presence-update') {

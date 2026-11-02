@@ -155,14 +155,31 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   // 503 from backend = application-level infrastructure unavailable signal (NOT gateway failure → no loop).
   // Force a /health probe so the chip reflects the offline component immediately
   // instead of waiting for the next periodic poll.
-  // Check the response body's internal_code to distinguish REDIS_UNAVAILABLE from DATABASE_UNAVAILABLE.
+  // Check the response body's internal_code to distinguish REDIS_UNAVAILABLE from DATABASE_UNAVAILABLE —
+  // and to scope PROXY service-level 503s (SERVICE_DEGRADED etc.): a degraded
+  // microservice is not a BE outage, so its 503 must not probe global health,
+  // must not throw ApiDatabaseUnavailableError, and must surface the real
+  // RFC 7807 problem details like the 502 path does.
   if (res.status === 503) {
-    let internalCode: string | undefined;
+    let errorData: Record<string, unknown> | null = null;
     try {
       const cloned = res.clone();
-      const body = await cloned.json();
-      internalCode = body?.internal_code;
+      errorData = await cloned.json();
     } catch { /* not JSON — treat as generic 503 */ }
+    const internalCode = errorData?.internal_code;
+    const isServiceScoped =
+      internalCode === 'SERVICE_DEGRADED' ||
+      internalCode === 'SERVICE_OFFLINE' ||
+      internalCode === 'BAD_GATEWAY';
+    if (isServiceScoped) {
+      const isRfc7807 =
+        errorData !== null &&
+        errorData.type !== undefined &&
+        errorData.title !== undefined &&
+        typeof errorData.status === 'number';
+      if (isRfc7807) pushNotification(errorData as Parameters<typeof pushNotification>[0]);
+      throw new ApiUnreachableError(res.status, isRfc7807);
+    }
     void probeHealth({ force: true });
     if (internalCode === 'REDIS_UNAVAILABLE') {
       throw new ApiRedisUnavailableError(503);

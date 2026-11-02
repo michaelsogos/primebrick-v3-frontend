@@ -92,6 +92,25 @@ describe('orderPresenceStack', () => {
     );
     expect(ordered.map((e) => e.user_uuid)).toEqual(['other']);
   });
+
+  it('divider invariant — editors stay contiguous at the tail of display order', () => {
+    // PresenceAvatars renders `display = reverse(ordered)` and splits
+    // readers|editors with ONE divider before the first 'editing' entry.
+    // That only works if editors form a contiguous tail in display order.
+    const readers = [
+      entry({ user_uuid: 'r1', last_seen_at: T0 - 100 }),
+      entry({ user_uuid: 'r2', last_seen_at: T0 - 200 }),
+    ];
+    const editors = [
+      entry({ user_uuid: 'e1', status: 'EDITING', last_seen_at: T0 - 50 }),
+      entry({ user_uuid: 'e2', status: 'EDITING', last_seen_at: T0 - 300 }),
+    ];
+    const display = [...orderPresenceStack(readers, editors, SELF, undefined, T0)].reverse();
+    const firstEditing = display.findIndex((e) => e.status === 'EDITING');
+    expect(firstEditing).toBeGreaterThan(0);
+    expect(display.slice(0, firstEditing).every((e) => e.status !== 'EDITING')).toBe(true);
+    expect(display.slice(firstEditing).every((e) => e.status === 'EDITING')).toBe(true);
+  });
 });
 
 describe('capPresenceStack', () => {

@@ -6,7 +6,7 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
-import type { ModuleEventsDecl, ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
+import type { ModuleCallablesDecl, ModuleEventsDecl, ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
 
 /**
  * AI domain types — canonical home is `@primebrick/ui/ai/types.ts` (the
@@ -66,6 +66,14 @@ export type ModuleInfo = {
    * across modules; free entry stays allowed for dynamic subjects.
    */
   events?: ModuleEventsDecl;
+  /**
+   * The module's callable destinations (`callables.callables` — governed
+   * LISTEN subjects auto-collected from routes carrying `payload_schema`).
+   * Served verbatim like `events`; a rule's target picker resolves options
+   * AND request contracts from the union across modules. Catalog-only —
+   * free entry is not allowed for targets.
+   */
+  callables?: ModuleCallablesDecl;
   /**
    * `false` = the module declares FE surface but ZERO leaves are
    * accessible to this user — present ONLY so the launcher's reveal

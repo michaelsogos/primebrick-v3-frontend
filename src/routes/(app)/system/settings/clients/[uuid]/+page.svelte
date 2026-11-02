@@ -4,7 +4,7 @@
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
-  import { Switch } from '@primebrick/ui';
+  import { SwitchField } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
@@ -302,10 +302,12 @@
           <FormField form={superFormObj} name="is_enabled">
             <FormControl>
               {#snippet children({ props })}
-                <div class="flex items-center gap-3">
-                  <Switch {...props} bind:checked={$form.is_enabled} data-testid="client-registry-is-enabled" />
-                  <FormLabel for={props.id}>{$t('system.entities.client_registry.fields.is_enabled')}</FormLabel>
-                </div>
+                <SwitchField
+                  {...props}
+                  label={$t('system.entities.client_registry.fields.is_enabled')}
+                  bind:checked={$form.is_enabled}
+                  data-testid="client-registry-is-enabled"
+                />
               {/snippet}
             </FormControl>
           </FormField>

@@ -38,7 +38,11 @@ function isLoadedFresh(cacheKey: string): boolean {
   return true;
 }
 
-async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise<void> {
+async function ensureModuleTranslations(
+  moduleId: string,
+  lang: UiLang,
+  opts?: { bestEffort?: boolean },
+): Promise<void> {
   const cacheKey = `${moduleId}:${lang}`;
   if (isLoadedFresh(cacheKey)) return;
 
@@ -58,6 +62,15 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
+    if (opts?.bestEffort) {
+      // Census contributors are peripheral enrichers (callable/emit labels
+      // on a foreign module's page): a dead service must not scream — the
+      // option degrades to its raw key and the failure is deduped for the
+      // TTL so an offline service is not hammered on every effect run.
+      LOADED_MODULES.set(cacheKey, Date.now());
+      console.debug(`[i18n] module ${moduleId} dict unavailable (${lang}) — raw keys`, e);
+      return;
+    }
     // Never silent, never blocking: a failed dict fetch surfaces as a
     // non-blocking notification (toast + errors-panel card) — raw keys stay
     // visible but the failure is explicit and the user can navigate/retry.
@@ -99,8 +112,12 @@ export async function loadPublicTranslations(lang: UiLang): Promise<void> {
 }
 
 /** Load translations for a specific module (authenticated pages). */
-export async function loadModuleTranslations(moduleId: string, lang: UiLang): Promise<void> {
-  return ensureModuleTranslations(moduleId, lang);
+export async function loadModuleTranslations(
+  moduleId: string,
+  lang: UiLang,
+  opts?: { bestEffort?: boolean },
+): Promise<void> {
+  return ensureModuleTranslations(moduleId, lang, opts);
 }
 
 /**

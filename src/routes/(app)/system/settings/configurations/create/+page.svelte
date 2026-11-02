@@ -537,20 +537,15 @@
                       }}
                       placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
                       searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
-                      display="custom"
+                      display="detailed"
+                      secondaryField="group_key"
+                      showDescription={false}
                       truncateFrom="start"
                       data-testid="config-create-group-key"
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
-                        {@const gk = (option as GroupKeyOption).group_key ?? resolvedValue}
-                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-                          <span class="font-medium truncate-start">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground truncate-start font-mono">{gk}</span>
-                        </div>
-                      {/snippet}
                       {#snippet selectedSnippet({ resolvedLabel, resolvedValue })}
                         {#if isGroupKeyNew(resolvedValue)}
-                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 truncate-start">
+                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground w-fit max-w-full truncate-start">
                             {resolvedLabel}
                           </Badge>
                         {:else}
