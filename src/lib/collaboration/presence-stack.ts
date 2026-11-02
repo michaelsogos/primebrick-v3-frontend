@@ -14,12 +14,12 @@ import type { PresenceEntry } from '@primebrick/ui';
 /** Window for the EDITED ring — mirrors the server-side changed-marker TTL. */
 export const EDITED_WINDOW_MS = 300_000;
 /**
- * Client-side staleness window — mirrors the server-side presence TTL.
+ * Client-side staleness window — mirrors the server-side presence TTL (60s).
  * Entries whose `last_seen_at` is older than this are dropped from the
  * stack: a dead tab that never sent LEAVE would otherwise stay visible
- * forever (hash TTL only dies when EVERYONE stops heartbeating).
+ * forever (hash TTL only dies when EVERYONE stops refreshing).
  */
-export const PRESENCE_STALE_MS = 30_000;
+export const PRESENCE_STALE_MS = 60_000;
 
 export type PresenceRing = 'editing' | 'edited' | 'none';
 

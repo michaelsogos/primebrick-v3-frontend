@@ -24,7 +24,14 @@ import type {
 	EntityChangedMarker,
 } from '@primebrick/ui';
 
-const HEARTBEAT_MS = 20_000;
+/**
+ * Fallback heartbeat cadence — only sent while the SSE stream is DOWN. When
+ * SSE is open the server refreshes this session's presence TTL (60s) itself
+ * on every 45s keep-alive tick, so a periodic POST would be redundant.
+ */
+const HEARTBEAT_MS = 45_000;
+/** Coalesce rapid focus changes into one EDITING signal (trailing edge). */
+const EDITING_DEBOUNCE_MS = 400;
 /** Grace window for release→acquire remounts (one Svelte flush). */
 const RELEASE_GRACE_MS = 0;
 
@@ -130,6 +137,7 @@ function createChannel(
 		}
 	};
 
+	let sseOpen = false;
 	const closeSse = createSseConnection({
 		// The server excludes only echoes of THIS session — another tab of the
 		// same user is a different session and must be echoed.
@@ -138,7 +146,13 @@ function createChannel(
 		authProbeUrl: base,
 		onOpen: () => {
 			// Fresh (re)connect → re-announce ourselves; the snapshot realigns.
+			// SSE liveness now drives the TTL — heartbeat stays silent.
+			sseOpen = true;
 			sendReading();
+		},
+		onError: () => {
+			// SSE down → fallback heartbeat resumes until the next onOpen.
+			sseOpen = false;
 		},
 		onMessage: (msg) => {
 			if (msg.event === 'snapshot') {
@@ -157,13 +171,35 @@ function createChannel(
 		},
 	});
 	sendReading();
-	const heartbeat = setInterval(
-		() => void sendSignal({ action: 'HEARTBEAT', loaded_version: getLoadedVersion?.() }),
-		HEARTBEAT_MS,
-	);
+	const heartbeat = setInterval(() => {
+		// SSE-driven liveness: while the stream is open the server refreshes
+		// this session's TTL on each keep-alive tick — skip the POST entirely.
+		if (sseOpen) return;
+		void sendSignal({ action: 'HEARTBEAT', loaded_version: getLoadedVersion?.() });
+	}, HEARTBEAT_MS);
 	window.addEventListener('beforeunload', sendLeaveBeacon);
 
+	let editingTimer: ReturnType<typeof setTimeout> | null = null;
+	let pendingEditing: { field: string; value: unknown } | null = null;
+
+	function sendEditingDebounced(field: string, value: unknown) {
+		// Rapid focus hops coalesce to the LATEST field+value — a burst of
+		// focusin events produces a single trailing EDITING signal.
+		pendingEditing = { field, value };
+		editingTimer ??= setTimeout(() => {
+			editingTimer = null;
+			const signal = pendingEditing;
+			pendingEditing = null;
+			if (signal) void sendSignal({ action: 'EDITING', field: signal.field, value: signal.value });
+		}, EDITING_DEBOUNCE_MS);
+	}
+
 	function close() {
+		if (editingTimer) {
+			clearTimeout(editingTimer);
+			editingTimer = null;
+			pendingEditing = null; // LEAVE supersedes any pending EDITING
+		}
 		clearInterval(heartbeat);
 		window.removeEventListener('beforeunload', sendLeaveBeacon);
 		void sendSignal({ action: 'LEAVE' }, true);
@@ -191,7 +227,7 @@ function createChannel(
 				return state.currentVersion;
 			},
 			sendEditing(field: string, value: unknown) {
-				void sendSignal({ action: 'EDITING', field, value });
+				sendEditingDebounced(field, value);
 			},
 			sendReading,
 			onEntityChanged(cb) {
