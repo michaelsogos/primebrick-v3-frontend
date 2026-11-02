@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
-  import { entityPageTitle } from '$lib/utils/entity-meta';
+
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { SvelteSet } from 'svelte/reactivity';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Button } from '@primebrick/ui';
   import { DeleteDialog } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
+  import { TextInput } from '@primebrick/ui';
+  import { Label } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
   import {
@@ -33,7 +33,7 @@
   // Form state
   let label_key = $state('');
   let is_admin = $state(false);
-  let selected_permissions = $state<Set<string>>(new Set());
+  const selected_permissions = new SvelteSet<string>();
 
   const permissionsCatalog = usePermissionsCatalog();
   const roleMappings = useRoleMappings();
@@ -55,30 +55,27 @@
     role = loaded;
     label_key = loaded.label_key ?? '';
     is_admin = loaded.is_admin;
-    selected_permissions = new Set(loaded.permissions);
+    selected_permissions.clear();
+    for (const p of loaded.permissions) selected_permissions.add(p);
     loading = false;
   });
 
   function togglePermission(code: string) {
-    const next = new Set(selected_permissions);
-    if (next.has(code)) {
-      next.delete(code);
+    if (selected_permissions.has(code)) {
+      selected_permissions.delete(code);
     } else {
-      next.add(code);
+      selected_permissions.add(code);
     }
-    selected_permissions = next;
   }
 
   function toggleModule(code: string) {
     const module_perms = permissionsCatalog.state.modules.find((m) => m.code === code)?.permissions ?? [];
     const all_selected = module_perms.every((p) => selected_permissions.has(p.code));
-    const next = new Set(selected_permissions);
     if (all_selected) {
-      for (const p of module_perms) next.delete(p.code);
+      for (const p of module_perms) selected_permissions.delete(p.code);
     } else {
-      for (const p of module_perms) next.add(p.code);
+      for (const p of module_perms) selected_permissions.add(p.code);
     }
-    selected_permissions = next;
   }
 
   function moduleAllSelected(code: string): boolean {
@@ -102,7 +99,7 @@
     });
     saving = false;
     if (ok) {
-      goto('/system/settings/roles');
+      goto(resolve('/system/settings/roles'));
     }
   }
 
@@ -113,48 +110,18 @@
     deleting = false;
     if (ok) {
       deleteOpen = false;
-      goto('/system/settings/roles');
+      goto(resolve('/system/settings/roles'));
     }
   }
 
   function handleCancel() {
-    goto('/system/settings/roles');
+    goto(resolve('/system/settings/roles'));
   }
 </script>
 
-<svelte:head>
-  <title>{entityPageTitle('role_mapping', 'edit', $t)} · Primebrick</title>
-</svelte:head>
+
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <div class="flex items-center justify-between gap-4">
-        <h1 class="truncate text-xl font-semibold leading-tight">
-          {entityPageTitle('role_mapping', 'edit', $t)}
-          {#if role}
-            <span class="font-mono text-base text-muted-foreground">{role.idp_role}</span>
-          {/if}
-        </h1>
-        {#if role}
-          <Button
-            variant="destructive"
-            size="sm"
-            onclick={() => (deleteOpen = true)}
-            disabled={deleting}
-            data-testid="roles-edit-delete-btn"
-          >
-            {$t('system.settings.roles.delete')}
-          </Button>
-        {/if}
-      </div>
-    </div>
-  {/snippet}
 
   <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.editSubtitle')}</p>
 

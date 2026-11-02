@@ -9,11 +9,11 @@
 
   interface FilterBarProps {
     hasAppliedFilters: boolean;
-    filterValues: Record<string, any>;
+    filterValues: Record<string, unknown>;
     advancedFilters: AdvancedFilter[];
     filterableColumns: MetaColumn[];
     onResetFilters: () => void;
-    onFilterValuesChange: (values: Record<string, any>) => void;
+    onFilterValuesChange: (values: Record<string, unknown>) => void;
     onAdvancedFiltersChange: (filters: AdvancedFilter[]) => void;
   }
 
@@ -27,9 +27,9 @@
     onAdvancedFiltersChange
   }: FilterBarProps = $props();
 
-  function formatBadgeValue(col: MetaColumn, value: any): string {
+  function formatBadgeValue(col: MetaColumn, value: unknown): string {
     if (col.type === 'badge' && col.badge?.values) {
-      const badgeValue = col.badge.values[value];
+      const badgeValue = col.badge.values[value as string];
       if (badgeValue) {
         return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
       }
@@ -68,7 +68,7 @@
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
-      {#each Object.entries(filterValues) as [key, value]}
+      {#each Object.entries(filterValues) as [key, value] (key)}
         {@const col = filterableColumns.find((c) => c.key === key)}
         {#if col}
           {@const operator = col.type === 'text' ? 'contains' : '='}
@@ -97,7 +97,7 @@
       {/each}
     {/if}
     {#if advancedFilters && advancedFilters.length > 0}
-      {#each advancedFilters as filter}
+      {#each advancedFilters as filter (filter.id)}
         {@const col = filterableColumns.find((c) => c.key === filter.field)}
         {#if col}
           {@const formattedValue = (() => {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils.js";
-	import TextInput from "$lib/components/ui/input/text-input.svelte";
+	import { TextInput } from "@primebrick/ui";
 	import { CircleCheckBig } from '@primebrick/ui/vendor/lucide'
   import { TicketX } from '@primebrick/ui/vendor/lucide'
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide'
@@ -71,12 +71,6 @@
 
 	let uiStatus = $derived(externalInvalid ? 'not-valid' : status);
 
-	let isValid = $derived(
-		status === "valid" || status === "idle" || status === "api-error"
-	);
-
-	let isLoading = $derived(status === "loading");
-
 	// When the clear X is visible (value present, not disabled), the status icon
 	// shifts left to avoid overlapping it. Padding adjusts accordingly.
 	let hasValue = $derived((value ?? "").length > 0 && !disabled);
@@ -107,7 +101,7 @@
 					status = "api-error";
 					break;
 			}
-		} catch (error) {
+		} catch {
 			// Network error or unexpected error
 			status = "api-error";
 		}

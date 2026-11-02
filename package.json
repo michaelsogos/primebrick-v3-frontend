@@ -59,6 +59,7 @@
     "eslint-plugin-svelte": "3.23.1",
     "globals": "17.13.0",
     "jsdom": "25.0.1",
+    "lighthouse": "12.8.2",
     "paneforge": "1.0.2",
     "pg": "8.23.1",
     "postcss": "8.5.31",

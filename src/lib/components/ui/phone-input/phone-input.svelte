@@ -1,14 +1,13 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "$lib/utils.js";
+  import { type WithElementRef } from "$lib/utils.js";
   import { InputGroup, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
-  import { CopyButton } from "$lib/components/ui/copy-button";
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
 
-  import { AsYouType } from "libphonenumber-js";
+  import { AsYouType, isSupportedCountry } from "libphonenumber-js";
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { Copy } from '@primebrick/ui/vendor/lucide';
@@ -79,7 +78,7 @@
     }
     // If value is E.164, format it for display using AsYouType
     try {
-      const formatter = new AsYouType(country as any);
+      const formatter = new AsYouType(isSupportedCountry(country) ? country : undefined);
       displayValue = formatter.input(value);
     } catch {
       displayValue = value;
@@ -98,7 +97,7 @@
     );
   }
 
-  function handleCountryChange(newCountry: string) {
+  function handleCountryChange() {
     // Re-parse the current value with the new country
     // The value stays in E.164, but the display will re-format
     // For now, just trigger re-render via the effect
@@ -111,7 +110,7 @@
     const raw = input.value;
     // Format as user types using AsYouType
     try {
-      const formatter = new AsYouType(country as any);
+      const formatter = new AsYouType(isSupportedCountry(country) ? country : undefined);
       displayValue = formatter.input(raw);
       // Get the E.164 number from the formatter
       const phoneNumber = formatter.getNumber();
@@ -181,36 +180,37 @@
       name={restProps.name}
     />
 
-    {#if value && !disabled}
-      {#if readonly}
-        <button
-          type="button"
-          onclick={handleCopy}
-          tabindex={-1}
-          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={$t('app.common.copy')}
-          title={$t('app.common.copy')}
-          data-testid="phone-input-copy"
-        >
-          {#if copied}
-            <Check class="size-4 text-primary" />
-          {:else}
-            <Copy class="size-4" />
-          {/if}
-        </button>
-      {:else}
-        <button
-          type="button"
-          onclick={handleClear}
-          tabindex={-1}
-          class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={$t('app.common.clear')}
-          title={$t('app.common.clear')}
-          data-testid="phone-input-clear"
-        >
-          <Eraser class="size-4" />
-        </button>
-      {/if}
+    {#if readonly && value && !disabled}
+      <button
+        type="button"
+        onclick={handleCopy}
+        tabindex={-1}
+        class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={$t('app.common.copy')}
+        title={$t('app.common.copy')}
+        data-testid="phone-input-copy"
+      >
+        {#if copied}
+          <Check class="size-4 text-primary" />
+        {:else}
+          <Copy class="size-4" />
+        {/if}
+      </button>
+    {:else if !readonly && !disabled}
+      <!-- Clear CTA always rendered (disabled while empty) — a disappearing
+           CTA shifts the input layout. -->
+      <button
+        type="button"
+        onclick={handleClear}
+        tabindex={-1}
+        disabled={!value}
+        class="flex items-center justify-center h-full px-2 text-muted-foreground hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground"
+        aria-label={$t('app.common.clear')}
+        title={$t('app.common.clear')}
+        data-testid="phone-input-clear"
+      >
+        <Eraser class="size-4" />
+      </button>
     {/if}
   </InputGroup>
   {#if translatedError}

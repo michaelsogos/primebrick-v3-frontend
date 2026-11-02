@@ -1,0 +1,36 @@
+{
+  "audit_date": "2026-11-02T00:37:22.918Z",
+  "base_url": "http://localhost:5173",
+  "tool": "lighthouse",
+  "mean_score": 0.82,
+  "routes": [
+    {
+      "route": "/system/settings/templates",
+      "final_url": "http://localhost:5173/system/settings/templates",
+      "score": 0.82,
+      "failing_audits": [
+        {
+          "id": "aria-required-attr",
+          "items": 1
+        },
+        {
+          "id": "button-name",
+          "items": 2
+        },
+        {
+          "id": "heading-order",
+          "items": 1
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "items": 3
+        },
+        {
+          "id": "target-size",
+          "items": 2
+        }
+      ],
+      "error": null
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Trigger
 - Applies to ALL non-bulk single-entity CUD calls to `/api/v1/entities/*`
-  (BE) and `/ws/:module/api/v1/entities/*` (microservices via proxy).
+  (BE) and `/svc/:module/api/v1/entities/*` (microservices via proxy).
 
 ## Canonical doc
 **`docs/ai/entity-write-payload.md` — read it before acting.** This file is a

@@ -1,9 +1,3 @@
-import Root from "./input.svelte";
-import TextInput from "./text-input.svelte";
+import AsyncValidatedInput from "./async-validated-input.svelte";
 
-export {
-	Root,
-	TextInput,
-	//
-	Root as Input,
-};
+export { AsyncValidatedInput };

@@ -48,11 +48,23 @@
   `label_key` fields) legitimately contain them.
 
 ### Determinism — evidence, not sleeps
-- Every wait polls DOM evidence in ≤5s slots, ≤6 retries (30s cap) via
-  `locator.waitFor({ state: "visible", timeout: 5000 })` in a loop.
+- **5 seconds is the expectation budget.** Every wait polls DOM evidence in
+  a ≤5s slot (`locator.waitFor({ state: "visible", timeout: 5000 })`). If the
+  expected state does not appear within 5s it is a PROBLEM, not a slow
+  system — nothing in the app legitimately takes longer than 5s per step.
+  Diagnose, fix, proceed. "Long-running" waits do not exist.
+- **The ONLY exception is a DECLARED long-polling phase** — a wait that is
+  explicitly named and budgeted in the test (e.g. the AI model download:
+  `loading_*` phases get an 8-minute budget in 5s slots because multi-GB
+  model files legitimately stream). Declared, never assumed: a generic
+  `timeout: 30000` is a violation — it hides problems instead of
+  surfacing them.
 - The same bound applies to the AGENT observing a run: read shell output in
   ≤30s windows (`get_output` timeout ≤30s), never multi-minute blocking
   reads — a test that is silent for >30s is already telling you something.
+- FE dev binds **`::1` (IPv6) only** — `curl http://127.0.0.1:5173` returns
+  000 even when the server is healthy. Probe `http://localhost:5173` (or
+  `http://[::1]:5173`). `PLAYWRIGHT_BASE_URL` already uses `localhost`.
 - Hydration gate: wait for a sidebar nav link (`a[href^="/system/"]`) —
   rendered only after `onMount` + module-nav fetch. Clicking SSR DOM hits
   dead (unhydrated) handlers. If a click may have raced hydration, retry the
@@ -72,6 +84,28 @@
 - If in-page `fetch()` hangs while `curl` succeeds, the browser instance's
   connection pool is wedged (stalled streams from killed runs) — close the
   E2E Edge instance and relaunch; do not add retries.
+
+### Multi-session matrix — TAB vs TAB / BROWSER vs BROWSER
+
+Multi-user, multi-session, and presence/concurrency tests pick ONE of two
+session shapes — the shape is part of the product contract under test:
+
+| Shape | How | Isolation | Use when |
+|---|---|---|---|
+| **TAB vs TAB** | `browser.newContext()` × N on the SAME Playwright browser | Separate cookie jars & sessionStorage per context — same browser engine, same machine clock | Most collaboration tests: presence on one record, merge/conflict choreography, "you — other tab" |
+| **BROWSER vs BROWSER** | Two real browser binaries: shared Edge via `getSharedContext()` (CDP :9333) OR `chromium.launch({ channel: "msedge" })`, plus Playwright `chromium.launch()`, plus Opera GX via `chromium.launch({ executablePath: "C:\\Users\\Micha\\AppData\\Local\\Programs\\Opera GX\\opera.exe" })` | Different engines/processes — real cross-browser divergence, separate storage and network stacks | Cross-browser presence, optimistic concurrency (same record, simultaneous conflicting writes from truly independent clients), anything where "it works in one engine" is not enough |
+
+- The shared Edge session (CDP :9333) MUST NOT be used as the SECOND browser
+  in TAB-vs-TAB contexts — its single context cannot hold two isolated
+  sessions; use it as one SIDE of a BROWSER-vs-BROWSER pair instead.
+- Opera GX is Chromium-based → `chromium.launch({ executablePath })` works;
+  do not kill it mid-run and do not close a shared instance.
+- Cases that REQUIRE BROWSER-vs-BROWSER (never TAB-vs-TAB): optimistic
+  concurrency (two truly independent writers racing one record) and the
+  future many→one→many presence model for `/list` pages.
+- `browser.newContext()` (not the shared Edge session) is the sanctioned
+  exception for multi-session specs — two isolated cookie jars cannot live
+  in one context.
 
 ### Assertions of completeness
 - When a UI renders a data-driven set (nav links, explorer topics), assert

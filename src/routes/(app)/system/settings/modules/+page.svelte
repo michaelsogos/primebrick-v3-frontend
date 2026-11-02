@@ -1,7 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
-  import { page } from '$app/state';
   import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { Switch } from '@primebrick/ui';
@@ -25,8 +24,6 @@
   import { Layers } from '@primebrick/ui/vendor/lucide';
   import { pushNotification } from '$lib/errors/app-errors';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
@@ -185,16 +182,6 @@
 </script>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.modules.title')}</h1>
-    </div>
-  {/snippet}
 
   <div class="flex-1 overflow-auto p-4">
     <div class="space-y-6">
@@ -266,8 +253,6 @@
                       <img src={module.icon} alt={module.name || module.code} class="size-5 rounded shrink-0" />
                     {:else if module.icon && module.icon_type === 'base64'}
                       <img src="data:image/png;base64,{module.icon}" alt={module.name || module.code} class="size-5 rounded shrink-0" />
-                    {:else if module.icon && module.icon_type === 'svg'}
-                      <div class="size-5 shrink-0">{@html module.icon}</div>
                     {:else}
                       <Package class="size-5 text-muted-foreground shrink-0" />
                     {/if}

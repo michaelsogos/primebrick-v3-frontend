@@ -1,3 +1,4 @@
+import { SvelteSet } from 'svelte/reactivity';
 import { untrack } from 'svelte';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -19,7 +20,7 @@ export function useRowRangeSelection<T>(options: {
     rangeDragActive: false,
     lastRangeEndIndex: null as number | null,
   });
-  let selectionSnapshotAtMouseDown: Set<string> | null = null;
+  let selectionSnapshotAtMouseDown: ReadonlySet<string> | null = null;
   let skipNextRowClickSelectToggle = false;
 
   function canStartRowRangeSelect(e: MouseEvent): boolean {
@@ -36,7 +37,7 @@ export function useRowRangeSelection<T>(options: {
     skipNextRowClickSelectToggle = false;
     if (!canStartRowRangeSelect(e)) return;
     e.preventDefault();
-    selectionSnapshotAtMouseDown = new Set(options.selectedKeys());
+    selectionSnapshotAtMouseDown = new SvelteSet(options.selectedKeys());
     _state.rowRangeMouseDown = true;
     _state.rangeAnchorIndex = i;
     _state.rangeDragActive = false;
@@ -71,10 +72,10 @@ export function useRowRangeSelection<T>(options: {
     const hi = Math.max(anchor, end);
     const currentViewRows = options.viewRows();
     const rangeKeys = currentViewRows.slice(lo, hi + 1).map((r) => options.rowKey(r));
-    const rangeSet = new Set(rangeKeys);
-    const pageKeySet = new Set(options.pageKeys());
+    const rangeSet = new SvelteSet(rangeKeys);
+    const pageKeySet = new SvelteSet(options.pageKeys());
 
-    const next = new Set<string>();
+    const next = new SvelteSet<string>();
     for (const k of snap) {
       if (!pageKeySet.has(k)) {
         next.add(k);

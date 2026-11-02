@@ -33,6 +33,15 @@ const MFA_ACTOR_NAME = process.env.E2E_MFA_ACTOR_NAME ?? "e2e_mfa_user";
 const MFA_ACTOR_DISPLAY = "E2E Test MFA User";
 const MFA_ACTOR_EMAIL = `${MFA_ACTOR_NAME}@e2e.local`;
 
+// Second admin twin for the collaboration suite: merge/conflict assertions
+// need a saver whose user_uuid differs from the observer — a save by the
+// same identity is filtered as a self-change (changed_by === me.uuid).
+// job_rule writes require AUTHENTICATED_ADMIN, so the e2e_user actor cannot
+// be the saver; this twin is admin and never touches MFA state.
+const COLLAB_ACTOR_NAME = process.env.E2E_COLLAB_ACTOR_NAME ?? "e2e_collab_admin";
+const COLLAB_ACTOR_DISPLAY = "E2E Collab Admin";
+const COLLAB_ACTOR_EMAIL = `${COLLAB_ACTOR_NAME}@e2e.local`;
+
 // Non-admin actor for access-axis E2E — a dedicated role carries only the
 // `access.*` + entity grants the suite needs; `is_admin=false` both in
 // Casdoor and user_profiles so nothing is implicitly inherited.
@@ -297,6 +306,15 @@ export function createE2eMfaActor(): Promise<{ username: string; password: strin
   return createE2eAdminLikeActor(MFA_ACTOR_NAME, MFA_ACTOR_DISPLAY, MFA_ACTOR_EMAIL, "E2E_MFA");
 }
 
+export function createE2eCollabActor(): Promise<{ username: string; password: string }> {
+  return createE2eAdminLikeActor(
+    COLLAB_ACTOR_NAME,
+    COLLAB_ACTOR_DISPLAY,
+    COLLAB_ACTOR_EMAIL,
+    "E2E_COLLAB",
+  );
+}
+
 /**
  * Remove a Casdoor user created during a test (e.g. an invited user created
  * via the admin UI). Unlinks it from the `administrators` role's `users` list
@@ -344,6 +362,10 @@ export function destroyE2eAdminActor(): Promise<void> {
 
 export function destroyE2eMfaActor(): Promise<void> {
   return destroyAdminLikeActor(MFA_ACTOR_NAME);
+}
+
+export function destroyE2eCollabActor(): Promise<void> {
+  return destroyAdminLikeActor(COLLAB_ACTOR_NAME);
 }
 
 /**

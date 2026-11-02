@@ -1,3 +1,4 @@
+import { SvelteMap } from 'svelte/reactivity';
 import { fetchServices, type ServiceInfo } from '$lib/api';
 import { createSseConnection, parseSseData } from '$lib/sse/create-sse-connection';
 
@@ -89,23 +90,28 @@ function upsertService(service: ServiceInfo): void {
 /**
  * Aggregate status across instances of the same service code.
  * - 'online' — all instances are online
- * - 'going_live' — 1+ online, 1+ not online
+ * - 'going_live' — 1+ online, 1+ not online (partial capacity still serves)
+ * - 'migration_failed' — no online instances, 1+ degraded by failed migration
  * - 'offline' — all instances are offline
  * - 'stale' — no online instances, at least one 'stale' (heartbeat lost recently)
  * - 'unknown' — no online/stale instances and at least one non-offline
+ * Service-specific degraded states MUST survive aggregation — collapsing
+ * them to 'unknown' hides the actionable reason from the unavailable view.
  */
 export function aggregateStatus(instances: ServiceInfo[]): string {
   if (instances.length === 0) return 'offline';
   if (instances.every((i) => i.status === 'online')) return 'online';
   if (instances.some((i) => i.status === 'online')) return 'going_live';
+  if (instances.some((i) => i.status === 'migration_failed')) return 'migration_failed';
   if (instances.every((i) => i.status === 'offline')) return 'offline';
   if (instances.some((i) => i.status === 'stale')) return 'stale';
+  if (instances.some((i) => i.status === 'going_live')) return 'going_live';
   return 'unknown';
 }
 
 /** Group services by code, returning a Map for ordered iteration. */
-export function groupByCode(services: ServiceInfo[]): Map<string, ServiceInfo[]> {
-  const map = new Map<string, ServiceInfo[]>();
+export function groupByCode(services: ServiceInfo[]): SvelteMap<string, ServiceInfo[]> {
+  const map = new SvelteMap<string, ServiceInfo[]>();
   for (const s of services) {
     if (!map.has(s.code)) map.set(s.code, []);
     map.get(s.code)!.push(s);

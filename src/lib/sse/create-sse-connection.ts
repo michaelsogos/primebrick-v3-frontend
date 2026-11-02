@@ -88,7 +88,13 @@ export function createSseConnection(opts: SseConnectionOptions): () => void {
   function scheduleReconnect(): void {
     if (closed) return;
     if (reconnectTimer) clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(() => void connect(), retryMs);
+    reconnectTimer = setTimeout(() => {
+      // The id must clear when the timer fires — a stale non-null id
+      // permanently blocks `onVisChangeReconnect`'s `!reconnectTimer`
+      // guard (the stream dies while hidden → never reconnects).
+      reconnectTimer = null;
+      void connect();
+    }, retryMs);
     // Exponential backoff: 1s → 2s → 4s → 8s → 16s → 30s (cap)
     retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
   }
@@ -311,7 +317,7 @@ export function createSsePostStream(opts: SsePostStreamOptions): () => void {
             return;
           }
           // Non-OK status — try to parse the error body as JSON
-          let errorBody: unknown = null;
+          let errorBody: unknown;
           try {
             errorBody = await res.json();
           } catch {

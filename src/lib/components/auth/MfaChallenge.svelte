@@ -7,7 +7,7 @@
   import { Button } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
   import { useOtpInput } from '@primebrick/ui';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Spinner } from '$lib/components/ui/spinner';
   import { t } from '$lib/i18n';
@@ -27,7 +27,7 @@
   }: {
     mfa_challenge_token: string;
     available_factors: Array<{ factor_id: string; factor_type: string; label: string | null }>;
-    onsuccess?: (data: { success: boolean; user: any }) => void;
+    onsuccess?: (data: { success: boolean; user: Record<string, unknown> }) => void;
     oncancel?: () => void;
   } = $props();
 

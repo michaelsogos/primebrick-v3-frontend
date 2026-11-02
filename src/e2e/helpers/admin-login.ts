@@ -26,6 +26,10 @@ export const E2E_USER_PASSWORD = process.env.E2E_USER_PASSWORD ?? "";
 // gate every concurrent suite's login with a challenge until afterAll.
 export const E2E_MFA_USERNAME = process.env.E2E_MFA_USERNAME ?? "";
 export const E2E_MFA_PASSWORD = process.env.E2E_MFA_PASSWORD ?? "";
+// Dedicated collaboration-suite admin twin — a second identity is required
+// because a same-user save is filtered as a self-change (changed_by === me).
+export const E2E_COLLAB_USERNAME = process.env.E2E_COLLAB_USERNAME ?? "";
+export const E2E_COLLAB_PASSWORD = process.env.E2E_COLLAB_PASSWORD ?? "";
 
 /** Guard: refuses to authenticate as a reserved dev identity in tests. */
 function assertTestActor(username: string): void {
@@ -63,6 +67,15 @@ export async function loginAsTestAdmin(page: Page): Promise<Page> {
 export async function loginAsTestUser(page: Page): Promise<Page> {
   assertTestActor(E2E_USER_USERNAME);
   return loginAs(page, E2E_USER_USERNAME, E2E_USER_PASSWORD);
+}
+
+/**
+ * Log in as the collaboration-suite admin twin — the "other user" in
+ * two-context merge/conflict scenarios.
+ */
+export async function loginAsCollabAdmin(page: Page): Promise<Page> {
+  assertTestActor(E2E_COLLAB_USERNAME);
+  return loginAs(page, E2E_COLLAB_USERNAME, E2E_COLLAB_PASSWORD);
 }
 
 async function loginAs(page: Page, username: string, password: string): Promise<Page> {

@@ -1,24 +1,21 @@
 <script lang="ts">
-  import { page } from '$app/state';
+
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch, createConfigEntry } from '$lib/api';
   import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
@@ -26,7 +23,7 @@
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { useExistingGroupKeys } from '$lib/composables/useExistingGroupKeys.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { maxMsg } from '$lib/validation/zod-messages';
   import { buildConfigValueSchema } from '$lib/validation/config-validation';
   import type { ConfigEntryType } from '$lib/api-types';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -105,8 +102,6 @@
     }
   });
 
-  type CreateForm = z.infer<typeof createSchema>;
-
   let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
 
   const superFormObj = superForm(defaults(zod4(createSchema)), {
@@ -154,7 +149,7 @@
           reserved: updateForm.data.reserved,
           ...(translations.length > 0 ? { translations } : {}),
         };
-        const data = await createConfigEntry(params);
+        await createConfigEntry(params);
         console.log('Config entry created successfully');
 
         notifyParentRefresh();
@@ -280,7 +275,9 @@
 
   // Build ComboSelect options: each group_key becomes an object with the
   // raw key as value and the full i18n key as label (translated at render time)
-  const groupKeyOptions = $derived(
+  type GroupKeyOption = { group_key: string; label_key: string };
+
+  const groupKeyOptions = $derived<GroupKeyOption[]>(
     existingGroupKeys.map((gk) => ({
       group_key: gk,
       label_key: `system.settings.config.auth.group.${gk}`,
@@ -347,20 +344,7 @@
   auditingColumns={[]}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: $t('system.settings.configurations.create.title') }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.configurations.create.title')}</h1>
-      <p class="text-sm text-muted-foreground">{$t('system.settings.configurations.create.description')}</p>
-    </div>
-  {/snippet}
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto">
       <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
         <div class="grid grid-cols-2 gap-6 p-4">
@@ -548,25 +532,20 @@
                       allowCreate={true}
                       loading={groupKeysLoading}
                       getSearchKeywords={(opt) => {
-                        const gk = (opt as Record<string, any>).group_key;
+                        const gk = (opt as GroupKeyOption).group_key;
                         return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
                       placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
                       searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
-                      display="custom"
+                      display="detailed"
+                      secondaryField="group_key"
+                      showDescription={false}
                       truncateFrom="start"
                       data-testid="config-create-group-key"
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel, resolvedValue })}
-                        {@const gk = (option as Record<string, any>).group_key ?? resolvedValue}
-                        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
-                          <span class="font-medium truncate-start">{resolvedLabel}</span>
-                          <span class="text-xs text-muted-foreground truncate-start font-mono">{gk}</span>
-                        </div>
-                      {/snippet}
                       {#snippet selectedSnippet({ resolvedLabel, resolvedValue })}
                         {#if isGroupKeyNew(resolvedValue)}
-                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground min-w-0 flex-1 truncate-start">
+                          <Badge variant="outline" class="gap-1 border-primary-gradient-soft text-foreground w-fit max-w-full truncate-start">
                             {resolvedLabel}
                           </Badge>
                         {:else}
@@ -614,7 +593,6 @@
         </div>
       </form>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

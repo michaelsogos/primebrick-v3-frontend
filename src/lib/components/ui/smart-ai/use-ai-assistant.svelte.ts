@@ -23,12 +23,14 @@
  * - Mutations only through exposed mutator functions
  * - `$derived` values exposed via individual getters
  */
+import { SvelteDate } from 'svelte/reactivity';
 import type { DeepReadonly } from '@primebrick/ui';
 import { useAiModels } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { useAiCerebellum } from '@primebrick/ui';
 import { resolveEffectiveParams, type EffectiveAiParams } from '@primebrick/ui';
 import type { AiCerebellum } from '$lib/api-types';
+import AiWorker from '$lib/ai/ai-worker.ts?worker';
 import type {
   AiAction,
   AiAssistantHooks,
@@ -63,7 +65,7 @@ type WorkerMessage =
       cached?: boolean;
       worker_nonce: string;
       files?: string[];
-      model_config?: Record<string, any>;
+      model_config?: Record<string, unknown>;
       fingerprint?: string;
       warmup_ms?: number;
       vram_bytes?: number | null;
@@ -77,7 +79,7 @@ type WorkerMessage =
   | { type: 'reset_complete' }
   | { type: 'dispose_complete'; disposed_model_id?: string; worker_nonce?: string }
   | { type: 'status'; worker_nonce: string; loaded_model_id: string | null; dtype: string | null; pipeline_alive: boolean; is_generating: boolean; loaded_files?: string[] }
-  | { type: 'measure'; data: any }
+  | { type: 'measure'; data: Record<string, unknown> }
   | { type: 'debug'; step?: string; [key: string]: unknown };
 
 export function useAiAssistant<TChoice = unknown>(
@@ -126,7 +128,7 @@ export function useAiAssistant<TChoice = unknown>(
     pending_choices: null as TChoice[] | null,
     webgpu_available: false,
     /** Empirical measurements from the worker (load time, TPS, cache bytes). */
-    measurements: null as Record<string, any> | null,
+    measurements: null as Record<string, unknown> | null,
     /**
      * Identity of the model ACTUALLY resident in VRAM, reported back by the
      * worker at load_complete (files fetched, ONNX config, probe output).
@@ -137,7 +139,7 @@ export function useAiAssistant<TChoice = unknown>(
       dtype: string;
       device: string;
       files: string[];
-      model_config: Record<string, any> | null;
+      model_config: Record<string, unknown> | null;
       fingerprint: string;
       warmup_ms: number;
       vram_bytes: number | null;
@@ -247,9 +249,7 @@ export function useAiAssistant<TChoice = unknown>(
    * The worker file is the shared src/lib/ai/ai-worker.ts.
    */
   function createWorker(): Worker {
-    const w = new Worker(new URL('$lib/ai/ai-worker.ts', import.meta.url), {
-      type: 'module',
-    });
+    const w = new AiWorker();
     w.addEventListener('message', handleWorkerMessage);
     w.addEventListener('error', (e) => {
       const error = new Error(`Worker error: ${e.message}`);
@@ -473,7 +473,7 @@ export function useAiAssistant<TChoice = unknown>(
   /**
    * Send a control message to the worker.
    */
-  function postToWorker(message: Record<string, any>): void {
+  function postToWorker(message: Record<string, unknown>): void {
     if (!worker) return;
     worker.postMessage(message);
   }
@@ -655,7 +655,7 @@ export function useAiAssistant<TChoice = unknown>(
     if (!row?.uuid || row.version == null) return;
     if (row.working_set_source === 'e2e_measured' && row.working_set_mb === working_set_mb) return;
     try {
-      const res = await apiFetch(`/ws/ai/api/v1/entities/ai_model/${row.uuid}`, {
+      const res = await apiFetch(`/svc/ai/api/v1/entities/ai_model/${row.uuid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -664,7 +664,7 @@ export function useAiAssistant<TChoice = unknown>(
             working_set_source: 'e2e_measured',
             working_set_detail: {
               measured_vram_bytes: vram_bytes,
-              measured_at: new Date().toISOString(),
+              measured_at: new SvelteDate().toISOString(),
               measured_ctx_tokens: null, // measured at load — pre-generation KV
             },
             version: row.version,
@@ -690,11 +690,19 @@ export function useAiAssistant<TChoice = unknown>(
 
     let js_heap_mb: number | null = null;
     try {
-      if (typeof performance !== 'undefined' && 'measureUserAgentSpecificMemory' in performance) {
-        const result = await (performance as any).measureUserAgentSpecificMemory();
-        js_heap_mb = result.bytes / (1024 * 1024);
-      } else if ((performance as any).memory) {
-        js_heap_mb = (performance as any).memory.usedJSHeapSize / (1024 * 1024);
+      if (typeof performance !== 'undefined') {
+        // measureUserAgentSpecificMemory (Chrome 89+) and performance.memory
+        // (Chrome-only) are not in lib.dom — shaped extension.
+        const perf = performance as Performance & {
+          measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
+          memory?: { usedJSHeapSize: number };
+        };
+        if ('measureUserAgentSpecificMemory' in perf) {
+          const result = await perf.measureUserAgentSpecificMemory!();
+          js_heap_mb = result.bytes / (1024 * 1024);
+        } else if (perf.memory) {
+          js_heap_mb = perf.memory.usedJSHeapSize / (1024 * 1024);
+        }
       }
     } catch { /* noop */ }
 
@@ -724,7 +732,14 @@ export function useAiAssistant<TChoice = unknown>(
       if (typeof navigator !== 'undefined' && navigator.gpu) {
         const adapter = await navigator.gpu.requestAdapter();
         if (adapter) {
-          const info = (adapter as any).info ?? (await (adapter as any).requestAdapterInfo?.());
+          // requestAdapterInfo() is the legacy getter — lib.dom only ships `info`.
+          const info =
+            (adapter.info as GPUAdapterInfo | undefined) ??
+            (await (
+              adapter as GPUAdapter & {
+                requestAdapterInfo?: () => Promise<GPUAdapterInfo>;
+              }
+            ).requestAdapterInfo?.());
           gpu_adapter = `${info?.vendor ?? ''} ${info?.architecture ?? ''}`.trim() || 'unknown';
         }
       }

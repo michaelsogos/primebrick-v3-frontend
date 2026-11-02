@@ -2,7 +2,7 @@
  * docs-browser — E2E for the in-product user-guide browser (Track C).
  *
  * Runs against the live dev stack (FE :5173 → /api proxy → BE :3001 →
- * /ws/ai → ai :3004) as the ephemeral E2E admin actor minted by
+ * /svc/ai → ai :3004) as the ephemeral E2E admin actor minted by
  * global.setup.ts. Read-only: the spec never writes entity rows; the only
  * surface it exercises is the docs sheet + the /docs/[...path] route backed
  * by the ai service's docs_kb corpus (populated by docs-pack ingestion).
@@ -42,7 +42,7 @@ async function openDocsPanel(page: Page): Promise<void> {
   page.on("pageerror", (e) => console.log("[browser:pageerror]", String(e).slice(0, 500)));
   page.on("requestfailed", (r) => console.log("[net:failed]", r.url(), r.failure()?.errorText));
   page.on("response", (r) => {
-    if (r.url().includes("/ws/ai/") && r.status() >= 400) console.log("[net:ai]", r.status(), r.url());
+    if (r.url().includes("/svc/ai/") && r.status() >= 400) console.log("[net:ai]", r.status(), r.url());
   });
   const cta = page.getByTestId("app-topbar-docs-cta");
   await expect(cta).toBeVisible({ timeout: 10000 });

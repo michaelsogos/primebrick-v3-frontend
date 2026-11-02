@@ -1,8 +1,8 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { Button } from '@primebrick/ui';
-  import { TextInput } from "$lib/components/ui/input";
-  import PrimeField from "$lib/components/ui/form/prime-field.svelte";
+  import { TextInput } from "@primebrick/ui";
+  import { PrimeField } from "@primebrick/ui";
   import { Sheet } from "@primebrick/ui";
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
@@ -24,17 +24,16 @@ import { Switch } from '@primebrick/ui';
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import DateWheelPicker from "$lib/components/date-dropper/date-wheel-picker.svelte";
-  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime, DateFormatter, getLocalTimeZone } from "@internationalized/date";
+  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime } from "@internationalized/date";
   import { badgeClassesFromToken } from '@primebrick/ui';
-  import { cn } from "$lib/utils";
   import { onMount } from "svelte";
   import { getResolvedIanaTimeZone } from "$lib/browser-iana-timezone";
   import { formatListCellValue } from '@primebrick/ui';
 
   interface Props {
     filterableColumns?: MetaColumn[];
-    filterValues?: Record<string, any>;
-    onFilterValuesChange?: (values: Record<string, any>) => void;
+    filterValues?: Record<string, unknown>;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
     onResetFilters?: () => void;
     advancedFilters?: AdvancedFilter[];
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
@@ -50,7 +49,7 @@ import { Switch } from '@primebrick/ui';
   }: Props = $props();
 
   // Temporary filter values (being edited by user)
-  let tempFilterValues = $state<Record<string, any>>({});
+  let tempFilterValues = $state<Record<string, unknown>>({});
 
   // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
   let dateDropperValues: Record<string, CalendarDate | CalendarDateTime | null> = $state({});
@@ -69,11 +68,11 @@ import { Switch } from '@primebrick/ui';
   // New filter being created
   let newFilterField = $state<string>(""); 
   let newFilterOperator = $state<FilterOperator>("="); 
-  let newFilterValue = $state<any | any[] | { start: any; end: any }>("");
+  let newFilterValue = $state<AdvancedFilter['value']>("");
 
   // BETWEEN operator state
-  let newFilterStartDate = $state<any>("");
-  let newFilterEndDate = $state<any>("");
+  let newFilterStartDate = $state<unknown>("");
+  let newFilterEndDate = $state<unknown>("");
 
   // Edit mode state
   let editingFilterId = $state<string | null>(null);
@@ -89,12 +88,12 @@ import { Switch } from '@primebrick/ui';
     for (const col of filterableColumns) {
       if (col.type === "date" || col.type === "datetime") {
         const tz = timezoneValues[col.key] || browserTimezone || "UTC";
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key], col.type, tz);
+        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key] as string | undefined, col.type, tz);
       }
     }
   });
 
-  function updateTempFilterValue(key: string, value: any) {
+  function updateTempFilterValue(key: string, value: unknown) {
     tempFilterValues = { ...tempFilterValues, [key]: value };
   }
 
@@ -249,7 +248,7 @@ import { Switch } from '@primebrick/ui';
       type: "input" as const,
       inputType: "text",
       placeholder: $t(`system.entities.list.filterPlaceholder`),
-      value: tempFilterValues[col.key] || "",
+      value: (tempFilterValues[col.key] as string) || "",
     };
   }
 
@@ -286,7 +285,7 @@ import { Switch } from '@primebrick/ui';
     if (!newFilterField) return;
 
     const selectedColumn = filterableColumns.find((c) => c.key === newFilterField);
-    let value: any | any[] | { start: any; end: any } = newFilterValue;
+    let value: AdvancedFilter['value'] = newFilterValue;
 
     // Handle BETWEEN operator
     if (newFilterOperator === "BETWEEN") {
@@ -396,12 +395,6 @@ import { Switch } from '@primebrick/ui';
     tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
   }
 
-  function updateAdvancedFilter(id: string, updates: Partial<AdvancedFilter>) {
-    tempAdvancedFilters = tempAdvancedFilters.map((f) =>
-      f.id === id ? { ...f, ...updates } : f
-    );
-  }
-
   function applyAdvancedFilters() {
     // Apply filters with global connector
     onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
@@ -502,7 +495,7 @@ import { Switch } from '@primebrick/ui';
                 align="start"
                 class="w-full max-h-96 overflow-auto"
               >
-                {#each options as option}
+                {#each options as option (option.key)}
                   {@const badgeColors = badgeClassesFromToken(
                     option.color ?? null,
                   )}
@@ -664,7 +657,7 @@ import { Switch } from '@primebrick/ui';
                 {/snippet}
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                {#each filterableColumns as col}
+                {#each filterableColumns as col (col.key)}
                   <DropdownMenu.Item
                     onSelect={() => {
                       newFilterField = col.key;
@@ -713,7 +706,7 @@ import { Switch } from '@primebrick/ui';
                   {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start" class="w-full">
-                  {#each availableOperators as op}
+                  {#each availableOperators as op (op)}
                     <DropdownMenu.Item
                       onSelect={() => {
                         newFilterOperator = op as FilterOperator;
@@ -758,7 +751,7 @@ import { Switch } from '@primebrick/ui';
                     {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value]}
+                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value] (key)}
                       {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
                       <DropdownMenuCheckboxItem
                         checked={selectedBadgeKeys.includes(key)}
@@ -800,7 +793,7 @@ import { Switch } from '@primebrick/ui';
               {:else}
                 <TextInput
                   placeholder={$t("system.entities.list.filterPlaceholder")}
-                  value={newFilterValue}
+                  value={newFilterValue as string}
                   clearLabel={$t("app.common.clear")}
                   oninput={(e) => (newFilterValue = e.currentTarget.value)}
                   onClear={() => (newFilterValue = "")}

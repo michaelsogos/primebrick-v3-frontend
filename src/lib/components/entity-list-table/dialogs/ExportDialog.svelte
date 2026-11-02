@@ -48,7 +48,7 @@
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
-<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.exportConfirmTitle')}</Dialog.Title>
     <Dialog.Description>
@@ -61,7 +61,7 @@
   </Dialog.Header>
   {#if selectedCount > 0}
     <div class="py-4">
-      <Choicebox bind:value={exportScope}>
+      <Choicebox bind:value={exportScope} onValueChange={(v) => onExportScopeChange(v as 'selected' | 'all')}>
         <ChoiceboxItem value="selected">
           <ChoiceboxTitle>Solo i {selectedCount} elementi selezionati</ChoiceboxTitle>
           <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>

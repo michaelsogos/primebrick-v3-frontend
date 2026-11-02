@@ -65,7 +65,7 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   await expect(mount).toContainText(RUN_UUID);
 
   // ws-bound fetch works — the remote called its owning service through ctx.api.
-  const res = await page.request.get(`/ws/job/api/v1/entities/job_run/${RUN_UUID}`);
+  const res = await page.request.get(`/svc/job/api/v1/entities/job_run/${RUN_UUID}`);
   expect(res.status()).toBe(200);
 
   // ctx.sheet.close() — the content drives the host-owned frame.

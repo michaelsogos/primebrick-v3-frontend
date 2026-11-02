@@ -27,11 +27,11 @@
   // Favorite currencies — resolved from config codes against the full currency list.
   // Unknown codes (typos, removed currencies) are silently filtered out.
   // Preserves the configured order.
-  let favoriteCurrencies = $derived.by(() => {
-    return favoriteCodes
+  let favoriteCurrencies = $derived(
+    favoriteCodes
       .map((code) => allCurrencies.find((c) => c.code === code))
-      .filter((c): c is NonNullable<typeof c> => c !== undefined);
-  });
+      .filter((c): c is NonNullable<typeof c> => c !== undefined),
+  );
 
   let filteredCurrencies = $derived.by(() => {
     const q = searchQuery.trim().toLowerCase();

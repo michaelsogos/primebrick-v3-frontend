@@ -4,22 +4,12 @@
   import { PreviewPanel } from '../panels';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { CellArgs } from '../types';
+  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
 
   type PreviewPanelWrapperCellArgs = CellArgs<TRow>;
 
   interface PreviewPanelWrapperProps {
-    previewPanel: {
-      state: {
-        previewPanelOpen: boolean;
-        previewRow: TRow | null;
-        focusedRowIndex: number | null;
-        previewEditMode: boolean;
-        previewRowIndex: number;
-      };
-      openPreview: (row: TRow) => void;
-      closePreview: () => void;
-      setPreviewEditMode: (mode: boolean) => void;
-    };
+    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
     rows: TRow[];
     viewRows: TRow[];
     uid: string;
@@ -32,14 +22,10 @@
     stickyColumns?: MetaColumn[];
     dataColumns?: MetaColumn[];
     auditingColumns?: MetaColumn[];
-    rowActionsEnabled: boolean;
-    rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: { edit?: boolean; duplicate?: boolean; preview?: boolean; delete?: boolean };
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     isRowDeleted: (row: TRow) => boolean;
     rowKey: (row: TRow) => string;
-    rowSelectionEnabled: boolean;
-    selectedKeys: Set<string> | string[];
     footerRangeTotal: number;
     footerPage: number;
     pageSize: number;
@@ -68,14 +54,10 @@
     stickyColumns = [],
     dataColumns = [],
     auditingColumns = [],
-    rowActionsEnabled,
-    rowActions,
     entityRowActions,
     datetimeIanaModeByKey,
     isRowDeleted,
     rowKey,
-    rowSelectionEnabled,
-    selectedKeys,
     footerRangeTotal,
     footerPage,
     previewDropdownOpen,
@@ -105,12 +87,15 @@
   let navigatingToPrevPage = $state(false);
   let _previewRestoredKey = $state<string | null>(_sessionState?.rowKey ?? null);
 
+  // `state` is exposed DeepReadonly to prevent external mutation; the stored
+  // object IS a TRow (written via openPreview(row: TRow)) — the mapped type
+  // cannot collapse back to the generic, so the read sites cast once here.
+  const previewRow = $derived(previewPanel.state.previewRow as TRow | null);
+
   $effect(() => {
     if (typeof sessionStorage !== 'undefined') {
       // While restoring, preserve the key from session until previewRow is actually set
-      const rowKey_ = previewPanel.state.previewRow
-        ? String((previewPanel.state.previewRow as Record<string, unknown>)[uid])
-        : (_previewRestoredKey ?? null);
+      const rowKey_ = previewRow ? String((previewRow as Record<string, unknown>)[uid]) : (_previewRestoredKey ?? null);
       const key = `pb-preview-panel:${entity ?? 'default'}`;
       sessionStorage.setItem(key, JSON.stringify({ open: previewPanel.state.previewPanelOpen, width: previewPanelWidth, rowKey: rowKey_ }));
     }
@@ -188,8 +173,8 @@
 
   // Handle page changes for navigation
   $effect(() => {
-    if (previewPanel.state.previewPanelOpen && previewPanel.state.previewRow) {
-      const currentIndex = viewRows.findIndex(r => rowKey(r) === rowKey(previewPanel.state.previewRow!));
+    if (previewPanel.state.previewPanelOpen && previewRow) {
+      const currentIndex = viewRows.findIndex(r => rowKey(r) === rowKey(previewRow));
       
       // If navigating to next page and we're at the last record
       if (currentIndex === viewRows.length - 1 && previewPanel.state.previewRowIndex < footerRangeTotal - 1) {
@@ -226,7 +211,7 @@
   <div class="h-full w-full overflow-auto">
     {#if previewPanel.state.previewPanelOpen}
       <PreviewPanel
-        row={previewPanel.state.previewRow!}
+        row={previewRow!}
         previewEditMode={previewPanel.state.previewEditMode}
         previewRowIndex={previewPanel.state.previewRowIndex}
         previewDropdownOpen={previewDropdownOpen}
@@ -250,8 +235,6 @@
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         entityRowActions={entityRowActions}
         isRowDeleted={isRowDeleted}
-        rowSelectionEnabled={rowSelectionEnabled}
-        rowSelected={Array.from(selectedKeys).includes(rowKey(previewPanel.state.previewRow!))}
         {cell}
       />
     {/if}

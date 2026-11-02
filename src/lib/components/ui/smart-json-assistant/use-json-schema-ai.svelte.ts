@@ -81,18 +81,30 @@ export interface JsonSchemaAiOptions {
 }
 
 /**
- * Extract the first complete JSON object from raw model output.
- * Strips markdown fences, a leading "json" tag, and prose around the object.
+ * Extract the first complete JSON document from raw model output —
+ * an `{...}` object OR a `[...]` array (whichever structural root opens
+ * first; array-rooted schemas like `RuleFilter[]` produce array
+ * candidates). Strips markdown fences, a leading "json" tag, and prose
+ * around the document.
  */
 export function extractJsonCandidate(raw: string): string | null {
   let text = raw.trim();
   text = text.replace(/^```(?:json)?\s*\n?/i, '');
   text = text.replace(/\n?```\s*$/i, '').trim();
 
-  const start = text.indexOf('{');
-  if (start === -1) return null;
+  // First structural root — `{` or `[`, whichever opens first.
+  const objStart = text.indexOf('{');
+  const arrStart = text.indexOf('[');
+  if (objStart === -1 && arrStart === -1) return null;
+  const arrFirst = arrStart !== -1 && (objStart === -1 || arrStart < objStart);
+  const open = arrFirst ? '[' : '{';
+  const close = arrFirst ? ']' : '}';
+  const start = arrFirst ? arrStart : objStart;
 
-  // Walk braces to find the matching close — strings/escapes respected.
+  // Walk the root bracket pair — strings/escapes respected; the OTHER
+  // bracket type is ignored (a `[` inside an object value doesn't move
+  // object depth and vice versa is impossible in valid JSON anyway —
+  // nested roots of the SAME type still count, which is correct).
   let depth = 0;
   let inString = false;
   let escape = false;
@@ -102,8 +114,8 @@ export function extractJsonCandidate(raw: string): string | null {
     if (ch === '\\') { escape = true; continue; }
     if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
-    if (ch === '{') depth++;
-    else if (ch === '}') {
+    if (ch === open) depth++;
+    else if (ch === close) {
       depth--;
       if (depth === 0) {
         const candidate = text.slice(start, i + 1);
@@ -111,7 +123,11 @@ export function extractJsonCandidate(raw: string): string | null {
           JSON.parse(candidate);
           return candidate;
         } catch {
-          return null;
+          // Unparseable slice (e.g. a prose bracket) — fall back to the
+          // other root type if it exists later in the text.
+          const rest = text.slice(start + 1);
+          const alt = rest.indexOf(arrFirst ? '{' : '[');
+          return alt === -1 ? null : extractJsonCandidate(rest.slice(alt));
         }
       }
     }

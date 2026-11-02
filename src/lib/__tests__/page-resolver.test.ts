@@ -27,13 +27,13 @@ const aiModule: ModuleInfo = {
 		{
 			route: '/system/ai/console',
 			kind: 'page',
-			component_url: '/ws/ai/api/v1/module-assets/ai-pages.js',
+			component_url: '/svc/ai/api/v1/module-assets/ai-pages.js',
 			component_format: 'esm-mount',
 		},
 		{
 			route: '/system/ai/docs-index',
 			kind: 'page',
-			component_url: '/ws/ai/api/v1/module-assets/ai-pages.js',
+			component_url: '/svc/ai/api/v1/module-assets/ai-pages.js',
 			component_format: 'esm-mount',
 		},
 	] as ModuleInfo['routes'],
@@ -53,13 +53,13 @@ const emailsenderModule: ModuleInfo = {
 		{
 			route: '/system/emailsender/providers/create',
 			kind: 'page',
-			component_url: '/ws/emailsender/api/v1/module-assets/emailsender-pages.js',
+			component_url: '/svc/emailsender/api/v1/module-assets/emailsender-pages.js',
 			component_format: 'esm-mount',
 		},
 		{
 			route: '/system/emailsender/providers/[uuid]',
 			kind: 'page',
-			component_url: '/ws/emailsender/api/v1/module-assets/emailsender-pages.js',
+			component_url: '/svc/emailsender/api/v1/module-assets/emailsender-pages.js',
 			component_format: 'esm-mount',
 		},
 	] as ModuleInfo['routes'],

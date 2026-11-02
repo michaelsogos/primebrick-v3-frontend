@@ -36,7 +36,7 @@
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
 
-  import type { EntityListTableProps, CellArgs } from './types';
+  import type { EntityListTableProps } from './types';
 
   let {
     uid,
@@ -319,7 +319,7 @@
   });
 
   // Scroll preservation
-  const scrollPreservation = useScrollPreservation({
+  useScrollPreservation({
     tableRef: () => tableRef,
     rowsLoading: () => rowsLoading
   });
@@ -358,23 +358,11 @@
     filterValues: () => filterValues,
     advancedFilters: () => advancedFilters,
     deletionFilterMode: () => deletionFilterMode,
-    onExportStart: () => {
-      // Optional: handle export start
-    },
-    onExportComplete: () => {
-      // Optional: handle export complete
-    },
-    onExportError: (error) => {
-      // Optional: handle export error
-    }
   });
 
   const previewPanel = usePreviewPanel<TRow>({
     viewRows: () => viewRows,
     rowKey: rowKey,
-    onFieldChange: (row, field, value) => {
-      // Handle field change if needed
-    },
     onRefresh: () => onRefresh
   });
 
@@ -385,15 +373,6 @@
     selectedKeys: () => selectedKeys,
     actions: () => entityActions,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
-    onBulkActionStart: () => {
-      // Optional: handle bulk action start
-    },
-    onBulkActionComplete: () => {
-      // Optional: handle bulk action complete
-    },
-    onBulkActionError: (error) => {
-      // Optional: handle bulk action error
-    },
     onSelectionChange: (keys) => {
       selectedKeys = keys;
     },
@@ -442,7 +421,7 @@
    * contract — an op is visible iff it is enabled AND the user satisfies its
    * declared requirement. Custom CTAs come from `meta.table.row_custom_actions`.
    */
-  const effectiveRowActions = $derived.by(() => ({
+  const effectiveRowActions = $derived(({
     edit: opAllowed('update.single'),
     duplicate: opAllowed('duplicate.bulk'),
     preview: opAllowed('get'),
@@ -570,7 +549,7 @@
     () => onAdvancedFiltersChange,
     () => onResetFilters
   );
-  const { resetColumnsAndSorting, resetFilters, reorderGroup, handleSortClick } = sortingHandlers;
+  const { resetColumnsAndSorting, resetFilters, handleSortClick } = sortingHandlers;
 
   // Click handlers
   const clickHandlers = createClickHandlers(
@@ -582,7 +561,7 @@
     rowRangeSelection,
     toggleRowSelect
   );
-  const { handleEditRow, handlePreviewRow, onEntityRowClick, onEntityCardClick } = clickHandlers;
+  const { handleEditRow, handlePreviewRow, onEntityCardClick } = clickHandlers;
 
   const loadingText = $derived(loadingMessage ?? $t('app.common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.noRecords'));
@@ -713,7 +692,6 @@
     stickyColumns={stickyColumnsGroup}
     dataColumns={nonAuditingColumns}
     auditingColumns={auditingColumnsGroup}
-    rowActionsEnabled={rowActionsEnabled}
     footerRangeTotal={footerRangeTotal}
     footerPage={footerPage}
     previewDropdownOpen={previewDropdownOpen}

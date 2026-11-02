@@ -425,3 +425,28 @@ describe("buildConfigValueSchema — unsigned only affects numeric types", () =>
     expect(safeParse(schema, "-hello-").success).toBe(true);
   });
 });
+
+describe("buildConfigValueSchema — phone", () => {
+  const withIt = JSON.stringify({ country: "IT" });
+
+  it("accepts a valid Italian number when country=IT", () => {
+    const schema = buildConfigValueSchema("phone", withIt);
+    expect(safeParse(schema, "+39 333 1234567").success).toBe(true);
+  });
+
+  it("rejects an invalid number", () => {
+    const schema = buildConfigValueSchema("phone", withIt);
+    expect(safeParse(schema, "not-a-number").success).toBe(false);
+  });
+
+  it("validates against the default country when none configured", () => {
+    const schema = buildConfigValueSchema("phone", null);
+    // E.164 with explicit prefix validates regardless of default country
+    expect(safeParse(schema, "+1 202 555 0123").success).toBe(true);
+  });
+
+  it("treats empty string as valid (optional by default)", () => {
+    const schema = buildConfigValueSchema("phone", withIt);
+    expect(safeParse(schema, "").success).toBe(true);
+  });
+});

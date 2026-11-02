@@ -3,11 +3,6 @@
   import { Button } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
-  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
-  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
-  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
-  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
-  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
   import { getEntitiesNsContext } from '../context';
 
   interface HtmlExportDialogProps {
@@ -38,7 +33,7 @@
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
-<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.exportHtmlConfirmTitle')}</Dialog.Title>
     <Dialog.Description>

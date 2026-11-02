@@ -12,6 +12,7 @@
  * - ETag: apiFetch sends If-None-Match and handles 304 transparently
  */
 
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { browser } from '$app/environment';
 import { page } from '$app/state';
 import { get, type Unsubscriber } from 'svelte/store';
@@ -24,7 +25,7 @@ import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import { pushNotification } from '$lib/errors/app-errors';
 
 const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
-const LOADED_MODULES = new Map<string, number>(); // cacheKey → loaded_at epoch
+const LOADED_MODULES = new SvelteMap<string, number>(); // cacheKey → loaded_at epoch
 
 /** Check if a module was loaded recently (within TTL). */
 function isLoadedFresh(cacheKey: string): boolean {
@@ -37,7 +38,11 @@ function isLoadedFresh(cacheKey: string): boolean {
   return true;
 }
 
-async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise<void> {
+async function ensureModuleTranslations(
+  moduleId: string,
+  lang: UiLang,
+  opts?: { bestEffort?: boolean },
+): Promise<void> {
   const cacheKey = `${moduleId}:${lang}`;
   if (isLoadedFresh(cacheKey)) return;
 
@@ -57,6 +62,15 @@ async function ensureModuleTranslations(moduleId: string, lang: UiLang): Promise
     setCachedModuleDict(moduleId, lang, dict);
     LOADED_MODULES.set(cacheKey, Date.now());
   } catch (e) {
+    if (opts?.bestEffort) {
+      // Census contributors are peripheral enrichers (callable/emit labels
+      // on a foreign module's page): a dead service must not scream — the
+      // option degrades to its raw key and the failure is deduped for the
+      // TTL so an offline service is not hammered on every effect run.
+      LOADED_MODULES.set(cacheKey, Date.now());
+      console.debug(`[i18n] module ${moduleId} dict unavailable (${lang}) — raw keys`, e);
+      return;
+    }
     // Never silent, never blocking: a failed dict fetch surfaces as a
     // non-blocking notification (toast + errors-panel card) — raw keys stay
     // visible but the failure is explicit and the user can navigate/retry.
@@ -98,8 +112,12 @@ export async function loadPublicTranslations(lang: UiLang): Promise<void> {
 }
 
 /** Load translations for a specific module (authenticated pages). */
-export async function loadModuleTranslations(moduleId: string, lang: UiLang): Promise<void> {
-  return ensureModuleTranslations(moduleId, lang);
+export async function loadModuleTranslations(
+  moduleId: string,
+  lang: UiLang,
+  opts?: { bestEffort?: boolean },
+): Promise<void> {
+  return ensureModuleTranslations(moduleId, lang, opts);
 }
 
 /**
@@ -119,7 +137,7 @@ export function useModuleTranslations(): { stop: () => void } {
     // system.entities.*, shared chrome strings) — NOT settings-owned; every
     // module page needs it (a service-owned page under module `job` still
     // renders system.* keys). CORE_DICT_MODULES is the single source.
-    const modules = new Set<string>(CORE_DICT_MODULES);
+    const modules = new SvelteSet<string>(CORE_DICT_MODULES);
     if (moduleId) modules.add(moduleId);
     for (const id of modules) {
       // Reset the in-memory cache for this module so the (new language or

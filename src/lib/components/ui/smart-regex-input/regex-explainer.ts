@@ -191,11 +191,11 @@ export function explainRegex(pattern: string, flags: string): RegexPart[] {
       },
       onCharacterEnter: (node: AST.Character) => {
         if (quantifierDepth > 0) return;
-        const parent = (node as any).parent;
+        const parent = node.parent;
         if (!parent) return;
         if (parent.type === 'CharacterClass') return;
         if (parent.type === 'CharacterClassRange') return;
-        if (parent.type === 'Alternative' || parent.type === 'Pattern') {
+        if (parent.type === 'Alternative') {
           const desc = describeCharacterKey(node);
           parts.push({ fragment: node.raw, meaning_key: desc.key, meaning_params: desc.params });
         }
@@ -250,7 +250,6 @@ function describeCharacterClassKey(node: AST.CharacterClass): KeyResult {
     } else if (el.type === 'Character') {
       descriptions.push(el.raw.replace('\\', ''));
     } else if (el.type === 'CharacterSet') {
-      const desc = describeCharacterSetKey(el);
       // Use the raw representation for character sets inside classes
       descriptions.push(el.raw);
     }

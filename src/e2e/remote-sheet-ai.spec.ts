@@ -77,7 +77,7 @@ async function closeSheet(page: import('@playwright/test').Page) {
 }
 
 async function aiEntityRows(page: import('@playwright/test').Page, entity: string) {
-  const res = await page.request.get(`/ws/ai/api/v1/entities/${entity}/list?page_size=5`);
+  const res = await page.request.get(`/svc/ai/api/v1/entities/${entity}/list?page_size=5`);
   expect(res.status(), `${entity} list reachable`).toBe(200);
   const body = (await res.json()) as { rows: Record<string, unknown>[] };
   return body.rows;

@@ -96,7 +96,7 @@
   });
 </script>
 
-<AppPageScaffold title={$t('app.docs.title')}>
+<AppPageScaffold>
   <div class="flex h-full min-h-0">
     <!-- page-local doc tree -->
     <aside class="w-64 shrink-0 overflow-auto border-r border-border p-2" data-testid="docs-tree">

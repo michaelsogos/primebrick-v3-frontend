@@ -122,7 +122,7 @@ export type UserContentTransformResult<TChoice = unknown> =
 export interface TransformContext<TChoice = unknown> {
   messages: ChatMessage<TChoice>[];
   /** execution_config of the active model (kv_cache_reuse, sliding_window, intent_detection…). */
-  exec_config: Record<string, any> | null;
+  exec_config: Record<string, unknown> | null;
   /** Serialized one-off generation allowed only during this turn's preflight hook. */
   generate_preflight: (
     system_prompt: string,

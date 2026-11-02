@@ -247,6 +247,7 @@
 @utility bg-range-warning-gradient {
   background: linear-gradient(to right, #fde047, #eab308);
 }
+
 @utility bg-range-info-gradient {
   background: linear-gradient(to right, #38bdf8, #2563eb);
 }

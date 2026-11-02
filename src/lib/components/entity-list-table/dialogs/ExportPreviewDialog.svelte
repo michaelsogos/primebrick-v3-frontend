@@ -7,7 +7,6 @@
   import * as Resizable from '$lib/components/ui/resizable';
   import { ScrollArea } from '$lib/components/ui/scroll-area';
   import { Skeleton } from '$lib/components/ui/skeleton';
-  import { Card, CardContent } from '$lib/components/ui/card';
   import { Window } from '$lib/components/ui/window';
   import BsFiletypeHtml from '~icons/bi/filetype-html';
   import BsFiletypePdf from '~icons/bi/filetype-pdf';
@@ -48,7 +47,7 @@
   }: ExportPreviewDialogProps = $props();
 </script>
 
-<BorderedDialog bind:open={open} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('app.common.htmlPreviewTitle')}</Dialog.Title>
   </Dialog.Header>

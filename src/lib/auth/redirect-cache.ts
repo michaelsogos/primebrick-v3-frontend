@@ -46,7 +46,9 @@ export function sanitizeRedirectPath(raw: string | null | undefined): string | n
   const p = raw.trim();
   if (!p.startsWith('/') || p.startsWith('//')) return null;
   if (p.startsWith('/api/')) return null;
-  if (/[\\\x00-\x1f]/.test(p)) return null;
+  for (const ch of p) {
+    if (ch === '\\' || ch.charCodeAt(0) < 0x20) return null;
+  }
   return p;
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { JsonCodeBlock, JsonEditor } from '$lib/components/ui/json-code-block';
+  import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Pencil } from '@primebrick/ui/vendor/lucide';
@@ -21,8 +21,9 @@
 
   // The editor works on PRETTY JSON; the builder keeps the compact
   // storage serialization (type_config is emitted verbatim in advanced mode).
-  // svelte-ignore state_referenced_locally — seed only; kept in sync by
-  // toggleAdvanced on mode entry, never re-read upstream afterwards.
+  // Seed only; kept in sync by toggleAdvanced on mode entry, never re-read
+  // upstream afterwards.
+  // svelte-ignore state_referenced_locally
   let rawJsonInput = $state(
     builder.state.advancedMode ? prettyJson(builder.json) : ''
   );

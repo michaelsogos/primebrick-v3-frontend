@@ -34,12 +34,13 @@
   import type { ModuleSheetDecl, ModuleSheetHost } from '@primebrick/ui';
   import {
     RemoteLoadError,
+    clearMountTarget,
     deriveStylesheetUrl,
     disposeMounted,
     ensureStylesheet,
     loadRemoteModuleCached,
     mountHostComponent,
-    parseWsServiceCode,
+    parseSvcServiceCode,
     type RemoteErrorKind,
   } from './remote-loader';
 
@@ -72,10 +73,10 @@
   // the same `ctx.components.mfaStepUp` bridge as remote pages.
   const stepUp = useMfaStepUp();
 
-  const service_code = $derived(parseWsServiceCode(decl.component_url));
+  const service_code = $derived(parseSvcServiceCode(decl.component_url));
 
   function buildSheetCtx(): ModuleSheetHost {
-    const base = service_code ? `/ws/${service_code}` : '';
+    const base = service_code ? `/svc/${service_code}` : '';
     return {
       host_version: 1,
       api: (path, init) =>
@@ -122,7 +123,7 @@
       mounted = null;
       await disposeMounted(prev).catch(() => undefined);
     }
-    mountEl?.replaceChildren();
+    if (mountEl) clearMountTarget(mountEl);
     if (!url) {
       setError('contract', null, 'sheet declaration has no component_url');
       return;

@@ -22,7 +22,6 @@
     rowSelectionEnabled,
     stickyColumnsGroup,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick,
     cell,
     viewMode,
     sparklineData
@@ -34,7 +33,6 @@
     rowSelectionEnabled: boolean;
     stickyColumnsGroup: MetaColumn[];
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick: number;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     viewMode: 'cards_list' | 'cards_grid';
     /** Per-column batch sparkline buckets — same map as the table view. */
@@ -83,7 +81,6 @@
         row={row}
         column={column}
         datetimeIanaModeByKey={datetimeIanaModeByKey}
-        datetimeIanaRenderTick={datetimeIanaRenderTick}
         sparklineData={sparklineData}
       />
     {/if}

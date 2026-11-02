@@ -1,8 +1,8 @@
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { CellArgs } from '../types';
+import type { Snippet } from 'svelte';
 import type { UiLang } from '$lib/i18n/languages';
 import { isBlankish as isBlankishUtil } from '../utils';
-import { formatListCellValue } from '@primebrick/ui';
-import { formatDatetimeCellDisplay } from '$lib/entity-list';
 import { getAuditableDisplayValue, isAuditableColumn, isAuditableFieldEmpty } from './auditable-fields';
 
 export const isBlankish = (value: unknown): boolean => isBlankishUtil(value);
@@ -25,7 +25,7 @@ export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
   col: MetaColumn,
   uiLang: UiLang,
   datetimeIanaModeByKey: Record<string, 'browser' | 'record'>,
-  cell: any,
+  cell: Snippet<[CellArgs<TRow>]> | undefined,
   formatDatetimeCellDisplayFn: (col: MetaColumn, row: Record<string, unknown>, lang: UiLang, mode: 'browser' | 'record') => { text: string; iana: string | null },
   formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string,
   isDatetimeIanaRecordModeFn: (col: MetaColumn, datetimeIanaModeByKey: Record<string, 'browser' | 'record'>) => boolean,

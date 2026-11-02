@@ -14,6 +14,7 @@ These files help humans and agents collaborate consistently on the **Primebrick 
 | [`field-hints.md`](./field-hints.md) | Field-hint/help conventions for form fields |
 | [`icon-conventions.md`](./icon-conventions.md) | Icon conventions — DynamicIcon, Lucide naming, verified icon names |
 | [`input-anatomy.md`](./input-anatomy.md) | Input component anatomy — label, help, hint, error slots and chrome |
+| [`pre-implementation-anatomy.md`](./pre-implementation-anatomy.md) | ⚠️ MANDATORY before any UI work — reference lock, contract read, allocation check, product-contract E2E, visual gate |
 | [`dev-server.md`](./dev-server.md) | Dev-server lifecycle & process ownership — empirical ownership check, ask-first for user-owned servers, port table |
 | [`env-policy.md`](./env-policy.md) | Closed environment policy — `.env` limited to bootstrap vars; runtime config lives in `config_entries` |
 | [`enforcement-over-verification.md`](./enforcement-over-verification.md) | Enforcement-over-verification doctrine — behavior is enforced by code/types/builders/validators, tests prove it |

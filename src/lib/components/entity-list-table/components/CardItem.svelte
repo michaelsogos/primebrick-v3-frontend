@@ -7,7 +7,6 @@
 
   let {
     row,
-    index,
     rowKey,
     rowSelected,
     rowDeleted,
@@ -17,7 +16,6 @@
     shownColumns,
     stickyColumnsGroup,
     datetimeIanaModeByKey,
-    datetimeIanaRenderTick,
     cell,
     rowActions,
     entityRowActions,
@@ -34,11 +32,9 @@
     onRestoreRow,
     onPreviewRow,
     handleCustomAction,
-    selectedKeys,
     sparklineData
   }: {
     row: TRow;
-    index: number;
     rowKey: string;
     rowSelected: boolean;
     rowDeleted: boolean;
@@ -48,7 +44,6 @@
     shownColumns: MetaColumn[];
     stickyColumnsGroup: MetaColumn[];
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    datetimeIanaRenderTick: number;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
@@ -80,7 +75,6 @@
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
-    selectedKeys: string[];
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
@@ -130,7 +124,6 @@
         rowDeleted={rowDeleted}
         rowSelectionEnabled={rowSelectionEnabled}
         actionsEnabled={actionsEnabled}
-        selectedKeys={selectedKeys}
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
@@ -157,7 +150,6 @@
             rowSelectionEnabled={rowSelectionEnabled}
             stickyColumnsGroup={stickyColumnsGroup}
             datetimeIanaModeByKey={datetimeIanaModeByKey}
-            datetimeIanaRenderTick={datetimeIanaRenderTick}
             cell={cell}
             viewMode={viewMode}
             sparklineData={sparklineData}
@@ -174,7 +166,6 @@
         rowDeleted={rowDeleted}
         rowSelectionEnabled={rowSelectionEnabled}
         actionsEnabled={actionsEnabled}
-        selectedKeys={selectedKeys}
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
@@ -202,7 +193,6 @@
           rowSelectionEnabled={rowSelectionEnabled}
           stickyColumnsGroup={stickyColumnsGroup}
           datetimeIanaModeByKey={datetimeIanaModeByKey}
-          datetimeIanaRenderTick={datetimeIanaRenderTick}
           cell={cell}
           viewMode={viewMode}
           sparklineData={sparklineData}

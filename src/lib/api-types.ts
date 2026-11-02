@@ -6,7 +6,7 @@
  * (requires `TRANSLATIONS_MANAGE`). Flat entity bodies are rejected.
  * Bulk endpoints (stream/temp-table) and RPC endpoints do NOT use it.
  */
-import type { ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
+import type { ModuleCallablesDecl, ModuleEventsDecl, ModuleSheetDecl, PageRouteDeclaration } from '@primebrick/ui';
 
 /**
  * AI domain types — canonical home is `@primebrick/ui/ai/types.ts` (the
@@ -58,6 +58,22 @@ export type ModuleInfo = {
    * `mountSheet` chunk mounted at runtime.
    */
   sheets?: ModuleSheetDecl[];
+  /**
+   * The module's emitted-event vocabulary (`events.emits` — NATS subjects
+   * the module publishes, wildcards allowed). Served verbatim like
+   * `route_prefixes` — module metadata, never access-filtered. Domain
+   * subject pickers (job rules, triggers) resolve options from the union
+   * across modules; free entry stays allowed for dynamic subjects.
+   */
+  events?: ModuleEventsDecl;
+  /**
+   * The module's callable destinations (`callables.callables` — governed
+   * LISTEN subjects auto-collected from routes carrying `payload_schema`).
+   * Served verbatim like `events`; a rule's target picker resolves options
+   * AND request contracts from the union across modules. Catalog-only —
+   * free entry is not allowed for targets.
+   */
+  callables?: ModuleCallablesDecl;
   /**
    * `false` = the module declares FE surface but ZERO leaves are
    * accessible to this user — present ONLY so the launcher's reveal
@@ -125,7 +141,7 @@ export type HealthPayload = {
   checks: Record<string, HealthCheckEntry>;
 };
 
-export type IconType = 'url' | 'svg' | 'base64' | 'icon';
+export type IconType = 'url' | 'base64' | 'icon';
 
 export type ServiceInfo = {
   code: string;
@@ -267,7 +283,7 @@ export class ApiRedisUnavailableError extends Error {
 
 // ── db_patch system module (migration admin surface) ──────────────────────
 // Wire contract shared by BE (/api/v1/system/db-migration/*) and every US
-// (/ws/<code>/api/v1/system/db-migration/*) — served by the SDK system module.
+// (/svc/<code>/api/v1/system/db-migration/*) — served by the SDK system module.
 
 /** A row of `<schema>.primebrick_database_patches` — the per-service migration registry. */
 export type DbPatchStatus =

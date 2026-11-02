@@ -6,7 +6,6 @@
   import * as Table from '$lib/components/ui/table';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Button } from '@primebrick/ui';
-  import { TableCell } from '../table';
   import CellRenderer from './CellRenderer.svelte';
   import {
     entityListGrayChromeCellClass,
@@ -27,7 +26,8 @@
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { DynamicIcon } from '@primebrick/ui';
-  import type { CellArgs } from '../types';
+  import type { CellArgs, EntityRowActions } from '../types';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
 
   type TableRowCellArgs = CellArgs<TRow>;
 
@@ -41,7 +41,6 @@
     rowSelectionEnabled,
     actionsEnabled,
     rowChromeH,
-    selectedKeys,
     shownColumns,
     stickyColumnsGroup,
     stickyColumnsState,
@@ -52,7 +51,6 @@
     rowActions,
     entityRowActions,
     dropdownMenuRow,
-    previewPanel,
     onRowRangeMouseDown,
     onEntityRowClick,
     onPreviewRow,
@@ -77,38 +75,16 @@
     rowSelectionEnabled: boolean;
     actionsEnabled: boolean;
     rowChromeH: string;
-    selectedKeys: string[];
     shownColumns: import('$lib/entity-list/types').MetaColumn[];
     stickyColumnsGroup: import('$lib/entity-list/types').MetaColumn[];
-    stickyColumnsState: {
-      state: { stickyLeftOffsets: Record<string, number> };
-      stickyRef: any;
-    };
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     datetimeIanaRenderTick: number;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     cell?: Snippet<[TableRowCellArgs]>;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
-    previewPanel: {
-      focusedRowIndex: number | null;
-    };
     onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onPreviewRow: (row: TRow) => void;
@@ -307,7 +283,7 @@
                 </DropdownMenu.Item>
               {/if}
               {#if entityRowActions?.custom_actions && handleCustomAction}
-                {#each entityRowActions.custom_actions as action}
+                {#each entityRowActions.custom_actions as action (action.action_name)}
                   {@const isDisabled = action.disabled_when_deleted && isRowDeleted(row)}
                   <DropdownMenu.Item
                     onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}

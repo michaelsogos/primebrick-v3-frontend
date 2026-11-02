@@ -3,19 +3,17 @@
   import { superForm, defaults } from "sveltekit-superforms";
   import { zod4 } from "sveltekit-superforms/adapters";
   import { t } from "$lib/i18n";
-  import { page } from "$app/state";
   import { AvatarPreview } from "$lib/components/ui/avatar-preview";
   import { Button } from '@primebrick/ui';
-  import { TextInput } from "$lib/components/ui/input";
+  import { TextInput } from "@primebrick/ui";
   import { Checkbox } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from "$lib/components/ui/form";
+  } from "@primebrick/ui";
   import {
     hashSeedToIndex,
     avatarChromePaletteToHex,
@@ -25,11 +23,7 @@
   import { apiFetch } from "$lib/api";
   import { onMount, untrack } from "svelte";
   import { userProfileStore } from "$lib/user-profile-store.svelte";
-  import { formatUiDateTime } from "$lib/i18n";
-  import { uiLang } from "$lib/i18n/store.svelte";
   import FormPageLayout from "$lib/components/FormPageLayout.svelte";
-  import AppPageBreadcrumb from "$lib/components/AppPageBreadcrumb.svelte";
-  import { moduleBreadcrumbSegments } from "$lib/breadcrumb/module-breadcrumb";
   import type { EntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
   import { orderedColumns } from "$lib/entity-list";
   import { useEntityMetadata } from "$lib/composables/useEntityMetadata.svelte";
@@ -56,8 +50,6 @@
     roles: z.array(z.string()).optional().default([]),
   });
 
-  type ProfileForm = z.infer<typeof profileSchema>;
-
   // Superforms in SPA mode
   const superFormObj = superForm(defaults(zod4(profileSchema)), {
     SPA: true,
@@ -69,9 +61,10 @@
       if (!updateForm.valid) return;
 
       try {
-        // Exclude immutable IDP fields from PATCH request
-        const { idp_code, idp_org, idp_username, is_admin, is_verified, email_verified, issuer, roles, ...requestData } =
-          updateForm.data;
+        // Only the editable fields go to PATCH — immutable IDP/role fields
+        // are never sent (allowlist, not exclusion).
+        const { display_name, email, avatar_color, avatar_initials } = updateForm.data;
+        const requestData = { display_name, email, avatar_color, avatar_initials };
         const response = await apiFetch("/api/v1/auth/me", {
           method: "PATCH",
           headers: {
@@ -161,18 +154,8 @@
 
   // Audit derived values from store
   const profile = $derived(userProfileStore.current);
-  const createdAt = $derived.by(() => profile?.created_at ? formatUiDateTime(profile.created_at, $uiLang) : '');
-  const createdBy = $derived(profile?.created_by || '');
-  const createdByName = $derived(profile?.created_by_name || '');
-  const updatedAt = $derived.by(() => profile?.updated_at ? formatUiDateTime(profile.updated_at, $uiLang) : '');
-  const updatedBy = $derived(profile?.updated_by || '');
-  const updatedByName = $derived(profile?.updated_by_name || '');
-  const lastSyncedAt = $derived.by(() => profile?.last_synced_at ? formatUiDateTime(profile.last_synced_at, $uiLang) : '');
   const userUuid = $derived(profile?.uuid || '');
   const auditData = $derived(profile ? buildAuditData(profile) : buildAuditData());
-  const deletedAt = $derived('');
-  const deletedBy = $derived('');
-  const deletedByName = $derived('');
 
   let isCreatePage = $state(false);
   const { roleNames: availableRoles } = useActiveRoles();
@@ -285,17 +268,6 @@
     auditingColumns={orderedColumns(metadata.state.meta?.columns).filter((c) => c.audited)}
     isCreatePage={isCreatePage}
   >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.profile.title')}</h1>
-    </div>
-  {/snippet}
-  {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <div class="space-y-6">
         <!-- Top Section: 2 columns 50/50 -->
@@ -543,7 +515,6 @@
         </form>
       </div>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <Button type="submit" form="profile-form" disabled={!formGuard.canSave}>

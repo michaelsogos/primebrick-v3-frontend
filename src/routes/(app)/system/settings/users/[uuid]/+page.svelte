@@ -1,41 +1,36 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
   import { page } from '$app/state';
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { AvatarPreview } from '$lib/components/ui/avatar-preview';
   import { Checkbox } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { apiFetch } from '$lib/api';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
-  import { entityPageTitle, resolvePageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
+  import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
   import { computeInitials } from '$lib/utils/avatar-initials';
-  import { minMsg, maxMsg } from '$lib/validation/zod-messages';
+  import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema } from '$lib/validation/display-name';
   import { ShieldUser } from '@primebrick/ui/vendor/lucide';
   import { ShieldOff } from '@primebrick/ui/vendor/lucide';
@@ -45,7 +40,9 @@
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
   const { state: rolesState } = useActiveRoles();
-  const availableRoles = $derived([...rolesState.roles] as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]);
+  type RoleOption = { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean };
+
+  const availableRoles = $derived([...rolesState.roles] as RoleOption[]);
 
   onMount(() => {
     void entityMetadata.loadMetadata();
@@ -66,8 +63,6 @@
       .optional()
       .or(z.literal('')),
   });
-
-  type UpdateForm = z.infer<typeof updateSchema>;
 
   let user = $state<{
     uuid: string;
@@ -95,7 +90,7 @@
   } | null>(null);
 
   let meta = $state<EntityMetadata | null>(null);
-  let pageTitle = $state('');
+
   let loading = $state(true);
   let isCreatePage = $state(false);
 
@@ -210,11 +205,6 @@
           roles: data.roles || [],
         },
       });
-      pageTitle = resolvePageTitle(
-        meta,
-        user as Record<string, unknown> | null,
-        user?.display_name || user?.idp_username || '',
-      );
     } catch (error) {
       console.error('Failed to load user:', error);
     } finally {
@@ -241,19 +231,7 @@
   auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: pageTitle || entityPageTitle(meta, 'edit', $t) }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'edit', $t)}</h1>
-    </div>
-  {/snippet}
 
-  {#snippet children()}
     {#if loading}
       <div class="flex items-center justify-center py-12">
         <div class="text-muted-foreground">{$t('app.common.loading')}</div>
@@ -349,11 +327,11 @@
                         isLabelTranslated={true}
                         placeholder={$t('system.settings.users.update.rolesPlaceholder')}
                         isOptionDisabled={(opt) => {
-                          const role = opt as Record<string, any>;
+                          const role = opt as RoleOption;
                           return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
                         }}
                         getSearchKeywords={(opt) => {
-                          const role = opt as Record<string, any>;
+                          const role = opt as RoleOption;
                           const kws: string[] = [];
                           if (role.is_admin) kws.push($t('app.auth.roles.systemAdministrator'));
                           if (Array.isArray(role.permissions)) kws.push(...role.permissions);
@@ -363,8 +341,8 @@
                           return kws;
                         }}
                       >
-                        {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                          {@const role = option as Record<string, any>}
+                        {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, unknown>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                          {@const role = option as RoleOption}
                           <div class="flex flex-col min-w-0 flex-1 gap-0.5">
                             <span class="font-medium truncate">{resolvedLabel}</span>
                             {#if role.is_admin}
@@ -461,7 +439,6 @@
         </form>
       </div>
     {/if}
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

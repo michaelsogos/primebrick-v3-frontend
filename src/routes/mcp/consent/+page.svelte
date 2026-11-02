@@ -13,7 +13,6 @@
   import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { apiFetch } from '$lib/api';
-  import { pushNotification } from '$lib/errors/app-errors';
   import {
     parseConsentParams,
     parseScopes,
@@ -201,7 +200,7 @@
             <div class="space-y-2">
               <p class="text-sm font-medium">{$t('app.mcp.consent.requestedScopes')}</p>
               <div class="space-y-2">
-                {#each scopes as scope}
+                {#each scopes as scope (scope.name)}
                   <div class="flex items-start gap-2 rounded-md border border-border p-2.5">
                     <div class="mt-0.5 flex size-5 items-center justify-center rounded-full bg-primary/10">
                       <Info class="size-3 text-primary" />

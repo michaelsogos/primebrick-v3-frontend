@@ -1,19 +1,16 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { page } from '$app/state';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { PrimeField } from '$lib/components/ui/form';
+  import { TextInput } from '@primebrick/ui';
+  import { PrimeField } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { updateService, fetchModuleConfig, updateModuleConfigKey } from '$lib/api';
   import type { ServiceInfo, ModuleConfigEntry, IconType } from '$lib/api-types';
-  import { resolveModuleLabel } from '$lib/shell/module-label';
+
 
   let { data } = $props();
   // svelte-ignore state_referenced_locally
@@ -121,21 +118,7 @@
   auditData={{}}
   auditingColumns={[]}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: resolveModuleLabel(service, $t) || service.code },
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">
-        {resolveModuleLabel(service, $t) || service.code}
-      </h1>
-    </div>
-  {/snippet}
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto p-4">
       <Tabs bind:value={activeTab}>
         <TabsList>
@@ -179,7 +162,6 @@
                   <select {id} bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
                     <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
                     <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
-                    <option value="svg">{$t('system.settings.modules.config.iconTypeSvg')}</option>
                     <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
                   </select>
                 {/snippet}
@@ -259,7 +241,6 @@
         </TabsContent>
       </Tabs>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     {#if activeTab === 'service-info'}

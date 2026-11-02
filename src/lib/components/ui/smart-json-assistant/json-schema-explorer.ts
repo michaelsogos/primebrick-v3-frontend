@@ -17,6 +17,9 @@ export type JsonSchemaObject = {
   type?: string;
   enum?: Array<string | number | boolean>;
   properties?: Record<string, JsonSchemaObject>;
+  /** Array item schema — array-rooted schemas (`RuleFilter[]`) expose
+   *  their navigable topics through `items.properties`. */
+  items?: JsonSchemaObject;
 };
 
 /**
@@ -28,7 +31,10 @@ export function buildSchemaTopics(
   schema: JsonSchemaObject,
   basePath = '',
 ): SchemaTopic[] {
-  const props = schema?.properties ?? {};
+  // Array-rooted schemas navigate their item shape — `RuleFilter[]`
+  // topics describe what one filter entry carries (`items.properties`),
+  // paths rooted at the item object.
+  const props = schema?.properties ?? schema?.items?.properties ?? {};
   return Object.entries(props).map(([key, def]) => {
     const path = basePath ? `${basePath}.${key}` : key;
     const children = buildSchemaTopics(def ?? {}, path);

@@ -1,15 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { entityPageTitle } from '$lib/utils/entity-meta';
+
   import { t } from '$lib/i18n';
-  import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { SvelteSet } from 'svelte/reactivity';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
+  import { TextInput } from '@primebrick/ui';
+  import { Label } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
@@ -24,10 +23,10 @@
   import { useRoleMappings } from '$lib/composables/useRoleMappings.svelte';
   import { apiFetch } from '$lib/api';
 
-  interface OrgOption {
+  type OrgOption = {
     idp_code: string;
     display_name: string | null;
-  }
+  };
 
   let orgs = $state<OrgOption[]>([]);
   let orgsLoading = $state(true);
@@ -38,7 +37,7 @@
   let idp_org = $state('');
   let label_key = $state('');
   let is_admin = $state(false);
-  let selected_permissions = $state<Set<string>>(new Set());
+  const selected_permissions = new SvelteSet<string>();
   let errors = $state<Record<string, string>>({});
 
   const permissionsCatalog = usePermissionsCatalog();
@@ -59,25 +58,21 @@
   });
 
   function togglePermission(code: string) {
-    const next = new Set(selected_permissions);
-    if (next.has(code)) {
-      next.delete(code);
+    if (selected_permissions.has(code)) {
+      selected_permissions.delete(code);
     } else {
-      next.add(code);
+      selected_permissions.add(code);
     }
-    selected_permissions = next;
   }
 
   function toggleModule(code: string) {
     const module_perms = permissionsCatalog.state.modules.find((m) => m.code === code)?.permissions ?? [];
     const all_selected = module_perms.every((p) => selected_permissions.has(p.code));
-    const next = new Set(selected_permissions);
     if (all_selected) {
-      for (const p of module_perms) next.delete(p.code);
+      for (const p of module_perms) selected_permissions.delete(p.code);
     } else {
-      for (const p of module_perms) next.add(p.code);
+      for (const p of module_perms) selected_permissions.add(p.code);
     }
-    selected_permissions = next;
   }
 
   function moduleAllSelected(code: string): boolean {
@@ -115,30 +110,18 @@
     });
     saving = false;
     if (result) {
-      goto('/system/settings/roles');
+      goto(resolve('/system/settings/roles'));
     }
   }
 
   function handleCancel() {
-    goto('/system/settings/roles');
+    goto(resolve('/system/settings/roles'));
   }
 </script>
 
-<svelte:head>
-  <title>{entityPageTitle('role_mapping', 'create', $t)} · Primebrick</title>
-</svelte:head>
+
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle('role_mapping', 'create', $t)}</h1>
-    </div>
-  {/snippet}
 
   <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.createSubtitle')}</p>
 

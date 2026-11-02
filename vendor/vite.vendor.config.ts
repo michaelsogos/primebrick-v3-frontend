@@ -124,6 +124,7 @@ const VENDOR_ENTRIES: Record<string, { file: string }> = {
 	'svelte/attachments': { file: 'svelte-attachments.js' },
 	'svelte/motion': { file: 'svelte-motion.js' },
 	'svelte/easing': { file: 'svelte-easing.js' },
+	'svelte/transition': { file: 'svelte-transition.js' },
 	'@primebrick/core': { file: 'primebrick-core.js' },
 	'@primebrick/ui': { file: 'primebrick-ui.js' },
 	'@primebrick/ui/vendor/transformers': { file: 'vendor-transformers.js' },
@@ -187,6 +188,7 @@ const VENDOR_INPUTS: Record<string, string> = {
 	'svelte-attachments': 'entries/svelte-attachments.ts',
 	'svelte-motion': 'entries/svelte-motion.ts',
 	'svelte-easing': 'entries/svelte-easing.ts',
+	'svelte-transition': 'entries/svelte-transition.ts',
 	'vendor-clsx': 'entries/vendor-clsx.ts',
 	'vendor-tailwind-merge': 'entries/vendor-tailwind-merge.ts',
 	'vendor-tailwind-variants': 'entries/vendor-tailwind-variants.ts',
@@ -221,6 +223,7 @@ const ENTRY_FILE_PKG: Record<string, string> = {
 	'svelte-attachments.ts': 'svelte',
 	'svelte-motion.ts': 'svelte',
 	'svelte-easing.ts': 'svelte',
+	'svelte-transition.ts': 'svelte',
 	'primebrick-core.ts': '@primebrick/core',
 	'primebrick-ui.ts': '@primebrick/ui',
 	// the vendor/* entries import the sanctioned @primebrick/ui wrapper —

@@ -8,6 +8,7 @@
    *
    * Shared by all Smart* assistant panels (i18n_ns + testid_prefix props).
    */
+  import { SvelteMap } from 'svelte/reactivity';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { RankMeter } from '@primebrick/ui';
@@ -45,15 +46,15 @@
 
   let modelSortBy = $state<ModelSortKey>('rank');
 
-  const SORT_LABEL_KEYS = $derived.by<Record<ModelSortKey, string>>(() => ({
+  const SORT_LABEL_KEYS = $derived<Record<ModelSortKey, string>>({
     rank: `${i18n_ns}.model_details.rank`,
     alphabetic: `${i18n_ns}.sort.alphabetic`,
     speed: `${i18n_ns}.model_details.speed`,
     quality: `${i18n_ns}.model_details.test_score`,
     power: `${i18n_ns}.model_details.power`,
-  }));
+  });
 
-  const modelScoreCache = new Map<string, ReturnType<typeof summarizeTestScores>>();
+  const modelScoreCache = new SvelteMap<string, ReturnType<typeof summarizeTestScores>>();
   function scoresFor(model: AiModel) {
     const vkey = modelVariantKey(model);
     let s = modelScoreCache.get(vkey);
