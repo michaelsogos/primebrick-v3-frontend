@@ -1772,6 +1772,192 @@
     }
   },
   {
+    "file": "src/lib/components/collaboration/FieldEditingBadge.svelte",
+    "component": "FieldEditingBadge",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 62,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "names",
+          "kind": "let",
+          "type": "string[]",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 14,
+              "column": 8
+            },
+            "end": {
+              "line": 14,
+              "column": 13
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/collaboration/PresenceAvatars.svelte",
+    "component": "PresenceAvatars",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 161,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "entity",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 36,
+              "column": 8
+            },
+            "end": {
+              "line": 36,
+              "column": 14
+            }
+          }
+        },
+        {
+          "name": "uuid",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 36,
+              "column": 16
+            },
+            "end": {
+              "line": 36,
+              "column": 20
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
+    "file": "src/lib/components/collaboration/PresenceStatusChip.svelte",
+    "component": "PresenceStatusChip",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 106,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "entity",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 27,
+              "column": 7
+            },
+            "end": {
+              "line": 27,
+              "column": 13
+            }
+          }
+        },
+        {
+          "name": "uuid",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 27,
+              "column": 15
+            },
+            "end": {
+              "line": 27,
+              "column": 19
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/CommandPalette.svelte",
     "component": "CommandPalette",
     "data": {
@@ -2802,7 +2988,7 @@
           "column": 0
         },
         "end": {
-          "line": 487,
+          "line": 480,
           "column": 0
         }
       },
@@ -5011,7 +5197,7 @@
         {
           "name": "entityRowActions",
           "kind": "let",
-          "type": "{\n      edit?: boolean;\n      duplicate?: boolean;\n      preview?: boolean;\n      delete?: boolean;\n      restore?: boolean;\n      versionHistory?: boolean;\n      custom_actions?: Array<{\n        action_name: string;\n        translation_key: string;\n        icon: string;\n        text_color?: string;\n        disabled_when_deleted?: boolean;\n        required_permission?: string | string[];\n      }>;\n    }",
+          "type": "{\r\n      edit?: boolean;\r\n      duplicate?: boolean;\r\n      preview?: boolean;\r\n      delete?: boolean;\r\n      restore?: boolean;\r\n      versionHistory?: boolean;\r\n      custom_actions?: Array<{\r\n        action_name: string;\r\n        translation_key: string;\r\n        icon: string;\r\n        text_color?: string;\r\n        disabled_when_deleted?: boolean;\r\n        required_permission?: string | string[];\r\n      }>;\r\n    }",
           "typeSource": "typescript",
           "isFunction": false,
           "isFunctionDeclaration": false,
@@ -23200,7 +23386,7 @@
           "column": 0
         },
         "end": {
-          "line": 263,
+          "line": 275,
           "column": 0
         }
       },
@@ -23888,11 +24074,11 @@
           "message": "{@render extraDialogs(...)} argument is not a plain object literal; the render call was not mapped to slot metadata.",
           "source": {
             "start": {
-              "line": 260,
+              "line": 272,
               "column": 4
             },
             "end": {
-              "line": 260,
+              "line": 272,
               "column": 31
             }
           }
@@ -24333,7 +24519,7 @@
           "column": 0
         },
         "end": {
-          "line": 160,
+          "line": 187,
           "column": 0
         }
       },
@@ -24943,6 +25129,102 @@
     }
   },
   {
+    "file": "src/lib/components/ServiceUnavailableView.svelte",
+    "component": "ServiceUnavailableView",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 39,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "service",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 16,
+              "column": 7
+            },
+            "end": {
+              "line": 16,
+              "column": 14
+            }
+          }
+        },
+        {
+          "name": "status",
+          "kind": "let",
+          "type": "string | null",
+          "typeSource": "typescript",
+          "value": "null",
+          "defaultValue": {
+            "raw": "null",
+            "kind": "literal",
+            "value": null
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 16,
+              "column": 16
+            },
+            "end": {
+              "line": 16,
+              "column": 29
+            }
+          }
+        },
+        {
+          "name": "onRetry",
+          "kind": "let",
+          "type": "() => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 16,
+              "column": 31
+            },
+            "end": {
+              "line": 16,
+              "column": 38
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/sidebar/SidebarAppLauncher.svelte",
     "component": "SidebarAppLauncher",
     "data": {
@@ -24952,7 +25234,7 @@
           "column": 0
         },
         "end": {
-          "line": 786,
+          "line": 788,
           "column": 0
         }
       },
