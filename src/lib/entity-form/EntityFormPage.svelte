@@ -380,6 +380,18 @@
 		}
 	});
 
+	// `job_trigger_shape` (closed-vocab validator) — live policy: with no
+	// event source the `user` lane is invalid, so its badge option disables
+	// and a selected "user" coerces to "me" (the schedule-only default).
+	// With a source present nothing is forced — "me" stays a valid choice.
+	const triggerShape = $derived(formDecl?.validators?.includes('job_trigger_shape') ?? false);
+	$effect(() => {
+		if (!triggerShape || !formObj) return;
+		const data = $form as Record<string, unknown>;
+		const hasSource = typeof data.event_subject === 'string' && data.event_subject.length > 0;
+		if (!hasSource && data.execution_context === 'user') data.execution_context = 'me';
+	});
+
 	const formGuard = useFormGuard(
 		() => $tainted,
 		() => ($errors as Record<string, unknown>) ?? {},
@@ -546,6 +558,11 @@
 												{targetCallable}
 												{sourceEmit}
 												controlProps={props}
+												disabledBadgeValues={triggerShape &&
+												col.key === 'execution_context' &&
+												!($form['event_subject'] as string)?.length
+													? ['user']
+													: undefined}
 												readonly={placement.readonly || collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
 											/>

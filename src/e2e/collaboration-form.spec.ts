@@ -2,7 +2,7 @@
  * collaboration-form — the F11 update-surface merge/conflict pilot, E2E.
  *
  * Two real browser contexts, two DIFFERENT admin identities on the same
- * job_rule detail record:
+ * job_trigger detail record:
  *
  *   - Context A (e2e_test_admin)  = the observer — opens the record first,
  *                                   taints one field, never saves.
@@ -38,13 +38,13 @@ import { loginAsTestAdmin, loginAsCollabAdmin } from "./helpers/admin-login";
 const TS = Date.now();
 const RULE_NAME = `e2e-collab-${TS}`;
 const JOB_BASE = "/svc/job/api/v1/entities";
-const DETAIL_PATH = (uuid: string) => `/system/job/rules/${uuid}`;
+const DETAIL_PATH = (uuid: string) => `/system/job/triggers/${uuid}`;
 
 // Serial: the fixture row is created in beforeAll and every test relies on
 // it; the two-context choreography inside each test is itself sequential.
 test.describe.configure({ mode: "serial" });
 
-test.describe("collaborative update surface (job_rule detail)", () => {
+test.describe("collaborative update surface (job_trigger detail)", () => {
   let ruleUuid = "";
   const fixtureUuids: string[] = [];
 
@@ -53,7 +53,7 @@ test.describe("collaborative update surface (job_rule detail)", () => {
     const page = await ctx.newPage();
     try {
       await loginAsTestAdmin(page);
-      const res = await page.request.post(`${JOB_BASE}/job_rule`, {
+      const res = await page.request.post(`${JOB_BASE}/job_trigger`, {
         data: {
           entity: {
             name,
@@ -90,9 +90,9 @@ test.describe("collaborative update surface (job_rule detail)", () => {
       await loginAsTestAdmin(page);
       for (const uuid of fixtureUuids) {
         // Re-read version — saves bumped it since creation.
-        const get = await page.request.get(`${JOB_BASE}/job_rule/${uuid}`);
+        const get = await page.request.get(`${JOB_BASE}/job_trigger/${uuid}`);
         const row = (await get.json()) as { version: number };
-        await page.request.delete(`${JOB_BASE}/job_rule/${uuid}?version=${row.version}`);
+        await page.request.delete(`${JOB_BASE}/job_trigger/${uuid}?version=${row.version}`);
       }
     } finally {
       await ctx.close();
@@ -143,7 +143,7 @@ test.describe("collaborative update surface (job_rule detail)", () => {
         .first()
         .fill("@every 6h");
       const putCapture = pageB.waitForResponse(
-        (r) => r.url().includes("/entities/job_rule/") && r.request().method() === "PUT",
+        (r) => r.url().includes("/entities/job_trigger/") && r.request().method() === "PUT",
         { timeout: 5000 },
       );
       await pageB.getByTestId("entity-form-submit").click();
@@ -230,7 +230,7 @@ test.describe("collaborative update surface (job_rule detail)", () => {
       const bName = `e2e-sametab-${TS}`;
       await pageB.getByTestId("entity-form-field-name").locator("input").fill(bName);
       const putCapture = pageB.waitForResponse(
-        (r) => r.url().includes("/entities/job_rule/") && r.request().method() === "PUT",
+        (r) => r.url().includes("/entities/job_trigger/") && r.request().method() === "PUT",
         { timeout: 5000 },
       );
       await pageB.getByTestId("entity-form-submit").click();
@@ -253,7 +253,7 @@ test.describe("collaborative update surface (job_rule detail)", () => {
     page,
   }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/rules/create", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers/create", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
     // The presence zone renders in the header but stays EMPTY on create —
     // no record uuid, no channel, no avatars, no chip.

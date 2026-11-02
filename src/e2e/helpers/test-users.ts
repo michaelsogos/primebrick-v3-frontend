@@ -36,7 +36,7 @@ const MFA_ACTOR_EMAIL = `${MFA_ACTOR_NAME}@e2e.local`;
 // Second admin twin for the collaboration suite: merge/conflict assertions
 // need a saver whose user_uuid differs from the observer — a save by the
 // same identity is filtered as a self-change (changed_by === me.uuid).
-// job_rule writes require AUTHENTICATED_ADMIN, so the e2e_user actor cannot
+// job_trigger writes require AUTHENTICATED_ADMIN, so the e2e_user actor cannot
 // be the saver; this twin is admin and never touches MFA state.
 const COLLAB_ACTOR_NAME = process.env.E2E_COLLAB_ACTOR_NAME ?? "e2e_collab_admin";
 const COLLAB_ACTOR_DISPLAY = "E2E Collab Admin";

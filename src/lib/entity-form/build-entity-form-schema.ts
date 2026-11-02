@@ -103,6 +103,28 @@ const CROSS_FIELD_VALIDATORS: Record<
 			});
 		}
 	},
+	/** `job_trigger` shape — `event_subject`/`schedule_spec` are mutually
+	 *  mandatory (at least one); `execution_context:"user"` needs an event
+	 *  source to forward auth headers from (schedule-only uses `me`/`system`).
+	 *  Mirrors the service-side `assertTriggerShape`. */
+	job_trigger_shape: (data, ctx) => {
+		const hasSrc = typeof data.event_subject === 'string' && data.event_subject.length > 0;
+		const hasSch = typeof data.schedule_spec === 'string' && data.schedule_spec.length > 0;
+		if (!hasSrc && !hasSch) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['event_subject'],
+				message: 'at least one of event source or schedule is required',
+			});
+		}
+		if (data.execution_context === 'user' && !hasSrc) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['execution_context'],
+				message: '"user" requires an event source — pick "me" or "system"',
+			});
+		}
+	},
 };
 
 function columnSchema(col: ColumnRecord): z.ZodTypeAny {

@@ -71,6 +71,9 @@
 		/** FormControl-provided props (`id`, `aria-invalid`, `aria-describedby`)
 		 *  — spread onto the rendered control so label/error wiring works. */
 		controlProps?: Record<string, unknown>;
+		/** Badge-option values the page disables live (closed-vocab option
+		 *  policy — e.g. `user` when a trigger has no event source). */
+		disabledBadgeValues?: string[];
 		readonly?: boolean;
 	}
 
@@ -83,6 +86,7 @@
 		targetCallable,
 		sourceEmit,
 		controlProps,
+		disabledBadgeValues,
 		readonly = false,
 	}: Props = $props();
 
@@ -323,6 +327,9 @@
 		valueField="value"
 		labelField="label"
 		colorField="color"
+		isOptionDisabled={disabledBadgeValues?.length
+			? (raw) => disabledBadgeValues.includes((raw as { value?: string }).value ?? '')
+			: undefined}
 		display="badge"
 		{placeholder}
 		disabled={readonly}

@@ -11,13 +11,13 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *   /system/job/job-schedules  job_schedule — `schedule_kind` toolbar
  *                              preset + builtin sparkline column
  *   /system/job/runs           job_run      — duration_ms humanizer cell
- *   /system/job/rules          job_rule
+ *   /system/job/triggers          job_trigger
  *
  * The module's only custom surfaces are REMOTE-delivered (jobs-page.js
  * esm-mount chunk):
  *
  *   /system/job/job-schedules/create  manual schedule form
- *   /system/job/rules/create          rule form
+ *   /system/job/triggers/create          rule form
  *
  * These specs verify: standard single-table rendering, preset AND-ing on
  * the wire, sparkline batch fetch, exactly-one-active nav item
@@ -229,21 +229,21 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
-  test("/system/job/runs and /system/job/rules render standard list tables", async ({
+  test("/system/job/runs and /system/job/triggers render standard list tables", async ({
     page,
   }) => {
-    for (const route of ["/system/job/runs", "/system/job/rules"]) {
+    for (const route of ["/system/job/runs", "/system/job/triggers"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
       await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     }
   });
 
-  test("/system/job/rules create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
+  test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,
   }) => {
-    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // create.single is enabled for admins — the New CTA opens a CHILD TAB
@@ -314,28 +314,28 @@ test.describe("/system/job/* pages (module-owned)", () => {
     });
 
     // Full document loads — every hydration path must stay orphan-free.
-    for (const route of ["/system/job/job-schedules", "/system/job/rules", "/system/settings/profile"]) {
+    for (const route of ["/system/job/job-schedules", "/system/job/triggers", "/system/settings/profile"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
     }
     expect(errors.filter((e) => e.includes("effect_orphan"))).toEqual([]);
   });
 
-  test("sidebar: exactly ONE nav item active on /system/job/rules", async ({
+  test("sidebar: exactly ONE nav item active on /system/job/triggers", async ({
     page,
   }) => {
-    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to resolve (scoped to the sidebar — the
     // breadcrumb's module link shares the same href).
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job/rules']`).first(),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/triggers']`).first(),
     ).toBeVisible({ timeout: 15000 });
 
-    // Longest-match wins: /system/job/rules is active, /system/job is NOT (it is a
+    // Longest-match wins: /system/job/triggers is active, /system/job is NOT (it is a
     // prefix of the current route, not the route itself).
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job/rules']`),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/triggers']`),
     ).toHaveAttribute("data-active", "true");
     await expect(
       page.locator(`${SIDEBAR_LINKS}[href='/system/job/job-schedules']`),
@@ -348,14 +348,14 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(activeCount).toBe(1);
   });
 
-  test("breadcrumb on /system/job/rules is System / {job module} — never Settings", async ({
+  test("breadcrumb on /system/job/triggers is System / {job module} — never Settings", async ({
     page,
   }) => {
-    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to load (breadcrumb items come from it).
     await expect(
-      page.locator("a[href='/system/job/rules']").first(),
+      page.locator("a[href='/system/job/triggers']").first(),
     ).toBeVisible({ timeout: 15000 });
 
     // The breadcrumb menu trigger carries the OWNING module's display
@@ -387,7 +387,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const switcher = page.locator("[data-testid='app-launcher-trigger']");
     await expect(switcher).toContainText(await expectedJobModuleLabel(page), { timeout: 15000 });
     await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible();
-    await expect(page.locator("a[href='/system/job/rules']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job/triggers']").first()).toBeVisible();
 
     // Settings' nav does NOT present another module's pages.
     await page.goto("/system/settings/profile", {

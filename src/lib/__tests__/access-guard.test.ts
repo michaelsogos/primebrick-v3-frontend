@@ -79,7 +79,7 @@ describe('isRouteAccessible — access-filtered census', () => {
   it('denies paths under an owned prefix absent from the census', () => {
     // Filtered or unknown — deliberately indistinguishable.
     expect(isRouteAccessible('/system/settings/secret', MODULES)).toBe(false);
-    expect(isRouteAccessible('/system/job/rules', MODULES)).toBe(false);
+    expect(isRouteAccessible('/system/job/triggers', MODULES)).toBe(false);
   });
 
   it('denies every path of an accessible:false module — including its prefix', () => {

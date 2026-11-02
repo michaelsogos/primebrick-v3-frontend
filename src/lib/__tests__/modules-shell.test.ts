@@ -34,7 +34,7 @@ const MODULES = [
     // Access-filtered nav — job-schedules is the declared DEFAULT leaf.
     nav: [
       { id: 'job-schedules', label_key: 'job.nav.schedules', href: '/system/job/job-schedules', default: true },
-      { id: 'rules', label_key: 'job.nav.rules', href: '/system/job/rules' },
+      { id: 'rules', label_key: 'job.nav.triggers', href: '/system/job/triggers' },
     ],
   },
   {
@@ -92,7 +92,7 @@ describe('resolveModuleFromRoute — longest-prefix ownership', () => {
     // /system/job is the job module's own prefix — it must resolve to
     // 'job', never to settings even though both live under /system.
     expect(shellNav.resolveModuleFromRoute('/system/job')).toBe('job');
-    expect(shellNav.resolveModuleFromRoute('/system/job/rules')).toBe('job');
+    expect(shellNav.resolveModuleFromRoute('/system/job/triggers')).toBe('job');
   });
 
   it('resolves routes under a declared prefix to that prefix owner', () => {

@@ -153,7 +153,7 @@
 
   /**
    * Meta-driven edit: census `kind:"detail"` routes end in a `[param]`
-   * segment (e.g. `/system/job/rules/[uuid]`) — convert to the `:uuid`
+   * segment (e.g. `/system/job/triggers/[uuid]`) — convert to the `:uuid`
    * template `openEdit` substitutes. Explicit `editPath` still wins.
    */
   const censusDetailRoute = $derived(

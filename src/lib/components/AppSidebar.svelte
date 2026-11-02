@@ -56,8 +56,8 @@
     if (!(pathname === href || pathname.startsWith(href + '/'))) return false;
     if (shellNav.resolveModuleFromRoute(pathname) !== shellNav.selectedModuleId) return false;
     // LONGEST MATCH WINS — sibling links may share prefixes (e.g. `/system/job`
-    // and `/system/job/rules`); only the most specific declared link is active,
-    // never both. On deeper sub-pages (`/system/job/rules/123`) the longest
+    // and `/system/job/triggers`); only the most specific declared link is active,
+    // never both. On deeper sub-pages (`/system/job/triggers/123`) the longest
     // declared prefix still resolves correctly.
     return !navHrefs.some(
       (h) => h !== href && h.length > href.length && (pathname === h || pathname.startsWith(h + '/'))

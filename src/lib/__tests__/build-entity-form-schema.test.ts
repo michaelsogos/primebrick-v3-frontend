@@ -12,8 +12,8 @@ const col = (over: Record<string, unknown>) => ({
 
 const meta = (columns: Record<string, unknown>[]): EntityMeta =>
 	({
-		entity: 'job_rule',
-		translation_key: 'job_rule',
+		entity: 'job_trigger',
+		translation_key: 'job_trigger',
 		uid: 'uuid',
 		display_field: 'name',
 		columns,
