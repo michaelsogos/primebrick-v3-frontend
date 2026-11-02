@@ -1,3 +1,4 @@
+import { SvelteSet } from 'svelte/reactivity';
 import { sheetState, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 import { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
 import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
@@ -18,8 +19,8 @@ export interface UseSheetPanelsOptions {
   nonAuditingColumns: () => MetaColumn[];
   auditingColumnsGroup: () => MetaColumn[];
   stickyColumnsGroup: () => MetaColumn[];
-  filterValues: () => Record<string, any> | null;
-  onFilterValuesChange?: () => ((values: Record<string, any>) => void) | undefined;
+  filterValues: () => Record<string, unknown> | null;
+  onFilterValuesChange?: () => ((values: Record<string, unknown>) => void) | undefined;
   onResetFilters?: () => (() => void) | undefined;
   advancedFilters: () => AdvancedFilter[] | null;
   onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined;
@@ -96,7 +97,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
         visibleKeys: options.visibleKeys(),
         toggleColumnKey,
         onReorderKeys: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => {
-          const allowed = new Set(
+          const allowed = new SvelteSet(
             (group === 'sticky'
               ? stickyColumnsGroup
               : group === 'data'
@@ -105,7 +106,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
             ).map((c) => c.key)
           );
           const dedup: string[] = [];
-          const seen = new Set<string>();
+          const seen = new SvelteSet<string>();
           for (const k of keys) {
             if (!allowed.has(k)) continue;
             if (seen.has(k)) continue;

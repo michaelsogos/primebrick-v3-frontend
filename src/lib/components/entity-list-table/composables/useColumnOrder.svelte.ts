@@ -1,3 +1,4 @@
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { onMount } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
@@ -8,6 +9,27 @@ export type ColumnOrderState = {
   auditing?: string[];
 };
 
+const STRING_LIST = (v: unknown): string[] | undefined =>
+  Array.isArray(v) ? v.filter((k): k is string => typeof k === 'string') : undefined;
+
+/** Parse the sessionStorage payload into a ColumnOrderState — pure, guards
+ *  every group before trusting it (storage is user-writable). */
+export function parseColumnOrderState(raw: string | null): ColumnOrderState {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    const obj = parsed as { sticky?: unknown; data?: unknown; auditing?: unknown };
+    return {
+      sticky: STRING_LIST(obj.sticky),
+      data: STRING_LIST(obj.data),
+      auditing: STRING_LIST(obj.auditing)
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function useColumnOrder(getColumnOrderStorageKey: () => string | undefined) {
   const _state = $state<ColumnOrderState>({});
 
@@ -15,24 +37,7 @@ export function useColumnOrder(getColumnOrderStorageKey: () => string | undefine
     const columnOrderStorageKey = getColumnOrderStorageKey();
     if (!columnOrderStorageKey) return {};
     if (typeof window === 'undefined') return {};
-    try {
-      const raw = window.sessionStorage.getItem(columnOrderStorageKey);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object') return {};
-      const obj = parsed as any;
-      return {
-        sticky: Array.isArray(obj.sticky)
-          ? obj.sticky.filter((k: unknown) => typeof k === 'string')
-          : undefined,
-        data: Array.isArray(obj.data) ? obj.data.filter((k: unknown) => typeof k === 'string') : undefined,
-        auditing: Array.isArray(obj.auditing)
-          ? obj.auditing.filter((k: unknown) => typeof k === 'string')
-          : undefined
-      };
-    } catch {
-      return {};
-    }
+    return parseColumnOrderState(window.sessionStorage.getItem(columnOrderStorageKey));
   }
 
   function writeOrderState(next: ColumnOrderState) {
@@ -48,9 +53,9 @@ export function useColumnOrder(getColumnOrderStorageKey: () => string | undefine
 
   function applyKeyOrder(cols: MetaColumn[], keys: readonly string[] | undefined): MetaColumn[] {
     if (!keys || keys.length === 0) return cols;
-    const byKey = new Map(cols.map((c) => [c.key, c] as const));
+    const byKey = new SvelteMap(cols.map((c) => [c.key, c] as const));
     const out: MetaColumn[] = [];
-    const used = new Set<string>();
+    const used = new SvelteSet<string>();
     for (const k of keys) {
       const c = byKey.get(k);
       if (!c) continue;

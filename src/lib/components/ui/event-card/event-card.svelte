@@ -37,7 +37,7 @@
 		}
 	});
 
-	const Icon = $derived.by(() => icon);
+	const Icon = $derived(icon);
 </script>
 
 <div

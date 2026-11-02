@@ -118,8 +118,9 @@
   } = $props();
 
   const aiModels = useAiModels();
-  // svelte-ignore state_referenced_locally — assistant_key is a static
-  // prop for the lifetime of the panel (the chat is remounted on change).
+  // assistant_key is a static prop for the lifetime of the panel
+  // (the chat is remounted on change).
+  // svelte-ignore state_referenced_locally
   const cerebellum = assistant_key ? useAiCerebellum(assistant_key) : null;
 
   let ai = $state<AiHandle | null>(null);
@@ -521,6 +522,7 @@
               <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
               <div class="min-w-0 max-w-full space-y-1.5">
                 <div class="ai-md rounded-lg px-3 py-2 text-xs gradient-ring" style={aiBubbleStyle} data-testid="{testid_prefix}-answer-{msg_idx}">
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- mdToHtml runs DOMPurify.sanitize on the marked output -->
                   {@html mdToHtml(message.content)}
                 </div>
                 {#if message.sources && message.sources.length > 0}
@@ -531,7 +533,7 @@
                       <a
                         href={sourceUrl(source)}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener noreferrer external"
                         class="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:border-border transition-colors"
                         title={source.path}
                       >
@@ -690,7 +692,6 @@
                     tunings={ai.tunings}
                     selected_tuning_uuid={ai.state.selected_tuning_uuid}
                     on_select={(uuid) => ai?.setTuning(uuid)}
-                    {i18n_ns}
                     {testid_prefix}
                   />
                 {:else}

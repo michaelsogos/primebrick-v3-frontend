@@ -5,11 +5,11 @@ export type ToolbarMode = 'filters' | 'bulk';
 
 export function useToolbarMode(options: {
   selectedKeys: () => string[];
-  filterValues: () => Record<string, any>;
+  filterValues: () => Record<string, unknown>;
   advancedFilters: () => AdvancedFilter[];
 }) {
-  const safeFilterValues = $derived.by(() => options.filterValues() ?? {});
-  const safeAdvancedFilters = $derived.by(() => options.advancedFilters() ?? []);
+  const safeFilterValues = $derived(options.filterValues() ?? {});
+  const safeAdvancedFilters = $derived(options.advancedFilters() ?? []);
 
   const _state = $state({
     toolbarMode: 'filters' as ToolbarMode,

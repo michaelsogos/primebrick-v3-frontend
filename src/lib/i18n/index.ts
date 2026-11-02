@@ -28,8 +28,11 @@ export const CORE_DICT_MODULES = ['app', 'custom', 'system'] as const;
 // globalThis singleton: editing this module (or en-GB-fallback.json) during
 // `vite dev` creates a second module instance (?t= URL) — a plain writable
 // would split-brain (loader writes one store, components read the other).
+declare global {
+  var __pb_i18n_merged: Writable<Record<UiLang, Dict>> | undefined;
+}
 const _mergedDicts: Writable<Record<UiLang, Dict>> =
-  ((globalThis as any).__pb_i18n_merged ??= writable({} as Record<UiLang, Dict>));
+  (globalThis.__pb_i18n_merged ??= writable({} as Record<UiLang, Dict>));
 
 /** Merge a partial dict (from API or fallback) into the i18n store for a language. */
 export function mergeModuleDict(lang: UiLang, partial: Dict): void {
@@ -44,7 +47,7 @@ export function getFallbackDict(): Dict {
   return enGBFallback as Dict;
 }
 
-function interpolate(template: string, params: Record<string, any>): string {
+function interpolate(template: string, params: Record<string, unknown>): string {
   return template.replace(/\{(\w+)\}/g, (match, key) => {
     return params[key] !== undefined ? String(params[key]) : match;
   });
@@ -66,10 +69,10 @@ export function getDictKeys(d: Record<string, unknown>): string[] {
   return Object.keys(d);
 }
 
-export const t: Readable<(key: string, params?: Record<string, any>) => string> = derived(
+export const t: Readable<(key: string, params?: Record<string, unknown>) => string> = derived(
   dict,
   ($dict) =>
-    (key: string, params?: Record<string, any>) => {
+    (key: string, params?: Record<string, unknown>) => {
       // 1. Try current language dict (from BE)
       // 2. Return the raw key if nothing found — no en-GB fallback for app.* keys.
       //    This makes missing translations visible (raw key) instead of silently

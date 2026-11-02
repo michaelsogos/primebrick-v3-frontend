@@ -21,7 +21,7 @@
     onerror,
     username,
   }: {
-    onsuccess?: (data: { success: boolean; user: any }) => void;
+    onsuccess?: (data: { success: boolean; user: Record<string, unknown> }) => void;
     onerror?: () => void;
     // When the user already typed their username, forward it so Casdoor uses
     // the non-discoverable signin path — the discoverable lookup

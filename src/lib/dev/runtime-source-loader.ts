@@ -228,6 +228,7 @@ export async function mountReport(report: LoaderReport, target: HTMLElement, pro
 	const shim = blobUrl('export { mount, unmount } from "svelte";');
 	const vendor = (await import(/* @vite-ignore */ shim)) as {
 		mount: (c: unknown, o: { target: HTMLElement; props?: unknown }) => unknown;
+		unmount: (c: unknown) => Promise<void>;
 	};
 	const mod = (await import(/* @vite-ignore */ entry.blobUrl)) as { default: unknown };
 	const css = report.modules.map((m) => m.css).filter(Boolean).join('\n');
@@ -237,5 +238,8 @@ export async function mountReport(report: LoaderReport, target: HTMLElement, pro
 		style.textContent = css;
 		document.head.appendChild(style);
 	}
-	return vendor.mount(mod.default, { target, props });
+	const component = vendor.mount(mod.default, { target, props });
+	// Teardown goes through the SAME vendor runtime instance — the host's own
+	// `unmount` import would target a different svelte copy (see mount above).
+	return { component, unmount: () => vendor.unmount(component) };
 }

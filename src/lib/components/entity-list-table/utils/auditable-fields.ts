@@ -40,7 +40,7 @@ export function getDisplayNameFieldKey(fieldKey: string): string {
  * @param auditingColumns - The auditing columns from entity metadata
  * @returns The display value (display name or original value)
  */
-export function getAuditableDisplayValue<T extends Record<string, unknown>>(
+export function getAuditableDisplayValue<T extends object>(
   row: T,
   col: MetaColumn,
   auditingColumns?: MetaColumn[]
@@ -73,7 +73,7 @@ export function getAuditableDisplayValue<T extends Record<string, unknown>>(
  * @param auditingColumns - The auditing columns from entity metadata
  * @returns true if the field is empty
  */
-export function isAuditableFieldEmpty<T extends Record<string, unknown>>(
+export function isAuditableFieldEmpty<T extends object>(
   row: T,
   col: MetaColumn,
   auditingColumns?: MetaColumn[]

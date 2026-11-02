@@ -12,12 +12,8 @@
     createTranslation,
     updateTranslation,
     deleteTranslation,
-    restoreTranslation,
   } from '$lib/api';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { page as appPage } from '$app/state';
 
   type TranslationRow = {
     uuid: string;
@@ -135,47 +131,28 @@
     }
   }
 
-  async function restore(row: TranslationRow) {
-    try {
-      await restoreTranslation(selectedModule, row.uuid, row.version);
-      pushNotification({ impact: 'NONE', message: 'Translation restored', scope: 'translations' });
-      await loadRows();
-    } catch (e) {
-      pushNotification({ impact: 'HIGH', message: 'Failed to restore translation', scope: 'translations', detail: String(e) });
-    }
-  }
-
   onMount(async () => {
     await loadModules();
     await loadRows();
   });
 
-  // Reload when module or language changes
+  // Reload when module or language changes — the condition is what tracks
+  // the two selectors as dependencies of this effect.
   $effect(() => {
-    selectedModule;
-    selectedLanguage;
-    if (modules.length > 0) {
+    if (selectedModule && selectedLanguage && modules.length > 0) {
       loadRows();
     }
   });
 </script>
 
 <AppPageScaffold>
-  <AppPageBreadcrumb
-    segments={[
-      ...moduleBreadcrumbSegments({ pathname: appPage.url.pathname, t: (key) => $t(key) })
-    ]}
-  />
-
   <div class="translations-admin">
     <div class="translations-admin__toolbar">
-      <h1>{$t('system.settings.translations.title')}</h1>
-
       <div class="translations-admin__selectors">
         <label>
           <span>{$t('system.settings.translations.module')}</span>
           <select bind:value={selectedModule}>
-            {#each modules as mod}
+            {#each modules as mod (mod)}
               <option value={mod}>{mod}</option>
             {/each}
           </select>
@@ -184,7 +161,7 @@
         <label>
           <span>{$t('system.settings.translations.language')}</span>
           <select bind:value={selectedLanguage}>
-            {#each UI_LANGS as lang}
+            {#each UI_LANGS as lang (lang)}
               <option value={lang}>{uiLangRegionSuffix(lang)}</option>
             {/each}
           </select>

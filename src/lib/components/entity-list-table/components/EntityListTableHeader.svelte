@@ -1,6 +1,6 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts">
   import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { EntityListToolbar, FilterBar, SelectionCounter } from '../toolbar';
+  import { EntityListToolbar } from '../toolbar';
 
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
   import type { MetaColumn, AdvancedFilter, FilterPreset } from '$lib/entity-list/types';
@@ -51,9 +51,9 @@
     onBulkDelete,
     onBulkRestore,
     bulkCapabilities
-  }: EntityListTableHeaderProps<TRow> = $props();
+  }: EntityListTableHeaderProps = $props();
 
-  type EntityListTableHeaderProps<TRow> = {
+  type EntityListTableHeaderProps = {
     search: string;
     onSearchInput: (value: string) => void;
     searchInKeys: string[] | null;
@@ -84,13 +84,13 @@
     onPresetChange?: (presetId: string, optionId: string) => void;
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
-    filterValues: Record<string, any>;
+    filterValues: Record<string, unknown>;
     advancedFilters: AdvancedFilter[];
     selectedKeys: string[];
     hasDeletedSelected: boolean;
     allSelectedDeleted: boolean;
     onResetFilters: () => void;
-    onFilterValuesChange?: (values: Record<string, any>) => void;
+    onFilterValuesChange?: (values: Record<string, unknown>) => void;
     onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;
     onToggleToolbarMode: () => void;
     onBulkExport: () => void;

@@ -27,15 +27,18 @@ import type { RemoteErrorKind } from '$lib/components/remote-page/remote-loader'
  *     be swallowed as a param value.
  *     - `component_url` present → `remote` + params extracted from `[name]`
  *       segments positionally.
- *     - `component_url` absent → `error/contract`: declared-but-not-
- *       mountable (host-rendered decl kinds, or nav leaf without a route
- *       decl) — declaration drift surfaced loudly until the generic
- *       archetypes exist (metadata-driven-page-system phase B).
+ *     - `component_url` absent + `entity` + `page_props.form` → `archetype`:
+ *       the host-rendered entity form (EntityFormPage) — the metadata-driven
+ *       contract replaces a per-entity remote page.
+ *     - `component_url` absent, otherwise → `error/contract`: declared-but-
+ *       not-mountable (nav leaf without a route decl) — declaration drift
+ *       surfaced loudly.
  *  4. nothing → `not-found` (guard whitelisted it → host surface).
  */
 export type ResolvedPage =
 	| { kind: 'redirect'; href: string }
 	| { kind: 'remote'; decl: CensusRoute; params: Record<string, string> }
+	| { kind: 'archetype'; archetype: 'entity_form'; decl: CensusRoute; params: Record<string, string> }
 	| { kind: 'error'; error_kind: RemoteErrorKind; detail: string | null }
 	| { kind: 'denied'; detail: string }
 	| { kind: 'not-found' };
@@ -84,6 +87,14 @@ export function resolvePageForPath(
 		routes.find((r) => routePatternMatches(r.route, pathname));
 	if (decl) {
 		if (!decl.component_url) {
+			if (decl.entity && decl.page_props?.form) {
+				return {
+					kind: 'archetype',
+					archetype: 'entity_form',
+					decl,
+					params: extractTemplateParams(decl.route, pathname),
+				};
+			}
 			return {
 				kind: 'error',
 				error_kind: 'contract',

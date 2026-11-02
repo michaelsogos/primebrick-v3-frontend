@@ -1,1 +1,1 @@
-export { default as AiIcon } from './ai-icon.svelte';
+export { AiIcon } from '@primebrick/ui';

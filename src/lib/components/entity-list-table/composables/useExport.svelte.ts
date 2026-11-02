@@ -19,7 +19,7 @@ interface ExportOptions {
   searchInKeys?: () => string[] | null;
   sortKey?: () => string | null;
   sortDir?: () => string;
-  filterValues?: () => Record<string, any>;
+  filterValues?: () => Record<string, unknown>;
   advancedFilters?: () => AdvancedFilter[];
   deletionFilterMode?: () => string;
   onExportStart?: () => void;
@@ -207,7 +207,7 @@ export function useExport(options: ExportOptions) {
       if (sortDir) params.append('sort_dir', sortDir);
 
       let filterIdx = 0;
-      const filters: Record<string, any> = {};
+      const filters: Record<string, unknown> = {};
 
       if (filterValues) {
         for (const [key, value] of Object.entries(filterValues)) {
@@ -252,7 +252,7 @@ export function useExport(options: ExportOptions) {
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
       Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, value);
+        params.append(key, String(value));
       });
 
       const exportBase = findActionEndpoint(getActions?.(), 'export')?.path ?? `${entityApiBase(entity)}/export`;

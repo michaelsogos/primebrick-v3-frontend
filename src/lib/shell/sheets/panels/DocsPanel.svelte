@@ -21,7 +21,7 @@
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
   import { Accordion } from '@primebrick/ui';
-  import { Input } from '$lib/components/ui/input';
+  import { Input } from '@primebrick/ui';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { closeSheet, sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';

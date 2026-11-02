@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
@@ -65,9 +66,9 @@
   // intersected with allowedCountries when provided.
   let suggestedCountries = $derived.by<CountryWithPhone[]>(() => {
     const allowed = allowedCountries && allowedCountries.length > 0
-      ? new Set(allowedCountries)
+      ? new SvelteSet(allowedCountries)
       : null;
-    const seen = new Set<string>();
+    const seen = new SvelteSet<string>();
     return UI_LANGS
       .map((tag) => tag.split('-')[1])
       .filter((code) => {

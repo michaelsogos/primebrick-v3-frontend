@@ -18,7 +18,7 @@ application for the Primebrick platform. It is built with **SvelteKit™**,
   and version badges, global side sheets — for all authenticated routes.
 - Talks to the **Primebrick backend** (`primebrick-be-v3`) over a REST API
   (`/api/v1/...`) and to registered **microservices** (`primebrick-us-v3`)
-  through a backend proxy (`/ws/<SERVICE>/...`).
+  through a backend proxy (`/svc/<SERVICE>/...`).
 - Provides a generic, reusable **entity list table** system used by every
   module to render lists with table/card views, filtering, sorting, bulk
   actions, export, and inline preview.
@@ -35,10 +35,10 @@ application for the Primebrick platform. It is built with **SvelteKit™**,
   end
   subgraph Primebrick
     BE[Backend v3<br/>REST /api/v1]
-    US[Microservices v3<br/>proxy /ws]
+    US[Microservices v3<br/>proxy /svc]
   end
   SK -->|REST| BE
-  SK -->|proxy /ws| US
+  SK -->|proxy /svc| US
   BE --> US
 `} />
 

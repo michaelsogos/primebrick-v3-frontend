@@ -9,6 +9,7 @@
   import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
   import RemoteSheetMount from '$lib/components/remote-page/RemoteSheetMount.svelte';
   import { cn } from '$lib/utils';
+  import type { Component } from 'svelte';
 
   import ErrorsPanel from '$lib/shell/sheets/panels/ErrorsPanel.svelte';
   import VersionsPanel from '$lib/shell/sheets/panels/VersionsPanel.svelte';
@@ -23,11 +24,19 @@
   import RegexFlagsPanel from '$lib/components/ui/smart-regex-input/regex-flags-panel.svelte';
   import RegexAiChatPanel from '$lib/components/ui/smart-regex-input/regex-ai-chat-panel.svelte';
   import JsonConfigAiChatPanel from '$lib/components/ui/smart-json-config/json-config-ai-chat-panel.svelte';
+  import JsonAiChatPanel from '$lib/components/ui/smart-json-assistant/json-ai-chat-panel.svelte';
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
 
-  const registry: Record<SheetPanelId, any> = {
+  /**
+   * Heterogeneous panel registry — each panel declares its own props contract,
+   * so a static `Component<Props>` union cannot type the dispatch. The
+   * SheetPanelId key is the dispatch contract; `any` props are the runtime
+   * spread boundary (`sheetState.props`).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const registry: Record<SheetPanelId, Component<any>> = {
     'shell.errors': ErrorsPanel,
     'shell.versions': VersionsPanel,
     'shell.aiChat': AiChatPanel,
@@ -41,6 +50,7 @@
     'config.regexFlags': RegexFlagsPanel,
     'config.regexAiChat': RegexAiChatPanel,
     'config.jsonAiChat': JsonConfigAiChatPanel,
+    'json.aiChat': JsonAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel
@@ -53,7 +63,7 @@
    * sheets mount through the same loader/ctx discipline as remote pages.
    */
   const Panel = $derived(
-    panelId && panelId in registry ? (registry as Record<string, any>)[panelId] : null
+    panelId && panelId in registry ? registry[panelId as SheetPanelId] : null
   );
   const remoteDecl = $derived(Panel ? null : panelId ? resolveRemoteSheetDecl(panelId) : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);

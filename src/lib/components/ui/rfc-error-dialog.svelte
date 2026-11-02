@@ -4,7 +4,6 @@
   import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { formatUiDateTime, t } from '$lib/i18n';
-  import { cn } from '$lib/utils';
   import * as Dock from '$lib/components/ui/dock';
   import { Code } from '@primebrick/ui/vendor/lucide'
   import { FileJson } from '@primebrick/ui/vendor/lucide'
@@ -12,16 +11,17 @@
   import { Info } from '@primebrick/ui/vendor/lucide'
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import JsonTableViewer from './JsonTableViewer.svelte';
-  import { JsonCodeBlock } from '$lib/components/ui/json-code-block';
-  import { onMount } from 'svelte';
+  import { JsonCodeBlock } from '@primebrick/ui';
 
+  // All fields optional: entries come from both RFC7807 BE errors (which carry
+  // type/title/status) and client-side AppError pushes (which may not).
   type RFC7807Error = {
     id?: string;
     impact?: string;
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
     instance?: string;
     internal_code?: string;
     severity?: string;
@@ -31,9 +31,9 @@
     message?: string;
     extra?: {
       viewer?: string;
-      results?: any;
-      issues?: any;
-      [key: string]: any;
+      results?: unknown;
+      issues?: unknown;
+      [key: string]: unknown;
     };
   };
 
@@ -55,21 +55,6 @@
     open = false;
   }
 
-  function getToneForImpact(impact?: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
-    if (!impact) return 'neutral';
-    switch (impact) {
-      case 'CRITICAL':
-        return 'danger';
-      case 'HIGH':
-        return 'danger';
-      case 'MEDIUM':
-        return 'warning';
-      case 'LOW':
-        return 'info';
-      default:
-        return 'neutral';
-    }
-  }
 </script>
 
 <BorderedDialog
@@ -120,7 +105,7 @@
         {:else}
           <div class="text-xs border border-neutral-300 shadow-inner rounded-lg overflow-auto h-full">
             {#if error.extra?.issues}
-              <JsonTableViewer data={error.extra.issues} />
+              <JsonTableViewer data={error.extra.issues as object} />
             {:else}
               <JsonTableViewer data={error} />
             {/if}
@@ -168,7 +153,7 @@
               <div>
                 <span class="text-xs font-semibold text-muted-foreground">Tags</span>
                 <div class="flex flex-wrap gap-1 mt-1">
-                  {#each error.tags as tag}
+                  {#each error.tags as tag (tag.label)}
                     <Badge class="text-xs border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
                       {tag.label}
                     </Badge>

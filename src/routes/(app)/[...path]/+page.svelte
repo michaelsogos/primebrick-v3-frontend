@@ -17,10 +17,9 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { fetchModules } from '$lib/api';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
+  import EntityFormPage from '$lib/entity-form/EntityFormPage.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import { Button } from '@primebrick/ui';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
@@ -35,14 +34,15 @@
   const resolved = $derived(retry_resolved ?? data.resolved);
 
   $effect(() => {
-    appPage.url.pathname;
-    retry_resolved = null;
+    // Reading pathname here is the tracking — the effect re-runs on every
+    // navigation and drops the retry override so the fresh `data` wins.
+    if (appPage.url.pathname) {
+      retry_resolved = null;
+    }
   });
 
   const components: Record<string, unknown> = {
-    AppPageBreadcrumb,
     Button,
-    moduleBreadcrumbSegments,
     // Live params channel — evaluated each time the remote reads
     // ctx.components.params, never a mount-time snapshot.
     get params() {
@@ -69,7 +69,7 @@
 </script>
 
 <svelte:head>
-  {#if resolved.kind === 'remote' && resolved.decl.label_key}
+  {#if resolved.kind === 'remote' && resolved.decl.chrome === 'remote' && resolved.decl.label_key}
     <title>{$t(resolved.decl.label_key)} · Primebrick</title>
   {/if}
 </svelte:head>
@@ -77,6 +77,10 @@
 {#if resolved.kind === 'remote'}
   {#key appPage.url.pathname}
     <RemotePageMount decl={resolved.decl} {components} />
+  {/key}
+{:else if resolved.kind === 'archetype'}
+  {#key appPage.url.pathname}
+    <EntityFormPage decl={resolved.decl} modules={data.modules} />
   {/key}
 {:else if resolved.kind === 'error'}
   <RemotePageErrorPanel

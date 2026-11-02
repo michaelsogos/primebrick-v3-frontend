@@ -100,8 +100,7 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       {#if bulkCapabilities.export}
         <Button
-          variant="soft"
-          tone="primary"
+          variant="default"
           size="xs"
           onclick={onBulkExport}
         >
@@ -111,8 +110,7 @@
       {/if}
       {#if bulkCapabilities.htmlExport}
         <Button
-          variant="soft"
-          tone="primary"
+          variant="default"
           size="xs"
           onclick={onHtmlExport}
         >
@@ -122,8 +120,7 @@
       {/if}
       {#if bulkCapabilities.duplicate}
         <Button
-          variant="soft"
-          tone="primary"
+          variant="default"
           size="xs"
           onclick={onBulkDuplicate}
           disabled={selectedKeys.length < 2}
@@ -134,8 +131,7 @@
       {/if}
       {#if bulkCapabilities.delete}
         <Button
-          variant="soft"
-          tone="destructive"
+          variant="destructive"
           size="xs"
           onclick={onBulkDelete}
           disabled={selectedKeys.length < 2 || hasDeletedSelected}
@@ -146,8 +142,7 @@
       {/if}
       {#if hasDeletedSelected && bulkCapabilities.restore}
         <Button
-          variant="soft"
-          tone="warning"
+          variant="warning"
           size="xs"
           onclick={onBulkRestore}
           disabled={!allSelectedDeleted}

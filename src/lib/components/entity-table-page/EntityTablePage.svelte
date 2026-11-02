@@ -3,12 +3,11 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { onMount, type Snippet } from 'svelte';
-  import { entityPageTitle, entitiesNs } from '$lib/utils/entity-meta';
+  import { entitiesNs } from '$lib/utils/entity-meta';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
-  import type { EntityMeta } from '$lib/entity-list/types';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import {
     useEntityList,
@@ -17,7 +16,7 @@
   } from '$lib/composables/useEntityList.svelte';
 
   interface EntityTablePageProps {
-    /** Full entity API base (`/api/v1/entities/<entity>` or `/ws/<svc>/api/v1/entities/<entity>`). */
+    /** Full entity API base (`/api/v1/entities/<entity>` or `/svc/<svc>/api/v1/entities/<entity>`). */
     basePath: string;
     /** Page storage namespace — `pb:<page>:list:`. */
     storageKeyPrefix: string;
@@ -37,7 +36,10 @@
     searchGate?: (trimmed: string) => boolean;
     searchDebounceMs?: number;
 
-    /** Navigation strategy for create/edit — `goto` (default) or `popup` (new window + focus). */
+    /** Navigation strategy for create/edit — `popup` (new tab + focus, the
+     *  platform convention: form pages are child tabs that broadcast and
+     *  self-close) or `goto` (same-tab, opt-out for pages that don't
+     *  implement the child contract). */
     navStrategy?: 'goto' | 'popup';
     /** Create path (e.g. `/system/settings/users/create`). */
     createPath?: string;
@@ -57,12 +59,6 @@
     selectionLabelText?: string;
     selectionLabelSingularText?: string;
 
-    /** Breadcrumb rendered above the title — page-level route position, not meta-derived. */
-    breadcrumb?: Snippet;
-    /** Extra header content after the title. */
-    headerExtras?: Snippet;
-    /** Right-side header actions (e.g. page-level create CTA gated on meta.actions). */
-    headerActions?: Snippet<[meta: EntityMeta | null]>;
     /** Per-cell render override — forwarded verbatim to EntityListTable. */
     cell?: Snippet<[CellArgs<TRow>]>;
     /** Page-specific dialogs — rendered after the table; receives the meta uid. */
@@ -88,7 +84,7 @@
     legacyPersist,
     searchGate,
     searchDebounceMs,
-    navStrategy = 'goto',
+    navStrategy = 'popup',
     createPath,
     editPath,
     onCreateAction,
@@ -99,9 +95,6 @@
     selectionLabelSingularKey,
     selectionLabelText,
     selectionLabelSingularText,
-    breadcrumb,
-    headerExtras,
-    headerActions,
     cell,
     extraDialogs,
     metaLoadingView,
@@ -157,6 +150,18 @@
     shellNav.moduleNav?.routes?.find((r) => r.kind === 'create' && r.entity === entity)
   );
   const effectiveCreatePath = $derived(createPath ?? censusCreateRoute?.route);
+
+  /**
+   * Meta-driven edit: census `kind:"detail"` routes end in a `[param]`
+   * segment (e.g. `/system/job/rules/[uuid]`) — convert to the `:uuid`
+   * template `openEdit` substitutes. Explicit `editPath` still wins.
+   */
+  const censusDetailRoute = $derived(
+    shellNav.moduleNav?.routes?.find((r) => r.kind === 'detail' && r.entity === entity)
+  );
+  const effectiveEditPath = $derived(
+    editPath ?? censusDetailRoute?.route.replace(/\[[^\]]*\]/, ':uuid')
+  );
   const createCta = $derived(
     censusCreateRoute
       ? { label_key: censusCreateRoute.label_key, icon: censusCreateRoute.icon }
@@ -175,8 +180,8 @@
   }
 
   function openEdit(row: TRow) {
-    if (!editPath) return;
-    const url = editPath.replace(':uuid', encodeURIComponent(String(row[uid])));
+    if (!effectiveEditPath) return;
+    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(String(row[uid])));
     if (navStrategy === 'popup') {
       const w = window.open(url, '_blank');
       if (w) w.focus();
@@ -187,7 +192,7 @@
   }
 
   const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
-  const effectiveOnEditAction = $derived(onEditAction ?? (editPath ? openEdit : undefined));
+  const effectiveOnEditAction = $derived(onEditAction ?? (effectiveEditPath ? openEdit : undefined));
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );
@@ -197,25 +202,6 @@
 </script>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="flex items-end justify-between gap-3">
-      <div class="min-w-0 space-y-1">
-        {#if breadcrumb}
-          {@render breadcrumb()}
-        {/if}
-        <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'list', $t)}</h1>
-        {#if headerExtras}
-          {@render headerExtras()}
-        {/if}
-      </div>
-      {#if headerActions}
-        <div class="flex shrink-0 items-center justify-end gap-2">
-          {@render headerActions(meta)}
-        </div>
-      {/if}
-    </div>
-  {/snippet}
-
   <EntityListTable
     {entity}
     {translationKey}

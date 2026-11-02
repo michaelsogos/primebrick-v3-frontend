@@ -9,9 +9,8 @@ vi.mock("$lib/i18n", () => ({
   getDictKeys: () => [],
 }));
 
-import AiIcon from "$lib/components/ui/ai-icon/ai-icon.svelte";
 import GradientIcon from "$lib/components/ui/gradient-icon/gradient-icon.svelte";
-import { SheetHeader } from '@primebrick/ui';
+import { AiIcon, SheetHeader } from '@primebrick/ui';
 import AppTopbar from "$lib/components/AppTopbar.svelte";
 
 describe("$$Props → typed $props() migration — render regressions", () => {

@@ -13,6 +13,7 @@
   import { MapPin } from '@primebrick/ui/vendor/lucide'
   import { PanelRightClose } from '@primebrick/ui/vendor/lucide'
   import { PanelRightOpen } from '@primebrick/ui/vendor/lucide';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
 
   let {
     rowSelectionEnabled,
@@ -35,11 +36,7 @@
     viewRows
   }: {
     rowSelectionEnabled: boolean;
-    stickyColumnsState: {
-      checkboxHeadRef: HTMLTableCellElement | null;
-      state: { stickyLeftOffsets: Record<string, number> };
-      stickyRef: any;
-    };
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     rowChromeH: string;
     allOnPageSelected: boolean;
     headerIndeterminate: boolean;

@@ -26,6 +26,21 @@ export type ColumnOrderState = {
   auditing?: string[];
 };
 
+/**
+ * Row-CTA capability contract derived from `meta.actions` + filtered
+ * `meta.table.row_custom_actions` — drives the per-row dropdown menu
+ * (`EntityListTable.effectiveRowActions` → views → `TableRow`).
+ */
+export type EntityRowActions = {
+  edit?: boolean;
+  duplicate?: boolean;
+  preview?: boolean;
+  delete?: boolean;
+  restore?: boolean;
+  versionHistory?: boolean;
+  custom_actions?: RowCustomAction[];
+};
+
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
 export type ToolbarMode = 'filters' | 'bulk';
@@ -118,8 +133,8 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
   filtersOpen?: boolean;
-  filterValues?: Record<string, any>;
-  onFilterValuesChange?: (values: Record<string, any>) => void;
+  filterValues?: Record<string, unknown>;
+  onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;
   advancedFilters?: AdvancedFilter[];
   onAdvancedFiltersChange?: (filters: AdvancedFilter[], connector: 'AND' | 'OR') => void;

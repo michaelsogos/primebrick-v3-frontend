@@ -35,3 +35,4 @@ playwright/.auth
 *.sw?
 docs/.obsidian/
 static/vendor/
+public/vpat/lighthouse/*.report.html

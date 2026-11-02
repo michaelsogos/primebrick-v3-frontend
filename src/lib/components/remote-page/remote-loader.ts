@@ -154,7 +154,7 @@ export async function resolveRemoteIntegrity(
 	if (declared !== undefined) return declared;
 	let res: Response;
 	try {
-		// The /ws proxy does not forward the service's Cache-Control, so the
+		// The /svc proxy does not forward the service's Cache-Control, so the
 		// request itself opts out — a rebuilt sibling must be re-read, never
 		// served from browser heuristics.
 		res = await fetchFn(deriveIntegrityUrl(component_url), { cache: 'no-cache' });
@@ -382,6 +382,16 @@ export async function disposeMounted(result: unknown): Promise<void> {
 }
 
 /**
+ * Reset the remote mount target. Its children are owned by the mounted remote
+ * module (imperative `mount()`/`mountPage`), never by the host's template —
+ * `disposeMounted` relies on the remote's own teardown, so clearing here is
+ * the boundary guarantee against partial mounts and remotes that leak nodes.
+ */
+export function clearMountTarget(el: HTMLElement): void {
+	el.replaceChildren();
+}
+
+/**
  * Predictable CSS convention — `pages/jobs-page.js` → `pages/jobs-page.css`.
  * The remote build keeps stylesheet and chunk side by side; when a module
  * deviates it passes an explicit `css_url` instead.
@@ -407,9 +417,9 @@ export function ensureStylesheet(css_url: string): HTMLLinkElement {
 	return link;
 }
 
-/** `/ws/<service>/…` → `<service>` — the owning module code for ctx.api binding. */
-export function parseWsServiceCode(component_url: string): string | undefined {
-	const m = /^\/ws\/([^/]+)\//.exec(component_url);
+/** `/svc/<service>/…` → `<service>` — the owning module code for ctx.api binding. */
+export function parseSvcServiceCode(component_url: string): string | undefined {
+	const m = /^\/svc\/([^/]+)\//.exec(component_url);
 	return m?.[1];
 }
 

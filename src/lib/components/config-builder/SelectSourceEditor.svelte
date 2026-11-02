@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Label } from '$lib/components/ui/label';
-  import { TextInput } from '$lib/components/ui/input';
+  import { Label } from '@primebrick/ui';
+  import { TextInput } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
   import { BUILTIN_VALUES_SOURCES } from '$lib/config/type-config-schema';
   import type { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';

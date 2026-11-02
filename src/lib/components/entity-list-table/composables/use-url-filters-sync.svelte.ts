@@ -17,11 +17,12 @@
  * URL filters take precedence over persisted filters (the AI explicitly
  * requested them).
  */
+import { SvelteMap } from 'svelte/reactivity';
 import type { AdvancedFilter, FilterOperator } from '$lib/entity-list/types';
 
 export interface UrlFiltersResult {
   /** Simple field→value map for the filter bar (e.g. { status: 'ACTIVE' }). */
-  filterValues: Record<string, any>;
+  filterValues: Record<string, unknown>;
   /** Structured filters for the advanced filter panel. */
   advancedFilters: AdvancedFilter[];
   /** Full-text search term (empty string if not in URL). */
@@ -40,7 +41,7 @@ export interface UrlFiltersResult {
  * @returns The parsed filter state.
  */
 export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult {
-  const filterValues: Record<string, any> = {};
+  const filterValues: Record<string, unknown> = {};
   const advancedFilters: AdvancedFilter[] = [];
   const search = searchParams.get('search') ?? '';
   const searchInRaw = searchParams.get('search_in') ?? '';
@@ -48,7 +49,7 @@ export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult
 
   // Parse filters[N][field|op|value|connector] entries.
   // Group by index, then convert to filterValues / advancedFilters.
-  const filterMap = new Map<number, { field?: string; op?: string; value?: any; connector?: string }>();
+  const filterMap = new SvelteMap<number, { field?: string; op?: string; value?: unknown; connector?: string }>();
 
   for (const [key, value] of searchParams.entries()) {
     // Match filters[0][field], filters[0][op], filters[0][value], filters[0][connector]
@@ -101,7 +102,7 @@ export function parseUrlFilters(searchParams: URLSearchParams): UrlFiltersResult
         id: `url-filter-${filterIdCounter++}`,
         field: entry.field,
         operator: 'BETWEEN',
-        value: entry.value as { start: any; end: any },
+        value: entry.value as { start: unknown; end: unknown },
       });
     } else if (op === '=' || op === 'ILIKE' || op === 'LIKE') {
       // Simple equality / ILIKE → filterValues (the filter bar)

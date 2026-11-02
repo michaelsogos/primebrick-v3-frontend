@@ -6,6 +6,7 @@
   import { t } from '$lib/i18n';
   import { avatarFallbackChromeClasses, computeAvatarGradient } from '$lib/avatar-chrome-palette';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import type { UserProfile } from '$lib/user-profile-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
@@ -105,7 +106,7 @@
           <DropdownMenu.Group>
             <DropdownMenu.Item
               closeOnSelect={true}
-              onSelect={() => { void shellNav.selectModule('settings'); void goto('/system/settings/profile'); }}
+              onSelect={() => { void shellNav.selectModule('settings'); void goto(resolve('/system/settings/profile')); }}
             >
               <Settings class="size-4 shrink-0" />
               <span>{$t('app.userMenu.itemSettings')}</span>

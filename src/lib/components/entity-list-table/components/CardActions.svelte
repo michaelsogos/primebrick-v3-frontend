@@ -21,7 +21,6 @@
     rowDeleted,
     rowSelectionEnabled,
     actionsEnabled,
-    selectedKeys,
     rowActions,
     entityRowActions,
     dropdownMenuRow,
@@ -43,7 +42,6 @@
     rowDeleted: boolean;
     rowSelectionEnabled: boolean;
     actionsEnabled: boolean;
-    selectedKeys: string[];
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: {
       edit?: boolean;
@@ -172,7 +170,7 @@
             </DropdownMenu.Item>
           {/if}
           {#if entityRowActions?.custom_actions && handleCustomAction}
-            {#each entityRowActions.custom_actions as action}
+            {#each entityRowActions.custom_actions as action (action.action_name)}
               {@const isDisabled = action.disabled_when_deleted && rowDeleted}
               <DropdownMenu.Item
                 onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}

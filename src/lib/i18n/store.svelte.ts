@@ -27,8 +27,11 @@ if (browser) initial = readStoredLang() ?? detectBrowserLang();
 
 // globalThis singleton — same HMR split-brain guard as _mergedDicts:
 // a duplicated module instance must share the language selection.
+declare global {
+  var __pb_i18n_lang: Writable<UiLang> | undefined;
+}
 export const uiLang: Writable<UiLang> =
-  ((globalThis as any).__pb_i18n_lang ??= writable<UiLang>(initial));
+  (globalThis.__pb_i18n_lang ??= writable<UiLang>(initial));
 
 export function setUiLang(next: UiLang) {
   uiLang.set(next);

@@ -22,11 +22,16 @@ export type SidebarStateProps = {
 
 class SidebarState {
 	readonly props: SidebarStateProps;
-	open = $derived.by(() => this.props.open());
 	openMobile = $state(false);
 	setOpen: SidebarStateProps["setOpen"];
 	#isMobile: IsMobile;
-	state = $derived.by(() => (this.open ? "expanded" : "collapsed"));
+	state = $derived(this.open ? "expanded" : "collapsed");
+
+	// `props` is assigned in the constructor — field initializers run before
+	// the constructor body, so `open` must defer the read to a getter.
+	get open() {
+		return this.props.open();
+	}
 
 	constructor(props: SidebarStateProps) {
 		this.setOpen = props.setOpen;

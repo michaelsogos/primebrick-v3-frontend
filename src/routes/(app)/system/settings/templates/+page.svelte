@@ -1,8 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { page } from '$app/state';
   import { Button } from '@primebrick/ui';
-  import { Input } from '$lib/components/ui/input';
+  import { Input } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import { FileText } from '@primebrick/ui/vendor/lucide'
   import { Mail } from '@primebrick/ui/vendor/lucide'
@@ -13,8 +12,6 @@
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { Plus } from '@primebrick/ui/vendor/lucide';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
 
   let uploadedFile = $state<File | null>(null);
   let selectedType = $state<'pdf' | 'email' | 'excel' | 'html'>('pdf');
@@ -62,17 +59,6 @@
 </script>
 
 <AppPageScaffold>
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) })
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{$t('system.settings.templates.title')}</h1>
-    </div>
-  {/snippet}
-
   <div class="flex-1 overflow-auto p-4">
     <div class="space-y-6">
       <!-- Template Type Selector -->

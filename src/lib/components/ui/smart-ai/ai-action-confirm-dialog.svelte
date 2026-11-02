@@ -17,7 +17,7 @@
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { Input } from '$lib/components/ui/input';
+  import { Input } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { callMcpTool } from '$lib/api';

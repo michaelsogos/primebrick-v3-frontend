@@ -9,6 +9,7 @@
  *   - Exposed via get state() returning DeepReadonly
  *   - $derived values exposed via individual getters
  */
+import { SvelteSet } from 'svelte/reactivity';
 import type { DeepReadonly } from '@primebrick/ui';
 import { useConfigEntries } from "@primebrick/ui";
 import { onMount } from "svelte";
@@ -21,7 +22,7 @@ export function useExistingGroupKeys() {
     try {
       await config.ensureLoaded();
       const entries = config.state.entries;
-      const groups = new Set<string>();
+      const groups = new SvelteSet<string>();
       for (const row of entries) {
         if (row.group_key && row.group_key.trim()) {
           groups.add(row.group_key.trim());

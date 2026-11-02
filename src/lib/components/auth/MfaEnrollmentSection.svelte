@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Button } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
   import { useOtpInput } from '@primebrick/ui';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -181,7 +181,7 @@
       <div class="space-y-2">
         <p class="text-xs text-muted-foreground">{$t('app.auth.mfa.recoveryCodes')}</p>
         <div class="bg-muted rounded p-2 space-y-1">
-          {#each recoveryCodes as code}
+          {#each recoveryCodes as code (code)}
             <code class="block text-xs font-mono">{code}</code>
           {/each}
         </div>

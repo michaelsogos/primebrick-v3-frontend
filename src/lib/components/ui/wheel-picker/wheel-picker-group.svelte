@@ -31,7 +31,6 @@
 	let velocity = 0;
 	let lastFrameTime = 0;
 	let animFrame: number;
-	let snapTimeout: ReturnType<typeof setTimeout> | undefined;
 	let wheelSnapTimeout: ReturnType<typeof setTimeout>;
 
 	const ctxState = setWheelContext({
@@ -103,7 +102,6 @@
 		lastFrameTime = Date.now();
 		velocity = 0;
 		cancelAnimationFrame(animFrame);
-		clearTimeout(snapTimeout);
 		clearTimeout(wheelSnapTimeout);
 		updateContext();
 		document.body.style.cursor = 'grabbing';
@@ -257,7 +255,6 @@
 			window.removeEventListener('mouseup', onUp);
 			cancelAnimationFrame(animFrame);
 			clearTimeout(wheelSnapTimeout);
-			clearTimeout(snapTimeout);
 		};
 	});
 </script>

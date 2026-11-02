@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
-  import { Label } from '$lib/components/ui/label';
+  import { Label } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -28,7 +28,6 @@
   let newPassword = $state('');
   let confirmPassword = $state('');
   let isSubmitting = $state(false);
-  let localError = $state<string | null>(null);
 
   const passwordPolicy = usePasswordPolicy();
 
@@ -37,7 +36,6 @@
     if (open) {
       newPassword = '';
       confirmPassword = '';
-      localError = null;
       void passwordPolicy.load();
     }
   });
@@ -67,7 +65,6 @@
     if (!uuid) return;
 
     isSubmitting = true;
-    localError = null;
     try {
       const res = await apiFetch(`/api/v1/auth/users/${uuid}/change-password`, {
         method: 'POST',
@@ -76,7 +73,7 @@
       });
 
       if (!res.ok) {
-        const errData = await res.json() as RFC7807Error & Record<string, any>;
+        const errData = await res.json() as RFC7807Error & Record<string, unknown>;
         pushNotification(errData);
         return;
       }
@@ -108,7 +105,7 @@
   }
 </script>
 
-<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('system.settings.users.changePasswordTitle')}</Dialog.Title>
     <Dialog.Description>{$t('system.settings.users.changePasswordDescription')}</Dialog.Description>

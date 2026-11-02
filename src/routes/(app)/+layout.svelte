@@ -20,8 +20,10 @@
 
   let { children }: { children: Snippet } = $props();
 
-  // Route-aware translation loader — watches route + language changes
-  const moduleI18n = useModuleTranslations();
+  // Route-aware translation loader — watches route + language changes.
+  // Call-only: the composable registers its own $effect watchers; the return
+  // value is unused.
+  useModuleTranslations();
 
   /**
    * Access-axis URL guard — every route under a module-owned prefix must
@@ -118,7 +120,7 @@
     const currentPath = page.url.pathname;
     const lastRoute = shellNav.getLastRoute();
     if (lastRoute && lastRoute !== '/login' && lastRoute !== currentPath) {
-      await goto(lastRoute);
+      await goto(resolve(lastRoute as '/'));
     }
 
     // Core dictionaries on app init — the single CORE_DICT_MODULES list:

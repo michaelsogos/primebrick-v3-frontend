@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { Switch } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Textarea } from '$lib/components/ui/textarea';
   import { ComboSelect } from '@primebrick/ui';
   import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
@@ -56,12 +56,12 @@
   // or SuperForms via $form.value in the create page).
   // For bigint/number types, the BE sends native types; we convert to string
   // for display in text inputs, and convert back to native on change.
-  // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
+  // Local mutable state initialized from a prop, then reassigned on change.
   let localValue = $state<string>(String(value));
 
   // Sync local value when the prop changes (e.g. after bulk save reset, or
   // when SuperForms resets the form). Supports both bind:value and value+onChange modes.
-  // svelte-ignore state_referenced_locally -- local mutable state initialized from a prop, then reassigned on change.
+  // Local mutable state initialized from a prop, then reassigned on change.
   let lastValue = $state<string | bigint | number>(value);
   $effect(() => {
     if (value !== lastValue) {
@@ -98,7 +98,7 @@
   });
 
   // Select options loaded from values_source, BE API, or static values
-  let selectOptions = $state<Record<string, any>[]>([]);
+  let selectOptions = $state<Record<string, unknown>[]>([]);
   let selectLoading = $state(false);
 
   // Money: extract currency from type_config and derive symbol
@@ -131,7 +131,7 @@
 
     // 1. values_source: "currencies" → load directly from countries-list (no API)
     if (selectConfig?.values_source === 'currencies') {
-      selectOptions = getAllCurrencies() as unknown as Record<string, any>[];
+      selectOptions = getAllCurrencies() as unknown as Record<string, unknown>[];
       return;
     }
 
@@ -144,7 +144,7 @@
           const arr: Record<string, string>[] = Array.isArray(data)
             ? data
             : data.rows ?? data.roles ?? data.organizations ?? data.services ?? [];
-          selectOptions = arr as Record<string, any>[];
+          selectOptions = arr as Record<string, unknown>[];
         })
         .catch(() => {
           selectOptions = [];
@@ -273,7 +273,7 @@
     return dv.toString();
   }
 
-  // svelte-ignore state_referenced_locally — synced mirror of the string value, initialized once
+  // Synced mirror of the string value, initialized once.
   let dateValue = $state<CalendarDate | CalendarDateTime | undefined>(parseDateValue(String(value)));
 
   let isDateType = $derived(type === 'date' || type === 'datetime' || type === 'time');
@@ -341,19 +341,12 @@
       placeholder={$t('app.common.selectValue')}
       disabled={selectLoading}
       loading={selectLoading}
-      display="custom"
+      display="detailed"
+      descriptionField="description_key"
+      isDescriptionTranslated
+      showTechName={false}
       data-testid={`config-input-single-select-${fieldKey}`}
-    >
-      {#snippet itemSnippet({ option, resolvedLabel, selected })}
-        {@const descKey = (option as Record<string, any>).description_key}
-        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
-          <span class="truncate text-left font-medium">{resolvedLabel}</span>
-          {#if descKey}
-            <span class="truncate text-left text-xs text-muted-foreground">{$t(descKey)}</span>
-          {/if}
-        </div>
-      {/snippet}
-    </ComboSelect>
+    />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>
     {/if}

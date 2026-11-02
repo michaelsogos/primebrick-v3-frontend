@@ -60,6 +60,7 @@ import {
 import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition } from '$lib/entity-list/types';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
+import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -73,7 +74,7 @@ export type { DeletionFilterMode } from '$lib/entity-list/types';
 export type PersistMedium = 'session' | 'local';
 
 export interface UseEntityListOptions<TRow extends Record<string, unknown>> {
-  /** Full list/meta base, e.g. `/api/v1/entities/user_profile` or `/ws/job/api/v1/entities/job_schedule`. */
+  /** Full list/meta base, e.g. `/api/v1/entities/user_profile` or `/svc/job/api/v1/entities/job_schedule`. */
   basePath: string;
   /** Storage prefix for persisted list preferences (e.g. `pb:users:list:`). */
   storageKeyPrefix: string;
@@ -527,6 +528,15 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     _state.loading = true;
     _state.error = null;
     restorePersistentState();
+    // Service gate — the registry already knows when the owner is down;
+    // skip the doomed fetch and surface the dedicated message instead.
+    // The service-event watch below re-inits on recovery.
+    if (!svc.available) {
+      _state.loading = false;
+      _state.bootstrapped = true;
+      _state.error = tFn('app.service.unavailable', { service: svcCode ?? '' });
+      return;
+    }
     try {
       // Sequential: if meta fails (gateway/offline), loadRows never runs.
       await loadMeta();
@@ -545,6 +555,25 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   // ── channels ─────────────────────────────────────────────────────────
+
+  // Service-availability gate — reads the SSE-fed registry so a down owner
+  // never receives a doomed fetch, and re-bootstraps when the service
+  // comes back (same re-bootstrap variant as connectivity-restored).
+  const svcCode = serviceCodeOf(opts.basePath);
+  const svc = useServiceAvailability(() => svcCode);
+  let lastSvcStamp: string | null = null;
+  $effect(() => {
+    if (!browser) return;
+    const stamp = svc.stamp;
+    const avail = svc.available;
+    const changed = stamp !== lastSvcStamp;
+    lastSvcStamp = stamp;
+    if (!avail || !changed || !_state.error) return;
+    void (async () => {
+      if (_state.meta) await refreshRows();
+      else await init();
+    })();
+  });
 
   if (opts.syncChannel) {
     useSyncChannel(opts.syncChannel, {

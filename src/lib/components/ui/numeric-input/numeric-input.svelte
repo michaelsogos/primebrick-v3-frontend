@@ -2,7 +2,7 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import { tick } from "svelte";
-  import Input from "$lib/components/ui/input/input.svelte";
+  import { Input } from "@primebrick/ui";
   import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
   import { useNumericInput } from "$lib/composables/useNumericInput.svelte";
   import { t } from "$lib/i18n";
@@ -89,7 +89,7 @@
   // Sync from prop when external value changes (e.g. form reset, SuperForms reset).
   // Normalize to string for comparison — the form value is always a string
   // (the DB stores text, Zod validates z.string(), native coercion happens at the SDK/BE boundary).
-  // svelte-ignore state_referenced_locally -- local mutable state tracking last external value for sync
+  // Local mutable state tracking last external value for sync.
   let lastValue = $state<string>(String(value));
   $effect(() => {
     const str = String(value);

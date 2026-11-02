@@ -5,7 +5,7 @@
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
-  import { isWebauthnSupported, decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
+  import { decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
   import { getPlatformVersion } from '$lib/webauthn/platform-info';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';

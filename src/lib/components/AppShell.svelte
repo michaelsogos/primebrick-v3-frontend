@@ -5,6 +5,7 @@
   import AppTopbar from '$lib/components/AppTopbar.svelte';
   import AppSidebar from '$lib/components/AppSidebar.svelte';
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
+  import PageHeader from '$lib/components/page-header/PageHeader.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import SheetHost from '$lib/shell/sheets/SheetHost.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
@@ -14,6 +15,7 @@
   import { backendState, probeHealth } from '$lib/backend-availability';
   import { pushNotification } from '$lib/errors/app-errors';
   import { startServicesStream, stopServicesStream } from '$lib/services-store.svelte';
+  import { userPreferences } from '$lib/composables/useUserPreferences.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -23,6 +25,7 @@
   onMount(() => {
     void probeHealth();
     void loadShellNav();
+    void userPreferences.load();
     startServicesStream();
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
@@ -94,6 +97,12 @@
         <AppTopbar />
         <AppServerBanner />
       </div>
+
+      <!-- MANDATORY page chrome — every (app) page inherits the fixed
+           header anatomy (breadcrumb · ★ · h1 · description · presence).
+           The ONLY opt-out is the route decl's `chrome:'remote'` flag,
+           honored inside PageHeader itself. -->
+      <PageHeader />
 
       <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
         {@render children()}

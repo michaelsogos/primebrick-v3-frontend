@@ -11,11 +11,9 @@ import {
   isUnreachableHttpStatus,
   type HealthPayload,
   type ModuleInfo,
-  type ModuleNav,
   type ModuleConfigEntry,
   type ConfigEntry,
   type TypeCapabilitiesMap,
-  type AiModel,
   type ServiceInfo,
   type DbMigrationStatus,
   type DbMigrationDriftResult
@@ -34,11 +32,12 @@ const ENTITY_API_PATH = '/api/v1/entities';
 
 /**
  * Entities owned by a microservice are reached through the BE proxy
- * (`/ws/<service>/api/v1/entities/<entity>`); BE-owned entities use the
+ * (`/svc/<service>/api/v1/entities/<entity>`); BE-owned entities use the
  * direct path. Single source of truth for every generic entity layer
  * (entity-list-table composables, version history, dialogs).
  */
 const ENTITY_SERVICE_MAP: Record<string, string> = {
+  customer: 'crm',
   ai_model: 'ai',
   ai_cerebellum: 'ai',
   job_schedule: 'job',
@@ -50,7 +49,7 @@ const ENTITY_SERVICE_MAP: Record<string, string> = {
 
 export function entityApiBase(entity: string): string {
   const service = ENTITY_SERVICE_MAP[entity];
-  return service ? `/ws/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
+  return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
@@ -156,14 +155,31 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   // 503 from backend = application-level infrastructure unavailable signal (NOT gateway failure → no loop).
   // Force a /health probe so the chip reflects the offline component immediately
   // instead of waiting for the next periodic poll.
-  // Check the response body's internal_code to distinguish REDIS_UNAVAILABLE from DATABASE_UNAVAILABLE.
+  // Check the response body's internal_code to distinguish REDIS_UNAVAILABLE from DATABASE_UNAVAILABLE —
+  // and to scope PROXY service-level 503s (SERVICE_DEGRADED etc.): a degraded
+  // microservice is not a BE outage, so its 503 must not probe global health,
+  // must not throw ApiDatabaseUnavailableError, and must surface the real
+  // RFC 7807 problem details like the 502 path does.
   if (res.status === 503) {
-    let internalCode: string | undefined;
+    let errorData: Record<string, unknown> | null = null;
     try {
       const cloned = res.clone();
-      const body = await cloned.json();
-      internalCode = body?.internal_code;
+      errorData = await cloned.json();
     } catch { /* not JSON — treat as generic 503 */ }
+    const internalCode = errorData?.internal_code;
+    const isServiceScoped =
+      internalCode === 'SERVICE_DEGRADED' ||
+      internalCode === 'SERVICE_OFFLINE' ||
+      internalCode === 'BAD_GATEWAY';
+    if (isServiceScoped) {
+      const isRfc7807 =
+        errorData !== null &&
+        errorData.type !== undefined &&
+        errorData.title !== undefined &&
+        typeof errorData.status === 'number';
+      if (isRfc7807) pushNotification(errorData as Parameters<typeof pushNotification>[0]);
+      throw new ApiUnreachableError(res.status, isRfc7807);
+    }
     void probeHealth({ force: true });
     if (internalCode === 'REDIS_UNAVAILABLE') {
       throw new ApiRedisUnavailableError(503);
@@ -174,7 +190,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
   // 401 = unauthorized - implement fast retry logic
   if (res.status === 401) {
     // If this is a retry after session-expired login and it's STILL 401, don't re-enqueue
-    if ((nextInit as any)._sessionRetry) {
+    if ((nextInit as RequestInit & { _sessionRetry?: boolean })._sessionRetry) {
       throw new Error('Session retry failed - still 401 after successful login');
     }
     // Skip refresh for auth endpoints - user doesn't have tokens yet.
@@ -364,12 +380,12 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
 
 // ── db_patch system module (migration admin) ────────────────────────────────
 // BE answers directly; microservices are reached through the governed proxy
-// (/ws/<code>/...), which exempts this prefix for `migration_failed` instances.
+// (/svc/<code>/...), which exempts this prefix for `migration_failed` instances.
 
 export function dbMigrationBase(code: string): string {
   return code === 'be'
     ? '/api/v1/system/db-migration'
-    : `/ws/${encodeURIComponent(code)}/api/v1/system/db-migration`;
+    : `/svc/${encodeURIComponent(code)}/api/v1/system/db-migration`;
 }
 
 export async function fetchDbMigrationStatus(code: string): Promise<DbMigrationStatus> {
@@ -419,14 +435,14 @@ export async function dbMigrationDriftCheck(code: string): Promise<DbMigrationDr
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
+  const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
   const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
   return data.config_entries;
 }
 
 export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
-  const res = await apiFetch(`/ws/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
+  const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: extJsonStringify({ entity: { value, version } }),
@@ -502,7 +518,7 @@ export async function searchDocs(params: {
   oversample?: number;
   graph_max_paths?: number;
 }): Promise<DocsSearchHit[]> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/search', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -529,7 +545,7 @@ export interface DocsIndexRepo {
 }
 
 export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/index', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/index', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
@@ -545,7 +561,7 @@ export async function fetchDoc(params: {
   path: string;
   repo?: string;
 }): Promise<{ repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } | null> {
-  const res = await apiFetch('/ws/ai/api/v1/system/docs/document', {
+  const res = await apiFetch('/svc/ai/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),

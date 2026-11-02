@@ -33,7 +33,7 @@
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
 </script>
 
-<BorderedDialog bind:open={open} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.duplicateConfirmTitle')}</Dialog.Title>
     <Dialog.Description>

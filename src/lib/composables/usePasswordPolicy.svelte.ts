@@ -13,8 +13,6 @@
 import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import {
-  PasswordPolicy,
-  PasswordChecklistRule,
   type PasswordPolicyResponse,
   PASSWORD_POLICY_REGEXES,
   PASSWORD_POLICY_CHECKLIST_RULES,

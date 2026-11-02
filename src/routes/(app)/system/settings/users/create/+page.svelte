@@ -1,62 +1,60 @@
 <script lang="ts">
   import { orderedColumns } from '$lib/entity-list';
-  import { page } from '$app/state';
   import { browser } from '$app/environment';
-  import { t, formatUiDateTime } from '$lib/i18n';
-  import { uiLang } from '$lib/i18n/store.svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { TextInput } from '$lib/components/ui/input';
+  import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
     FormLabel,
     FormControl,
-    FormFieldErrors,
     TranslatedFormFieldErrors,
-  } from '$lib/components/ui/form';
+  } from '@primebrick/ui';
   import { superForm, defaults } from 'sveltekit-superforms';
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { ImageOff } from '@primebrick/ui/vendor/lucide';
   import { Checkbox } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
   import { AvatarPreview } from '$lib/components/ui/avatar-preview';
   import { ColorSelector } from '$lib/components/ui/color-selector';
   import { ComboSelect } from '@primebrick/ui';
   import AsyncValidatedInput from '$lib/components/ui/input/async-validated-input.svelte';
   import { ValidationResult, type ValidationStatus } from '$lib/types/validation';
   import { minMsg, maxMsg } from '$lib/validation/zod-messages';
-  import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
+  import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
   import * as Password from '$lib/components/ui/password';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import { ShieldUser } from '@primebrick/ui/vendor/lucide';
   import { ShieldOff } from '@primebrick/ui/vendor/lucide';
   import type { EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useEntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
+  import { getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
-  import { entityPageTitle, getColMeta as getColMetaUtil } from '$lib/utils/entity-meta';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
+  type RoleOption = { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean };
+
   const { state: rolesState } = useActiveRoles();
-  const availableRoles = $derived([...rolesState.roles] as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]);
+  const availableRoles = $derived([...rolesState.roles] as RoleOption[]);
 
   // Organization dropdown — fetched from API (Section 10)
-  let availableOrgs = $state<Array<{ uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null }>>([]);
+  type OrgOption = { uuid: string; idp_code: string; idp_name: string; display_name: string; avatar: string | null };
+  let availableOrgs = $state<OrgOption[]>([]);
   let orgsLoading = $state(true);
 
   // Generate random hex color
@@ -162,8 +160,6 @@
     }
   });
 
-  type CreateForm = z.infer<typeof createSchema>;
-
   // Superforms in SPA mode
   let validateAllTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -241,7 +237,7 @@
         // unsaved-changes guard sees a still-tainted form and cancels the
         // navigation with a spurious confirm() dialog.
         justSaved = true;
-        await goto(`/system/settings/users/${data.profile?.uuid}`);
+        await goto(resolve(`/system/settings/users/${encodeURIComponent(String(data.profile?.uuid))}` as '/'));
       } catch (error) {
         console.error('Failed to create user:', error);
         cancel();
@@ -292,9 +288,6 @@
     }
   }
 
-  // Derived values for IDP fields
-  const idpCode = $derived(''); // Not used anymore - removed from form
-
   // Audit data state
   let meta = $state<EntityMetadata | null>(null);
   let isCreatePage = $state(true);
@@ -338,19 +331,7 @@
   auditingColumns={orderedColumns(meta?.columns).filter((c) => c.audited)}
   isCreatePage={isCreatePage}
 >
-  {#snippet header()}
-    <div class="min-w-0 space-y-1">
-      <AppPageBreadcrumb
-        segments={[
-          ...moduleBreadcrumbSegments({ pathname: page.url.pathname, t: (key) => $t(key) }),
-          { label: entityPageTitle(meta, 'create', $t) }
-        ]}
-      />
-      <h1 class="truncate text-xl font-semibold leading-tight">{entityPageTitle(meta, 'create', $t)}</h1>
-    </div>
-  {/snippet}
 
-  {#snippet children()}
     <div class="flex-1 overflow-auto">
       <form id="user-create-form" data-testid="admin-user-create-form" use:enhance>
         <!-- Avatar Section -->
@@ -443,11 +424,11 @@
                       isLabelTranslated={true}
                       placeholder={$t('system.settings.users.create.rolesPlaceholder')}
                       isOptionDisabled={(opt) => {
-                        const role = opt as Record<string, any>;
+                        const role = opt as RoleOption;
                         return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
                       }}
                       getSearchKeywords={(opt) => {
-                        const role = opt as Record<string, any>;
+                        const role = opt as RoleOption;
                         const kws: string[] = [];
                         if (role.is_admin) kws.push($t('app.auth.roles.systemAdministrator'));
                         if (Array.isArray(role.permissions)) kws.push(...role.permissions);
@@ -457,8 +438,8 @@
                         return kws;
                       }}
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                        {@const role = option as Record<string, any>}
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, unknown>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                        {@const role = option as RoleOption}
                         <div class="flex flex-col min-w-0 flex-1 gap-0.5">
                           <span class="font-medium truncate">{resolvedLabel}</span>
                           {#if role.is_admin}
@@ -505,8 +486,8 @@
                       onChange={onOrgChange}
                       searchPlaceholder={$t('system.settings.users.create.idpOrgSearch')}
                     >
-                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, any>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
-                        {@const org = option as Record<string, any>}
+                      {#snippet itemSnippet({ option, resolvedLabel }: { option: string | Record<string, unknown>; selected: boolean; resolvedLabel: string; resolvedValue: string })}
+                        {@const org = option as OrgOption}
                         <Avatar class="size-10 rounded-none shrink-0">
                           {#if org.avatar}
                             <img src={org.avatar} alt={org.display_name} class="size-10 rounded-none object-cover" />
@@ -687,7 +668,6 @@
         </div>
       </form>
     </div>
-  {/snippet}
 
   {#snippet footerActions()}
     <div class="flex gap-2">

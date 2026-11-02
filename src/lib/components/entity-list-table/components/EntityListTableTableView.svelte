@@ -1,5 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { Table, Root as TableRoot } from '$lib/components/ui/table';
+  import { Root as TableRoot } from '$lib/components/ui/table';
   import { cn } from '$lib/utils';
   import TableBody from './TableBody.svelte';
   import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';
@@ -7,6 +7,11 @@
   import { stickyCellClassWithCompute } from '../utils/cell-styling';
   import type { Snippet } from 'svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import type { CellArgs, EntityRowActions } from '../types';
+  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
+  import type { useRowActions } from '../composables/useRowActions.svelte';
+  import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
+  import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
 
   let {
     tableRef,
@@ -67,7 +72,6 @@
     stickyColumns,
     dataColumns,
     auditingColumns,
-    rowActionsEnabled,
     selectedKeys,
     footerRangeTotal,
     footerPage,
@@ -76,46 +80,46 @@
   }: EntityListTableTableViewProps = $props();
 
   type EntityListTableTableViewProps = {
-    tableRef: any;
+    tableRef: HTMLTableElement | null;
     tableDensityClass: string;
     rowSelectionEnabled: boolean;
-    stickyColumnsState: any;
+    stickyColumnsState: ReturnType<typeof useStickyColumns>;
     rowChromeH: string;
     checkboxInteractiveClass: string;
     allOnPageSelected: boolean;
     headerIndeterminate: boolean;
     toggleAllOnPage: () => void;
-    shownColumns: any[];
-    stickyColumnsGroup: any[];
+    shownColumns: MetaColumn[];
+    stickyColumnsGroup: MetaColumn[];
     visibleKeys: string[];
     sortKey: string | null;
     sortDir: 'asc' | 'desc';
     rowsLoading: boolean;
-    handleSortClick: (col: any) => void;
+    handleSortClick: (col: MetaColumn) => void;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
-    toggleDatetimeIana: (col: any) => void;
+    toggleDatetimeIana: (col: MetaColumn) => void;
     actionsEnabled: boolean;
-    previewPanel: any;
+    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
     viewRows: TRow[];
     error: string | null;
     errorView?: Snippet;
     rowsLoadingView?: Snippet;
     loadingText: string;
-    rows: any;
+    rows: TRow[];
     extraCols: number;
     emptyView?: Snippet;
     emptyText: string;
     showSelectedOnly: boolean;
     selectionCount: number;
     orderedSelectedRows: TRow[];
-    rowRangeSelection: any;
+    rowRangeSelection: ReturnType<typeof useRowRangeSelection>;
     datetimeIanaRenderTick: number;
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    cell: any;
-    rowActions: any;
-    entityRowActions: any;
+    cell?: Snippet<[CellArgs<TRow>]>;
+    rowActions?: Snippet<[{ row: TRow }]>;
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     handlePreviewRow: (row: TRow) => void;
@@ -123,7 +127,7 @@
     openRowDropdown: (row: TRow) => void;
     closeRowDropdown: () => void;
     handleEditRow: (row: TRow) => void;
-    rowActionsComposable: any;
+    rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
     uid: string;
     pageSize: number;
     page: number;
@@ -132,10 +136,9 @@
     /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
     entities_ns?: string;
     columns: MetaColumn[];
-    stickyColumns: any[] | undefined;
-    dataColumns: any[] | undefined;
-    auditingColumns: any[] | undefined;
-    rowActionsEnabled: boolean;
+    stickyColumns: MetaColumn[] | undefined;
+    dataColumns: MetaColumn[] | undefined;
+    auditingColumns: MetaColumn[] | undefined;
     selectedKeys: string[];
     footerRangeTotal: number;
     footerPage: number;
@@ -190,7 +193,6 @@
         sparklineData={sparklineData}
         rowKey={rowKey}
         isRowDeleted={isRowDeleted}
-        previewPanel={previewPanel}
         actionsEnabled={actionsEnabled}
         rowChromeH={rowChromeH}
         stickyColumnsGroup={stickyColumnsGroup}
@@ -201,7 +203,7 @@
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
-        onRowRangeMouseDown={(index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e)}
+        focusedRowIndex={previewPanel.state.focusedRowIndex}
         onEntityRowClick={onEntityRowClick}
         onPreviewRow={handlePreviewRow}
         onToggleRowSelect={toggleRowSelect}
@@ -240,14 +242,10 @@
     {stickyColumns}
     {dataColumns}
     {auditingColumns}
-    {rowActionsEnabled}
-    {rowActions}
     {entityRowActions}
     {datetimeIanaModeByKey}
     {isRowDeleted}
     {rowKey}
-    {rowSelectionEnabled}
-    selectedKeys={selectedKeys as Set<string> | string[]}
     footerRangeTotal={footerRangeTotal}
     footerPage={footerPage}
     {previewDropdownOpen}

@@ -3,7 +3,7 @@
    * /system/emailsender/templates — email template list, HOST-rendered
    * EntityTablePage (standard archetype). Declared by the emailsender
    * service's `endpoints.nav` census (`kind:"list"`, `entity:"email_template"`);
-   * api_base resolves via ENTITY_SERVICE_MAP → /ws/emailsender.
+   * api_base resolves via ENTITY_SERVICE_MAP → /svc/emailsender.
    *
    * The breadcrumb renders the EMAILSENDER module's nav menu — the page is
    * owned by the `emailsender` module (route_prefix `/system/emailsender`),
@@ -13,11 +13,7 @@
    */
   import { onMount } from 'svelte';
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
-  import AppPageBreadcrumb from '$lib/components/AppPageBreadcrumb.svelte';
-  import { moduleBreadcrumbSegments } from '$lib/breadcrumb/module-breadcrumb';
-  import { page as appPage } from '$app/state';
   import { get } from 'svelte/store';
-  import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { entityApiBase, fetchModules, routesCensusFromModules } from '$lib/api';
 
@@ -49,15 +45,6 @@
   errorScopeKeyInit="app.common.errors.scope.emailsenderTemplatesPageInit"
   editPath={edit_path}
   deletionFilter={false}
+  syncChannel="primebrick_email_template_sync"
 >
-  {#snippet breadcrumb()}
-    <AppPageBreadcrumb
-      segments={[
-        ...moduleBreadcrumbSegments({
-          pathname: appPage.url.pathname,
-          t: (key) => $t(key)
-        })
-      ]}
-    />
-  {/snippet}
 </EntityTablePage>

@@ -21,7 +21,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 
-  interface Props {
+  type Props = {
     /** The regex pattern string (bindable). */
     value?: string;
     /** The regex flags (bindable, e.g. 'gi'). */
@@ -41,10 +41,10 @@
     /** Additional classes. */
     class?: string;
     /** Test ID. */
-    'data-testid'?: string;
+    "data-testid"?: string;
     /** Config type context — controls which flags are available. */
     config_type?: 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone';
-  }
+  };
 
   let {
     value = $bindable(''),
@@ -56,7 +56,7 @@
     readonly = false,
     id,
     class: className,
-    'data-testid': dataTestId = 'smart-regex-input',
+    "data-testid": dataTestId,
     config_type = 'string',
   }: Props = $props();
 
@@ -101,7 +101,6 @@
 
   function open_ai_panel() {
     openSheet('config.regexAiChat', {
-      config_type,
       current_regex: value,
       current_flags: flags,
       on_apply_regex: (pattern: string, flag_str: string) => {
@@ -142,7 +141,7 @@
     {disabled}
     {readonly}
     oninput={handle_input}
-    data-testid={dataTestId}
+    data-testid={dataTestId ?? 'smart-regex-input'}
     class={cn(
       'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors',
       'file:border-0 file:bg-transparent file:text-sm file:font-medium',
@@ -200,14 +199,16 @@
       <AiIcon size={16} />
     </button>
 
-    <!-- Clear button (only when value is present and not disabled/readonly) -->
-    {#if value && !disabled && !readonly}
+    <!-- Clear button: always rendered when editable (disabled while empty)
+         so the CTA never pops the row's layout in and out. -->
+    {#if !disabled && !readonly}
       <button
         type="button"
         onclick={handle_clear}
         aria-label="Clear"
         title="Clear"
         tabindex={-1}
+        disabled={!value}
         class={inputTrailingIconColorClasses}
         data-testid="smart-regex-clear"
       >
