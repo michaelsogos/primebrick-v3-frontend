@@ -147,6 +147,13 @@ function normalizeRFC7807(error: RFC7807Error): NotificationInput {
 
 export type NotificationInput = {
   impact: ImpactLevel;
+  /**
+   * Optional toast-tone override — decouples the TOAST color from the
+   * `impact` used for the errors-panel card. `impact:'NONE'` stays the
+   * "no panel entry" signal while the toast can render `info` instead of
+   * the default success (e.g. an FYI notification, not a completion).
+   */
+  toastImpact?: ImpactLevel;
   message?: string;
   messageKey?: string;
   scope?: string;
@@ -203,7 +210,7 @@ export function pushNotification(
 
   // 5. Always show toast (unless toast === false)
   if (showToast !== false) {
-    showImpactToast(impact, messageValue, scopeValue, tags, detail);
+    showImpactToast(normalized.toastImpact ?? impact, messageValue, scopeValue, tags, detail);
   }
 
   return err.id;

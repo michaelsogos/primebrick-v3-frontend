@@ -61,6 +61,10 @@ type ColumnRecord = Record<string, unknown> & {
  */
 export interface EntityFormEnv {
 	resolveCallable?: (subject: string) => Record<string, unknown> | undefined;
+	/** The event emit's `payload_schema` for an `event_subject` — feeds the
+	 *  `kind:"path"` compatibility screen inside `payloadMapConformance`
+	 *  (the same source schema the path picker suggests from). */
+	resolveEmit?: (subject: string) => Record<string, unknown> | undefined;
 }
 
 /** Closed cross-field validator registry — the `validators` vocabulary. */
@@ -106,6 +110,11 @@ const CROSS_FIELD_VALIDATORS: Record<
 		if (typeof subject !== 'string' || subject.length === 0) return;
 		const schema = env.resolveCallable?.(subject);
 		if (!schema) return; // callable not selected/resolvable — nothing to check against
+		const eventSubject = data.event_subject;
+		const sourceSchema =
+			typeof eventSubject === 'string' && eventSubject.length > 0
+				? env.resolveEmit?.(eventSubject)
+				: undefined;
 		const raw = data.payload_map;
 		let map: unknown = raw ?? {};
 		if (typeof raw === 'string') {
@@ -119,7 +128,7 @@ const CROSS_FIELD_VALIDATORS: Record<
 				}
 			}
 		}
-		for (const i of payloadMapConformance(map as Record<string, unknown>, schema)) {
+		for (const i of payloadMapConformance(map as Record<string, unknown>, schema, sourceSchema)) {
 			ctx.addIssue({ code: 'custom', path: ['payload_map'], message: i.message });
 		}
 	},
