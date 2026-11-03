@@ -207,13 +207,114 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     await popup.keyboard.press("ArrowDown");
     await expect(cronCard).toHaveAttribute("aria-checked", "true");
 
-    // Cron mode shows its expression input; apply writes the canonical
-    // string into the SAME text field (single source of truth).
-    const cronInput = popup.locator('[data-testid$="-cron-expr"]');
-    await expect(cronInput).toBeVisible();
-    await cronInput.fill("*/15 * * * *");
-    await popup.locator('[data-testid$="-apply"]').click();
-    await expect(schedField.locator("input").first()).toHaveValue("*/15 * * * *");
+    // Cron mode shows the segmented CronInput — 5 editable columns (the
+    // legend IS the layout), field-aware keystroke mask, live description.
+    const minuteInput = popup.locator('[data-testid$="-cron-expr-field-minute"]');
+    const hourInput = popup.locator('[data-testid$="-cron-expr-field-hour"]');
+    const domInput = popup.locator('[data-testid$="-cron-expr-field-day_of_month"]');
+    const monthInput = popup.locator('[data-testid$="-cron-expr-field-month"]');
+    const dowInput = popup.locator('[data-testid$="-cron-expr-field-weekday"]');
+    const applyCta = popup.locator('[data-testid$="-apply"]');
+    await expect(minuteInput).toBeVisible();
+    await expect(dowInput).toBeVisible();
+    // Empty means `*` — a fresh editor is already `* * * * *` and enabled.
+    await expect(applyCta).toBeEnabled();
+
+    // Field-aware mask: letters are physically rejected in numeric fields.
+    await minuteInput.pressSequentially("DFDF");
+    await expect(minuteInput).toHaveValue("");
+
+    // Month accepts only letters that stay a name prefix: J-A-N keeps,
+    // X is dropped (no month name starts with X).
+    await monthInput.pressSequentially("JXAN");
+    await expect(monthInput).toHaveValue("JAN");
+
+    // The digit mask rejects out-of-range numbers at keystroke: 99 → 9,
+    // and a 4-digit run is impossible (599 → 59).
+    await hourInput.fill("99");
+    await expect(hourInput).toHaveValue("9");
+
+    // Leading zeros are allowed then collapsed on the fly: 00 → 0.
+    await domInput.fill("00");
+    await expect(domInput).toHaveValue("0");
+    await domInput.fill("");
+
+    // UOM abbreviations under the cells + footer keybind legend.
+    await expect(popup.locator('[data-testid$="-cron-expr-uom-minute"]')).toHaveText("MIN");
+    await expect(popup.locator('[data-testid$="-cron-expr-uom-weekday"]')).toHaveText("DOW");
+    await expect(popup.locator("kbd", { hasText: "esc" })).toBeVisible();
+
+    // OTP auto-advance: a full 2-digit run jumps to the next cell by itself.
+    await minuteInput.fill("5999");
+    await expect(minuteInput).toHaveValue("59");
+    await expect(hourInput).toBeFocused();
+
+    // Continuation char in an empty cell bounces back to the nearest
+    // non-empty previous field (hour has '9', dom is empty).
+    await domInput.press("-");
+    await expect(hourInput).toHaveValue("9-");
+    await expect(hourInput).toBeFocused();
+
+    // Enter advances to the next cell (like Space).
+    await hourInput.press("Enter");
+    await expect(domInput).toBeFocused();
+
+    // `/` starts a step on the implied wildcard — /5 → */5, /1 → *.
+    await dowInput.fill("/5");
+    await expect(dowInput).toHaveValue("*/5");
+    await dowInput.fill("/1");
+    await expect(dowInput).toHaveValue("*");
+    await dowInput.fill("");
+
+    // The legend is off by default — the toggle (second trailing CTA)
+    // reveals it, contextual to the ACTIVE cell (dow → 0-7 SUN-SAT).
+    const legendToggle = popup.locator('[data-testid$="-cron-expr-legend-toggle"]');
+    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeHidden();
+    await legendToggle.click();
+    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeVisible();
+    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toContainText("0-7 SUN-SAT");
+
+    // Example chips inside the legend fill the active cell.
+    await popup.locator('[data-testid$="-cron-expr-example-MON-FRI"]').click();
+    await expect(dowInput).toHaveValue("MON-FRI");
+    await dowInput.fill("");
+    await legendToggle.click();
+    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeHidden();
+
+    // Space commits and moves focus to the next field.
+    await minuteInput.press(" ");
+    await expect(hourInput).toBeFocused();
+
+    // A dangling-range draft (`9-`) is invalid — Apply stays gated.
+    await expect(applyCta).toBeDisabled();
+
+    // A syntactically invalid token (dangling range) is marked and blocked.
+    await hourInput.fill("5-");
+    await expect(hourInput).toHaveAttribute("aria-invalid", "true");
+    await expect(applyCta).toBeDisabled();
+
+    // Paste fan-out: a full expression pasted into one field fills them all.
+    await dowInput.evaluate((el) => {
+      const dt = new DataTransfer();
+      dt.setData("text/plain", "*/15 9 * JAN MON-FRI");
+      el.dispatchEvent(
+        new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
+      );
+    });
+    await expect(hourInput).toHaveValue("9");
+    await expect(domInput).toHaveValue("*");
+    await expect(monthInput).toHaveValue("JAN");
+    await expect(dowInput).toHaveValue("MON-FRI");
+
+    // A complete valid expression produces the live localized description
+    // and unlocks Apply.
+    await expect(popup.getByText(/every 15 minutes|ogni 15 minuti|chaque 15|jede 15|cada 15|alle 15/i)).toBeVisible();
+    await expect(applyCta).toBeEnabled();
+
+    // Apply writes the canonical string into the SAME text field (single
+    // source of truth).
+    await applyCta.click();
+    await expect(schedField.locator("input").first()).toHaveValue("*/15 9 * JAN MON-FRI");
 
     // The interpreter strip confirms the applied spec.
     await expect(popup.locator('[data-testid$="-interpreter"]')).toBeVisible();
@@ -288,7 +389,9 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     const hourBefore = await hourWheel.evaluate(
       (el) => el.querySelector('[aria-selected="true"]')?.getAttribute("data-value")
     );
-    await popup.keyboard.press("ArrowDown");
+    // At range boundaries only the inward direction can move the wheel —
+    // pick it dynamically so the test is time-of-day independent.
+    await popup.keyboard.press(hourBefore === "23" ? "ArrowUp" : "ArrowDown");
     await expect
       .poll(async () =>
         hourWheel.evaluate(
