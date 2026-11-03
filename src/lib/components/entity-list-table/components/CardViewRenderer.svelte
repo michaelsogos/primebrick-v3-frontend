@@ -221,7 +221,7 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
-              <Button variant="soft" size="xs" {...props} class="max-w-[220px] truncate">
+              <Button variant="ghost" size="xs" {...props} class="max-w-[220px] truncate">
                 {$t(allColumns.find((c) => c.key === effectiveSortKey)?.label_key ?? '')}
               </Button>
             {/snippet}
@@ -242,7 +242,7 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
-              <Button variant="soft" size="xs" {...props} disabled={!effectiveSortKey}>
+              <Button variant="ghost" size="xs" {...props} disabled={!effectiveSortKey}>
                 {#if sortDir === 'asc'}
                   <ArrowUpNarrowWide class="size-4" />
                 {:else}
