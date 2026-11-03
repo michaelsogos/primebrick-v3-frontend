@@ -284,8 +284,7 @@
         >
           {#if selectedTaintedCount > 0}
             <Button
-              variant="soft"
-              tone="warning"
+              variant="warning"
               size="sm"
               onclick={handleBulkRevert}
               data-testid="config-toolbar-bulk-revert"
@@ -296,8 +295,7 @@
             </Button>
           {/if}
           <Button
-            variant="soft"
-            tone="destructive"
+            variant="destructive"
             size="sm"
             onclick={handleBulkDelete}
             disabled={deletableSelectedEntries.length === 0}
