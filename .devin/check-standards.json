@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "raw-switch": {
+      "allowPaths": [
+        "lib/components/config-list/ConfigValueInput.svelte",
+        "lib/entity-list/sheets/panels/FiltersPanel.svelte",
+        "lib/components/entity-list-table/panels/PreviewPanel.svelte",
+        "lib/components/anchor-tabs/anchor-tabs-mode-switch.svelte",
+        "lib/components/entity-list-table/components/CardViewRenderer.svelte",
+        "routes/(app)/system/settings/modules/+page.svelte"
+      ]
+    },
+    "button-variant-toolbar": {
+      "appliesTo": ["lib/components/config-list/", "lib/components/entity-list-table/"]
+    }
+  },
+  "i18n_namespaces": ["app", "system", "custom", "ai", "crm", "emailsender", "job", "webhook"]
+}
