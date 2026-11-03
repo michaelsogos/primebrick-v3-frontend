@@ -185,6 +185,40 @@ export async function upsertFakeBrevoProvider(
   );
 }
 
+// ─── Email template fixtures ────────────────────────────────────────────────
+
+/**
+ * Deterministic `email_templates` row for payload_map E2E — the
+ * `x_map_keys` hint reads the row's `variables` declaration through the
+ * catalog list API. Delete-then-insert by `code` so reruns are clean.
+ */
+export async function upsertEmailTemplateFixture(template: {
+  code: string;
+  language_iso?: string;
+  subject?: string;
+  variables?: Record<string, unknown>;
+}): Promise<void> {
+  const pool = getPool();
+  await pool.query(`DELETE FROM emailsender.email_templates WHERE code = $1`, [template.code]);
+  await pool.query(
+    `INSERT INTO emailsender.email_templates
+       (uuid, code, language_iso, subject, body_html, body_text, variables,
+        created_by, updated_by, version)
+     VALUES (gen_random_uuid(), $1, $2, $3, '<p>x</p>', 'x', $4::jsonb,
+        'e2e', 'e2e', 1)`,
+    [
+      template.code,
+      template.language_iso ?? "en-GB",
+      template.subject ?? template.code,
+      template.variables ? JSON.stringify(template.variables) : null,
+    ],
+  );
+}
+
+export async function deleteEmailTemplateFixture(code: string): Promise<void> {
+  await getPool().query(`DELETE FROM emailsender.email_templates WHERE code = $1`, [code]);
+}
+
 // ─── Test user cleanup ──────────────────────────────────────────────────────
 
 /**
