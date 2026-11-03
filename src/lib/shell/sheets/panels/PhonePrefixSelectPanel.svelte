@@ -12,7 +12,7 @@
   import { cn } from '$lib/utils.js';
   import { Phone } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
-  import { Search } from '@primebrick/ui/vendor/lucide';
+  import { SearchInput } from '@primebrick/ui';
   import { ArrowDownAZ } from '@primebrick/ui/vendor/lucide';
   import { ArrowDown01 } from '@primebrick/ui/vendor/lucide';
 
@@ -137,16 +137,12 @@
   {/snippet}
   {#snippet toolbar()}
     <div class="flex items-center gap-2">
-      <div class="relative flex-1 min-w-0">
-        <Search class="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          bind:value={searchQuery}
-          placeholder={$t('system.settings.config.phonePrefixSelect.searchPlaceholder')}
-          class="w-full rounded-md border border-input bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          data-testid="phone-prefix-search"
-        />
-      </div>
+      <SearchInput
+        bind:value={searchQuery}
+        placeholder={$t('system.settings.config.phonePrefixSelect.searchPlaceholder')}
+        class="flex-1 min-w-0"
+        data_testid="phone-prefix-search"
+      />
       <ButtonGroup segmented aria-label={$t('system.settings.config.phonePrefixSelect.sortByName')}>
         <Button
           variant="ghost"

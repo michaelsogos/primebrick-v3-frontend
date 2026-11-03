@@ -1,10 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { InputGroup, InputGroupAddon, InputGroupButton, HighlightedInput } from '$lib/components/ui/input-group';
+  import { SearchInput } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { Search } from '@primebrick/ui/vendor/lucide'
-  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   let {
     search,
@@ -33,58 +31,20 @@
   });
 </script>
 
-<InputGroup
-  class="
-    group/input
-    w-full
-    border-foreground/25
-    hover:border-foreground/40
-    focus-within:border-foreground/50 focus-within:ring-2 focus-within:ring-foreground/20
-    rounded-md transition-all duration-200
-  "
->
-  <InputGroupAddon
-    align="inline-start"
-    class="bg-transparent border-none pr-0"
-  >
-    <Search class="size-4 text-muted-foreground group-hover/input:text-foreground transition-colors" />
-  </InputGroupAddon>
-
-  <HighlightedInput
-    class="text-sm placeholder:text-muted-foreground/70"
-    value={search}
-    oninput={(e: Event) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
-    placeholder={$t('system.entities.list.searchPlaceholder')}
-  />
-
-  {#if search.trim().length > 0}
-    <InputGroupButton
-      variant="ghost"
-      size="icon-xs"
-      class="mr-2.5 hover:bg-sky-100/50 dark:hover:bg-white/10"
-      onclick={() => onSearchInput('')}
-      aria-label={$t('app.common.reset')}
-      title={$t('app.common.reset')}
-    >
-      <Eraser class="size-4" />
-    </InputGroupButton>
-  {/if}
-
-  <InputGroupButton
-    variant="ghost"
-    size="xs"
-    class="h-full rounded-l-none rounded-r-md border-l border-foreground/25 bg-foreground/5 transition-colors"
-    onclick={() =>
-      openSheet(
-        'entity.searchIn',
-        {
-          searchInKeys,
-          searchableColumns,
-          onSearchInKeysChange,
-          toggleSearchKey
-        }
-      )}
-  >
-    {searchScopeLabel()}
-  </InputGroupButton>
-</InputGroup>
+<SearchInput
+  highlight={true}
+  value={search}
+  oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
+  on_clear={() => onSearchInput('')}
+  placeholder={$t('system.entities.list.searchPlaceholder')}
+  trailing_button={{
+    label: searchScopeLabel(),
+    onclick: () =>
+      openSheet('entity.searchIn', {
+        searchInKeys,
+        searchableColumns,
+        onSearchInKeysChange,
+        toggleSearchKey
+      })
+  }}
+/>

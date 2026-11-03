@@ -18,6 +18,7 @@
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { Input } from '@primebrick/ui';
+  import { JsonEditor } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { callMcpTool } from '$lib/api';
@@ -289,13 +290,14 @@
       {#if phase === 'confirm' || phase === 'executing'}
         {#if isCreateUpdate}
           <label class="text-xs text-muted-foreground" for="guide-action-args">{$t(`${NS}.args_label`)}</label>
-          <textarea
+          <JsonEditor
             id="guide-action-args"
             bind:value={argsText}
-            rows={Math.min(10, argsText.split('\n').length + 1)}
-            class="w-full rounded-md border border-border/60 bg-background p-2 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+            minRows={4}
+            maxHeight="16rem"
+            class="w-full"
             data-testid="guide-action-args"
-          ></textarea>
+          />
           {#if missingRequired.length > 0}
             <p class="text-xs text-destructive">
               {$t(`${NS}.missing_required`, { fields: missingRequired.join(', ') })}

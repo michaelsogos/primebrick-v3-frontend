@@ -14,6 +14,9 @@
     deleteTranslation,
   } from '$lib/api';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  import { ComboSelect } from '@primebrick/ui';
+  import { TextInput } from '@primebrick/ui';
+  import { Textarea } from '@primebrick/ui';
 
   type TranslationRow = {
     uuid: string;
@@ -151,20 +154,20 @@
       <div class="translations-admin__selectors">
         <label>
           <span>{$t('system.settings.translations.module')}</span>
-          <select bind:value={selectedModule}>
-            {#each modules as mod (mod)}
-              <option value={mod}>{mod}</option>
-            {/each}
-          </select>
+          <ComboSelect mode="single" bind:value={selectedModule} options={modules} />
         </label>
 
         <label>
           <span>{$t('system.settings.translations.language')}</span>
-          <select bind:value={selectedLanguage}>
-            {#each UI_LANGS as lang (lang)}
-              <option value={lang}>{uiLangRegionSuffix(lang)}</option>
-            {/each}
-          </select>
+          <ComboSelect
+            mode="single"
+            value={selectedLanguage}
+            onChange={(v) => (selectedLanguage = v as UiLang)}
+            options={UI_LANGS.map((lang) => ({ value: lang, label: uiLangRegionSuffix(lang) }))}
+            valueField="value"
+            labelField="label"
+            searchable={false}
+          />
         </label>
 
         <button class="translations-admin__create" onclick={openCreate}>
@@ -223,15 +226,15 @@
         <h2>{isCreating ? $t('system.settings.translations.create') : $t('system.settings.translations.edit')}</h2>
         <label>
           <span>{$t('system.settings.translations.key')}</span>
-          <input type="text" bind:value={editKey} disabled={!isCreating} />
+          <TextInput bind:value={editKey} disabled={!isCreating} />
         </label>
         <label>
           <span>{$t('system.settings.translations.language')}</span>
-          <input type="text" bind:value={editLanguage} disabled={!isCreating} />
+          <TextInput bind:value={editLanguage} disabled={!isCreating} />
         </label>
         <label>
           <span>{$t('system.settings.translations.value')}</span>
-          <textarea bind:value={editValue}></textarea>
+          <Textarea bind:value={editValue} />
         </label>
         <div class="translations-admin__dialog-actions">
           <button onclick={closeDialog}>{$t('app.common.cancel')}</button>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { useNumericInput } from '$lib/composables/useNumericInput.svelte';
+import { useNumericInput } from '@primebrick/ui';
 
 describe('useNumericInput', () => {
   // Helper to create a composable with simple reactive getters

@@ -3,7 +3,7 @@
   import { BorderedDialog } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
-  import * as Choicebox from '$lib/components/ui/choicebox';
+  import { Choicebox } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
