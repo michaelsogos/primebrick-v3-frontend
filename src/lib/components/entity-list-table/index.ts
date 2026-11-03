@@ -15,9 +15,6 @@ export * from './panels';
 // Dialog sub-components
 export * from './dialogs';
 
-// Pagination sub-components
-export * from './pagination';
-
 // Search sub-components — the canonical SearchInput lives in @primebrick/ui.
 
 // Composables
