@@ -30,7 +30,7 @@ const LAUNCHER_MODULES = "[data-testid='app-launcher-modules']";
 const FAV_EMPTY = "[data-testid='app-launcher-favorites-empty']";
 
 /** The rule-create route — censused decl, host-rendered entity-form pilot. */
-const FAV_ROUTE = "/system/job/rules/create";
+const FAV_ROUTE = "/system/job/triggers/create";
 
 /** Ensure the star on the current page is NOT favorite (idempotent cleanup). */
 async function ensureUnfavorited(page: import("@playwright/test").Page): Promise<void> {
@@ -48,7 +48,7 @@ test.describe("host chrome (PageHeader)", () => {
   });
 
   test("list page: breadcrumb, star, h1 — single header, own <title>", async ({ page }) => {
-    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator(HEADER)).toHaveCount(1);
     await expect(page.locator(TITLE)).toBeVisible();

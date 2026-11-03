@@ -92,7 +92,7 @@ const jobModule: ModuleInfo = {
 	nav: [
 		{ id: 'schedules', label_key: 'job.nav.schedules', href: '/system/job/job-schedules', default: true },
 		// Host-rendered leaf — static page exists but no component_url decl.
-		{ id: 'rules', label_key: 'job.nav.rules', href: '/system/job/rules' },
+		{ id: 'rules', label_key: 'job.nav.triggers', href: '/system/job/triggers' },
 	],
 	routes: [{ route: '/system/job/job-schedules' }] as ModuleInfo['routes'],
 };
@@ -225,7 +225,7 @@ describe('resolvePageForPath — contract drift + unknown', () => {
 	});
 
 	it('nav leaf without a route decl is the same contract error', () => {
-		const r = resolvePageForPath('/system/job/rules', MODULES);
+		const r = resolvePageForPath('/system/job/triggers', MODULES);
 		expect(r.kind).toBe('error');
 		if (r.kind === 'error') expect(r.error_kind).toBe('contract');
 	});

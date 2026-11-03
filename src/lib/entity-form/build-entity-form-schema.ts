@@ -1,9 +1,12 @@
 /**
- * `buildEntityFormSchema` — the entity-form twin of `buildConfigValueSchema`:
- * constructs the zod object for a `page_props.form` declaration from the
- * served `EntityMeta`. Physical constraints (nullable, max_length, pg_type)
- * come from the class-derived projection; semantic rules (format, pattern,
- * min_length, json_schema) are authored on `meta.columns`.
+ * `buildEntityFormSchema` — the entity-form zod object for a
+ * `page_props.form` declaration, built from the served `EntityMeta`.
+ * Field semantics come from `fieldSpecToZod` (ui), which delegates every
+ * rule to the core `checkFieldValue` predicate — the same predicate the
+ * wire-side validators run, so form and transport cannot drift. What this
+ * file adds is only the form binding: `required` wraps, `'' → undefined`
+ * normalization for optional fields, and the closed cross-field
+ * `validators` registry.
  *
  * Enforcement contract: every `FormFieldPlacement.key` MUST exist in
  * `meta.columns` — an unknown key throws at render-prepare time (drift
@@ -13,54 +16,26 @@
  * an unknown key throws.
  */
 import { z } from 'zod';
-import type { FormPageDecl } from '@primebrick/ui';
+import { fieldSpecToZod, type FormPageDecl, type MetaColumn } from '@primebrick/ui';
 import type { EntityMeta } from '$lib/entity-list/types';
-import { parseScheduleSpec } from '@primebrick/ui';
+import {
+	extJsonParse,
+	isValidNatsSubject,
+	isValidScheduleSpec,
+	jsonSchemaCheck,
+	jobTriggerShapeIssues,
+	payloadMapConformance,
+} from '@primebrick/ui';
 
-/** NATS subject grammar — mirrors validateEventsDeclaration (sdk). */
-const SUBJECT_SEGMENT = /^[A-Za-z0-9_-]+$/;
-export function isValidNatsSubject(subject: string): boolean {
-	if (typeof subject !== 'string' || subject.length === 0 || /\s/.test(subject)) return false;
-	const segs = subject.split('.');
-	for (let i = 0; i < segs.length; i++) {
-		const s = segs[i];
-		if (s === '*') continue;
-		if (s === '>') return i === segs.length - 1;
-		if (!SUBJECT_SEGMENT.test(s)) return false;
-	}
-	return true;
-}
+export { isValidNatsSubject, isValidScheduleSpec };
 
 /**
- * Minimal structural check driven by an authored `json_schema` prop —
- * supports `type` ("array"|"object"), `items.required`, and per-property
- * `enum` (the RuleFilter `{field, op?, value}` shape). Unknown keywords are
- * ignored — the editor-side Schema carries the full spec for lint/completion.
+ * Structural check driven by an authored `json_schema` prop — the boolean
+ * facade over the shared `jsonSchemaCheck` predicate (same rules the wire
+ * validators run).
  */
 export function jsonValueMatchesSchema(value: unknown, schema: Record<string, unknown>): boolean {
-	const type = schema.type;
-	if (type === 'array') {
-		if (!Array.isArray(value)) return false;
-		const items = schema.items as Record<string, unknown> | undefined;
-		if (items) return value.every((item) => jsonValueMatchesSchema(item, items));
-		return true;
-	}
-	if (type === 'object' || (type === undefined && typeof value === 'object' && value !== null && !Array.isArray(value))) {
-		if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-		const obj = value as Record<string, unknown>;
-		const required = schema.required;
-		if (Array.isArray(required) && !required.every((k) => typeof k === 'string' && k in obj)) return false;
-		const properties = schema.properties as Record<string, Record<string, unknown>> | undefined;
-		if (properties) {
-			for (const [key, prop] of Object.entries(properties)) {
-				if (!(key in obj)) continue;
-				if (Array.isArray(prop.enum) && !prop.enum.includes(obj[key])) return false;
-				if (prop.type === 'string' && typeof obj[key] !== 'string') return false;
-			}
-		}
-		return true;
-	}
-	return true;
+	return jsonSchemaCheck(value, schema).length === 0;
 }
 
 export interface EntityFormFieldSpec {
@@ -74,19 +49,28 @@ type ColumnRecord = Record<string, unknown> & {
 	type?: string;
 	pg_type?: string;
 	nullable?: boolean;
-	max_length?: number;
-	pattern?: string;
-	min_length?: number;
-	min?: number;
-	max?: number;
-	json_schema?: Record<string, unknown>;
-	badge?: { values?: Record<string, unknown> };
 };
+
+/**
+ * Host-injected environment for schema construction — the seam that lets a
+ * STATIC zod schema evaluate LIVE data. `resolveCallable` returns the
+ * callable's emitted `payload_schema` for a `target_subject`; the
+ * `payload_map_conformance` validator calls it on every validation pass,
+ * so the schema stays static while the resolved contract follows the
+ * selected callable.
+ */
+export interface EntityFormEnv {
+	resolveCallable?: (subject: string) => Record<string, unknown> | undefined;
+	/** The event emit's `payload_schema` for an `event_subject` — feeds the
+	 *  `kind:"path"` compatibility screen inside `payloadMapConformance`
+	 *  (the same source schema the path picker suggests from). */
+	resolveEmit?: (subject: string) => Record<string, unknown> | undefined;
+}
 
 /** Closed cross-field validator registry — the `validators` vocabulary. */
 const CROSS_FIELD_VALIDATORS: Record<
 	string,
-	(data: Record<string, unknown>, ctx: z.RefinementCtx) => void
+	(data: Record<string, unknown>, ctx: z.RefinementCtx, env: EntityFormEnv) => void
 > = {
 	/** `target_subject` must be `jobs.due.<execution_context>.<seg>+` — the
 	 *  rule's lane is derived from execution_context, never free. */
@@ -103,51 +87,52 @@ const CROSS_FIELD_VALIDATORS: Record<
 			});
 		}
 	},
-};
-
-function columnSchema(col: ColumnRecord): z.ZodTypeAny {
-	const format = col.format;
-	const pg = col.pg_type;
-	const type = col.type;
-
-	if (type === 'boolean' || pg === 'boolean') return z.boolean();
-	if (format === 'number' || format === 'money' || pg === 'integer' || pg === 'bigint' || pg === 'numeric') {
-		let s = z.number();
-		if (typeof col.min === 'number') s = s.min(col.min);
-		if (typeof col.max === 'number') s = s.max(col.max);
-		return s;
-	}
-	if (format === 'json' || pg === 'jsonb' || pg === 'json') {
-		// The control binds a JSON string; structure is checked against the
-		// authored json_schema. Parsed at the submit boundary.
-		return z.string().superRefine((raw, ctx) => {
+	/** `job_trigger` shape — `event_subject`/`schedule_spec` are mutually
+	 *  mandatory (at least one); `execution_context:"user"` needs an event
+	 *  source to forward auth headers from (schedule-only uses `me`/`system`).
+	 *  Shares the core `jobTriggerShapeIssues` predicate with the service-side
+	 *  `assertTriggerShape` hook — one rule, two surfaces. */
+	job_trigger_shape: (data, ctx) => {
+		for (const i of jobTriggerShapeIssues(data)) {
+			ctx.addIssue({ code: 'custom', path: [i.path], message: i.message });
+		}
+	},
+	/** `payload_map` must conform to the selected callable's emitted
+	 *  `payload_schema`: required destination fields covered (map entry or
+	 *  `x_inject`/`x_semantic` annotation) and every `const` value
+	 *  satisfying the prop's portable constraints. The map binds as a JSON
+	 *  string — an EMPTY/absent document is NOT a pass: required fields
+	 *  stay unmapped and produce issues, exactly like the JH write hook
+	 *  (`payloadMapConformance(map ?? {}, schema)`) that rejects the write
+	 *  server-side. Same checker, same contract — no drift. */
+	payload_map_conformance: (data, ctx, env) => {
+		const subject = data.target_subject;
+		if (typeof subject !== 'string' || subject.length === 0) return;
+		const schema = env.resolveCallable?.(subject);
+		if (!schema) return; // callable not selected/resolvable — nothing to check against
+		const eventSubject = data.event_subject;
+		const sourceSchema =
+			typeof eventSubject === 'string' && eventSubject.length > 0
+				? env.resolveEmit?.(eventSubject)
+				: undefined;
+		const raw = data.payload_map;
+		let map: unknown = raw ?? {};
+		if (typeof raw === 'string') {
 			const trimmed = raw.trim();
-			if (trimmed.length === 0) return; // emptiness handled by required wrap
-			try {
-				const parsed = JSON.parse(trimmed);
-				if (col.json_schema && !jsonValueMatchesSchema(parsed, col.json_schema)) {
-					ctx.addIssue({ code: 'custom', message: 'does not match the declared schema' });
+			if (trimmed.length === 0) map = {};
+			else {
+				try {
+					map = extJsonParse(trimmed);
+				} catch {
+					return; // malformed JSON already flagged by the field-level check
 				}
-			} catch {
-				ctx.addIssue({ code: 'custom', message: 'invalid JSON' });
 			}
-		});
-	}
-
-	let s = z.string();
-	if (typeof col.max_length === 'number') s = s.max(col.max_length);
-	if (typeof col.min_length === 'number') s = s.min(col.min_length);
-	if (typeof col.pattern === 'string') s = s.regex(new RegExp(col.pattern));
-	if (format === 'email') s = s.email();
-	if (format === 'url') s = s.url();
-	if (format === 'nats_subject') {
-		s = s.refine(isValidNatsSubject, { message: 'invalid NATS subject' });
-	}
-	if (format === 'schedule_spec') {
-		s = s.refine((v) => parseScheduleSpec(v).ok, { message: 'invalid schedule spec' });
-	}
-	return s;
-}
+		}
+		for (const i of payloadMapConformance(map as Record<string, unknown>, schema, sourceSchema)) {
+			ctx.addIssue({ code: 'custom', path: ['payload_map'], message: i.message });
+		}
+	},
+};
 
 /**
  * Build the zod object for `page_props.form` — throws when a placement key
@@ -156,6 +141,7 @@ function columnSchema(col: ColumnRecord): z.ZodTypeAny {
 export function buildEntityFormSchema(
 	meta: EntityMeta,
 	decl: FormPageDecl,
+	env: EntityFormEnv = {},
 ): { schema: z.ZodObject<Record<string, z.ZodTypeAny>>; fields: EntityFormFieldSpec[] } {
 	const columns = new Map(meta.columns.map((c) => [c.key, c as unknown as ColumnRecord]));
 	const shape: Record<string, z.ZodTypeAny> = {};
@@ -169,8 +155,7 @@ export function buildEntityFormSchema(
 			);
 		}
 		const required = placement.required ?? col.nullable === false;
-		let s: z.ZodTypeAny = columnSchema(col);
-		if (required && s instanceof z.ZodString) s = s.min(1);
+		let s: z.ZodTypeAny = fieldSpecToZod(col as MetaColumn, { required });
 		fields.push({ key: placement.key, required });
 		if (!required) {
 			// Optional strings: the control binds `''`, not `undefined` — format
@@ -188,7 +173,9 @@ export function buildEntityFormSchema(
 		if (!validator) {
 			throw new Error(`page_props.form declares unknown validator '${key}' — closed registry`);
 		}
-		schema = schema.superRefine(validator) as unknown as z.ZodObject<Record<string, z.ZodTypeAny>>;
+		schema = schema.superRefine((data, ctx) => validator(data, ctx, env)) as unknown as z.ZodObject<
+			Record<string, z.ZodTypeAny>
+		>;
 	}
 	return { schema, fields };
 }

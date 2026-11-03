@@ -42,7 +42,7 @@ const ENTITY_SERVICE_MAP: Record<string, string> = {
   ai_cerebellum: 'ai',
   job_schedule: 'job',
   job_run: 'job',
-  job_rule: 'job',
+  job_trigger: 'job',
   provider: 'emailsender',
   email_template: 'emailsender',
 };

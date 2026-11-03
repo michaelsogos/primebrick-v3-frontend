@@ -45,3 +45,37 @@ export function useFormGuard(
     },
   };
 }
+
+/**
+ * useForceFormValidation — keeps `$errors` fresh on every change so
+ * `useFormGuard.canSave` (hasChanges && no errors) is truthful.
+ *
+ * Superforms only lists errors for fields it has already validated, and
+ * untouched fields never emit events — on a CREATE form a required input
+ * the user never focused would carry no error, so `hasChanges` alone
+ * would unlock Save on an invalid form. Wiring the returned handler as
+ * `onChange` forces a full-form `validateForm({ update: true })` on every
+ * change (force=true bypasses the taint display checks), making errors
+ * — and therefore canSave — always current. Pair with
+ * `validationMethod: 'oninput'`.
+ *
+ * Debounced trailing-edge (250ms): `validateForm` internally calls
+ * `Form.set(result.data)` with data captured at validation start —
+ * overlapping validations resolving out of order would overwrite typed
+ * input. One trailing validation per typing burst avoids the race.
+ * Timer cleanup is handled here via `$effect` — callers must NOT wire
+ * their own. Canonical pattern, previously duplicated inline in
+ * users/create and configurations/create.
+ */
+export function useForceFormValidation(
+  validateForm: (opts: { update?: boolean; focusOnError?: boolean }) => Promise<unknown>,
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => () => clearTimeout(timer));
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      void validateForm({ update: true, focusOnError: false });
+    }, 250);
+  };
+}

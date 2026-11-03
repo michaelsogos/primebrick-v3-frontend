@@ -12,7 +12,7 @@
 	 * {base}/{uuid}` with `{ entity: {...fields, version} }` — same
 	 * `page_props.form`, same dispatchers, optimistic locking on `version`.
 	 */
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -41,10 +41,11 @@
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
 	import { pushNotification } from '$lib/errors/app-errors';
-	import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
+	import { useFormGuard, useForceFormValidation } from '$lib/composables/useFormGuard.svelte';
 	import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
 	import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
+	import { useFormDraft } from '$lib/entity-form/use-form-draft.svelte';
 	import FieldEditingBadge from '$lib/components/collaboration/FieldEditingBadge.svelte';
 	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { buildAuditData } from '$lib/utils/audit-data';
@@ -197,7 +198,19 @@
 	const prepared = $derived.by(() => {
 		if (!meta || !formDecl) return null;
 		if (isDetail && !record) return null;
-		return buildEntityFormSchema(meta, formDecl);
+		return buildEntityFormSchema(meta, formDecl, {
+			// Live resolution: the closure reads `callableDecls` on every
+			// validation pass — the schema stays static while the contract
+			// follows the selected `target_subject`.
+			resolveCallable: (subject) =>
+				callableDecls.find((c) => c.subject === subject)?.payload_schema as
+					| Record<string, unknown>
+					| undefined,
+			resolveEmit: (subject) =>
+				emitDecls.find((e) => e.subject === subject)?.payload_schema as
+					| Record<string, unknown>
+					| undefined,
+		});
 	});
 	const columnMap = $derived(new Map((meta?.columns ?? []).map((c) => [c.key, c])));
 
@@ -214,9 +227,11 @@
 	let reset = $state<PreparedForm['reset']>()!;
 	let submitting = $state(false);
 
-	$effect(() => {
-		const p = prepared;
-		if (!p || formObj) return;
+	/** The form's baseline values — create: declared defaults + type
+	 *  fallbacks; detail: the record's values (JSON cols stringified for
+	 *  their string-bound controls). Extracted so the reset button can
+	 *  rebuild the SAME baseline from a freshly fetched record. */
+	function buildInitial(): Record<string, unknown> {
 		const initial: Record<string, unknown> = {};
 		for (const placement of formDecl!.fields) {
 			const col = columnMap.get(placement.key);
@@ -236,10 +251,19 @@
 				initial[placement.key] = '';
 			}
 		}
+		return initial;
+	}
+
+	$effect(() => {
+		const p = prepared;
+		if (!p || formObj) return;
+		const initial = buildInitial();
 		formObj = superForm(defaults(initial, zod4(p.schema)), {
 			SPA: true,
 			validators: zod4(p.schema),
+			validationMethod: 'oninput',
 			dataType: 'json',
+			onChange: forceValidate,
 			async onUpdate({ form: updateForm, cancel }) {
 				if (!updateForm.valid) return;
 				cancel();
@@ -312,6 +336,7 @@
 							record = updated;
 							recordVersion = updated.version;
 						}
+						draft.clear();
 						reset({ newState: $form });
 						notifyParentRefresh();
 						if (window.opener) window.close();
@@ -321,6 +346,7 @@
 					// baseline so superforms untaints — the unsaved-changes
 					// beforeNavigate guard then lets the leave through. (Plain
 					// `reset({data})` PRESERVES tainted for fields in `data`.)
+					draft.clear();
 					reset({ newState: $form });
 					notifyParentRefresh();
 					if (window.opener) {
@@ -340,6 +366,19 @@
 			},
 		});
 		({ form, errors, enhance, tainted, isTainted, reset } = formObj);
+		// Draft replay — tainted keys onto the fresh baseline; a stale base
+		// turns them into collab conflicts instead of silent overwrites.
+		draft.restore();
+		collab.addConflicts(draft.conflicts);
+		if (draft.restoredCount > 0) {
+			pushNotification({
+				impact: 'NONE',
+				toastImpact: 'LOW',
+				message: $t('app.common.draftRestored', { count: draft.restoredCount }),
+				scopeKey: 'app.common.draftRestoredTitle',
+				tags: [{ label: decl.entity!, tone: 'info' }],
+			});
+		}
 	});
 
 	/**
@@ -380,6 +419,27 @@
 		}
 	});
 
+	// `job_trigger_shape` (closed-vocab validator) — live policy: with no
+	// event source the `user` lane is invalid, so its badge option disables
+	// and a selected "user" coerces to "me" (the schedule-only default).
+	// With a source present nothing is forced — "me" stays a valid choice.
+	const triggerShape = $derived(formDecl?.validators?.includes('job_trigger_shape') ?? false);
+	$effect(() => {
+		if (!triggerShape || !formObj) return;
+		const data = $form as Record<string, unknown>;
+		const hasSource = typeof data.event_subject === 'string' && data.event_subject.length > 0;
+		if (!hasSource && data.execution_context === 'user') {
+			// Machine coercion — `taint:'untaint'` declares it NOT a user
+			// edit; the `bind:value` widget echo re-marks the flag, so the
+			// clear lands once more after the binding tick settles.
+			void form.update((d) => ({ ...d, execution_context: 'me' }), { taint: 'untaint' });
+			void tick().then(() => {
+				if ($tainted) ($tainted as Record<string, boolean>)['execution_context'] = false;
+			});
+		}
+	});
+
+	const forceValidate = useForceFormValidation((opts) => formObj!.validateForm(opts));
 	const formGuard = useFormGuard(
 		() => $tainted,
 		() => ($errors as Record<string, unknown>) ?? {},
@@ -428,6 +488,75 @@
 		},
 	});
 	const auditData = $derived(buildAuditData());
+
+	/**
+	 * Draft persistence — unconditional for every entity form. Scoped key:
+	 * org + actor + entity + mode + record uuid → no cross-account bleed on
+	 * shared browsers. Restore replays tainted-marked keys only (the
+	 * anti-stale rule); the slot self-deletes when the form goes pristine.
+	 */
+	const draft = useFormDraft({
+		storageKey: () => {
+			const org = userProfileState.current?.organization ?? userProfileState.current?.idp_org;
+			const actor = userProfileState.current?.uuid;
+			if (!actor || !decl.entity) return null;
+			return `pb:draft:${org ?? 'local'}:${actor}:${decl.entity}:${isDetail ? 'detail' : 'create'}:${recordUuid ?? 'new'}`;
+		},
+		ready: () => formObj !== null,
+		fieldKeys: () => (formDecl?.fields ?? []).map((f) => f.key),
+		baseVersion: () => recordVersion,
+		data: () => (form ? ($form as Record<string, unknown>) : {}),
+		tainted: () => (form ? (($tainted as Record<string, boolean>) ?? {}) : {}),
+		// Same diff-semantics the form guard uses: `isTainted($tainted)`
+		// compares CURRENT values against the taint baseline — undoing an
+		// edit back to its original is "clean" again (no ghost drafts).
+		hasTainted: () =>
+			formObj
+				? (((isTainted as (p?: unknown) => boolean)($tainted as unknown)) ?? false)
+				: false,
+		setField: (k, v) => {
+			($form as Record<string, unknown>)[k] = v;
+		},
+		taintField: (k) => {
+			if ($tainted) ($tainted as Record<string, boolean>)[k] = true;
+		},
+	});
+
+	/**
+	 * Reset — create: back to first-load defaults; detail: refetch the
+	 * record FRESH from the service (no cached row — stale data is the
+	 * whole point of the button), rebuild the baseline, untaint all, drop
+	 * the draft slot. `newState` (not `data`) rebaselines so superforms
+	 * untaints — same trick as the save path.
+	 */
+	async function handleReset() {
+		if (!formObj) return;
+		// Draft-sourced conflicts live in the COLLAB map — the fresh row is
+		// the truth, so every one resolves use_remote before the rebuild
+		// (a stale conflict would pin the field readonly + ringed).
+		const draftConflictKeys = Object.keys(draft.conflicts);
+		draft.clear();
+		if (isDetail && recordUuid) {
+			try {
+				const row = await apiFetchExt<Record<string, unknown>>(`${basePath}/${recordUuid}`);
+				record = row;
+				recordVersion =
+					typeof row.version === 'number' || typeof row.version === 'bigint' ? row.version : 0;
+			} catch {
+				pushNotification({
+					impact: 'HIGH',
+					message: $t('app.common.loadError'),
+					scope: decl.entity!,
+				});
+				return;
+			}
+		}
+		for (const k of draftConflictKeys) collab.resolveConflict(k, 'use_remote');
+		// Re-arm the payload_map seed — machine entries re-materialize onto
+		// the fresh baseline (untainted, as at first load).
+		seededFor = null;
+		reset({ newState: buildInitial() });
+	}
 
 	function fieldStyle(placement: { col?: number; span?: number; row?: number; row_span?: number }): string {
 		const parts: string[] = [];
@@ -546,6 +675,11 @@
 												{targetCallable}
 												{sourceEmit}
 												controlProps={props}
+												disabledBadgeValues={triggerShape &&
+												col.key === 'execution_context' &&
+												!($form['event_subject'] as string)?.length
+													? ['user']
+													: undefined}
 												readonly={placement.readonly || collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
 											/>
@@ -561,10 +695,25 @@
 		</form>
 		{#snippet footerActions()}
 			<div class="flex gap-2">
+				<Button
+					variant="outline"
+					disabled={!formGuard.hasChanges}
+					onclick={() => void handleReset()}
+					data-testid="entity-form-reset"
+					title={$t('app.common.reset')}
+				>
+					<DynamicIcon name="eraser" size={16} />
+					{$t('app.common.reset')}
+				</Button>
 				<Button variant="outline" onclick={handleCancel}>
 					{$t('app.common.cancel')}
 				</Button>
-				<Button type="submit" form="entity-form" disabled={submitting} data-testid="entity-form-submit">
+				<Button
+					type="submit"
+					form="entity-form"
+					disabled={!formGuard.canSave || submitting}
+					data-testid="entity-form-submit"
+				>
 					{$t('app.common.save')}
 				</Button>
 			</div>

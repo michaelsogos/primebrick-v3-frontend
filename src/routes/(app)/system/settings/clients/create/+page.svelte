@@ -4,6 +4,7 @@
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
+  import { isNoSpace } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import {
     FormField,
@@ -33,7 +34,7 @@
       .string()
       .min(2, { message: minMsg(2) })
       .max(120, { message: maxMsg(120) })
-      .regex(/^\S+$/, { message: 'app.common.validation.invalidFormat' })
+      .refine(isNoSpace, { message: 'app.common.validation.no_space' })
       .default(''),
     client_key: z.string().max(256, { message: maxMsg(256) }).default(''),
     is_enabled: z.boolean().default(true),

@@ -619,7 +619,8 @@ select:-webkit-autofill:focus {
   inherits: false;
 }
 
-[data-animated-border]:has(input[aria-invalid="true"])::before {
+[data-animated-border]:has(input[aria-invalid="true"])::before,
+[data-animated-border][aria-invalid="true"]::before {
   content: "";
   position: absolute;
   inset: -2px;

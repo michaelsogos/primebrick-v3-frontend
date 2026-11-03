@@ -1,4 +1,5 @@
 import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+import { isColumnSortable } from '$lib/entity-list/types';
 import type { useColumnOrder } from '../composables/useColumnOrder.svelte';
 
 export function createSortingHandlers(
@@ -46,7 +47,7 @@ export function createSortingHandlers(
 
   function handleSortClick(col: MetaColumn) {
     if (rowsLoading()) return;
-    if (col.sortable === false) return;
+    if (!isColumnSortable(col)) return;
     const sortCb = onSortChange();
     if (sortKey() !== col.key) {
       sortCb(col.key, 'asc');

@@ -263,6 +263,18 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 			return field in conflicts;
 		},
 		/**
+		 * Inject foreign conflicts from a non-collab delta source — the
+		 * draft restore replays tainted edits over a stale base the same
+		 * way (local = applied draft value, remote = fresh server value).
+		 * Resolution goes through `resolveConflict` identically: keep_mine
+		 * keeps the already-applied local, use_remote writes remote.
+		 */
+		addConflicts(entries: Record<string, FieldConflict>) {
+			if (!Object.keys(entries).length) return;
+			conflicts = { ...conflicts, ...entries };
+			syncStatus();
+		},
+		/**
 		 * Optimistic-lock conflict (PUT → 409 ERR01): the save was rejected —
 		 * someone else committed first. Fetch the FRESH record (not the audit
 		 * delta — the marker may not have landed yet), realign the lock, then

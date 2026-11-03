@@ -1,7 +1,7 @@
 /**
  * job-rule-form-lifecycle — the EntityFormPage archetype end-to-end.
  *
- * /system/job/rules/create is declared kind:"create" + entity + page_props.form
+ * /system/job/triggers/create is declared kind:"create" + entity + page_props.form
  * (NO component_url): the resolver picks the archetype, the host renders the
  * form from served meta.columns + placement.
  *
@@ -28,11 +28,11 @@ const JOB_BASE = "/svc/job/api/v1/entities";
 // test — module state only survives within a single worker.
 test.describe.configure({ mode: "serial" });
 
-test.describe("job_rule entity-form archetype lifecycle", () => {
+test.describe("job_trigger entity-form archetype lifecycle", () => {
   let createdUuid = "";
   let createdVersion = 0;
 
-  test("create a job_rule in a child tab → it closes → parent list refreshes", async ({
+  test("create a job_trigger in a child tab → it closes → parent list refreshes", async ({
     page,
     context,
   }) => {
@@ -49,7 +49,7 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
     await loginAsTestAdmin(page);
 
     // 1. The create CTA opens the archetype in a NEW TAB (popup contract).
-    await page.goto("/system/job/rules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
@@ -74,12 +74,11 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
       popup.getByTestId("entity-form-field-target_subject").locator('button[aria-label="Help"]'),
     ).toBeVisible();
 
-    // event_subject — census-fed ComboSelect (detailed options: description +
-    // raw subject) with free entry for undeclared subjects.
+    // event_subject — census-fed ComboSelect, closed to declared emits.
     const eventField = popup.getByTestId("entity-form-field-event_subject");
     await eventField.locator('[role="combobox"]').click();
     const commandInput = popup.locator('[data-slot="command-input"]:visible').last();
-    await commandInput.fill("e2e.event.fired");
+    await commandInput.fill("crm.customer_changed");
     await commandInput.press("Enter");
     await popup.keyboard.press("Escape");
 
@@ -90,18 +89,45 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
       .first()
       .fill("@every 1h");
 
-    // target_subject — must match jobs.due.<lane>.* with lane=user.
+    // target_subject — closed census combo (allow_create: false): only
+    // callables declared via real makeNatsRequestRoute/payload_schema
+    // contracts are selectable.
     await popup
       .getByTestId("entity-form-field-target_subject")
-      .locator("input")
-      .fill("jobs.due.user.e2e.test");
+      .locator('[role="combobox"]')
+      .click();
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: "crm.emit_fake_event" })
+      .first()
+      .click();
+    await popup.keyboard.press("Escape");
 
-    // execution_context — badge ComboSelect, default "user".
+    // payload_map — the callable contract requires `event` (enum): map it
+    // to a fixed value before Save unlocks. The row's kind combo is narrow —
+    // click its left edge (center hits the disabled clear button).
+    const eventRow = popup.getByTestId("payload-map-row-event");
+    await eventRow.locator('[role="combobox"]').first().click({ position: { x: 8, y: 18 } });
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: /fixed value|valore fisso|constant|costante/i })
+      .first()
+      .click();
+    await eventRow.locator('[role="combobox"]').nth(1).click({ position: { x: 8, y: 18 } });
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: "crm.customer_changed" })
+      .first()
+      .click();
+    await popup.keyboard.press("Escape");
+
+    // execution_context — badge ComboSelect, default.
     // enabled — SwitchField, default true. Both left at defaults.
+    await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
 
     // 3. Submit → the child broadcasts 'refresh' and CLOSES itself.
     const postCapture = popup.waitForResponse(
-      (r) => r.url().includes("/entities/job_rule") && r.request().method() === "POST",
+      (r) => r.url().includes("/entities/job_trigger") && r.request().method() === "POST",
       { timeout: 15000 },
     );
     await popup.getByTestId("entity-form-submit").click();
@@ -120,7 +146,7 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
     // filtered by the unique name we just wrote.
     const api = page.request;
     const listRes = await api.get(
-      `${JOB_BASE}/job_rule/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
+      `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
     );
     expect(listRes.ok()).toBeTruthy();
     const rows = ((await listRes.json()).rows ?? []) as Array<{ uuid: string; version: number }>;
@@ -133,13 +159,13 @@ test.describe("job_rule entity-form archetype lifecycle", () => {
     await loginAsTestAdmin(page);
     test.skip(!createdUuid, "no row was created by the previous test");
     const res = await page.request.delete(
-      `${JOB_BASE}/job_rule/${createdUuid}?version=${createdVersion}`,
+      `${JOB_BASE}/job_trigger/${createdUuid}?version=${createdVersion}`,
     );
     expect(res.ok()).toBeTruthy();
 
     // The row must be gone from the default list (soft-deleted → excluded).
     const check = await page.request.get(
-      `${JOB_BASE}/job_rule/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
+      `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
     );
     const rows = ((await check.json()).rows ?? []) as unknown[];
     expect(rows.length).toBe(0);

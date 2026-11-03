@@ -32,6 +32,7 @@
   import { createSortingHandlers } from './handlers/sorting';
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
   import { setAuditColumnsContext, setEntitiesNsContext } from './context';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
@@ -142,11 +143,11 @@
   // `orderedColumns`); the sticky/audited groups are derived from column flags.
   const allColumns = $derived(columns);
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetime_iana_toggle));
-  const sortableColumns = $derived(allColumns.filter((c) => c.sortable !== false));
+  const sortableColumns = $derived(allColumns.filter((c) => isColumnSortable(c)));
   const searchableColumns = $derived(
-    allColumns.filter((c) => c.searchable !== false && c.type === 'text')
+    allColumns.filter((c) => isColumnSearchable(c) && c.type === 'text')
   );
-  const filterableColumns = $derived(allColumns.filter((c) => c.filterable !== false));
+  const filterableColumns = $derived(allColumns.filter((c) => isColumnFilterable(c)));
   const stickyColumnsGroup = $derived(
     columnOrder.applyKeyOrder(allColumns.filter((c) => c.sticky === true), orderState.sticky)
   );

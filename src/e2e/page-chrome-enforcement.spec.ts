@@ -13,8 +13,8 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * shell would show zero headers; one that rebuilt its own chrome would
  * show two.
  *
- *   - list archetype:      /system/job/rules            (EntityTablePage)
- *   - form archetype:      /system/job/rules/create     (EntityFormPage pilot)
+ *   - list archetype:      /system/job/triggers            (EntityTablePage)
+ *   - form archetype:      /system/job/triggers/create     (EntityFormPage pilot)
  *   - remote page:         /system/job/job-schedules/create (esm chunk)
  *   - custom pages:        /system/settings/migrations, /system/settings/credentials
  *
@@ -31,8 +31,8 @@ const HEADER = "[data-testid='page-header']";
 const PRESENCE = "[data-testid='page-header-presence']";
 
 const SURFACES: Array<{ name: string; route: string }> = [
-  { name: "list archetype", route: "/system/job/rules" },
-  { name: "form archetype", route: "/system/job/rules/create" },
+  { name: "list archetype", route: "/system/job/triggers" },
+  { name: "form archetype", route: "/system/job/triggers/create" },
   { name: "remote page", route: "/system/job/job-schedules/create" },
   { name: "custom page (migrations)", route: "/system/settings/migrations" },
   { name: "custom page (credentials)", route: "/system/settings/credentials" },

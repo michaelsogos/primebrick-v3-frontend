@@ -4,6 +4,7 @@
   import { cn } from '$lib/utils.js';
   import * as Table from '$lib/components/ui/table';
   import type { MetaColumn } from '$lib/entity-list/types';
+  import { isColumnSortable } from '$lib/entity-list/types';
   import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUp } from '@primebrick/ui/vendor/lucide'
   import { ArrowDown } from '@primebrick/ui/vendor/lucide';
@@ -40,7 +41,7 @@
   const renderColumns = $derived(columns.filter((c) => visibleKeys.includes(c.key)));
 
   function handleSortClick(col: MetaColumn) {
-    if (col.sortable === false) return;
+    if (!isColumnSortable(col)) return;
     if (sortKey === col.key) {
       onSortChange(col.key, sortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -70,7 +71,7 @@
     {#each renderColumns as col, colIdx (col.key)}
       <Table.Head
         class={stickyCellClass(col.key, colIdx, true) ??
-          (col.sortable !== false
+          (isColumnSortable(col)
             ? rowsLoading
               ? 'relative z-10 select-none opacity-60'
               : 'relative z-10 cursor-pointer select-none'
@@ -86,7 +87,7 @@
               title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
             />
           {/if}
-          {#if col.sortable !== false}
+          {#if isColumnSortable(col)}
             {#if sortKey !== col.key}
               <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
             {:else if sortDir === 'asc'}
