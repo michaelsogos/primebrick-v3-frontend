@@ -69,7 +69,7 @@
 <div class="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
   {#if hasAnyBulkCapability}
     <Button
-      variant="outline"
+      variant="ghost"
       size="xs"
       onclick={onToggleToolbarMode}
     >

@@ -58,8 +58,7 @@
 {#if hasAppliedFilters}
   <div class="flex flex-wrap items-center gap-2">
     <Button
-      variant="soft"
-      tone="primary"
+      variant="ghost"
       size="xs"
       onclick={onResetFilters}
     >
