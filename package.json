@@ -17,6 +17,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "check:standards": "bun ../primebrick-v3-sdk/tools/check-standards.ts src --profile=fe",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run",
