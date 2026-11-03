@@ -8,7 +8,7 @@
   import { onMount } from 'svelte';
   import { Coins } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
-  import { Search } from '@primebrick/ui/vendor/lucide';
+  import { SearchInput } from '@primebrick/ui';
 
   interface Props {
     currentCurrency: string;
@@ -101,16 +101,11 @@
     {$t('system.settings.config.currencySelect.title')}
   {/snippet}
   {#snippet toolbar()}
-    <div class="relative">
-      <Search class="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <input
-        type="text"
-        bind:value={searchQuery}
-        placeholder={$t('system.settings.config.currencySelect.searchPlaceholder')}
-        class="w-full rounded-md border border-input bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-        data-testid="currency-select-search"
-      />
-    </div>
+    <SearchInput
+      bind:value={searchQuery}
+      placeholder={$t('system.settings.config.currencySelect.searchPlaceholder')}
+      data_testid="currency-select-search"
+    />
   {/snippet}
 
   {#if !searchQuery && favoriteCurrencies.length > 0}

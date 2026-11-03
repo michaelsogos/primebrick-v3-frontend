@@ -3,11 +3,7 @@
   import { Button } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
-  import Choicebox from '$lib/components/ui/choicebox/choicebox.svelte';
-  import ChoiceboxItem from '$lib/components/ui/choicebox/choicebox-item.svelte';
-  import ChoiceboxTitle from '$lib/components/ui/choicebox/choicebox-title.svelte';
-  import ChoiceboxDescription from '$lib/components/ui/choicebox/choicebox-description.svelte';
-  import ChoiceboxIndicator from '$lib/components/ui/choicebox/choicebox-indicator.svelte';
+  import { Choicebox } from '@primebrick/ui';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
   import { getEntitiesNsContext } from '../context';
@@ -61,18 +57,18 @@
   </Dialog.Header>
   {#if selectedCount > 0}
     <div class="py-4">
-      <Choicebox bind:value={exportScope} onValueChange={(v) => onExportScopeChange(v as 'selected' | 'all')}>
-        <ChoiceboxItem value="selected">
-          <ChoiceboxTitle>Solo i {selectedCount} elementi selezionati</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta solo gli elementi selezionati nella tabella</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-        <ChoiceboxItem value="all">
-          <ChoiceboxTitle>Tutti i {totalCount} elementi</ChoiceboxTitle>
-          <ChoiceboxDescription>Esporta tutti gli elementi della tabella (con filtri correnti)</ChoiceboxDescription>
-          <ChoiceboxIndicator />
-        </ChoiceboxItem>
-      </Choicebox>
+      <Choicebox.Root bind:value={exportScope} onValueChange={(v) => onExportScopeChange(v as 'selected' | 'all')}>
+        <Choicebox.Item value="selected">
+          <Choicebox.Title>Solo i {selectedCount} elementi selezionati</Choicebox.Title>
+          <Choicebox.Description>Esporta solo gli elementi selezionati nella tabella</Choicebox.Description>
+          <Choicebox.Indicator />
+        </Choicebox.Item>
+        <Choicebox.Item value="all">
+          <Choicebox.Title>Tutti i {totalCount} elementi</Choicebox.Title>
+          <Choicebox.Description>Esporta tutti gli elementi della tabella (con filtri correnti)</Choicebox.Description>
+          <Choicebox.Indicator />
+        </Choicebox.Item>
+      </Choicebox.Root>
     </div>
   {/if}
   <Dialog.Footer class="gap-2 sm:space-x-0 flex-col sm:flex-row">

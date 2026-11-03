@@ -2,7 +2,7 @@
   import { SvelteURL } from 'svelte/reactivity';
   import type { HTMLInputAttributes } from "svelte/elements";
   import { type WithElementRef } from "$lib/utils.js";
-  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
+  import { InputGroup } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import { parseTypeConfig } from "$lib/config/type-config-schema";
@@ -127,10 +127,10 @@
 </script>
 
 <div class="w-full">
-  <InputGroup
+  <InputGroup.Root
     class="group/input border-primary-gradient hover:brightness-105 focus-within:ring-2 focus-within:ring-ring/50 rounded-md transition-all duration-200 {className}"
   >
-    <InputGroupButton
+    <InputGroup.Button
       variant="ghost"
       size="xs"
       class="h-full rounded-l-md rounded-r-none border-right-primary-gradient-soft hover:brightness-105 transition-colors font-mono"
@@ -142,9 +142,9 @@
       {#if !readonly && !disabled}
         <ChevronDown class="size-3 ml-0.5 opacity-60" />
       {/if}
-    </InputGroupButton>
+    </InputGroup.Button>
 
-    <InputGroupInput
+    <InputGroup.Input
       bind:ref={inputRef}
       type="text"
       inputmode="url"
@@ -160,7 +160,7 @@
     />
 
     {#if readonly && value && !disabled}
-      <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
+      <InputGroup.Addon align="inline-end" class="bg-transparent border-none pl-0">
         <button
           type="button"
           onclick={handleCopy}
@@ -176,11 +176,11 @@
             <Copy class="size-4" />
           {/if}
         </button>
-      </InputGroupAddon>
+      </InputGroup.Addon>
     {:else if !readonly && !disabled}
       <!-- Clear CTA always rendered (disabled while empty) — a disappearing
            CTA shifts the input layout. -->
-      <InputGroupAddon align="inline-end" class="bg-transparent border-none pl-0">
+      <InputGroup.Addon align="inline-end" class="bg-transparent border-none pl-0">
         <button
           type="button"
           onclick={handleClear}
@@ -193,9 +193,9 @@
         >
           <Eraser class="size-4" />
         </button>
-      </InputGroupAddon>
+      </InputGroup.Addon>
     {/if}
-  </InputGroup>
+  </InputGroup.Root>
   {#if translatedError}
     <p class="text-xs text-destructive mt-1">{translatedError}</p>
   {/if}

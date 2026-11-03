@@ -23,7 +23,7 @@
   import { onMount, type Snippet } from 'svelte';
   import { browser } from '$app/environment';
   import { Button } from '@primebrick/ui';
-  import { Textarea } from '$lib/components/ui/textarea';
+  import { Textarea } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { Popover } from '@primebrick/ui';
   import { cn } from '$lib/utils';

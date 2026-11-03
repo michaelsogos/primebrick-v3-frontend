@@ -5,7 +5,8 @@
   import { PrimeField } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
-  import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
+  import { Tabs } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { updateService, fetchModuleConfig, updateModuleConfigKey } from '$lib/api';
@@ -120,17 +121,17 @@
 >
 
     <div class="flex-1 overflow-auto p-4">
-      <Tabs bind:value={activeTab}>
-        <TabsList>
-          <TabsTrigger value="service-info">
+      <Tabs.Root bind:value={activeTab}>
+        <Tabs.List>
+          <Tabs.Trigger value="service-info">
             {$t('system.settings.modules.config.serviceInfo')}
-          </TabsTrigger>
-          <TabsTrigger value="module-config">
+          </Tabs.Trigger>
+          <Tabs.Trigger value="module-config">
             {$t('system.settings.modules.config.moduleConfig')}
-          </TabsTrigger>
-        </TabsList>
+          </Tabs.Trigger>
+        </Tabs.List>
 
-        <TabsContent value="service-info" class="flex-1 overflow-y-auto p-4">
+        <Tabs.Content value="service-info" class="flex-1 overflow-y-auto p-4">
           <form id="service-info-form" onsubmit={(e) => { e.preventDefault(); handleSaveServiceInfo(); }}>
             <div class="grid grid-cols-2 gap-6">
               <PrimeField id="name" label={$t('system.settings.modules.config.name')}>
@@ -159,11 +160,20 @@
 
               <PrimeField id="icon_type" label={$t('system.settings.modules.config.iconType')}>
                 {#snippet control({ id })}
-                  <select {id} bind:value={formData.icon_type} class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
-                    <option value="icon">{$t('system.settings.modules.config.iconTypeIcon')}</option>
-                    <option value="url">{$t('system.settings.modules.config.iconTypeUrl')}</option>
-                    <option value="base64">{$t('system.settings.modules.config.iconTypeBase64')}</option>
-                  </select>
+                  <ComboSelect
+                    {id}
+                    mode="single"
+                    value={formData.icon_type}
+                    onChange={(v) => (formData.icon_type = v as IconType)}
+                    options={[
+                      { value: 'icon', label: $t('system.settings.modules.config.iconTypeIcon') },
+                      { value: 'url', label: $t('system.settings.modules.config.iconTypeUrl') },
+                      { value: 'base64', label: $t('system.settings.modules.config.iconTypeBase64') },
+                    ]}
+                    valueField="value"
+                    labelField="label"
+                    searchable={false}
+                  />
                 {/snippet}
               </PrimeField>
 
@@ -199,9 +209,9 @@
               </div>
             </div>
           </form>
-        </TabsContent>
+        </Tabs.Content>
 
-        <TabsContent value="module-config" class="flex-1 overflow-y-auto p-4">
+        <Tabs.Content value="module-config" class="flex-1 overflow-y-auto p-4">
           {#if configLoading}
             <div class="text-sm text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if configError}
@@ -238,8 +248,8 @@
               {/each}
             </div>
           {/if}
-        </TabsContent>
-      </Tabs>
+        </Tabs.Content>
+      </Tabs.Root>
     </div>
 
   {#snippet footerActions()}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
   import { type WithElementRef } from "$lib/utils.js";
-  import { InputGroup, InputGroupButton, InputGroupInput } from "$lib/components/ui/input-group";
+  import { InputGroup } from "@primebrick/ui";
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -145,10 +145,10 @@
 </script>
 
 <div class="w-full">
-  <InputGroup
+  <InputGroup.Root
     class="group/input border-primary-gradient hover:brightness-105 focus-within:ring-2 focus-within:ring-ring/50 rounded-md transition-all duration-200 {className}"
   >
-    <InputGroupButton
+    <InputGroup.Button
       variant="ghost"
       size="xs"
       class="h-full rounded-l-md rounded-r-none border-right-primary-gradient-soft hover:brightness-105 transition-colors"
@@ -162,9 +162,9 @@
       {#if !readonly && !disabled}
         <ChevronDown class="size-3 ml-0.5 opacity-60" />
       {/if}
-    </InputGroupButton>
+    </InputGroup.Button>
 
-    <InputGroupInput
+    <InputGroup.Input
       bind:ref={inputRef}
       type="tel"
       inputmode="tel"
@@ -212,7 +212,7 @@
         <Eraser class="size-4" />
       </button>
     {/if}
-  </InputGroup>
+  </InputGroup.Root>
   {#if translatedError}
     <p class="text-xs text-destructive mt-1">{translatedError}</p>
   {/if}

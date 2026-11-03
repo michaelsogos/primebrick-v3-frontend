@@ -3,11 +3,11 @@
   import { Switch } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
-  import { Textarea } from '$lib/components/ui/textarea';
+  import { Textarea } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
-  import DateWheelPicker from '$lib/components/date-dropper/date-wheel-picker.svelte';
+  import { DateWheelPicker } from '@primebrick/ui';
   import * as Password from '$lib/components/ui/password';
-  import { NumericInput } from '$lib/components/ui/numeric-input';
+  import { NumericInput } from '@primebrick/ui';
   import { UrlInput } from '$lib/components/ui/url-input';
   import { EmailInput } from '$lib/components/ui/email-input';
   import { PhoneInput } from '$lib/components/ui/phone-input';
@@ -16,6 +16,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { parseTypeConfig, serializeTypeConfig } from '$lib/config/type-config-schema';
   import { apiFetch } from '$lib/api';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import {
     CalendarDate,
     CalendarDateTime,
@@ -119,6 +120,15 @@
     const config = parseTypeConfig(type_config) ?? {};
     config.currency = code;
     onTypeConfigChange(serializeTypeConfig(config));
+  }
+
+  // The currency CTA click opens the host-side currency selection sheet —
+  // NumericInput only forwards the click; sheet wiring stays in the shell.
+  function openCurrencyPicker() {
+    openSheet('config.currencySelect', {
+      currentCurrency: moneyCurrency,
+      onCurrencyChange: handleCurrencyChange,
+    });
   }
 
   // String representation of value for display in select/input components
@@ -391,7 +401,7 @@
     lang={$uiLang}
     currencySymbol={moneyCurrencySymbol}
     currencyCode={moneyCurrency}
-    onCurrencyChange={onTypeConfigChange ? handleCurrencyChange : undefined}
+    onCurrencyClick={onTypeConfigChange ? openCurrencyPicker : undefined}
     data-testid={`config-input-money-${fieldKey}`}
   />
 {:else if type === 'date' || type === 'datetime' || type === 'time'}

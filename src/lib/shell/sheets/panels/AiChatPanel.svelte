@@ -12,7 +12,7 @@
   import { browser } from '$app/environment';
   import { Sheet } from "@primebrick/ui";
   import { Button } from '@primebrick/ui';
-  import { Textarea } from '$lib/components/ui/textarea';
+  import { Textarea } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';

@@ -5,7 +5,7 @@
  * duplicated across:
  *   - config-validation.ts (extractValidation + ConfigValidation interface)
  *   - ConfigValueInput.svelte (4× inline JSON.parse for badge/select/money/currency)
- *   - useNumericInput.svelte.ts (own parseTypeConfig + ParsedTypeConfig)
+ *   - useNumericInput.svelte.ts in @primebrick/ui (narrow inline reader of the same shape)
  *
  * The FE cannot import these types from @primebrick/sdk (the SDK is a Node.js
  * library with server-only deps). This module mirrors the SDK's ConfigValidation

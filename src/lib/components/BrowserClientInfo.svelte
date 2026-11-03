@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
+  import { getResolvedIanaTimeZone } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { cn } from '$lib/utils';
   import { MapPin } from '@primebrick/ui/vendor/lucide';

@@ -3,6 +3,7 @@
   import { BorderedDialog } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
+  import { ComboSelect } from '@primebrick/ui';
   import { useOtpInput } from '@primebrick/ui';
   import { Label } from '@primebrick/ui';
   import { Spinner } from '$lib/components/ui/spinner';
@@ -158,17 +159,18 @@
         {#if availableFactors.length > 1}
           <div class="space-y-2">
             <Label for="mfa-stepup-factor">{$t('app.auth.mfaStepUp.selectFactor')}</Label>
-            <select
-              id="mfa-stepup-factor"
-              class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            <ComboSelect
+              mode="single"
               bind:value={factorId}
-            >
-              {#each availableFactors as factor (factor.factor_id)}
-                <option value={factor.factor_id}>
-                  {factor.label || $t('app.auth.mfa.defaultLabel')} ({factor.factor_type})
-                </option>
-              {/each}
-            </select>
+              options={availableFactors.map((f) => ({
+                value: f.factor_id,
+                label: `${f.label || $t('app.auth.mfa.defaultLabel')} (${f.factor_type})`,
+              }))}
+              valueField="value"
+              labelField="label"
+              searchable={false}
+              id="mfa-stepup-factor"
+            />
           </div>
         {/if}
 

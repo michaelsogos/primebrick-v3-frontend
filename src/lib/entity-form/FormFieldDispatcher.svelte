@@ -25,8 +25,8 @@
 		PayloadMapEditor,
 		ScheduleSpecInput,
 	} from '@primebrick/ui';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import { NumericInput } from '$lib/components/ui/numeric-input';
+	import { Textarea } from '@primebrick/ui';
+	import { NumericInput } from '@primebrick/ui';
 	import { EmailInput } from '$lib/components/ui/email-input';
 	import { UrlInput } from '$lib/components/ui/url-input';
 	import { PhoneInput } from '$lib/components/ui/phone-input';

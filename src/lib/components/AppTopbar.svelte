@@ -15,7 +15,7 @@
   import { AiIcon } from '$lib/components/ui/ai-icon';
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
-  import { getResolvedIanaTimeZone } from '$lib/browser-iana-timezone';
+  import { getResolvedIanaTimeZone } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';

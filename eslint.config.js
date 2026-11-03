@@ -192,6 +192,34 @@ export default ts.config(
     },
   },
   {
+    /**
+     * Raw HTML form controls (`<input>`/`<select>`/`<textarea>`) are
+     * canonical-component-only — every user-facing field MUST go through
+     * the @primebrick/ui wrappers (Input/TextInput/NumericInput,
+     * ComboSelect, Textarea…) so chrome, a11y and i18n stay uniform.
+     * A bare element was the ScheduleSpecInput drift — construction-time
+     * enforcement now. Legit raw elements live ONLY inside primitive
+     * wrappers (excluded below) or carry an inline
+     * `<!-- eslint-disable-next-line no-restricted-syntax -->` with reason.
+     */
+    files: ['src/**/*.svelte'],
+    ignores: [
+      // Canonical primitive wrappers — the raw element IS their job.
+      'src/lib/components/ui/smart-regex-input/**',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "SvelteElement[name.name='input'], SvelteElement[name.name='select'], SvelteElement[name.name='textarea']",
+          message:
+            'Raw HTML controls are forbidden — use the canonical components (@primebrick/ui Input/TextInput/NumericInput, ComboSelect, Textarea…). Exempt only primitive wrappers. See docs/ai/form-field-standard.md.',
+        },
+      ],
+    },
+  },
+  {
     // Project-specific rule overrides
     rules: {
       // Align with AGENTS.md: prefer $derived() over $derived.by() when possible
