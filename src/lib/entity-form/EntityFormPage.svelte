@@ -13,6 +13,7 @@
 	 * `page_props.form`, same dispatchers, optimistic locking on `version`.
 	 */
 	import { tick, untrack } from 'svelte';
+	import { get } from 'svelte/store';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -184,17 +185,6 @@
 		for (const code of censusModules) void loadModuleTranslations(code, lang, { bestEffort: true });
 	});
 
-	const targetCallable = $derived(
-		callableDecls.find(
-			(c) => c.subject === (form ? ($form['target_subject'] as string | undefined) : undefined),
-		),
-	);
-	const sourceEmit = $derived(
-		emitDecls.find(
-			(e) => e.subject === (form ? ($form['event_subject'] as string | undefined) : undefined),
-		),
-	);
-
 	const prepared = $derived.by(() => {
 		if (!meta || !formDecl) return null;
 		if (isDetail && !record) return null;
@@ -226,6 +216,15 @@
 	let isTainted = $state<PreparedForm['isTainted']>()!;
 	let reset = $state<PreparedForm['reset']>()!;
 	let submitting = $state(false);
+
+	const targetSubjectValue = $derived(
+		formObj ? ($form['target_subject'] as string | undefined) : undefined,
+	);
+	const targetCallable = $derived(callableDecls.find((c) => c.subject === targetSubjectValue));
+	const eventSubjectValue = $derived(
+		formObj ? ($form['event_subject'] as string | undefined) : undefined,
+	);
+	const sourceEmit = $derived(emitDecls.find((e) => e.subject === eventSubjectValue));
 
 	/** The form's baseline values — create: declared defaults + type
 	 *  fallbacks; detail: the record's values (JSON cols stringified for
@@ -505,14 +504,14 @@
 		ready: () => formObj !== null,
 		fieldKeys: () => (formDecl?.fields ?? []).map((f) => f.key),
 		baseVersion: () => recordVersion,
-		data: () => (form ? ($form as Record<string, unknown>) : {}),
-		tainted: () => (form ? (($tainted as Record<string, boolean>) ?? {}) : {}),
+		data: () => (formObj ? (get(form) as Record<string, unknown>) : {}),
+		tainted: () => (formObj ? ((get(tainted) as Record<string, boolean>) ?? {}) : {}),
 		// Same diff-semantics the form guard uses: `isTainted($tainted)`
 		// compares CURRENT values against the taint baseline — undoing an
 		// edit back to its original is "clean" again (no ghost drafts).
 		hasTainted: () =>
 			formObj
-				? (((isTainted as (p?: unknown) => boolean)($tainted as unknown)) ?? false)
+				? (((isTainted as (p?: unknown) => boolean)(get(tainted) as unknown)) ?? false)
 				: false,
 		setField: (k, v) => {
 			($form as Record<string, unknown>)[k] = v;

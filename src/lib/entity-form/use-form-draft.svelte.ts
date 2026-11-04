@@ -20,6 +20,7 @@
  * are swallowed — drafting must never break a form).
  */
 import { browser } from '$app/environment';
+import { SvelteSet } from 'svelte/reactivity';
 import type { FieldConflict } from '$lib/collaboration/merge-delta';
 
 const DRAFT_VERSION = 1;
@@ -90,7 +91,7 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 		if (!key) return 0;
 		const draft = readDraft(key);
 		if (!draft) return 0;
-		const validKeys = new Set(opts.fieldKeys());
+		const validKeys = new SvelteSet(opts.fieldKeys());
 		const data = opts.data();
 		const base = opts.baseVersion();
 		let applied = 0;

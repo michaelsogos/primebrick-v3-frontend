@@ -19,7 +19,7 @@
  * Locators use data-testid exclusively (brittle-on-purpose convention —
  * see docs/ai/e2e-testid-convention.md).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 test.describe("Typed configuration values", () => {

@@ -257,9 +257,11 @@ export default ts.config(
       'dist/**',
       'coverage/**',
       'docs/user-guide/_extracted/**',
-      '*.config.{js,ts}',
+      '**/*.config.{js,ts}',
       'scripts/**',
       'src/lib/__tests__/**',
+      'static/vendor/**',
+      '**/*.bak.*',
     ],
   },
 );
