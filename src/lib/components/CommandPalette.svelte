@@ -12,7 +12,7 @@
   import { Smile as SmileIcon } from '@primebrick/ui/vendor/lucide';
   import { User as UserIcon } from '@primebrick/ui/vendor/lucide';
   import { Command as CommandKeyGlyph } from '@primebrick/ui/vendor/lucide';
-  import { Kbd } from '$lib/components/ui/kbd';
+  import { Kbd } from '@primebrick/ui';
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
