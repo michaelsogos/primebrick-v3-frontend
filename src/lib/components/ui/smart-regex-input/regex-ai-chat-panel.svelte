@@ -18,7 +18,7 @@
   import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { explainRegex, summarizeRegex, type RegexSummary } from '$lib/components/ui/smart-regex-input/regex-explainer';
   import type { DeepReadonly } from '@primebrick/ui';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { Bot } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
