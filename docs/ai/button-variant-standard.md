@@ -37,3 +37,18 @@ roles, no manual styling.
   re-add them.
 - Sheet header CTAs are exempt: they use the shared `size-8` chrome documented
   in `docs/ai/sheets.md`, not `Button`.
+
+## Toolbar chrome — location rule
+
+Inside toolbar/list chrome (EntityListTable toolbars, FilterBar,
+card-view sort rows, sticky bulk bars) variants are role-scoped:
+
+| Role | Variant |
+|---|---|
+| Action CTAs (primary + semantic bulk ops) | `default` / `destructive` / `warning` / `success` / `info` — solid |
+| Secondary action with emphasis | `outline` + `tone` |
+| Muted utility controls (clear-all, sort/mode/dropdown triggers, refresh) | `ghost` |
+
+`variant="soft"` never appears in toolbar chrome — it is reserved for
+Layout-1 in-card secondary CTAs. Enforced by check-standards rule
+`button-variant-toolbar` (`appliesTo` in `.devin/check-standards.json`).
