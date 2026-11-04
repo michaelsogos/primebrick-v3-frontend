@@ -247,6 +247,10 @@ component **enforces** the presentation order — do not reorder manually:
 7. Button rules still apply: toggles = `ButtonGroup segmented` +
    `ghost icon-sm` + `aria-pressed`; primary = `variant="default"
    size="sm"`.
+8. **Variant roles inside toolbar chrome** — action CTAs = solid
+   (`default`/semantic), secondary emphasis = `outline`, muted utility
+   controls = `ghost`. `soft` never appears here — see
+   `docs/ai/button-variant-standard.md` (location rule).
 
 Canonical example: `/ai` models header in
 `ai/fe/src/AiSettingsPage.svelte` (remote page mounted at `/system/ai`)

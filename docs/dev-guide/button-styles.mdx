@@ -70,6 +70,11 @@ So "secondary button with the primary gradient border" is
 - Icon-only buttons: `size="icon-xs" | "icon-sm" | "icon" | "icon-lg"`.
   **Sheet header CTAs are exempt** — they use the shared `size-8` chrome from
   `docs/ai/sheets.md`, not `Button`.
+- **Toolbar/list chrome**: `soft` is forbidden there. Action CTAs use
+  solid variants, emphasized secondary CTAs use `outline` + `tone`,
+  muted utility controls (clear-all, sort/mode/dropdown triggers,
+  refresh) use `ghost`. `soft` is reserved for Layout-1 in-card
+  secondary CTAs.
 
 ## Sizes
 
