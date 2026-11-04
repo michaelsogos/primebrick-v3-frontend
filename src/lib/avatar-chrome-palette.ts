@@ -3,7 +3,14 @@
  * Light: saturated ~600/700 + white text vs ~hsl(210 20% 96%).
  * Dark: saturated ~400/500 + white text vs ~hsl(222 47% 12%) (--topbar-chrome).
  * Same seed picks the same hue family in both themes.
+ *
+ * Color math (luminance, rgb/hsl conversion) is shared — canonical
+ * implementations live in @primebrick/ui `colors/contrast`.
  */
+
+import { cssToLuminance, hexToRgb, hslToHex } from '@primebrick/ui';
+
+export { hslToHex };
 
 const AVATAR_CHROME_PALETTES = [
   { light: 'bg-sky-600 text-white', dark: 'dark:bg-sky-500 dark:text-white' },
@@ -57,31 +64,7 @@ export function avatarChromePaletteToHex(index: number): string {
  * Returns a value between 0 (black) and 1 (white)
  */
 export function calculateLuminance(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.5; // Default to middle if invalid
-
-  const [r, g, b] = rgb.map((channel) => {
-    channel = channel / 255;
-    return channel <= 0.03928
-      ? channel / 12.92
-      : Math.pow((channel + 0.055) / 1.055, 2.4);
-  });
-
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/**
- * Convert hex color to RGB array
- */
-function hexToRgb(hex: string): [number, number, number] | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? [
-        parseInt(result[1], 16),
-        parseInt(result[2], 16),
-        parseInt(result[3], 16)
-      ]
-    : null;
+  return cssToLuminance(hex) ?? 0.5; // Default to middle if invalid
 }
 
 /**
@@ -89,8 +72,8 @@ function hexToRgb(hex: string): [number, number, number] | null {
  * Returns 'white' for dark backgrounds, 'black' for light backgrounds
  */
 export function getContrastTextColor(hex: string): 'white' | 'black' {
-  const luminance = calculateLuminance(hex);
-  return luminance > 0.5 ? 'black' : 'white';
+  const luminance = cssToLuminance(hex);
+  return luminance != null && luminance > 0.5 ? 'black' : 'white';
 }
 
 // ─── Avatar gradient logic ────────────────────────────────────────────────
@@ -128,30 +111,6 @@ export function hexToHsl(hex: string): [number, number, number] | null {
     h /= 6;
   }
   return [h * 360, s * 100, l * 100];
-}
-
-/**
- * Convert HSL to hex color. Handles hue wraparound and clamps saturation/lightness.
- * @param h hue (0-360, wraps around)
- * @param s saturation (0-100, clamped)
- * @param l lightness (0-100, clamped)
- */
-export function hslToHex(h: number, s: number, l: number): string {
-  const hue = ((h % 360) + 360) % 360;
-  const sat = Math.max(0, Math.min(100, s)) / 100;
-  const light = Math.max(0, Math.min(100, l)) / 100;
-  const c = (1 - Math.abs(2 * light - 1)) * sat;
-  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const m = light - c / 2;
-  let r: number, g: number, b: number;
-  if (hue < 60) { r = c; g = x; b = 0; }
-  else if (hue < 120) { r = x; g = c; b = 0; }
-  else if (hue < 180) { r = 0; g = c; b = x; }
-  else if (hue < 240) { r = 0; g = x; b = c; }
-  else if (hue < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**
