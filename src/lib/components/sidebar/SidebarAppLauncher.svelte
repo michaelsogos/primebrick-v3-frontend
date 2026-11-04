@@ -1,8 +1,7 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
-  import { Popover, SwitchField } from '@primebrick/ui';
+  import { Popover, SwitchField, KeyboardHints } from '@primebrick/ui';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { Kbd } from '$lib/components/ui/kbd';
   import { menuListSelectedSurfaceDropdownClasses, menuListHoverNeutral } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
@@ -505,15 +504,17 @@
         data-testid="app-launcher-panel"
       >
         <!-- Virtual path header — the link the preview chain composes.
-             Line 1 labels (i18n), line 2 the resolved href == Enter's goto. -->
+             Line 1 labels (i18n), line 2 the resolved href == Enter's goto.
+             The mono line is ALWAYS rendered — a conditional mount made the
+             header jump from 1 to 2 lines on the first hover, flickering the
+             whole panel (same fix as prop-navigator's NavigatorHeader).
+             nbsp reserves the same height invisibly. -->
         <div
           class="border-b border-sidebar-border bg-sidebar-accent px-3 py-1.5 text-sidebar-accent-foreground"
           data-testid="app-launcher-path"
         >
           <div class="truncate text-sm font-medium">{shownPath.label}</div>
-          {#if shownPath.href}
-            <div class="truncate font-mono text-[11px] text-muted-foreground">{shownPath.href}</div>
-          {/if}
+          <div class="truncate font-mono text-[11px] text-muted-foreground">{shownPath.href ?? ' '}</div>
         </div>
         <div
           bind:this={panelEl}
@@ -755,32 +756,28 @@
             {/each}
           </div>
         </div>
-        <!-- Keyboard hints footer -->
-        <div
-          class="flex items-center gap-3 border-t border-border bg-muted/50 px-3 py-1.5 text-[11px] text-muted-foreground"
+        <!-- Keyboard hints footer — canonical KeyboardHints composite -->
+        <KeyboardHints
+          class="border-t border-border bg-muted/50 px-3 py-1.5"
           data-testid="app-launcher-footer"
+          hints={[
+            { keys: ['↑', '↓', '←', '→'] },
+            { keys: ['⏎'], label: $t('app.nav.goTo') },
+            { keys: ['esc'], size: 'modifier', label: $t('app.common.close') },
+          ]}
         >
-          <span class="inline-flex items-center gap-1">
-            <Kbd size="key">↑</Kbd><Kbd size="key">↓</Kbd><Kbd size="key">←</Kbd><Kbd size="key">→</Kbd>
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <Kbd size="key">⏎</Kbd>
-            <span>{$t('app.nav.goTo')}</span>
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <Kbd size="modifier">esc</Kbd>
-            <span>{$t('app.common.close')}</span>
-          </span>
-          <div class="ms-auto" data-testid="app-launcher-show-all">
-            <SwitchField
-              size="sm"
-              id="app-launcher-show-all-switch"
-              label={$t('app.nav.show_all')}
-              bind:checked={showAll}
-              class="scale-[0.75] origin-right"
-            />
-          </div>
-        </div>
+          {#snippet end()}
+            <div data-testid="app-launcher-show-all">
+              <SwitchField
+                size="sm"
+                id="app-launcher-show-all-switch"
+                label={$t('app.nav.show_all')}
+                bind:checked={showAll}
+                class="scale-[0.75] origin-right"
+              />
+            </div>
+          {/snippet}
+        </KeyboardHints>
       </Popover.Content>
     </Popover.Root>
   </Sidebar.MenuItem>

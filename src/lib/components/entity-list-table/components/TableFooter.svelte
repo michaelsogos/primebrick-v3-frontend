@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { ButtonGroup, Toolbar } from '@primebrick/ui';
+  import { ButtonGroup, Toolbar, KeyboardHints } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';
@@ -81,6 +81,25 @@
       />
     {/if}
   </div>
+  {/snippet}
+
+  {#snippet center()}
+  <!-- Centered keybind legend — the ELT bindings from
+       useKeyboardNavigation (absolute overlay, hidden when the footer
+       is too narrow to host it without collisions). -->
+  <KeyboardHints
+    class="hidden lg:flex"
+    data-testid="elt-kbd-legend"
+    hints={[
+      { keys: ['↑', '↓'], label: $t('system.entities.list.keys.move') },
+      ...(rowSelectionEnabled
+        ? [{ keys: ['Space'], label: $t('system.entities.list.keys.select') }]
+        : []),
+      { keys: ['⏎'], label: $t('system.entities.list.keys.actions') },
+      { keys: ['←', '→'], label: $t('system.entities.list.keys.preview') },
+      { keys: ['esc'], size: 'modifier', label: $t('app.common.close') },
+    ]}
+  />
   {/snippet}
 
   <!-- Right side: Page size + Pagination controls -->

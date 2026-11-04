@@ -463,6 +463,7 @@
   "app.errors.viewDetails": "View Details",
   "app.favorites.add": "Add to favourites",
   "app.favorites.empty": "No favourites yet — star a page to pin it here",
+  "app.favorites.other": "Other",
   "app.favorites.remove": "Remove from favourites",
   "app.favorites.title": "Favourites",
   "app.health.aiEnabled": "AI enabled",
