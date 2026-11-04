@@ -47,7 +47,7 @@
   import AiModelDetailsPopover from './ai-model-details-popover.svelte';
   import AiCerebellumSelector from './ai-cerebellum-selector.svelte';
   import { RealtimeMeter } from '$lib/components/ui/realtime-meter';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { BotIcon } from '$lib/components/ui/bot-icon';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { userProfileStore } from '$lib/user-profile-store.svelte';

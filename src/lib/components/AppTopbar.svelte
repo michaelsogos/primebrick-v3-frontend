@@ -12,7 +12,7 @@
   import { Globe } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
   import { BookOpen } from '@primebrick/ui/vendor/lucide'
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { GradientIcon } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '@primebrick/ui';

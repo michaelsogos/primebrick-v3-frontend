@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Pencil } from '@primebrick/ui/vendor/lucide';
   import { Eye } from '@primebrick/ui/vendor/lucide';

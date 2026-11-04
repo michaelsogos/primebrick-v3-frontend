@@ -101,13 +101,20 @@
 
   /** Favorite pages — resolved LIVE against the route census so labels and
    *  icons never go stale (the preference stores only route paths). A
-   *  favorite whose route left the census is `orphan` — rendered muted,
-   *  still removable. */
+   *  favorite whose route left the census is `orphan` — hidden from the
+   *  launcher but kept in prefs: it resurfaces automatically if the
+   *  route re-enters the census (module re-enabled, permission granted). */
   const favoriteItems = $derived.by(
-    (): { href: string; label_key: string | null; icon: string | null; orphan: boolean }[] => {
+    (): {
+      href: string;
+      label_key: string | null;
+      icon: string | null;
+      module: string | null;
+      orphan: boolean;
+    }[] => {
       const census = routesCensusFromModules(shellNav.modules);
-      const leaves = flattenNavLeaves(
-        shellNav.modules.flatMap((m) => m.nav ?? []),
+      const leaves = shellNav.modules.flatMap((m) =>
+        flattenNavLeaves(m.nav ?? []).map((l) => ({ ...l, module: m.id })),
       );
       return userPreferences.favorites().map((href) => {
         const decl =
@@ -118,6 +125,7 @@
           href,
           label_key: decl?.label_key ?? leaf?.label_key ?? null,
           icon: decl?.icon ?? leaf?.icon ?? null,
+          module: decl?.module ?? leaf?.module ?? null,
           orphan: !decl && !leaf,
         };
       });
@@ -125,6 +133,32 @@
   );
 
   const favoritesActive = $derived(activeApp === FAVORITES_ROOT);
+
+  /** Favorite groups — non-orphan items bucketed by owning module, in
+   *  module declaration order (orphans are filtered: hidden, kept in
+   *  prefs — see favoriteItems above). */
+  const favoriteGroups = $derived.by(() => {
+    const items = favoriteItems.filter((i) => !i.orphan);
+    return shellNav.modules
+      .map((m) => ({ m, items: items.filter((i) => i.module === m.id) }))
+      .filter((g) => g.items.length > 0);
+  });
+
+  let previewFavGroupId = $state<string | null>(null);
+
+  /** The previewed group, else the first group — same fallback model as
+   *  activeModuleId (content fallback, not selection). */
+  const activeFavGroupId = $derived(
+    previewFavGroupId && favoriteGroups.some((g) => g.m.id === previewFavGroupId)
+      ? previewFavGroupId
+      : (favoriteGroups[0]?.m.id ?? null)
+  );
+  const favGroupItems = $derived(
+    favoriteGroups.find((g) => g.m.id === activeFavGroupId)?.items ?? []
+  );
+  const previewFavGroup = $derived(
+    shellNav.modules.find((m) => m.id === activeFavGroupId) ?? null
+  );
 
   /** Modules rendered in column 2 — navigable first, then (reveal ON)
    *  `accessible:false` modules claiming this root, marked `hidden`.
@@ -219,7 +253,13 @@
       favoritesActive
         ? $t('app.favorites.title')
         : $t(`app.nav.roots.${activeApp ?? currentRoot}`),
-      selModule ? resolveModuleLabel(selModule, $t) : null,
+      favoritesActive
+        ? previewFavGroup
+          ? resolveModuleLabel(previewFavGroup, $t)
+          : null
+        : selModule
+          ? resolveModuleLabel(selModule, $t)
+          : null,
       selLeaf ? $t(selLeaf.label_key) : null,
     ]
       .filter(Boolean)
@@ -273,8 +313,8 @@
       Math.max(
         ROWS_MIN,
         displayRoots.length,
-        favoritesActive ? favoriteItems.length : displayModules.length,
-        previewPages.length
+        favoritesActive ? favoriteGroups.length : displayModules.length,
+        favoritesActive ? favGroupItems.length : previewPages.length
       )
     )
   );
@@ -297,6 +337,7 @@
     previewApp = root;
     previewModuleId = null;
     previewLeaf = null;
+    previewFavGroupId = null;
     // The Pages column previews this app's default module — prefetch its
     // meta so column 3 is populated when the pointer reaches it.
     const dflt = shellNav.defaultModuleForRoot(root);
@@ -384,15 +425,21 @@
       if (d && !d.hidden) void activateApp(d.root);
     } else if (col === 1) {
       if (favoritesActive) {
-        const item = favoriteItems[idx];
-        if (item) activateFavorite(item);
+        // A group row is a bucket, not a destination — Enter descends
+        // into its pages column like a tap preview.
+        focusRow(2, colFocusIdx[2]);
       } else {
         const d = displayModules[idx];
         if (d && !d.hidden) void activateModule(d.m);
       }
     } else if (col === 2) {
-      const item = previewPages[idx];
-      if (item) activatePage(item);
+      if (favoritesActive) {
+        const item = favGroupItems[idx];
+        if (item) activateFavorite(item);
+      } else {
+        const item = previewPages[idx];
+        if (item) activatePage(item);
+      }
     }
   }
 
@@ -514,7 +561,7 @@
           data-testid="app-launcher-path"
         >
           <div class="truncate text-sm font-medium">{shownPath.label}</div>
-          <div class="truncate font-mono text-[11px] text-muted-foreground">{shownPath.href ?? ' '}</div>
+          <div class="truncate font-mono text-[11px] text-muted-foreground">{shownPath.href || ' '}</div>
         </div>
         <div
           bind:this={panelEl}
@@ -594,8 +641,10 @@
             {/each}
           </div>
 
-          <!-- Column 2 — Modules of the selected app, or the favorites
-               list under the Preferiti pseudo-root. -->
+          <!-- Column 2 — Modules of the selected app, or the favorite
+               GROUPS (modules owning favorites) under the Preferiti
+               pseudo-root. Orphaned favorites are hidden: they stay in
+               user_preferences and resurface if their route returns. -->
           <div
             class="flex min-w-52 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
@@ -604,51 +653,41 @@
             data-testid="app-launcher-modules"
           >
             {#if favoritesActive}
-              {#each favoriteItems as item, i (item.href)}
+              {#each favoriteGroups as g, i (g.m.id)}
                 <div
                   role="option"
-                  aria-selected={false}
-                  aria-disabled={item.orphan}
+                  aria-selected={activeFavGroupId === g.m.id}
                   tabindex={colFocusIdx[1] === i ? 0 : -1}
                   data-launcher-row
-                  data-favorite-href={item.href}
-                  data-orphan={item.orphan || undefined}
-                  class={cn(rowBase, menuListHoverNeutral, item.orphan && 'opacity-50')}
-                  onfocus={() => trackFocus(1, i)}
-                  onmouseenter={() =>
-                    (hoverPath = {
-                      label: `${$t('app.favorites.title')} › ${item.label_key ? $t(item.label_key) : item.href}`,
-                      href: item.href,
-                    })}
-                  onclick={() => activateFavorite(item)}
+                  data-module-id={g.m.id}
+                  class={cn(
+                    rowBase,
+                    menuListHoverNeutral,
+                    activeFavGroupId === g.m.id && menuListSelectedSurfaceDropdownClasses
+                  )}
+                  onfocus={() => {
+                    trackFocus(1, i);
+                    previewFavGroupId = g.m.id;
+                  }}
+                  onmouseenter={() => {
+                    previewFavGroupId = g.m.id;
+                    hoverPath = {
+                      label: `${$t('app.favorites.title')} › ${resolveModuleLabel(g.m, $t)}`,
+                      href: '',
+                    };
+                  }}
+                  onclick={() => {
+                    previewFavGroupId = g.m.id;
+                    focusRow(2, colFocusIdx[2]);
+                  }}
                   onkeydown={(e) => handleRowKeydown(e, 1, i)}
                 >
                   <div class="flex size-5 shrink-0 items-center justify-center">
-                    {#if item.icon}
-                      <DynamicIcon name={item.icon} size={14} />
-                    {:else}
-                      <GradientIcon size={14} paths={starPaths} stops={amberStops} filled stroke_width={1.5} />
-                    {/if}
+                    <DynamicIcon name={g.m.icon ?? 'layout-grid'} size={14} />
                   </div>
-                  <span class="min-w-0 flex-1 truncate">
-                    {item.label_key ? $t(item.label_key) : item.href}
-                  </span>
-                  {#if page.url.pathname === item.href}
-                    <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
-                  {/if}
-                  <button
-                    type="button"
-                    tabindex="-1"
-                    class={ctaBtn}
-                    aria-label={$t('app.favorites.remove')}
-                    data-testid="launcher-favorite-remove"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      removeFavorite(item.href);
-                    }}
-                  >
-                    <StarOff size={14} />
-                  </button>
+                  <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(g.m, $t)}</span>
+                  <span class="shrink-0 text-[10px] tabular-nums text-muted-foreground">{g.items.length}</span>
+                  <ChevronRight class="size-4 shrink-0 opacity-60" aria-hidden="true" />
                 </div>
               {:else}
                 <div
@@ -713,14 +752,70 @@
             {/if}
           </div>
 
-          <!-- Column 3 — Pages of the selected module under the previewed app -->
+          <!-- Column 3 — Pages of the selected module under the previewed
+               app; under Preferiti, the favorite pages of the group. -->
           <div
             class="flex min-w-52 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
-            aria-label={$t('app.nav.links')}
+            aria-label={favoritesActive ? $t('app.favorites.title') : $t('app.nav.links')}
             data-launcher-col="2"
             data-testid="app-launcher-pages"
           >
+            {#if favoritesActive}
+              {#each favGroupItems as item, i (item.href)}
+                <div
+                  role="option"
+                  aria-selected={false}
+                  tabindex={colFocusIdx[2] === i ? 0 : -1}
+                  data-launcher-row
+                  data-favorite-href={item.href}
+                  class={cn(rowBase, menuListHoverNeutral)}
+                  onfocus={() => trackFocus(2, i)}
+                  onmouseenter={() =>
+                    (hoverPath = {
+                      label: [
+                        $t('app.favorites.title'),
+                        previewFavGroup ? resolveModuleLabel(previewFavGroup, $t) : null,
+                        item.label_key ? $t(item.label_key) : item.href,
+                      ]
+                        .filter(Boolean)
+                        .join(' › '),
+                      href: item.href,
+                    })}
+                  onclick={() => activateFavorite(item)}
+                  onkeydown={(e) => handleRowKeydown(e, 2, i)}
+                >
+                  <div class="flex size-5 shrink-0 items-center justify-center">
+                    {#if item.icon}
+                      <DynamicIcon name={item.icon} size={14} />
+                    {:else}
+                      <GradientIcon size={14} paths={starPaths} stops={amberStops} filled stroke_width={1.5} />
+                    {/if}
+                  </div>
+                  <span class="min-w-0 flex-1 truncate">
+                    {item.label_key ? $t(item.label_key) : item.href}
+                  </span>
+                  {#if page.url.pathname === item.href}
+                    <span class="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
+                  {/if}
+                  <button
+                    type="button"
+                    tabindex="-1"
+                    class={ctaBtn}
+                    aria-label={$t('app.favorites.remove')}
+                    data-testid="launcher-favorite-remove"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      removeFavorite(item.href);
+                    }}
+                  >
+                    <StarOff size={14} />
+                  </button>
+                </div>
+              {:else}
+                <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
+              {/each}
+            {:else}
             {#each previewPages as item, i (item.id)}
               <div
                 role="option"
@@ -754,6 +849,7 @@
             {:else}
               <div class="px-2 py-1.5 text-xs text-muted-foreground">—</div>
             {/each}
+            {/if}
           </div>
         </div>
         <!-- Keyboard hints footer — canonical KeyboardHints composite -->

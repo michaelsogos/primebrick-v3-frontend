@@ -16,7 +16,7 @@
   import { t } from '$lib/i18n';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { inputTrailingIconColorClasses } from '@primebrick/ui';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
