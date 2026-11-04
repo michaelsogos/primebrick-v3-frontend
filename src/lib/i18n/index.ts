@@ -53,9 +53,16 @@ function interpolate(template: string, params: Record<string, unknown>): string 
   });
 }
 
-export const dict = derived([uiLang, _mergedDicts], ([$lang, $dicts]) =>
-  $dicts[$lang] ?? $dicts[DEFAULT_LANG] ?? {}
-);
+export const dict = derived([uiLang, _mergedDicts], ([$lang, $dicts]) => ({
+  // app.* EN floor — the generated static dict, always present. Any `app.*`
+  // key missing in the fetched dicts still renders English instead of the
+  // raw key (this is what keeps the chrome readable when the BE is down).
+  ...(enGBFallback as Dict),
+  // Fetched en-GB dicts override the static floor (fresher, cache + API).
+  ...($dicts[DEFAULT_LANG] ?? {}),
+  // The current language always wins per key.
+  ...($dicts[$lang] ?? {}),
+}));
 
 
 
@@ -73,12 +80,10 @@ export const t: Readable<(key: string, params?: Record<string, unknown>) => stri
   dict,
   ($dict) =>
     (key: string, params?: Record<string, unknown>) => {
-      // 1. Try current language dict (from BE)
-      // 2. Return the raw key if nothing found — no en-GB fallback for app.* keys.
-      //    This makes missing translations visible (raw key) instead of silently
-      //    showing English, which causes "half English, half Italian" pages.
-      //    The en-GB fallback is only used when the BE is unreachable (see
-      //    use-module-translations.svelte.ts → loadPublicTranslations catch block).
+      // The dict already carries the layered fallback chain (static app.* EN
+      // floor → fetched en-GB → current lang). A raw key therefore means the
+      // key is missing in EVERY layer — the missing-translation detector
+      // stays intact for keys that don't exist anywhere.
       const template = $dict[key] ?? key;
       return params ? interpolate(template, params) : template;
     }

@@ -7,10 +7,12 @@
     "node": "24"
   },
   "scripts": {
+    "predev": "node scripts/i18n-fallback.mjs",
     "dev": "pnpm vendor:build && vite dev",
     "vendor:build": "vite build --config vendor/vite.vendor.config.ts",
     "version:auto": "node scripts/version-sync.mjs",
-    "prebuild": "node scripts/version-sync.mjs && pnpm check:standards && pnpm extract-docs",
+    "i18n:fallback": "node scripts/i18n-fallback.mjs",
+    "prebuild": "node scripts/i18n-fallback.mjs && node scripts/version-sync.mjs && pnpm check:standards && pnpm extract-docs",
     "build": "pnpm vendor:build && vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo .",
