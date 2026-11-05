@@ -1,8 +1,13 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import { resolve } from '$app/paths';
+  import { routesCensusFromModules } from '$lib/api';
+  import { entityRefHref, reverseRefHref } from '$lib/entity-list/entity-links';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { formatListCellValue } from '@primebrick/ui';
+  import { formatListCellValue, toDisplayString } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { Badge } from '@primebrick/ui';
+  import { ScheduleSpecCell, DynamicIcon } from '@primebrick/ui';
   import { badgeClassesFromToken } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { Snippet } from 'svelte';
@@ -11,7 +16,7 @@
   import { CircleX } from '@primebrick/ui/vendor/lucide';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
-  import { getAuditColumnsContext } from '../context';
+  import { getAuditColumnsContext, getMetaUidContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
 
   let {
@@ -30,6 +35,11 @@
 
   const value = $derived(row[column.key]);
 
+  /** Module route census — resolves `ref`/`reverse_ref` entity names to
+   *  real declared routes (FE-owned URLs, never hardcoded in meta). */
+  const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
+  const metaUid = getMetaUidContext();
+
   /** `type:"sparkline"` — resolve the per-row bucket series from the
    *  batch-loaded `sparklineData` map; series labels resolve `label_key`
    *  through i18n. */
@@ -42,7 +52,7 @@
   );
   const sparklineBuckets = $derived(
     column.type === 'sparkline' && column.sparkline
-      ? (sparklineData?.[column.key]?.by_key?.[String(row[column.sparkline.row_key] ?? '')] as
+      ? (sparklineData?.[column.key]?.by_key?.[toDisplayString(row[column.sparkline.row_key] ?? '')] as
           | { bucket_start: string; [k: string]: string | number }[]
           | undefined)
       : undefined
@@ -51,32 +61,52 @@
   function isDatetimeIanaRecordMode(col: MetaColumn, modeByKey: Record<string, 'browser' | 'record'>): boolean {
     return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
   }
+
+  /** `format:"nats_subject"` drill-down — the module list is the canonical
+   *  subject destination until the planned capabilities/events page lands
+   *  (keep in sync with the `ref` column contract when it ships). */
+  const NATS_SUBJECT_HREF = '/system/settings/modules';
+
+  type JsonCondition = { field: string; op?: string; value?: unknown };
+
+  /** `format:"json"` cell content: a `[{field, op, value}]` condition list
+   *  renders as prose chips (job trigger `filter` contract); anything else
+   *  falls back to truncated JSON text. */
+  function jsonCellContent(raw: unknown): { kind: 'conditions'; conditions: JsonCondition[] } | { kind: 'text'; text: string } {
+    if (Array.isArray(raw) && raw.length > 0 && raw.every((c) => c !== null && typeof c === 'object' && 'field' in c)) {
+      return { kind: 'conditions', conditions: raw as JsonCondition[] };
+    }
+    const text = toDisplayString(raw);
+    return { kind: 'text', text: text.length > 60 ? text.slice(0, 60) + '…' : text };
+  }
 </script>
 
 {#if cellSnippet}
   {@render cellSnippet({ row, column })}
 {:else if column.type === 'boolean'}
-  {#if value === true}
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <CircleCheck class="size-4 text-green-600 shrink-0" />
-      </Tooltip.Trigger>
-      <Tooltip.Content>
-        <p>{$t(`system.entities.user_profile.fields.${column.key}`)}</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-  {:else if value === false}
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <CircleX class="size-4 text-muted-foreground shrink-0" />
-      </Tooltip.Trigger>
-      <Tooltip.Content>
-        <p>{$t(`system.entities.user_profile.fields.${column.key}_false`)}</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-  {:else}
-    <span class="min-w-0 truncate">-</span>
-  {/if}
+  <div class="flex justify-center">
+    {#if value === true}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <CircleCheck class="size-4 text-green-600 shrink-0" />
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          <p>{$t(column.tooltip ?? column.label_key)}</p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {:else if value === false}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <CircleX class="size-4 text-muted-foreground shrink-0" />
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          <p>{$t(column.tooltip ?? column.label_key)}</p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {:else}
+      <span class="min-w-0 truncate">-</span>
+    {/if}
+  </div>
 {:else if column.type === 'sparkline' && column.sparkline}
   <SparklineBars
     buckets={sparklineBuckets}
@@ -93,6 +123,70 @@
   >
     {column.badge.values[badgeValue]?.label_text || $t(column.badge.values[badgeValue]?.label_key || `system.entities.customer.status.${badgeValue}`)}
   </Badge>
+{:else if column.format === 'schedule_spec' && typeof value === 'string' && value !== ''}
+  <ScheduleSpecCell {value} />
+{:else if column.format === 'nats_subject' && value}
+  <a
+    href={resolve(NATS_SUBJECT_HREF)}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
+    title={toDisplayString(value)}
+  >
+    <Badge variant="outline" class="gap-1 shadow-none">
+      {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
+      <span class="truncate font-mono text-[11px]">{toDisplayString(value)}</span>
+    </Badge>
+  </a>
+{:else if column.format === 'json'}
+  {@const json = jsonCellContent(value)}
+  {#if json.kind === 'conditions'}
+    <div class="flex min-w-0 flex-wrap gap-1">
+      {#each json.conditions as cond (cond.field)}
+        <Badge variant="secondary" class="gap-1 font-normal">
+          <span class="font-semibold">{cond.field}</span>
+          <span class="text-primary">{cond.op ?? 'eq'}</span>
+          {#if cond.value !== undefined}<span class="italic text-muted-foreground">{toDisplayString(cond.value)}</span>{/if}
+        </Badge>
+      {/each}
+    </div>
+  {:else}
+    <span class="min-w-0 truncate font-mono text-[11px]">{json.text || '-'}</span>
+  {/if}
+{:else if column.type === 'ref' && column.ref && value}
+  {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
+  {#if href}
+    <a
+      href={resolve(href as '/')}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
+    >
+      <Badge variant="outline" class="gap-1 shadow-none">
+        {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
+        <span class="truncate font-mono text-[11px]">{toDisplayString(value)}</span>
+      </Badge>
+    </a>
+  {:else}
+    <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(value)}</span>
+  {/if}
+{:else if column.type === 'ref_count' && column.reverse_ref}
+  {@const href = reverseRefHref(routeCensus, column.reverse_ref, metaUid, row)}
+  {#if href}
+    <a
+      href={resolve(href as '/')}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-flex items-center gap-1 text-primary hover:underline"
+    >
+      <Badge variant="secondary" class="gap-1 shadow-none">
+        {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
+        <span>{value !== undefined && value !== null ? toDisplayString(value) : $t(column.label_key)}</span>
+      </Badge>
+    </a>
+  {:else}
+    <span class="min-w-0 truncate">{value !== undefined && value !== null ? toDisplayString(value) : '-'}</span>
+  {/if}
 {:else if column.type === 'datetime'}
   {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}
   {@const parts = formatDatetimeCellDisplay(

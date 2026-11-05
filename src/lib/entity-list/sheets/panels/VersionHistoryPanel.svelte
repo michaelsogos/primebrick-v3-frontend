@@ -4,7 +4,7 @@
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
-  import { SheetPanelLayout } from '@primebrick/ui';
+  import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import { History } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide'
@@ -285,7 +285,7 @@
         if (column?.type === 'datetime' || isDateTimeField) {
           return formatUiDateTime(value as string | number | Date, $uiLang);
         }
-        return String(value);
+        return toDisplayString(value);
       }
 
       let badgeColor: string | undefined;

@@ -1,4 +1,5 @@
 import type { MetaColumn } from '$lib/entity-list/types';
+import { toDisplayString } from '@primebrick/ui';
 import { isBlankish } from '../utils';
 
 /**
@@ -55,13 +56,13 @@ export function getAuditableDisplayValue<T extends object>(
 
     // Use display name if present and non-empty
     if (!isBlankish(nameValue)) {
-      return String(nameValue);
+      return toDisplayString(nameValue);
     }
   }
 
   // Fall back to original value
   if (isBlankish(raw)) return '-';
-  return String(raw);
+  return toDisplayString(raw);
 }
 
 /**
