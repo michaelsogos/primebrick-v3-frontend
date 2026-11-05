@@ -38,3 +38,16 @@ export function setEntitiesNsContext(ns: string) {
 export function getEntitiesNsContext(): string {
   return getContext(ENTITIES_NS_KEY) ?? 'system';
 }
+
+const META_UID_KEY = Symbol('metaUid');
+
+/** Set the table's identity column (`meta.uid`) for child components —
+ *  e.g. `reverse_ref` links filter the child list by this row's uid. */
+export function setMetaUidContext(uid: string) {
+  setContext(META_UID_KEY, uid);
+}
+
+/** The table's identity column key — `'uuid'` by contract default. */
+export function getMetaUidContext(): string {
+  return getContext(META_UID_KEY) ?? 'uuid';
+}

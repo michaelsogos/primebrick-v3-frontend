@@ -3,6 +3,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Badge } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
+  import { toDisplayString } from '@primebrick/ui';
   import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser as EraserIcon } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
@@ -34,7 +35,7 @@
         return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
       }
     }
-    return String(value);
+    return toDisplayString(value);
   }
 
   function formatFilterDateValue(isoString: string): string {

@@ -9,6 +9,7 @@
   import { PanelRightOpen } from '@primebrick/ui/vendor/lucide';
   import * as Table from '$lib/components/ui/table';
   import { Button } from '@primebrick/ui';
+  import { DynamicIcon } from '@primebrick/ui';
   import { Checkbox } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { stickyCellClassWithCompute, datetimeIanaHeadHighlightClass } from '../utils/cell-styling';
@@ -95,6 +96,7 @@
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
             <span class="inline-flex items-center gap-1">
+              {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
@@ -128,6 +130,7 @@
           {#if col.datetime_iana_toggle}
             <div class="flex w-full min-w-0 items-center justify-between gap-1">
               <span class="inline-flex min-w-0 items-center gap-1">
+                {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
                 {$t(col.label_key)}
                 {#if isColumnSortable(col)}
                   {#if sortKey !== col.key}
@@ -163,6 +166,7 @@
             </div>
           {:else}
             <span class="inline-flex items-center gap-1">
+              {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}

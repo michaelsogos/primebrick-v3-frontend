@@ -5,6 +5,7 @@
   import { Button } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import type { RowCustomAction } from '$lib/entity-list/types';
+  import type { EntityRowActions } from '../types';
   import { isCustomActionVisible } from '$lib/entity-list';
   import { cn } from '$lib/utils.js';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
@@ -45,22 +46,7 @@
     rowSelectionEnabled: boolean;
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
@@ -179,7 +165,7 @@
                 class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
               >
                 <div class="flex items-center gap-2">
-                  <DynamicIcon name={action.icon} size={16} class="opacity-70" />
+                  {#if action.icon}<DynamicIcon name={action.icon} size={16} class="opacity-70" />{/if}
                   <span>{$t(action.translation_key)}</span>
                 </div>
               </DropdownMenu.Item>

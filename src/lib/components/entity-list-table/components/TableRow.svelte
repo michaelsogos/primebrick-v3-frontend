@@ -292,7 +292,7 @@
                     class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
                   >
                     <div class="flex items-center gap-2">
-                      <DynamicIcon name={action.icon} size={16} class="opacity-70" />
+                      {#if action.icon}<DynamicIcon name={action.icon} size={16} class="opacity-70" />{/if}
                       <span>{$t(action.translation_key)}</span>
                     </div>
                   </DropdownMenu.Item>

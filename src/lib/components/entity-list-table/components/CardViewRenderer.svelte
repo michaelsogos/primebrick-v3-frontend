@@ -13,6 +13,7 @@
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
   import type { MetaColumn, RowCustomAction, SortDir } from '$lib/entity-list/types';
+  import type { EntityRowActions } from '../types';
   import { ArrowUpNarrowWide } from '@primebrick/ui/vendor/lucide'
   import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
@@ -78,22 +79,7 @@
     previewPanel: { state: { focusedRowIndex: number | null } };
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;

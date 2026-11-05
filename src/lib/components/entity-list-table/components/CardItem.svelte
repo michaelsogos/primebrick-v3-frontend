@@ -4,6 +4,7 @@
   import CardFieldRenderer from './CardFieldRenderer.svelte';
   import CardActions from './CardActions.svelte';
   import type { MetaColumn, RowCustomAction } from '$lib/entity-list/types';
+  import type { EntityRowActions } from '../types';
 
   let {
     row,
@@ -46,22 +47,7 @@
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     viewMode: 'cards_list' | 'cards_grid';
     onEntityRowClick: (key: string, e: MouseEvent) => void;

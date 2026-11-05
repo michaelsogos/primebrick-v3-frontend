@@ -3,7 +3,7 @@
   import { cn } from '$lib/utils.js';
   import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { Snippet } from 'svelte';
   import type { CellArgs, EntityRowActions } from '../types';
@@ -71,7 +71,7 @@
 
   function rowKey(row: TRow): string {
     const v = row[uid as keyof typeof row] as unknown;
-    return typeof v === 'string' ? v : String(v ?? '');
+    return typeof v === 'string' ? v : toDisplayString(v ?? '');
   }
 
   function toggleRowSelect(key: string) {

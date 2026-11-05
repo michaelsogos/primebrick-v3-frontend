@@ -33,7 +33,7 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
-  import { setAuditColumnsContext, setEntitiesNsContext } from './context';
+  import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext } from './context';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
@@ -125,6 +125,12 @@
   $effect(() => {
     setEntitiesNsContext(entities_ns ?? 'system');
     uiSetEntitiesNsContext(entities_ns ?? 'system');
+  });
+
+  // The table's identity column — `reverse_ref` cells filter child lists
+  // by it.
+  $effect(() => {
+    setMetaUidContext(uid);
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the

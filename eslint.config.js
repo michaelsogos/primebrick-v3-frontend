@@ -29,6 +29,31 @@ export default ts.config(
   },
   {
     /**
+     * Wire-value display safety — `extJsonParse` (json-bigint strict) emits
+     * null-prototype objects; `String(obj)` throws `Cannot convert object to
+     * primitive value` on them. Display coercion of unknown/record values
+     * MUST go through `toDisplayString` (@primebrick/ui) — type-aware lint
+     * enforces it. `*.svelte*` files inherit type info from the projectService
+     * block above; plain `.ts` files get it here.
+     */
+    files: ['src/**/*.ts'],
+    ignores: ['src/**/*.svelte.ts'],
+    languageOptions: {
+      parser: ts.parser,
+      parserOptions: { projectService: true },
+    },
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'error',
+    },
+  },
+  {
+    files: ['src/**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'],
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'error',
+    },
+  },
+  {
+    /**
      * Sheets are a closed, typed system: every right/left panel goes through
      * `openSheet('<panelId>', props)` (sheet-manager.svelte.ts) and renders
      * inside `SheetPanelLayout`. Direct `ui/sheet` imports outside the
