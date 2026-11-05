@@ -36,6 +36,8 @@
   import { setAuditColumnsContext, setEntitiesNsContext } from './context';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
+  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
+  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
 
   import type { EntityListTableProps } from './types';
 
@@ -80,6 +82,7 @@
     rowActionsEnabled = false,
     rowActions,
     entityCustomActions,
+    entityBulkCustomActions,
     entityActions,
     customActionHandlers,
     onCreateAction,
@@ -369,11 +372,16 @@
 
   const dialogs = useDialogs<TRow>();
 
+  /** Step-up MFA driver — endpoint-dispatched row/bulk custom actions ride
+   *  it; the dialog renders once at table level. */
+  const stepUp = useMfaStepUp();
+
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
     actions: () => entityActions,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
+    mfaStepUp: () => stepUp,
     onSelectionChange: (keys) => {
       selectedKeys = keys;
     },
@@ -432,6 +440,12 @@
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
   }));
 
+  /** Bulk-bar custom CTAs — declared permission gate (endpoint dispatch
+   *  rides `meta.actions` via `useBulkActions.handleBulkCustomAction`). */
+  const effectiveBulkCustomActions = $derived(
+    entityBulkCustomActions?.filter((a) => hasRequiredPermission(a.required_permission)) ?? []
+  );
+
   /** True when at least one standard or custom row action is allowed —
    *  `restore` counts because a deleted row may show only that entry. */
   const hasEntityRowActions = $derived(
@@ -483,6 +497,7 @@
     closeRowDropdown: closeRowDropdown,
     t: $t,
     customActionHandlers: () => customActionHandlers,
+    mfaStepUp: () => stepUp,
     dialogs: {
       openDeleteDialog: dialogs.openDeleteDialog,
       closeDeleteDialog: dialogs.closeDeleteDialog,
@@ -625,6 +640,8 @@
     onBulkDelete={() => bulkActions.handleBulkDelete()}
     onBulkRestore={() => bulkActions.handleBulkRestore()}
     bulkCapabilities={bulkCapabilities}
+    bulkCustomActions={effectiveBulkCustomActions}
+    onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
   />
 
   <EntityListTableContent
@@ -735,5 +752,14 @@
     {entity}
     entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
+  />
+
+  <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on
+       the owning route land here on 403 mfa_step_up_required. -->
+  <MfaStepUpDialog
+    bind:open={stepUp.dialogOpen}
+    action={stepUp.pendingAction}
+    target_resource={stepUp.pendingTargetResource}
+    onauthorized={stepUp.handleAuthorized}
   />
 

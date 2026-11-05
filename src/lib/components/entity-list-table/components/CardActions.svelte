@@ -4,6 +4,8 @@
   import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import type { RowCustomAction } from '$lib/entity-list/types';
+  import { isCustomActionVisible } from '$lib/entity-list';
   import { cn } from '$lib/utils.js';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
@@ -69,7 +71,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
-    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     isListMode: boolean;
   } = $props();
 </script>
@@ -170,7 +172,7 @@
             </DropdownMenu.Item>
           {/if}
           {#if entityRowActions?.custom_actions && handleCustomAction}
-            {#each entityRowActions.custom_actions as action (action.action_name)}
+            {#each entityRowActions.custom_actions.filter((a) => isCustomActionVisible(a, row)) as action (action.action_name)}
               {@const isDisabled = action.disabled_when_deleted && rowDeleted}
               <DropdownMenu.Item
                 onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}

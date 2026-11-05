@@ -18,6 +18,7 @@ export type {
 	MetaColumn,
 	MetaColumnType,
 	RowCustomAction,
+	BulkCustomAction,
 	TableMeta,
 	EntityActionEndpoint,
 	EntityAction,

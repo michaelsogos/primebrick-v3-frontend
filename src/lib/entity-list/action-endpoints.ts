@@ -10,7 +10,7 @@
  * The `/api/v1/entities/{entity}` + suffix convention remains the fallback
  * for actions whose endpoint is absent (stale/mocked metas).
  */
-import type { EntityAction, EntityActionEndpoint } from './types';
+import type { EntityAction, EntityActionEndpoint, RowCustomAction } from './types';
 
 /** Look up the declared endpoint for an op — null when the action or its
  *  endpoint is absent (disabled ops carry no endpoint). */
@@ -29,6 +29,20 @@ export function findActionEndpoint(
  * `uuid` but not guaranteed). Any other `:name` resolves from `row[name]`,
  * falling back to `row[uid]`.
  */
+/**
+ * Per-row visibility predicate for `meta.table.row_custom_actions` —
+ * `visible_on` pins an action to a set of values of a row field (e.g.
+ * `status ∈ ["paused"]` for RESUME). Absent → always visible.
+ */
+export function isCustomActionVisible(
+  action: RowCustomAction,
+  row: Record<string, unknown>
+): boolean {
+  const cond = action.visible_on;
+  if (!cond) return true;
+  return (cond.values as unknown[]).includes(row[cond.field]);
+}
+
 export function fillActionPath(
   path: string,
   row: Record<string, unknown>,

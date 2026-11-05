@@ -3,7 +3,7 @@
   import { EntityListToolbar } from '../toolbar';
 
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
-  import type { MetaColumn, AdvancedFilter, FilterPreset } from '$lib/entity-list/types';
+  import type { MetaColumn, AdvancedFilter, BulkCustomAction, FilterPreset } from '$lib/entity-list/types';
 
   let {
     search,
@@ -50,7 +50,9 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
-    bulkCapabilities
+    bulkCapabilities,
+    bulkCustomActions = [],
+    onBulkCustomAction
   }: EntityListTableHeaderProps = $props();
 
   type EntityListTableHeaderProps = {
@@ -99,6 +101,8 @@
     onBulkDelete: () => void;
     onBulkRestore: () => void;
     bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    bulkCustomActions?: BulkCustomAction[];
+    onBulkCustomAction?: (action: BulkCustomAction) => void;
   };
 </script>
 
@@ -184,4 +188,6 @@
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
   bulkCapabilities={bulkCapabilities}
+  bulkCustomActions={bulkCustomActions}
+  onBulkCustomAction={onBulkCustomAction}
 />
