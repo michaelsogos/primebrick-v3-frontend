@@ -12,7 +12,7 @@
   import { Switch } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
-  import type { MetaColumn, SortDir } from '$lib/entity-list/types';
+  import type { MetaColumn, RowCustomAction, SortDir } from '$lib/entity-list/types';
   import { ArrowUpNarrowWide } from '@primebrick/ui/vendor/lucide'
   import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
@@ -129,7 +129,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
-    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();

@@ -1,9 +1,19 @@
-import { apiFetch, entityApiBase } from '$lib/api';
+import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { MetaColumn, EntityAction } from '$lib/entity-list/types';
+import type { MetaColumn, EntityAction, RowCustomAction } from '$lib/entity-list/types';
 import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
+
+/** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
+ *  endpoint-dispatched custom actions transparently pass through the
+ *  403 mfa_step_up_required → dialog → retry flow. */
+interface MfaStepUpDriver {
+  executeWithToken: (
+    requestFn: (token: string | null) => Promise<Response>,
+    context: { action: string; target_resource: string }
+  ) => Promise<Response>;
+}
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
@@ -34,6 +44,8 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, unknown>) => string;
   customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
+  /** Host step-up driver — wraps endpoint-dispatched custom actions. */
+  mfaStepUp?: () => MfaStepUpDriver | undefined;
   dialogs?: {
     openDeleteDialog: () => void;
     closeDeleteDialog: () => void;
@@ -69,7 +81,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown,
     dialogs,
     customActionHandlers: getCustomActionHandlers,
-    t: tFn = (key: string) => key // Default fallback
+    t: tFn = (key: string) => key, // Default fallback
+    mfaStepUp: getMfaStepUp
   } = options;
 
   const _state = $state({
@@ -310,22 +323,73 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     });
   }
 
-  function handleCustomAction(action: { action_name: string; translation_key: string }, row: TRow) {
+  /**
+   * Generic endpoint dispatch for `meta.table.row_custom_actions` — the op
+   * is declared in `meta.actions` (`entity_op` on the owning RPC route), so
+   * the write rides its declared endpoint instead of a page-side handler.
+   * `row_key` binds the row identity into the POST body. Returns false when
+   * the op has no declared endpoint (misdeclared meta → 501 toast).
+   */
+  async function runEndpointAction(action: RowCustomAction, row: TRow): Promise<boolean> {
+    const ep = findActionEndpoint(getActions?.(), action.action_name);
+    if (!ep) return false;
+    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn());
+    const body = action.row_key
+      ? JSON.stringify({ [action.row_key]: row[action.row_key] })
+      : undefined;
+    const request = (token: string | null) =>
+      apiFetch(url, {
+        method: ep.method || 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'X-MFA-Action-Authorization': token } : {})
+        },
+        body
+      });
+    const stepUp = getMfaStepUp?.();
+    const res = stepUp
+      ? await stepUp.executeWithToken(request, { action: action.action_name, target_resource: entityFn() })
+      : await request(null);
+    // RFC7807 failures are already surfaced by apiFetch — only refresh+toast
+    // on success.
+    if (!res.ok) return true;
+    getOnRefresh?.()?.();
+    onRowActionComplete?.();
+    pushNotification({
+      impact: 'LOW',
+      messageKey: 'app.common.done',
+      scope: tFn('app.common.errors.scope.customActionApi'),
+      toast: true
+    });
+    return true;
+  }
+
+  async function handleCustomAction(action: RowCustomAction, row: TRow) {
     const handler = getCustomActionHandlers?.()?.[action.action_name];
     if (handler) {
       handler(row);
     } else {
-      // No handler registered for this action — show a "not implemented"
-      // toast so the user sees the action exists but isn't wired yet.
-      pushNotification({
-        type: '/errors/not-implemented',
-        title: tFn('app.common.errors.notImplemented.title'),
-        status: 501,
-        detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
-        instance: `customAction:${action.action_name}`,
-        internal_code: 'CUSTOM_ACTION_NO_HANDLER',
-        severity: 'LOW',
-      });
+      let dispatched = false;
+      try {
+        dispatched = await runEndpointAction(action, row);
+      } catch (error) {
+        console.error('Custom action failed:', error);
+        onRowActionError?.(error as Error);
+        dispatched = true; // surfaced — don't double-notify with the 501
+      }
+      if (!dispatched) {
+        // No handler and no declared endpoint — the action exists in meta
+        // but isn't wired anywhere (contract violation).
+        pushNotification({
+          type: '/errors/not-implemented',
+          title: tFn('app.common.errors.notImplemented.title'),
+          status: 501,
+          detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+          instance: `customAction:${action.action_name}`,
+          internal_code: 'CUSTOM_ACTION_NO_HANDLER',
+          severity: 'LOW',
+        });
+      }
     }
     closeRowDropdown?.();
   }

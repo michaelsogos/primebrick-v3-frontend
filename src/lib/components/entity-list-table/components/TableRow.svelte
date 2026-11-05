@@ -27,6 +27,8 @@
   import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { DynamicIcon } from '@primebrick/ui';
   import type { CellArgs, EntityRowActions } from '../types';
+  import type { RowCustomAction } from '$lib/entity-list/types';
+  import { isCustomActionVisible } from '$lib/entity-list';
   import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
 
   type TableRowCellArgs = CellArgs<TRow>;
@@ -96,7 +98,7 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     stickyCellClass: (key: string, idx: number, isHeader: boolean) => string | undefined;
     isRowDeleted: (row: TRow) => boolean;
   } = $props();
@@ -283,7 +285,7 @@
                 </DropdownMenu.Item>
               {/if}
               {#if entityRowActions?.custom_actions && handleCustomAction}
-                {#each entityRowActions.custom_actions as action (action.action_name)}
+                {#each entityRowActions.custom_actions.filter((a) => isCustomActionVisible(a, row)) as action (action.action_name)}
                   {@const isDisabled = action.disabled_when_deleted && isRowDeleted(row)}
                   <DropdownMenu.Item
                     onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}

@@ -52,6 +52,17 @@ export function entityApiBase(entity: string): string {
   return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
+/**
+ * `/svc/<service>` proxy prefix for service-owned entities; `''` for
+ * BE-owned. Declared endpoints (`meta.actions[].endpoint.path`, e.g.
+ * `/api/v1/actions/<op>`) are service-local — they must ride the same
+ * proxy prefix. Single source: ENTITY_SERVICE_MAP.
+ */
+export function serviceApiPrefix(entity: string): string {
+  const service = ENTITY_SERVICE_MAP[entity];
+  return service ? `/svc/${service}` : '';
+}
+
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
 // live in $lib/auth/session-check — shared with the login page boot.
 

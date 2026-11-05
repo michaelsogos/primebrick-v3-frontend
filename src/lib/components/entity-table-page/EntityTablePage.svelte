@@ -213,6 +213,7 @@
     columns={list.columns}
     rowActionsEnabled={rowActions}
     entityCustomActions={meta?.table?.row_custom_actions}
+    entityBulkCustomActions={meta?.table?.bulk_custom_actions}
     entityActions={meta?.actions}
     {customActionHandlers}
     onCreateAction={effectiveOnCreateAction}

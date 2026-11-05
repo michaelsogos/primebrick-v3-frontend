@@ -3,7 +3,8 @@
   import { Button } from '@primebrick/ui';
   import { FilterBar } from '../toolbar';
   import { fly } from 'svelte/transition';
-  import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
+  import { DynamicIcon } from '@primebrick/ui';
+  import type { MetaColumn, AdvancedFilter, BulkCustomAction } from '$lib/entity-list/types';
   import { ListCheck } from '@primebrick/ui/vendor/lucide'
   import { Funnel } from '@primebrick/ui/vendor/lucide'
   import { Download } from '@primebrick/ui/vendor/lucide'
@@ -30,7 +31,9 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
-    bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true }
+    bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true },
+    bulkCustomActions = [],
+    onBulkCustomAction
   }: {
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
@@ -51,6 +54,9 @@
     onBulkRestore: () => void;
     /** Capability + permission gate per bulk CTA (from `meta.actions`). */
     bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    /** `meta.table.bulk_custom_actions` CTAs (permission-filtered upstream). */
+    bulkCustomActions?: BulkCustomAction[];
+    onBulkCustomAction?: (action: BulkCustomAction) => void;
   } = $props();
 
   /** True when at least one bulk CTA can ever render for this entity. When
@@ -61,7 +67,8 @@
       bulkCapabilities.htmlExport ||
       bulkCapabilities.duplicate ||
       bulkCapabilities.delete ||
-      bulkCapabilities.restore
+      bulkCapabilities.restore ||
+      bulkCustomActions.length > 0
   );
   const showBulkPanel = $derived(hasAnyBulkCapability && toolbarMode === 'bulk');
 </script>
@@ -154,6 +161,17 @@
           {$t('system.entities.list.bulkActions.restore')}
         </Button>
       {/if}
+      {#each bulkCustomActions as action (action.action_name)}
+        <Button
+          variant={action.text_color?.includes('red') ? 'destructive' : 'default'}
+          size="xs"
+          onclick={() => onBulkCustomAction?.(action)}
+          disabled={action.requires_selection !== false && selectedKeys.length === 0}
+        >
+          <DynamicIcon name={action.icon} size={14} class="opacity-70" />
+          {$t(action.translation_key)}
+        </Button>
+      {/each}
     </div>
   {/if}
 </div>

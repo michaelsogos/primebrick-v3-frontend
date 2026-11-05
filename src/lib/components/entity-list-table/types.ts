@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, BulkCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -120,6 +120,9 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    * from `entityActions` only — no parallel boolean flags.
    */
   entityCustomActions?: RowCustomAction[];
+  /** Bulk-bar custom CTAs from `meta.table.bulk_custom_actions` — endpoint
+   *  dispatch rides `meta.actions` (entity_op-declared routes). */
+  entityBulkCustomActions?: BulkCustomAction[];
   /**
    * Derived capability contract from `meta.actions`. When provided, standard
    * row/bulk CTAs are additionally gated on the op existing, being `enabled`,

@@ -1,9 +1,19 @@
-import { apiFetch, entityApiBase } from '$lib/api';
+import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { EntityAction } from '$lib/entity-list/types';
+import type { EntityAction, BulkCustomAction } from '$lib/entity-list/types';
 import { findActionEndpoint } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
+
+/** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
+ *  endpoint-dispatched bulk actions transparently pass through the
+ *  403 mfa_step_up_required → dialog → retry flow. */
+interface MfaStepUpDriver {
+  executeWithToken: (
+    requestFn: (token: string | null) => Promise<Response>,
+    context: { action: string; target_resource: string }
+  ) => Promise<Response>;
+}
 
 export interface BulkActionsOptions {
   entity: () => string;
@@ -29,6 +39,8 @@ export interface BulkActionsOptions {
     closeDuplicateDialog: () => void;
   };
   setDuplicateScope?: (scope: 'selected' | 'single') => void;
+  /** Host step-up driver — wraps endpoint-dispatched bulk custom actions. */
+  mfaStepUp?: () => MfaStepUpDriver | undefined;
 }
 
 export function useBulkActions(options: BulkActionsOptions) {
@@ -45,7 +57,8 @@ export function useBulkActions(options: BulkActionsOptions) {
     onToolbarModeChange,
     dialogs,
     setDuplicateScope,
-    t: tFn = (key: string) => key // Default fallback
+    t: tFn = (key: string) => key, // Default fallback
+    mfaStepUp: getMfaStepUp
   } = options;
 
   const _state = $state({ isDeleting: false, isRestoring: false, isDuplicating: false });
@@ -295,6 +308,62 @@ export function useBulkActions(options: BulkActionsOptions) {
     dialogs?.closeDuplicateDialog();
   }
 
+  /**
+   * Dispatch a `meta.table.bulk_custom_actions` CTA — the op endpoint is
+   * declared in `meta.actions` (`entity_op` on the owning RPC route).
+   * `requires_selection` rows ride as `{uuids}`; `confirm_key` gates on a
+   * browser confirm; step-up wraps the call when the BE asks for it.
+   */
+  async function handleBulkCustomAction(action: BulkCustomAction) {
+    const ep = findActionEndpoint(getActions?.(), action.action_name);
+    if (!ep) {
+      pushNotification({
+        type: '/errors/not-implemented',
+        title: tFn('app.common.errors.notImplemented.title'),
+        status: 501,
+        detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+        instance: `bulkCustomAction:${action.action_name}`,
+        internal_code: 'CUSTOM_ACTION_NO_ENDPOINT',
+        severity: 'LOW',
+      });
+      return;
+    }
+    if (action.requires_selection !== false && selectedKeysFn().length === 0) return;
+    if (action.confirm_key && !confirm(tFn(action.confirm_key))) return;
+    try {
+      onBulkActionStart?.();
+      const url = serviceApiPrefix(entityFn()) + ep.path;
+      const selection = action.requires_selection !== false ? selectedKeysFn() : [];
+      const request = (token: string | null) =>
+        apiFetch(url, {
+          method: ep.method || 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'X-MFA-Action-Authorization': token } : {})
+          },
+          body: selection.length > 0 ? JSON.stringify({ uuids: selection }) : undefined
+        });
+      const stepUp = getMfaStepUp?.();
+      const res = stepUp
+        ? await stepUp.executeWithToken(request, { action: action.action_name, target_resource: entityFn() })
+        : await request(null);
+      if (!res.ok) return; // RFC7807 already surfaced by apiFetch
+      onSelectionChange?.([]);
+      onToolbarModeChange?.();
+      getOnRefresh?.()?.();
+      onBulkActionComplete?.();
+      pushNotification({
+        impact: 'LOW',
+        messageKey: 'app.common.done',
+        scope: tFn('app.common.errors.scope.customActionApi'),
+        toast: true
+      });
+    } catch (error) {
+      console.error('Bulk custom action failed:', error);
+      onBulkActionError?.(error as Error);
+    }
+  }
+
   // Keep original function names for backward compatibility
   async function confirmBulkDelete() {
     await confirmBulkDeleteImpl();
@@ -321,6 +390,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     cancelBulkDuplicate,
     confirmBulkDeleteWrapper,
     confirmBulkRestoreWrapper,
-    confirmBulkDuplicateWrapper
+    confirmBulkDuplicateWrapper,
+    handleBulkCustomAction
   };
 }

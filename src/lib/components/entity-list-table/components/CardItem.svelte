@@ -3,7 +3,7 @@
   import { cn } from '$lib/utils.js';
   import CardFieldRenderer from './CardFieldRenderer.svelte';
   import CardActions from './CardActions.svelte';
-  import type { MetaColumn } from '$lib/entity-list/types';
+  import type { MetaColumn, RowCustomAction } from '$lib/entity-list/types';
 
   let {
     row,
@@ -74,7 +74,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
-    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();

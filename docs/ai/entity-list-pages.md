@@ -92,8 +92,10 @@ for everyone. Per-user enablement is evaluated against
 op is permitted the row-actions column is suppressed entirely — an empty
 menu never renders. There is NO parallel row-action boolean map —
 `meta.actions` is the single capability/visibility mechanism; table-specific
-custom CTAs come from `meta.table.row_custom_actions` +
-`customActionHandlers`.
+custom CTAs come from `meta.table.row_custom_actions` /
+`meta.table.bulk_custom_actions` — dispatched on the op's declared
+endpoint; `customActionHandlers` is the escape hatch for interactive
+flows (dialogs) only.
 
 - Any CTA rendered OUTSIDE the table (a page-level
   `<Button href="/entity/create">` in the page body) MUST be gated with
@@ -109,7 +111,27 @@ Write ops dispatch on the `endpoint` `{method, path}` declared per op in
 NOT `/api/v1/entities/user_profile/*`). `entityApiBase(entity)` remains the
 fallback convention when an op declares no endpoint. NEVER hand-build
 `/entities/{entity}/{uuid}` URLs in page code — the per-op endpoint is the
-source of truth (task 9b).
+source of truth (task 9b). For service-owned entities the declared path is
+service-local — `serviceApiPrefix(entity)` prepends `/svc/<svc>`.
+
+### Custom actions — endpoint dispatch (canonical)
+
+- `meta.table.row_custom_actions[]` — per-row dropdown CTAs. The
+  `action_name` IS the op name: a `RowCustomAction` with no JS handler
+  dispatches `POST meta.actions[action_name].endpoint` with body
+  `{[row_key]: row[row_key]}` (`row_key` binds the row identity —
+  e.g. `schedule_subject`). `visible_on: {field, values}` gates the CTA
+  per row status (`isCustomActionVisible`).
+- `meta.table.bulk_custom_actions[]` — bulk-bar CTAs. `requires_selection`
+  rides `{uuids}` (default true = selection-bound; false = global op);
+  `confirm_key` gates on a confirm; ops whose route declares `mfa` go
+  through the step-up dialog automatically (403 `mfa_step_up_required`
+  → dialog → retry with the authorization token).
+- `customActionHandlers[action_name]` — STILL wins when present, but it is
+  the escape hatch for INTERACTIVE flows only (dialogs, multi-step forms —
+  e.g. `change_password`). A non-interactive action has NO handler and no
+  endpoint → 501 toast = contract violation; the service MUST declare the
+  op (`RpcRoute.entity_op`) — `makeServiceRoutes` fails at boot otherwise.
 
 ### Soft vs hard delete (automatic)
 
