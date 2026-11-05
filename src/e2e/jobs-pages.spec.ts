@@ -13,11 +13,16 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *   /system/job/runs           job_run      — duration_ms humanizer cell
  *   /system/job/triggers          job_trigger
  *
- * The module's only custom surfaces are REMOTE-delivered (jobs-page.js
- * esm-mount chunk):
+ * The module's only custom surface is the host-rendered entity-form
+ * archetype (page_props.form, NO remote mount):
  *
- *   /system/job/job-schedules/create  manual schedule form
- *   /system/job/triggers/create          rule form
+ *   /system/job/triggers/create          trigger form
+ *
+ * Manual schedule arming was absorbed into triggers — `job_schedules` is
+ * a pure armed-state registry (no create route, no create CTA). The
+ * module's only remote surface is the `job.runDetail` SHEET (covered by
+ * remote-sheet specs); remote-PAGE machinery is exercised here through
+ * crm's live `/system/crm/pipeline` component_url route.
  *
  * These specs verify: standard single-table rendering, preset AND-ing on
  * the wire, sparkline batch fetch, exactly-one-active nav item
@@ -68,20 +73,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // multi-section custom page.
     const tables = page.locator("table");
     await expect(tables).toHaveCount(1, { timeout: 30000 });
-    // Schedule CTA — census-driven toolbar create (`kind:"create"` on
-    // job_schedule → /system/job/job-schedules/create remote form, label
-    // job.jobs.scheduleNew). navStrategy defaults to 'popup': the CTA opens
-    // the remote create page in a NEW TAB — the parent stays on the list.
-    const createBtn = page.getByTestId("entity-create-cta");
-    await expect(createBtn).toBeVisible();
-    const [popup] = await Promise.all([
-      page.context().waitForEvent("page", { timeout: 15000 }),
-      createBtn.click(),
-    ]);
-    await popup.waitForLoadState("domcontentloaded");
-    await expect(popup).toHaveURL(/\/system\/job\/job-schedules\/create/);
-    await expect(page).toHaveURL(/\/system\/job\/job-schedules$/);
-    await popup.close();
+    // NO create CTA — job_schedule is a pure armed-state registry: manual
+    // schedule arming was absorbed into triggers (a schedule-only trigger
+    // IS the declaration), so the census declares no kind:"create" route
+    // for the entity and the toolbar must not offer one.
+    await expect(page.getByTestId("entity-create-cta")).toHaveCount(0);
   });
 
   test("schedule_kind preset: meta-declared toolbar scope, always one active", async ({
@@ -256,7 +252,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       createBtn.click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup).toHaveURL(/\/system\/job\/rules\/create$/);
+    await expect(popup).toHaveURL(/\/system\/job\/triggers\/create$/);
 
     // Contract: the archetype renders — remote mount must NOT.
     await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
@@ -427,30 +423,18 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
-  test("/system/job/job-schedules/create mounts the remote schedule form", async ({ page }) => {
-    await page.goto("/system/job/job-schedules/create", { waitUntil: "domcontentloaded" });
-
-    const content = page.locator(REMOTE_CONTENT);
-    await expect(content).toBeVisible({ timeout: 30000 });
-    await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
-    await expect(page.locator(REMOTE_ERROR)).toHaveCount(0);
-
-    // The remote page renders its form fields.
-    await expect(content.locator("form")).toBeVisible();
-    await expect(content.locator("input#sched-name")).toBeVisible();
-    await expect(content.locator("input#sched-spec")).toBeVisible();
-  });
-
   test("remote asset failure degrades to an in-content error panel — shell stays", async ({
     page,
   }) => {
-    // Simulate the job service's module-assets endpoint being unreachable:
-    // the chunk fetch aborts before import() is even attempted.
+    // Simulate the crm service's module-assets endpoint being unreachable:
+    // the chunk fetch aborts before import() is even attempted. (The job
+    // module owns no remote PAGE — /system/crm/pipeline is a live
+    // component_url route exercising the same remote-mount machinery.)
     await page.route("**/api/v1/module-assets/**", (route) =>
       route.abort("connectionrefused"),
     );
 
-    await page.goto("/system/job/job-schedules/create", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/crm/pipeline", { waitUntil: "domcontentloaded" });
 
     // In-content error panel — classified 'network' (fetch threw).
     const errorPanel = page.locator(REMOTE_ERROR);
@@ -460,7 +444,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // The app shell survives: sidebar nav is still rendered, and the
     // failure NEVER escalated to the system full-page error.
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
-    await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible({
+    await expect(page.locator("a[href='/system/crm/pipeline']").first()).toBeVisible({
       timeout: 15000,
     });
 
