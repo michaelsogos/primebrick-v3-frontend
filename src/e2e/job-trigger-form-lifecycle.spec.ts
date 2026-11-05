@@ -353,7 +353,11 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
       'xpath=ancestor::*[contains(@class,"overflow-hidden")][1]'
     ).locator('div.border-t').last();
     const footerFit = await footer.evaluate((el) => {
-      const [legend, ctas] = el.children as unknown as HTMLElement[];
+      // KeyboardHints renders N hint spans + the `end` snippet (ms-auto CTAs):
+      // the real air is between the LAST hint group and the button row.
+      const kids = Array.from(el.children) as HTMLElement[];
+      const ctas = kids[kids.length - 1];
+      const legend = kids[kids.length - 2];
       return {
         fits: el.scrollWidth <= el.clientWidth,
         air: ctas.getBoundingClientRect().left - legend.getBoundingClientRect().right,

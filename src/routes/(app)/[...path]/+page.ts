@@ -1,36 +1,11 @@
-import { error, redirect } from '@sveltejs/kit';
-import { get } from 'svelte/store';
-import { fetchModules } from '$lib/api';
-import { uiLang } from '$lib/i18n/store.svelte';
-import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
-
-// apiFetch does not forward the session cookie during SSR — the census
-// resolution runs client-side only (same as every module route today).
-export const ssr = false;
-
 /**
- * THE catch-all universal load — static routes keep precedence, so this
- * only ever serves: bare module prefixes / part_of roots (→ redirect to
- * the declared default leaf), declared remote routes (→ component mounts
- * the chunk), and access-denied or non-declared paths (→ RFC error page).
+ * THE catch-all — static routes keep precedence, so this page only ever
+ * serves declared remote routes, module-prefix redirects and the shared
+ * error surfaces. Resolution lives in the COMPONENT, never in `load()`:
+ * `fetchModules` goes through `apiFetch`, and a 401 with no session is
+ * enqueued by the session-expired flow — the returned promise only
+ * settles after re-login, a `load()` awaiting it never returns, the
+ * component tree never mounts, and the SessionExpiredDialog itself
+ * (rendered by the root layout) can never appear → blank-page deadlock.
  */
-export async function load({ url }) {
-	let resolved: ResolvedPage;
-	let modules: Awaited<ReturnType<typeof fetchModules>>['modules'] = [];
-	try {
-		modules = (await fetchModules(get(uiLang))).modules;
-		resolved = resolvePageForPath(url.pathname, modules);
-	} catch (e) {
-		// Census fetch failed — hand the component a retryable network error
-		// rather than a SvelteKit 500 (the remote-page UX contract).
-		resolved = {
-			kind: 'error',
-			error_kind: 'network',
-			detail: e instanceof Error ? e.message : String(e),
-		};
-	}
-	if (resolved.kind === 'redirect') redirect(307, resolved.href);
-	if (resolved.kind === 'denied') error(403, `Access denied — ${resolved.detail}`);
-	if (resolved.kind === 'not-found') error(404, `The page '${url.pathname}' does not exist`);
-	return { resolved, modules };
-}
+export const ssr = false;

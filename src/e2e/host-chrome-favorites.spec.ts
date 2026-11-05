@@ -51,7 +51,9 @@ test.describe("host chrome (PageHeader)", () => {
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator(HEADER)).toHaveCount(1);
-    await expect(page.locator(TITLE)).toBeVisible();
+    // The title needs the route census (module fetch) — allow the same
+    // budget the other decl-driven assertions get under parallel load.
+    await expect(page.locator(TITLE)).toBeVisible({ timeout: 15000 });
     await expect(page.locator(STAR)).toBeVisible();
     // Breadcrumb lives inside the header, above the title.
     await expect(page.locator(`${HEADER} nav`).first()).toBeVisible();
@@ -66,8 +68,10 @@ test.describe("host chrome (PageHeader)", () => {
   });
 
   test("remote page: host header renders, remote chunk adds no second h1", async ({ page }) => {
-    // The real remote-mounted route — jobs-page.js esm-mount chunk.
-    await page.goto("/system/job/job-schedules/create", { waitUntil: "domcontentloaded" });
+    // The real remote-mounted route — ai-pages.js esm-mount chunk. The job
+    // module no longer owns a remote PAGE (manual schedule arming was
+    // absorbed into triggers; its only remote surface is the run sheet).
+    await page.goto("/system/ai/console", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator(HEADER)).toHaveCount(1);
     await expect(page.locator(TITLE)).toBeVisible();

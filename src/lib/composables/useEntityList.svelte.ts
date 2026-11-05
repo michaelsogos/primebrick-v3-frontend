@@ -151,7 +151,11 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     /** Batch-loaded sparkline buckets: `column.key → {by_key, bucket_unit}`. */
     sparklineData: {} as Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>,
 
-    bootstrapped: false
+    bootstrapped: false,
+    /** A refresh requested inside the bootstrap window is queued, not
+     *  dropped — the gated state change already committed, so the list
+     *  must re-query once init finishes or the UI diverges silently. */
+    refreshPending: false
   });
 
   const columns = $derived(orderedColumns(_state.meta?.columns));
@@ -503,8 +507,14 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   async function refreshRows(refreshOpts?: { clampPage?: boolean }) {
     // Gate: filter/prefs restoration inside EntityListTable can fire change
     // callbacks while the first bootstrap is still in flight — those must
-    // not trigger stale-meta list calls (canonical customers guard).
-    if (!_state.bootstrapped) return;
+    // not trigger stale-meta list calls (canonical customers guard). The
+    // refresh is QUEUED and replayed when init completes: an echo callback
+    // replays one identical request (bounded, harmless), while a real user
+    // change would otherwise flip the control and silently keep stale rows.
+    if (!_state.bootstrapped) {
+      _state.refreshPending = true;
+      return;
+    }
     _state.loading = true;
     _state.error = null;
     try {
@@ -551,6 +561,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     } finally {
       _state.loading = false;
       _state.bootstrapped = true;
+      // Replay only when init actually produced a working state — on a
+      // failed bootstrap a queued refresh would just double the error.
+      if (_state.refreshPending) {
+        _state.refreshPending = false;
+        if (_state.meta) void refreshRows();
+      }
     }
   }
 
