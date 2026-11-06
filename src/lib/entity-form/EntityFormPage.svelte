@@ -39,14 +39,13 @@
 	import { extJsonStringify, extJsonParse, apiFetchExt } from '$lib/api-ext';
 	import { getTabSessionId } from '$lib/collaboration/tab-session';
 	import { t } from '$lib/i18n';
-	import { uiLang } from '$lib/i18n/store.svelte';
-	import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
 	import { pushNotification } from '$lib/errors/app-errors';
 	import { useFormGuard, useForceFormValidation } from '$lib/composables/useFormGuard.svelte';
 	import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
 	import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
 	import { useFormDraft } from '$lib/entity-form/use-form-draft.svelte';
+	import { useCensusSubjectOptions } from './use-census-subject-options.svelte';
 	import FieldEditingBadge from '$lib/components/collaboration/FieldEditingBadge.svelte';
 	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { buildAuditData } from '$lib/utils/audit-data';
@@ -130,74 +129,25 @@
 		}
 	});
 
-	// Census emits → detailed ComboSelect options — the 3-line event anatomy:
-	// translated display name (`label_key`) on the label line, italic
-	// description (`description_key`) underneath, raw subject last
-	// (`_sub`), all behind an amber lightning icon (the archetype-level
-	// "this is an event" marker — same chrome for every emitted subject).
-	const emitsOptions = $derived(
-		modules
-			.flatMap((m) => m.events?.emits ?? [])
-			.map((e) => ({
-				value: e.subject,
-				label: e.label_key ? $t(e.label_key) : e.subject,
-				_desc: e.description_key ? $t(e.description_key) : '',
-				_sub: e.subject,
-				_icon: 'zap',
-				_icon_color: 'amber-500',
-			})),
-	);
-
-	// Census callables → the same detailed option anatomy, flipped marker:
-	// a callable is a destination you SEND a request to (`send` icon, sky).
-	// Decl lists are kept raw too — `payload_map` reads the selected
-	// callable's payload_schema/permissions and the event's payload_schema.
-	const callableDecls = $derived(modules.flatMap((m) => m.callables?.callables ?? []));
-	const emitDecls = $derived(modules.flatMap((m) => m.events?.emits ?? []));
-	const callablesOptions = $derived(
-		callableDecls.map((c) => ({
-			value: c.subject,
-			label: c.label_key ? $t(c.label_key) : c.subject,
-			_desc: c.description_key ? $t(c.description_key) : '',
-			_sub: c.subject,
-			_icon: 'send',
-			_icon_color: 'sky-500',
-		})),
-	);
-	// Census contributors' dicts — callable/emit label_key+description_key
-	// resolve in the DECLARING module's own namespace, which the route-aware
-	// loader never fetches on a foreign module's page (a `job` form listing
-	// `emailsender.send` needs the `emailsender` dict). Best-effort: an
-	// offline contributor degrades to raw keys without notifications — the
-	// registry census still lists its subjects.
-	const censusModules = $derived(
-		new Set(
-			modules
-				.filter(
-					(m) =>
-						(m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0,
-				)
-				.map((m) => m.id),
-		),
-	);
-	$effect(() => {
-		const lang = $uiLang;
-		for (const code of censusModules) void loadModuleTranslations(code, lang, { bestEffort: true });
-	});
+	// Census subject vocabularies — emits/callables options + raw decls,
+	// derived ONCE for every options_source surface by the shared
+	// composable (it also loads contributor dicts so label_key/
+	// description_key resolve in the declaring module's namespace).
+	const census = useCensusSubjectOptions(() => modules);
 
 	const prepared = $derived.by(() => {
 		if (!meta || !formDecl) return null;
 		if (isDetail && !record) return null;
 		return buildEntityFormSchema(meta, formDecl, {
-			// Live resolution: the closure reads `callableDecls` on every
-			// validation pass — the schema stays static while the contract
-			// follows the selected `target_subject`.
+			// Live resolution: the closure reads `census.callableDecls` on
+			// every validation pass — the schema stays static while the
+			// contract follows the selected `target_subject`.
 			resolveCallable: (subject) =>
-				callableDecls.find((c) => c.subject === subject)?.payload_schema as
+				census.callableDecls.find((c) => c.subject === subject)?.payload_schema as
 					| Record<string, unknown>
 					| undefined,
 			resolveEmit: (subject) =>
-				emitDecls.find((e) => e.subject === subject)?.payload_schema as
+				census.emitDecls.find((e) => e.subject === subject)?.payload_schema as
 					| Record<string, unknown>
 					| undefined,
 		});
@@ -220,11 +170,11 @@
 	const targetSubjectValue = $derived(
 		formObj ? ($form['target_subject'] as string | undefined) : undefined,
 	);
-	const targetCallable = $derived(callableDecls.find((c) => c.subject === targetSubjectValue));
+	const targetCallable = $derived(census.callableDecls.find((c) => c.subject === targetSubjectValue));
 	const eventSubjectValue = $derived(
 		formObj ? ($form['event_subject'] as string | undefined) : undefined,
 	);
-	const sourceEmit = $derived(emitDecls.find((e) => e.subject === eventSubjectValue));
+	const sourceEmit = $derived(census.emitDecls.find((e) => e.subject === eventSubjectValue));
 
 	/** The form's baseline values — create: declared defaults + type
 	 *  fallbacks; detail: the record's values (JSON cols stringified for
@@ -669,8 +619,8 @@
 											<FormFieldDispatcher
 												column={col}
 												{placement}
-												{emitsOptions}
-												{callablesOptions}
+												emitsOptions={census.emitsOptions}
+												callablesOptions={census.callablesOptions}
 												{targetCallable}
 												{sourceEmit}
 												controlProps={props}
