@@ -80,13 +80,6 @@
       >
         <span class="inline-flex items-center gap-1">
           {$t(col.label_key)}
-          {#if col.tooltip && col.show_list_tooltip !== false}
-            <FormLabelWithPriorityHelp
-              text={$t(col.tooltip)}
-              priority={col.tooltip_priority}
-              title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
-            />
-          {/if}
           {#if isColumnSortable(col)}
             {#if sortKey !== col.key}
               <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
@@ -95,6 +88,13 @@
             {:else}
               <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
             {/if}
+          {/if}
+          {#if col.tooltip && col.show_list_tooltip !== false}
+            <FormLabelWithPriorityHelp
+              text={$t(col.tooltip)}
+              priority={col.tooltip_priority}
+              title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
+            />
           {/if}
         </span>
       </Table.Head>

@@ -20,8 +20,7 @@
   import { ChevronDown } from '@primebrick/ui/vendor/lucide'
   import { Play } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
-  import { X } from '@primebrick/ui/vendor/lucide'
-import { Switch } from '@primebrick/ui';
+  import { Switch } from '@primebrick/ui';
   import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
   import { getOperatorsForColumnType } from "$lib/entity-list/types";
   import { DateWheelPicker } from "@primebrick/ui";
@@ -147,9 +146,7 @@ import { Switch } from '@primebrick/ui';
     if (col.type !== "badge" || !col.badge?.values) return [];
     return Object.entries(col.badge.values).map(([key, value]) => ({
       key,
-      label:
-        value.label_text ||
-        $t(value.label_key || `system.entities.customer.status.${key}`),
+      label: value.label_text || (value.label_key ? $t(value.label_key) : key),
       color: value.color,
     }));
   }
@@ -441,7 +438,7 @@ import { Switch } from '@primebrick/ui';
     {#if tabValue === "standard"}
     <div class="flex-1 overflow-y-auto p-4">
       {#each filterableColumns as col (col.key)}
-        <PrimeField id="filter-{col.key}" label={$t(col.label_key)} help={col} class="mb-4">
+        <PrimeField id="filter-{col.key}" label={$t(col.label_key)} help={col} help_context="list" class="mb-4">
           {#snippet control()}
 
           {#if renderFilterInput(col).type === "multiselect"}
@@ -598,11 +595,15 @@ import { Switch } from '@primebrick/ui';
                     {Array.isArray(filter.value)
                       ? filter.value.map((v) =>
                           column?.badge?.values?.[v]?.label_text ||
-                          $t(column?.badge?.values?.[v]?.label_key || `system.entities.customer.status.${v}`)
+                          (column?.badge?.values?.[v]?.label_key ? $t(column.badge.values[v].label_key!) : v)
                         ).join(", ")
                       : filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value
-                      ? `${formatListCellValue(column ?? { type: 'text' }, filter.value.start, $uiLang)} e ${formatListCellValue(column ?? { type: 'text' }, filter.value.end, $uiLang)}`
-                      : formatListCellValue(column ?? { type: 'text' }, filter.value, $uiLang)}
+                      ? column
+                        ? `${formatListCellValue(column, filter.value.start, $uiLang)} e ${formatListCellValue(column, filter.value.end, $uiLang)}`
+                        : `${String(filter.value.start)} e ${String(filter.value.end)}`
+                      : column
+                        ? formatListCellValue(column, filter.value, $uiLang)
+                        : String(filter.value)}
                   </span>
                 </div>
               </div>
@@ -621,7 +622,7 @@ import { Switch } from '@primebrick/ui';
                   onclick={() => removeAdvancedFilter(filter.id)}
                   title={$t("app.common.remove")}
                 >
-                  <X class="size-3" />
+                  <XIcon class="size-3" />
                 </button>
               </div>
             </div>
