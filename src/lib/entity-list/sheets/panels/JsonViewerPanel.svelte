@@ -7,10 +7,9 @@
    * (`JsonCodeBlock`, same control the create form uses).
    */
   import { t } from '$lib/i18n';
-  import { JsonCodeBlock, SheetPanelLayout, Sheet, toDisplayString } from '@primebrick/ui';
+  import { JsonCodeBlock, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { Braces, FileBraces, X as XIcon } from '@primebrick/ui/vendor/lucide';
+  import { Braces, FileBraces } from '@primebrick/ui/vendor/lucide';
 
   let { value }: { value: unknown } = $props();
   let mode = $state<'explorer' | 'raw'>('explorer');
@@ -54,13 +53,6 @@
         <Braces class="size-4" />
       {/if}
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
   {/snippet}
 
   <div class="h-full overflow-auto p-3">

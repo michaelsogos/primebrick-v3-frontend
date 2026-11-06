@@ -169,7 +169,7 @@
     class="shadow-none"
     style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
   >
-    {column.badge.values[badgeValue]?.label_text || $t(column.badge.values[badgeValue]?.label_key || `system.entities.customer.status.${badgeValue}`)}
+    {column.badge.values[badgeValue]?.label_text ?? (column.badge.values[badgeValue]?.label_key ? $t(column.badge.values[badgeValue].label_key!) : String(badgeValue))}
   </Badge>
 {:else if column.format === 'schedule_spec' && typeof value === 'string' && value !== ''}
   <ScheduleSpecCell {value} />

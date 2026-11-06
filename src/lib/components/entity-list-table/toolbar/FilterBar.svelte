@@ -32,7 +32,7 @@
     if (col.type === 'badge' && col.badge?.values) {
       const badgeValue = col.badge.values[value as string];
       if (badgeValue) {
-        return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
+        return badgeValue.label_text ?? (badgeValue.label_key ? $t(badgeValue.label_key) : toDisplayString(value));
       }
     }
     return toDisplayString(value);

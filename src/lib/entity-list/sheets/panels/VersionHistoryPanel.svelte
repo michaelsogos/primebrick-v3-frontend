@@ -496,7 +496,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `system.entities.customer.status.${delta.oldValue}`)}
+                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : String(delta.oldValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -531,7 +531,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `system.entities.customer.status.${delta.newValue}`)}
+                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : String(delta.newValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>

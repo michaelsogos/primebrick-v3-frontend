@@ -1,14 +1,12 @@
 <script lang="ts">
   import { Checkbox, checkboxVisualOnlyClass, DynamicIcon } from '@primebrick/ui';
   import * as Sortable from '$lib/components/ui/sortable';
-  import { Sheet } from "@primebrick/ui";
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
   import { t } from '$lib/i18n';
   import { Columns3 } from '@primebrick/ui/vendor/lucide';
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   type ColumnLike = { key: string; label_key: string; hideable?: boolean; icon?: string };
@@ -53,6 +51,7 @@
                   disabled={col.hideable === false}
                   class="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
                   onclick={() => toggleColumnKey(col.key)}
+                  data-testid="columns-toggle-{col.key}"
                 >
                   <span class="pointer-events-none shrink-0" aria-hidden="true">
                     <Checkbox
@@ -84,13 +83,6 @@
     <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onResetColumnVisibility()}>
       <Eraser class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
   {/snippet}
 
   {#if stickyColumns.length > 0}

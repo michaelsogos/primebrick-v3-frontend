@@ -24,11 +24,11 @@
   import { browser } from '$app/environment';
   import { Button } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import { ComboSelect } from '@primebrick/ui';
   import { Popover } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { fetchModuleConfig } from '$lib/api';
@@ -39,7 +39,6 @@
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
   import type { useAiAssistant } from './use-ai-assistant.svelte';
-  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { ModelCachePanel } from '@primebrick/ui';
   import { useModelCache } from '@primebrick/ui';
   import AiActionChips from './ai-action-chips.svelte';
@@ -54,13 +53,9 @@
   import { AI_BUBBLE_STYLE, chatAvatarChrome } from './chat-avatar-chrome';
   import { BrainCircuit } from '@primebrick/ui/vendor/lucide';
   import { Send } from '@primebrick/ui/vendor/lucide';
-  import { X } from '@primebrick/ui/vendor/lucide';
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
-  import { ChevronDown } from '@primebrick/ui/vendor/lucide';
   import { CircleStop } from '@primebrick/ui/vendor/lucide';
-  import { Cpu } from '@primebrick/ui/vendor/lucide';
-  import { Server } from '@primebrick/ui/vendor/lucide';
   import { Info } from '@primebrick/ui/vendor/lucide';
   import { StickyNotePlus } from '@primebrick/ui/vendor/lucide';
   import { ArrowDown } from '@primebrick/ui/vendor/lucide';
@@ -166,6 +161,20 @@
 
   // AI source: "local" (default, in-browser) or "backend" (coming soon).
   let aiSource = $state<'local' | 'backend'>('local');
+  // The picker is a ComboSelect (canonical select anatomy — panels never
+  // hand-roll DropdownMenu-as-select); `disabled` options render greyed.
+  const sourceOptions = $derived([
+    { value: 'local', label: $t(`${i18n_ns}.source.local`), _icon: 'cpu' },
+    { value: 'backend', label: $t(`${i18n_ns}.source.backend`), _icon: 'server', disabled: true },
+  ]);
+  const aiSourceValue = {
+    get value(): string | string[] {
+      return aiSource;
+    },
+    set value(v: string | string[]) {
+      if (typeof v === 'string') aiSource = v as 'local' | 'backend';
+    },
+  };
 
   // All available local models for the model dropdown (from BE entity).
   let availableModels = $state<AiModel[]>([]);
@@ -348,13 +357,6 @@
         testid="{testid_prefix}-new-session"
       >
         <StickyNotePlus class="size-4" />
-      </SheetHeaderAction>
-      <SheetHeaderAction
-        title={$t('app.common.close')}
-        onclick={() => closeSheet()}
-        testid="{testid_prefix}-close"
-      >
-        <X class="size-4" />
       </SheetHeaderAction>
     {/snippet}
     {#if !ai}
@@ -633,47 +635,17 @@
             <div class="space-y-0.5 px-2 pb-1 pt-1">
               <!-- Row 1: execution source + model selector -->
               <div class="flex items-center gap-1">
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger
-                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
-                    data-testid="{testid_prefix}-source-trigger"
-                  >
-                    {#if aiSource === 'local'}
-                      <Cpu class="size-3.5" />
-                    {:else}
-                      <Server class="size-3.5" />
-                    {/if}
-                    <span>
-                      {#if aiSource === 'local'}
-                        {$t(`${i18n_ns}.source.local`)}
-                      {:else}
-                        {$t(`${i18n_ns}.source.backend`)}
-                      {/if}
-                    </span>
-                    <ChevronDown class="size-3" />
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start" class="min-w-[10rem]">
-                    <DropdownMenu.Item
-                      onclick={() => (aiSource = 'local')}
-                      class={dropdownMenuItemWithSelectedClass(
-                        'flex items-center gap-2 text-xs',
-                        aiSource === 'local'
-                      )}
-                      data-testid="{testid_prefix}-source-local"
-                    >
-                      <Cpu class="size-3.5" />
-                      {$t(`${i18n_ns}.source.local`)}
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      disabled
-                      class="flex items-center gap-2 text-xs opacity-50 cursor-not-allowed"
-                      data-testid="{testid_prefix}-source-backend"
-                    >
-                      <Server class="size-3.5" />
-                      {$t(`${i18n_ns}.source.backend`)}
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
+                <ComboSelect
+                  mode="single"
+                  bind:value={aiSourceValue.value}
+                  options={sourceOptions}
+                  valueField="value"
+                  labelField="label"
+                  iconField="_icon"
+                  isOptionDisabled={(o) =>
+                    typeof o === 'object' && o !== null && (o as Record<string, unknown>).disabled === true}
+                  data-testid="{testid_prefix}-source"
+                />
 
                 <AiModelSelector
                   models={availableModels}

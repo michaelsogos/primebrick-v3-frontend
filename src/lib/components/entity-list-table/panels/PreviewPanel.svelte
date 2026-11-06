@@ -309,7 +309,7 @@
       class="shadow-none"
       style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
     >
-      {col.badge.values[badgeValue]?.label_text || $t(col.badge.values[badgeValue]?.label_key || `entities.customer.status.${badgeValue}`)}
+      {col.badge.values[badgeValue]?.label_text ?? (col.badge.values[badgeValue]?.label_key ? $t(col.badge.values[badgeValue].label_key!) : String(badgeValue))}
     </Badge>
   {:else if col.type === 'datetime' && col.datetime_iana_toggle}
     {@const mode = datetimeIanaModeByKey[col.key] ?? 'browser'}

@@ -24,8 +24,7 @@
   import { Input } from '@primebrick/ui';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import { closeSheet, sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { Sheet } from "@primebrick/ui";
+  import { sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
   import { docsContext } from '$lib/shell/docs/docs-context.svelte';
   import { renderDoc, hydrateMermaid, resolveDocTarget, type DocsTocItem } from '$lib/shell/docs/docs-render';
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';
@@ -381,13 +380,6 @@
         <Maximize2 class="size-4" />
       {/if}
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
   {/snippet}
   {#snippet toolbar()}
     <div class="relative">
@@ -444,6 +436,7 @@
                   type="button"
                   class="w-full rounded-md px-2 py-1.5 text-left hover:bg-accent"
                   onclick={() => openSearchHit(group)}
+                  data-testid="docs-search-hit"
                 >
                   <div class="flex items-center gap-2">
                     <div class="min-w-0 truncate text-sm font-medium">{group.title}</div>
@@ -551,6 +544,7 @@
                       class="flex items-center gap-1.5 text-sm text-primary hover:underline"
                       title={target.path}
                       onclick={() => void openDoc({ repo: target.repo, path: target.path.endsWith('.mdx') ? target.path : `${target.path}.mdx` })}
+                      data-testid="docs-open-target"
                     >
                       <FileText class="size-3.5 shrink-0" />
                       {linkLabel(target)}
@@ -589,6 +583,7 @@
                             contextDocRef?.repo === repo.repo && contextDocRef?.path === entry.path && 'bg-accent/60 font-medium'
                           )}
                           onclick={() => void openDoc({ repo: repo.repo, path: entry.path })}
+                          data-testid="docs-entry"
                         >
                           <span class="flex items-center gap-1.5">
                             <FileText class="size-3.5 shrink-0 text-muted-foreground" />

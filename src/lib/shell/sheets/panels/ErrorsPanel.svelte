@@ -2,20 +2,18 @@
   import { Button } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import * as EventCard from '$lib/components/ui/event-card';
-  import { Sheet } from "@primebrick/ui";
+
   import RfcErrorDialog from '$lib/components/ui/rfc-error-dialog.svelte';
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors, type AppError } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
   import { ThumbsUp } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { Eye } from '@primebrick/ui/vendor/lucide';
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 
   type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -82,13 +80,6 @@
     >
       <Trash2 class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.errors.close')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
   {/snippet}
 
   {#if $appErrors.length === 0}

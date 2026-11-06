@@ -10,12 +10,10 @@
    */
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { Sheet } from "@primebrick/ui";
   import { Button } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { aiChatStore } from '$lib/shell/ai-chat/use-ai-chat.svelte';
@@ -23,7 +21,6 @@
   import { MessageSquare } from '@primebrick/ui/vendor/lucide';
   import { Send } from '@primebrick/ui/vendor/lucide';
   import { Plus } from '@primebrick/ui/vendor/lucide';
-  import { X } from '@primebrick/ui/vendor/lucide';
   import { Square } from '@primebrick/ui/vendor/lucide';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';
   import { Bot } from '@primebrick/ui/vendor/lucide';
@@ -115,7 +112,7 @@
   }
 </script>
 
-<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+<SheetPanelLayout contentClass="flex min-h-0 flex-col p-0">
   {#snippet icon()}
     <MessageSquare class="size-4" />
   {/snippet}
@@ -126,13 +123,6 @@
     <SheetHeaderAction title={$t('app.aiChat.newConversation')} onclick={handleNewConversation}>
       <Plus class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <X class="size-4" />
-    </Sheet.Close>
   {/snippet}
   {#snippet footer()}
     <!-- Pending tool call confirmation -->
@@ -200,6 +190,7 @@
           {#each aiChatStore.conversations as conv (conv.uuid)}
             <button
               type="button"
+              data-testid="ai-chat-conversation"
               class={cn(
                 'group flex items-center justify-between gap-1 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-sidebar-accent',
                 aiChatStore.currentConversationUuid === conv.uuid && 'bg-sidebar-accent font-medium'
@@ -292,6 +283,7 @@
                         title={$t('app.aiChat.yes')}
                         onclick={() => handleFeedback(msg.uuid, 'up')}
                         disabled={msg.feedback === 'up'}
+                        data-testid="ai-chat-feedback-up"
                       >
                         <ThumbsUp class="size-3.5" />
                       </button>
@@ -305,6 +297,7 @@
                         title={$t('app.aiChat.no')}
                         onclick={() => handleFeedback(msg.uuid, 'down')}
                         disabled={msg.feedback === 'down'}
+                        data-testid="ai-chat-feedback-down"
                       >
                         <ThumbsDown class="size-3.5" />
                       </button>

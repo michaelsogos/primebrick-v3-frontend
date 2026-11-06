@@ -67,8 +67,11 @@ Rules:
   re-declare it in the panel).
 - Only CONTENT scrolls (`min-h-0 flex-1 overflow-auto`). HEAD/TOOLBAR/FOOT
   are `shrink-0` and always visible.
-- HEAD actions default to the standard close ✕ (`Sheet.Close` → `closeSheet()`).
-  Pass `actions` only to add MORE buttons — always keep a close affordance.
+- HEAD ALWAYS ends with the standard close ✕ — `SheetPanelLayout` appends
+  it automatically (`Sheet.Close` context close, or `onClose` when the
+  panel opts into a custom close). The `actions` snippet is EXTRA buttons
+  only, rendered before it — a panel NEVER re-declares `Sheet.Close`
+  itself (that would double the chrome).
 - **HEAD icon is mandatory**: `icon` snippet before the title, and it MUST
   match the icon of the CTA that opens the sheet (e.g. `shell.errors` opens
   from `TriangleAlert` in `AppTopbar` → panel icon = `TriangleAlert`).
@@ -79,10 +82,10 @@ Rules:
   close — `inline-flex size-8 items-center justify-center rounded-md
   text-muted-foreground opacity-70 transition-opacity hover:bg-accent
   hover:text-accent-foreground hover:opacity-100`, icon `size-4`.
-  Close itself uses `Sheet.Close` (same classes); other CTAs use a plain
-  `<button type="button">` with the same class string. No `Button`
-  component, no tinted-primary pill, no `size-7` — perfect symmetry,
-  one visual language for the whole header.
+  The close ✕ itself is layout-owned; panel CTAs use `SheetHeaderAction`
+  (which carries exactly this chrome). No `Button` component, no
+  tinted-primary pill, no `size-7` — perfect symmetry, one visual
+  language for the whole header.
 - **HEAD never hosts the primary action** — icon-only buttons have no
   label, so a primary CTA there is invisible. HEAD = close ✕ + secondary
   icon utilities only (reset, clear, new).
@@ -101,6 +104,24 @@ Rules:
     `effect_update_depth_exceeded`.
   - **VIEWER** — read-only + per-row actions, no commit footer
     (Errors, Versions, VersionHistory, AiModelCache).
+- **Commit & close semantics (codified decisions)**:
+  - FORM panels either `closeSheet()` on commit OR stay open — the
+    choice is per-panel and documented, never accidental. The DECIDED
+    default for list-criteria panels (Filters) is **stay open**: the
+    sheet is `modal` and non-fullscreen, so the user watches the table
+    update behind it and keeps tuning. Commit-close remains for panels
+    whose apply ends the task (BadgeValue).
+  - A HEAD **reset/clear** utility (Eraser/RotateCcw icon) is a LIVE
+    commit, exempt from the draft→Apply boundary by design: reset means
+    "clear applied AND draft at once" (FiltersPanel's `resetAllFilters`
+    clears its draft maps AND calls `onResetFilters`, which empties the
+    parent's applied `filterValues`/`advancedFilters`). Draft-only reset
+    would leave the table filtered while the panel looks empty.
+  - `keepMountedState` (openSheet option, default `false`): `false`
+    unmounts the panel on close → next open remounts fresh state;
+    `true` keeps `panelId`/`props` alive across close → the same mounted
+    instance reopens with its state intact. Use `true` only when the
+    draft must survive an accidental close.
 - Padding: CONTENT default `p-2`; override via `contentClass` (e.g.
   `px-4 py-3`). HEAD uses SheetHeader's `px-2 py-2`. TOOLBAR `px-3 py-2`.
   FOOT content supplies its own padding (`p-3` for inputs, `px-4 py-2` for bars).
@@ -161,15 +182,12 @@ what you don't need.
 ### Extra HEAD CTAs (actions snippet)
 
 When a panel needs header CTAs beyond the close ✕ (reset, apply, …), pass
-the `actions` snippet with `SheetHeaderAction` for each CTA AND repeat the
-standard close — providing `actions` replaces the default close:
+the `actions` snippet with `SheetHeaderAction` for each CTA. The layout
+ALWAYS appends the standard close after them — never re-declare it:
 
 ```svelte
 <script lang="ts">
-  import * as Sheet from '$lib/components/ui/sheet';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
 </script>
 
 <SheetPanelLayout>
@@ -180,13 +198,7 @@ standard close — providing `actions` replaces the default close:
     <SheetHeaderAction title={$t('app.common.reset')} onclick={reset}>
       <RotateCcw class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
+    <!-- close ✕ appended by SheetPanelLayout — do NOT add Sheet.Close -->
   {/snippet}
 
   <!-- CONTENT -->

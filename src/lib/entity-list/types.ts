@@ -47,6 +47,7 @@ export {
 	sanitizeVisibleKeys,
 	searchableTextColumns,
 	getOperatorsForColumnType,
+	FILTER_OPERATOR_ICON,
 	STANDARD_OPS,
 	isEntityOpEnabled,
 } from '@primebrick/ui';

@@ -1,12 +1,9 @@
 <script lang="ts">
   import { Checkbox, checkboxVisualOnlyClass, DynamicIcon } from '@primebrick/ui';
-  import { Sheet } from "@primebrick/ui";
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { Search } from '@primebrick/ui/vendor/lucide';
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   type ColumnLike = { key: string; label_key: string; icon?: string };
@@ -33,19 +30,13 @@
     <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onSearchInKeysChange(null)}>
       <Eraser class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <XIcon class="size-4" />
-    </Sheet.Close>
   {/snippet}
 
   <button
     type="button"
     class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
     onclick={() => onSearchInKeysChange(null)}
+    data-testid="search-in-all"
   >
     <span class="pointer-events-none shrink-0" aria-hidden="true">
       <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={checkboxVisualOnlyClass} />
@@ -63,6 +54,7 @@
       type="button"
       class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
       onclick={() => toggleSearchKey(col.key)}
+      data-testid="search-in-{col.key}"
     >
       <span class="pointer-events-none shrink-0" aria-hidden="true">
         <Checkbox checked={!!searchInKeys?.includes(col.key)} class={checkboxVisualOnlyClass} />
