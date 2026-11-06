@@ -17,7 +17,7 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47 } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString } from '@primebrick/ui';
 	import {
 		TextInput,
 		ComboSelect,
@@ -165,7 +165,7 @@
 	);
 	const stringValue = {
 		get value(): string {
-			return typeof value === 'string' ? value : value == null ? '' : String(value);
+			return typeof value === 'string' ? value : value == null ? '' : toDisplayString(value);
 		},
 		set value(v: string) {
 			value = v;
@@ -246,8 +246,8 @@
 			const vf = src.value_field;
 			const lf = src.label_field;
 			return (data.rows ?? []).map((row) => ({
-				value: String(row[vf] ?? ''),
-				label: String(row[lf] ?? row[vf] ?? ''),
+				value: toDisplayString(row[vf] ?? ''),
+				label: toDisplayString(row[lf] ?? row[vf] ?? ''),
 				_desc: typeof row.description === 'string' ? row.description : undefined,
 				_icon: src.icon,
 				_icon_color: src.icon_color,

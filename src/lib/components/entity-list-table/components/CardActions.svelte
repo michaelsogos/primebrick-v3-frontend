@@ -15,7 +15,7 @@
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
-  import { DynamicIcon } from '@primebrick/ui';
+  import { DynamicIcon, actionColorClass } from '@primebrick/ui';
 
   let {
     row,
@@ -118,13 +118,18 @@
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="w-56" align="end">
           {#if entityRowActions?.edit !== false}
+            {@const editChrome = entityRowActions?.edit_chrome}
             <DropdownMenu.Item
               onclick={(e) => { e.stopPropagation(); if (rowDeleted) return; onEditRow(row); }}
-              class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : actionColorClass(editChrome?.color)}
             >
               <div class="flex items-center gap-2">
-                <Pencil class="size-4 opacity-70" />
-                <span>{$t('app.common.edit')}</span>
+                {#if editChrome?.icon}
+                  <DynamicIcon name={editChrome.icon} class="size-4" />
+                {:else}
+                  <Pencil class="size-4" />
+                {/if}
+                <span>{$t(editChrome?.label_key ?? 'app.common.edit')}</span>
               </div>
             </DropdownMenu.Item>
           {/if}
@@ -134,26 +139,8 @@
               class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
             >
               <div class="flex items-center gap-2">
-                <Copy class="size-4 opacity-70" />
+                <Copy class="size-4" />
                 <span>{$t('app.common.duplicate')}</span>
-              </div>
-            </DropdownMenu.Item>
-          {/if}
-          {#if entityRowActions?.versionHistory !== false}
-            <DropdownMenu.Item
-              onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
-            >
-              <div class="flex items-center gap-2">
-                <FileClock class="size-4 opacity-70" />
-                <span>{$t('app.common.versionHistory')}</span>
-              </div>
-            </DropdownMenu.Item>
-          {/if}
-          {#if entityRowActions?.preview !== false}
-            <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
-              <div class="flex items-center gap-2">
-                <Eye class="size-4 opacity-70" />
-                <span>{$t('system.entities.list.preview')}</span>
               </div>
             </DropdownMenu.Item>
           {/if}
@@ -162,32 +149,62 @@
               {@const isDisabled = action.disabled_when_deleted && rowDeleted}
               <DropdownMenu.Item
                 onclick={(e) => { e.stopPropagation(); if (isDisabled) return; handleCustomAction(action, row); }}
-                class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : (action.text_color ?? '')}
+                class={isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : actionColorClass(action.color)}
               >
                 <div class="flex items-center gap-2">
-                  {#if action.icon}<DynamicIcon name={action.icon} size={16} class="opacity-70" />{/if}
+                  {#if action.icon}<DynamicIcon name={action.icon} size={16} />{/if}
                   <span>{$t(action.translation_key)}</span>
                 </div>
               </DropdownMenu.Item>
             {/each}
           {/if}
           {#if rowDeleted ? entityRowActions?.restore !== false : entityRowActions?.delete !== false}
-            <DropdownMenu.Separator />
             {#if rowDeleted}
-              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class="text-warning">
+              {@const chrome = entityRowActions?.restore_chrome}
+              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onRestoreRow(row); }} class={actionColorClass(chrome?.color) || 'text-warning'}>
                 <div class="flex items-center gap-2">
-                  <span class="relative flex items-center justify-center">
-                    <Trash2 class="size-4 text-warning/70" />
-                    <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                  </span>
-                  <span>{$t('app.common.restore')}</span>
+                  {#if chrome?.icon}
+                    <DynamicIcon name={chrome.icon} class="size-4" />
+                  {:else}
+                    <span class="relative flex items-center justify-center">
+                      <Trash2 class="size-4" />
+                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3" />
+                    </span>
+                  {/if}
+                  <span>{$t(chrome?.label_key ?? 'app.common.restore')}</span>
                 </div>
               </DropdownMenu.Item>
             {:else}
-              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onDeleteRow(row); }} class="text-destructive">
+              {@const chrome = entityRowActions?.delete_chrome}
+              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onDeleteRow(row); }} class={actionColorClass(chrome?.color) || 'text-destructive'}>
                 <div class="flex items-center gap-2">
-                  <Trash2 class="size-4 text-destructive/70" />
-                  <span>{$t('app.common.delete')}</span>
+                  {#if chrome?.icon}
+                    <DynamicIcon name={chrome.icon} class="size-4" />
+                  {:else}
+                    <Trash2 class="size-4" />
+                  {/if}
+                  <span>{$t(chrome?.label_key ?? 'app.common.delete')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+          {/if}
+          {#if entityRowActions?.versionHistory !== false || entityRowActions?.preview !== false}
+            <DropdownMenu.Separator />
+            {#if entityRowActions?.versionHistory !== false}
+              <DropdownMenu.Item
+                onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
+              >
+                <div class="flex items-center gap-2">
+                  <FileClock class="size-4" />
+                  <span>{$t('app.common.versionHistory')}</span>
+                </div>
+              </DropdownMenu.Item>
+            {/if}
+            {#if entityRowActions?.preview !== false}
+              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
+                <div class="flex items-center gap-2">
+                  <Eye class="size-4" />
+                  <span>{$t('system.entities.list.preview')}</span>
                 </div>
               </DropdownMenu.Item>
             {/if}

@@ -105,7 +105,7 @@
           ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
           : undefined,
         rowDeleted ? 'opacity-60' : '',
-        rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+        rowFocused ? 'border-primary-gradient' : ''
       )}
       onclick={(e) => onRowClick?.(r, rk, e)}
       onkeydown={

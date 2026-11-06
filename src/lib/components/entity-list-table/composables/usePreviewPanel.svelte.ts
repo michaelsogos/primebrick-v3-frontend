@@ -17,7 +17,7 @@ export function usePreviewPanel<TRow extends Record<string, unknown>>(
     previewRowIndex: 0,
     previewEditMode: false,
     previewPanelOpen: false,
-    focusedRowIndex: 0,
+    focusedRowIndex: null as number | null,
   });
 
   function openPreview(row: TRow) {

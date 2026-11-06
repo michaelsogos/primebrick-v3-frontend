@@ -18,6 +18,7 @@
   import ColumnsPanel from '$lib/entity-list/sheets/panels/ColumnsPanel.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
+  import JsonViewerPanel from '$lib/entity-list/sheets/panels/JsonViewerPanel.svelte';
   import CurrencySelectPanel from '$lib/shell/sheets/panels/CurrencySelectPanel.svelte';
   import ProtocolSelectPanel from '$lib/shell/sheets/panels/ProtocolSelectPanel.svelte';
   import PhonePrefixSelectPanel from '$lib/shell/sheets/panels/PhonePrefixSelectPanel.svelte';
@@ -44,6 +45,7 @@
     'entity.columns': ColumnsPanel,
     'entity.filters': FiltersPanel,
     'entity.versionHistory': VersionHistoryPanel,
+    'entity.jsonViewer': JsonViewerPanel,
     'config.currencySelect': CurrencySelectPanel,
     'config.protocolSelect': ProtocolSelectPanel,
     'config.phonePrefixSelect': PhonePrefixSelectPanel,

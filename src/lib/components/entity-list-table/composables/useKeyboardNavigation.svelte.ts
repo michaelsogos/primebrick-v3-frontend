@@ -13,14 +13,16 @@ export function useKeyboardNavigation<T>(options: {
   dropdownMenuRow: () => T | null;
   previewDropdownOpen: () => boolean;
   closeRowDropdown: () => void;
-  page: () => number;
-  pageSize: () => number;
-  totalPages: () => number;
-  onPageChange: () => (p: number) => void;
+  // Unified pager channel — same pair the footer buttons read (footerPage /
+  // footerTotalPages): server paging and client "selected only" paging are
+  // already collapsed upstream, so keys never duplicate that branching.
+  currentPage: () => number;
+  pageCount: () => number;
+  goToPage: (p: number) => void;
+  // The toolbar NEW CTA — sheet/goto/popup is owned by the handler; the
+  // Insert key is claimed only when a create CTA actually exists.
+  createAction: () => (() => void) | undefined;
   openRowDropdown: (row: T) => void;
-  footerUsesClientPaging: () => boolean;
-  clientSelectedPage: () => number;
-  setClientSelectedPage: (page: number) => void;
   toggleRowSelect: (key: string) => void;
   tableRef: () => HTMLTableElement | null;
 }) {
@@ -44,6 +46,32 @@ export function useKeyboardNavigation<T>(options: {
       }
     }
 
+    // Pager keys — table-level, so they run before the empty-list guard:
+    // PageUp must still work on an empty page (e.g. rows deleted). Clamped
+    // like the footer buttons; only claimed when the pager actually exists.
+    const pageCount = options.pageCount();
+    if (pageCount > 1) {
+      const current = options.currentPage();
+      const go = (p: number) => {
+        e.preventDefault();
+        const clamped = Math.min(Math.max(1, p), pageCount);
+        if (clamped !== current) options.goToPage(clamped);
+      };
+      if (e.key === 'PageDown') return go(current + 1);
+      if (e.key === 'PageUp') return go(current - 1);
+      if (e.key === 'Home') return go(1);
+      if (e.key === 'End') return go(pageCount);
+    }
+
+    if (e.key === 'Insert') {
+      const fn = options.createAction();
+      if (fn) {
+        e.preventDefault();
+        fn();
+      }
+      return;
+    }
+
     const viewRows = options.viewRows();
     if (viewRows.length === 0) return;
 
@@ -55,13 +83,9 @@ export function useKeyboardNavigation<T>(options: {
         options.setFocusedRowIndex(0);
       } else if (focused < viewRows.length - 1) {
         options.setFocusedRowIndex(focused + 1);
-      } else if (focused === viewRows.length - 1 && options.page() < options.totalPages()) {
+      } else if (focused === viewRows.length - 1 && options.currentPage() < options.pageCount()) {
         // Trigger next page when reaching end of current page
-        if (options.footerUsesClientPaging()) {
-          options.setClientSelectedPage(options.clientSelectedPage() + 1);
-        } else {
-          options.onPageChange()(options.page() + 1);
-        }
+        options.goToPage(options.currentPage() + 1);
       }
       if (options.previewPanelOpen()) {
         const newFocused = options.focusedRowIndex();
@@ -75,13 +99,9 @@ export function useKeyboardNavigation<T>(options: {
         options.setFocusedRowIndex(viewRows.length - 1);
       } else if (focused > 0) {
         options.setFocusedRowIndex(focused - 1);
-      } else if (focused === 0 && options.page() > 1) {
+      } else if (focused === 0 && options.currentPage() > 1) {
         // Trigger previous page when at start of current page
-        if (options.footerUsesClientPaging()) {
-          options.setClientSelectedPage(options.clientSelectedPage() - 1);
-        } else {
-          options.onPageChange()(options.page() - 1);
-        }
+        options.goToPage(options.currentPage() - 1);
       }
       if (options.previewPanelOpen()) {
         const newFocused = options.focusedRowIndex();

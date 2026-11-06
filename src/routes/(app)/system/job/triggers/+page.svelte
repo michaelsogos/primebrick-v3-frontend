@@ -19,7 +19,7 @@
   storageKeyPrefix="pb:jobs:triggers:"
   errorScopeKey="app.common.errors.scope.jobsList"
   errorScopeKeyInit="app.common.errors.scope.jobsPageInit"
-  deletionFilter={false}
+  deletionFilter={true}
   syncChannel="primebrick_job_trigger_sync"
 >
 </EntityTablePage>

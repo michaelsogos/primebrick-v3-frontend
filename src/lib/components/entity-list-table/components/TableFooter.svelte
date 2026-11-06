@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
-  import { ButtonGroup, Toolbar, KeyboardHints } from '@primebrick/ui';
+  import { ButtonGroup, Toolbar, KeyboardHints, Tooltip } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { SelectionCounter } from '../toolbar';
@@ -9,6 +9,7 @@
   import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
   import { ChevronRight } from '@primebrick/ui/vendor/lucide'
   import { ChevronsRight } from '@primebrick/ui/vendor/lucide';
+  import { Keyboard } from '@primebrick/ui/vendor/lucide';
 
   let {
     footerRangeTotal,
@@ -31,7 +32,8 @@
     page,
     totalPages,
     onPageChange,
-    onPageSizeChange
+    onPageSizeChange,
+    create_label_key
   }: {
     footerRangeTotal: number;
     footerRangeStart: number;
@@ -54,6 +56,9 @@
     totalPages: number;
     onPageChange: (page: number) => void;
     onPageSizeChange: (size: number) => void;
+    /** Label key of the toolbar NEW CTA — when a create action exists the
+     *  legend mirrors it verbatim (Ins = same target). */
+    create_label_key?: string;
   } = $props();
 </script>
 
@@ -84,22 +89,42 @@
   {/snippet}
 
   {#snippet center()}
-  <!-- Centered keybind legend — the ELT bindings from
-       useKeyboardNavigation (absolute overlay, hidden when the footer
-       is too narrow to host it without collisions). -->
-  <KeyboardHints
-    class="hidden lg:flex"
-    data-testid="elt-kbd-legend"
-    hints={[
-      { keys: ['↑', '↓'], label: $t('system.entities.list.keys.move') },
-      ...(rowSelectionEnabled
-        ? [{ keys: ['Space'], label: $t('system.entities.list.keys.select') }]
-        : []),
-      { keys: ['⏎'], label: $t('system.entities.list.keys.actions') },
-      { keys: ['←', '→'], label: $t('system.entities.list.keys.preview') },
-      { keys: ['esc'], size: 'modifier', label: $t('app.common.close') },
-    ]}
-  />
+  <!-- Centered keyboard-legend trigger — the ELT bindings from
+       useKeyboardNavigation live in the tooltip it opens (too many
+       hints for an inline legend); the Toolbar collision guard still
+       hides the trigger when the footer physically cannot host it. -->
+  <Tooltip.Root>
+    <Tooltip.Trigger
+      data-testid="elt-kbd-legend"
+      class="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+    >
+      <Keyboard class="size-3.5" />
+      {$t('system.entities.list.keyboardCommands')}
+    </Tooltip.Trigger>
+    <Tooltip.PriorityContent
+      priority="HINT"
+      title={$t('system.entities.list.keyboardCommands')}
+      side="top"
+      sideOffset={8}
+      data-testid="elt-kbd-legend-panel"
+    >
+      <KeyboardHints
+        tone="inverted"
+        class="flex-col items-start gap-2 text-xs text-background"
+        hints={[
+          { keys: ['↑', '↓', '←', '→'], size: 'key-lg' as const, label: $t('system.entities.list.keys.move') },
+          ...(rowSelectionEnabled
+            ? [{ keys: ['Space'], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.select') }]
+            : []),
+          { keys: ['Enter'], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.actions') },
+          ...(create_label_key ? [{ keys: ['Ins'], size: 'modifier-lg' as const, label: $t(create_label_key) }] : []),
+          { keys: ['Esc'], size: 'modifier-lg' as const, label: $t('app.common.close') },
+          { keys: [{ label: 'Pag.', glyph: '↑' }, { label: 'Pag.', glyph: '↓' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.page') },
+          { keys: [{ label: 'Home', glyph: '↖' }, { label: 'End', glyph: '↘' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.firstLast') },
+        ]}
+      />
+    </Tooltip.PriorityContent>
+  </Tooltip.Root>
   {/snippet}
 
   <!-- Right side: Page size + Pagination controls -->
@@ -158,7 +183,10 @@
           <ChevronLeft class="size-4" />
         </Button>
       </ButtonGroup>
-      <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
+      <div
+        class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground"
+        data-testid="elt-pagination-status"
+      >
         {$t('system.entities.list.paginationStatus')
           .replace('{page}', String(footerPage))
           .replace('{total}', String(footerTotalPages))}

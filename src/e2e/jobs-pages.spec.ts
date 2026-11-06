@@ -257,15 +257,16 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Contract: the archetype renders — remote mount must NOT.
     await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
     await expect(popup.locator(REMOTE_CONTENT)).toHaveCount(0);
-    // The 7 declared fields render in declaration order (meta.columns-driven).
+    // The 7 declared fields render in declaration order (TRIGGER_FORM
+    // page_props.form — no `enabled`: soft-delete IS the disable).
     for (const key of [
       "name",
-      "enabled",
       "event_subject",
       "target_subject",
       "schedule_spec",
       "execution_context",
       "filter",
+      "payload_map",
     ]) {
       await expect(popup.getByTestId(`entity-form-field-${key}`)).toBeVisible();
     }

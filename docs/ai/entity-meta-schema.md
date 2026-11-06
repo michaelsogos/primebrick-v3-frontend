@@ -84,6 +84,13 @@ type EntityMeta = {
     `filter_field` MUST be in the target service's `filterableKeys`.
   - Never invent links: no census route or missing `filterableKeys` entry →
     render plain, do not guess.
+- **Filtered-list URLs are a standard mechanism** (`entity-links.ts`):
+  `filteredEntityListHref(census, entity, terms)` builds a
+  `filters[i][field|op|value|connector]` deep link for ANY entity from
+  just its name + wire-level terms (scalar, `IN` array, BETWEEN
+  `{start,end}`) — route resolution stays metadata-owned (census), the
+  wire format is the `appendListFilterParams` contract. Use it whenever a
+  cell/CTA must deep-link a filtered list; never hand-assemble params.
 - **Physical columns are auto-derived from the entity class** —
   `withColumnConstraints` injects every physical column missing from
   authored `columns` (uid first, audit/deletable columns `audited:true`,

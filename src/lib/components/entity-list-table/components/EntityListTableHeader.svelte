@@ -4,6 +4,7 @@
 
   import BulkActionsToolbar from './BulkActionsToolbar.svelte';
   import type { MetaColumn, AdvancedFilter, BulkCustomAction, FilterPreset } from '$lib/entity-list/types';
+  import type { ActionChrome } from '../types';
 
   let {
     search,
@@ -52,7 +53,9 @@
     onBulkRestore,
     bulkCapabilities,
     bulkCustomActions = [],
-    onBulkCustomAction
+    onBulkCustomAction,
+    bulkDeleteChrome,
+    bulkRestoreChrome
   }: EntityListTableHeaderProps = $props();
 
   type EntityListTableHeaderProps = {
@@ -103,6 +106,8 @@
     bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
+    bulkDeleteChrome?: ActionChrome;
+    bulkRestoreChrome?: ActionChrome;
   };
 </script>
 
@@ -190,4 +195,6 @@
   bulkCapabilities={bulkCapabilities}
   bulkCustomActions={bulkCustomActions}
   onBulkCustomAction={onBulkCustomAction}
+  bulkDeleteChrome={bulkDeleteChrome}
+  bulkRestoreChrome={bulkRestoreChrome}
 />

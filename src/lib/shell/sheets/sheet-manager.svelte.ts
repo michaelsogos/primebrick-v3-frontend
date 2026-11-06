@@ -20,6 +20,7 @@ export const SHEET_PANEL_IDS = [
   'entity.columns',
   'entity.filters',
   'entity.versionHistory',
+  'entity.jsonViewer',
   'config.currencySelect',
   'config.protocolSelect',
   'config.phonePrefixSelect',
@@ -81,6 +82,10 @@ export type SheetPanelPropsMap = {
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+  };
+  'entity.jsonViewer': {
+    /** The cell's parsed JSON value (null-prototype safe — read-only). */
+    value: unknown;
   };
   'config.currencySelect': {
     currentCurrency: string;

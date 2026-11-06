@@ -3,8 +3,9 @@
   import { Button } from '@primebrick/ui';
   import { FilterBar } from '../toolbar';
   import { fly } from 'svelte/transition';
-  import { DynamicIcon } from '@primebrick/ui';
+  import { DynamicIcon, actionColorButtonVariant } from '@primebrick/ui';
   import type { MetaColumn, AdvancedFilter, BulkCustomAction } from '$lib/entity-list/types';
+  import type { ActionChrome } from '../types';
   import { ListCheck } from '@primebrick/ui/vendor/lucide'
   import { Funnel } from '@primebrick/ui/vendor/lucide'
   import { Download } from '@primebrick/ui/vendor/lucide'
@@ -33,7 +34,9 @@
     onBulkRestore,
     bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true },
     bulkCustomActions = [],
-    onBulkCustomAction
+    onBulkCustomAction,
+    bulkDeleteChrome,
+    bulkRestoreChrome
   }: {
     toolbarMode: 'filters' | 'bulk';
     hasAppliedFilters: boolean;
@@ -57,6 +60,10 @@
     /** `meta.table.bulk_custom_actions` CTAs (permission-filtered upstream). */
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
+    /** Chrome overrides for the standard bulk delete/restore CTAs
+     *  (`meta.actions["delete.bulk"]` / `["restore.bulk"]`). */
+    bulkDeleteChrome?: ActionChrome;
+    bulkRestoreChrome?: ActionChrome;
   } = $props();
 
   /** True when at least one bulk CTA can ever render for this entity. When
@@ -138,37 +145,45 @@
       {/if}
       {#if bulkCapabilities.delete}
         <Button
-          variant="destructive"
+          variant={bulkDeleteChrome?.color ? actionColorButtonVariant(bulkDeleteChrome.color) : 'destructive'}
           size="xs"
           onclick={onBulkDelete}
-          disabled={selectedKeys.length < 2 || hasDeletedSelected}
+          disabled={selectedKeys.length < 1 || hasDeletedSelected}
         >
-          <Trash2 class="size-3.5" />
-          {$t('system.entities.list.bulkActions.delete')}
+          {#if bulkDeleteChrome?.icon}
+            <DynamicIcon name={bulkDeleteChrome.icon} size={14} />
+          {:else}
+            <Trash2 class="size-3.5" />
+          {/if}
+          {$t(bulkDeleteChrome?.label_key ?? 'system.entities.list.bulkActions.delete')}
         </Button>
       {/if}
       {#if hasDeletedSelected && bulkCapabilities.restore}
         <Button
-          variant="warning"
+          variant={bulkRestoreChrome?.color ? actionColorButtonVariant(bulkRestoreChrome.color) : 'warning'}
           size="xs"
           onclick={onBulkRestore}
           disabled={!allSelectedDeleted}
         >
-          <span class="relative flex items-center justify-center">
-            <Trash class="size-3.5" />
-            <ArrowUpFromLine class="absolute bottom-px size-2" />
-          </span>
-          {$t('system.entities.list.bulkActions.restore')}
+          {#if bulkRestoreChrome?.icon}
+            <DynamicIcon name={bulkRestoreChrome.icon} size={14} />
+          {:else}
+            <span class="relative flex items-center justify-center">
+              <Trash class="size-3.5" />
+              <ArrowUpFromLine class="absolute bottom-px size-2" />
+            </span>
+          {/if}
+          {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulkActions.restore')}
         </Button>
       {/if}
       {#each bulkCustomActions as action (action.action_name)}
         <Button
-          variant={action.text_color?.includes('red') ? 'destructive' : 'default'}
+          variant={actionColorButtonVariant(action.color)}
           size="xs"
           onclick={() => onBulkCustomAction?.(action)}
           disabled={action.requires_selection !== false && selectedKeys.length === 0}
         >
-          {#if action.icon}<DynamicIcon name={action.icon} size={14} class="opacity-70" />{/if}
+          {#if action.icon}<DynamicIcon name={action.icon} size={14} class={action.color ? '' : 'opacity-70'} />{/if}
           {$t(action.translation_key)}
         </Button>
       {/each}

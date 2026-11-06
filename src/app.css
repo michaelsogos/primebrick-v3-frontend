@@ -146,6 +146,31 @@
 }
 
 /**
+ * Keyboard-focus frame for table rows — same sky→indigo primary gradient as
+ * border-primary-gradient, but the interior stays TRANSPARENT so the row
+ * beneath shows through and only the 1px border ring paints. An opaque
+ * padding-box fill (the border-primary-gradient trick) would hide the row,
+ * while a transparent fill lets the border-box gradient bleed across the
+ * whole element — the mask-composite xor keeps only the ring. Painted by a
+ * measured overlay sibling of <table> (tr cannot be a containing block and
+ * border-collapse ignores radius on it). Decorative only: pointer-events
+ * none, never in layout — zero reflow, always.
+ */
+@utility row-focus-frame {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+/**
  * Soft primary gradient background ONLY (no border trick).
  * Same sky→indigo tenue gradient fill as border-primary-gradient-soft, but
  * without the double-background border painting. Use on elements that already
