@@ -3,7 +3,6 @@
     "raw-switch": {
       "allowPaths": [
         "lib/components/config-list/ConfigValueInput.svelte",
-        "lib/entity-list/sheets/panels/FiltersPanel.svelte",
         "lib/components/entity-list-table/panels/PreviewPanel.svelte",
         "lib/components/anchor-tabs/anchor-tabs-mode-switch.svelte",
         "lib/components/entity-list-table/components/CardViewRenderer.svelte",
@@ -29,6 +28,12 @@
       "appliesTo": ["lib/entity-list/sheets/panels/", "lib/shell/sheets/panels/"]
     },
     "panel-button-testid": {
+      "appliesTo": ["lib/entity-list/sheets/panels/", "lib/shell/sheets/panels/"]
+    },
+    "panel-switch": {
+      "appliesTo": ["lib/entity-list/sheets/panels/", "lib/shell/sheets/panels/"]
+    },
+    "panel-search-clearable": {
       "appliesTo": ["lib/entity-list/sheets/panels/", "lib/shell/sheets/panels/"]
     },
     "i18n-entity-fallback": {

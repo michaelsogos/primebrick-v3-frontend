@@ -27,7 +27,6 @@
     SearchInput,
     SheetPanelLayout,
     DynamicIcon,
-    Switch,
     formatListCellValue,
     getResolvedIanaTimeZone,
   } from '@primebrick/ui';
@@ -61,6 +60,9 @@
   } from '$lib/entity-list/types';
 
   interface Props {
+    /** Entity being filtered — feeds `options_source:"audit.actors"`
+     *  columns through `{entity}/audit-actors`. */
+    entity?: string;
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -70,6 +72,7 @@
   }
 
   let {
+    entity,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -99,13 +102,20 @@
 
   let tabValue = $state<'standard' | 'advanced'>('standard');
 
-  // Field-name search — narrows the standard list AND the advanced field
-  // picker options from the same query (one vocabulary, one search box).
+  // Standard vs advanced surfaces: `datetime` columns are ADVANCED-ONLY —
+  // a same-instant equality quick-filter is noise (ranges/`BETWEEN` live
+  // in the advanced criteria). `date` stays standard (day-precision
+  // equality is meaningful). The advanced field combo gets the FULL set.
+  const standardColumnsBase = $derived(filterableColumns.filter((c) => c.type !== 'datetime'));
+  const fieldOptionsColumns = $derived(filterableColumns);
+
+  // Field-name search — standard tab only (the advanced field combo has
+  // its own internal search; a shared box there filters nothing it sees).
   let fieldSearch = $state('');
   const filteredColumns = $derived.by(() => {
     const q = fieldSearch.trim().toLowerCase();
-    if (!q) return filterableColumns;
-    return filterableColumns.filter(
+    if (!q) return standardColumnsBase;
+    return standardColumnsBase.filter(
       (c) =>
         c.key.toLowerCase().includes(q) ||
         c.label_key.toLowerCase().includes(q) ||
@@ -243,7 +253,7 @@
     selectedColumn ? getOperatorsForColumnType(selectedColumn.type) : [],
   );
   const fieldOptions = $derived(
-    filteredColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: c.icon ?? '' })),
+    fieldOptionsColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: c.icon ?? '' })),
   );
   const operatorOptions = $derived(
     availableOperators.map((op) => ({
@@ -415,7 +425,7 @@
   {#snippet toolbar()}
     <div class="space-y-2">
       <ButtonGroup segmented class="w-full">
-        {#each [['standard', 'list-filter'], ['advanced', 'list-filter-plus']] as [mode, icon] (mode)}
+        {#each [['standard', 'funnel'], ['advanced', 'hammer']] as [mode, icon] (mode)}
           {@const active = tabValue === mode}
           <Button
             variant="ghost"
@@ -433,11 +443,13 @@
           </Button>
         {/each}
       </ButtonGroup>
-      <SearchInput
-        bind:value={fieldSearch}
-        placeholder={$t('system.entities.list.searchFields')}
-        data_testid="filters-field-search"
-      />
+      {#if tabValue === 'standard'}
+        <SearchInput
+          bind:value={fieldSearch}
+          placeholder={$t('system.entities.list.searchFields')}
+          data_testid="filters-field-search"
+        />
+      {/if}
     </div>
   {/snippet}
 
@@ -454,39 +466,34 @@
           <FormFieldDispatcher
             surface="filter"
             column={col}
+            filterEntity={entity}
             bind:value={tempFilterValues[col.key]}
             bind:timezone={timezoneValues[col.key]}
             emitsOptions={census.emitsOptions}
             callablesOptions={census.callablesOptions}
-            placeholder={$t('system.entities.list.filterPlaceholder')}
             controlProps={{ id }}
           />
         {/snippet}
       </PrimeField>
     {/each}
   {:else}
-    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-4">
-      <span
-        class="justify-self-end text-xs font-medium {globalConnector === 'AND'
-          ? 'font-bold text-foreground'
-          : 'text-muted-foreground'}"
-      >
-        {$t('system.entities.list.allCriteria')}
-      </span>
-      <Switch
-        checked={globalConnector === 'OR'}
-        onCheckedChange={(checked) => (globalConnector = checked ? 'OR' : 'AND')}
-        aria-label={$t('system.entities.list.connector')}
-        data-testid="filters-connector"
-      />
-      <span
-        class="justify-self-start text-xs font-medium {globalConnector === 'OR'
-          ? 'font-bold text-foreground'
-          : 'text-muted-foreground'}"
-      >
-        {$t('system.entities.list.atLeastOneCriteria')}
-      </span>
-    </div>
+    <ButtonGroup segmented class="w-full mb-4">
+      {#each [['AND', 'ampersand', 'system.entities.list.allCriteria'], ['OR', 'split', 'system.entities.list.atLeastOneCriteria']] as [conn, icon, labelKey] (conn)}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex-1 {globalConnector === conn
+            ? 'bg-foreground/10 text-foreground shadow-xs'
+            : 'text-muted-foreground'}"
+          aria-pressed={globalConnector === conn}
+          data-testid="filters-connector-{conn.toLowerCase()}"
+          onclick={() => (globalConnector = conn as 'AND' | 'OR')}
+        >
+          <DynamicIcon name={icon} size={14} />
+          {$t(labelKey)}
+        </Button>
+      {/each}
+    </ButtonGroup>
 
     {#if tempAdvancedFilters.length > 0}
       <div class="space-y-3 mb-4">
@@ -576,28 +583,28 @@
                   <FormFieldDispatcher
                     surface="filter"
                     column={selectedColumn}
+                    filterEntity={entity}
                     bind:value={newFilterStart}
                     bind:timezone={advancedTimezone}
-                    placeholder={$t('system.entities.list.selectValue')}
                     controlProps={{ id }}
                   />
                   <FormFieldDispatcher
                     surface="filter"
                     column={selectedColumn}
+                    filterEntity={entity}
                     bind:value={newFilterEnd}
                     bind:timezone={advancedTimezone}
-                    placeholder={$t('system.entities.list.selectValue')}
                   />
                 </div>
               {:else}
                 <FormFieldDispatcher
                   surface="filter"
                   column={selectedColumn}
+                  filterEntity={entity}
                   bind:value={newFilterValue}
                   bind:timezone={advancedTimezone}
                   emitsOptions={census.emitsOptions}
                   callablesOptions={census.callablesOptions}
-                  placeholder={$t('system.entities.list.selectValue')}
                   controlProps={{ id }}
                 />
               {/if}

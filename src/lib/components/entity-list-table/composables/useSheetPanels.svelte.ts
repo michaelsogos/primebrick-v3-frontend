@@ -14,6 +14,7 @@ export interface UseSheetPanelsOptions {
   onSearchInKeysChange: () => (keys: string[] | null) => void;
   onVisibleKeysChange: () => (keys: string[]) => void;
   onResetColumnVisibility: () => (view: ViewName) => void;
+  entity: () => string;
   filterableColumns: () => MetaColumn[];
   searchableColumns: () => MetaColumn[];
   nonAuditingColumns: () => MetaColumn[];
@@ -129,6 +130,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
     }
     if (sheetState.panelId === 'entity.filters') {
       sheetState.props = {
+        entity: options.entity(),
         filterableColumns: options.filterableColumns(),
         filterValues: options.filterValues() ?? {},
         onFilterValuesChange: options.onFilterValuesChange?.(),

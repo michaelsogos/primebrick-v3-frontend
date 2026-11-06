@@ -131,6 +131,42 @@ test.describe("elt filters widget parity", () => {
       .toBe(true);
   });
 
+  test("standard tab — audit actor column renders the governed multi combo", async ({ page }) => {
+    const actorUrls: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/entities/user_profile/audit-actors")) actorUrls.push(req.url());
+    });
+    await page.goto(USERS, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await openFiltersSheet(page);
+
+    // created_by — options_source:"audit.actors": the table's own writers,
+    // NOT a user_profile entity-ref (fictitious actors have no profile).
+    const { control } = await labeledControl(page, /created.?by/i);
+    await expect(control).toHaveAttribute("role", "combobox");
+    // Mounting the control fetches the governed vocabulary endpoint.
+    await expect.poll(() => actorUrls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+  });
+
+  test("datetime columns are advanced-only — ranges live in criteria, not quick-filters", async ({ page }) => {
+    await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await openFiltersSheet(page);
+
+    // last_run/next_run (datetime) — a same-instant equality quick-filter
+    // is noise; they must NOT render on the standard tab.
+    await expect(page.locator("label", { hasText: /last.?run|next.?run/i })).toHaveCount(0);
+
+    // …but the advanced field combo still offers them.
+    await page.getByTestId("filters-mode-advanced").click();
+    const fieldLabel = page.locator("label", { hasText: /\bfield\b/i }).first();
+    const fieldId = await fieldLabel.getAttribute("for");
+    await page.locator(`[id="${fieldId}"]`).click();
+    const popover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(popover.getByText(/last.?run/i).first()).toBeVisible({ timeout: 10_000 });
+    await page.keyboard.press("Escape");
+  });
+
   test("standard tab — help icon exists only where the meta declares it", async ({ page }) => {
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });

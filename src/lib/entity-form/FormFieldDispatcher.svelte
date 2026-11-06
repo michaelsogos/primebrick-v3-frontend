@@ -46,6 +46,7 @@
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
+	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
@@ -99,6 +100,10 @@
 		/** Bindable IANA timezone for the `date` filter control — the panel
 		 *  converts CalendarDate→UTC at apply time using the picker's tz. */
 		timezone?: string;
+		/** The entity being filtered — required on the filter surface for
+		 *  `options_source:"audit.actors"` columns (the vocabulary is the
+		 *  entity's own audit writers, fetched from `{entity}/audit-actors`). */
+		filterEntity?: string;
 	}
 
 	let {
@@ -115,13 +120,34 @@
 		disabledBadgeValues,
 		readonly = false,
 		timezone = $bindable(),
+		filterEntity,
 	}: Props = $props();
 
-	const placeholder = $derived(
-		placeholderProp ?? (placement?.placeholder_key ? $t(placement.placeholder_key) : undefined),
-	);
 	const control = $derived(
 		surface === 'filter' ? resolveFilterControl() : resolveFormControl(),
+	);
+
+	/** Filter-surface placeholder defaults — the hint serves the ACTION:
+	 *  picker controls say "select", free-value controls say "filter
+	 *  value". `filterPlaceholder` ("No filter applied") was state copy
+	 *  rendered as an input hint — wrong on every control. */
+	function defaultFilterPlaceholder(ctl: string): string | undefined {
+		if (ctl === 'boolean_tristate') return undefined;
+		if (
+			ctl === 'text' ||
+			ctl === 'textarea' ||
+			ctl === 'number' ||
+			ctl === 'email' ||
+			ctl === 'url' ||
+			ctl === 'phone'
+		)
+			return $t('system.entities.list.filterValueHint');
+		return $t('system.entities.list.selectValue');
+	}
+	const placeholder = $derived(
+		placeholderProp ??
+			(placement?.placeholder_key ? $t(placement.placeholder_key) : undefined) ??
+			(surface === 'filter' ? defaultFilterPlaceholder(control) : undefined),
 	);
 
 	/**
@@ -150,13 +176,15 @@
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
 	 *  identical): multi variants feed IN semantics, booleans gain the
 	 *  "don't care" state, date columns get the real picker, `ref` columns
-	 *  get the paged entity combobox. */
+	 *  get the paged entity combobox, audit actors the governed
+	 *  multi-select over the table's own writers. */
 	const FILTER_CONTROLS = new Set([
 		'date',
 		'badge_multi',
 		'subject_combo_multi',
 		'boolean_tristate',
 		'entity_ref',
+		'actor_multi',
 		'textarea',
 		'number',
 		'email',
@@ -190,6 +218,8 @@
 		if (column.type === 'boolean' || column.pg_type === 'boolean') return 'boolean_tristate';
 		if (column.type === 'badge') return 'badge_multi';
 		if (column.type === 'ref' && column.ref?.entity) return 'entity_ref';
+		if (column.options_source === 'audit.actors') return 'actor_multi';
+		if (column.type === 'ref_count') return 'number';
 		if (
 			column.type === 'date' ||
 			column.type === 'datetime' ||
@@ -288,6 +318,12 @@
 	 *  `entity_ref`). Instantiated unconditionally: Svelte composables must
 	 *  run at init; the fetch is gated on the resolved entity. */
 	const entityRef = useEntityRefOptions(() => column);
+
+	/** `options_source:"audit.actors"` options — the filtered entity's own
+	 *  audit writers (single fetch, full vocabulary — client search inside
+	 *  the combo is truthful here). `filterEntity` is required; without it
+	 *  the delegate stays empty rather than fetching the wrong service. */
+	const auditActors = useAuditActorOptions(() => filterEntity);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters).
@@ -529,6 +565,18 @@
 		onLoadMore={entityRef.onLoadMore}
 		loadingMore={entityRef.state.loadingMore}
 		loading={entityRef.state.loading}
+		{placeholder}
+		disabled={readonly}
+		{...controlProps}
+	/>
+{:else if control === 'actor_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={auditActors.state.options as { value: string; label: string }[]}
+		valueField="value"
+		labelField="label"
+		loading={auditActors.state.loading}
 		{placeholder}
 		disabled={readonly}
 		{...controlProps}

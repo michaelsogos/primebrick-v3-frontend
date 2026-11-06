@@ -238,6 +238,7 @@
     onSearchInKeysChange: () => onSearchInKeysChange,
     onVisibleKeysChange: () => onVisibleKeysChange,
     onResetColumnVisibility: () => onResetColumnVisibility,
+    entity: () => entity,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,
