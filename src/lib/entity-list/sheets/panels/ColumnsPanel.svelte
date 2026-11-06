@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Checkbox, checkboxVisualOnlyClass } from '@primebrick/ui';
+  import { Checkbox, checkboxVisualOnlyClass, DynamicIcon } from '@primebrick/ui';
   import * as Sortable from '$lib/components/ui/sortable';
   import { Sheet } from "@primebrick/ui";
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -11,7 +11,7 @@
   import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
 
-  type ColumnLike = { key: string; label_key: string; hideable?: boolean };
+  type ColumnLike = { key: string; label_key: string; hideable?: boolean; icon?: string };
 
   interface Props {
     stickyColumns: ColumnLike[];
@@ -60,6 +60,9 @@
                       disabled={col.hideable === false}
                       class={checkboxVisualOnlyClass}
                     />
+                  </span>
+                  <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+                    {#if col.icon}<DynamicIcon name={col.icon} size={14} class="opacity-70" />{/if}
                   </span>
                   <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
                 </button>

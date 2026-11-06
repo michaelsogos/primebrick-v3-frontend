@@ -8,6 +8,7 @@
   import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { Badge } from '@primebrick/ui';
   import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
+  import { DynamicIcon } from '@primebrick/ui';
   import { t } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
@@ -586,6 +587,7 @@ import { Switch } from '@primebrick/ui';
             <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
               <div class="flex-1 min-w-0">
                 <div class="text-xs flex flex-wrap items-center gap-1">
+                  {#if column?.icon}<DynamicIcon name={column.icon} size={14} class="shrink-0 opacity-70" />{/if}
                   <span class="font-bold text-foreground">
                     {column ? $t(column.label_key) : filter.field}
                   </span>
@@ -641,15 +643,15 @@ import { Switch } from '@primebrick/ui';
                     class="h-9 w-full justify-between font-normal"
                     {...props}
                   >
+                    {@const selectedFieldCol = newFilterField ? filterableColumns.find((c) => c.key === newFilterField) : undefined}
                     <span
-                      class={newFilterField
+                      class="flex min-w-0 items-center gap-1.5 {newFilterField
                         ? "text-foreground"
-                        : "text-muted-foreground/70 text-xs"}
+                        : "text-muted-foreground/70 text-xs"}"
                     >
+                      {#if selectedFieldCol?.icon}<DynamicIcon name={selectedFieldCol.icon} size={14} class="shrink-0 opacity-70" />{/if}
                       {newFilterField
-                        ? (filterableColumns.find((c) => c.key === newFilterField)
-                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.label_key)
-                            : newFilterField)
+                        ? (selectedFieldCol ? $t(selectedFieldCol.label_key) : newFilterField)
                         : $t("system.entities.list.selectField")}
                     </span>
                     <ChevronDown class="h-4 w-4 shrink-0" />
@@ -674,6 +676,9 @@ import { Switch } from '@primebrick/ui';
                     closeOnSelect={true}
                     class={dropdownMenuItemWithSelectedClass('', newFilterField === col.key)}
                   >
+                    <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+                      {#if col.icon}<DynamicIcon name={col.icon} size={14} class="opacity-70" />{/if}
+                    </span>
                     {$t(col.label_key)}
                   </DropdownMenu.Item>
                 {/each}

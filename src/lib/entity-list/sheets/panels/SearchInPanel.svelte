@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Checkbox, checkboxVisualOnlyClass } from '@primebrick/ui';
+  import { Checkbox, checkboxVisualOnlyClass, DynamicIcon } from '@primebrick/ui';
   import { Sheet } from "@primebrick/ui";
   import { t } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -9,7 +9,7 @@
   import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
 
-  type ColumnLike = { key: string; label_key: string };
+  type ColumnLike = { key: string; label_key: string; icon?: string };
 
   interface Props {
     searchInKeys: string[] | null | undefined;
@@ -50,6 +50,7 @@
     <span class="pointer-events-none shrink-0" aria-hidden="true">
       <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={checkboxVisualOnlyClass} />
     </span>
+    <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true"></span>
     <span class="min-w-0 flex-1 truncate">{$t('system.entities.list.searchInAll')}</span>
   </button>
 
@@ -65,6 +66,9 @@
     >
       <span class="pointer-events-none shrink-0" aria-hidden="true">
         <Checkbox checked={!!searchInKeys?.includes(col.key)} class={checkboxVisualOnlyClass} />
+      </span>
+      <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+        {#if col.icon}<DynamicIcon name={col.icon} size={14} class="opacity-70" />{/if}
       </span>
       <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
     </button>
