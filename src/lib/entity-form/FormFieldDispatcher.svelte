@@ -2,9 +2,10 @@
 	/**
 	 * FormFieldDispatcher — the entity-form twin of `ConfigValueInput`:
 	 * selects the CONTROL for one declared field from the served column
-	 * metadata (`format` first, then `type`, then `pg_type` fallback) plus
-	 * the page-domain placement policy (`widget` override, `options_source`,
-	 * `readonly`, `placeholder_key`).
+	 * metadata (`format` first, then `type`, then `pg_type` fallback; the
+	 * column also owns `widget`/`options_source`/`allow_create` — the
+	 * semantic input contract every surface shares) plus the page-domain
+	 * placement policy (`readonly`, `placeholder_key`).
 	 *
 	 * Rendered inside a `FormField` wrapper by EntityFormPage — this
 	 * component emits only the control itself; label/constraints/errors are
@@ -121,7 +122,7 @@
 				`[FormFieldDispatcher] "${column.key}" is boolean — booleans render via SwitchField in EntityFormPage, never through the dispatcher.`,
 			);
 		}
-		const resolved = placement.widget ?? deriveControl();
+		const resolved = column.widget ?? deriveControl();
 		if (!CONTROLS.has(resolved)) {
 			throw new Error(
 				`[FormFieldDispatcher] unknown control "${resolved}" for "${column.key}" — register it in CONTROLS + add a template branch.`,
@@ -135,8 +136,8 @@
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
-			return placement.options_source === 'census.emits' ||
-				placement.options_source === 'census.callables'
+			return column.options_source === 'census.emits' ||
+				column.options_source === 'census.callables'
 				? 'subject_combo'
 				: 'text';
 		}
@@ -285,7 +286,7 @@
 	<ComboSelect
 		mode="single"
 		bind:value={stringValue.value}
-		options={placement.options_source === 'census.callables' ? callablesOptions : emitsOptions}
+		options={column.options_source === 'census.callables' ? callablesOptions : emitsOptions}
 		valueField="value"
 		labelField="label"
 		descriptionField="_desc"
@@ -293,12 +294,12 @@
 		iconField="_icon"
 		iconColorField="_icon_color"
 		display="detailed"
-		allowCreate={placement.allow_create === true}
+		allowCreate={column.allow_create === true}
 		{placeholder}
 		disabled={readonly}
 		{...controlProps}
 	/>
-	{#if placement.options_source === 'census.callables' && targetCallable?.permissions?.length}
+	{#if column.options_source === 'census.callables' && targetCallable?.permissions?.length}
 		<p class="text-xs text-amber-600 dark:text-amber-400" data-testid="callable-permissions-warn">
 			{$t('app.widgets.payload_map.permissions_warn.lead')}
 			{#each targetCallable.permissions as perm (perm)}
