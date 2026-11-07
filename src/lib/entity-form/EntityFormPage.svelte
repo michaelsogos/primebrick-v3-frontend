@@ -631,6 +631,7 @@
 													: undefined}
 												readonly={placement.readonly || collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
+												bind:record={$form}
 											/>
 											<TranslatedFormFieldErrors />
 										</div>

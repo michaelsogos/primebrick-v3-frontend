@@ -18,7 +18,7 @@
    */
   import { t, dict } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { SheetPanelLayout } from '@primebrick/ui';
+  import { SheetPanelLayout, SheetPanelFooter } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { PrimeField } from '@primebrick/ui';
@@ -308,10 +308,9 @@
 </SheetPanelLayout>
 
 {#snippet addFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
-      class="w-full"
       onclick={addRow}
       disabled={!draftCode.trim() || !!draftCodeError}
       data-testid="tcb-badge-add"
@@ -319,19 +318,18 @@
       <Plus class="h-4 w-4" />
       {$t('system.settings.config.typeConfig.addValue')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}
 
 {#snippet saveFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
-      class="w-full"
       onclick={saveEdit}
       disabled={!draftCode.trim() || !!draftCodeError}
       data-testid="tcb-badge-save"
     >
       {$t('app.common.save')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}

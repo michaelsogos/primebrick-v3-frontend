@@ -25,7 +25,10 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47, toDisplayString } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString, numericKindOf } from '@primebrick/ui';
+	import type { NumericUomSpec } from '@primebrick/ui';
+	import type { Decimal } from '@primebrick/ui';
+	import { currencySymbol } from '$lib/currency';
 	import {
 		TextInput,
 		ComboSelect,
@@ -104,6 +107,10 @@
 		 *  `options_source:"audit.actors"` columns (the vocabulary is the
 		 *  entity's own audit writers, fetched from `{entity}/audit-actors`). */
 		filterEntity?: string;
+		/** The whole form data record — a numeric column's `uom.field` sibling
+		 *  (the persisted currency/UoM code) is read and written through it.
+		 *  Filter surfaces have no record: uom renders display-only there. */
+		record?: Record<string, unknown>;
 	}
 
 	let {
@@ -121,6 +128,7 @@
 		readonly = false,
 		timezone = $bindable(),
 		filterEntity,
+		record = $bindable(),
 	}: Props = $props();
 
 	const control = $derived(
@@ -252,7 +260,9 @@
 				: 'text';
 		}
 		if (format === 'textarea' || column.type === 'textarea') return 'textarea';
-		if (format === 'number' || format === 'money' || column.type === 'number') return 'number';
+		// Numeric control — the shared `numericKindOf` contract: number/money
+		// formats, `type:"number"`/`ref_count`, and every numeric pg_type.
+		if (numericKindOf(column) !== null) return 'number';
 		if (format === 'email') return 'email';
 		if (format === 'url') return 'url';
 		if (format === 'phone') return 'phone';
@@ -283,15 +293,51 @@
 		},
 	};
 	const numValue = {
-		get value(): string | bigint | number {
-			return typeof value === 'number' || typeof value === 'bigint' || typeof value === 'string'
-				? value
+		get value(): string | bigint | number | Decimal {
+			return typeof value === 'number' ||
+				typeof value === 'bigint' ||
+				typeof value === 'string' ||
+				(value != null && typeof value === 'object' && 'v' in (value as object))
+				? (value as string | bigint | number | Decimal)
 				: '';
 		},
-		set value(v: string | bigint | number) {
+		set value(v: string | bigint | number | Decimal) {
 			value = v === '' ? undefined : v;
 		},
 	};
+	/** Numeric kind from the column contract — ONE resolver (`numericKindOf`)
+	 *  shared with the zod binding and every numeric surface. */
+	const numKind = $derived(numericKindOf(column) ?? 'number');
+	/** Resolved uom spec for the numeric control — `MetaColumn.uom` is the
+	 *  contract; the sibling `uom.field` value rides `record` (form surface
+	 *  only — filters render the adornment display-only). */
+	const numericUom = $derived.by<NumericUomSpec | undefined>(() => {
+		const u = column.uom;
+		if (!u) return undefined;
+		if (u.kind === 'percent') return { kind: 'percent' };
+		const code = surface === 'form' && record ? String(record[u.field] ?? '') : '';
+		if (u.kind === 'currency') {
+			return {
+				kind: 'currency',
+				code,
+				symbol: code ? currencySymbol(code) : '',
+				on_pick: record
+					? () =>
+							openSheet('config.currencySelect', {
+								currentCurrency: code,
+								onCurrencyChange: (c: string) => {
+									if (record) {
+										record[u.field] = c;
+										// self-assign — force the $bindable update through
+										record = record;
+									}
+								},
+							})
+					: undefined,
+			};
+		}
+		return { kind: 'custom', code, symbol: u.symbol ?? code };
+	});
 	/** Multi-select surfaces (filter IN semantics) — an empty selection is
 	 *  `undefined`, not `[]`, so the serializer drops the param entirely. */
 	const arrayValue = {
@@ -506,7 +552,17 @@
 {:else if control === 'textarea'}
 	<Textarea bind:value={stringValue.value} {placeholder} {readonly} {...controlProps} />
 {:else if control === 'number'}
-	<NumericInput type="number" bind:value={numValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<NumericInput
+		kind={numKind}
+		uom={numericUom}
+		bind:value={numValue.value}
+		min={column.min}
+		max={column.max}
+		unsigned={column.unsigned}
+		{placeholder}
+		disabled={readonly}
+		{...controlProps}
+	/>
 {:else if control === 'email'}
 	<EmailInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
 {:else if control === 'url'}

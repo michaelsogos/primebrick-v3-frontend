@@ -57,7 +57,7 @@ prop shape is a compile error.
 │   {@render children()}           │  THE ONLY SCROLLABLE REGION
 ├──────────────────────────────────┤
 │ FOOT (optional)                  │  action buttons / input box
-│       border-t                   │  never scrolls
+│       border-t bg-muted/50       │  never scrolls — muted strip owned by layout
 └──────────────────────────────────┘
 ```
 
@@ -89,12 +89,19 @@ Rules:
 - **HEAD never hosts the primary action** — icon-only buttons have no
   label, so a primary CTA there is invisible. HEAD = close ✕ + secondary
   icon utilities only (reset, clear, new).
-- **FOOT owns the primary CTA of FORM panels** — `Button` with a text
-  label. Single actions use `class="w-full"`; never add a Cancel button
+- **FOOT owns the primary CTA of FORM panels** — the strip itself
+  (`border-t bg-muted/50`) is layout-owned; the INNER anatomy is
+  `SheetPanelFooter` (`p-3`, right-aligned `ml-auto` button group,
+  natural-width CTAs — never `w-full`). Never add a Cancel button
   (the close ✕ and outside-click dismissal already cover "abort").
+  Input-box feet (chat composer) are the exception — they supply their
+  own padded container and do NOT use `SheetPanelFooter`.
 - **CTA placement by zone**: HEAD → secondary icon utilities + ✕ ·
-  TOOLBAR → tools only (search, tabs, sort) · CONTENT → per-row actions
-  and inline sub-form CTAs · FOOT → primary labeled commit button.
+  TOOLBAR → tools only (search, tabs, mode/connector groups, sort) ·
+  CONTENT → per-row actions and inline sub-form CTAs · FOOT → primary
+  labeled commit button. A tool rendered in CONTENT lands under the
+  toolbar's `border-b` and reads as a second header band — keep it in
+  the toolbar snippet.
 - **Three panel archetypes**:
   - **PICKER** — immediate commit: click a row/toggle → commit → close.
     No footer (CurrencySelect, PhonePrefixSelect, ProtocolSelect, Columns).
@@ -124,7 +131,8 @@ Rules:
     draft must survive an accidental close.
 - Padding: CONTENT default `p-2`; override via `contentClass` (e.g.
   `px-4 py-3`). HEAD uses SheetHeader's `px-2 py-2`. TOOLBAR `px-3 py-2`.
-  FOOT content supplies its own padding (`p-3` for inputs, `px-4 py-2` for bars).
+  FOOT: `SheetPanelFooter` owns `p-3` — input-box exceptions supply their
+  own (`p-3`).
 - **TOOLBAR is for tools only** — CTAs, search inputs, tab bars. Metadata
   (scores, timestamps, subtitles) belongs in CONTENT, never in TOOLBAR.
 - **Floating UI inside panels**: `Popover.Content` self-portals to `body`
@@ -168,9 +176,9 @@ Rules:
   <p>{someProp}</p>
 
   {#snippet footer()}
-    <div class="p-3">
-      <Button class="w-full" onclick={() => on_pick?.('x')}>{$t('app.common.apply')}</Button>
-    </div>
+    <SheetPanelFooter>
+      <Button onclick={() => on_pick?.('x')}>{$t('app.common.apply')}</Button>
+    </SheetPanelFooter>
   {/snippet}
 </SheetPanelLayout>
 ```

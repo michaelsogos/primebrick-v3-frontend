@@ -13,10 +13,17 @@
  * is "actors that wrote THIS table", which a `user_profile` entity-ref
  * combo could never offer (fictitious writers have no profile row).
  *
- * Cardinality is small and append-mostly → one fetch at mount, no
+ * Cardinality is small and append-mostly → one fetch per entity, no
  * paging, no server search. Client-side filtering inside ComboSelect
  * is CORRECT here (unlike entity refs): the loaded set IS the complete
  * vocabulary, not a page of it.
+ *
+ * The vocabulary is per-ENTITY, not per-column — every instance of the
+ * composable (one per audit-column control: created_by / updated_by /
+ * deleted_by, possibly mounted on both tabs) shares the SAME request.
+ * Without a shared cache the panel fired one GET per control instance
+ * (9 parallel requests for identical data). `_cache` dedupes in-flight
+ * requests and serves a short TTL so staggered mounts join too.
  *
  * Failures degrade silently to the empty list — the criterion's stored
  * values stay truthful (raw actor strings are the wire contract).
@@ -29,6 +36,29 @@ export type AuditActorOption = {
 	value: string;
 	label: string;
 };
+
+/** Short freshness window: covers staggered mounts (tab switch, sheet
+ *  reopen) while still refetching on the next panel open. */
+const CACHE_TTL_MS = 30_000;
+
+const _cache = new Map<string, { at: number; promise: Promise<AuditActorOption[]> }>();
+
+function fetchActors(entity: string): Promise<AuditActorOption[]> {
+	const hit = _cache.get(entity);
+	if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.promise;
+	const promise = apiFetchWithTimeout(`${entityApiBase(entity)}/audit-actors`, undefined, 15_000)
+		.then(async (res) => {
+			if (!res.ok) return [] as AuditActorOption[];
+			const data = extJsonParse<{ items?: AuditActorOption[] }>(await res.text());
+			return (data.items ?? []).map((i) => ({
+				value: String(i.value),
+				label: String(i.label ?? i.value),
+			}));
+		})
+		.catch(() => [] as AuditActorOption[]);
+	_cache.set(entity, { at: Date.now(), promise });
+	return promise;
+}
 
 export interface AuditActorOptionsApi {
 	readonly state: DeepReadonly<{
@@ -53,16 +83,10 @@ export function useAuditActorOptions(
 		loadedFor = e;
 		let cancelled = false;
 		_state.loading = true;
-		apiFetchWithTimeout(`${entityApiBase(e)}/audit-actors`, undefined, 15_000)
-			.then(async (res) => {
-				if (!res.ok || cancelled) return;
-				const data = extJsonParse<{ items?: AuditActorOption[] }>(await res.text());
-				_state.options = (data.items ?? []).map((i) => ({
-					value: String(i.value),
-					label: String(i.label ?? i.value),
-				}));
+		fetchActors(e)
+			.then((items) => {
+				if (!cancelled) _state.options = items;
 			})
-			.catch(() => {})
 			.finally(() => {
 				if (!cancelled) _state.loading = false;
 			});

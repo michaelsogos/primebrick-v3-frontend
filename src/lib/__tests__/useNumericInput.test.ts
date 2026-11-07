@@ -1,29 +1,47 @@
 import { describe, it, expect } from 'vitest';
 import { useNumericInput } from '@primebrick/ui';
+import type { NumericUomSpec } from '@primebrick/ui';
+import { dec, isDecimal, mul, div, toPG } from '@primebrick/ui';
+import type { Decimal } from '@primebrick/ui';
 
 describe('useNumericInput', () => {
   // Helper to create a composable with simple reactive getters
   function createComposable(
-    type: 'bigint' | 'number' | 'money',
+    kind: 'bigint' | 'number' | 'decimal',
     type_config: string | null,
     value: string | bigint | number = '',
     lang: string = 'en-GB',
   ) {
-    let _type = type;
+    let _kind = kind;
     let _type_config = type_config;
-    let _value = value;
+    let _value: string | bigint | number | Decimal = value;
     let _lang = lang;
+    let _uom: NumericUomSpec | undefined;
+    let _unsigned: boolean | undefined;
+    let _min: string | number | bigint | undefined;
+    let _max: string | number | bigint | undefined;
+    let _step: string | undefined;
     return {
       num: useNumericInput({
-        type: () => _type,
+        kind: () => _kind,
         type_config: () => _type_config,
         value: () => _value,
         lang: () => _lang,
+        uom: () => _uom,
+        unsigned: () => _unsigned,
+        min: () => _min,
+        max: () => _max,
+        step: () => _step,
       }),
-      setType: (t: typeof _type) => { _type = t; },
+      setKind: (k: typeof _kind) => { _kind = k; },
       setTypeConfig: (tc: typeof _type_config) => { _type_config = tc; },
       setValue: (v: typeof _value) => { _value = v; },
       setLang: (l: typeof _lang) => { _lang = l; },
+      setUom: (u: typeof _uom) => { _uom = u; },
+      setUnsigned: (u: typeof _unsigned) => { _unsigned = u; },
+      setMin: (m: typeof _min) => { _min = m; },
+      setMax: (m: typeof _max) => { _max = m; },
+      setStep: (s: typeof _step) => { _step = s; },
     };
   }
 
@@ -81,7 +99,7 @@ describe('useNumericInput', () => {
   });
 
   it('effectiveMin is null when type_config is null', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     expect(num.effectiveMin).toBe(null);
   });
 
@@ -98,7 +116,7 @@ describe('useNumericInput', () => {
   });
 
   it('inputMode is "decimal" for money', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     expect(num.inputMode).toBe('decimal');
   });
 
@@ -261,35 +279,35 @@ describe('useNumericInput', () => {
   // ─── normalize ──────────────────────────────────────────────────────
 
   it('normalize strips leading zeros from integer part', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '000000000011123';
     num.normalize();
     expect(num.rawValue).toBe('11123');
   });
 
   it('normalize reduces all-zero integer part to single zero', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '000';
     num.normalize();
     expect(num.rawValue).toBe('0');
   });
 
   it('normalize keeps single zero', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '0';
     num.normalize();
     expect(num.rawValue).toBe('0');
   });
 
   it('normalize preserves decimal part', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '0.50';
     num.normalize();
     expect(num.rawValue).toBe('0.50');
   });
 
   it('normalize strips leading zeros before decimal, keeps one zero', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '000.50';
     num.normalize();
     expect(num.rawValue).toBe('0.50');
@@ -310,7 +328,7 @@ describe('useNumericInput', () => {
   });
 
   it('normalize leaves empty string unchanged', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     num.rawValue = '';
     num.normalize();
     expect(num.rawValue).toBe('');
@@ -333,17 +351,17 @@ describe('useNumericInput', () => {
   // ─── currency ───────────────────────────────────────────────────────
 
   it('currency defaults to EUR when type_config is null', () => {
-    const { num } = createComposable('money', null);
+    const { num } = createComposable('decimal', null);
     expect(num.currency).toBe('EUR');
   });
 
   it('currency defaults to EUR when type_config has no currency field', () => {
-    const { num } = createComposable('money', JSON.stringify({ validation: { required: true, rules: {} } }));
+    const { num } = createComposable('decimal', JSON.stringify({ validation: { required: true, rules: {} } }));
     expect(num.currency).toBe('EUR');
   });
 
   it('currency reads from type_config', () => {
-    const { num } = createComposable('money', JSON.stringify({ currency: 'USD', validation: { required: true, rules: {} } }));
+    const { num } = createComposable('decimal', JSON.stringify({ currency: 'USD', validation: { required: true, rules: {} } }));
     expect(num.currency).toBe('USD');
   });
 
@@ -355,7 +373,7 @@ describe('useNumericInput', () => {
   // ─── filterInput (money) ─────────────────────────────────────────────
 
   it('filterInput works for money type', () => {
-    const { num } = createComposable('money', JSON.stringify({ currency: 'EUR', validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('decimal', JSON.stringify({ currency: 'EUR', validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('-99.99');
     expect(num.rawValue).toBe('99.99');
   });
@@ -374,10 +392,11 @@ describe('useNumericInput', () => {
     expect(num.toNative()).toBe(3.14);
   });
 
-  it('toNative converts to number for money type', () => {
-    const { num } = createComposable('money', null);
+  it('toNative converts to Decimal for decimal type', () => {
+    const { num } = createComposable('decimal', null);
     num.rawValue = '99.99';
-    expect(num.toNative()).toBe(99.99);
+    const v = num.toNative();
+    expect(isDecimal(v)).toBe(true);
   });
 
   it('toNative returns empty string for empty input', () => {
@@ -518,5 +537,284 @@ describe('useNumericInput', () => {
     // New display "3.14" → position after 2nd meaningful char = index 2
     const pos = num.computeCursorPosition(2, '3.14', '3.14');
     expect(pos).toBe(2);
+  });
+
+  // ─── unsigned prop (overrides type_config) ──────────────────────────
+
+  it('unsigned prop rejects the minus char without type_config', () => {
+    const ctx = createComposable('number', null);
+    ctx.setUnsigned(true);
+    ctx.num.filterInput('-42.5');
+    expect(ctx.num.rawValue).toBe('42.5');
+  });
+
+  it('unsigned prop sets effectiveMin to 0', () => {
+    const ctx = createComposable('number', null);
+    ctx.setUnsigned(true);
+    expect(ctx.num.effectiveMin).toBe('0');
+  });
+
+  // ─── prop-level min/max bounds ───────────────────────────────────────
+
+  it('prop min/max win over type_config rules', () => {
+    const ctx = createComposable('number', JSON.stringify({
+      validation: { rules: { min: { value: 1 }, max: { value: 9 } } },
+    }));
+    ctx.setMin(-10);
+    ctx.setMax(50);
+    expect(ctx.num.effectiveMin).toBe('-10');
+    expect(ctx.num.effectiveMax).toBe('50');
+  });
+
+  it('type_config max rule feeds effectiveMax', () => {
+    const { num } = createComposable('number', JSON.stringify({
+      validation: { rules: { max: { value: 9 } } },
+    }));
+    expect(num.effectiveMax).toBe('9');
+  });
+
+  // ─── clamp + oobIssue ────────────────────────────────────────────────
+
+  it('clamp raises minimum issue below min and clamps to min', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMin(5);
+    ctx.num.rawValue = '2';
+    expect(ctx.num.clamp()).toBe(true);
+    expect(ctx.num.rawValue).toBe('5');
+    expect(ctx.num.oobIssue).toBe('minimum');
+    expect(ctx.num.oobBound).toBe('5');
+  });
+
+  it('clamp raises maximum issue above max and clamps to max', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMax(10);
+    ctx.num.rawValue = '99';
+    expect(ctx.num.clamp()).toBe(true);
+    expect(ctx.num.rawValue).toBe('10');
+    expect(ctx.num.oobIssue).toBe('maximum');
+    expect(ctx.num.oobBound).toBe('10');
+  });
+
+  it('clamp is a no-op inside bounds and clears oobIssue', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMin(0);
+    ctx.setMax(10);
+    ctx.num.rawValue = '5';
+    expect(ctx.num.clamp()).toBe(false);
+    expect(ctx.num.rawValue).toBe('5');
+  });
+
+  // ─── stepBy ──────────────────────────────────────────────────────────
+
+  it('stepBy increments by the default step', () => {
+    const { num } = createComposable('number', null);
+    num.rawValue = '5';
+    expect(num.stepBy(1)).toBe(true);
+    expect(num.rawValue).toBe('6');
+  });
+
+  it('stepBy decrements by the default step', () => {
+    const { num } = createComposable('number', null);
+    num.rawValue = '5';
+    expect(num.stepBy(-1)).toBe(true);
+    expect(num.rawValue).toBe('4');
+  });
+
+  it('stepBy starts from 0 on empty input', () => {
+    const { num } = createComposable('number', null);
+    num.rawValue = '';
+    num.stepBy(1);
+    expect(num.rawValue).toBe('1');
+  });
+
+  it('stepBy respects a custom step', () => {
+    const ctx = createComposable('number', null);
+    ctx.setStep('0.5');
+    ctx.num.rawValue = '1';
+    ctx.num.stepBy(1);
+    expect(ctx.num.rawValue).toBe('1.5');
+  });
+
+  it('stepBy clamps to max', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMax(10);
+    ctx.num.rawValue = '9.5';
+    ctx.num.stepBy(1);
+    expect(ctx.num.rawValue).toBe('10');
+  });
+
+  it('stepBy clamps to min on decrement', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMin(0);
+    ctx.num.rawValue = '0.5';
+    ctx.num.stepBy(-1);
+    expect(ctx.num.rawValue).toBe('0');
+  });
+
+  it('stepBy is a no-op for step 0', () => {
+    const ctx = createComposable('number', null);
+    ctx.setStep('0');
+    ctx.num.rawValue = '5';
+    expect(ctx.num.stepDec).toBe(null);
+    expect(ctx.num.stepBy(1)).toBe(false);
+    expect(ctx.num.rawValue).toBe('5');
+  });
+
+  it('stepBy is a no-op when |step| exceeds max−min', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMin(0);
+    ctx.setMax(10);
+    ctx.setStep('20');
+    expect(ctx.num.stepDec).toBe(null);
+    expect(ctx.num.stepBy(1)).toBe(false);
+  });
+
+  it('stepBy accepts a signed (negative) step — buttons invert deterministically', () => {
+    const ctx = createComposable('number', null);
+    ctx.setStep('-1');
+    ctx.num.rawValue = '5';
+    ctx.num.stepBy(1); // + of a negative step decrements
+    expect(ctx.num.rawValue).toBe('4');
+  });
+
+  it('stepBy truncates fractional results for bigint', () => {
+    const ctx = createComposable('bigint', null);
+    ctx.setStep('1.5');
+    ctx.num.rawValue = '1';
+    ctx.num.stepBy(1);
+    expect(ctx.num.rawValue).toBe('2');
+  });
+
+  it('stepBy keeps exact decimal math (no float artifacts)', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setStep('0.1');
+    ctx.num.rawValue = '0.1';
+    ctx.num.stepBy(1);
+    expect(ctx.num.rawValue).toBe('0.2'); // 0.1+0.1 exact, not 0.30000000000000004
+  });
+
+  it('atMax/atMin reflect the bounds', () => {
+    const ctx = createComposable('number', null);
+    ctx.setMin(0);
+    ctx.setMax(10);
+    ctx.num.rawValue = '10';
+    expect(ctx.num.atMax).toBe(true);
+    expect(ctx.num.atMin).toBe(false);
+    ctx.num.rawValue = '0';
+    expect(ctx.num.atMax).toBe(false);
+    expect(ctx.num.atMin).toBe(true);
+  });
+
+  // ─── percent uom (display ×100 / emit ÷100) ──────────────────────────
+
+  it('percent: prop 0.1 displays as 10', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({ kind: 'percent' });
+    ctx.setValue('0.1');
+    ctx.num.syncFromProp();
+    expect(ctx.num.rawValue).toBe('10');
+  });
+
+  it('percent: prop 10 displays as 1000 (faithful ×100)', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({ kind: 'percent' });
+    ctx.setValue('10');
+    ctx.num.syncFromProp();
+    expect(ctx.num.rawValue).toBe('1000');
+  });
+
+  it('percent: emit divides the display by 100', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({ kind: 'percent' });
+    ctx.num.rawValue = '10';
+    expect(ctx.num.emit()).toBe('0.1');
+  });
+
+  it('percent: round-trip is faithful', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({ kind: 'percent' });
+    ctx.setValue('0.15');
+    ctx.num.syncFromProp();
+    expect(ctx.num.rawValue).toBe('15');
+    expect(ctx.num.emit()).toBe('0.15');
+  });
+
+  it('percent: bounds are expressed in display units', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({ kind: 'percent' });
+    ctx.setMin(0);
+    ctx.setMax(1);
+    // display units: 0–100%
+    ctx.num.rawValue = '150';
+    ctx.num.clamp();
+    expect(ctx.num.rawValue).toBe('100');
+    expect(ctx.num.emit()).toBe('1');
+  });
+
+  // ─── custom uom hooks ────────────────────────────────────────────────
+
+  it('custom uom: before_return transforms the emitted canonical', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({
+      kind: 'custom',
+      symbol: 'cm',
+      before_return: (canonical) => {
+        // store mm, display cm
+        return toPG(mul(dec(canonical), 10));
+      },
+    });
+    ctx.num.rawValue = '5';
+    expect(ctx.num.emit()).toBe('50');
+  });
+
+  it('custom uom: after_receive transforms the incoming canonical', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setUom({
+      kind: 'custom',
+      symbol: 'cm',
+      after_receive: (canonical) => toPG(div(dec(canonical), 10)),
+      before_return: (canonical) => toPG(mul(dec(canonical), 10)),
+    });
+    ctx.setValue('50');
+    ctx.num.syncFromProp();
+    expect(ctx.num.rawValue).toBe('5');
+    expect(ctx.num.emit()).toBe('50');
+  });
+
+  // ─── decimal kind ────────────────────────────────────────────────────
+
+  it('decimal toNative returns a Decimal instance', () => {
+    const { num } = createComposable('decimal', null);
+    num.rawValue = '3.14';
+    const v = num.toNative();
+    expect(isDecimal(v)).toBe(true);
+  });
+
+  it('decimal syncFromProp accepts a Decimal instance', () => {
+    const ctx = createComposable('decimal', null);
+    ctx.setValue(dec('12.34'));
+    ctx.num.syncFromProp();
+    expect(ctx.num.rawValue).toBe('12.34');
+  });
+
+  it('decimal formatting never loses precision in the display layer', () => {
+    const { num } = createComposable('decimal', null, '12345678901234567890123.456789', 'en-GB');
+    expect(num.displayValue).toBe('12,345,678,901,234,567,890,123.456789');
+  });
+
+  // ─── emit (plain kinds) ──────────────────────────────────────────────
+
+  it('emit returns the canonical string unchanged without a uom', () => {
+    const { num } = createComposable('number', null);
+    num.rawValue = '12.34';
+    expect(num.emit()).toBe('12.34');
+  });
+
+  it('emit returns empty/lone-minus unchanged', () => {
+    const { num } = createComposable('number', null);
+    num.rawValue = '';
+    expect(num.emit()).toBe('');
+    num.rawValue = '-';
+    expect(num.emit()).toBe('-');
   });
 });

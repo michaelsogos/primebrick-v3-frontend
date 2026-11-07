@@ -167,6 +167,63 @@ test.describe("elt filters widget parity", () => {
     await page.keyboard.press("Escape");
   });
 
+  test("numeric columns are advanced-only — `>`/`BETWEEN` live in criteria, not quick-filters", async ({ page }) => {
+    await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await openFiltersSheet(page);
+
+    // runs (ref_count) — a bare `=` quick-filter is rarely the question;
+    // range ops live in advanced. NO spinbutton on the standard tab.
+    await expect(page.locator("label", { hasText: /^runs$/i })).toHaveCount(0);
+    await expect(page.locator('[role="spinbutton"]')).toHaveCount(0);
+
+    // …but the advanced field combo still offers it, and the value slot
+    // mounts the SAME NumericInput (role="spinbutton") the form does.
+    await page.getByTestId("filters-mode-advanced").click();
+    const fieldLabel = page.locator("label", { hasText: /\bfield\b/i }).first();
+    const fieldId = await fieldLabel.getAttribute("for");
+    await page.locator(`[id="${fieldId}"]`).click();
+    const popover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(popover.getByText(/^runs$/i).first()).toBeVisible({ timeout: 10_000 });
+    await popover.getByText(/^runs$/i).first().click();
+    await expect(page.locator('[role="spinbutton"]').first()).toBeVisible({ timeout: 10_000 });
+    await page.keyboard.press("Escape");
+  });
+
+  test("audit actor combo renders display_name labels — never raw uuids on screen", async ({ page }) => {
+    // Capture the governed vocabulary: value = actor (uuid OR fictitious
+    // writer), label = user_profiles.display_name when the uuid resolves,
+    // else the raw actor. The combo MUST render `label`.
+    const respPromise = page.waitForResponse(
+      (r) => r.url().includes("/entities/user_profile/audit-actors") && r.status() === 200,
+      { timeout: 30_000 },
+    );
+    await page.goto(USERS, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await openFiltersSheet(page);
+    const items = (await (await respPromise).json()).items as { value: string; label: string }[];
+    expect(items.length).toBeGreaterThan(0);
+
+    const { control } = await labeledControl(page, /created.?by/i);
+    await control.click();
+    const popover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(popover).toBeVisible({ timeout: 10_000 });
+
+    for (const item of items.slice(0, 5)) {
+      await expect(popover.getByText(item.label, { exact: true }).first()).toBeVisible();
+    }
+    // A uuid actor with a resolved profile shows display_name — the raw
+    // uuid string must NOT appear as an option.
+    const resolved = items.find(
+      (i) => /^[0-9a-f-]{36}$/i.test(i.value) && i.label !== i.value,
+    );
+    if (resolved) {
+      await expect(popover.getByText(resolved.label, { exact: true }).first()).toBeVisible();
+      await expect(popover.getByText(resolved.value, { exact: true })).toHaveCount(0);
+    }
+    await page.keyboard.press("Escape");
+  });
+
   test("standard tab — help icon exists only where the meta declares it", async ({ page }) => {
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });

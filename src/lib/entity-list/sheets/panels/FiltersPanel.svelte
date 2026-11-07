@@ -26,9 +26,11 @@
     PrimeField,
     SearchInput,
     SheetPanelLayout,
+    SheetPanelFooter,
     DynamicIcon,
     formatListCellValue,
     getResolvedIanaTimeZone,
+    numericKindOf,
   } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
@@ -105,8 +107,14 @@
   // Standard vs advanced surfaces: `datetime` columns are ADVANCED-ONLY —
   // a same-instant equality quick-filter is noise (ranges/`BETWEEN` live
   // in the advanced criteria). `date` stays standard (day-precision
-  // equality is meaningful). The advanced field combo gets the FULL set.
-  const standardColumnsBase = $derived(filterableColumns.filter((c) => c.type !== 'datetime'));
+  // equality is meaningful). NUMERIC columns (`numericKindOf` — number/
+  // bigint/decimal/money/ref_count) are advanced-only the same way: a
+  // bare equality quick-filter is rarely the question — `>`/`>=`/
+  // `BETWEEN` are, and those ops live in advanced criteria.
+  // The advanced field combo gets the FULL set.
+  const standardColumnsBase = $derived(
+    filterableColumns.filter((c) => c.type !== 'datetime' && numericKindOf(c) === null),
+  );
   const fieldOptionsColumns = $derived(filterableColumns);
 
   // Field-name search — standard tab only (the advanced field combo has
@@ -449,6 +457,24 @@
           placeholder={$t('system.entities.list.searchFields')}
           data_testid="filters-field-search"
         />
+      {:else}
+        <ButtonGroup segmented class="w-full">
+          {#each [['AND', 'ampersand', 'system.entities.list.allCriteria'], ['OR', 'split', 'system.entities.list.atLeastOneCriteria']] as [conn, icon, labelKey] (conn)}
+            <Button
+              variant="ghost"
+              size="sm"
+              class="flex-1 {globalConnector === conn
+                ? 'bg-foreground/10 text-foreground shadow-xs'
+                : 'text-muted-foreground'}"
+              aria-pressed={globalConnector === conn}
+              data-testid="filters-connector-{conn.toLowerCase()}"
+              onclick={() => (globalConnector = conn as 'AND' | 'OR')}
+            >
+              <DynamicIcon name={icon} size={14} />
+              {$t(labelKey)}
+            </Button>
+          {/each}
+        </ButtonGroup>
       {/if}
     </div>
   {/snippet}
@@ -477,24 +503,6 @@
       </PrimeField>
     {/each}
   {:else}
-    <ButtonGroup segmented class="w-full mb-4">
-      {#each [['AND', 'ampersand', 'system.entities.list.allCriteria'], ['OR', 'split', 'system.entities.list.atLeastOneCriteria']] as [conn, icon, labelKey] (conn)}
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex-1 {globalConnector === conn
-            ? 'bg-foreground/10 text-foreground shadow-xs'
-            : 'text-muted-foreground'}"
-          aria-pressed={globalConnector === conn}
-          data-testid="filters-connector-{conn.toLowerCase()}"
-          onclick={() => (globalConnector = conn as 'AND' | 'OR')}
-        >
-          <DynamicIcon name={icon} size={14} />
-          {$t(labelKey)}
-        </Button>
-      {/each}
-    </ButtonGroup>
-
     {#if tempAdvancedFilters.length > 0}
       <div class="space-y-3 mb-4">
         {#each tempAdvancedFilters as filter (filter.id)}
@@ -509,9 +517,6 @@
                   {column ? $t(column.label_key) : filter.field}
                 </span>
                 <span class="text-primary inline-flex items-center gap-0.5">
-                  {#if FILTER_OPERATOR_ICON[filter.operator]}
-                    <DynamicIcon name={FILTER_OPERATOR_ICON[filter.operator]} size={12} class="opacity-70" />
-                  {/if}
                   {$t(`system.entities.list.operators.${filter.operator}`)}
                 </span>
                 <span class="italic text-muted-foreground">
@@ -544,7 +549,7 @@
       </div>
     {/if}
 
-    <div class="border-t pt-4">
+    <div class={tempAdvancedFilters.length > 0 ? 'border-t pt-4' : ''}>
       <div class="space-y-3">
         <PrimeField label={$t('system.entities.list.field')}>
           {#snippet control({ id })}
@@ -652,16 +657,15 @@
 
 <!-- Primary CTA lives in FOOT (form-panel convention), not in HEAD. -->
 {#snippet applyFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
       variant="default"
-      class="w-full"
       onclick={applyFilters}
       data-testid="filters-apply"
     >
       <Play class="size-4" />
       {$t('app.common.apply')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}

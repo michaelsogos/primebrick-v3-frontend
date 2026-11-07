@@ -383,7 +383,7 @@
   </div>
 {:else if type === 'bigint' || type === 'number'}
   <NumericInput
-    type={type as 'bigint' | 'number' | 'money'}
+    kind={type === 'bigint' ? 'bigint' : 'number'}
     {type_config}
     bind:value
     errors={errors}
@@ -393,15 +393,18 @@
   />
 {:else if type === 'money'}
   <NumericInput
-    type="money"
+    kind="decimal"
     {type_config}
     bind:value
     errors={errors}
     {onChange}
     lang={$uiLang}
-    currencySymbol={moneyCurrencySymbol}
-    currencyCode={moneyCurrency}
-    onCurrencyClick={onTypeConfigChange ? openCurrencyPicker : undefined}
+    uom={{
+      kind: 'currency',
+      code: moneyCurrency,
+      symbol: moneyCurrencySymbol,
+      on_pick: onTypeConfigChange ? openCurrencyPicker : undefined,
+    }}
     data-testid={`config-input-money-${fieldKey}`}
   />
 {:else if type === 'date' || type === 'datetime' || type === 'time'}
