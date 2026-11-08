@@ -53,6 +53,13 @@ export type ModuleInfo = {
   /** Route census declared by the module — access-filtered like `nav`. */
   routes?: ModuleRouteDecl[];
   /**
+   * The translations module serving this module's runtime dict
+   * (`/api/v1/system/translations/<module>/<lang>`). Absent = self —
+   * the module id IS its translations module. Sibling modules are
+   * virtual: their keys live in the declaring service's schema.
+   */
+  translations_module?: string;
+  /**
    * Remote sheet panels declared by the module — access-filtered like
    * `routes`. The sheet engine is host-side; each decl ships a
    * `mountSheet` chunk mounted at runtime.

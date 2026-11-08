@@ -38,7 +38,12 @@ import type { RemoteErrorKind } from '$lib/components/remote-page/remote-loader'
 export type ResolvedPage =
 	| { kind: 'redirect'; href: string }
 	| { kind: 'remote'; decl: CensusRoute; params: Record<string, string> }
-	| { kind: 'archetype'; archetype: 'entity_form'; decl: CensusRoute; params: Record<string, string> }
+	| {
+			kind: 'archetype';
+			archetype: 'entity_form' | 'entity_dict';
+			decl: CensusRoute;
+			params: Record<string, string>;
+	  }
 	| { kind: 'error'; error_kind: RemoteErrorKind; detail: string | null }
 	| { kind: 'denied'; detail: string }
 	| { kind: 'not-found' };
@@ -87,6 +92,14 @@ export function resolvePageForPath(
 		routes.find((r) => routePatternMatches(r.route, pathname));
 	if (decl) {
 		if (!decl.component_url) {
+			if (decl.kind === 'dict' && decl.entity) {
+				return {
+					kind: 'archetype',
+					archetype: 'entity_dict',
+					decl,
+					params: extractTemplateParams(decl.route, pathname),
+				};
+			}
 			if (decl.entity && decl.page_props?.form) {
 				return {
 					kind: 'archetype',

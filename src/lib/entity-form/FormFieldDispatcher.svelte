@@ -50,6 +50,14 @@
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
 	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
+	import { usePivotRow } from './use-pivot-row.svelte';
+	import {
+		depControlFormat,
+		depDisabled,
+		depOptionsFilter,
+		depPivotSignature,
+		depResetsOnPivotChange,
+	} from './depends-on';
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
@@ -111,6 +119,11 @@
 		 *  (the persisted currency/UoM code) is read and written through it.
 		 *  Filter surfaces have no record: uom renders display-only there. */
 		record?: Record<string, unknown>;
+		/** Sibling column map for `depends_on` resolution — the form page
+		 *  owns the served `meta.columns`. Absent on the filter surface:
+		 *  the edge is form-scope by contract and filter columns never
+		 *  declare it. */
+		columns?: ReadonlyMap<string, MetaColumn>;
 	}
 
 	let {
@@ -129,6 +142,7 @@
 		timezone = $bindable(),
 		filterEntity,
 		record = $bindable(),
+		columns,
 	}: Props = $props();
 
 	const control = $derived(
@@ -178,6 +192,7 @@
 		'email',
 		'url',
 		'phone',
+		'entity_ref',
 		'text',
 	]);
 
@@ -207,7 +222,11 @@
 				`[FormFieldDispatcher] "${column.key}" is boolean — booleans render via SwitchField in EntityFormPage, never through the dispatcher.`,
 			);
 		}
-		const resolved = column.widget ?? deriveControl();
+		const resolved =
+			column.widget ??
+			(column.type === 'ref' && column.ref?.entity
+				? 'entity_ref'
+				: deriveControl(depFormat));
 		if (!FORM_CONTROLS.has(resolved)) {
 			throw new Error(
 				`[FormFieldDispatcher] unknown control "${resolved}" for "${column.key}" — register it in FORM_CONTROLS + add a template branch.`,
@@ -249,8 +268,11 @@
 		);
 	}
 
-	function deriveControl(): string {
-		const format = column.format;
+	/** `formatOverride` — the `depends_on.control_prop` resolution: the
+	 *  pivot row's prop substitutes `column.format` for control selection
+	 *  (a `value_kind:"phone"` dict row renders PhoneInput). */
+	function deriveControl(formatOverride?: string): string {
+		const format = formatOverride ?? column.format;
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
@@ -315,7 +337,13 @@
 		const u = column.uom;
 		if (!u) return undefined;
 		if (u.kind === 'percent') return { kind: 'percent' };
-		const code = surface === 'form' && record ? String(record[u.field] ?? '') : '';
+		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
+		const code =
+			typeof rawCode === 'string' ||
+			typeof rawCode === 'number' ||
+			typeof rawCode === 'boolean'
+				? String(rawCode)
+				: '';
 		if (u.kind === 'currency') {
 			return {
 				kind: 'currency',
@@ -359,11 +387,54 @@
 		},
 	};
 
-	/** `type:"ref"` filter options — server-paged combobox delegate over
-	 *  `col.ref.entity`'s `/list` (no-op unless the filter surface resolves
-	 *  `entity_ref`). Instantiated unconditionally: Svelte composables must
-	 *  run at init; the fetch is gated on the resolved entity. */
-	const entityRef = useEntityRefOptions(() => column);
+	// ── depends_on — the declared sibling edge (form surface only). The
+	//    pivot column resolves through the served `columns` map; its picked
+	//    ROW feeds `disabled_when.prop`/`control_prop` via `usePivotRow`,
+	//    its stored value feeds the options filter via `depOptionsFilter`. */
+	const dep = $derived(surface === 'form' ? column.depends_on : undefined);
+	const pivotRow = usePivotRow(
+		() => (dep ? columns?.get(dep.field) : undefined),
+		() => (dep ? record?.[dep.field] : undefined),
+	);
+	/** Scope conditions for the dependent's ref-options fetch —
+	 *  `filters[0][country]=<pivot>` while the pivot carries a value. */
+	const depFilters = $derived(dep ? depOptionsFilter(dep, record) : undefined);
+	/** Gate: pivot-until-value (`filter_field`/`control_prop`) plus
+	 *  `disabled_when` — fail-closed while a prop comparison can't
+	 *  evaluate yet. */
+	const depOff = $derived(dep ? depDisabled(dep, record, pivotRow.state.row) : false);
+	const effectiveReadonly = $derived(readonly || depOff);
+	/** `control_prop` → the format the pivot row selects — substitutes the
+	 *  static `column.format` inside `deriveControl`. */
+	const depFormat = $derived(dep ? depControlFormat(dep, pivotRow.state.row) : undefined);
+
+	// Pivot-change reset — `filter_field`/`control_prop` couple the
+	// dependent's value to the pivot's CURRENT one: a country switch
+	// leaves an Italian legal form behind → integrity leak, so the value
+	// is dropped (the control is re-gated until a fresh pick anyway).
+	let lastDepSig = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (!dep || !depResetsOnPivotChange(dep)) return;
+		const sig = depPivotSignature(dep, record);
+		if (lastDepSig === undefined) {
+			lastDepSig = sig;
+			return;
+		}
+		if (sig !== lastDepSig) {
+			lastDepSig = sig;
+			if (value !== undefined && value !== '') value = undefined;
+		}
+	});
+
+	/** `type:"ref"` options — server-paged combobox delegate over
+	 *  `col.ref.entity`'s `/list`, scoped by `depends_on.filter_field`
+	 *  when declared (no-op unless the surface resolves `entity_ref`).
+	 *  Instantiated unconditionally: Svelte composables must run at init;
+	 *  the fetch is gated on the resolved entity. */
+	const entityRef = useEntityRefOptions(
+		() => column,
+		() => depFilters,
+	);
 
 	/** `options_source:"audit.actors"` options — the filtered entity's own
 	 *  audit writers (single fetch, full vocabulary — client search inside
@@ -372,11 +443,17 @@
 	const auditActors = useAuditActorOptions(() => filterEntity);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
-	// loaded option pages (draft state, URL-restored filters).
+	// loaded option pages (draft state, URL-restored filters, edit-form
+	// prefills — a single stored uid on the form surface).
 	$effect(() => {
-		if (control === 'entity_ref' && arrayValue.value.length > 0) {
-			entityRef.ensureSelectedLabels(arrayValue.value);
-		}
+		if (control !== 'entity_ref') return;
+		const selected =
+			surface === 'form'
+				? stringValue.value
+					? [stringValue.value]
+					: []
+				: arrayValue.value;
+		if (selected.length > 0) entityRef.ensureSelectedLabels(selected);
 	});
 
 	/** Boolean tri-state filter vocabulary — `any` clears the constraint. */
@@ -481,7 +558,7 @@
 </script>
 
 {#if control === 'schedule_spec'}
-	<ScheduleSpecInput bind:value={stringValue.value} {readonly} {placeholder} {...controlProps} />
+	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} {placeholder} {...controlProps} />
 {:else if control === 'json'}
 	<JsonValueEditor
 		bind:value={stringValue.value}
@@ -490,7 +567,7 @@
 		maxHeight="24rem"
 		preview_open={false}
 		{placeholder}
-		{readonly}
+		readonly={effectiveReadonly}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -509,7 +586,7 @@
 		display="detailed"
 		allowCreate={column.allow_create === true}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 	{#if column.options_source === 'census.callables' && targetCallable?.permissions?.length}
@@ -528,7 +605,7 @@
 		source_schema={sourceEmit?.payload_schema}
 		source_entity={sourceEmit?.entity}
 		options_resolver={optionsResolver}
-		{readonly}
+		readonly={effectiveReadonly}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -546,11 +623,11 @@
 			: undefined}
 		display="badge"
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'textarea'}
-	<Textarea bind:value={stringValue.value} {placeholder} {readonly} {...controlProps} />
+	<Textarea bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} {...controlProps} />
 {:else if control === 'number'}
 	<NumericInput
 		kind={numKind}
@@ -560,22 +637,22 @@
 		max={column.max}
 		unsigned={column.unsigned}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'email'}
-	<EmailInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<EmailInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
 {:else if control === 'url'}
-	<UrlInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<UrlInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
 {:else if control === 'phone'}
-	<PhoneInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<PhoneInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
 {:else if control === 'date'}
 	<DateWheelPicker
 		bind:value={dateValue.value}
 		bind:timezone
 		{placeholder}
 		includeTime={column.type === 'datetime' || column.format === 'datetime'}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'badge_multi'}
@@ -588,7 +665,7 @@
 		colorField="color"
 		display="badge"
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'subject_combo_multi'}
@@ -605,13 +682,18 @@
 		display="detailed"
 		allowCreate={column.allow_create === true}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'entity_ref'}
+	<!-- Same control contract, two surface bindings: the filter feeds IN
+	     semantics (multi), the form stores the single picked uid. The
+	     paged/search delegate is shared — `depends_on.filter_field`
+	     scopes the options `/list` on the form surface. -->
+	{@const refBind = surface === 'form' ? stringValue : arrayValue}
 	<ComboSelect
-		mode="multi"
-		bind:value={arrayValue.value}
+		mode={surface === 'form' ? 'single' : 'multi'}
+		bind:value={refBind.value}
 		options={entityRef.state.options as { value: string; label: string; _sub: string }[]}
 		valueField="value"
 		labelField="label"
@@ -622,7 +704,7 @@
 		loadingMore={entityRef.state.loadingMore}
 		loading={entityRef.state.loading}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'actor_multi'}
@@ -634,7 +716,7 @@
 		labelField="label"
 		loading={auditActors.state.loading}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveReadonly}
 		{...controlProps}
 	/>
 {:else if control === 'boolean_tristate'}
@@ -647,7 +729,7 @@
 				type="button"
 				class="flex-1 {active ? 'bg-foreground/10 text-foreground shadow-xs' : 'text-muted-foreground'}"
 				aria-pressed={active}
-				disabled={readonly}
+				disabled={effectiveReadonly}
 				onclick={() => (triStateValue.value = opt.key)}
 			>
 				{#if opt.icon === 'true'}
@@ -660,5 +742,5 @@
 		{/each}
 	</ButtonGroup>
 {:else}
-	<TextInput bind:value={stringValue.value} {placeholder} {readonly} {...controlProps} />
+	<TextInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} {...controlProps} />
 {/if}

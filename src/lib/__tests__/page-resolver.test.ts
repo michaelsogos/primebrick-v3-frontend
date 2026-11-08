@@ -122,6 +122,33 @@ const crmModule: ModuleInfo = {
 	routes: [{ route: '/crm/customers' }] as ModuleInfo['routes'],
 };
 
+// CRM's "Impostazioni" sibling — emitted by discovery as its own module
+// (`<code>-<id>`) with `part_of` inherited and dict routes nested under
+// the module prefix.
+const crmSettingsModule: ModuleInfo = {
+	id: 'crm-settings',
+	name: 'settings',
+	enabled: true,
+	part_of: 'crm',
+	route_prefixes: ['/crm/settings'],
+	nav: [
+		{
+			id: 'customer_types',
+			label_key: 'crm.settings.nav.customer_types',
+			href: '/crm/settings/customer_types',
+			default: true,
+		},
+	],
+	routes: [
+		{
+			route: '/crm/settings/customer_types',
+			kind: 'dict',
+			entity: 'customer_type',
+			label_key: 'crm.settings.nav.customer_types',
+		},
+	] as ModuleInfo['routes'],
+};
+
 const MODULES: ModuleInfo[] = [
 	settingsModule,
 	aiModule,
@@ -129,6 +156,7 @@ const MODULES: ModuleInfo[] = [
 	jobModule,
 	webhookModule,
 	crmModule,
+	crmSettingsModule,
 ];
 
 describe('resolvePageForPath — declared remote routes', () => {
@@ -211,6 +239,33 @@ describe('resolvePageForPath — namespace roots', () => {
 	it('prefix of an access-filtered module is denied — no leaves survive', () => {
 		const r = resolvePageForPath('/system/webhook', MODULES);
 		expect(r.kind).toBe('denied');
+	});
+});
+
+describe('resolvePageForPath — dict archetype', () => {
+	it('kind:"dict" + entity resolves to the entity_dict archetype', () => {
+		const r = resolvePageForPath('/crm/settings/customer_types', MODULES);
+		expect(r.kind).toBe('archetype');
+		if (r.kind === 'archetype') {
+			expect(r.archetype).toBe('entity_dict');
+			expect(r.decl.route).toBe('/crm/settings/customer_types');
+			expect(r.decl.entity).toBe('customer_type');
+		}
+	});
+
+	it('dict route without entity falls to the contract error', () => {
+		const broken: ModuleInfo = {
+			...crmSettingsModule,
+			routes: [
+				{ route: '/crm/settings/customer_types', kind: 'dict' },
+			] as ModuleInfo['routes'],
+		};
+		const r = resolvePageForPath('/crm/settings/customer_types', [
+			...MODULES.filter((m) => m.id !== 'crm-settings'),
+			broken,
+		]);
+		expect(r.kind).toBe('error');
+		if (r.kind === 'error') expect(r.error_kind).toBe('contract');
 	});
 });
 

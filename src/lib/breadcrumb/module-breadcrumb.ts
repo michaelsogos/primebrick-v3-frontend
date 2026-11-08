@@ -1,6 +1,8 @@
 import type { AppBreadcrumbSegment } from './types';
 import { defaultLeafHref, shellNav } from '$lib/shell/modules-shell.svelte';
 import { resolveModuleLabel } from '$lib/shell/module-label';
+// Nav-leaf icons arrive materialized in the discovery payload (authored or
+// kind-defaulted at emission) — the breadcrumb reads them plainly.
 
 /**
  * Generic module breadcrumb segments — works for ANY module-owned page
@@ -49,7 +51,7 @@ export function moduleBreadcrumbSegments(args: {
   const items = rootNav.map((item) => ({
     label: args.t(item.label_key),
     href: item.href,
-    icon: item.icon ?? 'circle',
+    icon: item.icon ?? 'file-box',
     current: item.href === activeHref
   }));
 
@@ -83,7 +85,7 @@ export function moduleBreadcrumbSegments(args: {
     segments.push({
       kind: 'menu',
       label: currentItem?.label ?? moduleLabel,
-      icon: currentItem?.icon ?? module?.icon ?? 'circle',
+      icon: currentItem?.icon ?? module?.icon ?? 'file-box',
       // Accessible name = the current page (module name lives on the
       // module switcher — distinct aria-labels keep the two triggers
       // addressable and truthful).

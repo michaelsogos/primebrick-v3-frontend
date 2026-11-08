@@ -21,13 +21,26 @@
  * Failures are silent-degraded: a ref option list that can't load
  * renders whatever is already selected — the filter value itself
  * remains truthful (uids are the stored contract).
+ *
+ * `filters` (optional) — extra `/list` scope conditions AND-ed into
+ * every paged fetch: the `depends_on.filter_field` edge feeds them
+ * (e.g. legal-form options scoped to the account's `country`). They
+ * apply to the OPTIONS fetch only — `ensureSelectedLabels` deliberately
+ * ignores them so a stale selection still resolves its display label.
+ * A change in the serialized signature refetches from page 1.
  */
 import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
 import { extJsonParse } from '$lib/api-ext';
 import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 import { defaultSearchGate } from '$lib/entity-list/search-gate';
-import type { EntityMeta, ListResponse, MetaColumn } from '$lib/entity-list/types';
+import type {
+	EntityMeta,
+	FilterCondition,
+	ListResponse,
+	MetaColumn,
+} from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 export type EntityRefOption = {
 	value: string;
@@ -52,7 +65,10 @@ export interface EntityRefOptionsApi {
 	ensureSelectedLabels: (values: string[]) => void;
 }
 
-export function useEntityRefOptions(column: () => MetaColumn | undefined): EntityRefOptionsApi {
+export function useEntityRefOptions(
+	column: () => MetaColumn | undefined,
+	filters?: () => readonly FilterCondition[] | undefined,
+): EntityRefOptionsApi {
 	const _state = $state({
 		options: [] as EntityRefOption[],
 		loading: false,
@@ -60,9 +76,12 @@ export function useEntityRefOptions(column: () => MetaColumn | undefined): Entit
 		total: 0,
 	});
 
-	let entity = $derived(column()?.type === 'ref' ? column()?.ref?.entity : undefined);
+	const entity = $derived(column()?.type === 'ref' ? column()?.ref?.entity : undefined);
+	/** Stored-value column on the target — `ref.value_field` overrides
+	 *  `meta.uid` (bigint `"id"` for true-FK pickers). */
+	const valueField = $derived(column()?.ref?.value_field);
 	let meta = $state<EntityMeta | null>(null);
-	let metaBasePath = $derived(entity ? entityApiBase(entity) : undefined);
+	const metaBasePath = $derived(entity ? entityApiBase(entity) : undefined);
 
 	// Paging state — `search` mirrors the last committed server query so
 	// onLoadMore continues the same result set.
@@ -73,18 +92,29 @@ export function useEntityRefOptions(column: () => MetaColumn | undefined): Entit
 
 	function mapRows(rows: Record<string, unknown>[]): EntityRefOption[] {
 		if (!meta) return [];
-		const uidKey = meta.uid;
+		const uidKey = valueField ?? meta.uid;
 		const labelKey = meta.display_field;
 		return rows.map((row) => {
-			const value = String(row[uidKey] ?? '');
+			const raw = row[uidKey];
+			const value =
+				typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean'
+					? String(raw)
+					: '';
 			const label = row[labelKey];
 			return {
 				value,
-				label: label === null || label === undefined ? value : String(label),
+				label:
+					typeof label === 'string' ||
+					typeof label === 'number' ||
+					typeof label === 'boolean'
+						? String(label)
+						: value,
 				_sub: value,
 			};
 		});
 	}
+
+	const scopeFilters = $derived(filters?.() ?? []);
 
 	async function fetchPage(nextPage: number, q: string, append: boolean) {
 		if (!entity || !metaBasePath || !meta) return;
@@ -92,10 +122,22 @@ export function useEntityRefOptions(column: () => MetaColumn | undefined): Entit
 		if (append) _state.loadingMore = true;
 		else _state.loading = true;
 		try {
-			const qs = new URLSearchParams();
+			const qs = new SvelteURLSearchParams();
 			qs.set('page', String(nextPage));
 			qs.set('page_size', String(PAGE_SIZE));
 			if (q) qs.set('search', q);
+			let fi = 0;
+			for (const f of scopeFilters) {
+				qs.set(`filters[${fi}][field]`, f.field);
+				qs.set(`filters[${fi}][op]`, f.op);
+				if (Array.isArray(f.value)) {
+					for (const v of f.value) qs.append(`filters[${fi}][value][]`, String(v));
+				} else {
+					qs.set(`filters[${fi}][value]`, String(f.value));
+				}
+				qs.set(`filters[${fi}][connector]`, 'AND');
+				fi++;
+			}
 			const res = await apiFetchWithTimeout(
 				`${metaBasePath}/list?${qs.toString()}`,
 				undefined,
@@ -143,6 +185,20 @@ export function useEntityRefOptions(column: () => MetaColumn | undefined): Entit
 		};
 	});
 
+	// Scope-filter signature change (the depends_on pivot moved) → the
+	// option vocabulary is a different set: refetch from page 1 with the
+	// current search still applied.
+	let lastFilterSig = '';
+	$effect(() => {
+		const sig = JSON.stringify(scopeFilters);
+		if (!meta || sig === lastFilterSig) {
+			lastFilterSig = sig;
+			return;
+		}
+		lastFilterSig = sig;
+		void fetchPage(1, search, false);
+	});
+
 	function onSearchInput(q: string) {
 		if (!entity || !meta) return;
 		const committed = defaultSearchGate(q) ? q : '';
@@ -172,8 +228,8 @@ export function useEntityRefOptions(column: () => MetaColumn | undefined): Entit
 			(v) => !_state.options.some((o) => o.value === v),
 		);
 		if (missing.length === 0) return;
-		const uidKey = meta.uid;
-		const qs = new URLSearchParams();
+		const uidKey = valueField ?? meta.uid;
+		const qs = new SvelteURLSearchParams();
 		qs.set('page', '1');
 		qs.set('page_size', String(Math.max(missing.length, 1)));
 		qs.set('filters[0][field]', uidKey);

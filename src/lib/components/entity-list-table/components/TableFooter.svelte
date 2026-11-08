@@ -110,7 +110,8 @@
     >
       <KeyboardHints
         tone="inverted"
-        class="flex-col items-start gap-2 text-xs text-background"
+        layout="median"
+        class="flex-col items-stretch gap-2 text-xs text-background min-w-56"
         hints={[
           { keys: ['↑', '↓', '←', '→'], size: 'key-lg' as const, label: $t('system.entities.list.keys.move') },
           ...(rowSelectionEnabled

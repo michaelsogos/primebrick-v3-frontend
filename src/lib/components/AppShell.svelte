@@ -6,6 +6,7 @@
   import AppSidebar from '$lib/components/AppSidebar.svelte';
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
   import PageHeader from '$lib/components/page-header/PageHeader.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import SheetHost from '$lib/shell/sheets/SheetHost.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
@@ -104,8 +105,11 @@
            honored inside PageHeader itself. -->
       <PageHeader />
 
+      <!-- MANDATORY body chrome — every (app) page inherits the bordered
+           rounded container (outer gap + content box). Pages and remote
+           chunks NEVER draw it themselves: they render INSIDE it. -->
       <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
-        {@render children()}
+        <AppPageScaffold>{@render children()}</AppPageScaffold>
       </div>
     </Sidebar.Inset>
   </Sidebar.Provider>

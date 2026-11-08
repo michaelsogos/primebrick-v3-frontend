@@ -23,7 +23,14 @@
 7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
    `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons
    self-position left (`right-10` slot 2). Never invent positions.
-8. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
+8. **Page-icon defaults are emission-materialized, never render-fallbacks** —
+   a nav leaf or route without an authored `icon` gets its kind default at
+   `/modules` emission: `dict`→`list`, `list`→`table-2`,
+   `create`/`detail`→`text-cursor-input`, anything else→`file-box` (the
+   maximum fallback). An authored `icon` always wins — defaults fill nulls,
+   never override. Consumers read `link.icon`/`decl.icon` plainly;
+   `circle`/`circle-small` are banned on leaf pages.
+9. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
    every standalone icon-only control inside an input (clear `Eraser`,
    `Eye`/`EyeOff`, `Copy`, `Check`/status icons, X-remove). Enforced by
    `[&>svg]:size-4` in `inputTrailingIconColorClasses` —

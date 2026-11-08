@@ -29,6 +29,7 @@
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
+  import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
 
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
@@ -55,7 +56,8 @@
     'json.aiChat': JsonAiChatPanel,
     'shell.aiGuide': GuideAiChatPanel,
     'config.badgeValueEdit': BadgeValuePanel,
-    'shell.docs': DocsPanel
+    'shell.docs': DocsPanel,
+    'i18n.translationEditor': TranslationEditorPanel
   };
 
   const panelId = $derived(sheetState.panelId);

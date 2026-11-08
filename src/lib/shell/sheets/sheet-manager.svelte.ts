@@ -30,6 +30,7 @@ export const SHEET_PANEL_IDS = [
   'json.aiChat',
   'config.badgeValueEdit',
   'shell.docs',
+  'i18n.translationEditor',
 ] as const;
 
 export type SheetPanelId = (typeof SHEET_PANEL_IDS)[number];
@@ -144,6 +145,15 @@ export type SheetPanelPropsMap = {
     builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
   };
   'shell.docs': Record<string, never>;
+  /**
+   * Per-key translation create editor — opened from a `*_key` cell's
+   * languages CTA. Writes queue into pending-translations and flush with
+   * the owning page's save (create-only; existing rows stay read-only).
+   */
+  'i18n.translationEditor': {
+    /** The i18n key being translated (e.g. `custom.entities.customer_type.rows.vip`). */
+    i18n_key: string;
+  };
 };
 
 type AnyPanelProps = SheetPanelPropsMap[SheetPanelId];

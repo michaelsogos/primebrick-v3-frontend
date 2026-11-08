@@ -46,6 +46,20 @@
     "field-stock-chrome": {
       "appliesTo": ["lib/"]
     },
+    "page-scaffold-ownership": {
+      "allowPaths": [
+        "lib/components/AppShell.svelte",
+        "routes/(app)/docs/[...path]/+page.svelte",
+        "routes/(app)/system/settings/configurations/+page.svelte",
+        "routes/(app)/system/settings/credentials/+page.svelte",
+        "routes/(app)/system/settings/migrations/+page.svelte",
+        "routes/(app)/system/settings/modules/+page.svelte",
+        "routes/(app)/system/settings/roles/create/+page.svelte",
+        "routes/(app)/system/settings/roles/[uuid]/+page.svelte",
+        "routes/(app)/system/settings/templates/+page.svelte",
+        "routes/(app)/system/settings/translations/+page.svelte"
+      ]
+    },
     "i18n-entity-fallback": {
       "appliesTo": ["lib/entity-list/", "lib/components/entity-list-table/"]
     }

@@ -8,7 +8,8 @@
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
-  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
+  // Page body chrome (the bordered box) is inherited — AppShell mounts
+  // AppPageScaffold once for every (app) page; archetypes never self-wrap.
   import {
     useEntityList,
     type FixedFilter,
@@ -201,8 +202,7 @@
   );
 </script>
 
-<AppPageScaffold>
-  <EntityListTable
+<EntityListTable
     {entity}
     {translationKey}
     entities_ns={entitiesNs(meta)}
@@ -269,7 +269,6 @@
     {noRecordsMessage}
   />
 
-  {#if extraDialogs}
-    {@render extraDialogs(uid)}
-  {/if}
-</AppPageScaffold>
+{#if extraDialogs}
+  {@render extraDialogs(uid)}
+{/if}

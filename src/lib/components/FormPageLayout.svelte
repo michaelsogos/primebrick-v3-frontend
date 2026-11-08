@@ -43,16 +43,16 @@
   const hasDeletedFields = $derived(deletedFields.length > 0 && !!auditData.deleted_at);
 </script>
 
-<div class="h-full p-2 sm:p-3 contain-layout">
-  <div class="flex h-full w-full flex-col gap-4 min-h-0 overflow-hidden">
-    {#if children}
-      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-background">
-        <div class="flex-1 overflow-auto">
-          {@render children()}
-        </div>
-        
-        <!-- Footer: 50/50 split -->
-        <div class="bg-muted/50 shrink-0 border-t p-4">
+<!-- Page body chrome (bordered box + outer gap) is inherited — AppShell
+     mounts AppPageScaffold once for every (app) page. This layout only
+     stacks the scrollable content over the audit/actions footer. -->
+{#if children}
+  <div class="flex-1 overflow-auto">
+    {@render children()}
+  </div>
+
+  <!-- Footer: 50/50 split -->
+  <div class="bg-muted/50 shrink-0 border-t p-4">
           <div class="grid grid-cols-2 gap-4">
             <!-- Left: Audit Box (50%) -->
             <div class="flex items-center">
@@ -178,8 +178,5 @@
               {@render footerActions()}
             </div>
           </div>
-        </div>
-      </div>
-    {/if}
   </div>
-</div>
+{/if}

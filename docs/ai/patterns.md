@@ -6,7 +6,11 @@
 
 In-app routes under the shell should **fill the main content area** (full width, no `mx-auto` / `max-w-*` unless a specific form needs it).
 
-Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer padding `p-2 sm:p-3`, column `gap-4`, `min-h-0` so flex children (tables, cards) can use remaining height. Put breadcrumb + `h1` (and optional toolbar) in `{#snippet header()}`; put the main block (e.g. entity list table) as default children.
+**The page wrapper is ambient — `AppShell` owns it.** Every `(app)` route renders inside `AppPageScaffold` (outer gap `p-2 sm:p-3`, the rounded bordered content box, `min-h-0` flex column) that the shell mounts once, below `PageHeader`. Pages — host archetypes (`EntityTablePage`, dict, forms) and remote `mountPage` chunks alike — render **content only**:
+
+- **Never self-wrap**: no outer `p-*` padding, no `rounded-md border` box — that surface already exists around the page (a second one shows as double borders; the `page-scaffold-ownership` check-standards rule rejects `<AppPageScaffold` outside the shell).
+- **Keep `min-h-0` discipline**: the page root is a flex child of the scaffold column — `h-full`/`min-h-0`/`overflow-auto` belong on the page's inner blocks, never on a new outer box.
+- `chrome:"remote"` on a route decl suppresses the `PageHeader` only — the body scaffold is unconditional; remote chunks must neither know about nor draw it.
 
 ## UI architecture (Shadcn-Svelte™)
 
@@ -83,7 +87,7 @@ edit/create page, etc.). Two layouts are allowed:
 
 2. **Mixed content (UN PO' FORM + UN PO' ALTRO)** — the page mixes a form with
    other content (in-card lists, info boxes, multiple cards).
-   - Use `AppPageScaffold` (NOT `FormPageLayout`) — no single footer primary.
+   - The ambient `AppPageScaffold` owns the frame (NOT `FormPageLayout`) — no single footer primary.
    - **No primary button in the page footer.**
    - Each card that needs an action puts its own **DEFAULT primary button
      in `CardFooter`** (`variant="default"`, default `tone="primary"`).

@@ -623,6 +623,7 @@
 												callablesOptions={census.callablesOptions}
 												{targetCallable}
 												{sourceEmit}
+												columns={columnMap}
 												controlProps={props}
 												disabledBadgeValues={triggerShape &&
 												col.key === 'execution_context' &&

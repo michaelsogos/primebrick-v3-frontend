@@ -126,7 +126,9 @@ export function entityRefHref(
 	ref: ColumnRef,
 	value: string
 ): string | null {
-	if ((ref.route ?? 'detail') === 'list') {
+	const route = ref.route ?? 'detail';
+	if (route === 'none') return null;
+	if (route === 'list') {
 		const list = census.find((r) => r.entity === ref.entity && r.kind === 'list');
 		if (!list) return null;
 		return filteredListHref(list.route, ref.filter_field ?? 'uuid', value);

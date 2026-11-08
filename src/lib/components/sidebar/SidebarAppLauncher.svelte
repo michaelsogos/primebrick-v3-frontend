@@ -11,6 +11,8 @@
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { routesCensusFromModules } from '$lib/api';
   import { routePatternMatches } from '$lib/navigation/access-guard';
+  // Leaf/page icons arrive materialized in the discovery payload — read
+  // them plainly; `file-box` stays the fail-closed tail on statics.
   import { userPreferences } from '$lib/composables/useUserPreferences.svelte';
   import type { ModuleInfo, ModuleNavLink } from '$lib/api-types';
   import { goto } from '$app/navigation';
@@ -99,6 +101,10 @@
     ];
   });
 
+  /** Route census shared by favorites + leaf icon defaults — one derived
+   *  so the modules payload flattens once. */
+  const routesCensus = $derived(routesCensusFromModules(shellNav.modules));
+
   /** Favorite pages — resolved LIVE against the route census so labels and
    *  icons never go stale (the preference stores only route paths). A
    *  favorite whose route left the census is `orphan` — hidden from the
@@ -112,7 +118,7 @@
       module: string | null;
       orphan: boolean;
     }[] => {
-      const census = routesCensusFromModules(shellNav.modules);
+      const census = routesCensus;
       const leaves = shellNav.modules.flatMap((m) =>
         flattenNavLeaves(m.nav ?? []).map((l) => ({ ...l, module: m.id })),
       );
@@ -839,7 +845,7 @@
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <DynamicIcon name={item.icon ?? 'circle'} size={14} />
+                  <DynamicIcon name={item.icon ?? 'file-box'} size={14} />
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
                 {#if page.url.pathname === item.href && selLeafId !== item.id}

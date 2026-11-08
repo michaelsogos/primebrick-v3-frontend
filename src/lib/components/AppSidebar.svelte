@@ -7,6 +7,8 @@
   import { resolve } from '$app/paths';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
+  // Leaf icons arrive materialized in the discovery payload — `icon` is
+  // emitted (authored or kind-defaulted); `file-box` is the fail-closed tail.
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
@@ -185,7 +187,7 @@
             {#each item.children as child (child.id)}
               <Sidebar.MenuSubItem>
                 <Sidebar.MenuSubButton href={child.href} isActive={isLinkActive(child.href)}>
-                  <DynamicIcon name={child.icon ?? 'circle'} size={14} />
+                  <DynamicIcon name={child.icon ?? 'file-box'} size={14} />
                   <span>{$t(child.label_key)}</span>
                 </Sidebar.MenuSubButton>
               </Sidebar.MenuSubItem>
@@ -199,7 +201,7 @@
       <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
         {#snippet child({ props })}
           <a {...props} href={resolve(item.href as '/')}>
-            <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+            <DynamicIcon name={item.icon ?? 'file-box'} size={16} />
             <span>{$t(item.label_key)}</span>
           </a>
         {/snippet}
