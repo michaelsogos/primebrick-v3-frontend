@@ -207,8 +207,10 @@
       {#if desc}
         <p class="text-sm text-muted-foreground">{desc}</p>
       {/if}
-      <!-- L3: version badge | last update | who -->
-      {#if version || updatedAt || updatedByName}
+      <!-- L3: version badge | audit sentence — same anatomy as
+           ConfigListRow: primary connectors, italic muted values, who
+           only ever rides with when. -->
+      {#if version || updatedAt}
         <div class="mt-0.5 flex items-center gap-2">
           {#if version}
             <button
@@ -222,16 +224,17 @@
               </Badge>
             </button>
           {/if}
-          {#if updatedAt}
+          {#if updatedAt && updatedByName}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-muted-foreground">{$t('system.common.fields.updated_at')}</span>
+              <span class="text-primary">{$t('app.common.lastUpdatedPrefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
-            </div>
-          {/if}
-          {#if updatedByName}
-            <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-muted-foreground">{$t('system.common.fields.updated_by')}</span>
+              <span class="text-primary">{$t('app.common.lastUpdatedByMid')}</span>
               <span class="italic text-muted-foreground">{updatedByName}</span>
+            </div>
+          {:else if updatedAt}
+            <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
+              <span class="text-primary">{$t('app.common.lastUpdatedPrefix')}</span>
+              <span class="italic text-muted-foreground">{updatedAt}</span>
             </div>
           {/if}
         </div>

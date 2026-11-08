@@ -286,6 +286,44 @@ table/cards/cards-list.
   and `system/job/rules/create` are the standing examples.
 - Rule of record: `.devin/rules/entity-list-pages.md`.
 
+#### List-item audit line (canonical anatomy + keys)
+
+The LINE-3 audit of a list item is a **sentence**, not field labels —
+`ConfigListRow` is the reference:
+
+```
+v{N}  Last updated {when} by {who}
+       ^text-primary  ^italic muted  ^text-primary  ^italic muted
+```
+
+- Keys: `app.common.lastUpdatedPrefix` (`"Last updated"`) +
+  `app.common.lastUpdatedByMid` (`"by"`) — moved out of
+  `system.settings.configurations.*` (they are audit vocabulary, not
+  settings-page vocabulary).
+- Connectors render `text-primary`; values render
+  `italic text-muted-foreground`.
+- `who` only ever rides with `when` — `{#if updatedAt && updatedByName}`
+  sentence, `{:else if updatedAt}` date-only; never a lone "by".
+- Never `system.common.fields.updated_at`/`updated_by` pairs — those are
+  FIELD labels; the audit line is not a form.
+
+#### Dict-row optional data (icon / desc / tooltip) — wire contract
+
+Row optionals are **row data**, never meta — the meta only *detects*
+columns via `columns_map`; the list wire already carries physical fields.
+
+| Attr | Source |
+|---|---|
+| `icon` | physical `icon` column (raw lucide name, per-entity opt-in) |
+| `desc` | derived `<label_key>.description` — seeded composition convention; explicit `description`/`description_key` column wins (non-keyed dicts) |
+| `tooltip` | derived `<label_key>.tooltip`; explicit `tooltip`/`tooltip_key` column wins |
+
+Presence = the derived key resolves (`$t(k) !== k`). **Absent data →
+absent element** — no invented fallback icon/desc/tooltip (lint:
+`icon-no-fallback`). The desc never feeds the tooltip icon — it already
+owns LINE 2. Derivation uses the live `values[display_field]`, so
+re-pointing `label_key` to `custom.*` keeps derived keys inside `custom.*`.
+
 Reusable abstractions should be **app components** composing primitives,
 not forks of primitives.
 
