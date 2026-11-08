@@ -11,7 +11,7 @@
    * No version/audit lines — the row is not persisted yet.
    */
   import { t } from '$lib/i18n';
-  import { Badge, DynamicIcon } from '@primebrick/ui';
+  import { Badge } from '@primebrick/ui';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
   import type { MetaColumn } from '@primebrick/ui';
@@ -57,7 +57,6 @@
         <Badge variant="outline" class="shrink-0 border-primary/40 bg-primary/10 text-xs">
           {$t('app.common.new')}
         </Badge>
-        <DynamicIcon name="tag" class="size-4 shrink-0 text-muted-foreground" />
         {#if codeColumn}
           <div class="w-48 min-w-0" data-dict-cell="code">
             <FormFieldDispatcher

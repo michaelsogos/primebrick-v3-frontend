@@ -98,9 +98,10 @@
       editable_columns.find((c) => c.key === 'label_key'),
   );
 
-  /** L1 icon — a per-row `icon` column wins, else the dict-tag default. */
+  /** L1 icon — rendered ONLY when the entity maps an `icon` column and the
+   *  row carries a value; absent column/value → no icon (no default). */
   const rowIcon = $derived(
-    columns_map?.has('icon') && row['icon'] ? String(row['icon']) : 'tag',
+    columns_map?.has('icon') && row['icon'] ? String(row['icon']) : '',
   );
 
   /** L2 desc — only when the meta declares a desc column (hidden otherwise). */
@@ -159,7 +160,9 @@
     <div class="min-w-0">
       <!-- L1: icon | display_name | tooltip-icon | TAGS -->
       <div class="flex items-center gap-2">
-        <DynamicIcon name={rowIcon} class="size-4 shrink-0 text-muted-foreground" />
+        {#if rowIcon}
+          <DynamicIcon name={rowIcon} class="size-4 shrink-0 text-muted-foreground" />
+        {/if}
         <p class="truncate font-medium {deleted ? 'line-through opacity-60' : ''}">{title_text}</p>
         {#if tooltip}
           <Info class="size-3.5 shrink-0 text-muted-foreground" title={tooltip} />
