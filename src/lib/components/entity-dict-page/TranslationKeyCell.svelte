@@ -8,8 +8,7 @@
    */
   import { SvelteSet } from 'svelte/reactivity';
   import { t, dict } from '$lib/i18n';
-  import { ComboSelect, Button, Badge } from '@primebrick/ui';
-  import { Languages } from '@primebrick/ui/vendor/lucide';
+  import { ComboSelect, Badge } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
@@ -53,7 +52,9 @@
     );
     if (suggestedKey) list.add(suggestedKey);
     if (value) list.add(value);
-    return [...list].sort().map((key) => ({ key }));
+    // Every item carries the i18n archetype icon — `languages` in the same
+    // `sky-500` token as the trigger-page `send` icon (census callables).
+    return [...list].sort().map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
   });
 
   /**
@@ -80,40 +81,44 @@
   }
 
   const pendingLangs = $derived(value ? Object.keys(getPendingTranslation(value) ?? {}) : []);
+
+  const languagesCta = $derived([{
+    icon: 'languages',
+    label: $t('system.settings.translations.title'),
+    onclick: openTranslations,
+    disabled: !value || readonly,
+    'data-testid': 'dict-cell-translations',
+  }]);
 </script>
 
-<div class="flex items-center gap-1">
-  <div class="min-w-0 flex-1">
-    <ComboSelect
+<div class="min-w-0 flex-1">
+  <ComboSelect
       mode="single"
       {value}
       onChange={handleChange}
       {options}
       valueField="key"
       labelField="key"
+      isLabelTranslated={true}
+      display="detailed"
+      iconField="_icon"
+      iconColorField="_icon_color"
       allowCreate
       defaultSearch={rowsPrefix}
       placeholder={suggestedKey || $t('app.common.selectValue')}
       searchPlaceholder={rowsPrefix}
       truncateFrom="start"
       disabled={readonly}
+      trailing_ctas={languagesCta}
       aria-label={$t(column.label_key)}
       data-testid="dict-cell-label-key"
-    />
-  </div>
-  {#if pendingLangs.length}
-    <Badge variant="outline" class="border-primary/50 px-1 text-[10px]" title={pendingLangs.join(', ')}>
-      +{pendingLangs.length}
-    </Badge>
-  {/if}
-  <Button
-    variant="ghost"
-    size="icon-sm"
-    onclick={openTranslations}
-    disabled={!value || readonly}
-    title={$t('system.settings.translations.title')}
-    data-testid="dict-cell-translations"
-  >
-    <Languages class="size-4" />
-  </Button>
+    >
+      {#snippet trailing()}
+        {#if pendingLangs.length}
+          <Badge variant="outline" class="border-primary/50 px-1 text-[10px]" title={pendingLangs.join(', ')}>
+            +{pendingLangs.length}
+          </Badge>
+        {/if}
+      {/snippet}
+    </ComboSelect>
 </div>

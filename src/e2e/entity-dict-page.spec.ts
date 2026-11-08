@@ -39,6 +39,9 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     // custom.* key into the combobox trigger to arm it.
     const languagesCta = page.getByTestId("dict-cell-translations").first();
     await expect(languagesCta).toBeVisible();
+    // Canonical trailing anatomy — the CTA is INSIDE the combobox trigger,
+    // never a sibling outside the value control.
+    await expect(keyCell.getByTestId("dict-cell-translations")).toBeVisible();
     await expect(languagesCta).toBeDisabled();
 
     // Fill the draft's code first so the suggested key is stable.

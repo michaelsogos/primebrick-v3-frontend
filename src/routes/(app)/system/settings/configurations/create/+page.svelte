@@ -260,12 +260,14 @@
 
   // Build ComboSelect options: each group_key becomes an object with the
   // raw key as value and the full i18n key as label (translated at render time)
-  type GroupKeyOption = { group_key: string; label_key: string };
+  type GroupKeyOption = { group_key: string; label_key: string; _icon: string; _icon_color: string };
 
   const groupKeyOptions = $derived<GroupKeyOption[]>(
     existingGroupKeys.map((gk) => ({
       group_key: gk,
       label_key: `system.settings.config.auth.group.${gk}`,
+      _icon: 'languages',
+      _icon_color: 'sky-500',
     })),
   );
 
@@ -295,12 +297,12 @@
   const labelKeyOptions = $derived(
     allI18nKeys
       .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
-      .map((k) => ({ key: k })),
+      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
   );
   const descriptionKeyOptions = $derived(
     allI18nKeys
       .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
-      .map((k) => ({ key: k })),
+      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
   );
 
   // Pre-filter prefix: when the popover opens, only show keys matching the
@@ -442,6 +444,8 @@
                       valueField="key"
                       labelField="key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       defaultSearch={labelKeyDefaultSearch}
                       placeholder={labelKeyPlaceholder}
@@ -478,6 +482,8 @@
                       valueField="key"
                       labelField="key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       defaultSearch={descriptionKeyDefaultSearch}
                       placeholder={descriptionKeyPlaceholder}
@@ -514,6 +520,8 @@
                       valueField="group_key"
                       labelField="label_key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       loading={groupKeysLoading}
                       getSearchKeywords={(opt) => {
