@@ -6,8 +6,8 @@
    *     L1: icon | display_name | tooltip-icon | TAGS — the dict `code` is
    *         a tag (never a field: keys are immutable after creation);
    *         version is NOT a tag.
-   *     L2: description — rendered only when the meta carries a desc
-   *         column (`description`/`description_key`), hidden otherwise.
+   *     L2: description — convention-derived `<label_key>.description`,
+   *         or an explicit `description[_key]` column; hidden otherwise.
    *     L3: version badge | last update | who — the audit line.
    *   center 4/12: the VALUE field — for dict entities `label_key`
    *     (TranslationKeyCell); the only editable input in the row.
@@ -104,39 +104,49 @@
     columns_map?.has('icon') && row['icon'] ? String(row['icon']) : '',
   );
 
-  /** L2 desc — only when the meta declares a desc column (hidden otherwise). */
-  const descKey = $derived(
-    columns_map?.has('description')
-      ? 'description'
-      : columns_map?.has('description_key')
-        ? 'description_key'
-        : undefined,
-  );
+  /** The row's i18n stem — the VALUE column's live value (`label_key` on
+   *  keyed dicts). Derived desc/tooltip keys are suffixes on this stem —
+   *  the seeded composition convention (`…rows.<code>.description`,
+   *  same as `entities.ai_model.qwen3_4b.description`). */
+  const labelStem = $derived(String(values[display_field ?? 'label_key'] ?? ''));
+
+  /** L2 desc — an explicit `description_key`/`description` column wins
+   *  (non-keyed dicts, name_local family); else the derived
+   *  `<stem>.description` key, rendered only when it resolves
+   *  (missing translation → absent line, no invented content). */
   const desc = $derived.by(() => {
-    if (!descKey) return '';
-    const v = row[descKey];
-    if (v === null || v === undefined || String(v).trim() === '') return '';
-    const s = String(v);
-    return descKey.endsWith('_key') ? $t(s) : s;
+    if (columns_map?.has('description_key')) {
+      const k = String(row['description_key'] ?? '').trim();
+      if (!k) return '';
+      const v = $t(k);
+      return v === k ? '' : v;
+    }
+    if (columns_map?.has('description')) {
+      return String(row['description'] ?? '').trim();
+    }
+    if (!labelStem) return '';
+    const k = `${labelStem}.description`;
+    const v = $t(k);
+    return v === k ? '' : v;
   });
 
-  /** L1 tooltip icon — rendered ONLY when the entity maps a tooltip
-   *  (`tooltip`/`tooltip_key`) or desc column and the row carries a
-   *  value; absent → no icon, no invented content. */
-  const tooltipKey = $derived(
-    columns_map?.has('tooltip')
-      ? 'tooltip'
-      : columns_map?.has('tooltip_key')
-        ? 'tooltip_key'
-        : undefined,
-  );
+  /** L1 tooltip icon — explicit `tooltip_key`/`tooltip` column wins; else
+   *  the derived `<stem>.tooltip` key; absent → no icon, no fallback to
+   *  the desc text (that text already owns LINE 2). */
   const tooltip = $derived.by(() => {
-    const k = tooltipKey ?? descKey;
-    if (!k) return '';
-    const v = row[k];
-    if (v === null || v === undefined || String(v).trim() === '') return '';
-    const s = String(v);
-    return k.endsWith('_key') ? $t(s) : s;
+    if (columns_map?.has('tooltip_key')) {
+      const k = String(row['tooltip_key'] ?? '').trim();
+      if (!k) return '';
+      const v = $t(k);
+      return v === k ? '' : v;
+    }
+    if (columns_map?.has('tooltip')) {
+      return String(row['tooltip'] ?? '').trim();
+    }
+    if (!labelStem) return '';
+    const k = `${labelStem}.tooltip`;
+    const v = $t(k);
+    return v === k ? '' : v;
   });
 
   const version = $derived(row['version'] as number | undefined);
