@@ -62,7 +62,8 @@
     },
     "i18n-entity-fallback": {
       "appliesTo": ["lib/entity-list/", "lib/components/entity-list-table/"]
-    }
+    },
+    "icon-no-fallback": {}
   },
   "i18n_namespaces": ["app", "system", "custom", "ai", "crm", "emailsender", "job", "webhook"]
 }

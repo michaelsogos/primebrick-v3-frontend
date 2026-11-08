@@ -51,7 +51,7 @@ export function moduleBreadcrumbSegments(args: {
   const items = rootNav.map((item) => ({
     label: args.t(item.label_key),
     href: item.href,
-    icon: item.icon ?? 'file-box',
+    icon: item.icon,
     current: item.href === activeHref
   }));
 
@@ -67,7 +67,7 @@ export function moduleBreadcrumbSegments(args: {
     .map((m) => ({
       label: resolveModuleLabel(m, args.t) || m.name,
       href: defaultLeafHref(m, root),
-      icon: m.icon ?? 'layout-grid',
+      icon: m.icon,
       current: m.id === module?.id
     }))
     .filter((i): i is typeof i & { href: string } => !!i.href);
@@ -76,16 +76,16 @@ export function moduleBreadcrumbSegments(args: {
     segments.push({
       kind: 'menu',
       label: moduleLabel,
-      icon: module?.icon ?? 'layout-grid',
+      icon: module?.icon,
       menuAriaLabel: moduleLabel,
-      items: siblings.length > 0 ? siblings : [{ label: moduleLabel, href: rootNav[0]?.href ?? '/', icon: module?.icon ?? 'layout-grid', current: true }]
+      items: siblings.length > 0 ? siblings : [{ label: moduleLabel, href: rootNav[0]?.href ?? '/', icon: module?.icon, current: true }]
     });
   }
   if (items.length > 0) {
     segments.push({
       kind: 'menu',
       label: currentItem?.label ?? moduleLabel,
-      icon: currentItem?.icon ?? module?.icon ?? 'file-box',
+      icon: currentItem?.icon ?? module?.icon,
       // Accessible name = the current page (module name lives on the
       // module switcher — distinct aria-labels keep the two triggers
       // addressable and truthful).

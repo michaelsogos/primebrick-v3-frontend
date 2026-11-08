@@ -175,7 +175,9 @@
             openGroups[item.id] = !groupOpen;
           }}
         >
-          <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+          {#if item.icon}
+            <DynamicIcon name={item.icon} size={16} />
+          {/if}
           <span>{$t(item.label_key)}</span>
           <ChevronRight
             class="ms-auto size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
@@ -187,7 +189,9 @@
             {#each item.children as child (child.id)}
               <Sidebar.MenuSubItem>
                 <Sidebar.MenuSubButton href={child.href} isActive={isLinkActive(child.href)}>
-                  <DynamicIcon name={child.icon ?? 'file-box'} size={14} />
+                  {#if child.icon}
+                    <DynamicIcon name={child.icon} size={14} />
+                  {/if}
                   <span>{$t(child.label_key)}</span>
                 </Sidebar.MenuSubButton>
               </Sidebar.MenuSubItem>
@@ -201,7 +205,9 @@
       <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
         {#snippet child({ props })}
           <a {...props} href={resolve(item.href as '/')}>
-            <DynamicIcon name={item.icon ?? 'file-box'} size={16} />
+            {#if item.icon}
+              <DynamicIcon name={item.icon} size={16} />
+            {/if}
             <span>{$t(item.label_key)}</span>
           </a>
         {/snippet}

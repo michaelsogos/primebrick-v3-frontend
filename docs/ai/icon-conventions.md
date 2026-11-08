@@ -30,7 +30,17 @@
    maximum fallback). An authored `icon` always wins — defaults fill nulls,
    never override. Consumers read `link.icon`/`decl.icon` plainly;
    `circle`/`circle-small` are banned on leaf pages.
-9. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
+9. **Field-mapped icons: absent data → absent element — NEVER a default
+   icon.** When an icon's value comes from a mapped field (`row.icon`,
+   `link.icon`, `decl.icon`, a `tooltip`/`description` column), render it
+   iff the field carries a value: `{#if icon}<DynamicIcon name={icon}/>{/if}`.
+   A `?? 'tag'`/`?? 'file-box'`/`|| 'layout-grid'` literal is an invented
+   fallback — the element must disappear, not fake an icon. Same rule for
+   the tooltip-ⓘ: it renders iff mapped tooltip/desc content exists.
+   Field→field resolution chains (`decl?.icon ?? leaf?.icon`) and `?? null`/
+   `?? ''` type coercions are NOT fallbacks — only quoted literal tails.
+   Linted by `icon-no-fallback` (check-standards).
+10. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
    every standalone icon-only control inside an input (clear `Eraser`,
    `Eye`/`EyeOff`, `Copy`, `Check`/status icons, X-remove). Enforced by
    `[&>svg]:size-4` in `inputTrailingIconColorClasses` —

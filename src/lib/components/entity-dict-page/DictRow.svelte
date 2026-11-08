@@ -120,9 +120,24 @@
     return descKey.endsWith('_key') ? $t(s) : s;
   });
 
-  /** L1 tooltip — desc when present, else the raw label_key behind the
-   *  translated display name. */
-  const tooltip = $derived(desc || String(values[display_field ?? 'label_key'] ?? ''));
+  /** L1 tooltip icon — rendered ONLY when the entity maps a tooltip
+   *  (`tooltip`/`tooltip_key`) or desc column and the row carries a
+   *  value; absent → no icon, no invented content. */
+  const tooltipKey = $derived(
+    columns_map?.has('tooltip')
+      ? 'tooltip'
+      : columns_map?.has('tooltip_key')
+        ? 'tooltip_key'
+        : undefined,
+  );
+  const tooltip = $derived.by(() => {
+    const k = tooltipKey ?? descKey;
+    if (!k) return '';
+    const v = row[k];
+    if (v === null || v === undefined || String(v).trim() === '') return '';
+    const s = String(v);
+    return k.endsWith('_key') ? $t(s) : s;
+  });
 
   const version = $derived(row['version'] as number | undefined);
   const updatedAt = $derived(

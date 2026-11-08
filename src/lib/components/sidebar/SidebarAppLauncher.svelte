@@ -689,7 +689,9 @@
                   onkeydown={(e) => handleRowKeydown(e, 1, i)}
                 >
                   <div class="flex size-5 shrink-0 items-center justify-center">
-                    <DynamicIcon name={g.m.icon ?? 'layout-grid'} size={14} />
+                    {#if g.m.icon}
+                      <DynamicIcon name={g.m.icon} size={14} />
+                    {/if}
                   </div>
                   <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(g.m, $t)}</span>
                   <span class="shrink-0 text-[10px] tabular-nums text-muted-foreground">{g.items.length}</span>
@@ -730,7 +732,9 @@
                 onkeydown={(e) => handleRowKeydown(e, 1, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <DynamicIcon name={m.icon ?? 'layout-grid'} size={14} />
+                  {#if m.icon}
+                    <DynamicIcon name={m.icon} size={14} />
+                  {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(m, $t)}</span>
                 {#if currentModuleId === m.id && selModuleId !== m.id}
@@ -845,7 +849,9 @@
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <DynamicIcon name={item.icon ?? 'file-box'} size={14} />
+                  {#if item.icon}
+                    <DynamicIcon name={item.icon} size={14} />
+                  {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
                 {#if page.url.pathname === item.href && selLeafId !== item.id}
