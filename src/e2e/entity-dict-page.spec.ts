@@ -76,6 +76,10 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     const sheet = page.getByRole("dialog");
     const FULL_KEY = "custom.entities.customer_type.rows.e2e_poc";
 
+    // Sheet title — the management phrasing ("Manage Translations"),
+    // not the bare noun, served from system.settings.translations.title.
+    await expect(sheet.getByText("Manage Translations")).toBeVisible();
+
     // LINE 1 — the FULL key renders as a colored dot-notation badge
     // (full path is the badge text AND the title), before the lang combo.
     const keyBadge = sheet.getByTestId("i18n-editor-key");
