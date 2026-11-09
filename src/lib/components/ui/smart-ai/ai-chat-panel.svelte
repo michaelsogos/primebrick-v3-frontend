@@ -46,7 +46,7 @@
   import AiModelDetailsPopover from './ai-model-details-popover.svelte';
   import AiCerebellumSelector from './ai-cerebellum-selector.svelte';
   import { RealtimeMeter } from '$lib/components/ui/realtime-meter';
-  import { AiIcon } from '@primebrick/ui';
+  import { AiIcon, AiTypingDots } from '@primebrick/ui';
   import { BotIcon } from '$lib/components/ui/bot-icon';
   import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
@@ -571,11 +571,7 @@
                   {$t(`${i18n_ns}.generating`)}
                 </span>
               {/if}
-              <div class="ai-typing-dots text-primary" data-testid="{testid_prefix}-typing">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+              <AiTypingDots class="text-primary" data-testid="{testid_prefix}-typing" />
             </div>
           </div>
         {/if}
@@ -721,28 +717,6 @@
 
 <style>
   /* ─── AI Status Animations (CSS-only) ─── */
-
-  /* Three-dot typing indicator (streaming state) */
-  .ai-typing-dots {
-    display: inline-flex;
-    gap: 4px;
-    align-items: center;
-  }
-  .ai-typing-dots span {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    animation: ai-dot-bounce 1.4s infinite ease-in-out both;
-  }
-  .ai-typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-  .ai-typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-  .ai-typing-dots span:nth-child(3) { animation-delay: 0s; }
-
-  @keyframes ai-dot-bounce {
-    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-    40% { transform: scale(1); opacity: 1; }
-  }
 
   /* Gentle bounce (ready state) */
   @keyframes ai-gentle-bounce {

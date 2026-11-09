@@ -12,17 +12,22 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 
 const DICT_URL = "/crm/settings/customer_types";
 
-/** Deterministic Translator API stub — every pair 'available', output `[MT] <text>`. */
-async function stubTranslator(page: import("@playwright/test").Page) {
-  await page.addInitScript(() => {
+/** Deterministic Translator API stub — every pair 'available', output
+ *  `[MT] <text>`; `delay` slows each translate so the AI-busy indicator
+ *  is observable mid-flight. */
+async function stubTranslator(page: import("@playwright/test").Page, delay = 0) {
+  await page.addInitScript((ms) => {
     (window as unknown as { Translator: unknown }).Translator = {
       availability: async () => "available",
       create: async () => ({
-        translate: async (text: string) => `[MT] ${text}`,
+        translate: async (text: string) => {
+          if (ms > 0) await new Promise((r) => setTimeout(r, ms));
+          return `[MT] ${text}`;
+        },
         destroy: () => {},
       }),
     };
-  });
+  }, delay);
 }
 
 test.describe("entity dict page (/crm/settings/customer_types)", () => {
@@ -42,7 +47,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
   test("sheet anatomy: colored key badge, coverage chips, EN gate, AI review", async ({
     page,
   }) => {
-    await stubTranslator(page);
+    await stubTranslator(page, 350);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 20000 });
@@ -161,13 +166,18 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     // …and with TWO update languages the swap CTA greys out.
     await expect(swapBtn).toBeDisabled();
 
-    // Per-language AI suggestion — a disabled inline preview under its
-    // own row; the apply CTA fills the matching draft.
+    // Per-language AI suggestion — while the translator runs, the
+    // canonical assistant busy indicator (AiIcon + "Generating…" +
+    // typing dots) is up; a disabled inline preview then renders under
+    // the row and the indicator retires — no "here you go" text.
     await sheet.getByTestId("i18n-editor-ai-suggest-it-IT").click();
+    await expect(sheet.getByTestId("i18n-editor-ai-busy")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-ai-dots")).toBeVisible();
     const suggestion = sheet.getByTestId("i18n-editor-suggestion-it-IT");
     await expect(suggestion).toBeVisible();
     await expect(suggestion).toHaveClass(/bg-muted/);
     await expect(suggestion).toContainText("[MT] E2E proof");
+    await expect(sheet.getByTestId("i18n-editor-ai-busy")).toHaveCount(0);
     await sheet.getByTestId("i18n-editor-suggestion-accept-it-IT").click();
     await expect(sheet.getByTestId("i18n-editor-value-it-IT")).toHaveValue("[MT] E2E proof");
     await expect(sheet.getByTestId("i18n-editor-status-it-IT")).toHaveClass(/sky-500/);
@@ -178,6 +188,9 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     const results = sheet.getByTestId("i18n-editor-results");
     await expect(results).toBeVisible({ timeout: 15000 });
     await expect(results.getByTestId("i18n-editor-result-fr-FR")).toContainText("[MT] E2E proof");
+    // Accept-all stays disabled while the generation loop is busy —
+    // Playwright waits for it to arm once every result is in.
+    await expect(sheet.getByTestId("i18n-editor-accept-all")).toBeEnabled();
     await sheet.getByTestId("i18n-editor-accept-all").click();
     await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText("7/7");
 

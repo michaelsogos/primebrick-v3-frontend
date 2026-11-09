@@ -35,7 +35,7 @@
     translateBrowser,
   } from '$lib/ai/browser-translator';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { SheetPanelLayout, SheetPanelFooter, Button, Badge, ComboSelect, Textarea, AiIcon, CopyButton } from '@primebrick/ui';
+  import { SheetPanelLayout, SheetPanelFooter, Button, Badge, ComboSelect, Textarea, AiIcon, AiTypingDots, CopyButton } from '@primebrick/ui';
   import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
   import { Languages, LoaderCircle, Check, CircleCheck, Clock, CircleHelp, TriangleAlert, ArrowLeftRight, X, Eraser } from '@primebrick/ui/vendor/lucide';
 
@@ -537,7 +537,7 @@
           <AiIcon size={14} />
           <span class="text-xs font-medium">{$t('app.common.translations.results_title')}</span>
           <div class="ml-auto flex items-center gap-1">
-            <Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={acceptAllResults} data-testid="i18n-editor-accept-all">
+            <Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={acceptAllResults} disabled={aiBusy} data-testid="i18n-editor-accept-all">
               {$t('app.common.translations.accept_all')}
             </Button>
             <Button variant="ghost" size="icon" class="size-6" onclick={() => (results = [])} aria-label={$t('app.common.translations.dismiss')} data-testid="i18n-editor-results-dismiss">
@@ -574,8 +574,21 @@
       </div>
     {/if}
 
-    {#if aiStep}
-      <p class="font-mono text-xs text-muted-foreground" data-testid="i18n-editor-ai-step">{aiStep}</p>
+    <!-- AI busy indicator — the canonical assistant anatomy (icon +
+         `*.generating` status + typing dots); the pair/progress detail
+         rides as the tail. When the op ends the suggestions/results
+         render directly — no "here you go" line. -->
+    {#if aiBusy}
+      <div class="flex items-center gap-2" data-testid="i18n-editor-ai-busy">
+        <AiIcon size={14} />
+        <span class="text-xs text-muted-foreground" data-testid="i18n-editor-ai-status">
+          {$t('app.common.translations.generating')}
+        </span>
+        <AiTypingDots class="text-primary" data-testid="i18n-editor-ai-dots" />
+        {#if aiStep}
+          <span class="font-mono text-xs text-muted-foreground" data-testid="i18n-editor-ai-step">{aiStep}</span>
+        {/if}
+      </div>
     {/if}
     {#if !aiSupported}
       <p class="text-xs italic text-muted-foreground" data-testid="i18n-editor-ai-unsupported">
