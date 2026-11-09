@@ -20,7 +20,7 @@
   import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { UI_LANGS, UI_LANG_META, DEFAULT_LANG, orderLangEntriesByBrowser, type UiLang } from '$lib/i18n/languages';
+  import { UI_LANGS, UI_LANG_META, orderLangEntriesByBrowser, type UiLang } from '$lib/i18n/languages';
   import { fetchModuleTranslations, fetchTranslationList } from '$lib/api';
   import {
     addPendingTranslation,
@@ -37,7 +37,7 @@
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout, SheetPanelFooter, Button, Badge, ComboSelect, Textarea, AiIcon, CopyButton } from '@primebrick/ui';
   import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
-  import { Languages, LoaderCircle, Check, Clock, CircleHelp, X } from '@primebrick/ui/vendor/lucide';
+  import { Languages, LoaderCircle, Check, CircleCheck, Clock, CircleHelp, TriangleAlert, ArrowLeftRight, X, Eraser } from '@primebrick/ui/vendor/lucide';
 
   let { i18n_key, pending_owner }: { i18n_key: string; pending_owner: string } = $props();
 
@@ -75,13 +75,21 @@
 
   const canUpdateT = hasRequiredPermission('translation.update.single');
 
-  let selectedLang = $state<UiLang>(get(uiLang));
+  /** LINE 3a — which EN language feeds the preview (combobox, en-GB|en-US). */
+  let previewLang = $state<UiLang>('en-GB');
+  /** LINE 3b — the update languages being edited (multi-select, 1..n). */
+  let updateLangs = $state<UiLang[]>([get(uiLang)]);
+  /** Per-lang textarea refs — the eraser refocuses its own field.
+   *  Pre-seeded: `bind:ref` refuses `undefined` when ref has a fallback. */
+  let valueRefs = $state<Record<string, HTMLTextAreaElement | null>>(
+    Object.fromEntries(UI_LANGS.map((l) => [l, null])),
+  );
 
   let aiBusy = $state(false);
   let aiStep = $state('');
   let aiSupported = browserTranslatorSupported();
-  /** Single-language AI suggestion pending review. */
-  let suggestion = $state<{ lang: UiLang; text: string } | null>(null);
+  /** Per-language AI suggestions pending review (one per update lang). */
+  let suggestions = $state<Partial<Record<UiLang, { text: string }>>>({});
   /** Generate-all results pending review — one row per attempted language. */
   let results = $state<{ lang: UiLang; text?: string; error?: 'unavailable' | 'failed'; accepted?: boolean }[]>([]);
 
@@ -127,8 +135,10 @@
     // chips are headline data: an unfetched language must never read as
     // "missing".
     void loadAll().then(() => {
-      // Selector default (approved): EN when nothing EN exists, else the app language.
-      if (!hasEn) selectedLang = 'en-GB';
+      // Defaults (approved): update = en-GB when nothing EN exists, else
+      // the app language; preview = the first EN holding text, else en-GB.
+      if (!hasEn) updateLangs = ['en-GB'];
+      previewLang = EN_LANGS.find((l) => langText(l).trim() !== '') ?? 'en-GB';
     });
   });
 
@@ -136,63 +146,60 @@
     UI_LANGS.map((l) => ({ code: l, label: UI_LANG_META[l].label, flag: UI_LANG_META[l].flag })),
     typeof navigator !== 'undefined' ? navigator.languages : null,
   );
+  const enOptions = EN_LANGS.map((l) => ({ code: l, label: UI_LANG_META[l].label, flag: UI_LANG_META[l].flag }));
 
   const langText = (l: UiLang) => draft[l] ?? existing[l]?.value ?? '';
 
-  /** The EN base — first EN language holding any text (saved or draft). */
-  const baseLang = $derived(EN_LANGS.find((l) => langText(l).trim() !== '') ?? DEFAULT_LANG);
-  const baseValue = $derived(langText(baseLang));
-  /** LINE 3 visible only when there IS a base and it isn't the selected row. */
-  const showBase = $derived(baseValue.trim() !== '' && selectedLang !== baseLang);
+  /** The EN preview — the language picked in combobox 1 (draft or saved). */
+  const previewValue = $derived(langText(previewLang));
+  const showPreview = $derived(previewValue.trim() !== '');
 
   const hasEn = $derived(EN_LANGS.some((l) => langText(l).trim() !== ''));
 
   const missingLangs = $derived(UI_LANGS.filter((l) => langText(l).trim() === ''));
   const coveredCount = $derived(UI_LANGS.length - missingLangs.length);
 
-  const selectedRow = $derived(existing[selectedLang]);
-  const selectedSaved = $derived(selectedRow != null);
-  const selectedIsEn = $derived(EN_LANGS.includes(selectedLang));
+  /** Per-language row helpers — read live state inside the each block. */
+  const rowOf = (l: UiLang) => existing[l];
+  const savedOf = (l: UiLang) => rowOf(l) != null;
+  const isEn = (l: UiLang) => EN_LANGS.includes(l);
   /** Editable: missing rows always; saved rows need the update perm AND a
    *  CAS identity (rows read via the flat-dict fallback carry none →
-   *  read-only, an honest degradation — never a phantom update). */
-  const selectedEditable = $derived(
-    !selectedSaved || (canUpdateT && selectedRow?.uuid != null && selectedRow?.version != null),
-  );
-  const selectedDirty = $derived(
-    draft[selectedLang] !== undefined && draft[selectedLang].trim() !== (selectedRow?.value ?? ''),
-  );
-  const selectedStatus = $derived.by((): 'saved' | 'modified' | 'missing' | 'draft' => {
-    if (selectedSaved) return selectedDirty ? 'modified' : 'saved';
-    return draft[selectedLang]?.trim() ? 'draft' : 'missing';
-  });
+   *  disabled, an honest degradation — never a phantom update). */
+  const editableOf = (l: UiLang) =>
+    !savedOf(l) || (canUpdateT && rowOf(l)?.uuid != null && rowOf(l)?.version != null);
+  const statusOf = (l: UiLang): 'saved' | 'modified' | 'missing' | 'draft' => {
+    if (savedOf(l)) {
+      return draft[l] !== undefined && draft[l].trim() !== (rowOf(l)?.value ?? '') ? 'modified' : 'saved';
+    }
+    return draft[l]?.trim() ? 'draft' : 'missing';
+  };
 
-  /** AI suggest source: always the EN base the user sees on LINE 3. */
-  const canSuggest = $derived(
-    aiSupported && !aiBusy && selectedLang !== baseLang && baseValue.trim() !== '',
-  );
+  /** AI suggest source: always the EN preview (combobox 1). */
+  const suggestible = (l: UiLang) =>
+    aiSupported && !aiBusy && l !== previewLang && previewValue.trim() !== '';
   const canGenerateAll = $derived(
-    aiSupported && !aiBusy && baseValue.trim() !== '' && missingLangs.length > 0,
+    aiSupported && !aiBusy && previewValue.trim() !== '' && missingLangs.length > 0,
   );
 
   const canSave = $derived(hasEn);
 
-  async function suggestSelected() {
-    const src = baseValue.trim();
-    if (!canSuggest || !src) return;
+  async function suggestLang(l: UiLang) {
+    const src = previewValue.trim();
+    if (!suggestible(l) || !src) return;
     aiBusy = true;
     try {
-      const availability = await browserPairAvailability(baseLang, selectedLang);
+      const availability = await browserPairAvailability(previewLang, l);
       if (availability === 'unavailable') {
-        suggestion = { lang: selectedLang, text: '' };
+        suggestions[l] = { text: '' };
         return;
       }
-      const out = await translateBrowser(src, baseLang, selectedLang, (f) => {
-        aiStep = `${toMtLang(baseLang)} → ${toMtLang(selectedLang)} · ${Math.min(100, Math.round(f * 100))}%`;
+      const out = await translateBrowser(src, previewLang, l, (f) => {
+        aiStep = `${toMtLang(previewLang)} → ${toMtLang(l)} · ${Math.min(100, Math.round(f * 100))}%`;
       });
-      suggestion = out.trim() ? { lang: selectedLang, text: out } : { lang: selectedLang, text: '' };
+      suggestions[l] = { text: out.trim() };
     } catch {
-      suggestion = { lang: selectedLang, text: '' };
+      suggestions[l] = { text: '' };
     } finally {
       aiBusy = false;
       aiStep = '';
@@ -200,7 +207,7 @@
   }
 
   async function generateAll() {
-    const src = baseValue.trim();
+    const src = previewValue.trim();
     if (!canGenerateAll || !src) return;
     aiBusy = true;
     results = [];
@@ -211,15 +218,15 @@
       let step = 0;
       for (const lang of missing) {
         step += 1;
-        const pair = `${toMtLang(baseLang)} → ${toMtLang(lang)} (${step}/${missing.length})`;
+        const pair = `${toMtLang(previewLang)} → ${toMtLang(lang)} (${step}/${missing.length})`;
         aiStep = pair;
-        const availability = await browserPairAvailability(baseLang, lang);
+        const availability = await browserPairAvailability(previewLang, lang);
         if (availability === 'unavailable') {
           results.push({ lang, error: 'unavailable' });
           continue;
         }
         try {
-          const out = await translateBrowser(src, baseLang, lang, (f) => {
+          const out = await translateBrowser(src, previewLang, lang, (f) => {
             aiStep = `${pair} · ${Math.min(100, Math.round(f * 100))}%`;
           });
           results.push(out.trim() ? { lang, text: out } : { lang, error: 'failed' });
@@ -233,10 +240,11 @@
     }
   }
 
-  function acceptSuggestion() {
-    if (!suggestion?.text) return;
-    draft[suggestion.lang] = suggestion.text;
-    suggestion = null;
+  function acceptSuggestion(l: UiLang) {
+    const s = suggestions[l];
+    if (!s?.text) return;
+    draft[l] = s.text;
+    delete suggestions[l];
   }
 
   function acceptResult(lang: UiLang) {
@@ -272,29 +280,32 @@
     closeSheet();
   }
 
-  const statusBadge: Record<string, { label: string; class: string; icon: typeof Check }> = {
+  const statusBadge: Record<string, { label: string; class: string; icon: typeof Check; iconClass: string }> = {
     saved: {
       label: 'app.common.translations.saved',
       class: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
       icon: Check,
+      iconClass: 'text-emerald-500',
     },
     modified: {
       label: 'app.common.translations.modified',
       class: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
       icon: Clock,
+      iconClass: 'text-sky-500',
     },
     draft: {
       label: 'app.common.translations.draft',
       class: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
       icon: Clock,
+      iconClass: 'text-sky-500',
     },
     missing: {
       label: 'app.common.translations.missing',
       class: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
       icon: CircleHelp,
+      iconClass: 'text-amber-500',
     },
   };
-  const statusMeta = $derived(statusBadge[selectedStatus]);
 </script>
 
 <SheetPanelLayout contentClass="p-3">
@@ -321,137 +332,182 @@
       </Badge>
     </div>
 
-    <!-- LINE 2 — coverage: covered/total ratio + the untranslated-language
-         list as clickable flag chips (click jumps the selector). -->
+    <!-- LINE 2 — left: the missing-language copy + clickable flag chips;
+         right: the covered/total ratio — success when full, destructive
+         when anything is missing. -->
     <div class="flex items-center gap-2">
-      <Badge variant="outline" class="shrink-0 px-1.5 text-[10px] tabular-nums" data-testid="i18n-editor-coverage">
-        {coveredCount}/{UI_LANGS.length}
-      </Badge>
+      <span class="shrink-0 text-xs text-muted-foreground" data-testid="i18n-editor-missing-label">
+        {$t(missingLangs.length === 0 ? 'app.common.translations.missing_none' : 'app.common.translations.missing_list')}
+      </span>
       {#each missingLangs as l (l)}
         <button
           type="button"
           class="rounded-sm transition-opacity hover:opacity-70"
           title={UI_LANG_META[l].label}
           aria-label={UI_LANG_META[l].label}
-          onclick={() => { selectedLang = l; }}
+          onclick={() => { if (!updateLangs.includes(l)) updateLangs = [...updateLangs, l]; }}
           data-testid="i18n-editor-missing-{l}"
         >
           <span class="fi fi-{UI_LANG_META[l].flag} rounded-sm" aria-hidden="true"></span>
         </button>
       {/each}
+      <Badge
+        variant="outline"
+        class="ml-auto shrink-0 px-1.5 text-[10px] tabular-nums {coveredCount === UI_LANGS.length ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-destructive/30 bg-destructive/10 text-destructive'}"
+        data-testid="i18n-editor-coverage"
+      >
+        {#if coveredCount === UI_LANGS.length}<CircleCheck class="mr-0.5 size-3" />{:else}<TriangleAlert class="mr-0.5 size-3" />{/if}
+        {coveredCount}/{UI_LANGS.length}
+      </Badge>
     </div>
 
-    <!-- LINE 3 — EN base preview (hidden while the selected row IS the base,
-         or when no EN text exists yet): flag + label meta row, read-only
-         muted textarea with the copy button inside — no wrapping card. -->
-    {#if showBase}
-      <div data-testid="i18n-editor-base">
-        <div class="mb-1 flex items-center gap-2">
-          <span class="fi fi-{UI_LANG_META[baseLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-          <span class="text-xs font-medium text-muted-foreground">{UI_LANG_META[baseLang].label}</span>
-          <Badge variant="outline" class="border-sky-500/30 bg-sky-500/10 px-1 text-[10px] text-sky-700 dark:text-sky-300">
-            {$t('app.common.translations.base')}
-          </Badge>
-        </div>
-        <div class="relative">
-          <Textarea value={baseValue} readonly rows={2} class="resize-none bg-muted/40 pr-10 text-sm" data-testid="i18n-editor-base-text" />
-          <CopyButton class="absolute right-1.5 top-1.5 size-7" variant="ghost" size="icon" text={baseValue} data-testid="i18n-editor-base-copy" />
-        </div>
-      </div>
-    {/if}
+    <!-- LINE 3 — two comboboxes: which EN language feeds the preview
+         (single), and the update languages being edited (multi, 1..n),
+         with a comparison glyph between them. -->
+    <div class="flex items-center gap-2">
+      <ComboSelect
+        class="min-w-0 flex-1"
+        mode="single"
+        value={previewLang}
+        onChange={(v) => { previewLang = (Array.isArray(v) ? v[0] : v) as UiLang; }}
+        options={enOptions}
+        valueField="code"
+        labelField="label"
+        flagField="flag"
+        searchable={false}
+        placeholder={$t('app.common.translations.base')}
+        data-testid="i18n-editor-preview-lang"
+      />
+      <ArrowLeftRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <ComboSelect
+        class="min-w-0 flex-1"
+        mode="multi"
+        bind:value={updateLangs}
+        options={langOptions}
+        valueField="code"
+        labelField="label"
+        flagField="flag"
+        searchable={false}
+        placeholder={$t('system.settings.translations.language')}
+        data-testid="i18n-editor-update-langs"
+      />
+    </div>
 
-    <!-- LINE 4 — language selector (native labels + flags, browser order). -->
-    <ComboSelect
-      class="min-w-0 flex-1"
-      mode="single"
-      value={selectedLang}
-      onChange={(v) => { selectedLang = (Array.isArray(v) ? v[0] : v) as UiLang; suggestion = null; }}
-      options={langOptions}
-      valueField="code"
-      labelField="label"
-      flagField="flag"
-      searchable={false}
-      data-testid="i18n-editor-lang"
-    />
-
-    <!-- LINE 5 — selected language editor: flag + label + status badge;
-         textarea editable (input-bordered) or read-only without the
-         update permission; AI + copy overlay top-right. -->
-    <div>
-      <div class="mb-1 flex items-center gap-2">
-        <span class="fi fi-{UI_LANG_META[selectedLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-        <span class="text-xs font-medium text-muted-foreground">
-          {UI_LANG_META[selectedLang].label}{#if selectedIsEn && !hasEn}<span class="text-destructive" title={$t('app.common.translations.en_required')}>*</span>{/if}
-        </span>
-        <Badge variant="outline" class="{statusMeta.class} px-1.5 text-[10px]" data-testid="i18n-editor-status">
-          <statusMeta.icon class="mr-0.5 size-3" />{$t(statusMeta.label)}
-        </Badge>
-        {#if selectedIsEn && !hasEn}
-          <span class="text-[10px] text-destructive" data-testid="i18n-editor-en-required">
-            {$t('app.common.translations.en_required')}
-          </span>
-        {/if}
-      </div>
-      <div class="relative">
-        <Textarea
-          bind:value={
-            () => draft[selectedLang] ?? selectedRow?.value ?? '',
-            (v) => { draft[selectedLang] = v; }
-          }
-          readonly={!selectedEditable}
-          rows={3}
-          placeholder={$t('system.settings.translations.value')}
-          class={selectedEditable ? 'pr-16' : 'resize-none bg-muted/40'}
-          data-testid="i18n-editor-value"
-        />
+    <!-- LINE 4 — the EN preview picked in combobox 1: a plain DISABLED
+         surface (gray box, muted text, not-a-field) — flag + copy sit
+         right-top inside it. -->
+    {#if showPreview}
+      <div
+        class="relative rounded-lg border bg-muted/50 px-2.5 pb-2 pt-8 text-sm text-muted-foreground cursor-not-allowed"
+        data-testid="i18n-editor-base"
+      >
+        <span class="whitespace-pre-wrap" data-testid="i18n-editor-base-text">{previewValue}</span>
         <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5">
-          {#if canSuggest}
-            <button
-              type="button"
-              class="rounded p-1 transition-colors hover:bg-accent disabled:opacity-50"
-              title={$t('app.common.translations.suggest')}
-              aria-label={$t('app.common.translations.suggest')}
-              onclick={() => void suggestSelected()}
-              disabled={aiBusy}
-              data-testid="i18n-editor-ai-suggest"
-            >
-              <AiIcon size={14} />
-            </button>
-          {/if}
-          <CopyButton
-            variant="ghost"
-            size="icon"
-            class="size-7"
-            text={langText(selectedLang)}
-            data-testid="i18n-editor-copy"
-          />
+          <CopyButton variant="ghost" size="icon" class="size-7" text={previewValue} data-testid="i18n-editor-base-copy" />
+          <span class="fi fi-{UI_LANG_META[previewLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
         </div>
       </div>
-    </div>
+    {/if}
 
-    <!-- Single-language AI suggestion — review card, accept fills the
-         textarea (draft), reject discards. -->
-    {#if suggestion}
-      <div class="rounded-md border border-sky-500/30 bg-sky-500/5 p-2.5" data-testid="i18n-editor-suggestion">
-        {#if suggestion.text}
-          <p class="text-sm">
-            <span class="fi fi-{UI_LANG_META[suggestion.lang].flag} mr-1.5 rounded-sm" aria-hidden="true"></span>{suggestion.text}
-            <button
-              type="button"
-              class="ml-1.5 inline-flex translate-y-0.5 rounded p-0.5 transition-colors hover:bg-accent"
-              title={$t('app.common.translations.accept')}
-              aria-label={$t('app.common.translations.accept')}
-              onclick={acceptSuggestion}
-              data-testid="i18n-editor-suggestion-accept"
-            >
-              <GradientIcon size={14} paths={GRADIENT_ICON_PATHS.check} />
-            </button>
-          </p>
-        {:else}
-          <p class="text-xs italic text-muted-foreground">{$t('app.common.translations.ai_unavailable')}</p>
+    <!-- LINE 5+ — one editor per update language: the chrome lives INSIDE
+         the box — status icon left-top, AI suggest + eraser + copy + flag
+         right-top; the text starts on the line below. No-permission rows
+         degrade to disabled. -->
+    {#each updateLangs as l (l)}
+      {@const meta = statusBadge[statusOf(l)]}
+      {@const editable = editableOf(l)}
+      <div class="space-y-1.5" data-testid="i18n-editor-row-{l}">
+        <div class="relative">
+          <Textarea
+            bind:ref={valueRefs[l]}
+            bind:value={
+              () => draft[l] ?? rowOf(l)?.value ?? '',
+              (v) => { draft[l] = v; }
+            }
+            disabled={!editable}
+            rows={3}
+            placeholder={$t('system.settings.translations.value')}
+            class="pt-9"
+            aria-label={UI_LANG_META[l].label}
+            data-testid="i18n-editor-value-{l}"
+          />
+          <div class="absolute left-2 top-1.5 flex items-center gap-1">
+            <Badge variant="outline" class="{meta.class} px-1.5 text-[10px]" data-testid="i18n-editor-status-{l}">
+              <meta.icon class="mr-0.5 size-3" />{$t(meta.label)}
+            </Badge>
+            {#if isEn(l) && !hasEn}
+              <span class="text-[10px] text-destructive" title={$t('app.common.translations.en_required')} data-testid="i18n-editor-en-required-{l}">*</span>
+            {/if}
+          </div>
+          <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5">
+            {#if suggestible(l)}
+              <button
+                type="button"
+                class="rounded p-1 transition-colors hover:bg-accent disabled:opacity-50"
+                title={$t('app.common.translations.suggest')}
+                aria-label={$t('app.common.translations.suggest')}
+                onclick={() => void suggestLang(l)}
+                disabled={aiBusy}
+                data-testid="i18n-editor-ai-suggest-{l}"
+              >
+                <AiIcon size={14} />
+              </button>
+            {/if}
+            {#if editable}
+              <button
+                type="button"
+                class="rounded p-1 transition-colors hover:bg-accent disabled:opacity-50"
+                title={$t('app.common.clear')}
+                aria-label={$t('app.common.clear')}
+                onclick={() => { draft[l] = ''; valueRefs[l]?.focus(); }}
+                disabled={langText(l).trim() === ''}
+                data-testid="i18n-editor-clear-{l}"
+              >
+                <Eraser class="size-3.5" />
+              </button>
+            {/if}
+            <CopyButton
+              variant="ghost"
+              size="icon"
+              class="size-7"
+              text={langText(l)}
+              data-testid="i18n-editor-copy-{l}"
+            />
+            <span class="fi fi-{UI_LANG_META[l].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <!-- AI suggestion preview for THIS language — a disabled surface;
+             the text flows from char 0 and the flag + gradient-check apply
+             ride INLINE at the end of the flow, wrapping only when the
+             text itself reaches the right edge. -->
+        {#if suggestions[l]}
+          <div
+            class="rounded-lg border bg-muted/50 px-2.5 py-2 text-sm text-muted-foreground cursor-not-allowed"
+            data-testid="i18n-editor-suggestion-{l}"
+          >
+            {#if suggestions[l]!.text}
+              {suggestions[l]!.text}
+              <span class="inline-flex translate-y-0.5 items-center gap-0.5">
+                <button
+                  type="button"
+                  class="rounded p-1 transition-colors hover:bg-accent"
+                  title={$t('app.common.translations.accept')}
+                  aria-label={$t('app.common.translations.accept')}
+                  onclick={() => acceptSuggestion(l)}
+                  data-testid="i18n-editor-suggestion-accept-{l}"
+                >
+                  <GradientIcon size={14} paths={GRADIENT_ICON_PATHS.check} />
+                </button>
+                <span class="fi fi-{UI_LANG_META[l].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
+              </span>
+            {:else}
+              <span class="italic">{$t('app.common.translations.ai_unavailable')}</span>
+            {/if}
+          </div>
         {/if}
       </div>
-    {/if}
+    {/each}
 
     <!-- Generate-all results — review list; each row is accepted singly
          or all at once. Failed/unavailable langs stay visible, honest. -->

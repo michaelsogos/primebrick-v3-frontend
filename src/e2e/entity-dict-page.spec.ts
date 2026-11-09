@@ -79,7 +79,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await expect(keyBadge).toHaveAttribute("title", FULL_KEY);
     const badgeLeadsPicker = await sheet.evaluate((el) => {
       const badge = el.querySelector('[data-testid="i18n-editor-key"]');
-      const combo = el.querySelector('[data-testid="i18n-editor-lang"]');
+      const combo = el.querySelector('[data-testid="i18n-editor-preview-lang"]');
       return (
         !!badge &&
         !!combo &&
@@ -93,41 +93,68 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     for (const l of ["it-IT", "fr-FR", "de-DE"])
       await expect(sheet.getByTestId(`i18n-editor-missing-${l}`)).toBeVisible();
 
-    // EN gate — selector defaults to en-GB (no EN anywhere), Save disabled,
-    // the * marker + message are visible.
+    // LINE 3 — the two comboboxes: EN preview picker + update langs multi.
+    await expect(sheet.getByTestId("i18n-editor-preview-lang")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-update-langs")).toBeVisible();
+
+    // EN gate — update multi defaults to en-GB (no EN anywhere), Save
+    // disabled, the * marker sits in that row's chrome.
     const saveBtn = sheet.getByTestId("i18n-editor-save");
     await expect(saveBtn).toBeVisible();
     await expect(saveBtn).toBeDisabled();
-    await expect(sheet.getByTestId("i18n-editor-en-required")).toBeVisible();
-    // No EN base → LINE 2 hidden.
+    await expect(sheet.getByTestId("i18n-editor-en-required-en-GB")).toBeVisible();
+    // No EN base → preview hidden.
     await expect(sheet.getByTestId("i18n-editor-base")).toHaveCount(0);
-    // Missing status badge = amber semantic.
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/amber-500/);
+    // Missing status icon = amber semantic.
+    await expect(sheet.getByTestId("i18n-editor-status-en-GB")).toHaveClass(/amber-500/);
 
     // Type the EN value → status turns Draft (sky), coverage 1/7, Save arms.
-    await sheet.getByTestId("i18n-editor-value").fill("E2E proof");
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/sky-500/);
+    await sheet.getByTestId("i18n-editor-value-en-GB").fill("E2E proof");
+    await expect(sheet.getByTestId("i18n-editor-status-en-GB")).toHaveClass(/sky-500/);
     await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText("1/7");
     await expect(saveBtn).toBeEnabled();
-    await expect(sheet.getByTestId("i18n-editor-en-required")).toHaveCount(0);
+    await expect(sheet.getByTestId("i18n-editor-en-required-en-GB")).toHaveCount(0);
 
-    // Jump to Italiano through its missing chip — LINE 2 EN base appears
-    // (Base badge + readonly text + copy CTA), status back to Missing.
-    await sheet.getByTestId("i18n-editor-missing-it-IT").click();
+    // The EN preview appears — a DISABLED-looking surface (gray muted
+    // box, never an editable field) carrying the draft text.
     const baseCard = sheet.getByTestId("i18n-editor-base");
     await expect(baseCard).toBeVisible();
-    await expect(baseCard.getByTestId("i18n-editor-base-text")).toHaveValue("E2E proof");
+    await expect(baseCard).toHaveClass(/bg-muted/);
+    await expect(baseCard).toHaveClass(/cursor-not-allowed/);
+    const baseText = baseCard.getByTestId("i18n-editor-base-text");
+    await expect(baseText).toHaveText("E2E proof");
     await expect(sheet.getByTestId("i18n-editor-base-copy")).toBeVisible();
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/amber-500/);
 
-    // Per-language AI suggestion — card below the textarea, accept fills it.
-    await sheet.getByTestId("i18n-editor-ai-suggest").click();
-    const suggestion = sheet.getByTestId("i18n-editor-suggestion");
+    // Eraser CTA (editable overlay) — clears the draft back to empty:
+    // status Missing, coverage 0/7, Save disarmed; refilling re-arms.
+    const clearBtn = sheet.getByTestId("i18n-editor-clear-en-GB");
+    await expect(clearBtn).toBeEnabled();
+    await clearBtn.click();
+    await expect(sheet.getByTestId("i18n-editor-value-en-GB")).toHaveValue("");
+    await expect(sheet.getByTestId("i18n-editor-status-en-GB")).toHaveClass(/amber-500/);
+    await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText("0/7");
+    await expect(saveBtn).toBeDisabled();
+    await sheet.getByTestId("i18n-editor-value-en-GB").fill("E2E proof");
+    await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText("1/7");
+    await expect(saveBtn).toBeEnabled();
+
+    // Italiano's missing chip ADDS it to the update multi-select — a second
+    // editor row appears with the Missing (amber) status icon.
+    await sheet.getByTestId("i18n-editor-missing-it-IT").click();
+    await expect(sheet.getByTestId("i18n-editor-row-it-IT")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-value-it-IT")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-status-it-IT")).toHaveClass(/amber-500/);
+
+    // Per-language AI suggestion — a disabled inline preview under its
+    // own row; the apply CTA fills the matching draft.
+    await sheet.getByTestId("i18n-editor-ai-suggest-it-IT").click();
+    const suggestion = sheet.getByTestId("i18n-editor-suggestion-it-IT");
     await expect(suggestion).toBeVisible();
+    await expect(suggestion).toHaveClass(/bg-muted/);
     await expect(suggestion).toContainText("[MT] E2E proof");
-    await sheet.getByTestId("i18n-editor-suggestion-accept").click();
-    await expect(sheet.getByTestId("i18n-editor-value")).toHaveValue("[MT] E2E proof");
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/sky-500/);
+    await sheet.getByTestId("i18n-editor-suggestion-accept-it-IT").click();
+    await expect(sheet.getByTestId("i18n-editor-value-it-IT")).toHaveValue("[MT] E2E proof");
+    await expect(sheet.getByTestId("i18n-editor-status-it-IT")).toHaveClass(/sky-500/);
 
     // Generate-all — review list: rows per uncovered lang, accept-all fills
     // every draft; coverage reaches 7/7.
@@ -140,7 +167,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
 
     // Locale picker parity with the top bar: native labels + flags,
     // never raw ISO tags as the option name.
-    await sheet.getByTestId("i18n-editor-lang").click();
+    await sheet.getByTestId("i18n-editor-update-langs").click();
     await expect(page.getByRole("option", { name: "Italiano" })).toBeVisible();
     await expect(page.getByRole("option", { name: "it-IT", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -166,24 +193,29 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await expect(sheet.getByTestId("i18n-editor-key")).toBeVisible({ timeout: 10000 });
     // Coverage reflects real seeded rows (this key isn't necessarily
     // translated in every language) — any non-zero count means a Saved row.
-    await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText(/^[1-7]\/7/, {
+    await expect(sheet.getByTestId("i18n-editor-coverage")).toHaveText(/[1-7]\/7/, {
       timeout: 10000,
     });
-    // Land on en-GB explicitly — seeded rows always carry English.
-    await sheet.getByTestId("i18n-editor-lang").click();
-    await page.getByRole("option", { name: "British English" }).click();
+    // Land on en-GB explicitly — seeded rows always carry English. The
+    // update multi-select may already hold it (app-language default), so
+    // only open the picker when the row isn't mounted.
+    if ((await sheet.getByTestId("i18n-editor-value-en-GB").count()) === 0) {
+      await sheet.getByTestId("i18n-editor-update-langs").click();
+      await page.getByRole("option", { name: "British English" }).click();
+      await page.keyboard.press("Escape");
+    }
     // Saved status = emerald semantic; the textarea accepts input
     // (the test admin holds translation.update.single).
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/emerald-500/, {
+    await expect(sheet.getByTestId("i18n-editor-status-en-GB")).toHaveClass(/emerald-500/, {
       timeout: 10000,
     });
-    const valueArea = sheet.getByTestId("i18n-editor-value");
+    const valueArea = sheet.getByTestId("i18n-editor-value-en-GB");
     await expect(valueArea).toBeEditable();
 
     // Editing a saved value flips the status to Modified (sky) — the
     // pending write is an UPDATE (uuid+version ride the queue entry).
     await valueArea.fill("E2E touched value");
-    await expect(sheet.getByTestId("i18n-editor-status")).toHaveClass(/sky-500/);
+    await expect(sheet.getByTestId("i18n-editor-status-en-GB")).toHaveClass(/sky-500/);
 
     // Save queues under the dict page's owner — the cell shows the +N
     // pending badge after the sheet closes.
