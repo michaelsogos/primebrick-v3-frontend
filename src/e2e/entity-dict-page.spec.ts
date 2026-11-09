@@ -93,9 +93,23 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     for (const l of ["it-IT", "fr-FR", "de-DE"])
       await expect(sheet.getByTestId(`i18n-editor-missing-${l}`)).toBeVisible();
 
-    // LINE 3 — the two comboboxes: EN preview picker + update langs multi.
+    // LINE 3 — the two comboboxes: preview picker + update langs multi.
     await expect(sheet.getByTestId("i18n-editor-preview-lang")).toBeVisible();
     await expect(sheet.getByTestId("i18n-editor-update-langs")).toBeVisible();
+
+    // Swap CTA — the icon button between the combos exchanges preview ↔
+    // update, enabled only while the update multi holds ONE language.
+    const swapBtn = sheet.getByTestId("i18n-editor-swap");
+    await expect(swapBtn).toBeEnabled(); // update multi defaults to [en-GB]
+    await sheet.getByTestId("i18n-editor-preview-lang").click();
+    await page.getByRole("option", { name: "Italiano" }).click();
+    await swapBtn.click(); // preview en-GB → it-IT swap: update=[it-IT]
+    await expect(sheet.getByTestId("i18n-editor-row-it-IT")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-row-en-GB")).toHaveCount(0);
+    await swapBtn.click(); // back — update=[en-GB]
+    await expect(sheet.getByTestId("i18n-editor-row-en-GB")).toBeVisible();
+    await sheet.getByTestId("i18n-editor-preview-lang").click();
+    await page.getByRole("option", { name: "British English" }).click();
 
     // EN gate — update multi defaults to en-GB (no EN anywhere), Save
     // disabled, the * marker sits in that row's chrome.
@@ -144,6 +158,8 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await expect(sheet.getByTestId("i18n-editor-row-it-IT")).toBeVisible();
     await expect(sheet.getByTestId("i18n-editor-value-it-IT")).toBeVisible();
     await expect(sheet.getByTestId("i18n-editor-status-it-IT")).toHaveClass(/amber-500/);
+    // …and with TWO update languages the swap CTA greys out.
+    await expect(swapBtn).toBeDisabled();
 
     // Per-language AI suggestion — a disabled inline preview under its
     // own row; the apply CTA fills the matching draft.

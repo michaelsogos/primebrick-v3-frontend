@@ -75,7 +75,8 @@
 
   const canUpdateT = hasRequiredPermission('translation.update.single');
 
-  /** LINE 3a — which EN language feeds the preview (combobox, en-GB|en-US). */
+  /** LINE 3a — which language feeds the preview (combobox, any of the 7;
+   *  there is no fixed base language). */
   let previewLang = $state<UiLang>('en-GB');
   /** LINE 3b — the update languages being edited (multi-select, 1..n). */
   let updateLangs = $state<UiLang[]>([get(uiLang)]);
@@ -146,8 +147,6 @@
     UI_LANGS.map((l) => ({ code: l, label: UI_LANG_META[l].label, flag: UI_LANG_META[l].flag })),
     typeof navigator !== 'undefined' ? navigator.languages : null,
   );
-  const enOptions = EN_LANGS.map((l) => ({ code: l, label: UI_LANG_META[l].label, flag: UI_LANG_META[l].flag }));
-
   const langText = (l: UiLang) => draft[l] ?? existing[l]?.value ?? '';
 
   /** The EN preview — the language picked in combobox 1 (draft or saved). */
@@ -158,6 +157,16 @@
 
   const missingLangs = $derived(UI_LANGS.filter((l) => langText(l).trim() === ''));
   const coveredCount = $derived(UI_LANGS.length - missingLangs.length);
+
+  /** The LINE-3 swap CTA exchanges preview ↔ update — only defined when the
+   *  update side holds exactly ONE language; multi-selection greys it. */
+  const canSwap = $derived(updateLangs.length === 1);
+  function swapLangs() {
+    if (updateLangs.length !== 1) return;
+    const next = previewLang;
+    previewLang = updateLangs[0];
+    updateLangs = [next];
+  }
 
   /** Per-language row helpers — read live state inside the each block. */
   const rowOf = (l: UiLang) => existing[l];
@@ -361,24 +370,35 @@
       </Badge>
     </div>
 
-    <!-- LINE 3 — two comboboxes: which EN language feeds the preview
-         (single), and the update languages being edited (multi, 1..n),
-         with a comparison glyph between them. -->
+    <!-- LINE 3 — two comboboxes: which language feeds the preview
+         (single), and the update languages being edited (multi, 1..n).
+         The swap CTA between them exchanges the two selections — primary
+         when the update side holds exactly one language, greyed else. -->
     <div class="flex items-center gap-2">
       <ComboSelect
         class="min-w-0 flex-1"
         mode="single"
         value={previewLang}
         onChange={(v) => { previewLang = (Array.isArray(v) ? v[0] : v) as UiLang; }}
-        options={enOptions}
+        options={langOptions}
         valueField="code"
         labelField="label"
         flagField="flag"
         searchable={false}
-        placeholder={$t('app.common.translations.base')}
+        placeholder={$t('app.common.translations.preview')}
         data-testid="i18n-editor-preview-lang"
       />
-      <ArrowLeftRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <Button
+        size="icon"
+        class="size-8 shrink-0"
+        disabled={!canSwap}
+        title={$t('app.common.translations.swap')}
+        aria-label={$t('app.common.translations.swap')}
+        onclick={swapLangs}
+        data-testid="i18n-editor-swap"
+      >
+        <ArrowLeftRight class="size-4" />
+      </Button>
       <ComboSelect
         class="min-w-0 flex-1"
         mode="multi"
@@ -393,7 +413,7 @@
       />
     </div>
 
-    <!-- LINE 4 — the EN preview picked in combobox 1: a plain DISABLED
+    <!-- LINE 4 — the preview picked in combobox 1: a plain DISABLED
          surface (gray box, muted text, not-a-field) — flag + copy sit
          right-top inside it. -->
     {#if showPreview}
