@@ -389,15 +389,16 @@
         data-testid="i18n-editor-preview-lang"
       />
       <Button
+        variant="ghost"
         size="icon"
-        class="size-8 shrink-0 bg-none bg-primary text-primary-foreground hover:bg-primary/90"
+        class="size-8 shrink-0"
         disabled={!canSwap}
         title={$t('app.common.translations.swap')}
         aria-label={$t('app.common.translations.swap')}
         onclick={swapLangs}
         data-testid="i18n-editor-swap"
       >
-        <ArrowLeftRight class="size-4" />
+        <ArrowLeftRight class="size-4 text-primary" />
       </Button>
       <ComboSelect
         class="min-w-0 flex-1"
