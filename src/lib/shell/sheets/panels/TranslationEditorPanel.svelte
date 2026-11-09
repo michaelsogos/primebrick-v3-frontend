@@ -414,18 +414,20 @@
     </div>
 
     <!-- LINE 4 — the preview picked in combobox 1: a plain DISABLED
-         surface (gray box, muted text, not-a-field) — flag + copy sit
-         right-top inside it. -->
+         surface (gray box, muted text, not-a-field). Text starts at
+         char 0 of line 1; copy + flag ride a right-float AFTER the text,
+         docking at the right edge of its last line (a new line only
+         when the flow itself requires it). -->
     {#if showPreview}
       <div
-        class="relative rounded-lg border bg-muted/50 px-2.5 pb-2 pt-8 text-sm text-muted-foreground cursor-not-allowed"
+        class="rounded-lg border bg-muted/50 px-2.5 py-2 text-sm text-muted-foreground cursor-not-allowed"
         data-testid="i18n-editor-base"
       >
         <span class="whitespace-pre-wrap" data-testid="i18n-editor-base-text">{previewValue}</span>
-        <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5">
+        <span class="float-right ml-1 inline-flex translate-y-0.5 items-center gap-0.5" data-testid="i18n-editor-base-icons">
           <CopyButton variant="ghost" size="icon" class="size-7" text={previewValue} data-testid="i18n-editor-base-copy" />
           <span class="fi fi-{UI_LANG_META[previewLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-        </div>
+        </span>
       </div>
     {/if}
 
@@ -508,7 +510,7 @@
           >
             {#if suggestions[l]!.text}
               {suggestions[l]!.text}
-              <span class="inline-flex translate-y-0.5 items-center gap-0.5">
+              <span class="float-right ml-1 inline-flex translate-y-0.5 items-center gap-0.5" data-testid="i18n-editor-suggestion-icons-{l}">
                 <button
                   type="button"
                   class="rounded p-1 transition-colors hover:bg-accent"

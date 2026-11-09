@@ -143,6 +143,9 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     const baseText = baseCard.getByTestId("i18n-editor-base-text");
     await expect(baseText).toHaveText("E2E proof");
     await expect(sheet.getByTestId("i18n-editor-base-copy")).toBeVisible();
+    // Icons ride a right-float AFTER the text — docked at the right
+    // edge of the text's last line, never pinned top-right.
+    await expect(sheet.getByTestId("i18n-editor-base-icons")).toHaveClass(/float-right/);
 
     // Eraser CTA (editable overlay) — clears the draft back to empty:
     // status Missing, coverage 0/7, Save disarmed; refilling re-arms.
@@ -177,6 +180,8 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await expect(suggestion).toBeVisible();
     await expect(suggestion).toHaveClass(/bg-muted/);
     await expect(suggestion).toContainText("[MT] E2E proof");
+    // Suggestion icons — same right-float contract as the base preview.
+    await expect(sheet.getByTestId("i18n-editor-suggestion-icons-it-IT")).toHaveClass(/float-right/);
     await expect(sheet.getByTestId("i18n-editor-ai-busy")).toHaveCount(0);
     await sheet.getByTestId("i18n-editor-suggestion-accept-it-IT").click();
     await expect(sheet.getByTestId("i18n-editor-value-it-IT")).toHaveValue("[MT] E2E proof");
